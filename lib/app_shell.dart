@@ -1,3 +1,5 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -139,7 +141,7 @@ class AppShellState extends State<AppShell> {
             ),
             mobile: _buildPage(
               Scaffold(
-                appBar: CustomAppBar(),
+                appBar: MobileAppBar(),
                 drawer: const AppDrawer(),
                 body: Row(
                   children: [
@@ -148,7 +150,18 @@ class AppShellState extends State<AppShell> {
                     ),
                   ],
                 ),
-                bottomNavigationBar: const CustomBottomNavigation(),
+                bottomNavigationBar:
+                    BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                  builder: (context, state) {
+                    if (state is! DriveDetailLoadSuccess) {
+                      return Container();
+                    }
+                    return CustomBottomNavigation(
+                      currentFolder: state.folderInView,
+                      drive: (state).currentDrive,
+                    );
+                  },
+                ),
               ),
             ),
           );
@@ -168,7 +181,9 @@ class AppShellState extends State<AppShell> {
       setState(() => _showProfileOverlay = !_showProfileOverlay);
 }
 
-class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const MobileAppBar({super.key});
+
   @override
   Size get preferredSize =>
       const Size.fromHeight(80); // Set the height of the appbar
@@ -181,15 +196,21 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         color: ArDriveTheme.of(context).themeData.tableTheme.cellColor,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
-              icon: ArDriveIcons.menuArrow(),
+              icon: ArDriveIcons.menuArrow(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              ),
               onPressed: () => Scaffold.of(context).openDrawer(),
             ),
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.person),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.only(right: 12.0),
+              child: ProfileCard(
+                walletAddress:
+                    context.read<ArDriveAuth>().currentUser?.walletAddress ??
+                        '',
+              ),
             ),
           ],
         ),
