@@ -148,6 +148,7 @@ class ArDriveItemListTile extends StatelessWidget {
         item.onPressed(item);
       },
       child: ArDriveCard(
+        key: key,
         backgroundColor:
             ArDriveTheme.of(context).themeData.tableTheme.cellColor,
         content: Row(
