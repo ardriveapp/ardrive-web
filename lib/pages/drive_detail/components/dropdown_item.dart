@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 class ArDriveDropdownItemTile extends StatelessWidget {
   final String name;
   final ArDriveIcon icon;
+  final bool isDisabled;
+
   const ArDriveDropdownItemTile({
     Key? key,
     required this.name,
     required this.icon,
+    this.isDisabled = false,
   }) : super(key: key);
 
   @override
@@ -24,9 +27,23 @@ class ArDriveDropdownItemTile extends StatelessWidget {
           children: [
             Text(
               name,
-              style: ArDriveTypography.body.buttonNormalBold(),
+              style: ArDriveTypography.body.buttonNormalBold(
+                color: isDisabled
+                    ? ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled
+                    : null,
+              ),
             ),
-            icon,
+            icon.copyWith(
+              color: isDisabled
+                  ? ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentDisabled
+                  : null,
+            ),
           ],
         ),
       ),
