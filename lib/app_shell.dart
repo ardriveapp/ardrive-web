@@ -41,13 +41,8 @@ class AppShellState extends State<AppShell> {
             //Used to prevent the dialog being shown multiple times.
             _showWalletSwitchDialog = false;
           });
-          // FIXME
-          AppBar _buildAppBar() => AppBar(
-                elevation: 0.0,
-                backgroundColor: Colors.transparent,
-                actions: [const Icon(Icons.usb_rounded)],
-              );
-          Widget _buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
+
+          Widget buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
                 builder: (context, syncState) => syncState is SyncInProgress
                     ? Stack(
                         children: [
@@ -125,7 +120,7 @@ class AppShellState extends State<AppShell> {
                     : scaffold,
               );
           return ScreenTypeLayout(
-            desktop: _buildPage(
+            desktop: buildPage(
               Row(
                 children: [
                   const AppDrawer(),
@@ -135,7 +130,7 @@ class AppShellState extends State<AppShell> {
                 ],
               ),
             ),
-            mobile: _buildPage(
+            mobile: buildPage(
               Scaffold(
                 appBar: const MobileAppBar(),
                 drawer: const AppDrawer(),
