@@ -112,10 +112,12 @@ class _DriveExplorerMobileViewState extends State<DriveExplorerMobileView> {
                           ),
                         ),
                       ] else
-                        DriveDetailFolderEmptyCard(
-                          promptToAddFiles: state.hasWritePermissions,
-                          driveId: state.currentDrive.id,
-                          parentFolderId: state.folderInView.folder.id,
+                        Expanded(
+                          child: DriveDetailFolderEmptyCard(
+                            promptToAddFiles: state.hasWritePermissions,
+                            driveId: state.currentDrive.id,
+                            parentFolderId: state.folderInView.folder.id,
+                          ),
                         ),
                     ],
                   ),
