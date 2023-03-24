@@ -1,6 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/components/app_bottom_bar.dart';
 import 'package:ardrive/components/profile_card.dart';
-import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -130,18 +130,14 @@ class AppShellState extends State<AppShell> {
                 children: [
                   const AppDrawer(),
                   Expanded(
-                    child: Scaffold(
-                      // FIXME
-                      // appBar: _buildAppBar(),
-                      body: widget.page,
-                    ),
+                    child: Scaffold(body: widget.page),
                   ),
                 ],
               ),
             ),
             mobile: _buildPage(
               Scaffold(
-                appBar: MobileAppBar(),
+                appBar: const MobileAppBar(),
                 drawer: const AppDrawer(),
                 body: Row(
                   children: [
@@ -156,9 +152,10 @@ class AppShellState extends State<AppShell> {
                     if (state is! DriveDetailLoadSuccess) {
                       return Container();
                     }
-                    return CustomBottomNavigation(
+                    return AppBottomBar(
                       currentFolder: state.folderInView,
                       drive: (state).currentDrive,
+                      driveDetailState: state,
                     );
                   },
                 ),
