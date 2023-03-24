@@ -26,9 +26,11 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         );
 
       case FsEntryPreviewImage:
-        return Image.memory(
-          (widget.state as FsEntryPreviewImage).imageBytes,
-          fit: BoxFit.fitWidth,
+        return ArDriveImage(
+          fit: BoxFit.cover,
+          height: double.maxFinite,
+          width: double.maxFinite,
+          image: MemoryImage((widget.state as FsEntryPreviewImage).imageBytes),
         );
 
       default:

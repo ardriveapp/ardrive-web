@@ -5,6 +5,7 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/copy_icon_button.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
+import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
@@ -29,7 +30,6 @@ import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:drift/drift.dart' show OrderingMode;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,12 +38,9 @@ import 'package:intersperse/intersperse.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 
-import 'components/custom_paginated_data_table.dart';
-
 part 'components/drive_detail_actions_row.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
 part 'components/drive_detail_data_list.dart';
-part 'components/drive_detail_data_table.dart';
 part 'components/drive_detail_data_table_source.dart';
 part 'components/drive_detail_folder_empty_card.dart';
 part 'components/fs_entry_preview_widget.dart';
@@ -254,16 +251,43 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 ),
               ),
             ),
-            if (state.showSelectedItemDetails) ...{
-              const VerticalDivider(width: 1),
-              FsEntrySideSheet(
-                driveId: state.currentDrive.id,
-                drivePrivacy: state.currentDrive.privacy,
-                maybeSelectedItem: state.selectedItems.isNotEmpty
-                    ? state.selectedItems.first
-                    : null,
+            AnimatedSize(
+              curve: Curves.easeInOut,
+              duration: const Duration(milliseconds: 300),
+              child: Align(
+                alignment: Alignment.center,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 120),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                        maxWidth: state.showSelectedItemDetails &&
+                                context.read<DriveDetailCubit>().selectedItem !=
+                                    null
+                            ? 374
+                            : 0,
+                        maxHeight: MediaQuery.of(context).size.height - 120),
+                    child: state.showSelectedItemDetails &&
+                            context.read<DriveDetailCubit>().selectedItem !=
+                                null
+                        ? DetailsPanel(
+                            maybeSelectedItem: state.maybeSelectedItem(),
+                            item:
+                                context.read<DriveDetailCubit>().selectedItem!,
+                          )
+                        : const SizedBox(),
+                  ),
+                ),
               ),
-            }
+            )
+            // TODO:(@thiagocarvalhodev): Remove this
+            // FsEntrySideSheet(
+            //   driveId: state.currentDrive.id,
+            //   drivePrivacy: state.currentDrive.privacy,
+            //   maybeSelectedItem: state.selectedItems.isNotEmpty
+            //       ? state.selectedItems.first
+            //       : null,
+            // ),
+            // }
           ],
         ),
         if (kIsWeb)
@@ -275,6 +299,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     );
   }
 
+  // TODO(@thiagocarvalhodev): Dedup the logic here
   Widget _mobileView(
       DriveDetailLoadSuccess state, bool hasSubfolders, bool hasFiles) {
     int index = 0;
@@ -297,7 +322,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           if (file.id == state.maybeSelectedItem()?.id) {
             bloc.toggleSelectedItemDetails();
           } else {
-            await bloc.selectItem(SelectedFile(file: file));
+            await bloc.selectDataItem(selected);
           }
         },
         index++,

@@ -3,6 +3,7 @@ part of '../drive_detail_page.dart';
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
   int index = 0;
 
+  // TODO(@thiagocarvalhodev): Refactor using the new method for select items
   final folders = state.folderInView.subfolders.map(
     (folder) => DriveDataTableItemMapper.fromFolderEntry(
       folder,
@@ -18,11 +19,12 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
     (file) => DriveDataTableItemMapper.toFileDataTableItem(
       file,
       (selected) async {
+        // TODO(@thiagocarvalhodev): Refactor using the new method for select items
         final bloc = context.read<DriveDetailCubit>();
         if (file.id == state.maybeSelectedItem()?.id) {
           bloc.toggleSelectedItemDetails();
         } else {
-          await bloc.selectItem(SelectedFile(file: file));
+          bloc.selectDataItem(selected);
         }
       },
       index++,
