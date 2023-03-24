@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3309-new-drive-explorer-mobile
-      resolved-ref: "8f01d92e5a6c6e6f4fda90047f5deb1e99cc774d"
+      resolved-ref: "4939eea64f7df85b9cbeb81bc28ff2bcd34cabee"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -1231,7 +1231,7 @@ packages:
       name: pointycastle
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.7.1"
+    version: "3.7.2"
   pool:
     dependency: transitive
     description:
