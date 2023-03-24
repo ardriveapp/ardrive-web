@@ -250,10 +250,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         ),
                       )
                     else
-                      DriveDetailFolderEmptyCard(
-                        driveId: state.currentDrive.id,
-                        parentFolderId: state.folderInView.folder.id,
-                        promptToAddFiles: state.hasWritePermissions,
+                      Expanded(
+                        child: DriveDetailFolderEmptyCard(
+                          driveId: state.currentDrive.id,
+                          parentFolderId: state.folderInView.folder.id,
+                          promptToAddFiles: state.hasWritePermissions,
+                        ),
                       ),
                   ],
                 ),
