@@ -1,9 +1,12 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_helper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DriveExplorerItemTile extends TableRowWidget {
   DriveExplorerItemTile({
@@ -14,10 +17,7 @@ class DriveExplorerItemTile extends TableRowWidget {
     required Function() onPressed,
   }) : super(
           [
-            Text(
-              name,
-              style: ArDriveTypography.body.buttonNormalBold(),
-            ),
+            Text(name, style: ArDriveTypography.body.buttonNormalBold()),
             Text(size, style: ArDriveTypography.body.xSmallRegular()),
             Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),
             Text(dateCreated, style: ArDriveTypography.body.captionRegular()),
@@ -132,11 +132,15 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
   }
 }
 
-// build a DriveExplorerItemTileTrailing widget
 class DriveExplorerItemTileTrailing extends StatefulWidget {
-  const DriveExplorerItemTileTrailing({super.key, required this.item});
+  const DriveExplorerItemTileTrailing({
+    super.key,
+    required this.item,
+    required this.drive,
+  });
 
   final ArDriveDataTableItem item;
+  final Drive drive;
 
   @override
   State<DriveExplorerItemTileTrailing> createState() =>
@@ -190,36 +194,49 @@ class _DriveExplorerItemTileTrailingState
 
   List<ArDriveDropdownItem> _getItems(
       ArDriveDataTableItem item, BuildContext context) {
+    final isDriveOwner = widget.drive.ownerAddress ==
+        context.read<ArDriveAuth>().currentUser?.walletAddress;
     if (item is FolderDataTableItem) {
       return [
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToMove(
-              context,
-              driveId: item.driveId,
-              selectedItems: [
-                parseMoveItem(item),
-              ],
-            );
-          },
-          content: _buildItem('Move', ArDriveIcons.move()),
-        ),
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToRenameModal(
-              context,
-              driveId: item.driveId,
-              folderId: item.id,
-              initialName: item.name,
-            );
-          },
-          content: _buildItem('Rename', ArDriveIcons.edit()),
-        ),
+        if (isDriveOwner) ...[
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToMove(
+                context,
+                driveId: item.driveId,
+                selectedItems: [
+                  item,
+                ],
+              );
+            },
+            content: _buildItem(
+              appLocalizationsOf(context).move,
+              ArDriveIcons.move(),
+            ),
+          ),
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToRenameModal(
+                context,
+                driveId: item.driveId,
+                folderId: item.id,
+                initialName: item.name,
+              );
+            },
+            content: _buildItem(
+              appLocalizationsOf(context).rename,
+              ArDriveIcons.edit(),
+            ),
+          ),
+        ],
         ArDriveDropdownItem(
           onClick: () {
             _comingSoonModal();
           },
-          content: _buildItem('More Info', ArDriveIcons.info()),
+          content: _buildItem(
+            appLocalizationsOf(context).moreInfo,
+            ArDriveIcons.info(),
+          ),
         ),
       ];
     }
@@ -231,7 +248,10 @@ class _DriveExplorerItemTileTrailingState
             file: item as FileDataTableItem,
           );
         },
-        content: _buildItem('Download', ArDriveIcons.download()),
+        content: _buildItem(
+          appLocalizationsOf(context).download,
+          ArDriveIcons.download(),
+        ),
       ),
       ArDriveDropdownItem(
         onClick: () {
@@ -241,42 +261,55 @@ class _DriveExplorerItemTileTrailingState
             fileId: item.id,
           );
         },
-        content: _buildItem('Share File', ArDriveIcons.share()),
+        content: _buildItem(
+          appLocalizationsOf(context).shareFile,
+          ArDriveIcons.share(),
+        ),
       ),
       ArDriveDropdownItem(
         onClick: () {
           _comingSoonModal();
         },
-        content: _buildItem('Preview', ArDriveIcons.externalLink()),
+        content: _buildItem(
+          appLocalizationsOf(context).preview,
+          ArDriveIcons.externalLink(),
+        ),
       ),
-      ArDriveDropdownItem(
-        onClick: () {
-          promptToRenameModal(
-            context,
-            driveId: item.driveId,
-            fileId: item.id,
-            initialName: item.name,
-          );
-        },
-        content: _buildItem('Rename File', ArDriveIcons.edit()),
-      ),
-      ArDriveDropdownItem(
-        onClick: () {
-          promptToMove(
-            context,
-            driveId: item.driveId,
-            selectedItems: [
-              parseMoveItem(item),
-            ],
-          );
-        },
-        content: _buildItem('Move File', ArDriveIcons.move()),
-      ),
+      if (isDriveOwner) ...[
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToRenameModal(
+              context,
+              driveId: item.driveId,
+              fileId: item.id,
+              initialName: item.name,
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).rename,
+            ArDriveIcons.edit(),
+          ),
+        ),
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToMove(
+              context,
+              driveId: item.driveId,
+              selectedItems: [item],
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).move,
+            ArDriveIcons.move(),
+          ),
+        ),
+      ],
       ArDriveDropdownItem(
         onClick: () {
           _comingSoonModal();
         },
-        content: _buildItem('More Info', ArDriveIcons.info()),
+        content: _buildItem(
+            appLocalizationsOf(context).moreInfo, ArDriveIcons.info()),
       ),
     ];
   }
@@ -311,68 +344,5 @@ class _DriveExplorerItemTileTrailingState
         description: 'Coming soon',
       ),
     );
-  }
-}
-
-abstract class MoveItem {
-  final String id;
-  final String name;
-  final String driveId;
-  final String path;
-
-  MoveItem({
-    required this.id,
-    required this.name,
-    required this.driveId,
-    required this.path,
-  });
-}
-
-class MoveFolder extends MoveItem {
-  MoveFolder({
-    required String id,
-    required String name,
-    required String driveId,
-    required String path,
-  }) : super(
-          id: id,
-          name: name,
-          driveId: driveId,
-          path: path,
-        );
-}
-
-class MoveFile extends MoveItem {
-  MoveFile({
-    required String id,
-    required String name,
-    required String driveId,
-    required String path,
-  }) : super(
-          id: id,
-          name: name,
-          driveId: driveId,
-          path: path,
-        );
-}
-
-// parse ArDriveDataTableItem to MoveItem
-MoveItem parseMoveItem(ArDriveDataTableItem item) {
-  if (item is FolderDataTableItem) {
-    return MoveFolder(
-      id: item.id,
-      name: item.name,
-      driveId: item.driveId,
-      path: item.path,
-    );
-  } else if (item is FileDataTableItem) {
-    return MoveFile(
-      id: item.id,
-      name: item.name,
-      driveId: item.driveId,
-      path: item.path,
-    );
-  } else {
-    throw Exception('Invalid ArDriveDataTableItem');
   }
 }

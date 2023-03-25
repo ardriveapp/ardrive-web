@@ -1,29 +1,44 @@
 part of '../drive_detail_page.dart';
 
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
+  int index = 0;
+
   final folders = state.folderInView.subfolders.map(
-    (folder) => DriveDataTableItemMapper.fromFolderEntry(folder, (selected) {
-      final bloc = context.read<DriveDetailCubit>();
-      bloc.openFolder(path: folder.path);
-    }),
+    (folder) => DriveDataTableItemMapper.fromFolderEntry(
+      folder,
+      (selected) {
+        final bloc = context.read<DriveDetailCubit>();
+        bloc.openFolder(path: folder.path);
+      },
+      index++,
+    ),
   );
 
   final files = state.folderInView.files.map(
-    (file) =>
-        DriveDataTableItemMapper.toFileDataTableItem(file, (selected) async {
-      final bloc = context.read<DriveDetailCubit>();
-      if (file.id == state.maybeSelectedItem()?.id) {
-        bloc.toggleSelectedItemDetails();
-      } else {
-        await bloc.selectItem(SelectedFile(file: file));
-      }
-    }),
+    (file) => DriveDataTableItemMapper.toFileDataTableItem(
+      file,
+      (selected) async {
+        final bloc = context.read<DriveDetailCubit>();
+        if (file.id == state.maybeSelectedItem()?.id) {
+          bloc.toggleSelectedItemDetails();
+        } else {
+          await bloc.selectItem(SelectedFile(file: file));
+        }
+      },
+      index++,
+    ),
   );
 
-  return _buildDataListContent(context, [...folders, ...files]);
+  return _buildDataListContent(
+    context,
+    [...folders, ...files],
+    state.folderInView.folder,
+    state.currentDrive,
+    state.multiselect,
+  );
 }
 
-abstract class ArDriveDataTableItem {
+abstract class ArDriveDataTableItem extends IndexedItem {
   final String name;
   final int? size;
   final DateTime lastUpdated;
@@ -46,7 +61,8 @@ abstract class ArDriveDataTableItem {
     this.fileStatusFromTransactions,
     required this.onPressed,
     required this.path,
-  });
+    required int index,
+  }) : super(index);
 }
 
 class FolderDataTableItem extends ArDriveDataTableItem {
@@ -63,6 +79,7 @@ class FolderDataTableItem extends ArDriveDataTableItem {
     String? fileStatusFromTransactions,
     required Function(ArDriveDataTableItem) onPressed,
     this.parentFolderId,
+    required int index,
   }) : super(
           driveId: driveId,
           path: path,
@@ -74,7 +91,11 @@ class FolderDataTableItem extends ArDriveDataTableItem {
           contentType: contentType,
           fileStatusFromTransactions: fileStatusFromTransactions,
           onPressed: onPressed,
+          index: index,
         );
+
+  @override
+  List<Object?> get props => [id, name];
 }
 
 class FileDataTableItem extends ArDriveDataTableItem {
@@ -103,6 +124,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
     String? fileStatusFromTransactions,
     required Function(ArDriveDataTableItem) onPressed,
     this.bundledIn,
+    required int index,
   }) : super(
           path: path,
           driveId: driveId,
@@ -114,25 +136,50 @@ class FileDataTableItem extends ArDriveDataTableItem {
           contentType: contentType,
           fileStatusFromTransactions: fileStatusFromTransactions,
           onPressed: onPressed,
+          index: index,
         );
+
+  @override
+  List<Object?> get props => [fileId, name];
 }
 
-Widget _buildDataListContent(
-    BuildContext context, List<ArDriveDataTableItem> items) {
+ArDriveDataTable _buildDataListContent(
+  BuildContext context,
+  List<ArDriveDataTableItem> items,
+  FolderEntry folder,
+  Drive drive,
+  bool isMultiselecting,
+) {
   return ArDriveDataTable<ArDriveDataTableItem>(
-    key: ValueKey(items),
+    key: ValueKey(folder.id + items.length.toString()),
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,
     pageItemsDivisorFactor: 25,
+    onSelectedRows: (rows) {
+      final bloc = context.read<DriveDetailCubit>();
+
+      if (rows.isEmpty) {
+        bloc.setMultiSelect(false);
+        return;
+      }
+
+      bloc.selectItems(rows);
+    },
+    onChangeMultiSelecting: (isMultiselecting) {
+      context.read<DriveDetailCubit>().setMultiSelect(isMultiselecting);
+    },
     columns: [
       TableColumn(appLocalizationsOf(context).name, 2),
       TableColumn(appLocalizationsOf(context).size, 1),
       TableColumn(appLocalizationsOf(context).lastUpdated, 1),
       TableColumn(appLocalizationsOf(context).dateCreated, 1),
     ],
-    trailing: (file) => DriveExplorerItemTileTrailing(
-      item: file,
-    ),
+    trailing: (file) => isMultiselecting
+        ? const SizedBox.shrink()
+        : DriveExplorerItemTileTrailing(
+            drive: drive,
+            item: file,
+          ),
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
     ),
@@ -211,7 +258,8 @@ class ColumnIndexes {
 class DriveDataTableItemMapper {
   static FileDataTableItem toFileDataTableItem(
       FileWithLatestRevisionTransactions file,
-      Function(ArDriveDataTableItem) onPressed) {
+      Function(ArDriveDataTableItem) onPressed,
+      int index) {
     return FileDataTableItem(
       path: file.path,
       lastModifiedDate: file.lastModifiedDate,
@@ -232,12 +280,17 @@ class DriveDataTableItemMapper {
       bundledIn: file.bundledIn,
       metadataTx: file.metadataTx,
       dataTx: file.dataTx,
+      index: index,
     );
   }
 
   static FolderDataTableItem fromFolderEntry(
-      FolderEntry folderEntry, Function(ArDriveDataTableItem) onPressed) {
+    FolderEntry folderEntry,
+    Function(ArDriveDataTableItem) onPressed,
+    int index,
+  ) {
     return FolderDataTableItem(
+      index: index,
       path: folderEntry.path,
       driveId: folderEntry.driveId,
       folderId: folderEntry.id,

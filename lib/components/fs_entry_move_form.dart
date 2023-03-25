@@ -1,7 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -9,12 +8,13 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../pages/drive_detail/drive_detail_page.dart';
 import 'components.dart';
 
 Future<void> promptToMove(
   BuildContext context, {
   required String driveId,
-  required List<MoveItem> selectedItems,
+  required List<ArDriveDataTableItem> selectedItems,
 }) {
   return showAnimatedDialog(
     context,

@@ -44,7 +44,7 @@ packages:
     source: hosted
     version: "4.2.0"
   archive:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: archive
       url: "https://pub.dartlang.org"
@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3177-implement-drive-options
-      resolved-ref: "31f8eaf80c71135b333e053bc7d55088bc320dde"
+      ref: PE-3116-implement-multiselect
+      resolved-ref: "8e9d7f2f0d69bfe041f351c408c45a6a4d6a3b88"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -797,7 +797,7 @@ packages:
       name: http_client
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.5.1"
+    version: "1.5.2"
   http_methods:
     dependency: transitive
     description:
@@ -839,7 +839,7 @@ packages:
       name: image_picker_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.6+5"
+    version: "0.8.6+6"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -1231,7 +1231,7 @@ packages:
       name: pointycastle
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.7.0"
+    version: "3.7.1"
   pool:
     dependency: transitive
     description:
@@ -1315,7 +1315,7 @@ packages:
       name: shared_preferences
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.18"
+    version: "2.0.20"
   shared_preferences_android:
     dependency: transitive
     description:
@@ -1600,7 +1600,7 @@ packages:
       name: url_launcher_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.25"
+    version: "6.0.26"
   url_launcher_ios:
     dependency: transitive
     description:
