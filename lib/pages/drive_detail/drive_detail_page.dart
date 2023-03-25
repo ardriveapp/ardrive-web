@@ -30,6 +30,7 @@ import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:chewie/chewie.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,6 +38,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
+import 'package:video_player/video_player.dart';
 
 part 'components/drive_detail_actions_row.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
@@ -270,6 +272,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             context.read<DriveDetailCubit>().selectedItem !=
                                 null
                         ? DetailsPanel(
+                            drivePrivacy: state.currentDrive.privacy,
                             maybeSelectedItem: state.maybeSelectedItem(),
                             item:
                                 context.read<DriveDetailCubit>().selectedItem!,

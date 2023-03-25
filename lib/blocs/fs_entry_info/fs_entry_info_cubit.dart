@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -8,7 +9,7 @@ part 'fs_entry_info_state.dart';
 
 class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
   final String driveId;
-  final SelectedItem? maybeSelectedItem;
+  final ArDriveDataTableItem? maybeSelectedItem;
 
   final DriveDao _driveDao;
 
@@ -23,7 +24,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
       switch (selectedItem.runtimeType) {
-        case SelectedFolder:
+        case FolderDataTableItem:
           _entrySubscription = _driveDao
               .getFolderTree(driveId, selectedItem.id)
               .asStream()
@@ -38,7 +39,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                 ),
               );
           break;
-        case SelectedFile:
+        case FileDataTableItem:
           _entrySubscription = _driveDao
               .fileById(driveId: driveId, fileId: selectedItem.id)
               .watchSingle()

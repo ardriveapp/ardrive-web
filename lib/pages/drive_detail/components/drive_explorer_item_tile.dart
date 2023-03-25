@@ -233,7 +233,9 @@ class _DriveExplorerItemTileTrailingState
         ],
         ArDriveDropdownItem(
           onClick: () {
-            _comingSoonModal();
+            final bloc = context.read<DriveDetailCubit>();
+
+            bloc.selectDataItem(item);
           },
           content: _buildItem(
             appLocalizationsOf(context).moreInfo,

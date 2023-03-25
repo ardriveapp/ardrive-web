@@ -17,7 +17,7 @@ class AppConfig {
     this.defaultTurboUrl,
     this.allowedDataItemSizeForTurbo,
     this.enableQuickSyncAuthoring = false,
-    this.enableMultipleFileDownload = false,
+    this.enableMultipleFileDownload = true,
   });
   AppConfig copyWith({
     String? defaultArweaveGatewayUrl,

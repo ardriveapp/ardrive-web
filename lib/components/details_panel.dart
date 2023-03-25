@@ -1,16 +1,21 @@
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/models/selected_item.dart';
+import 'package:ardrive/entities/string_types.dart';
+import 'package:ardrive/l11n/l11n.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/blocs.dart';
-import '../models/daos/drive_dao/drive_dao.dart';
 import '../services/arweave/arweave_service.dart';
 
 class DetailsPanel extends StatefulWidget {
@@ -18,10 +23,13 @@ class DetailsPanel extends StatefulWidget {
     super.key,
     required this.item,
     required this.maybeSelectedItem,
+    required this.drivePrivacy,
   });
 
   final ArDriveDataTableItem item;
   final SelectedItem? maybeSelectedItem;
+  final Privacy drivePrivacy;
+
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
 }
@@ -31,16 +39,14 @@ class _DetailsPanelState extends State<DetailsPanel> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       // Specify a key to ensure a new cubit is provided when the folder/file id changes.
-      key: widget.maybeSelectedItem?.id != null
-          ? ValueKey(
-              '${widget.item.driveId}${widget.maybeSelectedItem?.id}',
-            )
-          : UniqueKey(),
+      key: ValueKey(
+        '${widget.item.driveId}${widget.item.id}',
+      ),
       providers: [
         BlocProvider<FsEntryInfoCubit>(
           create: (context) => FsEntryInfoCubit(
             driveId: widget.item.driveId,
-            maybeSelectedItem: widget.maybeSelectedItem,
+            maybeSelectedItem: widget.item,
             driveDao: context.read<DriveDao>(),
           ),
         ),
@@ -48,7 +54,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           create: (context) => FsEntryPreviewCubit(
             crypto: ArDriveCrypto(),
             driveId: widget.item.driveId,
-            maybeSelectedItem: widget.maybeSelectedItem,
+            maybeSelectedItem: widget.item,
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             arweave: context.read<ArweaveService>(),
@@ -58,73 +64,91 @@ class _DetailsPanelState extends State<DetailsPanel> {
       ],
       child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
           builder: (context, previewState) {
-        final tabs = [
-          if (previewState is FsEntryPreviewSuccess)
-            ArDriveTab(
+        return BlocBuilder<FsEntryInfoCubit, FsEntryInfoState>(
+          builder: (context, state) {
+            final tabs = [
+              if (previewState is FsEntryPreviewSuccess)
+                ArDriveTab(
+                    Tab(
+                      child: Text(
+                        appLocalizationsOf(context).itemPreviewEmphasized,
+                      ),
+                    ),
+                    _buildPreview(previewState)),
+              ArDriveTab(
                 Tab(
                   child: Text(
-                    appLocalizationsOf(context).itemPreviewEmphasized,
+                    appLocalizationsOf(context).itemDetailsEmphasized,
                   ),
                 ),
-                _buildPreview(previewState)),
-          ArDriveTab(
-            Tab(
-              child: Text(
-                appLocalizationsOf(context).itemDetailsEmphasized,
+                _buildDetails(state),
               ),
-            ),
-            _buildDetails(),
-          ),
-          ArDriveTab(
-            Tab(
-              child: Text(
-                appLocalizationsOf(context).itemActivityEmphasized,
+              ArDriveTab(
+                Tab(
+                  child: Text(
+                    appLocalizationsOf(context).itemActivityEmphasized,
+                  ),
+                ),
+                BlocProvider(
+                  create: (context) => FsEntryActivityCubit(
+                    driveId: widget.item.driveId,
+                    maybeSelectedItem: widget.item,
+                    driveDao: context.read<DriveDao>(),
+                  ),
+                  child:
+                      BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
+                    builder: (context, state) {
+                      return _buildActivity(state);
+                    },
+                  ),
+                ),
+              )
+            ];
+            return SizedBox(
+              child: ArDriveCard(
+                backgroundColor: ArDriveTheme.of(context)
+                    .themeData
+                    .tableTheme
+                    .backgroundColor,
+                contentPadding: const EdgeInsets.all(24),
+                content: Column(
+                  children: [
+                    ArDriveCard(
+                      contentPadding: const EdgeInsets.all(24),
+                      backgroundColor: ArDriveTheme.of(context)
+                          .themeData
+                          .tableTheme
+                          .selectedItemColor,
+                      content: Row(
+                        children: [
+                          DriveExplorerItemTileLeading(
+                            item: widget.item,
+                          ),
+                          Flexible(
+                            child: Text(
+                              widget.item.name,
+                              style: ArDriveTypography.body.buttonLargeBold(),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 48,
+                    ),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: ArDriveTabView(
+                        key: Key(widget.item.id + tabs.length.toString()),
+                        tabs: tabs,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            _buildActivity(),
-          )
-        ];
-        return SizedBox(
-          child: ArDriveCard(
-            backgroundColor:
-                ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-            contentPadding: const EdgeInsets.all(24),
-            content: Column(
-              children: [
-                ArDriveCard(
-                  contentPadding: const EdgeInsets.all(24),
-                  backgroundColor: ArDriveTheme.of(context)
-                      .themeData
-                      .tableTheme
-                      .selectedItemColor,
-                  content: Row(
-                    children: [
-                      DriveExplorerItemTileLeading(
-                        item: widget.item,
-                      ),
-                      Flexible(
-                        child: Text(
-                          widget.item.name,
-                          style: ArDriveTypography.body.buttonLargeBold(),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(
-                  height: 48,
-                ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.6,
-                  child: ArDriveTabView(
-                    key: Key(widget.item.id + tabs.length.toString()),
-                    tabs: tabs,
-                  ),
-                ),
-              ],
-            ),
-          ),
+            );
+          },
         );
       }),
     );
@@ -139,11 +163,396 @@ class _DetailsPanelState extends State<DetailsPanel> {
     );
   }
 
-  Widget _buildDetails() {
-    return Container();
+  Widget _buildDetails(FsEntryInfoState state) {
+    late List<Widget> children;
+    if (state is FsEntryInfoSuccess<FolderNode>) {
+      children = _folderDetails(state);
+    } else if (state is FsEntryInfoSuccess<FileEntry>) {
+      children = _fileDetails();
+    } else {
+      children = [const Text('Loading...')];
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+      children: children,
+    );
   }
 
-  Widget _buildActivity() {
-    return Container();
+  List<Widget> _folderDetails(
+    FsEntryInfoSuccess<FolderNode> folder,
+  ) {
+    // itemContains
+    return [
+      DetailsPanelItem(
+        leading: CopyButton(text: folder.entry.folder.id),
+        itemTitle: appLocalizationsOf(context).folderID,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: Text(
+          fileAndFolderCountsToString(
+            folderCount: folder.entry.getRecursiveSubFolderCount(),
+            fileCount: folder.entry.getRecursiveFileCount(),
+            localizations: appLocalizationsOf(context),
+          ),
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: appLocalizationsOf(context).itemContains,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: Text(
+          yMMdDateFormatter.format(widget.item.lastUpdated),
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: appLocalizationsOf(context).lastUpdated,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: Text(
+          yMMdDateFormatter.format(widget.item.dateCreated),
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: appLocalizationsOf(context).dateCreated,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: CopyButton(
+          text: folder.entry.folder.driveId,
+        ),
+        itemTitle: appLocalizationsOf(context).driveID,
+      ),
+    ];
+  }
+
+  List<Widget> _fileDetails() {
+    return [
+      DetailsPanelItem(
+        leading: CopyButton(text: widget.item.id),
+        itemTitle: appLocalizationsOf(context).fileID,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: Text(
+          filesize(widget.item.size),
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: appLocalizationsOf(context).size,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: Text(
+          yMMdDateFormatter.format(widget.item.lastUpdated),
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: appLocalizationsOf(context).lastUpdated,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: Text(
+          yMMdDateFormatter.format(widget.item.dateCreated),
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: appLocalizationsOf(context).dateCreated,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: Text(
+          widget.item.contentType,
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: 'File type',
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: CopyButton(
+          text: widget.item.driveId,
+        ),
+        itemTitle: appLocalizationsOf(context).metadataTxID,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: CopyButton(
+          text: (widget.item as FileDataTableItem).dataTxId,
+        ),
+        itemTitle: appLocalizationsOf(context).dataTxID,
+      ),
+    ];
+  }
+
+  Widget _buildActivity(FsEntryActivityState state) {
+    if (state is FsEntryActivitySuccess) {
+      if (state.revisions.isNotEmpty) {
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          separatorBuilder: (context, index) => const SizedBox(
+            height: 16,
+          ),
+          itemCount: state.revisions.length,
+          itemBuilder: (context, index) {
+            final revision = state.revisions[index];
+            String title = '';
+            String subtitle = '';
+
+            if (revision is FolderRevisionWithTransaction) {
+              switch (revision.action) {
+                case RevisionAction.create:
+                  title = 'Folder added to the drive';
+                  break;
+                case RevisionAction.rename:
+                  title = 'Folder renamed to ${revision.name}';
+                  break;
+                case RevisionAction.move:
+                  title = 'Folder moved';
+                  break;
+                default:
+                  title = 'Folder was modified';
+              }
+              subtitle = yMMdDateFormatter.format(revision.dateCreated);
+
+              return DetailsPanelItem(
+                itemSubtitle: subtitle,
+                itemTitle: title,
+              );
+            } else if (revision is FileRevisionWithTransactions) {
+              late String title;
+              String? subtitle;
+              Widget? leading;
+
+              switch (revision.action) {
+                case RevisionAction.create:
+                  title = 'File added to the drive';
+                  leading = _DownloadOrPreview(
+                    privacy: widget.drivePrivacy,
+                    revision: revision,
+                  );
+                  break;
+                case RevisionAction.rename:
+                  title = 'File renamed to ${revision.name}';
+                  break;
+                case RevisionAction.move:
+                  title = 'File was moved';
+                  break;
+                case RevisionAction.uploadNewVersion:
+                  title = 'File was updated';
+                  leading = leading = _DownloadOrPreview(
+                    privacy: widget.drivePrivacy,
+                    revision: revision,
+                  );
+                  break;
+                default:
+                  title = appLocalizationsOf(context).fileWasModified;
+              }
+              subtitle = yMMdDateFormatter.format(revision.dateCreated);
+
+              return DetailsPanelItem(
+                leading: leading ?? const SizedBox(),
+                itemTitle: title,
+                itemSubtitle: subtitle,
+              );
+            }
+
+            return const SizedBox();
+          },
+        );
+      }
+    }
+    return const Center(child: Text('Loading...'));
+  }
+}
+
+class DetailsPanelItem extends StatelessWidget {
+  const DetailsPanelItem({
+    super.key,
+    required this.itemTitle,
+    this.itemSubtitle,
+    this.leading,
+  });
+
+  final String itemTitle;
+  final String? itemSubtitle;
+  final Widget? leading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        itemTitle,
+                        style: ArDriveTypography.body.buttonNormalRegular(),
+                        maxLines: 2,
+                      ),
+                    ),
+                    if (itemSubtitle != null)
+                      Text(
+                        itemSubtitle!,
+                        style: ArDriveTypography.body.xSmallRegular(),
+                      ),
+                  ],
+                ),
+              ),
+              if (leading != null) leading!,
+            ],
+          ),
+        ),
+        const SizedBox(
+          height: 18,
+        ),
+        HorizontalDottedLine(
+          color: ArDriveTheme.of(context).themeData.colors.themeBorderDefault,
+          width: double.maxFinite,
+        ),
+      ],
+    );
+  }
+}
+
+class CopyButton extends StatefulWidget {
+  final String text;
+
+  const CopyButton({
+    Key? key,
+    required this.text,
+  }) : super(key: key);
+
+  @override
+  _CopyButtonState createState() => _CopyButtonState();
+}
+
+class _CopyButtonState extends State<CopyButton> {
+  bool _showCheck = false;
+  OverlayEntry? _overlayEntry;
+
+  @override
+  dispose() {
+    _overlayEntry?.remove();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: widget.text));
+        setState(() {
+          _showCheck = true;
+          if (mounted) {
+            _overlayEntry = _createOverlayEntry(context);
+            Overlay.of(context)?.insert(_overlayEntry!);
+            Future.delayed(const Duration(seconds: 2), () {
+              setState(() {
+                _showCheck = false;
+                if (_overlayEntry != null && _overlayEntry!.mounted) {
+                  _overlayEntry?.remove();
+                }
+              });
+            });
+          }
+        });
+      },
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: _showCheck
+            ? ArDriveIcons.checkSuccess(
+                size: 16,
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .colors
+                    .themeSuccessDefault,
+              )
+            : ArDriveIcons.copy(size: 16),
+      ),
+    );
+  }
+
+  OverlayEntry _createOverlayEntry(BuildContext parentContext) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final Offset buttonPosition = button.localToGlobal(Offset.zero);
+    final double buttonWidth = button.size.width;
+
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        left: buttonPosition.dx - 28,
+        top: buttonPosition.dy - 40,
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: ArDriveTheme.of(parentContext)
+                .themeData
+                .dropdownTheme
+                .backgroundColor,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Center(
+              child: Material(
+                  child: Text('Copied!',
+                      style: ArDriveTypography.body.smallRegular())),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DownloadOrPreview extends StatelessWidget {
+  const _DownloadOrPreview({
+    Key? key,
+    required this.privacy,
+    required this.revision,
+  }) : super(key: key);
+
+  final String privacy;
+  final FileRevisionWithTransactions revision;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        downloadOrPreviewRevision(
+          drivePrivacy: privacy,
+          context: context,
+          revision: revision,
+        );
+      },
+      child: ArDriveIcons.download(
+        size: 16,
+      ),
+    );
   }
 }

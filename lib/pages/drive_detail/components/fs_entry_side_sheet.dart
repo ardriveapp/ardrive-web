@@ -31,7 +31,6 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
             BlocProvider<FsEntryInfoCubit>(
               create: (context) => FsEntryInfoCubit(
                 driveId: widget.driveId,
-                maybeSelectedItem: widget.maybeSelectedItem,
                 driveDao: context.read<DriveDao>(),
               ),
             ),
@@ -39,7 +38,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
               create: (context) => FsEntryPreviewCubit(
                 crypto: ArDriveCrypto(),
                 driveId: widget.driveId,
-                maybeSelectedItem: widget.maybeSelectedItem,
+                // maybeSelectedItem: widget.maybeSelectedItem,
                 driveDao: context.read<DriveDao>(),
                 profileCubit: context.read<ProfileCubit>(),
                 arweave: context.read<ArweaveService>(),
@@ -286,7 +285,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
         create: (context) => FsEntryActivityCubit(
           driveId: widget.driveId,
           driveDao: context.read<DriveDao>(),
-          maybeSelectedItem: widget.maybeSelectedItem,
+          // maybeSelectedItem: widget.maybeSelectedItem,
         ),
         child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
           builder: (context, state) {
@@ -424,7 +423,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
         child: BlocProvider(
           create: (context) => FsEntryActivityCubit(
             driveId: widget.driveId,
-            maybeSelectedItem: widget.maybeSelectedItem,
+            // maybeSelectedItem: widget.maybeSelectedItem,
             driveDao: context.read<DriveDao>(),
           ),
           child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
@@ -613,7 +612,7 @@ void downloadOrPreviewRevision({
   required BuildContext context,
   required FileRevisionWithTransactions revision,
 }) {
-  if (drivePrivacy == DrivePrivacy.private) {
+  if (drivePrivacy == 'private') {
     promptToDownloadFileRevision(context: context, revision: revision);
   } else {
     context.read<DriveDetailCubit>().launchPreview(revision.dataTxId);
