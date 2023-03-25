@@ -97,6 +97,8 @@ dependencies:
   animations: ^2.0.7
   connectivity_plus: ^3.0.3
   archive: ^3.3.0
+  video_player: ^2.6.0
+  chewie: ^1.4.0
 
 dev_dependencies:
   flutter_test:
