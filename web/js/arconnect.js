@@ -7,7 +7,7 @@ const permissions = [
 ];
 
 function isExtensionPresent() {
-  return window.arweaveWallet != null && window.arweaveWallet != 'undefined';
+  return false;
 }
 
 async function connect() {
