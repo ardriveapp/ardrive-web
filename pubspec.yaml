@@ -99,6 +99,7 @@ dependencies:
   archive: ^3.3.0
   video_player: ^2.6.0
   chewie: ^1.4.0
+  lottie: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -124,3 +125,4 @@ flutter:
     - assets/images/inferno/
     - assets/images/login/
     - assets/images/login/onboarding/
+    - assets/animations/

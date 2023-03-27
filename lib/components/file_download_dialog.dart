@@ -53,12 +53,14 @@ Future<void> promptToDownloadProfileFile({
 
 Future<void> promptToDownloadFileRevision({
   required BuildContext context,
-  required FileRevisionWithTransactions revision,
+  required ARFSFileEntity revision,
 }) {
-  final ARFSFileEntity arfsFile =
-      ARFSFactory().getARFSFileFromFileRevisionWithTransactions(revision);
+  final ARFSFileEntity arfsFile = revision;
+
   final profileState = context.read<ProfileCubit>().state;
+
   final arweave = context.read<ArweaveService>();
+
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
@@ -87,7 +89,7 @@ Future<void> promptToDownloadFileRevision({
 Future<void> promptToDownloadSharedFile({
   required BuildContext context,
   SecretKey? fileKey,
-  required FileRevision revision,
+  required ARFSFileEntity revision,
 }) {
   final cubit = SharedFileDownloadCubit(
     crypto: ArDriveCrypto(),

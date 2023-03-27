@@ -2,7 +2,6 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
-import 'package:ardrive/components/copy_icon_button.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/details_panel.dart';
@@ -10,23 +9,18 @@ import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/profile_card.dart';
-import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
-import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -46,7 +40,6 @@ part 'components/drive_detail_data_list.dart';
 part 'components/drive_detail_data_table_source.dart';
 part 'components/drive_detail_folder_empty_card.dart';
 part 'components/fs_entry_preview_widget.dart';
-part 'components/fs_entry_side_sheet.dart';
 
 class DriveDetailPage extends StatefulWidget {
   const DriveDetailPage({
@@ -212,6 +205,23 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   ArDriveIcons.download(),
                                 ),
                               ),
+                              ArDriveDropdownItem(
+                                onClick: () {
+                                  final bloc = context.read<DriveDetailCubit>();
+
+                                  bloc.selectDataItem(
+                                    DriveDataTableItemMapper.fromDrive(
+                                      state.currentDrive,
+                                      (_) => null,
+                                      0,
+                                    ),
+                                  );
+                                },
+                                content: _buildItem(
+                                  appLocalizationsOf(context).moreInfo,
+                                  ArDriveIcons.info(),
+                                ),
+                              )
                             ],
                             child: ArDriveIcons.options(),
                           ),
@@ -272,6 +282,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             context.read<DriveDetailCubit>().selectedItem !=
                                 null
                         ? DetailsPanel(
+                            isSharePage: false,
                             drivePrivacy: state.currentDrive.privacy,
                             maybeSelectedItem: state.maybeSelectedItem(),
                             item:

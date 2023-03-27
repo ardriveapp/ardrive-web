@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/dotted_line.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
@@ -11,12 +12,14 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/blocs.dart';
 import '../services/arweave/arweave_service.dart';
+import 'file_download_dialog.dart';
 
 class DetailsPanel extends StatefulWidget {
   const DetailsPanel({
@@ -24,11 +27,17 @@ class DetailsPanel extends StatefulWidget {
     required this.item,
     required this.maybeSelectedItem,
     required this.drivePrivacy,
+    this.revisions,
+    this.fileKey,
+    required this.isSharePage,
   });
 
   final ArDriveDataTableItem item;
   final SelectedItem? maybeSelectedItem;
   final Privacy drivePrivacy;
+  final List<FileRevision>? revisions;
+  final SecretKey? fileKey;
+  final bool isSharePage;
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
@@ -113,25 +122,28 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 contentPadding: const EdgeInsets.all(24),
                 content: Column(
                   children: [
-                    ArDriveCard(
-                      contentPadding: const EdgeInsets.all(24),
-                      backgroundColor: ArDriveTheme.of(context)
-                          .themeData
-                          .tableTheme
-                          .selectedItemColor,
-                      content: Row(
-                        children: [
-                          DriveExplorerItemTileLeading(
-                            item: widget.item,
-                          ),
-                          Flexible(
-                            child: Text(
-                              widget.item.name,
-                              style: ArDriveTypography.body.buttonLargeBold(),
-                              overflow: TextOverflow.ellipsis,
+                    Flexible(
+                      child: ArDriveCard(
+                        contentPadding: const EdgeInsets.all(24),
+                        backgroundColor: ArDriveTheme.of(context)
+                            .themeData
+                            .tableTheme
+                            .selectedItemColor,
+                        content: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            DriveExplorerItemTileLeading(
+                              item: widget.item,
                             ),
-                          ),
-                        ],
+                            Expanded(
+                              child: Text(
+                                widget.item.name,
+                                style: ArDriveTypography.body.buttonLargeBold(),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(
@@ -167,8 +179,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
     late List<Widget> children;
     if (state is FsEntryInfoSuccess<FolderNode>) {
       children = _folderDetails(state);
-    } else if (state is FsEntryInfoSuccess<FileEntry>) {
+    } else if (state is FsEntryInfoSuccess<FileEntry> ||
+        widget.revisions != null) {
       children = _fileDetails();
+    } else if (state is FsEntryInfoSuccess<Drive>) {
+      children = _driveDetails(state);
     } else {
       children = [const Text('Loading...')];
     }
@@ -230,6 +245,62 @@ class _DetailsPanelState extends State<DetailsPanel> {
           text: folder.entry.folder.driveId,
         ),
         itemTitle: appLocalizationsOf(context).driveID,
+      ),
+    ];
+  }
+
+  List<Widget> _driveDetails(FsEntryInfoSuccess state) {
+    return [
+      DetailsPanelItem(
+        leading: CopyButton(text: widget.item.id),
+        itemTitle: appLocalizationsOf(context).driveID,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      // size
+      DetailsPanelItem(
+        leading: Text(
+          filesize((state as FsEntryDriveInfoSuccess)
+              .rootFolderTree
+              .computeFolderSize()),
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: appLocalizationsOf(context).size,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: Text(
+          fileAndFolderCountsToString(
+            fileCount: state.rootFolderTree.getRecursiveFileCount(),
+            folderCount: state.rootFolderTree.getRecursiveSubFolderCount(),
+            localizations: appLocalizationsOf(context),
+          ),
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: appLocalizationsOf(context).itemContains,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: Text(
+          yMMdDateFormatter.format(widget.item.lastUpdated),
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: appLocalizationsOf(context).lastUpdated,
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      DetailsPanelItem(
+        leading: Text(
+          yMMdDateFormatter.format(widget.item.dateCreated),
+          style: ArDriveTypography.body.buttonNormalRegular(),
+        ),
+        itemTitle: appLocalizationsOf(context).dateCreated,
       ),
     ];
   }
@@ -302,6 +373,26 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }
 
   Widget _buildActivity(FsEntryActivityState state) {
+    if (widget.revisions != null) {
+      return ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        itemCount: widget.revisions!.length,
+        itemBuilder: (context, inded) {
+          final revision = widget.revisions![inded];
+          final file = ARFSFactory().getARFSFileFromFileRevision(revision);
+
+          return _buildFileActivity(
+            file,
+            revision.action,
+            widget.fileKey,
+          );
+        },
+        separatorBuilder: (contexr, index) => const SizedBox(
+          height: 16,
+        ),
+      );
+    }
+
     if (state is FsEntryActivitySuccess) {
       if (state.revisions.isNotEmpty) {
         return ListView.separated(
@@ -336,40 +427,30 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 itemTitle: title,
               );
             } else if (revision is FileRevisionWithTransactions) {
-              late String title;
-              String? subtitle;
-              Widget? leading;
+              final file = ARFSFactory()
+                  .getARFSFileFromFileRevisionWithTransactions(revision);
 
+              return _buildFileActivity(file, revision.action, null);
+            } else if (revision is DriveRevisionWithTransaction) {
               switch (revision.action) {
                 case RevisionAction.create:
-                  title = 'File added to the drive';
-                  leading = _DownloadOrPreview(
-                    privacy: widget.drivePrivacy,
-                    revision: revision,
-                  );
+                  title = 'Drive created';
                   break;
                 case RevisionAction.rename:
-                  title = 'File renamed to ${revision.name}';
+                  title = 'Drive renamed to ${revision.name}';
                   break;
                 case RevisionAction.move:
-                  title = 'File was moved';
-                  break;
-                case RevisionAction.uploadNewVersion:
-                  title = 'File was updated';
-                  leading = leading = _DownloadOrPreview(
-                    privacy: widget.drivePrivacy,
-                    revision: revision,
-                  );
+                  title = 'Drive moved';
                   break;
                 default:
-                  title = appLocalizationsOf(context).fileWasModified;
+                  title = 'Drive was modified';
               }
+
               subtitle = yMMdDateFormatter.format(revision.dateCreated);
 
               return DetailsPanelItem(
-                leading: leading ?? const SizedBox(),
-                itemTitle: title,
                 itemSubtitle: subtitle,
+                itemTitle: title,
               );
             }
 
@@ -380,6 +461,64 @@ class _DetailsPanelState extends State<DetailsPanel> {
     }
     return const Center(child: Text('Loading...'));
   }
+
+  Widget _buildFileActivity(
+    ARFSFileEntity file,
+    String action,
+    SecretKey? key,
+  ) {
+    late String title;
+    String? subtitle;
+    Widget? leading;
+
+    switch (action) {
+      case RevisionAction.create:
+        title = 'File added to the drive';
+        leading = _DownloadOrPreview(
+          isSharedFile: widget.isSharePage,
+          privacy: widget.drivePrivacy,
+          fileRevision: file,
+          fileKey: key,
+        );
+        break;
+      case RevisionAction.rename:
+        title = 'File renamed to ${file.name}';
+        break;
+      case RevisionAction.move:
+        title = 'File was moved';
+        break;
+      case RevisionAction.uploadNewVersion:
+        title = 'File was updated';
+        leading = leading = _DownloadOrPreview(
+          isSharedFile: widget.isSharePage,
+          privacy: widget.drivePrivacy,
+          fileRevision: file,
+          fileKey: key,
+        );
+        break;
+      default:
+        title = appLocalizationsOf(context).fileWasModified;
+    }
+    subtitle = yMMdDateFormatter.format(file.unixTime);
+
+    return DetailsPanelItem(
+      leading: leading ?? const SizedBox(),
+      itemTitle: title,
+      itemSubtitle: subtitle,
+    );
+  }
+}
+
+class EntityRevision {
+  final String name;
+  final DateTime dateCreated;
+  final String action;
+
+  EntityRevision({
+    required this.name,
+    required this.dateCreated,
+    required this.action,
+  });
 }
 
 class DetailsPanelItem extends StatelessWidget {
@@ -449,6 +588,7 @@ class CopyButton extends StatefulWidget {
   }) : super(key: key);
 
   @override
+  // ignore: library_private_types_in_public_api
   _CopyButtonState createState() => _CopyButtonState();
 }
 
@@ -520,8 +660,11 @@ class _CopyButtonState extends State<CopyButton> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Center(
               child: Material(
-                  child: Text('Copied!',
-                      style: ArDriveTypography.body.smallRegular())),
+                child: Text(
+                  'Copied!',
+                  style: ArDriveTypography.body.smallRegular(),
+                ),
+              ),
             ),
           ),
         ),
@@ -534,25 +677,55 @@ class _DownloadOrPreview extends StatelessWidget {
   const _DownloadOrPreview({
     Key? key,
     required this.privacy,
-    required this.revision,
+    required this.fileRevision,
+    this.fileKey,
+    this.isSharedFile = false,
   }) : super(key: key);
 
   final String privacy;
-  final FileRevisionWithTransactions revision;
+  final ARFSFileEntity fileRevision;
+  final SecretKey? fileKey;
+  final bool isSharedFile;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        downloadOrPreviewRevision(
+        return downloadOrPreviewRevision(
           drivePrivacy: privacy,
           context: context,
-          revision: revision,
+          revision: fileRevision,
+          fileKey: fileKey,
+          isSharedFile: isSharedFile,
         );
       },
       child: ArDriveIcons.download(
         size: 16,
       ),
     );
+  }
+}
+
+void downloadOrPreviewRevision({
+  required String drivePrivacy,
+  required BuildContext context,
+  required ARFSFileEntity revision,
+  SecretKey? fileKey,
+  bool isSharedFile = false,
+}) {
+  if (drivePrivacy == 'private') {
+    if (isSharedFile) {
+      promptToDownloadSharedFile(
+        context: context,
+        revision: revision,
+        fileKey: fileKey,
+      );
+
+      return;
+    }
+
+    promptToDownloadFileRevision(context: context, revision: revision);
+  } else {
+    context.read<DriveDetailCubit>().launchPreview(revision.dataTxId!);
   }
 }

@@ -55,35 +55,34 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               );
           break;
         default:
-      }
-    } else {
-      _entrySubscription = _driveDao
-          .driveById(
-            driveId: driveId,
-          )
-          .watchSingle()
-          .listen(
-        (d) async {
-          final rootFolderRevision = await _driveDao
-              .latestFolderRevisionByFolderId(
-                folderId: d.rootFolderId,
-                driveId: d.id,
+          _entrySubscription = _driveDao
+              .driveById(
+                driveId: driveId,
               )
-              .getSingle();
-          final rootFolderTree =
-              await _driveDao.getFolderTree(d.id, d.rootFolderId);
-          emit(
-            FsEntryDriveInfoSuccess(
-              name: d.name,
-              lastUpdated: d.lastUpdated,
-              dateCreated: d.dateCreated,
-              drive: d,
-              rootFolderRevision: rootFolderRevision,
-              rootFolderTree: rootFolderTree,
-            ),
+              .watchSingle()
+              .listen(
+            (d) async {
+              final rootFolderRevision = await _driveDao
+                  .latestFolderRevisionByFolderId(
+                    folderId: d.rootFolderId,
+                    driveId: d.id,
+                  )
+                  .getSingle();
+              final rootFolderTree =
+                  await _driveDao.getFolderTree(d.id, d.rootFolderId);
+              emit(
+                FsEntryDriveInfoSuccess(
+                  name: d.name,
+                  lastUpdated: d.lastUpdated,
+                  dateCreated: d.dateCreated,
+                  drive: d,
+                  rootFolderRevision: rootFolderRevision,
+                  rootFolderTree: rootFolderTree,
+                ),
+              );
+            },
           );
-        },
-      );
+      }
     }
   }
 
