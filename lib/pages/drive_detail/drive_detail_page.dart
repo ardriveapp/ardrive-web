@@ -346,16 +346,21 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     );
   }
 
-  // TODO(@thiagocarvalhodev): Dedup the logic here
   Widget _mobileView(
       DriveDetailLoadSuccess state, bool hasSubfolders, bool hasFiles) {
     if (state.showSelectedItemDetails &&
         context.read<DriveDetailCubit>().selectedItem != null) {
-      return DetailsPanel(
-        isSharePage: false,
-        drivePrivacy: state.currentDrive.privacy,
-        maybeSelectedItem: state.maybeSelectedItem(),
-        item: context.read<DriveDetailCubit>().selectedItem!,
+      return WillPopScope(
+        onWillPop: () async {
+          context.read<DriveDetailCubit>().toggleSelectedItemDetails();
+          return false;
+        },
+        child: DetailsPanel(
+          isSharePage: false,
+          drivePrivacy: state.currentDrive.privacy,
+          maybeSelectedItem: state.maybeSelectedItem(),
+          item: context.read<DriveDetailCubit>().selectedItem!,
+        ),
       );
     }
 
