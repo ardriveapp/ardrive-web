@@ -1,3 +1,4 @@
+import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
@@ -81,7 +82,39 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 hasFiles: hasFiles,
                 canDownloadMultipleFiles: canDownloadMultipleFiles,
               ),
-              mobile: _mobileView(state, hasSubfolders, hasFiles),
+              mobile: Scaffold(
+                drawer: const AppDrawer(),
+                appBar: MobileAppBar(
+                  leading: (state.showSelectedItemDetails &&
+                          context.read<DriveDetailCubit>().selectedItem != null)
+                      ? IconButton(
+                          icon: ArDriveIcons.arrowBack(),
+                          onPressed: () {
+                            context
+                                .read<DriveDetailCubit>()
+                                .toggleSelectedItemDetails();
+                          },
+                        )
+                      : null,
+                ),
+                bottomNavigationBar:
+                    BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                  builder: (context, state) {
+                    if (state is! DriveDetailLoadSuccess) {
+                      return Container();
+                    }
+                    return CustomBottomNavigation(
+                      currentFolder: state.folderInView,
+                      drive: (state).currentDrive,
+                    );
+                  },
+                ),
+                body: _mobileView(
+                  state,
+                  hasSubfolders,
+                  hasFiles,
+                ),
+              ),
             );
           } else {
             return const SizedBox();
@@ -316,6 +349,16 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   // TODO(@thiagocarvalhodev): Dedup the logic here
   Widget _mobileView(
       DriveDetailLoadSuccess state, bool hasSubfolders, bool hasFiles) {
+    if (state.showSelectedItemDetails &&
+        context.read<DriveDetailCubit>().selectedItem != null) {
+      return DetailsPanel(
+        isSharePage: false,
+        drivePrivacy: state.currentDrive.privacy,
+        maybeSelectedItem: state.maybeSelectedItem(),
+        item: context.read<DriveDetailCubit>().selectedItem!,
+      );
+    }
+
     int index = 0;
     final folders = state.folderInView.subfolders.map(
       (folder) => DriveDataTableItemMapper.fromFolderEntry(

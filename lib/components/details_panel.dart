@@ -122,35 +122,32 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 contentPadding: const EdgeInsets.all(24),
                 content: Column(
                   children: [
-                    Flexible(
-                      child: ArDriveCard(
-                        contentPadding: const EdgeInsets.all(24),
-                        backgroundColor: ArDriveTheme.of(context)
-                            .themeData
-                            .tableTheme
-                            .selectedItemColor,
-                        content: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            DriveExplorerItemTileLeading(
-                              item: widget.item,
+                    ArDriveCard(
+                      contentPadding: const EdgeInsets.all(24),
+                      backgroundColor: ArDriveTheme.of(context)
+                          .themeData
+                          .tableTheme
+                          .selectedItemColor,
+                      content: Row(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          DriveExplorerItemTileLeading(
+                            item: widget.item,
+                          ),
+                          Expanded(
+                            child: Text(
+                              widget.item.name,
+                              style: ArDriveTypography.body.buttonLargeBold(),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            Expanded(
-                              child: Text(
-                                widget.item.name,
-                                style: ArDriveTypography.body.buttonLargeBold(),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(
                       height: 48,
                     ),
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.6,
+                    Expanded(
                       child: ArDriveTabView(
                         key: Key(widget.item.id + tabs.length.toString()),
                         tabs: tabs,
