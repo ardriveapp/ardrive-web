@@ -106,7 +106,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           children: [
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+                padding: const EdgeInsets.fromLTRB(0, 32, 24, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -297,15 +297,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 ),
               ),
             )
-            // TODO:(@thiagocarvalhodev): Remove this
-            // FsEntrySideSheet(
-            //   driveId: state.currentDrive.id,
-            //   drivePrivacy: state.currentDrive.privacy,
-            //   maybeSelectedItem: state.selectedItems.isNotEmpty
-            //       ? state.selectedItems.first
-            //       : null,
-            // ),
-            // }
           ],
         ),
         if (kIsWeb)

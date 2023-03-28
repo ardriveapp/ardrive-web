@@ -203,6 +203,7 @@ class _AppSideBarState extends State<AppSideBar> {
                   ],
                 )
               : Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     ArDriveImage(
                       image: AssetImage(
