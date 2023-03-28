@@ -37,4 +37,6 @@ download:
       - removed
     include_tags: # Optional. List of tags to be downloaded. If not set, all string keys will be considered for download.
       - new
+      - added
+      - updated
 

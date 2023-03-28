@@ -1,0 +1,2 @@
+- Improves quick sync: avoids fetching unnecessary data
+- Avoids requesting unsupported permissions
