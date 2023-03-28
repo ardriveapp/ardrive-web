@@ -73,11 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3128-profile-component
-<<<<<<< HEAD
       resolved-ref: d73928d81d07d12675c415c2f0dc58a47d587947
-=======
-      resolved-ref: a7148f4466e51c01099557559a29e566412ce228
->>>>>>> PE-3045-new-details-panel
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
