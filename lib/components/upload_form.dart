@@ -15,11 +15,10 @@ import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'components.dart';
 
 Future<void> promptToUpload(
   BuildContext context, {
@@ -57,9 +56,9 @@ Future<void> promptToUpload(
   // ignore: use_build_context_synchronously
   await showCongestionDependentModalDialog(
     context,
-    () => showDialog(
-      context: context,
-      builder: (_) => BlocProvider<UploadCubit>(
+    () => showAnimatedDialog(
+      context,
+      content: BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
           uploadFileChecker: context.read<UploadFileChecker>(),
           uploadPlanUtils: UploadPlanUtils(
@@ -93,19 +92,19 @@ class UploadForm extends StatelessWidget {
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
-            await context.read<FeedbackSurveyCubit>().openRemindMe();
+            context.read<FeedbackSurveyCubit>().openRemindMe();
           } else if (state is UploadPreparationInitialized) {
             context.read<UploadCubit>().verifyFilesAboveWarningLimit();
           }
 
           if (state is UploadWalletMismatch) {
             Navigator.pop(context);
-            await context.read<ProfileCubit>().logoutProfile();
+            context.read<ProfileCubit>().logoutProfile();
           }
         },
         builder: (context, state) {
           if (state is UploadFolderNameConflict) {
-            return AppDialog(
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context).duplicateFolders(
                 state.conflictingFileNames.length,
               ),
@@ -120,6 +119,7 @@ class UploadForm extends StatelessWidget {
                           .foldersWithTheSameNameAlreadyExists(
                         state.conflictingFileNames.length,
                       ),
+                      style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
                     const SizedBox(height: 16),
                     Text(appLocalizationsOf(context).conflictingFiles),
@@ -129,33 +129,28 @@ class UploadForm extends StatelessWidget {
                       child: SingleChildScrollView(
                         child: Text(
                           state.conflictingFileNames.join(', \n'),
+                          style: ArDriveTypography.body.buttonNormalRegular(),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              actions: <Widget>[
+              actions: [
                 if (!state.areAllFilesConflicting)
-                  TextButton(
-                    style: ButtonStyle(
-                        fixedSize: MaterialStateProperty.all(
-                            const Size.fromWidth(140))),
-                    onPressed: () =>
+                  ModalAction(
+                    action: () =>
                         context.read<UploadCubit>().checkConflictingFiles(),
-                    child: Text(appLocalizationsOf(context).skipEmphasized),
+                    title: appLocalizationsOf(context).skipEmphasized,
                   ),
-                TextButton(
-                  style: ButtonStyle(
-                      fixedSize:
-                          MaterialStateProperty.all(const Size.fromWidth(140))),
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+                ModalAction(
+                  action: () => Navigator.of(context).pop(false),
+                  title: appLocalizationsOf(context).cancelEmphasized,
                 ),
               ],
             );
           } else if (state is UploadFileConflict) {
-            return AppDialog(
+            return ArDriveStandardModal(
                 title: appLocalizationsOf(context)
                     .duplicateFiles(state.conflictingFileNames.length),
                 content: SizedBox(
@@ -169,44 +164,49 @@ class UploadForm extends StatelessWidget {
                             .filesWithTheSameNameAlreadyExists(
                           state.conflictingFileNames.length,
                         ),
+                        style: ArDriveTypography.body.buttonNormalRegular(),
                       ),
                       const SizedBox(height: 16),
-                      Text(appLocalizationsOf(context).conflictingFiles),
+                      Text(
+                        appLocalizationsOf(context).conflictingFiles,
+                        style: ArDriveTypography.body.buttonNormalRegular(),
+                      ),
                       const SizedBox(height: 8),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxHeight: 320),
                         child: SingleChildScrollView(
                           child: Text(
                             state.conflictingFileNames.join(', \n'),
+                            style: ArDriveTypography.body.buttonNormalRegular(),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                actions: <Widget>[
+                actions: [
                   if (!state.areAllFilesConflicting)
-                    TextButton(
-                      onPressed: () => context
+                    ModalAction(
+                      action: () => context
                           .read<UploadCubit>()
                           .prepareUploadPlanAndCostEstimates(
                               uploadAction: UploadActions.skip),
-                      child: Text(appLocalizationsOf(context).skipEmphasized),
+                      title: appLocalizationsOf(context).skipEmphasized,
                     ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: Text(appLocalizationsOf(context).cancelEmphasized),
+                  ModalAction(
+                    action: () => Navigator.of(context).pop(false),
+                    title: appLocalizationsOf(context).cancelEmphasized,
                   ),
-                  TextButton(
-                    onPressed: () => context
+                  ModalAction(
+                    action: () => context
                         .read<UploadCubit>()
                         .prepareUploadPlanAndCostEstimates(
                             uploadAction: UploadActions.replace),
-                    child: Text(appLocalizationsOf(context).replaceEmphasized),
+                    title: appLocalizationsOf(context).replaceEmphasized,
                   ),
                 ]);
           } else if (state is UploadFileTooLarge) {
-            return AppDialog(
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context)
                   .filesTooLarge(state.tooLargeFileNames.length),
               content: SizedBox(
@@ -224,31 +224,38 @@ class UploadForm extends StatelessWidget {
                                   .filesTooLargeExplanationPublic)
                           : appLocalizationsOf(context)
                               .filesTooLargeExplanationMobile,
+                      style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
                     const SizedBox(height: 16),
-                    Text(appLocalizationsOf(context).tooLargeForUpload),
+                    Text(
+                      appLocalizationsOf(context).tooLargeForUpload,
+                      style: ArDriveTypography.body.buttonNormalRegular(),
+                    ),
                     const SizedBox(height: 8),
-                    Text(state.tooLargeFileNames.join(', ')),
+                    Text(
+                      state.tooLargeFileNames.join(', '),
+                      style: ArDriveTypography.body.buttonNormalRegular(),
+                    ),
                   ],
                 ),
               ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+              actions: [
+                ModalAction(
+                  action: () => Navigator.of(context).pop(false),
+                  title: appLocalizationsOf(context).cancelEmphasized,
                 ),
                 if (state.hasFilesToUpload)
-                  TextButton(
-                    onPressed: () => context
+                  ModalAction(
+                    action: () => context
                         .read<UploadCubit>()
                         .skipLargeFilesAndCheckForConflicts(),
-                    child: Text(appLocalizationsOf(context).skipEmphasized),
+                    title: appLocalizationsOf(context).skipEmphasized,
                   ),
               ],
             );
           } else if (state is UploadPreparationInProgress ||
               state is UploadPreparationInitialized) {
-            return AppDialog(
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context).preparingUpload,
               content: SizedBox(
                 width: kMediumDialogWidth,
@@ -259,9 +266,15 @@ class UploadForm extends StatelessWidget {
                     const SizedBox(height: 16),
                     if (state is UploadPreparationInProgress &&
                         state.isArConnect)
-                      Text(appLocalizationsOf(context).arConnectRemainOnThisTab)
+                      Text(
+                        appLocalizationsOf(context).arConnectRemainOnThisTab,
+                        style: ArDriveTypography.body.buttonNormalBold(),
+                      )
                     else
-                      Text(appLocalizationsOf(context).thisMayTakeAWhile)
+                      Text(
+                        appLocalizationsOf(context).thisMayTakeAWhile,
+                        style: ArDriveTypography.body.buttonNormalBold(),
+                      )
                   ],
                 ),
               ),
@@ -275,7 +288,7 @@ class UploadForm extends StatelessWidget {
                     : 0;
             final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
 
-            return AppDialog(
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context)
                   .uploadNFiles(numberOfFilesInBundles + numberOfV2Files),
               content: SizedBox(
@@ -293,18 +306,50 @@ class UploadForm extends StatelessWidget {
                             for (final file in state
                                 .uploadPlan.fileV2UploadHandles.values) ...{
                               ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                title: Text(file.entity.name!),
-                                subtitle: Text(filesize(file.size)),
-                              ),
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(
+                                    file.entity.name!,
+                                    style: ArDriveTypography.body
+                                        .buttonNormalBold(),
+                                  ),
+                                  subtitle: Text(
+                                    filesize(
+                                      file.size,
+                                    ),
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgOnDisabled,
+                                    ),
+                                  )),
                             },
                             for (final bundle
                                 in state.uploadPlan.bundleUploadHandles) ...{
                               for (final fileEntity in bundle.fileEntities) ...{
                                 ListTile(
                                   contentPadding: EdgeInsets.zero,
-                                  title: Text(fileEntity.name!),
-                                  subtitle: Text(filesize(fileEntity.size)),
+                                  title: Text(
+                                    fileEntity.name!,
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    filesize(fileEntity.size),
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgOnDisabled,
+                                    ),
+                                  ),
                                 ),
                               },
                             },
@@ -321,17 +366,24 @@ class UploadForm extends StatelessWidget {
                             TextSpan(
                               text: appLocalizationsOf(context)
                                   .freeTurboTransaction,
+                              style:
+                                  ArDriveTypography.body.buttonNormalRegular(),
                             ),
                           ] else ...[
                             TextSpan(
-                              text: appLocalizationsOf(context)
-                                  .cost(state.costEstimate.arUploadCost),
+                              text: appLocalizationsOf(context).cost(
+                                state.costEstimate.arUploadCost,
+                              ),
+                              style:
+                                  ArDriveTypography.body.buttonNormalRegular(),
                             ),
                             if (state.costEstimate.usdUploadCost != null)
                               TextSpan(
                                 text: usdUploadCostToString(
                                   state.costEstimate.usdUploadCost!,
                                 ),
+                                style: ArDriveTypography.body
+                                    .buttonNormalRegular(),
                               ),
                           ],
                         ],
@@ -342,7 +394,9 @@ class UploadForm extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         appLocalizationsOf(context).filesWillBeUploadedPublicly(
-                            numberOfFilesInBundles + numberOfV2Files),
+                          numberOfFilesInBundles + numberOfV2Files,
+                        ),
+                        style: ArDriveTypography.body.buttonNormalRegular(),
                       ),
                     },
                     if (!state.sufficientArBalance &&
@@ -358,24 +412,25 @@ class UploadForm extends StatelessWidget {
                   ],
                 ),
               ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+              actions: [
+                ModalAction(
+                  action: () => Navigator.of(context).pop(false),
+                  title: appLocalizationsOf(context).cancelEmphasized,
                 ),
-                ElevatedButton(
-                  onPressed:
-                      state.sufficientArBalance || state.isFreeThanksToTurbo
-                          ? () => context
+                ModalAction(
+                  action: state.sufficientArBalance || state.isFreeThanksToTurbo
+                      ? () {
+                          context
                               .read<UploadCubit>()
-                              .startUpload(uploadPlan: state.uploadPlan)
-                          : null,
-                  child: Text(appLocalizationsOf(context).uploadEmphasized),
+                              .startUpload(uploadPlan: state.uploadPlan);
+                        }
+                      : () {},
+                  title: appLocalizationsOf(context).uploadEmphasized,
                 ),
               ],
             );
           } else if (state is UploadSigningInProgress) {
-            return AppDialog(
+            return ArDriveStandardModal(
               title: state.uploadPlan.bundleUploadHandles.isNotEmpty
                   ? appLocalizationsOf(context).bundlingAndSigningUpload
                   : appLocalizationsOf(context).signingUpload,
@@ -387,9 +442,13 @@ class UploadForm extends StatelessWidget {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     if (state.isArConnect)
-                      Text(appLocalizationsOf(context).arConnectRemainOnThisTab)
+                      Text(
+                        appLocalizationsOf(context).arConnectRemainOnThisTab,
+                        style: ArDriveTypography.body.buttonNormalRegular(),
+                      )
                     else
-                      Text(appLocalizationsOf(context).thisMayTakeAWhile)
+                      Text(appLocalizationsOf(context).thisMayTakeAWhile,
+                          style: ArDriveTypography.body.buttonNormalRegular()),
                   ],
                 ),
               ),
@@ -403,8 +462,7 @@ class UploadForm extends StatelessWidget {
                     : 0;
             final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
 
-            return AppDialog(
-              dismissable: false,
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context)
                   .uploadingNFiles(numberOfFilesInBundles + numberOfV2Files),
               content: SizedBox(
@@ -419,9 +477,20 @@ class UploadForm extends StatelessWidget {
                             in state.uploadPlan.fileV2UploadHandles.values) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: Text(file.entity.name!),
+                            title: Text(
+                              file.entity.name!,
+                              style: ArDriveTypography.body
+                                  .buttonNormalBold(color: Colors.red),
+                            ),
                             subtitle: Text(
-                                '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
+                              '${filesize(file.uploadedSize)}/${filesize(file.size)}',
+                              style: ArDriveTypography.body.buttonNormalRegular(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgOnDisabled,
+                              ),
+                            ),
                             trailing: file.hasError
                                 ? const Icon(Icons.error)
                                 : CircularProgressIndicator(
@@ -440,11 +509,22 @@ class UploadForm extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 for (var fileEntity in bundle.fileEntities)
-                                  Text(fileEntity.name!)
+                                  Text(
+                                    fileEntity.name!,
+                                    style: ArDriveTypography.body
+                                        .buttonNormalRegular(color: Colors.red),
+                                  )
                               ],
                             ),
                             subtitle: Text(
-                                '${filesize(bundle.uploadedSize)}/${filesize(bundle.size)}'),
+                              '${filesize(bundle.uploadedSize)}/${filesize(bundle.size)}',
+                              style: ArDriveTypography.body.buttonNormalRegular(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgOnDisabled,
+                              ),
+                            ),
                             trailing: bundle.hasError
                                 ? const Icon(Icons.error)
                                 : CircularProgressIndicator(
@@ -463,27 +543,18 @@ class UploadForm extends StatelessWidget {
               ),
             );
           } else if (state is UploadFailure) {
-            return AppDialog(
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context).uploadFailed,
-              content: SizedBox(
-                width: kMediumDialogWidth,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(appLocalizationsOf(context).yourUploadFailed),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).okEmphasized),
+              description: appLocalizationsOf(context).yourUploadFailed,
+              actions: [
+                ModalAction(
+                  action: () => Navigator.of(context).pop(false),
+                  title: appLocalizationsOf(context).okEmphasized,
                 ),
               ],
             );
           } else if (state is UploadShowingWarning) {
-            return AppDialog(
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context).warningEmphasized,
               content: SizedBox(
                 width: kMediumDialogWidth,
@@ -496,21 +567,20 @@ class UploadForm extends StatelessWidget {
                           .weDontRecommendUploadsAboveASafeLimit(
                         filesize(publicFileSafeSizeLimit),
                       ),
+                      style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
                   ],
                 ),
               ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+              actions: [
+                ModalAction(
+                  action: () => Navigator.of(context).pop(false),
+                  title: appLocalizationsOf(context).cancelEmphasized,
                 ),
-                ElevatedButton(
-                  onPressed: () =>
+                ModalAction(
+                  action: () =>
                       context.read<UploadCubit>().checkFilesAboveLimit(),
-                  child: Text(
-                    appLocalizationsOf(context).proceed,
-                  ),
+                  title: appLocalizationsOf(context).proceed,
                 ),
               ],
             );

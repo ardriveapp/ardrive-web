@@ -4,6 +4,7 @@ import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,9 +24,10 @@ Future<void> showCongestionDependentModalDialog(
   // ignore: use_build_context_synchronously
   return await showModalDialog(context, () async {
     if (warnAboutCongestion) {
-      final shouldShowDialog = await showDialog(
-        context: context,
-        builder: (_) => AppDialog(
+      bool shouldShowDialog = false;
+      await showAnimatedDialog(
+        context,
+        content: AppDialog(
           title: appLocalizationsOf(context).warningEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
@@ -58,6 +60,7 @@ Future<void> showCongestionDependentModalDialog(
           actions: [
             TextButton(
               onPressed: () {
+                shouldShowDialog = false;
                 Navigator.of(context).pop(false);
               },
               child: Text(
@@ -65,9 +68,12 @@ Future<void> showCongestionDependentModalDialog(
             ),
             ElevatedButton(
               onPressed: () async {
+                shouldShowDialog = true;
                 Navigator.of(context).pop(true);
               },
-              child: Text(appLocalizationsOf(context).proceedEmphasized),
+              child: Text(
+                appLocalizationsOf(context).proceedEmphasized,
+              ),
             ),
           ],
         ),

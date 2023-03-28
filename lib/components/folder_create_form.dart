@@ -18,9 +18,9 @@ Future<void> promptToCreateFolder(
 }) =>
     showCongestionDependentModalDialog(
       context,
-      () => showDialog(
-        context: context,
-        builder: (_) => BlocProvider(
+      () => showAnimatedDialog(
+        context,
+        content: BlocProvider(
           create: (context) => FolderCreateCubit(
             driveId: driveId,
             parentFolderId: parentFolderId,
@@ -39,9 +39,9 @@ Future<void> promptToCreateFolderWithoutCongestionWarning(
   required String driveId,
   required String parentFolderId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
+    showAnimatedDialog(
+      context,
+      content: BlocProvider(
         create: (context) => FolderCreateCubit(
           driveId: driveId,
           parentFolderId: parentFolderId,
