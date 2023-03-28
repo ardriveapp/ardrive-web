@@ -26,13 +26,59 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         );
 
       case FsEntryPreviewImage:
-        return Image.memory(
-          (widget.state as FsEntryPreviewImage).imageBytes,
-          fit: BoxFit.fitWidth,
+        return ArDriveImage(
+          fit: BoxFit.cover,
+          height: double.maxFinite,
+          width: double.maxFinite,
+          image: MemoryImage((widget.state as FsEntryPreviewImage).imageBytes),
         );
 
       default:
-        return Container();
+        return VideoPlayerWidget(
+          videoUrl: (widget.state as FsEntryPreviewVideo).previewUrl,
+        );
     }
+  }
+}
+
+class VideoPlayerWidget extends StatefulWidget {
+  final String videoUrl;
+
+  const VideoPlayerWidget({Key? key, required this.videoUrl}) : super(key: key);
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _VideoPlayerWidgetState createState() => _VideoPlayerWidgetState();
+}
+
+class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
+  late VideoPlayerController _videoPlayerController;
+  late ChewieController _chewieController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videoPlayerController = VideoPlayerController.network(widget.videoUrl);
+    _chewieController = ChewieController(
+      videoPlayerController: _videoPlayerController,
+      autoPlay: true,
+      looping: true,
+      showControls: true,
+      allowFullScreen: false,
+    );
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController.dispose();
+    _chewieController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Chewie(
+      controller: _chewieController,
+    );
   }
 }

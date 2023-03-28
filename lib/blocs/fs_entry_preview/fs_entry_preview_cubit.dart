@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/mime_lookup.dart';
@@ -17,7 +18,7 @@ part 'fs_entry_preview_state.dart';
 
 class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final String driveId;
-  final SelectedItem? maybeSelectedItem;
+  final ArDriveDataTableItem? maybeSelectedItem;
 
   final DriveDao _driveDao;
   final AppConfig _config;
@@ -50,41 +51,38 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   Future<void> preview() async {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
-      if (selectedItem.runtimeType == SelectedFile) {
+      if (selectedItem.runtimeType == FileDataTableItem) {
         _entrySubscription = _driveDao
             .fileById(driveId: driveId, fileId: selectedItem.id)
             .watchSingle()
-            .listen((file) {
-          if (file.size <= previewMaxFileSize) {
+            .listen((file) async {
+          final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+
+          if ((drive.isPrivate && file.size <= previewMaxFileSize) ||
+              drive.isPublic) {
             final contentType =
                 file.dataContentType ?? lookupMimeType(file.name);
             final fileExtension = contentType?.split('/').last;
             final previewType = contentType?.split('/').first;
             final previewUrl =
                 '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
-            if (!_supportedExtension(previewType, fileExtension)) {
-              emit(FsEntryPreviewUnavailable());
-              return;
-            }
 
             switch (previewType) {
               case 'image':
+                if (!_supportedExtension(previewType, fileExtension)) {
+                  emit(FsEntryPreviewUnavailable());
+                  return;
+                }
                 emitImagePreview(file, previewUrl);
                 break;
+              case 'video':
+                if (drive.isPrivate) {
+                  emit(FsEntryPreviewUnavailable());
+                  return;
+                }
 
-              /// Enable more previews in the future after dealing
-              /// with state and widget disposal
-
-              // case 'audio':
-              //   emit(FsEntryPreviewAudio(previewUrl: previewUrl));
-              //   break;
-              // case 'video':
-              //   emit(FsEntryPreviewVideo(previewUrl: previewUrl));
-              //   break;
-              // case 'text':
-              //   emit(FsEntryPreviewText(previewUrl: previewUrl));
-              //   break;
-
+                emit(FsEntryPreviewVideo(previewUrl: previewUrl));
+                break;
               default:
                 emit(FsEntryPreviewUnavailable());
             }
@@ -179,6 +177,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     switch (previewType) {
       case 'image':
         return supportedImageTypesInFilePreview
+            .any((element) => element.contains(fileExtension));
+      case 'video':
+        return videoContentTypes
             .any((element) => element.contains(fileExtension));
       default:
         return false;

@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
@@ -232,7 +233,9 @@ class _DriveExplorerItemTileTrailingState
         ],
         ArDriveDropdownItem(
           onClick: () {
-            _comingSoonModal();
+            final bloc = context.read<DriveDetailCubit>();
+
+            bloc.selectDataItem(item);
           },
           content: _buildItem(
             appLocalizationsOf(context).moreInfo,
@@ -269,7 +272,9 @@ class _DriveExplorerItemTileTrailingState
       ),
       ArDriveDropdownItem(
         onClick: () {
-          _comingSoonModal();
+          final bloc = context.read<DriveDetailCubit>();
+
+          bloc.selectDataItem(item);
         },
         content: _buildItem(
           appLocalizationsOf(context).preview,
@@ -307,7 +312,9 @@ class _DriveExplorerItemTileTrailingState
       ],
       ArDriveDropdownItem(
         onClick: () {
-          _comingSoonModal();
+          final bloc = context.read<DriveDetailCubit>();
+
+          bloc.selectDataItem(item);
         },
         content: _buildItem(
             appLocalizationsOf(context).moreInfo, ArDriveIcons.info()),

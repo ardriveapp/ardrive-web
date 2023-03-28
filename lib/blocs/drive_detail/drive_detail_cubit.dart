@@ -150,25 +150,27 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
-  Future<void> selectItem(SelectedItem selectedItem) async {
+  Future<void> selectDataItem(ArDriveDataTableItem item) async {
     var state = this.state as DriveDetailLoadSuccess;
 
-    state = state.multiselect
-        ? state.copyWith(selectedItems: [selectedItem, ...state.selectedItems])
-        : state.copyWith(selectedItems: [selectedItem]);
-    if (state.currentDrive.isPublic && selectedItem is SelectedFile) {
+    if (state.currentDrive.isPublic && item is FileDataTableItem) {
       final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
         driveId: driveId,
-        fileId: selectedItem.id,
+        fileId: item.id,
       );
       final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:
               '${_config.defaultArweaveGatewayUrl}/$dataTxId');
     }
+    _selectedItem = item;
 
-    emit(state);
+    emit(state.copyWith(selectedItem: item, showSelectedItemDetails: true));
   }
+
+  ArDriveDataTableItem? _selectedItem;
+
+  ArDriveDataTableItem? get selectedItem => _selectedItem;
 
   Future<void> selectItems(List<ArDriveDataTableItem> items) async {
     var state = this.state as DriveDetailLoadSuccess;

@@ -1,6 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/profile_card.dart';
-import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -131,8 +130,6 @@ class AppShellState extends State<AppShell> {
                   const AppDrawer(),
                   Expanded(
                     child: Scaffold(
-                      // FIXME
-                      // appBar: _buildAppBar(),
                       body: widget.page,
                     ),
                   ),
@@ -140,29 +137,7 @@ class AppShellState extends State<AppShell> {
               ),
             ),
             mobile: _buildPage(
-              Scaffold(
-                appBar: MobileAppBar(),
-                drawer: const AppDrawer(),
-                body: Row(
-                  children: [
-                    Expanded(
-                      child: widget.page,
-                    ),
-                  ],
-                ),
-                bottomNavigationBar:
-                    BlocBuilder<DriveDetailCubit, DriveDetailState>(
-                  builder: (context, state) {
-                    if (state is! DriveDetailLoadSuccess) {
-                      return Container();
-                    }
-                    return CustomBottomNavigation(
-                      currentFolder: state.folderInView,
-                      drive: (state).currentDrive,
-                    );
-                  },
-                ),
-              ),
+              widget.page,
             ),
           );
         },
@@ -182,7 +157,9 @@ class AppShellState extends State<AppShell> {
 }
 
 class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const MobileAppBar({super.key});
+  const MobileAppBar({super.key, this.leading});
+
+  final Widget? leading;
 
   @override
   Size get preferredSize =>
@@ -197,12 +174,16 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            IconButton(
-              icon: ArDriveIcons.menuArrow(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-              ),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            ),
+            leading ??
+                IconButton(
+                  icon: ArDriveIcons.menuArrow(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
             const Spacer(),
             Padding(
               padding: const EdgeInsets.only(right: 12.0),

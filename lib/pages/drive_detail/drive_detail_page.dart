@@ -1,35 +1,31 @@
+import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
-import 'package:ardrive/components/copy_icon_button.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
+import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/profile_card.dart';
-import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
-import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:drift/drift.dart' show OrderingMode;
+import 'package:chewie/chewie.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,17 +33,14 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
-
-import 'components/custom_paginated_data_table.dart';
+import 'package:video_player/video_player.dart';
 
 part 'components/drive_detail_actions_row.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
 part 'components/drive_detail_data_list.dart';
-part 'components/drive_detail_data_table.dart';
 part 'components/drive_detail_data_table_source.dart';
 part 'components/drive_detail_folder_empty_card.dart';
 part 'components/fs_entry_preview_widget.dart';
-part 'components/fs_entry_side_sheet.dart';
 
 class DriveDetailPage extends StatefulWidget {
   const DriveDetailPage({
@@ -89,7 +82,39 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 hasFiles: hasFiles,
                 canDownloadMultipleFiles: canDownloadMultipleFiles,
               ),
-              mobile: _mobileView(state, hasSubfolders, hasFiles),
+              mobile: Scaffold(
+                drawer: const AppDrawer(),
+                appBar: MobileAppBar(
+                  leading: (state.showSelectedItemDetails &&
+                          context.read<DriveDetailCubit>().selectedItem != null)
+                      ? IconButton(
+                          icon: ArDriveIcons.arrowBack(),
+                          onPressed: () {
+                            context
+                                .read<DriveDetailCubit>()
+                                .toggleSelectedItemDetails();
+                          },
+                        )
+                      : null,
+                ),
+                bottomNavigationBar:
+                    BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                  builder: (context, state) {
+                    if (state is! DriveDetailLoadSuccess) {
+                      return Container();
+                    }
+                    return CustomBottomNavigation(
+                      currentFolder: state.folderInView,
+                      drive: (state).currentDrive,
+                    );
+                  },
+                ),
+                body: _mobileView(
+                  state,
+                  hasSubfolders,
+                  hasFiles,
+                ),
+              ),
             );
           } else {
             return const SizedBox();
@@ -213,6 +238,23 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   ArDriveIcons.download(),
                                 ),
                               ),
+                              ArDriveDropdownItem(
+                                onClick: () {
+                                  final bloc = context.read<DriveDetailCubit>();
+
+                                  bloc.selectDataItem(
+                                    DriveDataTableItemMapper.fromDrive(
+                                      state.currentDrive,
+                                      (_) => null,
+                                      0,
+                                    ),
+                                  );
+                                },
+                                content: _buildItem(
+                                  appLocalizationsOf(context).moreInfo,
+                                  ArDriveIcons.info(),
+                                ),
+                              )
                             ],
                             child: ArDriveIcons.options(),
                           ),
@@ -254,16 +296,45 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 ),
               ),
             ),
-            if (state.showSelectedItemDetails) ...{
-              const VerticalDivider(width: 1),
-              FsEntrySideSheet(
-                driveId: state.currentDrive.id,
-                drivePrivacy: state.currentDrive.privacy,
-                maybeSelectedItem: state.selectedItems.isNotEmpty
-                    ? state.selectedItems.first
-                    : null,
+            AnimatedSize(
+              curve: Curves.easeInOut,
+              duration: const Duration(milliseconds: 300),
+              child: Align(
+                alignment: Alignment.center,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 120),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                        maxWidth: state.showSelectedItemDetails &&
+                                context.read<DriveDetailCubit>().selectedItem !=
+                                    null
+                            ? 374
+                            : 0,
+                        maxHeight: MediaQuery.of(context).size.height - 120),
+                    child: state.showSelectedItemDetails &&
+                            context.read<DriveDetailCubit>().selectedItem !=
+                                null
+                        ? DetailsPanel(
+                            isSharePage: false,
+                            drivePrivacy: state.currentDrive.privacy,
+                            maybeSelectedItem: state.maybeSelectedItem(),
+                            item:
+                                context.read<DriveDetailCubit>().selectedItem!,
+                          )
+                        : const SizedBox(),
+                  ),
+                ),
               ),
-            }
+            )
+            // TODO:(@thiagocarvalhodev): Remove this
+            // FsEntrySideSheet(
+            //   driveId: state.currentDrive.id,
+            //   drivePrivacy: state.currentDrive.privacy,
+            //   maybeSelectedItem: state.selectedItems.isNotEmpty
+            //       ? state.selectedItems.first
+            //       : null,
+            // ),
+            // }
           ],
         ),
         if (kIsWeb)
@@ -277,6 +348,22 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
   Widget _mobileView(
       DriveDetailLoadSuccess state, bool hasSubfolders, bool hasFiles) {
+    if (state.showSelectedItemDetails &&
+        context.read<DriveDetailCubit>().selectedItem != null) {
+      return WillPopScope(
+        onWillPop: () async {
+          context.read<DriveDetailCubit>().toggleSelectedItemDetails();
+          return false;
+        },
+        child: DetailsPanel(
+          isSharePage: false,
+          drivePrivacy: state.currentDrive.privacy,
+          maybeSelectedItem: state.maybeSelectedItem(),
+          item: context.read<DriveDetailCubit>().selectedItem!,
+        ),
+      );
+    }
+
     int index = 0;
     final folders = state.folderInView.subfolders.map(
       (folder) => DriveDataTableItemMapper.fromFolderEntry(
@@ -297,7 +384,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           if (file.id == state.maybeSelectedItem()?.id) {
             bloc.toggleSelectedItemDetails();
           } else {
-            await bloc.selectItem(SelectedFile(file: file));
+            await bloc.selectDataItem(selected);
           }
         },
         index++,
