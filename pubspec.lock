@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3309-new-drive-explorer-mobile
-      resolved-ref: "7bb325bbb88e939a5895ac6ba97e116ac62ef6d5"
+      ref: PE-3128-profile-component
+      resolved-ref: a7148f4466e51c01099557559a29e566412ce228
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
