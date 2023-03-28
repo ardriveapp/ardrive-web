@@ -3,7 +3,7 @@ import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/sync/sync_cubit.dart';
 import 'package:ardrive/components/app_drawer/app_drawer.dart';
-import 'package:ardrive/components/new_button.dart';
+import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -49,14 +49,8 @@ class _AppSideBarState extends State<AppSideBar> {
                           const SizedBox(
                             height: 56,
                           ),
-                          BlocBuilder<ProfileCubit, ProfileState>(
-                            builder: (context, profileState) {
-                              return _buildDriveActionsButton(
-                                context,
-                                context.read<DrivesCubit>().state,
-                                profileState,
-                              );
-                            },
+                          _buildDriveActionsButton(
+                            context,
                           ),
                           const SizedBox(
                             height: 56,
@@ -227,9 +221,7 @@ class _AppSideBarState extends State<AppSideBar> {
                         shape: BoxShape.circle,
                       ),
                       padding: const EdgeInsets.all(8.0),
-                      child: ArDriveIcons.plus(
-                        color: Colors.white,
-                      ),
+                      child: _newButton(false),
                     ),
                     const SizedBox(
                       height: 32,
@@ -319,85 +311,105 @@ class _AppSideBarState extends State<AppSideBar> {
 
   Widget _buildDriveActionsButton(
     BuildContext context,
-    DrivesState drivesState,
-    ProfileState profileState,
   ) {
-    final theme = Theme.of(context);
     final minimumWalletBalance = BigInt.from(10000000);
+
+    final profileState = context.watch<ProfileCubit>().state;
 
     if (profileState.runtimeType == ProfileLoggedIn) {
       final profile = profileState as ProfileLoggedIn;
       final notEnoughARInWallet = !profile.hasMinimumBalanceForUpload(
         minimumWalletBalance: minimumWalletBalance,
       );
+
       return Column(
         children: [
           Align(
             alignment: Alignment.center,
-            child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
-              builder: (context, driveDetailState) => buildNewButton(
-                context,
-                drivesState: drivesState,
-                profileState: profile,
-                driveDetailState: driveDetailState,
-                button: ArDriveButton(
-                  maxWidth: 128,
-                  maxHeight: 40,
-                  text: appLocalizationsOf(context).newStringEmphasized,
-                  onPressed: () {},
-                ),
-              ),
-            ),
+            child: _newButton(_isExpanded),
           ),
           if (notEnoughARInWallet) ...{
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 appLocalizationsOf(context).insufficientARWarning,
-                style: Theme.of(context)
-                    .textTheme
-                    .caption!
-                    .copyWith(color: Colors.grey),
-              ),
-            ),
-            TextButton(
-              onPressed: () => openUrl(url: Resources.arHelpLink),
-              child: Text(
-                appLocalizationsOf(context).howDoIGetAR,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  decoration: TextDecoration.underline,
+                style: ArDriveTypography.body.captionRegular(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentDisabled,
                 ),
               ),
+            ),
+            ArDriveButton(
+              style: ArDriveButtonStyle.primary,
+              onPressed: () => openUrl(url: Resources.arHelpLink),
+              text: appLocalizationsOf(context).howDoIGetAR,
             ),
           }
         ],
       );
     } else {
-      return ListTileTheme(
-        textColor: theme.textTheme.bodyText1!.color,
-        iconColor: theme.iconTheme.color,
-        child: Align(
-          alignment: Alignment.center,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-            child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
-              builder: (context, driveDetailState) => buildNewButton(
-                context,
-                drivesState: drivesState,
-                profileState: profileState,
-                driveDetailState: driveDetailState,
-                button: ArDriveButton(
-                  maxWidth: 128,
-                  text: appLocalizationsOf(context).newStringEmphasized,
-                  onPressed: () {},
+      return _newButton(_isExpanded);
+    }
+  }
+
+  Widget _newButton(
+    bool isExpanded,
+  ) {
+    return BlocBuilder<DriveDetailCubit, DriveDetailState>(
+      builder: (context, state) {
+        if (state is DriveDetailLoadSuccess) {
+          if (isExpanded) {
+            return NewButton(
+              anchor: const Aligned(
+                follower: Alignment.topLeft,
+                target: Alignment.topRight,
+              ),
+              drive: state.currentDrive,
+              driveDetailState: state,
+              currentFolder: state.folderInView,
+              child: InkWell(
+                child: Container(
+                  width: 128,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentBrand,
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(8),
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      appLocalizationsOf(context).newString,
+                      style: ArDriveTypography.headline.headline5Bold(),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        ),
-      );
-    }
+            );
+          } else {
+            return NewButton(
+              anchor: const Aligned(
+                follower: Alignment.topLeft,
+                target: Alignment.topRight,
+              ),
+              drive: state.currentDrive,
+              driveDetailState: state,
+              currentFolder: state.folderInView,
+              child: ArDriveIcons.plus(
+                color: Colors.white,
+              ),
+            );
+          }
+        }
+
+        return const SizedBox();
+      },
+    );
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/app_bottom_bar.dart';
 import 'package:ardrive/components/profile_card.dart';
+import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -123,7 +124,7 @@ class AppShellState extends State<AppShell> {
             desktop: buildPage(
               Row(
                 children: [
-                  const AppDrawer(),
+                  const AppSideBar(),
                   Expanded(
                     child: Scaffold(
                       body: widget.page,
