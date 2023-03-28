@@ -72,12 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3309-new-drive-explorer-mobile
-<<<<<<< HEAD
-      resolved-ref: "7bb325bbb88e939a5895ac6ba97e116ac62ef6d5"
-=======
-      resolved-ref: "4939eea64f7df85b9cbeb81bc28ff2bcd34cabee"
->>>>>>> PE-3309-new-drive-explorer-mobile
+      ref: PE-3128-profile-component
+      resolved-ref: d73928d81d07d12675c415c2f0dc58a47d587947
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -390,7 +386,7 @@ packages:
       name: dio
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.3"
+    version: "5.1.0"
   dio_smart_retry:
     dependency: transitive
     description:
@@ -485,7 +481,7 @@ packages:
       name: file_selector_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.1+1"
+    version: "0.5.1+2"
   file_selector_linux:
     dependency: transitive
     description:
@@ -499,7 +495,7 @@ packages:
       name: file_selector_macos
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.0+6"
+    version: "0.9.0+7"
   file_selector_platform_interface:
     dependency: transitive
     description:
@@ -520,7 +516,7 @@ packages:
       name: file_selector_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.1+6"
+    version: "0.9.1+7"
   firebase_core:
     dependency: "direct main"
     description:
@@ -850,7 +846,7 @@ packages:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.7"
+    version: "0.8.7+1"
   image_picker_android:
     dependency: transitive
     description:
@@ -871,7 +867,7 @@ packages:
       name: image_picker_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.7+1"
+    version: "0.8.7+2"
   image_picker_platform_interface:
     dependency: transitive
     description:
@@ -1004,7 +1000,7 @@ packages:
       name: lottie
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.0"
+    version: "2.3.1"
   matcher:
     dependency: transitive
     description:
@@ -1158,7 +1154,7 @@ packages:
       name: path_provider_foundation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0"
+    version: "2.2.1"
   path_provider_linux:
     dependency: transitive
     description:
@@ -1319,7 +1315,7 @@ packages:
       name: retry
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.0"
+    version: "3.1.1"
   rxdart:
     dependency: "direct main"
     description:
@@ -1695,7 +1691,7 @@ packages:
       name: video_player_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.2"
+    version: "2.4.3"
   video_player_avfoundation:
     dependency: transitive
     description:
