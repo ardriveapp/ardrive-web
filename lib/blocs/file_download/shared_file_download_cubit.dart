@@ -4,7 +4,7 @@ part of 'file_download_cubit.dart';
 /// are shared with them without a login.
 class SharedFileDownloadCubit extends FileDownloadCubit {
   final SecretKey? fileKey;
-  final FileRevision revision;
+  final ARFSFileEntity revision;
   final ArweaveService _arweave;
   final ArDriveCrypto _crypto;
 
@@ -27,7 +27,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     }
   }
 
-  Future<void> _downloadFile(FileRevision revision) async {
+  Future<void> _downloadFile(ARFSFileEntity revision) async {
     late Uint8List dataBytes;
 
     emit(
@@ -41,7 +41,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
         '${_arweave.client.api.gatewayUrl.origin}/${revision.dataTxId}');
 
     if (fileKey != null) {
-      final dataTx = await (_arweave.getTransactionDetails(revision.dataTxId));
+      final dataTx = await (_arweave.getTransactionDetails(revision.dataTxId!));
 
       if (dataTx != null) {
         dataBytes = await _crypto.decryptTransactionData(
@@ -58,7 +58,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       FileDownloadSuccess(
         bytes: dataBytes,
         fileName: revision.name,
-        mimeType: revision.dataContentType ?? lookupMimeType(revision.name),
+        mimeType: revision.contentType ?? lookupMimeType(revision.name),
         lastModified: revision.lastModifiedDate,
       ),
     );

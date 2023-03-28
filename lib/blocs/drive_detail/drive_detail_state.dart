@@ -27,6 +27,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   ///
   /// Null if no file is selected.
   final String? selectedFilePreviewUrl;
+  final ArDriveDataTableItem? selectedItem;
 
   final int rowsPerPage;
   final List<int> availableRowsPerPage;
@@ -46,6 +47,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.hasFoldersSelected = false,
     this.selectedFilePreviewUrl,
     required this.driveIsEmpty,
+    this.selectedItem,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -62,8 +64,10 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     bool? driveIsEmpty,
     bool? multiselect,
     bool? hasFoldersSelected,
+    ArDriveDataTableItem? selectedItem,
   }) =>
       DriveDetailLoadSuccess(
+        selectedItem: selectedItem ?? this.selectedItem,
         hasFoldersSelected: hasFoldersSelected ?? this.hasFoldersSelected,
         currentDrive: currentDrive ?? this.currentDrive,
         multiselect: multiselect ?? this.multiselect,

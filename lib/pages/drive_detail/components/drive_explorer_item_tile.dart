@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
@@ -176,6 +177,7 @@ class _DriveExplorerItemTileTrailingState
   @override
   Widget build(BuildContext context) {
     return ArDriveDropdown(
+      height: isMobile(context) ? 44 : 60,
       key: ValueKey(alignment),
       anchor: Aligned(
         follower: alignment,
@@ -231,7 +233,9 @@ class _DriveExplorerItemTileTrailingState
         ],
         ArDriveDropdownItem(
           onClick: () {
-            _comingSoonModal();
+            final bloc = context.read<DriveDetailCubit>();
+
+            bloc.selectDataItem(item);
           },
           content: _buildItem(
             appLocalizationsOf(context).moreInfo,
@@ -268,7 +272,9 @@ class _DriveExplorerItemTileTrailingState
       ),
       ArDriveDropdownItem(
         onClick: () {
-          _comingSoonModal();
+          final bloc = context.read<DriveDetailCubit>();
+
+          bloc.selectDataItem(item);
         },
         content: _buildItem(
           appLocalizationsOf(context).preview,
@@ -306,7 +312,9 @@ class _DriveExplorerItemTileTrailingState
       ],
       ArDriveDropdownItem(
         onClick: () {
-          _comingSoonModal();
+          final bloc = context.read<DriveDetailCubit>();
+
+          bloc.selectDataItem(item);
         },
         content: _buildItem(
             appLocalizationsOf(context).moreInfo, ArDriveIcons.info()),
@@ -345,4 +353,12 @@ class _DriveExplorerItemTileTrailingState
       ),
     );
   }
+}
+
+bool isMobile(BuildContext context) {
+  final screenHeight = MediaQuery.of(context).size.height;
+  final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+  return isPortrait &&
+      screenHeight <
+          1100; // Set a threshold of 700 for screen height in portrait mode
 }
