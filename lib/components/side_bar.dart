@@ -408,13 +408,12 @@ class _AppSideBarState extends State<AppSideBar> {
           }
         }
 
-        return const SizedBox();
+        return const SizedBox(
+          height: 40,
+        );
       },
     );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }
 
 class DriveListTile extends StatelessWidget {
