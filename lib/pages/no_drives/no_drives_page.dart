@@ -1,5 +1,7 @@
 import 'package:ardrive/components/plus_button.dart';
+import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -12,11 +14,28 @@ class NoDrivesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ScreenTypeLayout(
-        desktop: Center(
-          child: Text(
-            appLocalizationsOf(context).noDrives,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headline6,
+        desktop: Padding(
+          padding: const EdgeInsets.only(top: 32, right: 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: const [
+                  ProfileCard(
+                    walletAddress: '',
+                  ),
+                ],
+              ),
+              Center(
+                child: Text(
+                  appLocalizationsOf(context).noDrives,
+                  textAlign: TextAlign.center,
+                  style: ArDriveTypography.headline.headline5Regular(),
+                ),
+              ),
+              const SizedBox(),
+            ],
           ),
         ),
         mobile: Stack(
@@ -25,7 +44,7 @@ class NoDrivesPage extends StatelessWidget {
               child: Text(
                 appLocalizationsOf(context).noDrives,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headline6,
+                style: ArDriveTypography.headline.headline5Regular(),
               ),
             ),
             const PlusButton(),

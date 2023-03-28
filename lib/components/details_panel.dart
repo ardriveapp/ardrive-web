@@ -578,10 +578,14 @@ class DetailsPanelItem extends StatelessWidget {
 
 class CopyButton extends StatefulWidget {
   final String text;
+  final double size;
+  final bool showCopyText;
 
   const CopyButton({
     Key? key,
     required this.text,
+    this.size = 16,
+    this.showCopyText = true,
   }) : super(key: key);
 
   @override
@@ -607,8 +611,11 @@ class _CopyButtonState extends State<CopyButton> {
         setState(() {
           _showCheck = true;
           if (mounted) {
-            _overlayEntry = _createOverlayEntry(context);
-            Overlay.of(context)?.insert(_overlayEntry!);
+            if (widget.showCopyText) {
+              _overlayEntry = _createOverlayEntry(context);
+              Overlay.of(context)?.insert(_overlayEntry!);
+            }
+
             Future.delayed(const Duration(seconds: 2), () {
               setState(() {
                 _showCheck = false;
@@ -624,7 +631,7 @@ class _CopyButtonState extends State<CopyButton> {
         duration: const Duration(milliseconds: 200),
         child: _showCheck
             ? ArDriveIcons.checkSuccess(
-                size: 16,
+                size: widget.size,
                 color: ArDriveTheme.of(context)
                     .themeData
                     .colors
