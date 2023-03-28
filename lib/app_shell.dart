@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/components/app_bottom_bar.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -40,13 +41,8 @@ class AppShellState extends State<AppShell> {
             //Used to prevent the dialog being shown multiple times.
             _showWalletSwitchDialog = false;
           });
-          // FIXME
-          AppBar _buildAppBar() => AppBar(
-                elevation: 0.0,
-                backgroundColor: Colors.transparent,
-                actions: [const Icon(Icons.usb_rounded)],
-              );
-          Widget _buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
+
+          Widget buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
                 builder: (context, syncState) => syncState is SyncInProgress
                     ? Stack(
                         children: [
@@ -124,7 +120,7 @@ class AppShellState extends State<AppShell> {
                     : scaffold,
               );
           return ScreenTypeLayout(
-            desktop: _buildPage(
+            desktop: buildPage(
               Row(
                 children: [
                   const AppDrawer(),
@@ -136,8 +132,31 @@ class AppShellState extends State<AppShell> {
                 ],
               ),
             ),
-            mobile: _buildPage(
-              widget.page,
+            mobile: buildPage(
+              Scaffold(
+                appBar: const MobileAppBar(),
+                drawer: const AppDrawer(),
+                body: Row(
+                  children: [
+                    Expanded(
+                      child: widget.page,
+                    ),
+                  ],
+                ),
+                bottomNavigationBar:
+                    BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                  builder: (context, state) {
+                    if (state is! DriveDetailLoadSuccess) {
+                      return Container();
+                    }
+                    return AppBottomBar(
+                      currentFolder: state.folderInView,
+                      drive: (state).currentDrive,
+                      driveDetailState: state,
+                    );
+                  },
+                ),
+              ),
             ),
           );
         },

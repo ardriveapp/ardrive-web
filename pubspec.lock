@@ -73,7 +73,11 @@ packages:
     description:
       path: "."
       ref: PE-3309-new-drive-explorer-mobile
+<<<<<<< HEAD
       resolved-ref: "7bb325bbb88e939a5895ac6ba97e116ac62ef6d5"
+=======
+      resolved-ref: "4939eea64f7df85b9cbeb81bc28ff2bcd34cabee"
+>>>>>>> PE-3309-new-drive-explorer-mobile
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
