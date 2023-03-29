@@ -181,10 +181,18 @@ class _AppSideBarState extends State<AppSideBar> {
                         children: [
                           Column(
                             children: [
-                              Text(
-                                'LIGHT THEME',
-                                style:
-                                    ArDriveTypography.body.buttonNormalBold(),
+                              InkWell(
+                                onTap: () {
+                                  arDriveAppKey.currentState?.changeTheme();
+                                },
+                                child: Text(
+                                  ArDriveTheme.of(context).themeData.name ==
+                                          'light'
+                                      ? 'DARK MODE'
+                                      : 'LIGHT MODE',
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(),
+                                ),
                               ),
                               const AppVersionWidget(),
                             ],
@@ -261,7 +269,9 @@ class _AppSideBarState extends State<AppSideBar> {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Image.asset(
-        Resources.images.brand.logoHorizontalNoSubtitleDark,
+        ArDriveTheme.of(context).themeData.name == 'light'
+            ? Resources.images.brand.logoHorizontalNoSubtitleLight
+            : Resources.images.brand.logoHorizontalNoSubtitleDark,
         height: 32,
         fit: BoxFit.contain,
       ),
@@ -386,7 +396,9 @@ class _AppSideBarState extends State<AppSideBar> {
                   child: Center(
                     child: Text(
                       appLocalizationsOf(context).newString,
-                      style: ArDriveTypography.headline.headline5Bold(),
+                      style: ArDriveTypography.headline.headline5Bold(
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),

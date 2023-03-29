@@ -62,7 +62,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
         BlocProvider<FsEntryPreviewCubit>(
           create: (context) => FsEntryPreviewCubit(
             crypto: ArDriveCrypto(),
+            isSharedFile: widget.isSharePage,
             driveId: widget.item.driveId,
+            fileKey: widget.fileKey,
             maybeSelectedItem: widget.item,
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),

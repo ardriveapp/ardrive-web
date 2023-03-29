@@ -479,8 +479,12 @@ class UploadForm extends StatelessWidget {
                             contentPadding: EdgeInsets.zero,
                             title: Text(
                               file.entity.name!,
-                              style: ArDriveTypography.body
-                                  .buttonNormalBold(color: Colors.red),
+                              style: ArDriveTypography.body.buttonNormalBold(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
+                              ),
                             ),
                             subtitle: Text(
                               '${filesize(file.uploadedSize)}/${filesize(file.size)}',
@@ -512,7 +516,12 @@ class UploadForm extends StatelessWidget {
                                   Text(
                                     fileEntity.name!,
                                     style: ArDriveTypography.body
-                                        .buttonNormalRegular(color: Colors.red),
+                                        .buttonNormalRegular(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault,
+                                    ),
                                   )
                               ],
                             ),

@@ -215,6 +215,7 @@ class AppState extends State<App> {
               ),
             ],
             child: ArDriveApp(
+              key: arDriveAppKey,
               builder: (context) => MaterialApp.router(
                 title: 'ArDrive',
                 theme: ArDriveTheme.of(context)
