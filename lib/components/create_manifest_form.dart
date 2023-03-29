@@ -24,9 +24,9 @@ Future<void> promptToCreateManifest(
   BuildContext context, {
   required Drive drive,
 }) {
-  return showDialog(
-    context: context,
-    builder: (_) => BlocProvider(
+  return showAnimatedDialog(
+    context,
+    content: BlocProvider(
       create: (context) => CreateManifestCubit(
         drive: drive,
         profileCubit: context.read<ProfileCubit>(),
@@ -81,19 +81,17 @@ class CreateManifestForm extends StatelessWidget {
 
         ArDriveStandardModal errorDialog({required String errorText}) =>
             ArDriveStandardModal(
+              width: kMediumDialogWidth,
               title:
                   appLocalizationsOf(context).failedToCreateManifestEmphasized,
-              content: SizedBox(
-                width: kMediumDialogWidth,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-                    Text(errorText),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  Text(errorText),
+                  const SizedBox(height: 16),
+                ],
               ),
               actions: [
                 ModalAction(
@@ -130,9 +128,9 @@ class CreateManifestForm extends StatelessWidget {
 
         if (state is CreateManifestNameConflict) {
           return ArDriveStandardModal(
+            width: kMediumDialogWidth,
             title: appLocalizationsOf(context).conflictingNameFound,
             content: SizedBox(
-              width: kMediumDialogWidth,
               height: 200,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -162,21 +160,19 @@ class CreateManifestForm extends StatelessWidget {
 
         if (state is CreateManifestRevisionConfirm) {
           return ArDriveStandardModal(
+            width: kMediumDialogWidth,
             title: appLocalizationsOf(context).conflictingManifestFound,
-            content: SizedBox(
-              width: kMediumDialogWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  Text(
-                    appLocalizationsOf(context)
-                        .conflictingManifestFoundChooseNewName,
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  appLocalizationsOf(context)
+                      .conflictingManifestFoundChooseNewName,
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
             actions: [
               ModalAction(
@@ -193,6 +189,7 @@ class CreateManifestForm extends StatelessWidget {
 
         if (state is CreateManifestInitial) {
           return ArDriveStandardModal(
+              width: kLargeDialogWidth,
               title: appLocalizationsOf(context).addnewManifestEmphasized,
               actions: [
                 ModalAction(
@@ -205,7 +202,6 @@ class CreateManifestForm extends StatelessWidget {
                 ),
               ],
               content: SizedBox(
-                width: kLargeDialogWidth,
                 height: 250,
                 child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -248,9 +244,9 @@ class CreateManifestForm extends StatelessWidget {
         if (state is CreateManifestTurboUploadConfirmation) {
           Navigator.pop(context);
           return ArDriveStandardModal(
+            width: kMediumDialogWidth,
             title: appLocalizationsOf(context).createManifestEmphasized,
             content: SizedBox(
-              width: kMediumDialogWidth,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,9 +296,9 @@ class CreateManifestForm extends StatelessWidget {
         if (state is CreateManifestUploadConfirmation) {
           Navigator.pop(context);
           return ArDriveStandardModal(
+            width: kMediumDialogWidth,
             title: appLocalizationsOf(context).createManifestEmphasized,
             content: SizedBox(
-              width: kMediumDialogWidth,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,6 +358,7 @@ class CreateManifestForm extends StatelessWidget {
 
         if (state is CreateManifestFolderLoadSuccess) {
           return ArDriveStandardModal(
+            width: kLargeDialogWidth,
             title: appLocalizationsOf(context).createManifestEmphasized,
             actions: [
               ModalAction(
@@ -374,7 +371,6 @@ class CreateManifestForm extends StatelessWidget {
               ),
             ],
             content: SizedBox(
-                width: kLargeDialogWidth,
                 height: 300,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
