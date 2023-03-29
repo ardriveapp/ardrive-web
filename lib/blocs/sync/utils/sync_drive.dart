@@ -19,6 +19,9 @@ Stream<double> _syncDrive(
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
   final startSyncDT = DateTime.now();
 
+  final String owner =
+      await arweave.getOwnerForDriveEntityWithId(driveId) ?? '';
+
   logSync('Syncing drive - ${drive.name}');
 
   SecretKey? driveKey;
@@ -43,6 +46,7 @@ Stream<double> _syncDrive(
   final snapshotsStream = arweave.getAllSnapshotsOfDrive(
     driveId,
     lastBlockHeight,
+    ownerAddress: owner,
   );
   final List<SnapshotItem> snapshotItems = await SnapshotItem.instantiateAll(
     snapshotsStream,
@@ -69,6 +73,7 @@ Stream<double> _syncDrive(
     subRanges: gqlDriveHistorySubRanges,
     arweave: arweave,
     driveId: driveId,
+    ownerAddress: owner,
   );
 
   print('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');

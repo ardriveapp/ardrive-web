@@ -8,6 +8,7 @@ import '../../services/arweave/arweave_service.dart';
 
 class GQLDriveHistory implements SegmentedGQLData {
   final DriveID driveId;
+  final String ownerAddress;
 
   int _currentIndex = -1;
   final ArweaveService _arweave;
@@ -21,6 +22,7 @@ class GQLDriveHistory implements SegmentedGQLData {
     required this.subRanges,
     required ArweaveService arweave,
     required this.driveId,
+    required this.ownerAddress,
   }) : _arweave = arweave;
 
   @override
@@ -42,6 +44,7 @@ class GQLDriveHistory implements SegmentedGQLData {
       driveId,
       minBlockHeight: subRangeForIndex.start,
       maxBlockHeight: subRangeForIndex.end,
+      ownerAddress: ownerAddress,
     );
 
     await for (final multipleEdges in txsStream) {

@@ -119,8 +119,9 @@ class ArweaveService {
 
   Stream<SnapshotEntityTransaction> getAllSnapshotsOfDrive(
     String driveId,
-    int? lastBlockHeight,
-  ) async* {
+    int? lastBlockHeight, {
+    required String ownerAddress,
+  }) async* {
     String cursor = '';
 
     while (true) {
@@ -131,6 +132,7 @@ class ArweaveService {
             driveId: driveId,
             lastBlockHeight: lastBlockHeight,
             after: cursor,
+            ownerAddress: ownerAddress,
           ),
         ),
       );
@@ -153,17 +155,20 @@ class ArweaveService {
   Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
       getAllTransactionsFromDrive(
     String driveId, {
+    required String ownerAddress,
     int? lastBlockHeight,
   }) {
     return getSegmentedTransactionsFromDrive(
       driveId,
       minBlockHeight: lastBlockHeight,
+      ownerAddress: ownerAddress,
     );
   }
 
   Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
       getSegmentedTransactionsFromDrive(
     String driveId, {
+    required String ownerAddress,
     int? minBlockHeight,
     int? maxBlockHeight,
   }) async* {
@@ -178,6 +183,7 @@ class ArweaveService {
             minBlockHeight: minBlockHeight,
             maxBlockHeight: maxBlockHeight,
             after: cursor,
+            ownerAddress: ownerAddress,
           ),
         ),
       );
