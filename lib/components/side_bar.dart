@@ -116,11 +116,11 @@ class _AppSideBarState extends State<AppSideBar> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: const AppVersionWidget(),
+          const Padding(
+            padding: EdgeInsets.only(left: 16.0),
+            child: AppVersionWidget(),
           ),
-          SizedBox(
+          const SizedBox(
             height: 32,
           ),
         ],
