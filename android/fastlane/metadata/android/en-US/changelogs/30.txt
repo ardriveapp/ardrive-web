@@ -1,2 +1,2 @@
 - Adds Hindi localization
-- Adds missing ˝
+- Adds missing translations for Chinese and Spanish
