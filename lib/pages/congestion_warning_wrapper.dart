@@ -1,4 +1,3 @@
-import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -27,7 +26,7 @@ Future<void> showCongestionDependentModalDialog(
       bool shouldShowDialog = false;
       await showAnimatedDialog(
         context,
-        content: AppDialog(
+        content: ArDriveStandardModal(
           title: appLocalizationsOf(context).warningEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
@@ -58,22 +57,19 @@ Future<void> showCongestionDependentModalDialog(
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () {
+            ModalAction(
+              action: () {
                 shouldShowDialog = false;
                 Navigator.of(context).pop(false);
               },
-              child: Text(
-                  appLocalizationsOf(context).tryLaterCongestionEmphasized),
+              title: appLocalizationsOf(context).tryLaterCongestionEmphasized,
             ),
-            ElevatedButton(
-              onPressed: () async {
+            ModalAction(
+              action: () async {
                 shouldShowDialog = true;
                 Navigator.of(context).pop(true);
               },
-              child: Text(
-                appLocalizationsOf(context).proceedEmphasized,
-              ),
+              title: appLocalizationsOf(context).proceedEmphasized,
             ),
           ],
         ),
