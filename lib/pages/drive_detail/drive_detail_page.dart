@@ -45,7 +45,12 @@ part 'components/fs_entry_preview_widget.dart';
 class DriveDetailPage extends StatefulWidget {
   const DriveDetailPage({
     Key? key,
+    this.driveId,
+    this.driveFolderId,
   }) : super(key: key);
+
+  final String? driveId;
+  final String? driveFolderId;
 
   @override
   State<DriveDetailPage> createState() => _DriveDetailPageState();
@@ -99,6 +104,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     required bool isDriveOwner,
     required bool canDownloadMultipleFiles,
   }) {
+    print('Desktop View');
     return Stack(
       children: [
         Row(

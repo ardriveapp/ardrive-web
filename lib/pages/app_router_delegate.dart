@@ -223,7 +223,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             print('Injecting SyncCubit');
             return MultiBlocProvider(
               providers: [
-                BlocProvider(
+                BlocProvider<SyncCubit>(
                   create: (context) => SyncCubit(
                     profileCubit: context.read<ProfileCubit>(),
                     activityCubit: context.read<ActivityCubit>(),
@@ -233,7 +233,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     tabVisibility: TabVisibilitySingleton(),
                   ),
                 ),
-                BlocProvider(
+                BlocProvider<DrivesCubit>(
                   create: (context) => DrivesCubit(
                     initialSelectedDriveId: driveId,
                     profileCubit: context.read<ProfileCubit>(),

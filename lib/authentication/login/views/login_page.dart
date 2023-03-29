@@ -5,6 +5,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/navigator/go_router.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
@@ -201,6 +202,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             ),
           );
         } else if (state is LoginSuccess) {
+          router.go('/drives/loading/');
           context.read<ProfileCubit>().unlockDefaultProfile(
               state.user.password, state.user.profileType);
         }

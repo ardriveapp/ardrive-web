@@ -52,6 +52,8 @@ class DrivesCubit extends Cubit<DrivesState> {
             (drives.isNotEmpty ? drives.first.id : null);
       }
 
+      print(profile.runtimeType);
+
       final walletAddress =
           profile is ProfileLoggedIn ? profile.walletAddress : null;
 

@@ -5,8 +5,8 @@ import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
-import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/navigator/go_router.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
 import 'package:ardrive/pst/community_oracle.dart';
 import 'package:ardrive/pst/contract_oracle.dart';
@@ -195,61 +195,57 @@ class AppState extends State<App> {
             ),
           ),
         ],
-        child: KeyboardHandler(
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (context) => ProfileCubit(
-                  arweave: context.read<ArweaveService>(),
-                  turboService: context.read<TurboService>(),
-                  profileDao: context.read<ProfileDao>(),
-                  db: context.read<Database>(),
-                ),
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => ProfileCubit(
+                arweave: context.read<ArweaveService>(),
+                turboService: context.read<TurboService>(),
+                profileDao: context.read<ProfileDao>(),
+                db: context.read<Database>(),
               ),
-              BlocProvider(
-                create: (context) => ActivityCubit(),
-              ),
-              BlocProvider(
-                create: (context) =>
-                    FeedbackSurveyCubit(FeedbackSurveyInitialState()),
-              ),
-            ],
-            child: ArDriveApp(
-              key: arDriveAppKey,
-              builder: (context) => MaterialApp.router(
-                title: 'ArDrive',
-                theme: ArDriveTheme.of(context)
-                    .themeData
-                    .materialThemeData
-                    .copyWith(
-                      scaffoldBackgroundColor:
-                          ArDriveTheme.of(context).themeData.backgroundColor,
-                    ),
-                debugShowCheckedModeBanner: false,
-                routeInformationParser: _routeInformationParser,
-                routerDelegate: _routerDelegate,
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                ],
-                supportedLocales: const [
-                  Locale('en', ''), // English, no country code
-                  Locale('es', ''), // Spanish, no country code
-                  Locale.fromSubtags(
-                      languageCode: 'zh'), // generic Chinese 'zh'
-                  Locale.fromSubtags(
-                    languageCode: 'zh',
-                    countryCode: 'HK',
-                  ), // generic traditional Chinese 'zh_Hant'
-                  Locale('ja', ''), // Japanese, no country code
-                ],
-                builder: (context, child) => ListTileTheme(
-                  textColor: kOnSurfaceBodyTextColor,
-                  iconColor: kOnSurfaceBodyTextColor,
-                  child: Portal(
-                    child: child!,
-                  ),
+            ),
+            BlocProvider(
+              create: (context) => ActivityCubit(),
+            ),
+            BlocProvider(
+              create: (context) =>
+                  FeedbackSurveyCubit(FeedbackSurveyInitialState()),
+            ),
+          ],
+          child: ArDriveApp(
+            key: arDriveAppKey,
+            builder: (context) => MaterialApp.router(
+              title: 'ArDrive',
+              theme:
+                  ArDriveTheme.of(context).themeData.materialThemeData.copyWith(
+                        scaffoldBackgroundColor:
+                            ArDriveTheme.of(context).themeData.backgroundColor,
+                      ),
+              debugShowCheckedModeBanner: false,
+              // routeInformationParser: _routeInformationParser,
+              // routerDelegate: _routerDelegate,
+              routerConfig: router,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+              ],
+              supportedLocales: const [
+                Locale('en', ''), // English, no country code
+                Locale('es', ''), // Spanish, no country code
+                Locale.fromSubtags(languageCode: 'zh'), // generic Chinese 'zh'
+                Locale.fromSubtags(
+                  languageCode: 'zh',
+                  countryCode: 'HK',
+                ), // generic traditional Chinese 'zh_Hant'
+                Locale('ja', ''), // Japanese, no country code
+              ],
+              builder: (context, child) => ListTileTheme(
+                textColor: kOnSurfaceBodyTextColor,
+                iconColor: kOnSurfaceBodyTextColor,
+                child: Portal(
+                  child: child!,
                 ),
               ),
             ),

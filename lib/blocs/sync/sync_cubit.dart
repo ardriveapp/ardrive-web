@@ -170,6 +170,7 @@ class SyncCubit extends Cubit<SyncState> {
   var ghostFolders = <FolderID, GhostFolder>{};
 
   Future<void> startSync({bool syncDeep = false}) async {
+    print('starting sync');
     logSync('Starting Sync');
     logSync('SyncCubit is currently active? ${!isClosed}');
 
