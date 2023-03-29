@@ -1,4 +1,8 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/components/app_bottom_bar.dart';
+import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -37,41 +41,8 @@ class AppShellState extends State<AppShell> {
             //Used to prevent the dialog being shown multiple times.
             _showWalletSwitchDialog = false;
           });
-          // FIXME
-          // AppBar _buildAppBar() => AppBar(
-          //       elevation: 0.0,
-          //       backgroundColor: Colors.transparent,
-          //       actions: [
-          //         IconButton(
-          //           icon: PortalEntry(
-          //             visible: _showProfileOverlay,
-          //             portal: GestureDetector(
-          //               behavior: HitTestBehavior.opaque,
-          //               onTap: () => toggleProfileOverlay(),
-          //             ),
-          //             child: PortalEntry(
-          //               visible: _showProfileOverlay,
-          //               portal: Padding(
-          //                 padding: const EdgeInsets.only(top: 56, left: 24),
-          //                 child: ProfileOverlay(
-          //                   onCloseProfileOverlay: () {
-          //                     setState(() {
-          //                       _showProfileOverlay = false;
-          //                     });
-          //                   },
-          //                 ),
-          //               ),
-          //               portalAnchor: Alignment.topRight,
-          //               childAnchor: Alignment.topRight,
-          //               child: const Icon(Icons.account_circle),
-          //             ),
-          //           ),
-          //           tooltip: appLocalizationsOf(context).profile,
-          //           onPressed: () => toggleProfileOverlay(),
-          //         ),
-          //       ],
-          //     );
-          Widget _buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
+
+          Widget buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
                 builder: (context, syncState) => syncState is SyncInProgress
                     ? Stack(
                         children: [
@@ -149,24 +120,19 @@ class AppShellState extends State<AppShell> {
                     : scaffold,
               );
           return ScreenTypeLayout(
-            desktop: _buildPage(
+            desktop: buildPage(
               Row(
                 children: [
                   const AppDrawer(),
                   Expanded(
-                    child: Scaffold(
-                      // FIXME
-                      // appBar: _buildAppBar(),
-                      body: widget.page,
-                    ),
+                    child: Scaffold(body: widget.page),
                   ),
                 ],
               ),
             ),
-            mobile: _buildPage(
+            mobile: buildPage(
               Scaffold(
-                // FIXME
-                // appBar: _buildAppBar(),
+                appBar: const MobileAppBar(),
                 drawer: const AppDrawer(),
                 body: Row(
                   children: [
@@ -174,6 +140,19 @@ class AppShellState extends State<AppShell> {
                       child: widget.page,
                     ),
                   ],
+                ),
+                bottomNavigationBar:
+                    BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                  builder: (context, state) {
+                    if (state is! DriveDetailLoadSuccess) {
+                      return Container();
+                    }
+                    return AppBottomBar(
+                      currentFolder: state.folderInView,
+                      drive: (state).currentDrive,
+                      driveDetailState: state,
+                    );
+                  },
                 ),
               ),
             ),
@@ -192,4 +171,42 @@ class AppShellState extends State<AppShell> {
 
   void toggleProfileOverlay() =>
       setState(() => _showProfileOverlay = !_showProfileOverlay);
+}
+
+class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const MobileAppBar({super.key});
+
+  @override
+  Size get preferredSize =>
+      const Size.fromHeight(80); // Set the height of the appbar
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        height: 80,
+        color: ArDriveTheme.of(context).themeData.tableTheme.cellColor,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: ArDriveIcons.menuArrow(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              ),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.only(right: 12.0),
+              child: ProfileCard(
+                walletAddress:
+                    context.read<ArDriveAuth>().currentUser?.walletAddress ??
+                        '',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
