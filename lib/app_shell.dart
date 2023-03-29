@@ -1,5 +1,4 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/components/app_bottom_bar.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/utils/html/html_util.dart';
@@ -43,82 +42,85 @@ class AppShellState extends State<AppShell> {
             _showWalletSwitchDialog = false;
           });
 
-          Widget buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
-                builder: (context, syncState) => syncState is SyncInProgress
-                    ? Stack(
-                        children: [
-                          AbsorbPointer(
-                            child: scaffold,
-                          ),
-                          SizedBox.expand(
-                            child: Container(
-                              color: Colors.black.withOpacity(0.5),
+          Widget buildPage(scaffold) => Material(
+                child: BlocBuilder<SyncCubit, SyncState>(
+                  builder: (context, syncState) => syncState is SyncInProgress
+                      ? Stack(
+                          children: [
+                            AbsorbPointer(
+                              child: scaffold,
                             ),
-                          ),
-                          BlocBuilder<ProfileCubit, ProfileState>(
-                            builder: (context, state) {
-                              return FutureBuilder(
-                                future: context
-                                    .read<ProfileCubit>()
-                                    .isCurrentProfileArConnect(),
-                                builder: (BuildContext context,
-                                    AsyncSnapshot snapshot) {
-                                  return Align(
-                                    alignment: Alignment.center,
-                                    child: Material(
-                                      child: ProgressDialog(
-                                          progressBar: ProgressBar(
-                                            percentage: context
-                                                .read<SyncCubit>()
-                                                .syncProgressController
-                                                .stream,
-                                          ),
-                                          percentageDetails: _syncStreamBuilder(
-                                              builderWithData: (syncProgress) =>
-                                                  Text(appLocalizationsOf(
-                                                          context)
-                                                      .syncProgressPercentage(
-                                                          (syncProgress
-                                                                      .progress *
-                                                                  100)
-                                                              .roundToDouble()
-                                                              .toString()))),
-                                          progressDescription:
-                                              _syncStreamBuilder(
-                                            builderWithData: (syncProgress) =>
-                                                Text(
-                                              syncProgress.drivesCount == 0
-                                                  ? ''
-                                                  : syncProgress.drivesCount > 1
-                                                      ? appLocalizationsOf(
-                                                              context)
-                                                          .driveSyncedOfDrivesCount(
-                                                              syncProgress
-                                                                  .drivesSynced,
-                                                              syncProgress
-                                                                  .drivesCount)
-                                                      : appLocalizationsOf(
-                                                              context)
-                                                          .syncingOnlyOneDrive,
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
+                            SizedBox.expand(
+                              child: Container(
+                                color: Colors.black.withOpacity(0.5),
+                              ),
+                            ),
+                            BlocBuilder<ProfileCubit, ProfileState>(
+                              builder: (context, state) {
+                                return FutureBuilder(
+                                  future: context
+                                      .read<ProfileCubit>()
+                                      .isCurrentProfileArConnect(),
+                                  builder: (BuildContext context,
+                                      AsyncSnapshot snapshot) {
+                                    return Align(
+                                      alignment: Alignment.center,
+                                      child: Material(
+                                        child: ProgressDialog(
+                                            progressBar: ProgressBar(
+                                              percentage: context
+                                                  .read<SyncCubit>()
+                                                  .syncProgressController
+                                                  .stream,
                                             ),
-                                          ),
-                                          title: snapshot.data ?? false
-                                              ? appLocalizationsOf(context)
-                                                  .syncingPleaseRemainOnThisTab
-                                              : appLocalizationsOf(context)
-                                                  .syncingPleaseWait),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      )
-                    : scaffold,
+                                            percentageDetails: _syncStreamBuilder(
+                                                builderWithData: (syncProgress) =>
+                                                    Text(appLocalizationsOf(
+                                                            context)
+                                                        .syncProgressPercentage(
+                                                            (syncProgress.progress *
+                                                                    100)
+                                                                .roundToDouble()
+                                                                .toString()))),
+                                            progressDescription:
+                                                _syncStreamBuilder(
+                                              builderWithData: (syncProgress) =>
+                                                  Text(
+                                                syncProgress.drivesCount == 0
+                                                    ? ''
+                                                    : syncProgress.drivesCount >
+                                                            1
+                                                        ? appLocalizationsOf(
+                                                                context)
+                                                            .driveSyncedOfDrivesCount(
+                                                                syncProgress
+                                                                    .drivesSynced,
+                                                                syncProgress
+                                                                    .drivesCount)
+                                                        : appLocalizationsOf(
+                                                                context)
+                                                            .syncingOnlyOneDrive,
+                                                style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                            ),
+                                            title: snapshot.data ?? false
+                                                ? appLocalizationsOf(context)
+                                                    .syncingPleaseRemainOnThisTab
+                                                : appLocalizationsOf(context)
+                                                    .syncingPleaseWait),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        )
+                      : scaffold,
+                ),
               );
           return ScreenTypeLayout(
             desktop: buildPage(
@@ -134,30 +136,7 @@ class AppShellState extends State<AppShell> {
               ),
             ),
             mobile: buildPage(
-              Scaffold(
-                appBar: const MobileAppBar(),
-                drawer: const AppSideBar(),
-                body: Row(
-                  children: [
-                    Expanded(
-                      child: widget.page,
-                    ),
-                  ],
-                ),
-                bottomNavigationBar:
-                    BlocBuilder<DriveDetailCubit, DriveDetailState>(
-                  builder: (context, state) {
-                    if (state is! DriveDetailLoadSuccess) {
-                      return Container();
-                    }
-                    return AppBottomBar(
-                      currentFolder: state.folderInView,
-                      drive: (state).currentDrive,
-                      driveDetailState: state,
-                    );
-                  },
-                ),
-              ),
+              widget.page,
             ),
           );
         },

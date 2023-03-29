@@ -1,3 +1,4 @@
+import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
@@ -9,6 +10,7 @@ import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/profile_card.dart';
+import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
 import 'package:ardrive/l11n/l11n.dart';
@@ -82,7 +84,39 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 hasFiles: hasFiles,
                 canDownloadMultipleFiles: canDownloadMultipleFiles,
               ),
-              mobile: _mobileView(state, hasSubfolders, hasFiles),
+              mobile: Scaffold(
+                drawer: const AppSideBar(),
+                appBar: MobileAppBar(
+                  leading: (state.showSelectedItemDetails &&
+                          context.read<DriveDetailCubit>().selectedItem != null)
+                      ? IconButton(
+                          icon: ArDriveIcons.arrowBack(),
+                          onPressed: () {
+                            context
+                                .read<DriveDetailCubit>()
+                                .toggleSelectedItemDetails();
+                          },
+                        )
+                      : null,
+                ),
+                bottomNavigationBar:
+                    BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                  builder: (context, state) {
+                    if (state is! DriveDetailLoadSuccess) {
+                      return Container();
+                    }
+                    return CustomBottomNavigation(
+                      currentFolder: state.folderInView,
+                      drive: (state).currentDrive,
+                    );
+                  },
+                ),
+                body: _mobileView(
+                  state,
+                  hasSubfolders,
+                  hasFiles,
+                ),
+              ),
             );
           } else {
             return const SizedBox();
