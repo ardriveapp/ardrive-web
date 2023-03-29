@@ -136,7 +136,7 @@ class AppShellState extends State<AppShell> {
             mobile: buildPage(
               Scaffold(
                 appBar: const MobileAppBar(),
-                drawer: const AppDrawer(),
+                drawer: const AppSideBar(),
                 body: Row(
                   children: [
                     Expanded(
