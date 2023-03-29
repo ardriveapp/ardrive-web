@@ -21,6 +21,7 @@ void main() {
           'DRIVE_ID',
           minBlockHeight: captureAny(named: 'minBlockHeight'),
           maxBlockHeight: captureAny(named: 'maxBlockHeight'),
+          ownerAddress: 'owner',
         ),
       ).thenAnswer(
         (invocation) => fakeNodesStream(
@@ -37,6 +38,10 @@ void main() {
             )
             .map((event) => [event]),
       );
+
+      when(() => arweave.getOwnerForDriveEntityWithId('DRIVE_ID')).thenAnswer(
+        (invocation) => Future.value('owner'),
+      );
     });
 
     test('getStreamForIndex returns a valid stream of nodes', () async {
@@ -44,6 +49,7 @@ void main() {
         arweave: arweave,
         driveId: 'DRIVE_ID',
         subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
+        ownerAddress: 'owner',
       );
       expect(gqlDriveHistory.subRanges.rangeSegments.length, 1);
       expect(gqlDriveHistory.currentIndex, -1);
@@ -63,6 +69,7 @@ void main() {
           Range(start: 0, end: 10),
           Range(start: 20, end: 30)
         ]),
+        ownerAddress: 'owner',
       );
       expect(gqlDriveHistory.subRanges.rangeSegments.length, 2);
       expect(gqlDriveHistory.currentIndex, -1);
