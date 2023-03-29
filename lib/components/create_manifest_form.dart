@@ -12,6 +12,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -78,7 +79,8 @@ class CreateManifestForm extends StatelessWidget {
                   kValidationMessages(appLocalizationsOf(context)),
             ));
 
-        AppDialog errorDialog({required String errorText}) => AppDialog(
+        ArDriveStandardModal errorDialog({required String errorText}) =>
+            ArDriveStandardModal(
               title:
                   appLocalizationsOf(context).failedToCreateManifestEmphasized,
               content: SizedBox(
@@ -93,10 +95,10 @@ class CreateManifestForm extends StatelessWidget {
                   ],
                 ),
               ),
-              actions: <Widget>[
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(appLocalizationsOf(context).continueEmphasized),
+              actions: [
+                ModalAction(
+                  action: () => Navigator.pop(context),
+                  title: appLocalizationsOf(context).continueEmphasized,
                 ),
               ],
             );
@@ -127,7 +129,7 @@ class CreateManifestForm extends StatelessWidget {
         }
 
         if (state is CreateManifestNameConflict) {
-          return AppDialog(
+          return ArDriveStandardModal(
             title: appLocalizationsOf(context).conflictingNameFound,
             content: SizedBox(
               width: kMediumDialogWidth,
@@ -145,21 +147,21 @@ class CreateManifestForm extends StatelessWidget {
                 ],
               ),
             ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(appLocalizationsOf(context).cancelEmphasized),
+            actions: [
+              ModalAction(
+                action: () => Navigator.of(context).pop(false),
+                title: appLocalizationsOf(context).cancelEmphasized,
               ),
-              ElevatedButton(
-                onPressed: () => readCubitContext.reCheckConflicts(),
-                child: Text(appLocalizationsOf(context).continueEmphasized),
+              ModalAction(
+                action: () => readCubitContext.reCheckConflicts(),
+                title: appLocalizationsOf(context).continueEmphasized,
               ),
             ],
           );
         }
 
         if (state is CreateManifestRevisionConfirm) {
-          return AppDialog(
+          return ArDriveStandardModal(
             title: appLocalizationsOf(context).conflictingManifestFound,
             content: SizedBox(
               width: kMediumDialogWidth,
@@ -176,31 +178,30 @@ class CreateManifestForm extends StatelessWidget {
                 ],
               ),
             ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(appLocalizationsOf(context).cancelEmphasized),
+            actions: [
+              ModalAction(
+                action: () => Navigator.of(context).pop(false),
+                title: appLocalizationsOf(context).cancelEmphasized,
               ),
-              ElevatedButton(
-                onPressed: () => readCubitContext.confirmRevision(),
-                child: Text(appLocalizationsOf(context).continueEmphasized),
+              ModalAction(
+                action: () => readCubitContext.confirmRevision(),
+                title: appLocalizationsOf(context).continueEmphasized,
               ),
             ],
           );
         }
 
         if (state is CreateManifestInitial) {
-          return AppDialog(
+          return ArDriveStandardModal(
               title: appLocalizationsOf(context).addnewManifestEmphasized,
               actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(appLocalizationsOf(context).cancelEmphasized)),
-                ElevatedButton(
-                  onPressed: () => readCubitContext.chooseTargetFolder(),
-                  child: Text(
-                    appLocalizationsOf(context).nextEmphasized,
-                  ),
+                ModalAction(
+                  action: () => Navigator.pop(context),
+                  title: appLocalizationsOf(context).cancelEmphasized,
+                ),
+                ModalAction(
+                  action: () => readCubitContext.chooseTargetFolder(),
+                  title: appLocalizationsOf(context).nextEmphasized,
                 ),
               ],
               content: SizedBox(
@@ -246,7 +247,7 @@ class CreateManifestForm extends StatelessWidget {
         }
         if (state is CreateManifestTurboUploadConfirmation) {
           Navigator.pop(context);
-          return AppDialog(
+          return ArDriveStandardModal(
             title: appLocalizationsOf(context).createManifestEmphasized,
             content: SizedBox(
               width: kMediumDialogWidth,
@@ -284,21 +285,21 @@ class CreateManifestForm extends StatelessWidget {
                 ],
               ),
             ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(appLocalizationsOf(context).cancelEmphasized),
+            actions: [
+              ModalAction(
+                action: () => Navigator.of(context).pop(false),
+                title: appLocalizationsOf(context).cancelEmphasized,
               ),
-              ElevatedButton(
-                onPressed: () => readCubitContext.uploadManifest(),
-                child: Text(appLocalizationsOf(context).confirmEmphasized),
+              ModalAction(
+                action: () => readCubitContext.uploadManifest(),
+                title: appLocalizationsOf(context).confirmEmphasized,
               ),
             ],
           );
         }
         if (state is CreateManifestUploadConfirmation) {
           Navigator.pop(context);
-          return AppDialog(
+          return ArDriveStandardModal(
             title: appLocalizationsOf(context).createManifestEmphasized,
             content: SizedBox(
               width: kMediumDialogWidth,
@@ -346,30 +347,30 @@ class CreateManifestForm extends StatelessWidget {
                 ],
               ),
             ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(appLocalizationsOf(context).cancelEmphasized),
+            actions: [
+              ModalAction(
+                action: () => Navigator.of(context).pop(false),
+                title: appLocalizationsOf(context).cancelEmphasized,
               ),
-              ElevatedButton(
-                onPressed: () => readCubitContext.uploadManifest(),
-                child: Text(appLocalizationsOf(context).confirmEmphasized),
+              ModalAction(
+                action: () => readCubitContext.uploadManifest(),
+                title: appLocalizationsOf(context).confirmEmphasized,
               ),
             ],
           );
         }
 
         if (state is CreateManifestFolderLoadSuccess) {
-          return AppDialog(
+          return ArDriveStandardModal(
             title: appLocalizationsOf(context).createManifestEmphasized,
             actions: [
-              TextButton(
-                onPressed: () => readCubitContext.backToName(),
-                child: Text(appLocalizationsOf(context).backEmphasized),
+              ModalAction(
+                action: () => readCubitContext.backToName(),
+                title: appLocalizationsOf(context).backEmphasized,
               ),
-              ElevatedButton(
-                onPressed: () => readCubitContext.checkForConflicts(),
-                child: Text(appLocalizationsOf(context).createHereEmphasized),
+              ModalAction(
+                action: () => readCubitContext.checkForConflicts(),
+                title: appLocalizationsOf(context).createHereEmphasized,
               ),
             ],
             content: SizedBox(
