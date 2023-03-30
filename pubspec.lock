@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3358-when-a-folder-is-selected-to-be-moved-into-a-folder-that-has-just-been-created-the-folder-is-not-moved-to-the-selected-destination
-      resolved-ref: "1eb5b005eca05886c7195e6765907dcffb6905aa"
+      ref: PE-3357-checkbox-list-is-hidden-if-we-want-to-uncheck-a-file-folder-after-selecting-all-of-them
+      resolved-ref: "610e3a955f6bb2371fe8552d26097429373f3d0e"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
