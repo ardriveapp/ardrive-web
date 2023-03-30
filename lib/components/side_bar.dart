@@ -345,7 +345,6 @@ class _AppSideBarState extends State<AppSideBar> {
             style: ArDriveTypography.body.buttonLargeBold(),
           ),
           state.sharedDrives
-              .where((element) => element.privacy == 'public')
               .map(
                 (d) => DriveListTile(
                   drive: d,
