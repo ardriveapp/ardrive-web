@@ -420,11 +420,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Column(
-                      //   crossAxisAlignment: CrossAxisAlignment.start,
-                      //   children: [const DriveDetailActionRow()],
-                      // ),
-
                       if (hasSubfolders || hasFiles) ...[
                         Expanded(
                           child: ListView.separated(
