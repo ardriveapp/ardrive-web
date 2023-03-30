@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/dotted_line.dart';
+import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -202,9 +203,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: CopyButton(text: folder.entry.folder.id),
         itemTitle: appLocalizationsOf(context).folderID,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           fileAndFolderCountsToString(
@@ -216,9 +215,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).itemContains,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.lastUpdated),
@@ -226,9 +223,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.dateCreated),
@@ -236,9 +231,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: CopyButton(
           text: folder.entry.folder.driveId,
@@ -254,9 +247,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: CopyButton(text: widget.item.id),
         itemTitle: appLocalizationsOf(context).driveID,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       // size
       DetailsPanelItem(
         leading: Text(
@@ -267,9 +258,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).size,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           fileAndFolderCountsToString(
@@ -281,9 +270,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).itemContains,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.lastUpdated),
@@ -291,9 +278,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.dateCreated),
@@ -310,9 +295,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: CopyButton(text: widget.item.id),
         itemTitle: appLocalizationsOf(context).fileID,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           filesize(widget.item.size),
@@ -320,9 +303,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).size,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.lastUpdated),
@@ -330,9 +311,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.dateCreated),
@@ -340,9 +319,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           widget.item.contentType,
@@ -350,18 +327,14 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: 'File type',
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: CopyButton(
           text: widget.item.driveId,
         ),
         itemTitle: appLocalizationsOf(context).metadataTxID,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: CopyButton(
           text: (widget.item as FileDataTableItem).dataTxId,
@@ -396,9 +369,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       if (state.revisions.isNotEmpty) {
         return ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          separatorBuilder: (context, index) => const SizedBox(
-            height: 16,
-          ),
+          separatorBuilder: (context, index) => sizedBoxHeight16px,
           itemCount: state.revisions.length,
           itemBuilder: (context, index) {
             final revision = state.revisions[index];
