@@ -14,6 +14,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required int batchSize,
   required SnapshotDriveHistory snapshotDriveHistory,
   required Map<FolderID, GhostFolder> ghostFolders,
+  required String ownerAddress,
 }) async* {
   final numberOfDriveEntitiesToParse = transactions.length;
   var numberOfDriveEntitiesParsed = 0;
@@ -40,8 +41,6 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
     'no. of entities in drive - ${drive.name} to be parsed are: $numberOfDriveEntitiesToParse\n',
   );
 
-  final owner = await arweave.getOwnerForDriveEntityWithId(drive.id);
-
   yield* _batchProcess<DriveHistoryTransaction>(
       list: transactions,
       batchSize: batchSize,
@@ -56,10 +55,10 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
             await arweave.createDriveEntityHistoryFromTransactions(
           items,
           driveKey,
-          owner,
           lastBlockHeight,
           snapshotDriveHistory: snapshotDriveHistory,
           driveId: drive.id,
+          ownerAddress: ownerAddress,
         );
 
         // Create entries for all the new revisions of file and folders in this drive.
