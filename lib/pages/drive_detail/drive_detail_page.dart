@@ -17,6 +17,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
+import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -208,9 +209,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       driveName: state.currentDrive.name,
                                     );
                                   },
-                                  content: _buildItem(
-                                    appLocalizationsOf(context).renameDrive,
-                                    ArDriveIcons.edit(),
+                                  content: ArDriveDropdownItemTile(
+                                    name:
+                                        appLocalizationsOf(context).renameDrive,
+                                    icon: ArDriveIcons.edit(),
                                   ),
                                 ),
                               ArDriveDropdownItem(
@@ -220,9 +222,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     drive: state.currentDrive,
                                   );
                                 },
-                                content: _buildItem(
-                                  appLocalizationsOf(context).shareDrive,
-                                  ArDriveIcons.share(),
+                                content: ArDriveDropdownItemTile(
+                                  name: appLocalizationsOf(context).shareDrive,
+                                  icon: ArDriveIcons.share(),
                                 ),
                               ),
                               ArDriveDropdownItem(
@@ -232,10 +234,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     driveId: state.currentDrive.id,
                                   );
                                 },
-                                content: _buildItem(
-                                  appLocalizationsOf(context)
+                                content: ArDriveDropdownItemTile(
+                                  name: appLocalizationsOf(context)
                                       .exportDriveContents,
-                                  ArDriveIcons.download(),
+                                  icon: ArDriveIcons.download(),
                                 ),
                               ),
                               ArDriveDropdownItem(
@@ -287,10 +289,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         ),
                       )
                     else
-                      DriveDetailFolderEmptyCard(
-                        driveId: state.currentDrive.id,
-                        parentFolderId: state.folderInView.folder.id,
-                        promptToAddFiles: state.hasWritePermissions,
+                      Expanded(
+                        child: DriveDetailFolderEmptyCard(
+                          driveId: state.currentDrive.id,
+                          parentFolderId: state.folderInView.folder.id,
+                          promptToAddFiles: state.hasWritePermissions,
+                        ),
                       ),
                   ],
                 ),
@@ -326,15 +330,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 ),
               ),
             )
-            // TODO:(@thiagocarvalhodev): Remove this
-            // FsEntrySideSheet(
-            //   driveId: state.currentDrive.id,
-            //   drivePrivacy: state.currentDrive.privacy,
-            //   maybeSelectedItem: state.selectedItems.isNotEmpty
-            //       ? state.selectedItems.first
-            //       : null,
-            // ),
-            // }
           ],
         ),
         if (kIsWeb)
