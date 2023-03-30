@@ -140,8 +140,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                   hintText: appLocalizationsOf(context).driveName,
                   onChanged: (s) async {},
                   validator: (s) async {
-                    final nameValidation =
-                        validateFolderAndDriveName(s, context);
+                    final nameValidation = validateEntityName(s, context);
 
                     setState(() {
                       _isFormValid = nameValidation == null;
