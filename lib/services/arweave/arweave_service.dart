@@ -188,7 +188,20 @@ class ArweaveService {
         ),
       );
 
-      yield driveEntityHistoryQuery.data!.transactions.edges;
+      final List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>
+          transactions = driveEntityHistoryQuery.data!.transactions.edges;
+
+      // NOTE: this filter is being made in order to remove from the query
+      /// the ArFS tag filter, in order to make the query faster
+      // TODO: factor out this into its own testable method . [PUT JIRA TICKET NUMBER HERE]
+      yield transactions.where((tx) {
+        final tags = tx.node.tags;
+        final arFsTags = tags.where((tag) => tag.name == 'ArFS');
+        final arFsCorrectVersion = arFsTags.any(
+          (tag) => ['0.10', '0.11', '0.12'].contains(tag.value),
+        );
+        return arFsCorrectVersion;
+      }).toList();
 
       cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
           ? driveEntityHistoryQuery.data!.transactions.edges.last.cursor
