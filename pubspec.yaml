@@ -9,7 +9,7 @@ environment:
   sdk: '>=2.18.5 <3.0.0'
   flutter: 3.3.9
 
-# https://pub.dev/packages/script_runner
+# https://purb.dev/packages/script_runner
 script_runner:
   shell:
     default: /bin/sh
@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3374-when-multiselect-list-is-static-we-cant-continue-selecting-items-without-pressing-command-key
+      ref: PE-3374-select-by-pages
   artemis: ^7.0.0-beta.13
   arweave:
     git:

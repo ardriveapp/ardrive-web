@@ -155,15 +155,20 @@ ArDriveDataTable _buildDataListContent(
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,
     pageItemsDivisorFactor: 25,
-    onSelectedRows: (rows) {
+    onSelectedRows: (boxes) {
       final bloc = context.read<DriveDetailCubit>();
 
-      if (rows.isEmpty) {
+      if (boxes.isEmpty) {
         bloc.setMultiSelect(false);
         return;
       }
 
-      bloc.selectItems(rows);
+      final multiSelectedItems = boxes
+          .map((e) => e.selectedItems.map((e) => e))
+          .expand((e) => e)
+          .toList();
+
+      bloc.selectItems(multiSelectedItems);
     },
     onChangeMultiSelecting: (isMultiselecting) {
       context.read<DriveDetailCubit>().setMultiSelect(isMultiselecting);
