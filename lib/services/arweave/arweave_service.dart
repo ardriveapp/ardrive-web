@@ -5,6 +5,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/arfs_transactions_filter.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
@@ -191,17 +192,7 @@ class ArweaveService {
       final List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>
           transactions = driveEntityHistoryQuery.data!.transactions.edges;
 
-      // NOTE: this filter is being made in order to remove from the query
-      /// the ArFS tag filter, in order to make the query faster
-      // TODO: factor out this into its own testable method. [PE-3398]
-      yield transactions.where((tx) {
-        final tags = tx.node.tags;
-        final arFsTags = tags.where((tag) => tag.name == 'ArFS');
-        final arFsCorrectVersion = arFsTags.any(
-          (tag) => ['0.10', '0.11', '0.12'].contains(tag.value),
-        );
-        return arFsCorrectVersion;
-      }).toList();
+      yield transactions.where(arFsTransactionsFilter).toList();
 
       cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
           ? driveEntityHistoryQuery.data!.transactions.edges.last.cursor
