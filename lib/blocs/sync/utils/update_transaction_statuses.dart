@@ -13,7 +13,7 @@ Future<void> _updateTransactionStatuses({
 
   // Thats was discovered by tests at profile mode.
   // TODO(@thiagocarvalhodev): Revisit
-  const page = 5000;
+  const page = 100;
 
   for (var i = 0; i < length / page; i++) {
     final confirmations = <String?, int>{};
@@ -48,7 +48,7 @@ Future<void> _updateTransactionStatuses({
         } else {
           transactionDateCreated = await _getDateCreatedByDataTx(
             driveDao: driveDao,
-            dataTx: txId,
+            dataTxId: txId,
           );
         }
 
@@ -95,9 +95,9 @@ bool _isOverThePendingTime(DateTime? transactionCreatedDate) {
 
 Future<DateTime?> _getDateCreatedByDataTx({
   required DriveDao driveDao,
-  required String dataTx,
+  required String dataTxId,
 }) async {
-  final rev = await driveDao.fileRevisionByDataTx(tx: dataTx).get();
+  final rev = await driveDao.fileRevisionByDataTx(tx: dataTxId).get();
 
   // no file found
   if (rev.isEmpty) {

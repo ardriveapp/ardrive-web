@@ -135,11 +135,8 @@ Stream<double> _syncDrive(
           'The transaction block is null. \nTransaction node id: ${t.id}',
         );
       }
-    } else {
-      print('Block attribute is already present - $firstBlockHeight');
     }
 
-    print('Adding transaction ${t.id}');
     transactions.add(t);
 
     /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
