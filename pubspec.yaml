@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3358-when-a-folder-is-selected-to-be-moved-into-a-folder-that-has-just-been-created-the-folder-is-not-moved-to-the-selected-destination
+      ref: PE-3374-when-multiselect-list-is-static-we-cant-continue-selecting-items-without-pressing-command-key
   artemis: ^7.0.0-beta.13
   arweave:
     git:
