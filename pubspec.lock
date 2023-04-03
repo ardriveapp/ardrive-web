@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3309-new-drive-explorer-mobile
-      resolved-ref: "4939eea64f7df85b9cbeb81bc28ff2bcd34cabee"
+      ref: PE-3358-when-a-folder-is-selected-to-be-moved-into-a-folder-that-has-just-been-created-the-folder-is-not-moved-to-the-selected-destination
+      resolved-ref: "1eb5b005eca05886c7195e6765907dcffb6905aa"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
