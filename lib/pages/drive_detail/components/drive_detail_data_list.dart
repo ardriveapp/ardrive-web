@@ -151,7 +151,6 @@ ArDriveDataTable _buildDataListContent(
   bool isMultiselecting,
 ) {
   return ArDriveDataTable<ArDriveDataTableItem>(
-    key: ValueKey(folder.id + items.length.toString()),
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,
     pageItemsDivisorFactor: 25,
@@ -173,6 +172,8 @@ ArDriveDataTable _buildDataListContent(
     onChangeMultiSelecting: (isMultiselecting) {
       context.read<DriveDetailCubit>().setMultiSelect(isMultiselecting);
     },
+    forceDisableMultiSelect:
+        context.read<DriveDetailCubit>().forceDisableMultiselect,
     columns: [
       TableColumn(appLocalizationsOf(context).name, 2),
       TableColumn(appLocalizationsOf(context).size, 1),
