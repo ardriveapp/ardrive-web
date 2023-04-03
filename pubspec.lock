@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3374-select-by-pages
-      resolved-ref: "218333aa17af128c912b4aa708f56515c3dac1bd"
+      resolved-ref: ba319ed4a5e4d28b7d19cb54eceb967c7553fe32
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"

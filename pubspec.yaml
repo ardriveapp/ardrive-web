@@ -9,7 +9,7 @@ environment:
   sdk: '>=2.18.5 <3.0.0'
   flutter: 3.3.9
 
-# https://purb.dev/packages/script_runner
+# https://pub.dev/packages/script_runner
 script_runner:
   shell:
     default: /bin/sh
