@@ -193,7 +193,7 @@ class ArweaveService {
 
       // NOTE: this filter is being made in order to remove from the query
       /// the ArFS tag filter, in order to make the query faster
-      // TODO: factor out this into its own testable method . [PUT JIRA TICKET NUMBER HERE]
+      // TODO: factor out this into its own testable method. [PE-3398]
       yield transactions.where((tx) {
         final tags = tx.node.tags;
         final arFsTags = tags.where((tag) => tag.name == 'ArFS');
