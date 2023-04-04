@@ -18,17 +18,24 @@ Future<void> promptToMove(
 }) {
   return showAnimatedDialog(
     context,
-    content: BlocProvider(
-      create: (context) => FsEntryMoveBloc(
-        crypto: ArDriveCrypto(),
-        driveId: driveId,
-        selectedItems: selectedItems,
-        arweave: context.read<ArweaveService>(),
-        turboService: context.read<TurboService>(),
-        driveDao: context.read<DriveDao>(),
-        profileCubit: context.read<ProfileCubit>(),
-        syncCubit: context.read<SyncCubit>(),
-      )..add(const FsEntryMoveInitial()),
+    content: MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => FsEntryMoveBloc(
+            crypto: ArDriveCrypto(),
+            driveId: driveId,
+            selectedItems: selectedItems,
+            arweave: context.read<ArweaveService>(),
+            turboService: context.read<TurboService>(),
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            syncCubit: context.read<SyncCubit>(),
+          )..add(const FsEntryMoveInitial()),
+        ),
+        BlocProvider.value(
+          value: context.read<DriveDetailCubit>(),
+        )
+      ],
       child: const FsEntryMoveForm(),
     ),
   );
@@ -311,6 +318,9 @@ class FsEntryMoveForm extends StatelessWidget {
                                       folderInView: state.viewingFolder.folder,
                                     ),
                                   );
+                              context
+                                  .read<DriveDetailCubit>()
+                                  .forceDisableMultiselect = true;
                             },
                           ),
                         ],
