@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -58,8 +59,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   }) async {
     _driveKey = driveKey;
 
-    drivePrivacyLoader();
-
     // Add the initial drive id in a microtask to properly trigger the drive name loader.
     await Future.microtask(() async {
       if (driveId != null) {
@@ -72,9 +71,20 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
           if (driveNameController.text.isNotEmpty) {
             submit();
           }
-        } else if (driveNameController.text.isNotEmpty &&
-            driveKeyController.text.isNotEmpty) {
-          submit();
+        } else {
+          if (driveName != null) {
+            driveNameController.text = driveName;
+          }
+          if (driveKey != null) {
+            driveKeyController.text = base64Encode(
+              await driveKey.extractBytes(),
+            );
+          }
+
+          if (driveNameController.text.isNotEmpty &&
+              driveKeyController.text.isNotEmpty) {
+            submit();
+          }
         }
       }
     });
@@ -88,8 +98,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     final driveId = driveIdController.text;
     final driveName = driveNameController.text;
 
-    emit(DriveAttachInProgress());
-
     try {
       if (await driveKeyValidator() != null) {
         return;
@@ -98,6 +106,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       if (!await driveNameLoader()) {
         return;
       }
+
+      emit(DriveAttachInProgress());
 
       final driveEntity = await _arweave.getLatestDriveEntityWithId(
         driveId,
@@ -133,16 +143,16 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       return _driveKey;
     }
 
-    final String? driveKeyBase64 = promptedDriveKey;
+    if (promptedDriveKey == null || promptedDriveKey.isEmpty) {
+      return null;
+    }
 
     SecretKey? driveKey;
 
-    if (driveKeyBase64 != null) {
-      try {
-        driveKey = SecretKey(decodeBase64ToBytes(driveKeyBase64));
-      } catch (e) {
-        return null;
-      }
+    try {
+      driveKey = SecretKey(decodeBase64ToBytes(promptedDriveKey));
+    } catch (e) {
+      return null;
     }
 
     return driveKey;
