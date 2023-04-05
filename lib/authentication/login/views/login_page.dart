@@ -218,9 +218,6 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           );
         } else if (state is LoginLoading) {
           content = const MaxDeviceSizesConstrainedBox(
-            defaultMaxHeight: 489,
-            defaultMaxWidth: 512,
-            maxHeightPercent: 0.8,
             child: _LoginCard(
               content: Center(
                 child: CircularProgressIndicator(),
@@ -532,8 +529,6 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
   @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
-      defaultMaxWidth: 512,
-      defaultMaxHeight: 489,
       child: _LoginCard(
         content: AutofillGroup(
           child: Column(
@@ -942,8 +937,6 @@ class OnBoardingViewState extends State<OnBoardingView> {
                 color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
                 child: Align(
                   child: MaxDeviceSizesConstrainedBox(
-                    defaultMaxWidth: 512,
-                    defaultMaxHeight: 489,
                     child: _FadeThroughTransitionSwitcher(
                       fillColor: ArDriveTheme.of(context)
                           .themeData
@@ -970,8 +963,6 @@ class OnBoardingViewState extends State<OnBoardingView> {
           color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
           child: Align(
             child: MaxDeviceSizesConstrainedBox(
-              defaultMaxWidth: 512,
-              defaultMaxHeight: 489,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: _buildOnBoardingContent(),
@@ -1144,8 +1135,8 @@ class MaxDeviceSizesConstrainedBox extends StatelessWidget {
   const MaxDeviceSizesConstrainedBox({
     Key? key,
     this.maxHeightPercent = 0.8,
-    this.defaultMaxWidth = 512,
-    this.defaultMaxHeight = 489,
+    this.defaultMaxWidth = _defaultLoginCardMaxWidth,
+    this.defaultMaxHeight = _defaultLoginCardMaxHeight,
     required this.child,
   }) : super(key: key);
 
@@ -1163,3 +1154,6 @@ class MaxDeviceSizesConstrainedBox extends StatelessWidget {
     );
   }
 }
+
+const double _defaultLoginCardMaxWidth = 512;
+const double _defaultLoginCardMaxHeight = 489;
