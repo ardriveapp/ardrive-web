@@ -33,11 +33,12 @@ class _AppSideBarState extends State<AppSideBar> {
   @override
   Widget build(BuildContext context) {
     return Material(
-        color: ArDriveTheme.of(context).themeData.backgroundColor,
-        child: ScreenTypeLayout(
-          mobile: _mobileView(),
-          desktop: _desktopView(),
-        ));
+      color: ArDriveTheme.of(context).themeData.backgroundColor,
+      child: ScreenTypeLayout(
+        mobile: _mobileView(),
+        desktop: _desktopView(),
+      ),
+    );
   }
 
   Widget _mobileView() {
@@ -86,20 +87,6 @@ class _AppSideBarState extends State<AppSideBar> {
           const SizedBox(
             height: 16,
           ),
-          Padding(
-            padding: const EdgeInsets.only(
-              left: 24.0,
-              right: 16,
-              bottom: 16,
-            ),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: InkWell(
-                child: ArDriveIcons.help(),
-                onTap: () {},
-              ),
-            ),
-          ),
           const SizedBox(
             height: 16,
           ),
@@ -120,154 +107,94 @@ class _AppSideBarState extends State<AppSideBar> {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       child: SizedBox(
-        width: _isExpanded ? 240 : 64,
-        child: _isExpanded
-            ? Column(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        const SizedBox(
-                          height: 62,
-                        ),
-                        _buildLogo(),
-                        const SizedBox(
-                          height: 56,
-                        ),
-                        _buildDriveActionsButton(
-                          context,
-                          false,
-                        ),
-                        const SizedBox(
-                          height: 56,
-                        ),
-                        BlocBuilder<DrivesCubit, DrivesState>(
-                          builder: (context, state) {
-                            if (state is DrivesLoadSuccess &&
-                                (state.userDrives.isNotEmpty ||
-                                    state.sharedDrives.isEmpty)) {
-                              return Flexible(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 43.0),
-                                  child: _buildAccordion(
-                                    state,
+          width: _isExpanded ? 240 : 64,
+          child: Column(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    const SizedBox(
+                      height: 62,
+                    ),
+                    _buildLogo(),
+                    const SizedBox(
+                      height: 56,
+                    ),
+                    _buildDriveActionsButton(
+                      context,
+                      false,
+                    ),
+                    const SizedBox(
+                      height: 56,
+                    ),
+                    _isExpanded
+                        ? BlocBuilder<DrivesCubit, DrivesState>(
+                            builder: (context, state) {
+                              if (state is DrivesLoadSuccess &&
+                                  (state.userDrives.isNotEmpty ||
+                                      state.sharedDrives.isEmpty)) {
+                                return Flexible(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 43.0),
+                                    child: _buildAccordion(
+                                      state,
+                                    ),
                                   ),
-                                ),
-                              );
-                            }
-                            return const SizedBox();
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 51.0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: InkWell(
-                        child: ArDriveIcons.help(),
-                        onTap: () {},
-                      ),
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 43.0,
-                      right: 24,
-                      bottom: 24,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          children: const [
-                            ThemeSwitcher(),
-                            AppVersionWidget(),
-                          ],
-                        ),
-                        InkWell(
-                          child: ArDriveIcons.arrowBackFilled(),
-                          onTap: () {
-                            setState(() {
-                              _isExpanded = !_isExpanded;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  ArDriveImage(
-                    image: AssetImage(
-                      Resources.images.brand.logo,
-                    ),
-                  ),
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.1,
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeAccentBrand,
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(8.0),
-                    child: _newButton(false, false),
-                  ),
-                  const SizedBox(
-                    height: 32,
-                  ),
-                  const Spacer(),
-                  InkWell(
-                    child: ArDriveIcons.help(),
-                    onTap: () {},
-                  ),
-                  const SizedBox(
-                    height: 32,
-                  ),
-                  InkWell(
-                    child: ArDriveIcons.arrowForwardFilled(),
-                    onTap: () {
-                      setState(() {
-                        _isExpanded = !_isExpanded;
-                      });
-                    },
-                  ),
-                  const SizedBox(
-                    height: 32,
-                  ),
-                  const AppVersionWidget(),
-                  const SizedBox(
-                    height: 32,
-                  ),
-                ],
+                                );
+                              }
+                              return const SizedBox();
+                            },
+                          )
+                        : const SizedBox(),
+                  ],
+                ),
               ),
-      ),
+              const SizedBox(
+                height: 16,
+              ),
+              _isExpanded
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 51.0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: InkWell(
+                          child: ArDriveIcons.help(),
+                          onTap: () {},
+                        ),
+                      ),
+                    )
+                  : const SizedBox(),
+              _isExpanded
+                  ? const SizedBox(
+                      height: 16,
+                    )
+                  : const Spacer(),
+              _buildSideBarBottom(),
+            ],
+          )),
     );
   }
 
   Widget _buildLogo() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Image.asset(
-        ArDriveTheme.of(context).themeData.name == 'light'
-            ? Resources.images.brand.logoHorizontalNoSubtitleLight
-            : Resources.images.brand.logoHorizontalNoSubtitleDark,
-        height: 32,
-        fit: BoxFit.contain,
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 500),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: _isExpanded
+            ? Image.asset(
+                ArDriveTheme.of(context).themeData.name == 'light'
+                    ? Resources.images.brand.logoHorizontalNoSubtitleLight
+                    : Resources.images.brand.logoHorizontalNoSubtitleDark,
+                height: 32,
+                fit: BoxFit.contain,
+              )
+            : ArDriveImage(
+                width: 62,
+                height: 62,
+                image: AssetImage(
+                  Resources.images.brand.logo,
+                ),
+              ),
       ),
     );
   }
@@ -336,6 +263,62 @@ class _AppSideBarState extends State<AppSideBar> {
     );
   }
 
+  Widget _buildSideBarBottom() {
+    return _isExpanded
+        ? Padding(
+            padding: const EdgeInsets.only(
+              left: 43.0,
+              right: 24,
+              bottom: 24,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  children: const [
+                    ThemeSwitcher(),
+                    AppVersionWidget(),
+                  ],
+                ),
+                InkWell(
+                  child: ArDriveIcons.arrowBackFilled(),
+                  onTap: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
+                  },
+                ),
+              ],
+            ),
+          )
+        : Column(
+            children: [
+              InkWell(
+                child: ArDriveIcons.help(),
+                onTap: () {},
+              ),
+              const SizedBox(
+                height: 32,
+              ),
+              InkWell(
+                child: ArDriveIcons.arrowForwardFilled(),
+                onTap: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+              ),
+              const SizedBox(
+                height: 32,
+              ),
+              const AppVersionWidget(),
+              const SizedBox(
+                height: 32,
+              ),
+            ],
+          );
+  }
+
   Widget _buildSyncButton() {
     return BlocBuilder<SyncCubit, SyncState>(
       builder: (context, syncState) {
@@ -392,32 +375,47 @@ class _AppSideBarState extends State<AppSideBar> {
         minimumWalletBalance: minimumWalletBalance,
       );
 
-      return Column(
-        children: [
-          Align(
-            alignment: Alignment.center,
-            child: _newButton(_isExpanded, isMobile),
-          ),
-          if (notEnoughARInWallet) ...{
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                appLocalizationsOf(context).insufficientARWarning,
-                style: ArDriveTypography.body.captionRegular(
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: _isExpanded
+            ? Column(
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: _newButton(_isExpanded, isMobile),
+                  ),
+                  if (notEnoughARInWallet) ...{
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        appLocalizationsOf(context).insufficientARWarning,
+                        style: ArDriveTypography.body.captionRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeAccentDisabled,
+                        ),
+                      ),
+                    ),
+                    ArDriveButton(
+                      style: ArDriveButtonStyle.primary,
+                      onPressed: () => openUrl(url: Resources.arHelpLink),
+                      text: appLocalizationsOf(context).howDoIGetAR,
+                    ),
+                  }
+                ],
+              )
+            : Container(
+                decoration: BoxDecoration(
                   color: ArDriveTheme.of(context)
                       .themeData
                       .colors
-                      .themeAccentDisabled,
+                      .themeAccentBrand,
+                  shape: BoxShape.circle,
                 ),
+                padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 10),
+                child: _newButton(false, false),
               ),
-            ),
-            ArDriveButton(
-              style: ArDriveButtonStyle.primary,
-              onPressed: () => openUrl(url: Resources.arHelpLink),
-              text: appLocalizationsOf(context).howDoIGetAR,
-            ),
-          }
-        ],
       );
     } else {
       return _newButton(_isExpanded, isMobile);
