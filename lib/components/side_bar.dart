@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/sync/sync_cubit.dart';
 import 'package:ardrive/components/app_drawer/app_drawer.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
+import 'package:ardrive/components/theme_switcher.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -102,20 +103,7 @@ class _AppSideBarState extends State<AppSideBar> {
           const SizedBox(
             height: 16,
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 24.0),
-            child: InkWell(
-              onTap: () {
-                arDriveAppKey.currentState?.changeTheme();
-              },
-              child: Text(
-                ArDriveTheme.of(context).themeData.name == 'light'
-                    ? 'DARK MODE'
-                    : 'LIGHT MODE',
-                style: ArDriveTypography.body.buttonNormalBold(),
-              ),
-            ),
-          ),
+          const ThemeSwitcher(),
           const Padding(
             padding: EdgeInsets.only(left: 16.0),
             child: AppVersionWidget(),
@@ -199,21 +187,9 @@ class _AppSideBarState extends State<AppSideBar> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
-                          children: [
-                            InkWell(
-                              onTap: () {
-                                arDriveAppKey.currentState?.changeTheme();
-                              },
-                              child: Text(
-                                ArDriveTheme.of(context).themeData.name ==
-                                        'light'
-                                    ? 'DARK MODE'
-                                    : 'LIGHT MODE',
-                                style:
-                                    ArDriveTypography.body.buttonNormalBold(),
-                              ),
-                            ),
-                            const AppVersionWidget(),
+                          children: const [
+                            ThemeSwitcher(),
+                            AppVersionWidget(),
                           ],
                         ),
                         InkWell(
