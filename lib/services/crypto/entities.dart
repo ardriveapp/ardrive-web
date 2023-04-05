@@ -28,7 +28,7 @@ Future<Uint8List> decryptTransactionData(
   Uint8List data,
   SecretKey key,
 ) async {
-  final cipher = transaction.getTag(EntityTag.cipher);
+  final cipher = transaction.getTag(EntityTag.cipher)!;
   final impl = cipherBufferImpl(cipher);
 
   final cipherIv =
@@ -64,7 +64,7 @@ Future<Stream<Uint8List>> decryptTransactionDataStream(
   Stream<Uint8List> dataStream,
   Uint8List keyData,
 ) async {
-  final cipher = transaction.getTag(EntityTag.cipher);
+  final cipher = transaction.getTag(EntityTag.cipher)!;
   final impl = await cipherStreamDecryptImpl(cipher, keyData: keyData);
 
   final cipherIv =
