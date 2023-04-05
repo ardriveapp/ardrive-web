@@ -217,9 +217,11 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             wallet: state.walletFile,
           );
         } else if (state is LoginLoading) {
-          content = ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
-            child: const _LoginCard(
+          content = const MaxDeviceSizesConstrainedBox(
+            defaultMaxHeight: 489,
+            defaultMaxWidth: 512,
+            maxHeightPercent: 0.8,
+            child: _LoginCard(
               content: Center(
                 child: CircularProgressIndicator(),
               ),
@@ -296,8 +298,9 @@ class _PromptWalletViewState extends State<PromptWalletView> {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 798),
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxWidth: 512,
+      defaultMaxHeight: 798,
       child: _LoginCard(
         content: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -528,8 +531,9 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxWidth: 512,
+      defaultMaxHeight: 489,
       child: _LoginCard(
         content: AutofillGroup(
           child: Column(
@@ -641,8 +645,9 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 618),
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxWidth: 512,
+      defaultMaxHeight: 618,
       child: _LoginCard(
         content: Column(
           mainAxisSize: MainAxisSize.max,
@@ -936,15 +941,16 @@ class OnBoardingViewState extends State<OnBoardingView> {
               child: Container(
                 color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
                 child: Align(
-                  child: ConstrainedBox(
-                    constraints:
-                        const BoxConstraints(maxWidth: 512, maxHeight: 489),
+                  child: MaxDeviceSizesConstrainedBox(
+                    defaultMaxWidth: 512,
+                    defaultMaxHeight: 489,
                     child: _FadeThroughTransitionSwitcher(
-                        fillColor: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeBgSurface,
-                        child: _buildOnBoardingContent()),
+                      fillColor: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeBgSurface,
+                      child: _buildOnBoardingContent(),
+                    ),
                   ),
                 ),
               ),
@@ -963,8 +969,9 @@ class OnBoardingViewState extends State<OnBoardingView> {
         body: Container(
           color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
           child: Align(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
+            child: MaxDeviceSizesConstrainedBox(
+              defaultMaxWidth: 512,
+              defaultMaxHeight: 489,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: _buildOnBoardingContent(),
@@ -1126,4 +1133,33 @@ void _forgetWallet(
     description: appLocalizationsOf(context).forgetWalletDescription,
     actions: actions,
   );
+}
+
+class MaxDeviceSizesConstrainedBox extends StatelessWidget {
+  final double maxHeightPercent;
+  final double defaultMaxHeight;
+  final double defaultMaxWidth;
+  final Widget child;
+
+  const MaxDeviceSizesConstrainedBox({
+    Key? key,
+    this.maxHeightPercent = 0.8,
+    this.defaultMaxWidth = 512,
+    this.defaultMaxHeight = 489,
+    required this.child,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxHeight = screenHeight * maxHeightPercent;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: defaultMaxWidth,
+        maxHeight: defaultMaxHeight > maxHeight ? maxHeight : defaultMaxHeight,
+      ),
+      child: child,
+    );
+  }
 }
