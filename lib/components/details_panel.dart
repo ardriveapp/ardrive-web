@@ -681,19 +681,15 @@ void downloadOrPreviewRevision({
   SecretKey? fileKey,
   bool isSharedFile = false,
 }) {
-  if (drivePrivacy == 'private') {
-    if (isSharedFile) {
-      promptToDownloadSharedFile(
-        context: context,
-        revision: revision,
-        fileKey: fileKey,
-      );
+  if (isSharedFile) {
+    promptToDownloadSharedFile(
+      context: context,
+      revision: revision,
+      fileKey: fileKey,
+    );
 
-      return;
-    }
-
-    promptToDownloadFileRevision(context: context, revision: revision);
-  } else {
-    context.read<DriveDetailCubit>().launchPreview(revision.dataTxId!);
+    return;
   }
+
+  promptToDownloadFileRevision(context: context, revision: revision);
 }
