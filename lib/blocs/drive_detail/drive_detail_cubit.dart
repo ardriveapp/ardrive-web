@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:drift/drift.dart';
@@ -22,6 +23,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   StreamSubscription? _folderSubscription;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
+
+  List<ArDriveDataTableItem> _selectedItems = [];
+  List<ArDriveDataTableItem> get selectedItems => _selectedItems;
+
+  bool _forceDisableMultiselect = false;
 
   DriveDetailCubit({
     required this.driveId,
@@ -166,6 +172,25 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     emit(state);
   }
 
+  Future<void> selectItems(List<ArDriveDataTableItem> items) async {
+    var state = this.state as DriveDetailLoadSuccess;
+
+    bool hasFolderSelected = false;
+
+    if (items.any((element) => element is FolderDataTableItem)) {
+      hasFolderSelected = true;
+    }
+
+    _selectedItems = items;
+
+    if (items.isEmpty) {
+      state = state.copyWith(multiselect: false, hasFoldersSelected: false);
+    } else {
+      emit(state.copyWith(
+          multiselect: true, hasFoldersSelected: hasFolderSelected));
+    }
+  }
+
   Future<void> unselectItem(SelectedItem selectedItem) async {
     var state = this.state as DriveDetailLoadSuccess;
     final updatedSelectedItems = state.selectedItems
@@ -185,12 +210,37 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
+  void setMultiSelect(bool multiSelect) {
+    final state = this.state as DriveDetailLoadSuccess;
+
+    if (state.multiselect == multiSelect) return;
+
+    if (!multiSelect) {
+      clearSelection();
+    }
+
+    if (_selectedItems.isNotEmpty) {
+      emit(state.copyWith(multiselect: true));
+    } else {
+      emit(state.copyWith(multiselect: false));
+    }
+  }
+
   Future<void> clearSelection() async {
-    var state = this.state as DriveDetailLoadSuccess;
+    _selectedItems.clear();
+  }
 
-    state = state.copyWith(multiselect: false, selectedItems: []);
+  bool get forceDisableMultiselect {
+    if (_forceDisableMultiselect) {
+      _forceDisableMultiselect = false;
+      return true;
+    }
 
-    emit(state);
+    return false;
+  }
+
+  set forceDisableMultiselect(bool value) {
+    _forceDisableMultiselect = value;
   }
 
   Future<void> launchPreview(TxID dataTxId) =>
@@ -213,17 +263,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     emit(
       state.copyWith(showSelectedItemDetails: !state.showSelectedItemDetails),
     );
-  }
-
-  void setMultiSelect(bool multiSelect) {
-    final state = this.state as DriveDetailLoadSuccess;
-
-    // Do not close selection when something is already selected
-    if (state.selectedItems.isNotEmpty) {
-      emit(state.copyWith(multiselect: true));
-    } else {
-      emit(state.copyWith(multiselect: multiSelect));
-    }
   }
 
   @override

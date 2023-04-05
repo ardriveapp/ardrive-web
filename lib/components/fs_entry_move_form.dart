@@ -1,7 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -9,26 +8,34 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../pages/drive_detail/drive_detail_page.dart';
 import 'components.dart';
 
 Future<void> promptToMove(
   BuildContext context, {
   required String driveId,
-  required List<MoveItem> selectedItems,
+  required List<ArDriveDataTableItem> selectedItems,
 }) {
   return showAnimatedDialog(
     context,
-    content: BlocProvider(
-      create: (context) => FsEntryMoveBloc(
-        crypto: ArDriveCrypto(),
-        driveId: driveId,
-        selectedItems: selectedItems,
-        arweave: context.read<ArweaveService>(),
-        turboService: context.read<TurboService>(),
-        driveDao: context.read<DriveDao>(),
-        profileCubit: context.read<ProfileCubit>(),
-        syncCubit: context.read<SyncCubit>(),
-      )..add(const FsEntryMoveInitial()),
+    content: MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => FsEntryMoveBloc(
+            crypto: ArDriveCrypto(),
+            driveId: driveId,
+            selectedItems: selectedItems,
+            arweave: context.read<ArweaveService>(),
+            turboService: context.read<TurboService>(),
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            syncCubit: context.read<SyncCubit>(),
+          )..add(const FsEntryMoveInitial()),
+        ),
+        BlocProvider.value(
+          value: context.read<DriveDetailCubit>(),
+        )
+      ],
       child: const FsEntryMoveForm(),
     ),
   );
@@ -97,6 +104,77 @@ class FsEntryMoveForm extends StatelessWidget {
             );
           }
           if (state is FsEntryMoveLoadSuccess) {
+            final items = [
+              ...state.viewingFolder.subfolders.map(
+                (f) {
+                  final enabled = state.itemsToMove
+                      .where((item) => item.id == f.id)
+                      .isEmpty;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 16),
+                    child: GestureDetector(
+                      onTap: enabled
+                          ? () {
+                              context.read<FsEntryMoveBloc>().add(
+                                    FsEntryMoveUpdateTargetFolder(
+                                      folderId: f.id,
+                                    ),
+                                  );
+                            }
+                          : null,
+                      child: Row(
+                        children: [
+                          ArDriveIcons.folderOutlined(
+                            size: 16,
+                            color: enabled ? null : _colorDisabled(context),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              f.name,
+                              style: ArDriveTypography.body.inputNormalRegular(
+                                color: enabled ? null : _colorDisabled(context),
+                              ),
+                            ),
+                          ),
+                          ArDriveIcons.chevronRight(
+                            size: 18,
+                            color: enabled ? null : _colorDisabled(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ...state.viewingFolder.files.map(
+                (f) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16.0,
+                    horizontal: 16,
+                  ),
+                  child: Row(
+                    children: [
+                      ArDriveIcons.fileOutlined(
+                        size: 16,
+                        color: _colorDisabled(context),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          f.name,
+                          style: ArDriveTypography.body.inputNormalRegular(
+                            color: _colorDisabled(context),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ];
+
             return ArDriveCard(
               height: 441,
               contentPadding: EdgeInsets.zero,
@@ -106,6 +184,7 @@ class FsEntryMoveForm extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Container(
                       padding: const EdgeInsets.only(left: 16, right: 16),
@@ -157,95 +236,13 @@ class FsEntryMoveForm extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
                     Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Scrollbar(
-                          child: ListView(
-                            shrinkWrap: true,
-                            children: [
-                              ...state.viewingFolder.subfolders.map(
-                                (f) {
-                                  final enabled = state.itemsToMove
-                                      .where((item) => item.id == f.id)
-                                      .isEmpty;
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16.0, horizontal: 16),
-                                    child: GestureDetector(
-                                      onTap: enabled
-                                          ? () {
-                                              context
-                                                  .read<FsEntryMoveBloc>()
-                                                  .add(
-                                                    FsEntryMoveUpdateTargetFolder(
-                                                      folderId: f.id,
-                                                    ),
-                                                  );
-                                            }
-                                          : null,
-                                      child: Row(
-                                        children: [
-                                          ArDriveIcons.folderOutlined(
-                                            size: 16,
-                                            color: enabled
-                                                ? null
-                                                : _colorDisabled(context),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              f.name,
-                                              style: ArDriveTypography.body
-                                                  .inputNormalRegular(
-                                                color: enabled
-                                                    ? null
-                                                    : _colorDisabled(context),
-                                              ),
-                                            ),
-                                          ),
-                                          ArDriveIcons.chevronRight(
-                                            size: 18,
-                                            color: enabled
-                                                ? null
-                                                : _colorDisabled(context),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              ...state.viewingFolder.files.map(
-                                (f) => Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16.0,
-                                    horizontal: 16,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      ArDriveIcons.fileOutlined(
-                                        size: 16,
-                                        color: _colorDisabled(context),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          f.name,
-                                          style: ArDriveTypography.body
-                                              .inputNormalRegular(
-                                            color: _colorDisabled(context),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          return items[index];
+                        },
                       ),
                     ),
                     const Divider(),
@@ -321,6 +318,9 @@ class FsEntryMoveForm extends StatelessWidget {
                                       folderInView: state.viewingFolder.folder,
                                     ),
                                   );
+                              context
+                                  .read<DriveDetailCubit>()
+                                  .forceDisableMultiselect = true;
                             },
                           ),
                         ],

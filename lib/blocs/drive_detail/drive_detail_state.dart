@@ -13,6 +13,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final bool hasWritePermissions;
   final bool driveIsEmpty;
   final bool multiselect;
+  final bool hasFoldersSelected;
 
   final FolderWithContents folderInView;
 
@@ -42,6 +43,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.multiselect,
     this.selectedItems = const [],
     this.showSelectedItemDetails = false,
+    this.hasFoldersSelected = false,
     this.selectedFilePreviewUrl,
     required this.driveIsEmpty,
   });
@@ -59,8 +61,10 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     List<int>? availableRowsPerPage,
     bool? driveIsEmpty,
     bool? multiselect,
+    bool? hasFoldersSelected,
   }) =>
       DriveDetailLoadSuccess(
+        hasFoldersSelected: hasFoldersSelected ?? this.hasFoldersSelected,
         currentDrive: currentDrive ?? this.currentDrive,
         multiselect: multiselect ?? this.multiselect,
         hasWritePermissions: hasWritePermissions ?? this.hasWritePermissions,

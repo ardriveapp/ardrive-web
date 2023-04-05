@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3177-implement-drive-options
+      ref: PE-3374-select-by-pages
   artemis: ^7.0.0-beta.13
   arweave:
     git:
@@ -96,6 +96,7 @@ dependencies:
   async: ^2.9.0
   animations: ^2.0.7
   connectivity_plus: ^3.0.3
+  archive: ^3.3.0
 
 dev_dependencies:
   flutter_test:

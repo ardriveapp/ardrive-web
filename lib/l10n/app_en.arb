@@ -303,8 +303,12 @@
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
   },
-  "addSomeFiles": "There's nothing to see here. Click \"new\" to add some files.",
+  "addSomeFiles": "You have no files in this drive yet, let's add some!",
   "@addSomeFiles": {
+    "description": "Upload your first file"
+  },
+  "uploadYourFirstFile": "Upload your first file",
+  "@uploadYourFirstFile": {
     "description": "Empty folder"
   },
   "noFiles": "There's nothing to see here.",
@@ -687,6 +691,14 @@
   },
   "fileFailedToDownloadFileAboveLimit": "The file you have selected is too large to download from the mobile app",
   "@fileFailedToDownloadFileAboveLimit": {
+    "description": "Download failure message when a file is too big"
+  },
+  "fileFailedToDownloadFileAbovePublicLimit": "The file(s) you have selected is too large to download",
+  "@fileFailedToDownloadFileAbovePublicLimit": {
+    "description": "Download failure message when a file is too big"
+  },
+  "zippingYourFiles": "Zipping your file(s)...",
+  "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
   },
   "tryAgainDownloadingFile": "This can happen if the file was only uploaded recently. Please try again later.",
@@ -1737,5 +1749,9 @@
   "pleaseRemainOnThisTabSnapshots": "Your Web3 wallet is signing your transactions. Please stay on this page while we finish things up!",
   "@pleaseRemainOnThisTabSnapshots": {
     "description": "Please stay on this page while we finish things up!"
+  },
+  "moreInfo": "More info",
+  "@moreInfo": {
+    "description": "More info"
   }
 }
