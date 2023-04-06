@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3128-profile-component
-      resolved-ref: "946039018f4247d8f6e98517069d86b9d38bf857"
+      ref: redesign-integration-components
+      resolved-ref: "1cb5d2e4a4f840d4c89190a568766a31ae3f0838"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -1000,7 +1000,7 @@ packages:
       name: lottie
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   matcher:
     dependency: transitive
     description:

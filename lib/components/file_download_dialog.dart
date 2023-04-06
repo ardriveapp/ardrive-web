@@ -97,9 +97,9 @@ Future<void> promptToDownloadSharedFile({
     fileKey: fileKey,
     arweave: context.read<ArweaveService>(),
   );
-  return showDialog(
-    context: context,
-    builder: (_) => BlocProvider<FileDownloadCubit>.value(
+  return showAnimatedDialog(
+    context,
+    content: BlocProvider<FileDownloadCubit>.value(
       value: cubit,
       child: const FileDownloadDialog(),
     ),
