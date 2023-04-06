@@ -442,7 +442,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               ],
             ),
             ArDriveTextButton(
-              onPressed: () => openUrl(url: Resources.getWalletLink),
+              onPressed: () => openUrl(url: Resources.getStartedLink),
               text: appLocalizationsOf(context).getAWallet,
             ),
           ],
