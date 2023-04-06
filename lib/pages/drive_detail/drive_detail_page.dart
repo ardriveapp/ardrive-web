@@ -304,7 +304,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       child: Align(
                         alignment: Alignment.center,
                         child: Padding(
-                          padding: const EdgeInsets.only(top: 120),
+                          padding: const EdgeInsets.only(top: 76),
                           child: ConstrainedBox(
                             constraints: BoxConstraints(
                                 maxWidth:
