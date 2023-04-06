@@ -37,6 +37,7 @@ import 'package:intersperse/intersperse.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:video_player/video_player.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 part 'components/drive_detail_actions_row.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
@@ -298,36 +299,38 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                     ),
                   ),
                   AnimatedSize(
-                    curve: Curves.easeInOut,
-                    duration: const Duration(milliseconds: 300),
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                            maxWidth: state.showSelectedItemDetails &&
+                      curve: Curves.easeInOut,
+                      duration: const Duration(milliseconds: 300),
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 120),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                                maxWidth:
+                                    _getMaxWidthForDetailsPanel(state, context),
+                                minWidth:
+                                    _getMinWidthForDetailsPanel(state, context),
+                                maxHeight:
+                                    MediaQuery.of(context).size.height - 120),
+                            child: state.showSelectedItemDetails &&
                                     context
                                             .read<DriveDetailCubit>()
                                             .selectedItem !=
                                         null
-                                ? 374
-                                : 0,
-                            maxHeight:
-                                MediaQuery.of(context).size.height - 110),
-                        child: state.showSelectedItemDetails &&
-                                context.read<DriveDetailCubit>().selectedItem !=
-                                    null
-                            ? DetailsPanel(
-                                isSharePage: false,
-                                drivePrivacy: state.currentDrive.privacy,
-                                maybeSelectedItem: state.maybeSelectedItem(),
-                                item: context
-                                    .read<DriveDetailCubit>()
-                                    .selectedItem!,
-                              )
-                            : const SizedBox(),
-                      ),
-                    ),
-                  )
+                                ? DetailsPanel(
+                                    isSharePage: false,
+                                    drivePrivacy: state.currentDrive.privacy,
+                                    maybeSelectedItem:
+                                        state.maybeSelectedItem(),
+                                    item: context
+                                        .read<DriveDetailCubit>()
+                                        .selectedItem!,
+                                  )
+                                : const SizedBox(),
+                          ),
+                        ),
+                      ))
                 ],
               ),
               if (kIsWeb)
@@ -340,6 +343,25 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         ),
       ],
     );
+  }
+
+  double _getMaxWidthForDetailsPanel(state, BuildContext context) {
+    if (state.showSelectedItemDetails &&
+        context.read<DriveDetailCubit>().selectedItem != null) {
+      if (MediaQuery.of(context).size.width * 0.25 < 375) {
+        return 375;
+      }
+      return MediaQuery.of(context).size.width * 0.25;
+    }
+    return 0;
+  }
+
+  double _getMinWidthForDetailsPanel(state, BuildContext context) {
+    if (state.showSelectedItemDetails &&
+        context.read<DriveDetailCubit>().selectedItem != null) {
+      return 375;
+    }
+    return 0;
   }
 
   Widget _mobileView(

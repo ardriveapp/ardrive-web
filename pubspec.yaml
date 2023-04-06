@@ -100,6 +100,7 @@ dependencies:
   video_player: ^2.6.0
   chewie: ^1.4.0
   lottie: ^2.3.0
+  visibility_detector: ^0.4.0+2
 
 dev_dependencies:
   flutter_test:
