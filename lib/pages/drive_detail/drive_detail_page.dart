@@ -172,6 +172,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 if (canDownloadMultipleFiles &&
                                     context
                                         .read<AppConfig>()
+                                        .copyWith(
+                                          enableMultipleFileDownload: true,
+                                        )
                                         .enableMultipleFileDownload)
                                   InkWell(
                                     child: ArDriveIcons.download(),
