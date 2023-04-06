@@ -466,18 +466,21 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         //   items,
                         // )
                         // ),
-                        ListView.separated(
-                          controller: _scrollController,
-                          separatorBuilder: (context, index) => const SizedBox(
-                            height: 5,
+                        Expanded(
+                          child: ListView.separated(
+                            controller: _scrollController,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(
+                              height: 5,
+                            ),
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              return ArDriveItemListTile(
+                                  key: ObjectKey([items[index]]),
+                                  drive: state.currentDrive,
+                                  item: items[index]);
+                            },
                           ),
-                          itemCount: items.length,
-                          itemBuilder: (context, index) {
-                            return ArDriveItemListTile(
-                                key: ObjectKey([items[index]]),
-                                drive: state.currentDrive,
-                                item: items[index]);
-                          },
                         ),
                       ] else
                         DriveDetailFolderEmptyCard(
