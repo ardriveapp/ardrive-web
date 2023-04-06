@@ -22,64 +22,11 @@ class FeedbackSurveyModal extends StatelessWidget {
       BlocBuilder<FeedbackSurveyCubit, FeedbackSurveyState>(
         builder: (context, state) {
           final deviceWidth = MediaQuery.of(context).size.width;
-          final padding = deviceWidth <= kMaxMobileWidth
-              ? const EdgeInsets.symmetric(horizontal: 24)
-              : const EdgeInsets.only(bottom: 0, left: 0);
           final content = ArDriveStandardModal(
             hasCloseButton: true,
             title: state is FeedbackSurveyDontRemindMe
                 ? appLocalizationsOf(context).weWontRemindYou
                 : appLocalizationsOf(context).feedbackTitle,
-            // title: Container(
-            //   color: kDarkSurfaceColor,
-            //   height: 72,
-            //   child: Column(
-            //     children: [
-            //       Row(
-            //         mainAxisAlignment: MainAxisAlignment.end,
-            //         children: [
-            //           IconButton(
-            //             onPressed: () =>
-            //                 context.read<FeedbackSurveyCubit>().closeRemindMe(),
-            //             icon: const Icon(Icons.close),
-            //             color: kOnDarkSurfaceMediumEmphasis,
-            //             iconSize: 16,
-            //             visualDensity:
-            //                 const VisualDensity(horizontal: -4, vertical: -4),
-            //           ),
-            //         ],
-            //       ),
-            //       Padding(
-            //         padding:
-            //             const EdgeInsets.only(bottom: 12, right: 18, left: 18),
-            //         child: Center(
-            //           child: Row(
-            //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            //             children: [
-            //               state is FeedbackSurveyDontRemindMe
-            //                   ? Text(
-            //                       appLocalizationsOf(context).weWontRemindYou,
-            //                       style: Theme.of(context)
-            //                           .textTheme
-            //                           .headline6!
-            //                           .copyWith(
-            //                               color: kOnDarkSurfaceHighEmphasis),
-            //                     )
-            //                   : Text(
-            //                       appLocalizationsOf(context).feedbackTitle,
-            //                       style: Theme.of(context)
-            //                           .textTheme
-            //                           .headline6!
-            //                           .copyWith(
-            //                               color: kOnDarkSurfaceHighEmphasis),
-            //                     ),
-            //             ],
-            //           ),
-            //         ),
-            //       ),
-            //     ],
-            //   ),
-            // ),
             content: Column(
               children: [
                 SizedBox(

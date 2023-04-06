@@ -90,7 +90,10 @@ class _AppSideBarState extends State<AppSideBar> {
           const SizedBox(
             height: 16,
           ),
-          const ThemeSwitcher(),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: ThemeSwitcher(),
+          ),
           const Padding(
             padding: EdgeInsets.only(left: 16.0),
             child: AppVersionWidget(),
@@ -114,11 +117,11 @@ class _AppSideBarState extends State<AppSideBar> {
                 child: Column(
                   children: [
                     const SizedBox(
-                      height: 62,
+                      height: 24,
                     ),
                     _buildLogo(),
                     const SizedBox(
-                      height: 56,
+                      height: 24,
                     ),
                     _buildDriveActionsButton(
                       context,
@@ -153,18 +156,6 @@ class _AppSideBarState extends State<AppSideBar> {
                 height: 16,
               ),
               _isExpanded
-                  ? Padding(
-                      padding: const EdgeInsets.only(left: 51.0),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: InkWell(
-                          child: ArDriveIcons.help(),
-                          onTap: () {},
-                        ),
-                      ),
-                    )
-                  : const SizedBox(),
-              _isExpanded
                   ? const SizedBox(
                       height: 16,
                     )
@@ -176,17 +167,20 @@ class _AppSideBarState extends State<AppSideBar> {
   }
 
   Widget _buildLogo() {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+    return SizedBox(
+      height: 64,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
         child: _isExpanded
-            ? Image.asset(
-                ArDriveTheme.of(context).themeData.name == 'light'
-                    ? Resources.images.brand.logoHorizontalNoSubtitleLight
-                    : Resources.images.brand.logoHorizontalNoSubtitleDark,
-                height: 32,
-                fit: BoxFit.contain,
+            ? Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Image.asset(
+                  ArDriveTheme.of(context).themeData.name == 'light'
+                      ? Resources.images.brand.logoHorizontalNoSubtitleLight
+                      : Resources.images.brand.logoHorizontalNoSubtitleDark,
+                  height: 32,
+                  fit: BoxFit.contain,
+                ),
               )
             : ArDriveImage(
                 width: 62,
@@ -275,8 +269,19 @@ class _AppSideBarState extends State<AppSideBar> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: HelpButton(),
+                    ),
+                    SizedBox(
+                      height: 8,
+                    ),
                     ThemeSwitcher(),
+                    SizedBox(
+                      height: 8,
+                    ),
                     AppVersionWidget(),
                   ],
                 ),
@@ -293,10 +298,7 @@ class _AppSideBarState extends State<AppSideBar> {
           )
         : Column(
             children: [
-              InkWell(
-                child: ArDriveIcons.help(),
-                onTap: () {},
-              ),
+              const HelpButton(),
               const SizedBox(
                 height: 32,
               ),
@@ -311,7 +313,10 @@ class _AppSideBarState extends State<AppSideBar> {
               const SizedBox(
                 height: 32,
               ),
-              const AppVersionWidget(),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                child: AppVersionWidget(),
+              ),
               const SizedBox(
                 height: 32,
               ),
@@ -468,16 +473,18 @@ class _AppSideBarState extends State<AppSideBar> {
               ),
             );
           } else {
-            return NewButton(
-              anchor: const Aligned(
-                follower: Alignment.topLeft,
-                target: Alignment.topRight,
-              ),
-              drive: state.currentDrive,
-              driveDetailState: state,
-              currentFolder: state.folderInView,
-              child: ArDriveIcons.plus(
-                color: Colors.white,
+            return ArDriveClickArea(
+              child: NewButton(
+                anchor: const Aligned(
+                  follower: Alignment.topLeft,
+                  target: Alignment.topRight,
+                ),
+                drive: state.currentDrive,
+                driveDetailState: state,
+                currentFolder: state.folderInView,
+                child: ArDriveIcons.plus(
+                  color: Colors.white,
+                ),
               ),
             );
           }
@@ -518,6 +525,20 @@ class DriveListTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class HelpButton extends StatelessWidget {
+  const HelpButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      child: ArDriveIcons.help(),
+      onTap: () {
+        openUrl(url: Resources.helpLink);
+      },
     );
   }
 }

@@ -379,14 +379,12 @@ class AppVersionWidget extends StatelessWidget {
         }
         final literalVersion =
             kIsWeb ? info.version : '${info.version}+${info.buildNumber}';
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            appLocalizationsOf(context).appVersion(literalVersion),
-            style: ArDriveTypography.body.buttonNormalRegular(
-              color: Colors.grey,
-            ),
+        return Text(
+          appLocalizationsOf(context).appVersion(literalVersion),
+          style: ArDriveTypography.body.buttonNormalRegular(
+            color: Colors.grey,
           ),
+          textAlign: TextAlign.center,
         );
       },
     );
