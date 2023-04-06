@@ -98,7 +98,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         resizeToAvoidBottomInset: true,
         body: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
             child: Center(child: _buildContent(context)),
           ),
         ),
@@ -298,6 +301,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
     return MaxDeviceSizesConstrainedBox(
       defaultMaxWidth: 512,
       defaultMaxHeight: 798,
+      maxHeightPercent: 0.9,
       child: _LoginCard(
         content: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -329,9 +333,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   },
                   platformSupportsDragAndDrop: !AppPlatform.isMobile,
                 ),
-                const SizedBox(
-                  height: 24,
-                ),
+                heightSpacing(),
                 if (widget.isArConnectAvailable) ...[
                   Align(
                     alignment: Alignment.centerLeft,
@@ -387,9 +389,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     ],
                   ),
                 ],
-                const SizedBox(
-                  height: 24,
-                ),
+                heightSpacing(),
                 Row(
                   children: [
                     ArDriveCheckBox(
@@ -451,6 +451,11 @@ class _PromptWalletViewState extends State<PromptWalletView> {
     );
   }
 
+  SizedBox heightSpacing() {
+    return SizedBox(
+        height: MediaQuery.of(context).size.height < 700 ? 8.0 : 24.0);
+  }
+
   Widget _showAcceptTermsModal() {
     return ArDriveIconModal(
       title: appLocalizationsOf(context).termsAndConditions,
@@ -502,13 +507,29 @@ class _LoginCard extends StatelessWidget {
         boxShadow: BoxShadowCard.shadow80,
         contentPadding: EdgeInsets.fromLTRB(
           horizontalPadding,
-          53,
+          _topPadding(context),
           horizontalPadding,
-          43,
+          _bottomPadding(context),
         ),
         content: content,
       );
     });
+  }
+
+  double _topPadding(BuildContext context) {
+    if (MediaQuery.of(context).size.height * 0.05 > 53) {
+      return 53;
+    } else {
+      return MediaQuery.of(context).size.height * 0.05;
+    }
+  }
+
+  double _bottomPadding(BuildContext context) {
+    if (MediaQuery.of(context).size.height * 0.05 > 43) {
+      return 43;
+    } else {
+      return MediaQuery.of(context).size.height * 0.05;
+    }
   }
 }
 
@@ -1144,7 +1165,6 @@ class MaxDeviceSizesConstrainedBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final maxHeight = screenHeight * maxHeightPercent;
-
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxWidth: defaultMaxWidth,
