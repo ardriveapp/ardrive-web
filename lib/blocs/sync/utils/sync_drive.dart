@@ -73,8 +73,11 @@ Stream<double> _syncDrive(
 
   print('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');
   print(
-      'Sub ranges in snapshots: ${snapshotDriveHistory.subRanges.rangeSegments}');
-  print('Sub ranges in GQL: ${gqlDriveHistorySubRanges.rangeSegments}');
+    'Sub ranges in snapshots (DRIVE ID: $driveId): ${snapshotDriveHistory.subRanges.rangeSegments}',
+  );
+  print(
+    'Sub ranges in GQL (DRIVE ID: $driveId): ${gqlDriveHistorySubRanges.rangeSegments}',
+  );
 
   final DriveHistoryComposite driveHistory = DriveHistoryComposite(
     subRanges: totalRangeToQueryFor,
