@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3374-select-by-pages
+      ref: PE-3128-profile-component
   artemis: ^7.0.0-beta.13
   arweave:
     git:
@@ -97,6 +97,10 @@ dependencies:
   animations: ^2.0.7
   connectivity_plus: ^3.0.3
   archive: ^3.3.0
+  video_player: ^2.6.0
+  chewie: ^1.4.0
+  lottie: ^2.3.0
+  visibility_detector: ^0.4.0+2
 
 dev_dependencies:
   flutter_test:
@@ -122,3 +126,4 @@ flutter:
     - assets/images/inferno/
     - assets/images/login/
     - assets/images/login/onboarding/
+    - assets/animations/

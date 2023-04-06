@@ -1,3 +1,4 @@
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +6,18 @@ import 'package:google_fonts/google_fonts.dart';
 part 'colors.dart';
 part 'constants.dart';
 
+class ThemeDetector {
+  ArDriveThemes getOSDefaultTheme() {
+    final brightness = WidgetsBinding.instance.window.platformBrightness;
+    if (brightness == Brightness.dark) {
+      return ArDriveThemes.dark;
+    } else {
+      return ArDriveThemes.light;
+    }
+  }
+}
+
+// TODO(@thiagocarvalhodev): remove this code.
 final ThemeData theme = ThemeData.light();
 final base = theme.copyWith(
   colorScheme: theme.colorScheme.copyWith(primary: kPrimarySwatch.shade900),

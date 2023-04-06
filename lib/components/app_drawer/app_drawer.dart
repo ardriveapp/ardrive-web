@@ -7,6 +7,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/inferno_rules_url.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -367,27 +368,25 @@ class AppVersionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: PackageInfo.fromPlatform(),
-        builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
-          final info = snapshot.data;
-          if (info == null) {
-            return const SizedBox(
-              height: 32,
-              width: 32,
-            );
-          }
-          final literalVersion =
-              kIsWeb ? info.version : '${info.version}+${info.buildNumber}';
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              appLocalizationsOf(context).appVersion(literalVersion),
-              style: Theme.of(context)
-                  .textTheme
-                  .caption!
-                  .copyWith(color: Colors.grey),
-            ),
+      future: PackageInfo.fromPlatform(),
+      builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
+        final info = snapshot.data;
+        if (info == null) {
+          return const SizedBox(
+            height: 32,
+            width: 32,
           );
-        });
+        }
+        final literalVersion =
+            kIsWeb ? info.version : '${info.version}+${info.buildNumber}';
+        return Text(
+          appLocalizationsOf(context).appVersion(literalVersion),
+          style: ArDriveTypography.body.buttonNormalRegular(
+            color: Colors.grey,
+          ),
+          textAlign: TextAlign.center,
+        );
+      },
+    );
   }
 }

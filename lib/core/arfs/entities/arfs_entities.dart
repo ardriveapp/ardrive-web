@@ -72,6 +72,7 @@ abstract class ARFSFileEntity extends ARFSEntity {
     required this.lastModifiedDate,
     required this.parentFolderId,
     this.contentType,
+    this.dataTxId,
   });
 
   final String id;
@@ -79,6 +80,7 @@ abstract class ARFSFileEntity extends ARFSEntity {
   final String parentFolderId;
   final DateTime lastModifiedDate;
   final String? contentType;
+  final String? dataTxId;
 }
 
 abstract class ARFSPrivateFileEntity extends ARFSFileEntity
@@ -115,6 +117,7 @@ class _ARFSFileEntity extends ARFSFileEntity {
     required super.parentFolderId,
     required super.size,
     required super.id,
+    super.dataTxId,
   });
 }
 

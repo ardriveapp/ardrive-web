@@ -59,7 +59,7 @@ class _DriveExplorerMobileViewState extends State<DriveExplorerMobileView> {
           if (file.id == state.maybeSelectedItem()?.id) {
             bloc.toggleSelectedItemDetails();
           } else {
-            await bloc.selectItem(SelectedFile(file: file));
+            await bloc.selectDataItem(selected);
           }
         },
         index++,

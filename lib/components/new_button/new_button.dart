@@ -22,31 +22,38 @@ class NewButton extends StatelessWidget {
     required this.drive,
     this.currentFolder,
     required this.driveDetailState,
+    this.child,
+    this.anchor = const Aligned(
+      follower: Alignment.bottomCenter,
+      target: Alignment.topCenter,
+    ),
+    this.dropdownWidth = 275,
   });
 
-  final Drive drive;
+  final Drive? drive;
   final FolderWithContents? currentFolder;
   final DriveDetailState driveDetailState;
+  final Widget? child;
+  final Anchor anchor;
+  final double dropdownWidth;
 
   @override
   Widget build(BuildContext context) {
     return ArDriveDropdown(
-      width: MediaQuery.of(context).size.width * 0.6,
-      anchor: const Aligned(
-        follower: Alignment.bottomCenter,
-        target: Alignment.topCenter,
-      ),
+      width: dropdownWidth,
+      anchor: anchor,
       items: _buildDriveDropdownItems(context),
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: ArDriveFAB(
-          backgroundColor:
-              ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-          child: ArDriveIcons.plus(
-            color: Colors.white,
+      child: child ??
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: ArDriveFAB(
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+              child: ArDriveIcons.plus(
+                color: Colors.white,
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -78,7 +85,7 @@ class NewButton extends StatelessWidget {
           icon: ArDriveIcons.drive(size: 24),
         ),
       ],
-      if (driveDetailState is DriveDetailLoadSuccess) ...[
+      if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
         _buildDriveDropdownItem(
           onClick: () => promptToCreateFolder(
             context,
@@ -92,7 +99,7 @@ class NewButton extends StatelessWidget {
         _buildDriveDropdownItem(
           onClick: () => promptToUpload(
             context,
-            driveId: drive.id,
+            driveId: drive!.id,
             parentFolderId: currentFolder!.folder.id,
             isFolderUpload: true,
           ),
@@ -104,7 +111,7 @@ class NewButton extends StatelessWidget {
           onClick: () {
             promptToUpload(
               context,
-              driveId: drive.id,
+              driveId: drive!.id,
               parentFolderId: currentFolder!.folder.id,
               isFolderUpload: false,
             );
@@ -115,12 +122,13 @@ class NewButton extends StatelessWidget {
         ),
       ],
       if (driveDetailState is DriveDetailLoadSuccess &&
-          driveDetailState.currentDrive.privacy == 'public')
+          driveDetailState.currentDrive.privacy == 'public' &&
+          drive != null)
         _buildDriveDropdownItem(
           onClick: () {
             promptToCreateManifest(
               context,
-              drive: drive,
+              drive: drive!,
             );
           },
           isDisabled: driveDetailState.driveIsEmpty || !canUpload,
@@ -128,12 +136,13 @@ class NewButton extends StatelessWidget {
           icon: ArDriveIcons.manifest(size: 24),
         ),
       if (context.read<AppConfig>().enableQuickSyncAuthoring &&
-          driveDetailState is DriveDetailLoadSuccess)
+          driveDetailState is DriveDetailLoadSuccess &&
+          drive != null)
         _buildDriveDropdownItem(
           onClick: () {
             promptToCreateSnapshot(
               context,
-              drive,
+              drive!,
             );
           },
           isDisabled: driveDetailState.driveIsEmpty ||

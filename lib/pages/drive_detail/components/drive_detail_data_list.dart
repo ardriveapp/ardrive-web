@@ -22,7 +22,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
         if (file.id == state.maybeSelectedItem()?.id) {
           bloc.toggleSelectedItemDetails();
         } else {
-          await bloc.selectItem(SelectedFile(file: file));
+          bloc.selectDataItem(selected);
         }
       },
       index++,
@@ -65,6 +65,23 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   }) : super(index);
 }
 
+class DriveDataItem extends ArDriveDataTableItem {
+  DriveDataItem({
+    required super.id,
+    required super.driveId,
+    required super.name,
+    required super.lastUpdated,
+    required super.dateCreated,
+    super.contentType = 'drive',
+    required super.onPressed,
+    super.path = '',
+    required super.index,
+  });
+
+  @override
+  List<Object?> get props => [id, name];
+}
+
 class FolderDataTableItem extends ArDriveDataTableItem {
   final String? parentFolderId;
 
@@ -104,8 +121,8 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final String dataTxId;
   final String? bundledIn;
   final DateTime lastModifiedDate;
-  final NetworkTransaction metadataTx;
-  final NetworkTransaction dataTx;
+  final NetworkTransaction? metadataTx;
+  final NetworkTransaction? dataTx;
 
   FileDataTableItem({
     required this.fileId,
@@ -308,6 +325,45 @@ class DriveDataTableItemMapper {
       contentType: 'folder',
       fileStatusFromTransactions: null,
       onPressed: onPressed,
+    );
+  }
+
+  static DriveDataItem fromDrive(
+    Drive drive,
+    Function(ArDriveDataTableItem) onPressed,
+    int index,
+  ) {
+    return DriveDataItem(
+      index: index,
+      driveId: drive.id,
+      name: drive.name,
+      lastUpdated: drive.lastUpdated,
+      dateCreated: drive.dateCreated,
+      contentType: 'drive',
+      onPressed: onPressed,
+      id: drive.id,
+    );
+  }
+
+  static FileDataTableItem fromRevision(FileRevision revision) {
+    return FileDataTableItem(
+      path: '',
+      lastModifiedDate: revision.lastModifiedDate,
+      name: revision.name,
+      size: revision.size,
+      lastUpdated: revision.lastModifiedDate,
+      dateCreated: revision.dateCreated,
+      contentType: revision.dataContentType ?? '',
+      fileStatusFromTransactions: null,
+      fileId: revision.fileId,
+      onPressed: (_) {},
+      driveId: revision.driveId,
+      parentFolderId: revision.parentFolderId,
+      dataTxId: revision.dataTxId,
+      bundledIn: revision.bundledIn,
+      metadataTx: null,
+      dataTx: null,
+      index: 0,
     );
   }
 }

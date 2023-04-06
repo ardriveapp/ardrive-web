@@ -46,14 +46,21 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       );
     }
 
-    Widget buildSeparator() {
+    Widget buildSeparator(bool isDrive) {
       final segmentStyle = ArDriveTypography.body.captionBold(
         color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
       );
 
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        child: Text('/', style: segmentStyle),
+      return Text(
+        '/',
+        style: isDrive
+            ? segmentStyle.copyWith(
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .colors
+                    .themeAccentDisabled,
+              )
+            : segmentStyle,
       );
     }
 
@@ -65,23 +72,46 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
         breadCrumbcount: breadCrumbcount,
       ));
       segments.addAll(
-          _pathSegments.sublist(breadCrumbSplit).asMap().entries.expand((s) => [
+        _pathSegments.sublist(breadCrumbSplit).asMap().entries.expand(
+              (s) => [
                 buildSegment(s.key + breadCrumbSplit),
-                if (!isLastSegment(s.key + breadCrumbSplit)) buildSeparator()
-              ]));
+                if (!isLastSegment(s.key + breadCrumbSplit))
+                  buildSeparator(false)
+              ],
+            ),
+      );
     } else {
-      segments.addAll([
-        TextButton(
-            onPressed: () =>
-                context.read<DriveDetailCubit>().openFolder(path: entities.rootPath),
-            child: Text(driveName, style: segmentStyle)),
-      ]);
+      segments.addAll(
+        [
+          TextButton(
+            onPressed: () => context
+                .read<DriveDetailCubit>()
+                .openFolder(path: entities.rootPath),
+            child: Text(
+              driveName,
+              style: segmentStyle.copyWith(
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .colors
+                    .themeAccentDisabled,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      );
       if (_pathSegments.isNotEmpty) {
-        segments.add(buildSeparator());
+        segments.add(buildSeparator(true));
       }
 
-      segments.addAll(_pathSegments.asMap().entries.expand((s) =>
-          [buildSegment(s.key), if (!isLastSegment(s.key)) buildSeparator()]));
+      segments.addAll(
+        _pathSegments.asMap().entries.expand(
+              (s) => [
+                buildSegment(s.key),
+                if (!isLastSegment(s.key)) buildSeparator(false)
+              ],
+            ),
+      );
     }
 
     return Row(children: segments);
@@ -99,7 +129,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           onClick: () => context.read<DriveDetailCubit>().openFolder(
                 path: '/${path.sublist(0, s.key + 1).join('/')}',
               ),
-          content: _buildDropdownItemContent(context, s.value),
+          content: _buildDropdownItemContent(
+            context,
+            s.value,
+            false,
+          ),
         ),
       ];
     }).toList();
@@ -109,7 +143,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
         onClick: () => context.read<DriveDetailCubit>().openFolder(
               path: entities.rootPath,
             ),
-        content: _buildDropdownItemContent(context, driveName),
+        content: _buildDropdownItemContent(
+          context,
+          driveName,
+          true,
+        ),
       ),
     );
     return ArDriveDropdown(
@@ -127,7 +165,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     );
   }
 
-  Widget _buildDropdownItemContent(BuildContext context, String text) {
+  Widget _buildDropdownItemContent(
+    BuildContext context,
+    String text,
+    bool isDrive,
+  ) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(

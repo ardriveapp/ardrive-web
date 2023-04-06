@@ -1,30 +1,32 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/l11n/validation_messages.dart';
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:reactive_forms/reactive_forms.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'drive_attach_state.dart';
 
 /// [DriveAttachCubit] includes logic for attaching drives to the user's profile.
 class DriveAttachCubit extends Cubit<DriveAttachState> {
-  late FormGroup form;
+  // late FormGroup form;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final SyncCubit _syncBloc;
   final DrivesCubit _drivesBloc;
   final SecretKey? _profileKey;
+
+  final driveNameController = TextEditingController();
+  final driveKeyController = TextEditingController();
+  final driveIdController = TextEditingController();
 
   late SecretKey? _driveKey;
 
@@ -56,58 +58,64 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     SecretKey? driveKey,
   }) async {
     _driveKey = driveKey;
-    form = FormGroup(
-      {
-        'driveId': FormControl<String>(
-          validators: [Validators.required],
-          asyncValidators: [_drivePrivacyLoader, _driveNameLoader],
-          // Debounce drive name loading by 500ms.
-          asyncValidatorsDebounceTime: 500,
-        ),
-        'name': FormControl<String>(
-          validators: [
-            Validators.required,
-            Validators.pattern(kDriveNameRegex),
-            Validators.pattern(kTrimTrailingRegex),
-          ],
-        ),
-      },
-    );
 
     // Add the initial drive id in a microtask to properly trigger the drive name loader.
-    await Future.microtask(() {
+    await Future.microtask(() async {
       if (driveId != null) {
-        form.control('driveId').updateValue(driveId);
+        driveIdController.text = driveId;
+
+        await drivePrivacyLoader();
+
+        if (state is! DriveAttachPrivate) {
+          await driveNameLoader();
+          if (driveNameController.text.isNotEmpty) {
+            submit();
+          }
+        } else {
+          if (driveName != null) {
+            driveNameController.text = driveName;
+          }
+          if (driveKey != null) {
+            driveKeyController.text = base64Encode(
+              await driveKey.extractBytes(),
+            );
+          }
+
+          if (driveNameController.text.isNotEmpty &&
+              driveKeyController.text.isNotEmpty) {
+            submit();
+          }
+        }
       }
     });
 
     if (driveName != null && driveName.isNotEmpty) {
-      form.control('name').updateValue(driveName);
-      submit();
+      driveNameController.text = driveName;
     }
   }
 
   void submit() async {
-    form.markAllAsTouched();
-
-    if (form.invalid) {
-      return;
-    }
-
-    emit(DriveAttachInProgress());
+    final driveId = driveIdController.text;
+    final driveName = driveNameController.text;
 
     try {
-      final String driveId = form.control('driveId').value;
-      final driveName = form.control('name').value.toString().trim();
-      final driveKey = await getDriveKey();
+      if (await driveKeyValidator() != null) {
+        return;
+      }
+
+      if (!await driveNameLoader()) {
+        return;
+      }
+
+      emit(DriveAttachInProgress());
+
       final driveEntity = await _arweave.getLatestDriveEntityWithId(
         driveId,
-        driveKey,
+        _driveKey,
       );
+
       if (driveEntity == null) {
-        form
-            .control('driveId')
-            .setErrors({AppValidationMessage.driveAttachDriveNotFound: true});
+        emit(DriveAttachDriveNotFound());
         emit(DriveAttachInitial());
         return;
       }
@@ -115,11 +123,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       await _driveDao.writeDriveEntity(
         name: driveName,
         entity: driveEntity,
-        driveKey: driveKey,
+        driveKey: _driveKey,
         profileKey: _profileKey,
       );
 
       _drivesBloc.selectDrive(driveId);
+
       emit(DriveAttachSuccess());
       unawaited(_syncBloc.startSync());
     } catch (err) {
@@ -127,102 +136,82 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     }
   }
 
-  Future<SecretKey?> getDriveKey() async {
+  Future<SecretKey?> getDriveKey(
+    String? promptedDriveKey,
+  ) async {
     if (_driveKey != null) {
       return _driveKey;
     }
-    final String? driveKeyBase64 = form.controls.containsKey('driveKey')
-        ? form.control('driveKey').value
-        : null;
-    SecretKey? driveKey;
-    if (driveKeyBase64 != null) {
-      try {
-        driveKey = SecretKey(decodeBase64ToBytes(driveKeyBase64));
-      } catch (e) {
-        form.control('driveKey').setErrors({
-          AppValidationMessage.driveAttachInvalidDriveKey: true,
-        });
-        return null;
-      }
+
+    if (promptedDriveKey == null || promptedDriveKey.isEmpty) {
+      return null;
     }
+
+    SecretKey? driveKey;
+
+    try {
+      driveKey = SecretKey(decodeBase64ToBytes(promptedDriveKey));
+    } catch (e) {
+      return null;
+    }
+
     return driveKey;
   }
 
-  Future<Map<String, dynamic>?> _driveNameLoader(
-      AbstractControl<dynamic> driveIdControl) async {
-    if ((driveIdControl as AbstractControl<String?>).isNull) {
-      return null;
+  Future<bool> driveNameLoader() async {
+    final driveId = driveIdController.text;
+    final promptedDriveKey = driveKeyController.text;
+
+    if (driveId.isEmpty) {
+      return false;
     }
 
-    final driveId = driveIdControl.value;
-    if (driveId == null) {
-      return null;
-    }
-
-    final driveKey = await getDriveKey();
+    final driveKey = await getDriveKey(promptedDriveKey);
 
     final drive = await _arweave.getLatestDriveEntityWithId(driveId, driveKey);
 
     if (drive == null) {
-      if (driveKey != null) {
-        form.control('driveKey').markAsTouched();
-        return {AppValidationMessage.driveAttachInvalidDriveKey: true};
-      }
-      return null;
+      if (driveKey != null) {}
+      return false;
     }
 
-    form.control('name').updateValue(drive.name);
-
-    return null;
+    driveNameController.text = drive.name!;
+    return true;
   }
 
-  Future<Map<String, dynamic>?> _driveKeyValidator(
-      AbstractControl<dynamic> driveKeyControl) async {
-    final driveId = form.control('driveId').value;
+  Future<String?> driveKeyValidator() async {
+    final driveId = driveIdController.text;
+    final promptedDriveKey = driveKeyController.text;
 
-    if (driveId == null) {
-      return null;
+    if (driveId.isEmpty) {
+      return 'Invalid drive key';
     }
 
-    final driveKey = await getDriveKey();
+    _driveKey = await getDriveKey(promptedDriveKey);
 
-    final drive = await _arweave.getLatestDriveEntityWithId(driveId, driveKey);
+    final drive = await _arweave.getLatestDriveEntityWithId(driveId, _driveKey);
 
     if (drive == null) {
-      driveKeyControl.markAsTouched();
-      return {AppValidationMessage.driveAttachInvalidDriveKey: true};
+      return 'Invalid drive key';
     }
 
-    form.control('name').updateValue(drive.name);
+    driveNameController.text = drive.name!;
 
     return null;
   }
 
-  Future<Map<String, dynamic>?> _drivePrivacyLoader(
-      AbstractControl<dynamic> driveIdControl) async {
-    if ((driveIdControl as AbstractControl<String?>).isNull) {
+  Future drivePrivacyLoader() async {
+    final driveId = driveIdController.text;
+
+    if (driveId.isEmpty) {
       return null;
     }
 
-    final driveId = driveIdControl.value;
-    if (driveId == null) {
-      return null;
-    }
     final drivePrivacy = await _arweave.getDrivePrivacyForId(driveId);
 
     switch (drivePrivacy) {
       case DrivePrivacy.private:
         emit(DriveAttachPrivate());
-        form.addAll({
-          'driveKey': FormControl<String>(
-            validators: [
-              Validators.required,
-            ],
-            asyncValidatorsDebounceTime: 500,
-            asyncValidators: [_driveKeyValidator],
-          ),
-        });
-
         break;
       case null:
         emit(DriveAttachDriveNotFound());
