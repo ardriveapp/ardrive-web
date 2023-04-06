@@ -90,8 +90,8 @@ class _AppSideBarState extends State<AppSideBar> {
           const SizedBox(
             height: 16,
           ),
-          const Align(
-            alignment: Alignment.centerLeft,
+          const Padding(
+            padding: EdgeInsets.only(left: 16.0),
             child: ThemeSwitcher(),
           ),
           const Padding(
