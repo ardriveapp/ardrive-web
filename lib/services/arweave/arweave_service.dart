@@ -749,7 +749,7 @@ class ArweaveService {
 
     // Chunk the transaction confirmation query to workaround the 10 item limit of the gateway API
     // and run it in parallel.
-    const chunkSize = 10;
+    const chunkSize = 100;
 
     final confirmationFutures = <Future<void>>[];
 
@@ -759,10 +759,14 @@ class ArweaveService {
             ? i + chunkSize
             : transactionIds.length;
 
-        final query = await _graphQLRetry.execute(TransactionStatusesQuery(
+        final query = await _graphQLRetry.execute(
+          TransactionStatusesQuery(
             variables: TransactionStatusesArguments(
-                transactionIds:
-                    transactionIds.sublist(i, chunkEnd) as List<String>?)));
+              transactionIds:
+                  transactionIds.sublist(i, chunkEnd) as List<String>?,
+            ),
+          ),
+        );
 
         final currentBlockHeight = query.data!.blocks.edges.first.node.height;
 
