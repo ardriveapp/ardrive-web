@@ -27,6 +27,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   List<ArDriveDataTableItem> _selectedItems = [];
   List<ArDriveDataTableItem> get selectedItems => _selectedItems;
 
+  bool _forceDisableMultiselect = false;
+
   DriveDetailCubit({
     required this.driveId,
     String? initialFolderId,
@@ -228,6 +230,19 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   Future<void> clearSelection() async {
     _selectedItems.clear();
+  }
+
+  bool get forceDisableMultiselect {
+    if (_forceDisableMultiselect) {
+      _forceDisableMultiselect = false;
+      return true;
+    }
+
+    return false;
+  }
+
+  set forceDisableMultiselect(bool value) {
+    _forceDisableMultiselect = value;
   }
 
   Future<void> launchPreview(TxID dataTxId) =>
