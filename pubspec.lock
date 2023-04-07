@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3421-no-button-to-close-details-activity-panel
-      resolved-ref: c5ebdb387ca847096db7d5652a16148a202074c3
+      resolved-ref: "5255d91a97a68e806f47209644e83ee18ef3d304"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
