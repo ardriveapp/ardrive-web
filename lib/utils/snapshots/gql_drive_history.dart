@@ -33,24 +33,31 @@ class GQLDriveHistory implements SegmentedGQLData {
       throw SubRangeIndexOverflow(index: currentIndex);
     }
 
-    return _getNextStream();
+    try {
+      return _getNextStream();
+    } catch (e, s) {
+      print('[GQLDriveHistory] Error in GQLDriveHistory: $e $s');
+      rethrow;
+    }
   }
 
   Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
       _getNextStream() async* {
     Range subRangeForIndex = subRanges.rangeSegments[currentIndex];
 
-    final txsStream = _arweave.getSegmentedTransactionsFromDrive(
-      driveId,
-      minBlockHeight: subRangeForIndex.start,
-      maxBlockHeight: subRangeForIndex.end,
-      ownerAddress: ownerAddress,
-    );
+    try {
+      final txsStream = _arweave.getSegmentedTransactionsFromDrive(
+        driveId,
+        minBlockHeight: subRangeForIndex.start,
+        maxBlockHeight: subRangeForIndex.end,
+        ownerAddress: ownerAddress,
+      );
 
-    await for (final multipleEdges in txsStream) {
-      for (final edge in multipleEdges) {
-        yield edge.node;
-      }
+      final edgesStream = txsStream.expand((txs) => txs);
+      final nodesStream = edgesStream.map((edge) => edge.node);
+      yield* nodesStream;
+    } catch (e, s) {
+      print('[GQLDriveHistory - PRIVATE API] Error in GQLDriveHistory: $e $s');
     }
   }
 }

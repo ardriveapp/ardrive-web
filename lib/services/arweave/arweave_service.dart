@@ -173,10 +173,13 @@ class ArweaveService {
     int? maxBlockHeight,
   }) async* {
     String? cursor;
+    bool hasNextPage = true;
 
-    while (true) {
+    do {
+      late GraphQLResponse<DriveEntityHistory$Query> driveEntityHistoryQuery;
+      // try {
       // Get a page of 100 transactions
-      final driveEntityHistoryQuery = await _graphQLRetry.execute(
+      driveEntityHistoryQuery = await _graphQLRetry.execute(
         DriveEntityHistoryQuery(
           variables: DriveEntityHistoryArguments(
             driveId: driveId,
@@ -187,6 +190,11 @@ class ArweaveService {
           ),
         ),
       );
+      // } catch (e, s) {
+      //   print('Error in getSegmentedTransactionsFromDrive: $e\n$s');
+      //   hasNextPage = false;
+      //   rethrow;
+      // }
 
       yield driveEntityHistoryQuery.data!.transactions.edges;
 
@@ -194,10 +202,11 @@ class ArweaveService {
           ? driveEntityHistoryQuery.data!.transactions.edges.last.cursor
           : null;
 
-      if (!driveEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
-        break;
-      }
-    }
+      hasNextPage =
+          (driveEntityHistoryQuery.data?.transactions.pageInfo.hasNextPage ??
+              false);
+    } while (hasNextPage);
+    return;
   }
 
   /// Get the metadata of transactions
@@ -214,30 +223,44 @@ class ArweaveService {
     required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
-    final List<Uint8List> responses = await Future.wait(
-      entityTxs.map(
-        (entity) async {
-          final tags = entity.tags;
-          final isSnapshot = tags.any(
-            (tag) =>
-                tag.name == EntityTag.entityType &&
-                tag.value == EntityType.snapshot.toString(),
-          );
+    final List<Future<Uint8List>> futures = entityTxs.map(
+      (entity) async {
+        // // TODO: remove me
+        // await Future.delayed(const Duration(seconds: 5));
+        // throw Exception('Testing error');
 
-          // don't fetch data for snapshots
-          if (isSnapshot) {
-            print('skipping unnecessary request for snapshot data');
-            return Uint8List(0);
-          }
+        final tags = entity.tags;
+        final isSnapshot = tags.any(
+          (tag) =>
+              tag.name == EntityTag.entityType &&
+              tag.value == EntityType.snapshot.toString(),
+        );
 
-          return _getEntityData(
-            entityId: entity.id,
-            driveId: driveId,
-            isPrivate: driveKey != null,
-          );
-        },
-      ),
-    );
+        // don't fetch data for snapshots
+        if (isSnapshot) {
+          print('skipping unnecessary request for snapshot data');
+          return Uint8List(0);
+        }
+
+        return _getEntityData(
+          entityId: entity.id,
+          driveId: driveId,
+          isPrivate: driveKey != null,
+        );
+      },
+    ).toList();
+
+    late List<Uint8List> responses;
+    try {
+      responses = await Future.wait(
+        futures,
+        eagerError: true,
+      );
+    } catch (e, s) {
+      print(
+          '[createDriveEntityHistoryFromTransactions] Error fetching entity data: $e $s');
+      rethrow;
+    }
 
     final blockHistory = <BlockEntities>[];
 
@@ -749,7 +772,7 @@ class ArweaveService {
 
     // Chunk the transaction confirmation query to workaround the 10 item limit of the gateway API
     // and run it in parallel.
-    const chunkSize = 10;
+    const chunkSize = 100;
 
     final confirmationFutures = <Future<void>>[];
 
@@ -759,10 +782,14 @@ class ArweaveService {
             ? i + chunkSize
             : transactionIds.length;
 
-        final query = await _graphQLRetry.execute(TransactionStatusesQuery(
+        final query = await _graphQLRetry.execute(
+          TransactionStatusesQuery(
             variables: TransactionStatusesArguments(
-                transactionIds:
-                    transactionIds.sublist(i, chunkEnd) as List<String>?)));
+              transactionIds:
+                  transactionIds.sublist(i, chunkEnd) as List<String>?,
+            ),
+          ),
+        );
 
         final currentBlockHeight = query.data!.blocks.edges.first.node.height;
 

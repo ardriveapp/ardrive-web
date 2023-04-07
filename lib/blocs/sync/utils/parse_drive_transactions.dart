@@ -51,15 +51,22 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           logSync('Getting metadata from drive ${drive.name}');
         }
 
-        final entityHistory =
-            await arweave.createDriveEntityHistoryFromTransactions(
-          items,
-          driveKey,
-          lastBlockHeight,
-          snapshotDriveHistory: snapshotDriveHistory,
-          driveId: drive.id,
-          ownerAddress: ownerAddress,
-        );
+        late DriveEntityHistory entityHistory;
+        try {
+          entityHistory =
+              await arweave.createDriveEntityHistoryFromTransactions(
+            items,
+            driveKey,
+            lastBlockHeight,
+            snapshotDriveHistory: snapshotDriveHistory,
+            driveId: drive.id,
+            ownerAddress: ownerAddress,
+          );
+        } catch (e, s) {
+          logSync(
+              '[Parse Drive Transaction] Error while parsing drive transactions: $e\n$s');
+          rethrow;
+        }
 
         // Create entries for all the new revisions of file and folders in this drive.
         final newEntities = entityHistory.blockHistory
@@ -186,6 +193,11 @@ Stream<double> _batchProcess<T>({
       currentBatch.add(list[j]);
     }
 
+    // try {
     yield* endOfBatchCallback(currentBatch);
+    // } catch (e, s) {
+    //   print('[Batch Process] Error while processing batch: $e $s');
+    //   rethrow;
+    // }
   }
 }

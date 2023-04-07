@@ -27,7 +27,15 @@ Future<void> _updateTransactionStatuses({
       currentPage.add(list[j]);
     }
 
-    final map = await arweave.getTransactionConfirmations(currentPage.toList());
+    late Map<String?, int> map;
+    try {
+      map = await arweave.getTransactionConfirmations(currentPage.toList());
+    } catch (e, s) {
+      print(
+        '[Batch Process] Error while getting Transaction Confirmations: $e $s',
+      );
+      rethrow;
+    }
 
     map.forEach((key, value) {
       confirmations.putIfAbsent(key, () => value);

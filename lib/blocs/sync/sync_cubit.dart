@@ -252,34 +252,36 @@ class SyncCubit extends Cubit<SyncState> {
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
       logSync('Current block height number $currentBlockHeight');
       final driveSyncProcesses = drives.map(
-        (drive) => _syncDrive(
-          drive.id,
-          driveDao: _driveDao,
-          arweave: _arweave,
-          ghostFolders: ghostFolders,
-          database: _db,
-          profileState: profile,
-          addError: addError,
-          lastBlockHeight: syncDeep
-              ? 0
-              : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
-          currentBlockHeight: currentBlockHeight,
-          transactionParseBatchSize:
-              200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced),
-          ownerAddress: drive.ownerAddress,
-        ).handleError(
-          (error, stackTrace) {
+        (drive) async* {
+          try {
+            yield* _syncDrive(
+              drive.id,
+              driveDao: _driveDao,
+              arweave: _arweave,
+              ghostFolders: ghostFolders,
+              database: _db,
+              profileState: profile,
+              addError: addError,
+              lastBlockHeight: syncDeep
+                  ? 0
+                  : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
+              currentBlockHeight: currentBlockHeight,
+              transactionParseBatchSize: 200 ~/
+                  (_syncProgress.drivesCount - _syncProgress.drivesSynced),
+              ownerAddress: drive.ownerAddress,
+            );
+          } catch (e, s) {
             logSync('''
                     Error syncing drive with id ${drive.id}. \n
                     Skipping sync on this drive.\n
                     Exception: \n
-                    ${error.toString()} \n
+                    ${e.toString()} \n
                     StackTrace: \n
-                    ${stackTrace.toString()}
+                    ${s.toString()}
                     ''');
-            addError(error!);
-          },
-        ),
+            addError(e);
+          }
+        },
       );
 
       double totalProgress = 0;
