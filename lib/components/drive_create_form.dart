@@ -92,8 +92,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                           }
                         },
                         validator: (value) {
-                          final validation =
-                              validateFolderAndDriveName(value, context);
+                          final validation = validateEntityName(value, context);
 
                           if (validation == null) {
                             setState(() => _isDriveNameValid = true);

@@ -1753,5 +1753,13 @@
   "moreInfo": "More info",
   "@moreInfo": {
     "description": "More info"
+  },
+  "darkMode": "DARK MODE",
+  "@darkMode": {
+    "description": "DARK MODE"
+  },
+  "lightMode": "LIGHT MODE",
+  "@lightMode": {
+    "description": "LIGHT MODE"
   }
 }

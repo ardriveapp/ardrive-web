@@ -363,16 +363,18 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       DriveDetailLoadSuccess state, bool hasSubfolders, bool hasFiles) {
     if (state.showSelectedItemDetails &&
         context.read<DriveDetailCubit>().selectedItem != null) {
-      return WillPopScope(
-        onWillPop: () async {
-          context.read<DriveDetailCubit>().toggleSelectedItemDetails();
-          return false;
-        },
-        child: DetailsPanel(
-          isSharePage: false,
-          drivePrivacy: state.currentDrive.privacy,
-          maybeSelectedItem: state.maybeSelectedItem(),
-          item: context.read<DriveDetailCubit>().selectedItem!,
+      return Material(
+        child: WillPopScope(
+          onWillPop: () async {
+            context.read<DriveDetailCubit>().toggleSelectedItemDetails();
+            return false;
+          },
+          child: DetailsPanel(
+            isSharePage: false,
+            drivePrivacy: state.currentDrive.privacy,
+            maybeSelectedItem: state.maybeSelectedItem(),
+            item: context.read<DriveDetailCubit>().selectedItem!,
+          ),
         ),
       );
     }
@@ -406,6 +408,42 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
     final items = [...folders, ...files];
 
+    return Scaffold(
+      drawer: const AppDrawer(),
+      appBar: MobileAppBar(
+        leading: (state.showSelectedItemDetails &&
+                context.read<DriveDetailCubit>().selectedItem != null)
+            ? IconButton(
+                icon: ArDriveIcons.arrowBack(),
+                onPressed: () {
+                  context.read<DriveDetailCubit>().toggleSelectedItemDetails();
+                },
+              )
+            : null,
+      ),
+      bottomNavigationBar: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+        builder: (context, state) {
+          if (state is! DriveDetailLoadSuccess) {
+            return Container();
+          }
+
+          return CustomBottomNavigation(
+            currentFolder: state.folderInView,
+            drive: (state).currentDrive,
+          );
+        },
+      ),
+      body: _mobileViewContent(
+        state,
+        hasSubfolders,
+        hasFiles,
+        items,
+      ),
+    );
+  }
+
+  Widget _mobileViewContent(DriveDetailLoadSuccess state, bool hasSubfolders,
+      bool hasFiles, List<ArDriveDataTableItem> items) {
     return Column(
       children: [
         Padding(
@@ -440,7 +478,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 const SizedBox(
                               height: 5,
                             ),
-                            itemCount: folders.length + files.length,
+                            itemCount: items.length,
                             itemBuilder: (context, index) {
                               return ArDriveItemListTile(
                                   key: ObjectKey([items[index]]),
