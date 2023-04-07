@@ -105,9 +105,9 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       bool authenticated = false;
 
       if (needBiometrics) {
-        authenticated =
-            // ignore: use_build_context_synchronously
-            await _biometricAuthentication.authenticate(context);
+        // authenticated =
+        // ignore: use_build_context_synchronously
+        // await _biometricAuthentication.authenticate(context);
       }
 
       if (authenticated || !needBiometrics) {

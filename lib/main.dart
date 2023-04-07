@@ -192,6 +192,10 @@ class AppState extends State<App> {
           ),
           RepositoryProvider(
             create: (context) => ArDriveAuth(
+              biometricAuthentication: context.read<BiometricAuthentication>(),
+              secureKeyValueStore: SecureKeyValueStore(
+                const FlutterSecureStorage(),
+              ),
               crypto: ArDriveCrypto(),
               arweave: _arweave,
               userRepository: context.read<UserRepository>(),
