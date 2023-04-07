@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3421-no-button-to-close-details-activity-panel
-      resolved-ref: "5255d91a97a68e806f47209644e83ee18ef3d304"
+      ref: PE-3354-design-fine-tune
+      resolved-ref: "1cb5d2e4a4f840d4c89190a568766a31ae3f0838"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
