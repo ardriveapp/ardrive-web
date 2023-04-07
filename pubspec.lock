@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3128-profile-component
-      resolved-ref: "946039018f4247d8f6e98517069d86b9d38bf857"
+      ref: PE-3421-no-button-to-close-details-activity-panel
+      resolved-ref: "5255d91a97a68e806f47209644e83ee18ef3d304"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -1713,6 +1713,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.16"
+  visibility_detector:
+    dependency: "direct main"
+    description:
+      name: visibility_detector
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.4.0+2"
   vm_service:
     dependency: transitive
     description:

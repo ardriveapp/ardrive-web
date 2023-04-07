@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3128-profile-component
+      ref: PE-3421-no-button-to-close-details-activity-panel
   artemis: ^7.0.0-beta.13
   arweave:
     git:
@@ -100,6 +100,7 @@ dependencies:
   video_player: ^2.6.0
   chewie: ^1.4.0
   lottie: ^2.3.0
+  visibility_detector: ^0.4.0+2
 
 dev_dependencies:
   flutter_test:

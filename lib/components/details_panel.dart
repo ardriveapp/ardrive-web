@@ -1,5 +1,7 @@
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
+import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -16,10 +18,10 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 import '../blocs/blocs.dart';
 import '../services/arweave/arweave_service.dart';
-import 'file_download_dialog.dart';
 
 class DetailsPanel extends StatefulWidget {
   const DetailsPanel({
@@ -124,6 +126,20 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 contentPadding: const EdgeInsets.all(24),
                 content: Column(
                   children: [
+                    if (!widget.isSharePage)
+                      ScreenTypeLayout(
+                        desktop: Column(
+                          children: [
+                            DetailsPanelToolbar(
+                              item: widget.item,
+                            ),
+                            const SizedBox(
+                              height: 24,
+                            ),
+                          ],
+                        ),
+                        mobile: const SizedBox.shrink(),
+                      ),
                     ArDriveCard(
                       contentPadding: const EdgeInsets.all(24),
                       backgroundColor: ArDriveTheme.of(context)
@@ -147,7 +163,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       ),
                     ),
                     const SizedBox(
-                      height: 48,
+                      height: 24,
                     ),
                     Expanded(
                       child: ArDriveTabView(
@@ -202,9 +218,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: CopyButton(text: folder.entry.folder.id),
         itemTitle: appLocalizationsOf(context).folderID,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           fileAndFolderCountsToString(
@@ -216,9 +230,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).itemContains,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.lastUpdated),
@@ -226,9 +238,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.dateCreated),
@@ -236,9 +246,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: CopyButton(
           text: folder.entry.folder.driveId,
@@ -254,9 +262,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: CopyButton(text: widget.item.id),
         itemTitle: appLocalizationsOf(context).driveID,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       // size
       DetailsPanelItem(
         leading: Text(
@@ -267,9 +273,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).size,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           fileAndFolderCountsToString(
@@ -281,9 +285,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).itemContains,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.lastUpdated),
@@ -291,9 +293,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.dateCreated),
@@ -310,9 +310,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: CopyButton(text: widget.item.id),
         itemTitle: appLocalizationsOf(context).fileID,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           filesize(widget.item.size),
@@ -320,9 +318,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).size,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.lastUpdated),
@@ -330,9 +326,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.dateCreated),
@@ -340,9 +334,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
           widget.item.contentType,
@@ -350,18 +342,14 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: 'File type',
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: CopyButton(
           text: widget.item.driveId,
         ),
         itemTitle: appLocalizationsOf(context).metadataTxID,
       ),
-      const SizedBox(
-        height: 16,
-      ),
+      sizedBoxHeight16px,
       DetailsPanelItem(
         leading: CopyButton(
           text: (widget.item as FileDataTableItem).dataTxId,
@@ -396,9 +384,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       if (state.revisions.isNotEmpty) {
         return ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          separatorBuilder: (context, index) => const SizedBox(
-            height: 16,
-          ),
+          separatorBuilder: (context, index) => sizedBoxHeight16px,
           itemCount: state.revisions.length,
           itemBuilder: (context, index) {
             final revision = state.revisions[index];
@@ -647,7 +633,6 @@ class _CopyButtonState extends State<CopyButton> {
   OverlayEntry _createOverlayEntry(BuildContext parentContext) {
     final RenderBox button = context.findRenderObject() as RenderBox;
     final Offset buttonPosition = button.localToGlobal(Offset.zero);
-    final double buttonWidth = button.size.width;
 
     return OverlayEntry(
       builder: (context) => Positioned(
@@ -719,19 +704,96 @@ void downloadOrPreviewRevision({
   SecretKey? fileKey,
   bool isSharedFile = false,
 }) {
-  if (drivePrivacy == 'private') {
-    if (isSharedFile) {
-      promptToDownloadSharedFile(
-        context: context,
-        revision: revision,
-        fileKey: fileKey,
-      );
+  if (isSharedFile) {
+    promptToDownloadSharedFile(
+      context: context,
+      revision: revision,
+      fileKey: fileKey,
+    );
 
-      return;
-    }
+    return;
+  }
 
-    promptToDownloadFileRevision(context: context, revision: revision);
-  } else {
-    context.read<DriveDetailCubit>().launchPreview(revision.dataTxId!);
+  promptToDownloadFileRevision(context: context, revision: revision);
+}
+
+class DetailsPanelToolbar extends StatelessWidget {
+  const DetailsPanelToolbar({
+    super.key,
+    required this.item,
+  });
+
+  final ArDriveDataTableItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final drive =
+        (context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess)
+            .currentDrive;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: ArDriveTheme.of(context)
+              .themeData
+              .colors
+              .themeBorderDefault
+              .withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (item is FileDataTableItem || item is DriveDataItem)
+            InkWell(
+              onTap: () {
+                if (item is FileDataTableItem) {
+                  promptToShareFile(
+                    context: context,
+                    driveId: item.driveId,
+                    fileId: item.id,
+                  );
+                } else if (item is DriveDataItem) {
+                  promptToShareDrive(
+                    context: context,
+                    drive: drive,
+                  );
+                }
+              },
+              child: ArDriveIcons.share(
+                size: 21,
+              ),
+            ),
+          const SizedBox(
+            width: 16,
+          ),
+          if (item is FileDataTableItem)
+            InkWell(
+              onTap: () {
+                promptToDownloadProfileFile(
+                  context: context,
+                  file: item as FileDataTableItem,
+                );
+              },
+              child: ArDriveIcons.download(
+                size: 21,
+              ),
+            ),
+          const Spacer(),
+          InkWell(
+            onTap: () {
+              final bloc = context.read<DriveDetailCubit>();
+              bloc.toggleSelectedItemDetails();
+            },
+            child: ArDriveIcons.closeButton(
+              size: 21,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

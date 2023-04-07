@@ -12,9 +12,15 @@ class FsEntryPreviewWidget extends StatefulWidget {
   State<FsEntryPreviewWidget> createState() => _FsEntryPreviewWidgetState();
 }
 
-class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
+class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     switch (widget.state.runtimeType) {
       case FsEntryPreviewLoading:
         return const Center(
@@ -54,6 +60,7 @@ class VideoPlayerWidget extends StatefulWidget {
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   late VideoPlayerController _videoPlayerController;
   late ChewieController _chewieController;
+  bool _isPlaying = false;
 
   @override
   void initState() {
@@ -77,8 +84,23 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Chewie(
-      controller: _chewieController,
+    return VisibilityDetector(
+      key: Key(widget.videoUrl),
+      onVisibilityChanged: (VisibilityInfo info) {
+        setState(
+          () {
+            if (_videoPlayerController.value.isInitialized) {
+              _isPlaying = info.visibleFraction > 0.5;
+              _isPlaying
+                  ? _videoPlayerController.play()
+                  : _videoPlayerController.pause();
+            }
+          },
+        );
+      },
+      child: Chewie(
+        controller: _chewieController,
+      ),
     );
   }
 }
