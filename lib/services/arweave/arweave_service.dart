@@ -214,6 +214,14 @@ class ArweaveService {
     required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
+    // FIXME - PE-3440
+    /// Make use of `eagerError: true` to make it fail on first error
+    /// Also, when there's no internet connection and when we're getting
+    /// rate-limited (TODO: check the latter), many requests will be retrying.
+    /// We shall find another way to fail faster.
+
+    // MAYBE FIX: set a narrow concurrency limit
+
     final List<Uint8List> responses = await Future.wait(
       entityTxs.map(
         (entity) async {
