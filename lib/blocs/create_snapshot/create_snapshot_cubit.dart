@@ -37,6 +37,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   bool returnWithoutSigningForTesting;
 
   late DriveID _driveId;
+  late String _ownerAddress;
   late Range _range;
   late int _currentHeight;
   late Transaction _preparedTx;
@@ -72,6 +73,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
       return;
     }
+
+    final profileState = _profileCubit.state as ProfileLoggedIn;
+    _ownerAddress = profileState.walletAddress;
 
     _setTrustedRange(range);
 
@@ -147,6 +151,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       _driveId,
       minBlockHeight: _range.start,
       maxBlockHeight: _range.end,
+      ownerAddress: _ownerAddress,
     );
 
     // transforms the stream of arrays into a flat stream

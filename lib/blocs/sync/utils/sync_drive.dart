@@ -14,6 +14,7 @@ Stream<double> _syncDrive(
   required int lastBlockHeight,
   required int transactionParseBatchSize,
   required Map<FolderID, GhostFolder> ghostFolders,
+  required String ownerAddress,
 }) async* {
   /// Variables to count the current drive's progress information
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
@@ -43,6 +44,7 @@ Stream<double> _syncDrive(
   final snapshotsStream = arweave.getAllSnapshotsOfDrive(
     driveId,
     lastBlockHeight,
+    ownerAddress: ownerAddress,
   );
   final List<SnapshotItem> snapshotItems = await SnapshotItem.instantiateAll(
     snapshotsStream,
@@ -69,6 +71,7 @@ Stream<double> _syncDrive(
     subRanges: gqlDriveHistorySubRanges,
     arweave: arweave,
     driveId: driveId,
+    ownerAddress: ownerAddress,
   );
 
   print('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');
@@ -178,6 +181,7 @@ Stream<double> _syncDrive(
     lastBlockHeight: lastBlockHeight,
     batchSize: transactionParseBatchSize,
     snapshotDriveHistory: snapshotDriveHistory,
+    ownerAddress: ownerAddress,
   ).map(
     (parseProgress) => parseProgress * 0.9,
   );

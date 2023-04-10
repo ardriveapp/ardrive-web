@@ -57,11 +57,16 @@ void main() {
             any(),
             minBlockHeight: any(named: 'minBlockHeight'),
             maxBlockHeight: any(named: 'maxBlockHeight'),
+            ownerAddress: any(named: 'ownerAddress'),
           ),
         ).thenAnswer(
           (_) async* {
             await Future.delayed(const Duration(milliseconds: 1));
           },
+        );
+
+        when(() => arweave.getOwnerForDriveEntityWithId(any())).thenAnswer(
+          (invocation) => Future.value('owner'),
         );
 
         // mocks prepareEntityTx method of ardrive
