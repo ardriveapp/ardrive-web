@@ -32,7 +32,7 @@ FutureOr<DecryptStream> cipherStreamDecryptImpl(
 }
 
 FutureOr<EncryptStream> cipherStreamEncryptImpl(
-  String? cipherName, {
+  String cipherName, {
   required Uint8List keyData,
 }) async {
   final Map<String, FutureOr<EncryptStream> Function(Uint8List)> ctrs = {
