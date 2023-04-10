@@ -31,7 +31,7 @@ class NewButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveDropdown(
-      width: MediaQuery.of(context).size.width * 0.6,
+      width: MediaQuery.of(context).size.width * 0.7,
       anchor: const Aligned(
         follower: Alignment.bottomCenter,
         target: Alignment.topCenter,
