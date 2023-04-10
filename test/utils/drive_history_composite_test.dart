@@ -26,6 +26,7 @@ void main() {
           'DRIVE_ID',
           minBlockHeight: captureAny(named: 'minBlockHeight'),
           maxBlockHeight: captureAny(named: 'maxBlockHeight'),
+          ownerAddress: any(named: 'ownerAddress'),
         ),
       ).thenAnswer(
         (invocation) => fakeNodesStream(
@@ -42,6 +43,10 @@ void main() {
             )
             .map((event) => [event]),
       );
+
+      when(() => arweave.getOwnerForDriveEntityWithId('DRIVE_ID')).thenAnswer(
+        (invocation) => Future.value('owner'),
+      );
     });
 
     test('constructor throws with invalid sub-ranges amount', () async {
@@ -53,6 +58,7 @@ void main() {
           Range(start: 26, end: 50),
           Range(start: 99, end: 100),
         ]),
+        ownerAddress: 'owner',
       );
       SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
         items: await Future.wait(mockSubRanges
@@ -94,6 +100,7 @@ void main() {
           Range(start: 26, end: 50),
           Range(start: 99, end: 100),
         ]),
+        ownerAddress: 'owner',
       );
       SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
         items: await Future.wait(mockSubRanges
