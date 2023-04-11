@@ -747,8 +747,6 @@ class ArweaveService {
       for (final transactionId in transactionIds) transactionId: -1
     };
 
-    // Chunk the transaction confirmation query to workaround the 10 item limit of the gateway API
-    // and run it in parallel.
     const chunkSize = 100;
 
     final confirmationFutures = <Future<void>>[];
