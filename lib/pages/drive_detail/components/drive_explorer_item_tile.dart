@@ -176,20 +176,28 @@ class _DriveExplorerItemTileTrailingState
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveDropdown(
-      height: isMobile(context) ? 44 : 60,
-      key: ValueKey(alignment),
-      anchor: Aligned(
-        follower: alignment,
-        target: Alignment.topLeft,
-      ),
-      items: _getItems(widget.item, context),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ArDriveIcons.dots(),
-        ],
+    return ArDriveClickArea(
+      tooltip: 'Show menu',
+      child: ArDriveDropdown(
+        height: isMobile(context) ? 44 : 60,
+        key: ValueKey(alignment),
+        anchor: Aligned(
+          follower: alignment,
+          target: Alignment.topLeft,
+        ),
+        items: _getItems(widget.item, context),
+        // ignore: sized_box_for_whitespace
+        child: Container(
+          height: 40,
+          width: 40,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ArDriveIcons.dots(),
+            ],
+          ),
+        ),
       ),
     );
   }

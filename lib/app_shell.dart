@@ -67,6 +67,7 @@ class AppShellState extends State<AppShell> {
                                     return Align(
                                       alignment: Alignment.center,
                                       child: Material(
+                                        borderRadius: BorderRadius.circular(8),
                                         child: ProgressDialog(
                                             progressBar: ProgressBar(
                                               percentage: context

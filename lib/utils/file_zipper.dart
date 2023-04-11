@@ -8,7 +8,7 @@ class FileZipper {
 
   FileZipper({required this.files});
 
-  Future<IOFile> _zipFiles() async {
+  Future<IOFile> _zipFiles({String? fileName}) async {
     // Create a new archive
     final archive = Archive();
 
@@ -25,13 +25,13 @@ class FileZipper {
 
     return IOFile.fromData(
       Uint8List.fromList(zipBytes!),
-      name: 'files.zip',
+      name: '$fileName.zip',
       lastModifiedDate: DateTime.now(),
     );
   }
 
-  Future<void> downloadZipFile() async {
-    final zipBytes = await _zipFiles();
+  Future<void> downloadZipFile({String? fileName}) async {
+    final zipBytes = await _zipFiles(fileName: fileName);
 
     await ArDriveIO().saveFile(zipBytes);
   }

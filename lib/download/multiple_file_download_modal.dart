@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
 import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -24,9 +25,14 @@ promptToDownloadMultipleFiles(
     context,
     barrierDismissible: false,
     content: BlocProvider(
-      create: (context) =>
+      create: (modalContext) =>
           MultipleDownloadBloc(downloadService: DownloadService(arweave))
-            ..add(StartDownload(arfsItems)),
+            ..add(StartDownload(arfsItems,
+                folderName: (context.read<DriveDetailCubit>().state
+                        as DriveDetailLoadSuccess)
+                    .folderInView
+                    .folder
+                    .name)),
       child: const MultipleFilesDonwload(),
     ),
   );
