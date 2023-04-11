@@ -71,9 +71,11 @@ packages:
   ardrive_ui:
     dependency: "direct main"
     description:
-      path: "../ardrive_ui"
-      relative: true
-    source: path
+      path: "."
+      ref: redesign-integration-components
+      resolved-ref: "1cb5d2e4a4f840d4c89190a568766a31ae3f0838"
+      url: "https://github.com/ar-io/ardrive_ui.git"
+    source: git
     version: "1.0.0"
   args:
     dependency: transitive
@@ -272,7 +274,7 @@ packages:
       name: connectivity_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.3"
+    version: "3.0.4"
   connectivity_plus_platform_interface:
     dependency: transitive
     description:
@@ -363,7 +365,7 @@ packages:
       name: device_info_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "8.1.0"
+    version: "8.2.0"
   device_info_plus_platform_interface:
     dependency: transitive
     description:
@@ -479,7 +481,7 @@ packages:
       name: file_selector_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.1+2"
+    version: "0.5.1+3"
   file_selector_linux:
     dependency: transitive
     description:
@@ -865,7 +867,7 @@ packages:
       name: image_picker_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.7+2"
+    version: "0.8.7+3"
   image_picker_platform_interface:
     dependency: transitive
     description:
@@ -1472,7 +1474,7 @@ packages:
       name: sqlite3
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.10.1"
+    version: "1.11.0"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
@@ -1626,7 +1628,7 @@ packages:
       name: url_launcher_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.3"
+    version: "6.1.4"
   url_launcher_linux:
     dependency: transitive
     description:
@@ -1696,7 +1698,7 @@ packages:
       name: video_player_avfoundation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.3"
+    version: "2.4.4"
   video_player_platform_interface:
     dependency: transitive
     description:
@@ -1794,7 +1796,7 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.3"
+    version: "3.1.4"
   xdg_directories:
     dependency: transitive
     description:
