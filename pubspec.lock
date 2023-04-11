@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: redesign-integration-components
-      resolved-ref: "1cb5d2e4a4f840d4c89190a568766a31ae3f0838"
+      resolved-ref: d574b5fecb3a1359c9a71d8b61a0ab2e8f45184d
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
