@@ -435,20 +435,21 @@ class _AppSideBarState extends State<AppSideBar> {
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
           if (isExpanded) {
-            return NewButton(
-              anchor: isMobile
-                  ? const Aligned(
-                      follower: Alignment.topLeft,
-                      target: Alignment.bottomLeft,
-                    )
-                  : const Aligned(
-                      follower: Alignment.topLeft,
-                      target: Alignment.topRight,
-                    ),
-              drive: state.currentDrive,
-              driveDetailState: state,
-              currentFolder: state.folderInView,
-              child: InkWell(
+            return ArDriveClickArea(
+              tooltip: 'Show menu',
+              child: NewButton(
+                anchor: isMobile
+                    ? const Aligned(
+                        follower: Alignment.topLeft,
+                        target: Alignment.bottomLeft,
+                      )
+                    : const Aligned(
+                        follower: Alignment.topLeft,
+                        target: Alignment.topRight,
+                      ),
+                drive: state.currentDrive,
+                driveDetailState: state,
+                currentFolder: state.folderInView,
                 child: Container(
                   width: 128,
                   height: 40,
@@ -474,6 +475,7 @@ class _AppSideBarState extends State<AppSideBar> {
             );
           } else {
             return ArDriveClickArea(
+              tooltip: 'Show menu',
               child: NewButton(
                 anchor: const Aligned(
                   follower: Alignment.topLeft,
@@ -512,16 +514,21 @@ class DriveListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 32.0, bottom: 8.0, top: 8.0),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Text(
-          drive.name,
-          style: ArDriveTypography.body.buttonNormalBold(
-            color: isSelected
-                ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
-                : ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+    return GestureDetector(
+      onTap: onTap,
+      child: ArDriveClickArea(
+        child: Padding(
+          padding: const EdgeInsets.only(left: 32.0, bottom: 8.0, top: 8.0),
+          child: Text(
+            drive.name,
+            style: ArDriveTypography.body.buttonNormalBold(
+              color: isSelected
+                  ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
+                  : ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentDisabled,
+            ),
           ),
         ),
       ),

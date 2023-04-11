@@ -38,61 +38,66 @@ class SyncButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveDropdown(
-      anchor: const Aligned(
-        follower: Alignment.topRight,
-        target: Alignment.bottomRight,
-      ),
-      items: [
-        ArDriveDropdownItem(
-          onClick: () {
-            context.read<SyncCubit>().startSync(
-                  syncDeep: false,
-                );
-          },
-          content: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                ArDriveIcons.sync(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  appLocalizationsOf(context).resync,
-                ),
-              ],
+    return ArDriveClickArea(
+      tooltip: appLocalizationsOf(context).resyncTooltip,
+      child: ArDriveDropdown(
+        anchor: const Aligned(
+          follower: Alignment.topRight,
+          target: Alignment.bottomRight,
+        ),
+        items: [
+          ArDriveDropdownItem(
+            onClick: () {
+              context.read<SyncCubit>().startSync(
+                    syncDeep: false,
+                  );
+            },
+            content: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  ArDriveIcons.sync(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    appLocalizationsOf(context).resync,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        ArDriveDropdownItem(
-          onClick: () {
-            context.read<SyncCubit>().startSync(
-                  syncDeep: true,
-                );
-          },
-          content: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.cloud_sync,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  appLocalizationsOf(context).deepResync,
-                ),
-              ],
+          ArDriveDropdownItem(
+            onClick: () {
+              context.read<SyncCubit>().startSync(
+                    syncDeep: true,
+                  );
+            },
+            content: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.cloud_sync,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    appLocalizationsOf(context).deepResync,
+                  ),
+                ],
+              ),
             ),
           ),
+        ],
+        child: ArDriveIcons.sync(
+          color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+          size: 24,
         ),
-      ],
-      child: ArDriveIcons.sync(
-        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-        size: 24,
       ),
     );
   }

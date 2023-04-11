@@ -176,90 +176,97 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           enableMultipleFileDownload: true,
                                         )
                                         .enableMultipleFileDownload)
-                                  InkWell(
-                                    child: ArDriveIcons.download(),
-                                    onTap: () {
-                                      final files = context
-                                          .read<DriveDetailCubit>()
-                                          .selectedItems
-                                          .whereType<FileDataTableItem>()
-                                          .toList();
+                                  ArDriveClickArea(
+                                    tooltip: 'Download selected files',
+                                    child: InkWell(
+                                      child: ArDriveIcons.download(),
+                                      onTap: () {
+                                        final files = context
+                                            .read<DriveDetailCubit>()
+                                            .selectedItems
+                                            .whereType<FileDataTableItem>()
+                                            .toList();
 
-                                      promptToDownloadMultipleFiles(
-                                        context,
-                                        items: files,
-                                      );
-                                    },
+                                        promptToDownloadMultipleFiles(
+                                          context,
+                                          items: files,
+                                        );
+                                      },
+                                    ),
                                   ),
                                 const SizedBox(width: 16),
-                                ArDriveDropdown(
-                                  width: 250,
-                                  anchor: const Aligned(
-                                    follower: Alignment.topRight,
-                                    target: Alignment.bottomRight,
-                                  ),
-                                  items: [
-                                    if (isDriveOwner)
+                                ArDriveClickArea(
+                                  tooltip: 'Show menu',
+                                  child: ArDriveDropdown(
+                                    width: 250,
+                                    anchor: const Aligned(
+                                      follower: Alignment.topRight,
+                                      target: Alignment.bottomRight,
+                                    ),
+                                    items: [
+                                      if (isDriveOwner)
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            promptToRenameDrive(
+                                              context,
+                                              driveId: state.currentDrive.id,
+                                              driveName:
+                                                  state.currentDrive.name,
+                                            );
+                                          },
+                                          content: ArDriveDropdownItemTile(
+                                            name: appLocalizationsOf(context)
+                                                .renameDrive,
+                                            icon: ArDriveIcons.edit(),
+                                          ),
+                                        ),
                                       ArDriveDropdownItem(
                                         onClick: () {
-                                          promptToRenameDrive(
-                                            context,
-                                            driveId: state.currentDrive.id,
-                                            driveName: state.currentDrive.name,
+                                          promptToShareDrive(
+                                            context: context,
+                                            drive: state.currentDrive,
                                           );
                                         },
                                         content: ArDriveDropdownItemTile(
                                           name: appLocalizationsOf(context)
-                                              .renameDrive,
-                                          icon: ArDriveIcons.edit(),
+                                              .shareDrive,
+                                          icon: ArDriveIcons.share(),
                                         ),
                                       ),
-                                    ArDriveDropdownItem(
-                                      onClick: () {
-                                        promptToShareDrive(
-                                          context: context,
-                                          drive: state.currentDrive,
-                                        );
-                                      },
-                                      content: ArDriveDropdownItemTile(
-                                        name: appLocalizationsOf(context)
-                                            .shareDrive,
-                                        icon: ArDriveIcons.share(),
+                                      ArDriveDropdownItem(
+                                        onClick: () {
+                                          promptToExportCSVData(
+                                            context: context,
+                                            driveId: state.currentDrive.id,
+                                          );
+                                        },
+                                        content: ArDriveDropdownItemTile(
+                                          name: appLocalizationsOf(context)
+                                              .exportDriveContents,
+                                          icon: ArDriveIcons.download(),
+                                        ),
                                       ),
-                                    ),
-                                    ArDriveDropdownItem(
-                                      onClick: () {
-                                        promptToExportCSVData(
-                                          context: context,
-                                          driveId: state.currentDrive.id,
-                                        );
-                                      },
-                                      content: ArDriveDropdownItemTile(
-                                        name: appLocalizationsOf(context)
-                                            .exportDriveContents,
-                                        icon: ArDriveIcons.download(),
-                                      ),
-                                    ),
-                                    ArDriveDropdownItem(
-                                      onClick: () {
-                                        final bloc =
-                                            context.read<DriveDetailCubit>();
+                                      ArDriveDropdownItem(
+                                        onClick: () {
+                                          final bloc =
+                                              context.read<DriveDetailCubit>();
 
-                                        bloc.selectDataItem(
-                                          DriveDataTableItemMapper.fromDrive(
-                                            state.currentDrive,
-                                            (_) => null,
-                                            0,
-                                          ),
-                                        );
-                                      },
-                                      content: _buildItem(
-                                        appLocalizationsOf(context).moreInfo,
-                                        ArDriveIcons.info(),
-                                      ),
-                                    )
-                                  ],
-                                  child: ArDriveIcons.options(),
+                                          bloc.selectDataItem(
+                                            DriveDataTableItemMapper.fromDrive(
+                                              state.currentDrive,
+                                              (_) => null,
+                                              0,
+                                            ),
+                                          );
+                                        },
+                                        content: _buildItem(
+                                          appLocalizationsOf(context).moreInfo,
+                                          ArDriveIcons.info(),
+                                        ),
+                                      )
+                                    ],
+                                    child: ArDriveIcons.options(),
+                                  ),
                                 ),
                                 // const SizedBox(width: 16),
                                 // ProfileCard(
