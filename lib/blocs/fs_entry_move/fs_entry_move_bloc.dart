@@ -66,6 +66,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             parentFolder: folderInView,
             profile: profile,
           );
+
           if (conflictingItems.isEmpty) {
             emit(const FsEntryMoveLoadInProgress());
 
@@ -78,7 +79,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             } catch (err) {
               print('Error moving items: $err');
             }
-            print('success');
             emit(const FsEntryMoveSuccess());
           } else {
             emit(
@@ -218,6 +218,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
           performedAction: RevisionAction.move,
         ));
       }
+
       for (var folderToMove in foldersToMove) {
         var folder = await _driveDao
             .folderById(driveId: driveId, folderId: folderToMove.id)
@@ -239,10 +240,13 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         moveTxDataItems.add(folderDataItem);
 
         await _driveDao.writeToFolder(folder);
+
         folderEntity.txId = folderDataItem.id;
+
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
           performedAction: RevisionAction.move,
         ));
+
         folderMap.addAll({folder.id: folder.toCompanion(false)});
       }
     });
