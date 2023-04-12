@@ -5,8 +5,6 @@ class Resources {
   static const manifestLearnMoreLink =
       'https://ar-io.zendesk.com/hc/en-us/articles/5300353421467-Arweave-Manifests';
   static const surveyFeedbackFormUrl = 'https://ar-io.typeform.com/UserSurvey';
-  static const infernoRulesLinkEn = 'https://ardrive.io/inferno/';
-  static const infernoRulesLinkZh = 'https://cn.ardrive.io/inferno/';
 
   static const helpLink = 'https://ar-io.zendesk.com/hc/en-us';
   static const getStartedLink = 'https://arconnect.io';
@@ -17,7 +15,6 @@ class Images {
 
   final brand = const Brand();
   final profile = const Profile();
-  final inferno = const Inferno();
 }
 
 class Brand {
@@ -44,10 +41,4 @@ class Profile {
   final newUserUpload = 'assets/images/profile/profile_new_user_upload.png';
   final newUserPrivate = 'assets/images/profile/profile_new_user_private.png';
   final newUserDelete = 'assets/images/profile/profile_new_user_delete.png';
-}
-
-class Inferno {
-  const Inferno();
-
-  final fire = 'assets/images/inferno/fire_icon.png';
 }
