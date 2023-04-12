@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3424-move-button-not-visible-on-screen-with-480-x-800-resolution
-      resolved-ref: "16da6a17c9ac366f57cafff06f465a5b7e4b6cc2"
+      resolved-ref: "372ec00f4f8d2d94592aa0ed326b2e6293bf47b3"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
