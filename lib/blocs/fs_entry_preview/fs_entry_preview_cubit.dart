@@ -26,6 +26,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final ProfileCubit _profileCubit;
   final ArDriveCrypto _crypto;
 
+  final SecretKey? _fileKey;
+
   StreamSubscription? _entrySubscription;
 
   final previewMaxFileSize = 1024 * 1024 * 100;
@@ -39,13 +41,105 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     required ArweaveService arweave,
     required ProfileCubit profileCubit,
     required ArDriveCrypto crypto,
+    SecretKey? fileKey,
+    bool isSharedFile = false,
   })  : _driveDao = driveDao,
         _config = config,
         _arweave = arweave,
         _profileCubit = profileCubit,
         _crypto = crypto,
+        _fileKey = fileKey,
         super(FsEntryPreviewInitial()) {
-    preview();
+    if (isSharedFile) {
+      sharedFilePreview(maybeSelectedItem!, fileKey);
+    } else {
+      preview();
+    }
+  }
+
+  Future<void> sharedFilePreview(
+    ArDriveDataTableItem selectedItem,
+    SecretKey? fileKey,
+  ) async {
+    if (selectedItem is FileDataTableItem) {
+      final file = selectedItem;
+      final contentType = file.contentType;
+      final fileExtension = contentType.split('/').last;
+      final previewType = contentType.split('/').first;
+      final previewUrl = '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
+
+      switch (previewType) {
+        case 'image':
+          if (!_supportedExtension(previewType, fileExtension)) {
+            emit(FsEntryPreviewUnavailable());
+            return;
+          }
+
+          final data = await _getPreviewData(file, previewUrl);
+
+          if (data != null) {
+            emit(FsEntryPreviewImage(imageBytes: data, previewUrl: previewUrl));
+          } else {
+            emit(FsEntryPreviewUnavailable());
+          }
+
+          break;
+        case 'video':
+          if (_fileKey != null) {
+            emit(FsEntryPreviewUnavailable());
+            return;
+          }
+
+          emit(FsEntryPreviewVideo(previewUrl: previewUrl));
+          break;
+        default:
+          emit(FsEntryPreviewUnavailable());
+      }
+    } else {
+      emit(FsEntryPreviewUnavailable());
+    }
+
+    return Future.value();
+  }
+
+  Future<Uint8List?> _getPreviewData(
+      FileDataTableItem file, String previewUrl) async {
+    final dataTx = await _getTxDetails(file);
+
+    if (dataTx == null) {
+      emit(FsEntryPreviewUnavailable());
+      return null;
+    }
+
+    final dataRes = await ArDriveHTTP().getAsBytes(previewUrl);
+
+    if (_fileKey != null) {
+      if (file.size! >= previewMaxFileSize) {
+        emit(FsEntryPreviewUnavailable());
+        return null;
+      }
+
+      try {
+        final decodedBytes = await _crypto.decryptTransactionData(
+          dataTx,
+          dataRes.data,
+          _fileKey!,
+        );
+
+        return decodedBytes;
+      } catch (e) {
+        emit(FsEntryPreviewUnavailable());
+        return Future.value();
+      }
+    }
+
+    return dataRes.data;
+  }
+
+  Future<TransactionCommonMixin?> _getTxDetails(FileDataTableItem file) async {
+    final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+
+    return dataTx;
   }
 
   Future<void> preview() async {
@@ -99,13 +193,16 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       emit(const FsEntryPreviewLoading());
 
       final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+
       if (dataTx == null) {
         emit(FsEntryPreviewFailure());
         return;
       }
 
       late Uint8List dataBytes;
+
       final cachedBytes = await _driveDao.getPreviewDataFromMemory(dataTx.id);
+
       if (cachedBytes == null) {
         final dataRes = await ArDriveHTTP().getAsBytes(dataUrl);
         dataBytes = dataRes.data;
@@ -119,6 +216,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       }
 
       final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+
       switch (drive.privacy) {
         case DrivePrivacy.public:
           emit(
