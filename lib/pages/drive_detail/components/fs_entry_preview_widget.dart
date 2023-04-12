@@ -84,7 +84,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return VisibilityDetector(
+  return VisibilityDetector(
       key: Key(widget.videoUrl),
       onVisibilityChanged: (VisibilityInfo info) {
         setState(
