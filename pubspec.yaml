@@ -37,9 +37,10 @@ dependencies:
       url: https://github.com/ar-io/ardrive_io.git
       ref: v1.2.0
   ardrive_ui:
-    git:
-      url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3374-select-by-pages
+    path: ../ardrive_ui
+    # git:
+    #   url: https://github.com/ar-io/ardrive_ui.git
+    #   ref: PE-3128-profile-component
   artemis: ^7.0.0-beta.13
   arweave:
     git:

@@ -59,7 +59,8 @@ Future<void> showBiometricPermanentlyLockedOut({
       final biometricsAuth = context.read<BiometricAuthentication>();
 
       /// let the user use password/pin
-      biometricsAuth.authenticate(context, biometricOnly: false);
+      biometricsAuth.authenticate(
+          biometricOnly: false, localizedReason: 'TODO');
     },
     cancelTitle: appLocalizationsOf(context).cancel,
     cancelAction: cancelAction,

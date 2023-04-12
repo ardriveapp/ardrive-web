@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 
@@ -14,6 +16,13 @@ abstract class ArDriveAuth {
   Future<bool> isUserLoggedIn();
   Future<bool> isExistingUser(Wallet wallet);
   Future<User> login(Wallet wallet, String password, ProfileType profileType);
+  Future<User> unlockWithBiometrics({required String localizedReason});
+  Future<User> loginWithBiometrics(
+    Wallet wallet,
+    String password,
+    ProfileType profileType, {
+    required String localizedReason,
+  });
   Future<User> unlockUser({required String password});
   Future<void> logout();
   User? get currentUser;
@@ -23,11 +32,15 @@ abstract class ArDriveAuth {
     required ArweaveService arweave,
     required UserRepository userRepository,
     required ArDriveCrypto crypto,
+    required BiometricAuthentication biometricAuthentication,
+    required SecureKeyValueStore secureKeyValueStore,
   }) =>
       _ArDriveAuth(
         arweave: arweave,
         userRepository: userRepository,
         crypto: crypto,
+        biometricAuthentication: biometricAuthentication,
+        secureKeyValueStore: secureKeyValueStore,
       );
 }
 
@@ -36,13 +49,19 @@ class _ArDriveAuth implements ArDriveAuth {
     required ArweaveService arweave,
     required UserRepository userRepository,
     required ArDriveCrypto crypto,
+    required BiometricAuthentication biometricAuthentication,
+    required SecureKeyValueStore secureKeyValueStore,
   })  : _arweave = arweave,
         _crypto = crypto,
+        _secureKeyValueStore = secureKeyValueStore,
+        _biometricAuthentication = biometricAuthentication,
         _userRepository = userRepository;
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
   final ArDriveCrypto _crypto;
+  final BiometricAuthentication _biometricAuthentication;
+  final SecureKeyValueStore _secureKeyValueStore;
 
   User? _currentUser;
 
@@ -81,6 +100,11 @@ class _ArDriveAuth implements ArDriveAuth {
   @override
   Future<User> login(
       Wallet wallet, String password, ProfileType profileType) async {
+    if (await _biometricAuthentication.isActive()) {
+      return loginWithBiometrics(wallet, password, profileType,
+          localizedReason: 'Login to ArDrive');
+    }
+
     final isValidPassword = await _validateUser(
       wallet,
       password,
@@ -188,6 +212,56 @@ class _ArDriveAuth implements ArDriveAuth {
       profileType,
       wallet,
     );
+  }
+
+  @override
+  Future<User> unlockWithBiometrics({
+    required String localizedReason,
+  }) async {
+    final isAuthenticated = await _biometricAuthentication.authenticate(
+      localizedReason: localizedReason,
+    );
+
+    if (isAuthenticated) {
+      if (await isUserLoggedIn()) {
+        // load from local storage
+        final storedPassword = await _secureKeyValueStore.getString('password');
+
+        if (storedPassword == null) {
+          throw AuthenticationUnknownException(
+            'Biometric authentication failed. Password not found',
+          );
+        }
+
+        return await unlockUser(password: storedPassword);
+      }
+    }
+
+    throw AuthenticationFailedException('Biometric authentication failed');
+  }
+
+  @override
+  Future<User> loginWithBiometrics(
+      Wallet wallet, String password, ProfileType profileType,
+      {required String localizedReason}) async {
+    final isAuthenticated = await _biometricAuthentication.authenticate(
+      localizedReason: localizedReason,
+    );
+
+    if (isAuthenticated) {
+      if (await isUserLoggedIn()) {
+        throw AuthenticationFailedException(
+          'Biometric authentication failed. User already logged in',
+        );
+      }
+
+      // save password
+      await _secureKeyValueStore.putString('password', password);
+
+      return await login(wallet, password, profileType);
+    }
+
+    throw AuthenticationFailedException('Biometric authentication failed');
   }
 }
 

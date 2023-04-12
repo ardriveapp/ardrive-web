@@ -50,6 +50,26 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleForgetWalletEvent(event, emit);
     } else if (event is FinishOnboarding) {
       await _handleFinishOnboardingEvent(event, emit);
+    } else if (event is UnLockWithBiometrics) {
+      await _handleUnlockUserWithBiometricsEvent(event, emit);
+    }
+  }
+
+  Future<void> _handleUnlockUserWithBiometricsEvent(
+      UnLockWithBiometrics event, Emitter<LoginState> emit) async {
+    final previousState = state;
+
+    try {
+      emit(LoginLoading());
+
+      final user = await _arDriveAuth.unlockWithBiometrics(
+        localizedReason: '',
+      );
+
+      emit(LoginSuccess(user));
+    } catch (e) {
+      emit(LoginFailure(e));
+      emit(previousState);
     }
   }
 

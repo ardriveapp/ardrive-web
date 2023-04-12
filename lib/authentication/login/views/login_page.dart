@@ -5,7 +5,10 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -185,6 +188,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                 ),
               ),
             );
+            return;
+          } else if (state.error is BiometricException) {
+            showBiometricExceptionDialogForException(
+                context, state.error as BiometricException, () {});
             return;
           }
 
@@ -393,21 +400,20 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                 Row(
                   children: [
                     ArDriveCheckBox(
-                        title: '',
-                        checked: _isTermsChecked,
-                        onChange: ((value) {
-                          if (_file != null && value) {
-                            context
-                                .read<LoginBloc>()
-                                .add(AddWalletFile(_file!));
-                          } else if (_isArConnectSelected && value) {
-                            context
-                                .read<LoginBloc>()
-                                .add(const AddWalletFromArConnect());
-                          }
+                      title: '',
+                      checked: _isTermsChecked,
+                      onChange: ((value) {
+                        if (_file != null && value) {
+                          context.read<LoginBloc>().add(AddWalletFile(_file!));
+                        } else if (_isArConnectSelected && value) {
+                          context
+                              .read<LoginBloc>()
+                              .add(const AddWalletFromArConnect());
+                        }
 
-                          setState(() => _isTermsChecked = value);
-                        })),
+                        setState(() => _isTermsChecked = value);
+                      }),
+                    ),
                     Flexible(
                       child: GestureDetector(
                         onTap: () => openUrl(
@@ -440,6 +446,15 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   ],
                 ),
               ],
+            ),
+            BiometricToggle(
+              onEnableBiometric: () {
+                /// Biometrics was enabled
+                context.read<LoginBloc>().add(UnLockWithBiometrics());
+              },
+              onDisableBiometric: () {
+                context.read<LoginBloc>().add(CheckIfUserIsLoggedIn());
+              },
             ),
             ArDriveTextButton(
               onPressed: () => openUrl(url: Resources.getWalletLink),
@@ -740,6 +755,15 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
           ),
           const SizedBox(
             height: 53,
+          ),
+          BiometricToggle(
+            onEnableBiometric: () {
+              /// Biometrics was enabled
+              _onSubmit();
+            },
+            onDisableBiometric: () {
+              context.read<LoginBloc>().add(CheckIfUserIsLoggedIn());
+            },
           ),
           Align(
             alignment: Alignment.bottomCenter,
