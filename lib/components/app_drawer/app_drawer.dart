@@ -5,7 +5,6 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/inferno_rules_url.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -146,57 +145,6 @@ class AppDrawer extends StatelessWidget {
                               ),
                             ),
                             const AppVersionWidget()
-                          ],
-                        ),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.only(
-                                  top: 8.0,
-                                  bottom: 8.0,
-                                ),
-                              ),
-                              onPressed: () {
-                                final localeName =
-                                    appLocalizationsOf(context).localeName;
-                                final infernoUrl =
-                                    getInfernoUrlForCurrentLocalization(
-                                        localeName);
-
-                                openUrl(url: infernoUrl);
-                              },
-                              child: Tooltip(
-                                message: appLocalizationsOf(context)
-                                    .infernoIsInFullSwing,
-                                child: Column(
-                                  children: [
-                                    Image.asset(
-                                      Resources.images.inferno.fire,
-                                      height: 50.0,
-                                      width: 50.0,
-                                      fit: BoxFit.contain,
-                                    ),
-                                    SizedBox(
-                                      height: 32,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          top: 16.0,
-                                        ),
-                                        child: Text(
-                                          'Inferno',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .caption!
-                                              .copyWith(color: Colors.grey),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ],
