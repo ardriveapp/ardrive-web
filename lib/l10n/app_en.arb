@@ -459,7 +459,7 @@
       }
     }
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{A duplicate file found} =other{Duplicate files found}}",
+  "duplicateFiles": "{one=A duplicate file found, other=Duplicate files found}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -470,7 +470,7 @@
       }
     }
   },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{A duplicate folder found} =other{Duplicate folders found}}",
+  "duplicateFolders": "{one=A duplicate folder found, other=Duplicate folders found}",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title",
     "placeholders": {
@@ -608,7 +608,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{1 file too large} =other{{numberOfFiles} files too large}}",
+  "filesTooLarge": "{one=1 file too large, other={numberOfFiles} files too large}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -635,7 +635,7 @@
   "@filesWillBePermanentlyPublicWarning": {
     "description": "Make the user aware that it is uploading permanent data publicly"
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{This file will be uploaded publicly.} =other{These files will be uploaded publicly.}}",
+  "filesWillBeUploadedPublicly": "{one=This file will be uploaded publicly., other=These files will be uploaded publicly.}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -646,7 +646,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?} =other{{numberOfFiles} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?}}",
+  "filesWithTheSameNameAlreadyExists": "{one=A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?, other={numberOfFiles} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -734,7 +734,7 @@
   "@folderName": {
     "description": "The name of certain folder"
   },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{A folder with the same name already exists at this location. Please rename it and try uploading again.}  =other{{numberOfFolders} folders with the same name already exist at this location. Please rename them and try uploading again.}}",
+  "foldersWithTheSameNameAlreadyExists": "{one=A folder with the same name already exists at this location. Please rename it and try uploading again., other={numberOfFolders} folders with the same name already exist at this location. Please rename them and try uploading again.}",
   "@foldersWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with folder name conflicts",
     "placeholders": {
@@ -1456,7 +1456,7 @@
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{Uploading 1 file...} =other{Uploading {numberOfFiles} files...}}",
+  "uploadingNFiles": "{one=Uploading 1 file..., other=Uploading {numberOfFiles} files...}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -1471,7 +1471,7 @@
   "@uploadingSnapshot": {
     "description": "Uploading Snapshot"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{Upload 1 file} =other{Upload {numberOfFiles} files}}",
+  "uploadNFiles": "{one=Upload 1 file, other=Upload {numberOfFiles} files}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
