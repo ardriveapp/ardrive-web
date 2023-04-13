@@ -30,8 +30,10 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
               appLocalizationsOf(context).noFiles,
               style: ArDriveTypography.headline.headline5Regular(),
             ),
-            const SizedBox(
-              height: 45,
+            const Flexible(
+              child: SizedBox(
+                height: 45,
+              ),
             ),
             if (promptToAddFiles)
               InkWell(
@@ -66,6 +68,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                       Text(
                         appLocalizationsOf(context).uploadYourFirstFile,
                         style: ArDriveTypography.headline.headline5Regular(),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),

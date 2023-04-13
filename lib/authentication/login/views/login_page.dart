@@ -100,7 +100,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         resizeToAvoidBottomInset: true,
         body: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
             child: Center(child: _buildContent(context)),
           ),
         ),
@@ -223,9 +226,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             wallet: state.walletFile,
           );
         } else if (state is LoginLoading) {
-          content = ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
-            child: const _LoginCard(
+          content = const MaxDeviceSizesConstrainedBox(
+            child: _LoginCard(
               content: Center(
                 child: CircularProgressIndicator(),
               ),
@@ -291,8 +293,10 @@ class _PromptWalletViewState extends State<PromptWalletView> {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxWidth: 512,
+      defaultMaxHeight: 798,
+      maxHeightPercent: 0.9,
       child: _LoginCard(
         content: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -324,9 +328,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   },
                   platformSupportsDragAndDrop: !AppPlatform.isMobile,
                 ),
-                const SizedBox(
-                  height: 24,
-                ),
+                heightSpacing(),
                 if (widget.isArConnectAvailable) ...[
                   Align(
                     alignment: Alignment.centerLeft,
@@ -391,6 +393,11 @@ class _PromptWalletViewState extends State<PromptWalletView> {
       ),
     );
   }
+
+  SizedBox heightSpacing() {
+    return SizedBox(
+        height: MediaQuery.of(context).size.height < 700 ? 8.0 : 24.0);
+  }
 }
 
 class _LoginCard extends StatelessWidget {
@@ -432,13 +439,29 @@ class _LoginCard extends StatelessWidget {
         boxShadow: BoxShadowCard.shadow80,
         contentPadding: EdgeInsets.fromLTRB(
           horizontalPadding,
-          53,
+          _topPadding(context),
           horizontalPadding,
-          43,
+          _bottomPadding(context),
         ),
         content: content,
       );
     });
+  }
+
+  double _topPadding(BuildContext context) {
+    if (MediaQuery.of(context).size.height * 0.05 > 53) {
+      return 53;
+    } else {
+      return MediaQuery.of(context).size.height * 0.05;
+    }
+  }
+
+  double _bottomPadding(BuildContext context) {
+    if (MediaQuery.of(context).size.height * 0.05 > 43) {
+      return 43;
+    } else {
+      return MediaQuery.of(context).size.height * 0.05;
+    }
   }
 }
 
@@ -458,8 +481,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
+    return MaxDeviceSizesConstrainedBox(
       child: _LoginCard(
         content: AutofillGroup(
           child: Column(
@@ -573,8 +595,9 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 618),
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxWidth: 512,
+      defaultMaxHeight: 618,
       child: _LoginCard(
         content: Column(
           mainAxisSize: MainAxisSize.max,
@@ -918,15 +941,14 @@ class OnBoardingViewState extends State<OnBoardingView> {
               child: Container(
                 color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
                 child: Align(
-                  child: ConstrainedBox(
-                    constraints:
-                        const BoxConstraints(maxWidth: 512, maxHeight: 489),
+                  child: MaxDeviceSizesConstrainedBox(
                     child: _FadeThroughTransitionSwitcher(
-                        fillColor: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeBgSurface,
-                        child: _buildOnBoardingContent()),
+                      fillColor: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeBgSurface,
+                      child: _buildOnBoardingContent(),
+                    ),
                   ),
                 ),
               ),
@@ -945,8 +967,7 @@ class OnBoardingViewState extends State<OnBoardingView> {
         body: Container(
           color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
           child: Align(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
+            child: MaxDeviceSizesConstrainedBox(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: _buildOnBoardingContent(),
@@ -1111,3 +1132,34 @@ void _forgetWallet(
     actions: actions,
   );
 }
+
+class MaxDeviceSizesConstrainedBox extends StatelessWidget {
+  final double maxHeightPercent;
+  final double defaultMaxHeight;
+  final double defaultMaxWidth;
+  final Widget child;
+
+  const MaxDeviceSizesConstrainedBox({
+    Key? key,
+    this.maxHeightPercent = 0.8,
+    this.defaultMaxWidth = _defaultLoginCardMaxWidth,
+    this.defaultMaxHeight = _defaultLoginCardMaxHeight,
+    required this.child,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxHeight = screenHeight * maxHeightPercent;
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: defaultMaxWidth,
+        maxHeight: defaultMaxHeight > maxHeight ? maxHeight : defaultMaxHeight,
+      ),
+      child: child,
+    );
+  }
+}
+
+const double _defaultLoginCardMaxWidth = 512;
+const double _defaultLoginCardMaxHeight = 489;
