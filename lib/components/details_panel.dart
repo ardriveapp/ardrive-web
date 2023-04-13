@@ -14,6 +14,7 @@ import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
@@ -186,6 +187,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     return Align(
       alignment: Alignment.center,
       child: FsEntryPreviewWidget(
+        key: ValueKey(widget.item.id),
         state: previewState,
       ),
     );
@@ -201,7 +203,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
     } else if (state is FsEntryInfoSuccess<Drive>) {
       children = _driveDetails(state);
     } else {
-      children = [const Text('Loading...')];
+      children = [
+        const Center(
+          child: CircularProgressIndicator(),
+        )
+      ];
     }
 
     return ListView(
@@ -352,8 +358,23 @@ class _DetailsPanelState extends State<DetailsPanel> {
       ),
       sizedBoxHeight16px,
       DetailsPanelItem(
-        leading: CopyButton(
-          text: (widget.item as FileDataTableItem).dataTxId,
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              child: ArDriveIcons.externalLink(size: 16),
+              onTap: () {
+                openUrl(
+                  url:
+                      'https://viewblock.io/arweave/tx/${(widget.item as FileDataTableItem).dataTxId}',
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            CopyButton(
+              text: (widget.item as FileDataTableItem).dataTxId,
+            ),
+          ],
         ),
         itemTitle: appLocalizationsOf(context).dataTxID,
       ),
