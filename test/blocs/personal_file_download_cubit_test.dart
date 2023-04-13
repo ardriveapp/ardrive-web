@@ -53,45 +53,6 @@ class MockARFSDrive extends ARFSDriveEntity {
   });
 }
 
-class MockIOFile extends IOFile {
-  final DateTime _lastModifiedDate;
-  final String _name;
-  final String _path;
-  final Uint8List _data;
-
-  MockIOFile({
-    required super.contentType,
-    required DateTime lastModifiedDate,
-    required String name,
-    required String path,
-    required Uint8List data,
-  }) : _lastModifiedDate = lastModifiedDate,
-       _name = name,
-       _path = path,
-       _data = data;
-
-  @override
-  DateTime get lastModifiedDate => _lastModifiedDate;
-
-  @override
-  int get length => _data.length;
-  
-  @override
-  String get name => _name;
-
-  @override
-  String get path => _path;
-
-  @override
-  Stream<Uint8List> openReadStream([int start = 0, int? end]) => Stream.value(_data);
-
-  @override
-  Future<Uint8List> readAsBytes() => Future.value(_data);
-
-  @override
-  Future<String> readAsString() async => Future.value(String.fromCharCodes(_data));
-}
-
 Stream<int> mockDownloadProgress() async* {
   yield 100;
 }
