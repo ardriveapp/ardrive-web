@@ -168,6 +168,7 @@ ArDriveDataTable _buildDataListContent(
   bool isMultiselecting,
 ) {
   return ArDriveDataTable<ArDriveDataTableItem>(
+    key: ValueKey(folder.id + items.length.toString()),
     lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress,
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,

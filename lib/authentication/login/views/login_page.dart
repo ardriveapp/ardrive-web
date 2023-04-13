@@ -352,6 +352,10 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             icon: Padding(
                               padding: const EdgeInsets.only(right: 20),
                               child: ArDriveImage(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
                                 height: 24,
                                 width: 22,
                                 image: AssetImage(
@@ -607,7 +611,9 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ArDriveImage(
-                image: SvgImage.asset('assets/images/brand/ArDrive-Logo.svg'),
+                image: SvgImage.asset(
+                  'assets/images/brand/ArDrive-Logo.svg',
+                ),
                 height: 73,
               ),
               Text(
