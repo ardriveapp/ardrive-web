@@ -404,7 +404,7 @@ class _AppSideBarState extends State<AppSideBar> {
                       ),
                     ),
                     ArDriveButton(
-                      style: ArDriveButtonStyle.primary,
+                      style: ArDriveButtonStyle.tertiary,
                       onPressed: () => openUrl(url: Resources.arHelpLink),
                       text: appLocalizationsOf(context).howDoIGetAR,
                     ),
