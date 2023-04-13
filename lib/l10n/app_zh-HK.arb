@@ -1,5 +1,5 @@
 {
-  "@@locale": "zh_HK",
+  "@@locale": "zh-HK",
   "addnewManifestEmphasized": "新增資訊清單",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
