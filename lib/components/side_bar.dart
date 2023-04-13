@@ -432,72 +432,68 @@ class _AppSideBarState extends State<AppSideBar> {
     bool isExpanded,
     bool isMobile,
   ) {
-    return BlocBuilder<DriveDetailCubit, DriveDetailState>(
-      builder: (context, state) {
-        if (state is DriveDetailLoadSuccess) {
-          if (isExpanded) {
-            return ArDriveClickArea(
-              tooltip: appLocalizationsOf(context).showMenu,
-              child: NewButton(
-                anchor: isMobile
-                    ? const Aligned(
-                        follower: Alignment.topLeft,
-                        target: Alignment.bottomLeft,
-                      )
-                    : const Aligned(
-                        follower: Alignment.topLeft,
-                        target: Alignment.topRight,
-                      ),
-                drive: state.currentDrive,
-                driveDetailState: state,
-                currentFolder: state.folderInView,
-                child: Container(
-                  width: 128,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeAccentBrand,
-                    borderRadius: const BorderRadius.all(
-                      Radius.circular(8),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      appLocalizationsOf(context).newString,
-                      style: ArDriveTypography.headline.headline5Bold(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          } else {
-            return ArDriveClickArea(
-              tooltip: appLocalizationsOf(context).showMenu,
-              child: NewButton(
-                anchor: const Aligned(
+    Drive? currentDrive;
+    FolderWithContents? currentFolder;
+    final state = context.watch<DriveDetailCubit>().state;
+
+    if (state is DriveDetailLoadSuccess) {
+      currentDrive = state.currentDrive;
+      currentFolder = state.folderInView;
+    }
+
+    if (isExpanded) {
+      return ArDriveClickArea(
+        tooltip: appLocalizationsOf(context).showMenu,
+        child: NewButton(
+          anchor: isMobile
+              ? const Aligned(
+                  follower: Alignment.topLeft,
+                  target: Alignment.bottomLeft,
+                )
+              : const Aligned(
                   follower: Alignment.topLeft,
                   target: Alignment.topRight,
                 ),
-                drive: state.currentDrive,
-                driveDetailState: state,
-                currentFolder: state.folderInView,
-                child: ArDriveIcons.plus(
+          drive: currentDrive,
+          driveDetailState: context.read<DriveDetailCubit>().state,
+          currentFolder: currentFolder,
+          child: Container(
+            width: 128,
+            height: 40,
+            decoration: BoxDecoration(
+              color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+              borderRadius: const BorderRadius.all(
+                Radius.circular(8),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                appLocalizationsOf(context).newString,
+                style: ArDriveTypography.headline.headline5Bold(
                   color: Colors.white,
                 ),
               ),
-            );
-          }
-        }
-
-        return const SizedBox(
-          height: 40,
-        );
-      },
-    );
+            ),
+          ),
+        ),
+      );
+    } else {
+      return ArDriveClickArea(
+        tooltip: appLocalizationsOf(context).showMenu,
+        child: NewButton(
+          anchor: const Aligned(
+            follower: Alignment.topLeft,
+            target: Alignment.topRight,
+          ),
+          drive: currentDrive,
+          driveDetailState: state,
+          currentFolder: currentFolder,
+          child: ArDriveIcons.plus(
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
   }
 }
 
