@@ -99,11 +99,16 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     final driveName = driveNameController.text;
 
     try {
+      final previousState = state;
       if (await driveKeyValidator() != null) {
+        emit(DriveAttachInvalidDriveKey());
+        emit(previousState);
         return;
       }
 
       if (!await driveNameLoader()) {
+        emit(DriveAttachDriveNotFound());
+        emit(previousState);
         return;
       }
 
@@ -139,10 +144,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   Future<SecretKey?> getDriveKey(
     String? promptedDriveKey,
   ) async {
-    if (_driveKey != null) {
-      return _driveKey;
-    }
-
     if (promptedDriveKey == null || promptedDriveKey.isEmpty) {
       return null;
     }
@@ -162,16 +163,23 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     final driveId = driveIdController.text;
     final promptedDriveKey = driveKeyController.text;
 
+    if (_driveKey != null) {
+      return true;
+    }
+
     if (driveId.isEmpty) {
       return false;
     }
 
-    final driveKey = await getDriveKey(promptedDriveKey);
+    _driveKey = await getDriveKey(promptedDriveKey);
 
-    final drive = await _arweave.getLatestDriveEntityWithId(driveId, driveKey);
+    if (_driveKey == null) {
+      return false;
+    }
+
+    final drive = await _arweave.getLatestDriveEntityWithId(driveId, _driveKey);
 
     if (drive == null) {
-      if (driveKey != null) {}
       return false;
     }
 
