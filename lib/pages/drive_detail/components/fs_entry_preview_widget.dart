@@ -32,15 +32,12 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget>
         );
 
       case FsEntryPreviewImage:
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: ArDriveImage(
-            fit: BoxFit.contain,
-            height: double.maxFinite,
-            width: double.maxFinite,
-            image: MemoryImage(
-              (widget.state as FsEntryPreviewImage).imageBytes,
-            ),
+        return ArDriveImage(
+          fit: BoxFit.contain,
+          height: double.maxFinite,
+          width: double.maxFinite,
+          image: MemoryImage(
+            (widget.state as FsEntryPreviewImage).imageBytes,
           ),
         );
 
