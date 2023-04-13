@@ -13,7 +13,6 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
-import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -268,23 +267,12 @@ class PromptWalletView extends StatefulWidget {
 }
 
 class _PromptWalletViewState extends State<PromptWalletView> {
-  bool _isTermsChecked = false;
-  bool _isArConnectSelected = false;
-  IOFile? _file;
   late ArDriveDropAreaSingleInputController _dropAreaController;
 
   @override
   void initState() {
     _dropAreaController = ArDriveDropAreaSingleInputController(
       onFileAdded: (file) {
-        _file = file;
-        _isArConnectSelected = false;
-
-        if (!_isTermsChecked) {
-          showAnimatedDialog(context, content: _showAcceptTermsModal());
-          return;
-        }
-
         context.read<LoginBloc>().add(AddWalletFile(file));
       },
       validateFile: (file) async {
@@ -304,7 +292,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 798),
+      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
       child: _LoginCard(
         content: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -369,20 +357,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             ),
                             style: ArDriveButtonStyle.secondary,
                             onPressed: () {
-                              if (!_isTermsChecked) {
-                                showAnimatedDialog(
-                                  context,
-                                  content: _showAcceptTermsModal(),
-                                );
-
-                                _dropAreaController.reset();
-
-                                _file = null;
-                                _isArConnectSelected = true;
-
-                                return;
-                              }
-
                               context
                                   .read<LoginBloc>()
                                   .add(const AddWalletFromArConnect());
@@ -397,63 +371,15 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                 const SizedBox(
                   height: 24,
                 ),
-                Row(
-                  children: [
-                    ArDriveCheckBox(
-                      title: '',
-                      checked: _isTermsChecked,
-                      onChange: ((value) {
-                        if (_file != null && value) {
-                          context.read<LoginBloc>().add(AddWalletFile(_file!));
-                        } else if (_isArConnectSelected && value) {
-                          context
-                              .read<LoginBloc>()
-                              .add(const AddWalletFromArConnect());
-                        }
-
-                        setState(() => _isTermsChecked = value);
-                      }),
-                    ),
-                    Flexible(
-                      child: GestureDetector(
-                        onTap: () => openUrl(
-                          url: Resources.agreementLink,
-                        ),
-                        child: ArDriveClickArea(
-                          child: Text.rich(
-                            TextSpan(
-                              children: splitTranslationsWithMultipleStyles<
-                                  InlineSpan>(
-                                originalText: appLocalizationsOf(context)
-                                    .aggreeToTerms_body,
-                                defaultMapper: (text) => TextSpan(text: text),
-                                parts: {
-                                  appLocalizationsOf(context).aggreeToTerms_link:
-                                      (text) => TextSpan(
-                                            text: text,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
             BiometricToggle(
               onEnableBiometric: () {
                 /// Biometrics was enabled
-                context.read<LoginBloc>().add(UnLockWithBiometrics());
+                context.read<LoginBloc>().add(const UnLockWithBiometrics());
               },
               onDisableBiometric: () {
-                context.read<LoginBloc>().add(CheckIfUserIsLoggedIn());
+                context.read<LoginBloc>().add(const CheckIfUserIsLoggedIn());
               },
             ),
             ArDriveTextButton(
@@ -462,17 +388,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _showAcceptTermsModal() {
-    return ArDriveIconModal(
-      title: appLocalizationsOf(context).termsAndConditions,
-      content: appLocalizationsOf(context).pleaseAcceptTheTermsToContinue,
-      icon: ArDriveIcons.warning(
-        size: 88,
-        color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
       ),
     );
   }
@@ -646,6 +561,8 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<ArDriveFormState>();
 
+  bool _isTermsChecked = false;
+
   bool _passwordIsValid = false;
   bool _confirmPasswordIsValid = false;
 
@@ -744,11 +661,52 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             },
           ),
           const SizedBox(height: 16),
+          Row(
+            children: [
+              ArDriveCheckBox(
+                title: '',
+                checked: _isTermsChecked,
+                onChange: ((value) {
+                  setState(() => _isTermsChecked = value);
+                }),
+              ),
+              Flexible(
+                child: GestureDetector(
+                  onTap: () => openUrl(
+                    url: Resources.agreementLink,
+                  ),
+                  child: ArDriveClickArea(
+                    child: Text.rich(
+                      TextSpan(
+                        children:
+                            splitTranslationsWithMultipleStyles<InlineSpan>(
+                          originalText:
+                              appLocalizationsOf(context).aggreeToTerms_body,
+                          defaultMapper: (text) => TextSpan(text: text),
+                          parts: {
+                            appLocalizationsOf(context).aggreeToTerms_link:
+                                (text) => TextSpan(
+                                      text: text,
+                                      style: const TextStyle(
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ArDriveButton(
-              isDisabled:
-                  _passwordIsValid == false || _confirmPasswordIsValid == false,
+              isDisabled: !_isTermsChecked ||
+                  _passwordIsValid == false ||
+                  _confirmPasswordIsValid == false,
               onPressed: _onSubmit,
               text: appLocalizationsOf(context).proceed,
             ),
@@ -762,7 +720,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               _onSubmit();
             },
             onDisableBiometric: () {
-              context.read<LoginBloc>().add(CheckIfUserIsLoggedIn());
+              context.read<LoginBloc>().add(const CheckIfUserIsLoggedIn());
             },
           ),
           Align(
@@ -1066,7 +1024,9 @@ class _OnBoardingContent extends StatelessWidget {
             const SizedBox(width: 32),
             ArDriveButton(
               iconAlignment: IconButtonAlignment.right,
-              icon: ArDriveIcons.arrowRightCircle(),
+              icon: ArDriveIcons.arrowRightCircle(
+                color: Colors.white,
+              ),
               text: onBoarding.primaryButtonText,
               onPressed: () => onBoarding.primaryButtonAction(),
             ),
