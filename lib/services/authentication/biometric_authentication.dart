@@ -57,10 +57,22 @@ class BiometricAuthentication {
     return hasPassword != null;
   }
 
+  bool _authenticated = false;
+  DateTime _lastAuthenticatedTime = DateTime.now();
+
   Future<bool> authenticate({
     bool biometricOnly = true,
     required String localizedReason,
+    bool useCached = false, // Add a new flag for using cached authentication
   }) async {
+    if (useCached &&
+        _authenticated &&
+        _lastAuthenticatedTime
+            .isAfter(DateTime.now().subtract(const Duration(seconds: 5)))) {
+      // Return the cached authentication state if it was authenticated less than 5 seconds ago
+      return _authenticated;
+    }
+
     try {
       final canAuthenticate = await checkDeviceSupport();
 
@@ -75,6 +87,9 @@ class BiometricAuthentication {
           useErrorDialogs: false,
         ),
       );
+
+      _authenticated = authenticated;
+      _lastAuthenticatedTime = DateTime.now();
 
       return authenticated;
     } on PlatformException catch (e) {

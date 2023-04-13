@@ -381,15 +381,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                 ),
               ],
             ),
-            BiometricToggle(
-              onEnableBiometric: () {
-                /// Biometrics was enabled
-                context.read<LoginBloc>().add(const UnLockWithBiometrics());
-              },
-              onDisableBiometric: () {
-                context.read<LoginBloc>().add(const CheckIfUserIsLoggedIn());
-              },
-            ),
             ArDriveTextButton(
               onPressed: () => openUrl(url: Resources.getWalletLink),
               text: appLocalizationsOf(context).getAWallet,
@@ -537,6 +528,17 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                       },
                       text: appLocalizationsOf(context).proceed,
                     ),
+                  ),
+                  BiometricToggle(
+                    onEnableBiometric: () {
+                      /// Biometrics was enabled
+                      context
+                          .read<LoginBloc>()
+                          .add(const UnLockWithBiometrics());
+                    },
+                    onDisableBiometric: () {
+                      // context.read<LoginBloc>().add(const CheckIfUserIsLoggedIn());
+                    },
                   ),
                 ],
               ),

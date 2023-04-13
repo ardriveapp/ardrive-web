@@ -275,9 +275,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
             // activeTrackColor: Colors.black,
             // controlAffinity: ListTileControlAffinity.leading,
             onChanged: (value) async {
-              setState(() {
-                _isEnabled = value;
-              });
+              _isEnabled = value;
 
               if (_isEnabled) {
                 final auth = context.read<BiometricAuthentication>();
