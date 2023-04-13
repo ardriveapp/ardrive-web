@@ -1,0 +1,1 @@
+- Removes the link to the Inferno Leaderboard
