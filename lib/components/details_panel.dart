@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
@@ -748,7 +749,9 @@ class DetailsPanelToolbar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           if (item is FileDataTableItem || item is DriveDataItem)
-            InkWell(
+            _buildActionIcon(
+              tooltip: _getShareTooltip(item, context),
+              icon: ArDriveIcons.share(size: 21),
               onTap: () {
                 if (item is FileDataTableItem) {
                   promptToShareFile(
@@ -763,36 +766,87 @@ class DetailsPanelToolbar extends StatelessWidget {
                   );
                 }
               },
-              child: ArDriveIcons.share(
-                size: 21,
-              ),
             ),
-          const SizedBox(
-            width: 16,
-          ),
-          if (item is FileDataTableItem)
-            InkWell(
+          if (item is FileDataTableItem) ...[
+            _buildActionIcon(
+              tooltip: appLocalizationsOf(context).download,
+              icon: ArDriveIcons.download(size: 21),
               onTap: () {
                 promptToDownloadProfileFile(
                   context: context,
                   file: item as FileDataTableItem,
                 );
               },
-              child: ArDriveIcons.download(
-                size: 21,
-              ),
+            ),
+            _buildActionIcon(
+              tooltip: appLocalizationsOf(context).preview,
+              icon: ArDriveIcons.externalLink(size: 21),
+              onTap: () {
+                final bloc = context.read<DriveDetailCubit>();
+                bloc.launchPreview((item as FileDataTableItem).dataTxId);
+              },
+            ),
+          ],
+          if (drive.ownerAddress ==
+              context.read<ArDriveAuth>().currentUser?.walletAddress)
+            _buildActionIcon(
+              tooltip: appLocalizationsOf(context).rename,
+              icon: ArDriveIcons.edit(size: 21),
+              onTap: () {
+                promptToRenameModal(
+                  context,
+                  driveId: drive.id,
+                  initialName: item.name,
+                  fileId: item is FileDataTableItem ? item.id : null,
+                  folderId: item is FolderDataTableItem ? item.id : null,
+                );
+              },
+            ),
+          if (drive.ownerAddress ==
+              context.read<ArDriveAuth>().currentUser?.walletAddress)
+            _buildActionIcon(
+              tooltip: appLocalizationsOf(context).move,
+              icon: ArDriveIcons.move(size: 21),
+              onTap: () {
+                promptToMove(context, driveId: drive.id, selectedItems: [item]);
+              },
             ),
           const Spacer(),
-          InkWell(
+          _buildActionIcon(
+            icon: ArDriveIcons.closeButton(size: 21),
             onTap: () {
               final bloc = context.read<DriveDetailCubit>();
               bloc.toggleSelectedItemDetails();
             },
-            child: ArDriveIcons.closeButton(
-              size: 21,
-            ),
           ),
         ],
+      ),
+    );
+  }
+
+  String _getShareTooltip(ArDriveDataTableItem item, BuildContext context) {
+    if (item is FileDataTableItem) {
+      return appLocalizationsOf(context).shareFile;
+    } else if (item is DriveDataItem) {
+      return appLocalizationsOf(context).shareDrive;
+    } else {
+      return '';
+    }
+  }
+
+  Widget _buildActionIcon({
+    required Widget icon,
+    required VoidCallback onTap,
+    String? tooltip,
+  }) {
+    return ArDriveClickArea(
+      tooltip: tooltip,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 16.0),
+        child: InkWell(
+          onTap: onTap,
+          child: icon,
+        ),
       ),
     );
   }

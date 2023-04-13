@@ -282,7 +282,7 @@ class _DriveExplorerItemTileTrailingState
         onClick: () {
           final bloc = context.read<DriveDetailCubit>();
 
-          bloc.selectDataItem(item);
+          bloc.launchPreview((item as FileDataTableItem).dataTxId);
         },
         content: _buildItem(
           appLocalizationsOf(context).preview,
