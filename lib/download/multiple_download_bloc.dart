@@ -20,13 +20,12 @@ class MultipleDownloadBloc
         super(MultipleDownloadInitial()) {
     on<MultipleDownloadEvent>((event, emit) async {
       if (event is StartDownload) {
-        await _downloadMultipleFiles(event.items, emit);
+        await _downloadMultipleFiles(event.items, emit, event.folderName);
       }
     });
   }
-
-  Future<void> _downloadMultipleFiles(
-      List<ARFSFileEntity> items, Emitter<MultipleDownloadState> emit) async {
+  Future<void> _downloadMultipleFiles(List<ARFSFileEntity> items,
+      Emitter<MultipleDownloadState> emit, String? folderName) async {
     try {
       final files = items.whereType<ARFSFileEntity>().toList();
       final ioFiles = <IOFile>[];
@@ -66,7 +65,7 @@ class MultipleDownloadBloc
 
       await Future.delayed(const Duration(milliseconds: 200));
 
-      await FileZipper(files: ioFiles).downloadZipFile();
+      await FileZipper(files: ioFiles).downloadZipFile(fileName: folderName);
 
       emit(const MultipleDownloadFinishedWithSuccess(title: 'Multiple Files'));
     } catch (e) {
