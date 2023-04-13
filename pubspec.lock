@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: redesign-feedbacks-implementations
-      resolved-ref: d574b5fecb3a1359c9a71d8b61a0ab2e8f45184d
+      resolved-ref: "1e08dd718320ceaac13404a650331a70f18a3d00"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
