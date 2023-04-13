@@ -733,7 +733,7 @@ class DetailsPanelToolbar extends StatelessWidget {
             .currentDrive;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
@@ -748,6 +748,9 @@ class DetailsPanelToolbar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          const SizedBox(
+            width: 16,
+          ),
           if (item is FileDataTableItem || item is DriveDataItem)
             _buildActionIcon(
               tooltip: _getShareTooltip(item, context),
