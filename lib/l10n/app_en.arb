@@ -1628,6 +1628,10 @@
   "@welcomeBack": {
     "description": "welcome back"
   },
+  "welcome": "Welcome",
+  "@welcome": {
+    "description": "welcome"
+  },
   "dragAndDropButtonTitle": "Browse Json",
   "@dragAndDropButtonTitle": {
     "description": "text of title drag and drop"

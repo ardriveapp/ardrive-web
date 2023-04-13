@@ -299,15 +299,17 @@ class _PromptWalletViewState extends State<PromptWalletView> {
       maxHeightPercent: 0.9,
       child: _LoginCard(
         content: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             Align(
               alignment: Alignment.topCenter,
               child: Text(
-                appLocalizationsOf(context).welcomeBack,
+                appLocalizationsOf(context).welcome,
                 style: ArDriveTypography.headline.headline4Regular(),
               ),
             ),
+            heightSpacing(),
             Column(
               children: [
                 ArDriveDropAreaSingleInput(
@@ -596,25 +598,26 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
   @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
-      defaultMaxWidth: 512,
-      defaultMaxHeight: 618,
+      maxHeightPercent: 1,
       child: _LoginCard(
-        content: Column(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ArDriveImage(
-              image: SvgImage.asset('assets/images/brand/ArDrive-Logo.svg'),
-              height: 73,
-            ),
-            Text(
-              appLocalizationsOf(context).createAndConfirmPassword,
-              textAlign: TextAlign.center,
-              style: ArDriveTypography.headline.headline5Regular(),
-            ),
-            const SizedBox(height: 16),
-            _createPasswordForm(),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ArDriveImage(
+                image: SvgImage.asset('assets/images/brand/ArDrive-Logo.svg'),
+                height: 73,
+              ),
+              Text(
+                appLocalizationsOf(context).createAndConfirmPassword,
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.headline.headline5Regular(),
+              ),
+              const SizedBox(height: 16),
+              _createPasswordForm(),
+            ],
+          ),
         ),
       ),
     );
@@ -678,7 +681,9 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               return null;
             },
             onFieldSubmitted: (_) {
-              if (_passwordIsValid && _confirmPasswordIsValid) {
+              if (_passwordIsValid &&
+                  _confirmPasswordIsValid &&
+                  _isTermsChecked) {
                 _onSubmit();
               }
             },
@@ -734,18 +739,18 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               text: appLocalizationsOf(context).proceed,
             ),
           ),
-          const SizedBox(
-            height: 53,
-          ),
-          BiometricToggle(
-            onEnableBiometric: () {
-              /// Biometrics was enabled
-              _onSubmit();
-            },
-            onDisableBiometric: () {
-              context.read<LoginBloc>().add(const CheckIfUserIsLoggedIn());
-            },
-          ),
+          // const SizedBox(
+          //   height: 53,
+          // ),
+          // BiometricToggle(
+          //   onEnableBiometric: () {
+          //     /// Biometrics was enabled
+          //     _onSubmit();
+          //   },
+          //   onDisableBiometric: () {
+          //     context.read<LoginBloc>().add(const CheckIfUserIsLoggedIn());
+          //   },
+          // ),
           Align(
             alignment: Alignment.bottomCenter,
             child: ArDriveButton(
