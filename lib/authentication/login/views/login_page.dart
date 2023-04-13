@@ -598,6 +598,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
   @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
+      defaultMaxHeight: 798,
       maxHeightPercent: 1,
       child: _LoginCard(
         content: SingleChildScrollView(

@@ -1,5 +1,4 @@
 // implement a widget that has 145 of height and maximum widget, and has a row as child
-import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/sync/sync_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -19,13 +18,10 @@ class AppTopBar extends StatelessWidget {
         padding: const EdgeInsets.only(right: 24.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            const SyncButton(),
-            const SizedBox(width: 24),
-            ProfileCard(
-              walletAddress:
-                  context.read<ArDriveAuth>().currentUser?.walletAddress ?? '',
-            ),
+          children: const [
+            SyncButton(),
+            SizedBox(width: 24),
+            ProfileCard(),
           ],
         ),
       ),

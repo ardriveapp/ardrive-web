@@ -1,4 +1,3 @@
-import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/utils/html/html_util.dart';
@@ -190,13 +189,9 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
             const SizedBox(
               width: 24,
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: 12.0),
-              child: ProfileCard(
-                walletAddress:
-                    context.read<ArDriveAuth>().currentUser?.walletAddress ??
-                        '',
-              ),
+            const Padding(
+              padding: EdgeInsets.only(right: 12.0),
+              child: ProfileCard(),
             ),
           ],
         ),

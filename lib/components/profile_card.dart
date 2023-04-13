@@ -11,10 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ProfileCard extends StatelessWidget {
   const ProfileCard({
     super.key,
-    required this.walletAddress,
   });
-
-  final String walletAddress;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +53,8 @@ class ProfileCard extends StatelessWidget {
 
   Widget _loggedInView(BuildContext context) {
     final state = context.read<ProfileCubit>().state as ProfileLoggedIn;
+    final walletAddress = state.walletAddress;
+    
     return ArDriveClickArea(
       tooltip: appLocalizationsOf(context).profile,
       child: ArDriveDropdown(

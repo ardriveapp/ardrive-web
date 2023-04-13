@@ -22,9 +22,7 @@ class NoDrivesPage extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: const [
-                  ProfileCard(
-                    walletAddress: '',
-                  ),
+                  ProfileCard(),
                 ],
               ),
               Center(
