@@ -2,7 +2,6 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/sync/sync_cubit.dart';
-import 'package:ardrive/components/app_drawer/app_drawer.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/theme_switcher.dart';
 import 'package:ardrive/misc/resources.dart';
@@ -11,8 +10,10 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class AppSideBar extends StatefulWidget {
@@ -200,7 +201,7 @@ class _AppSideBarState extends State<AppSideBar> {
         ArDriveAccordionItem(
           isExpanded: true,
           Text(
-            'Public Drives',
+            appLocalizationsOf(context).publicDrives,
             style: ArDriveTypography.body.buttonLargeBold(),
           ),
           state.userDrives
@@ -219,7 +220,7 @@ class _AppSideBarState extends State<AppSideBar> {
         ArDriveAccordionItem(
           isExpanded: true,
           Text(
-            'Private Drives',
+            appLocalizationsOf(context).privateDrives,
             style: ArDriveTypography.body.buttonLargeBold(),
           ),
           state.userDrives
@@ -238,7 +239,7 @@ class _AppSideBarState extends State<AppSideBar> {
         ArDriveAccordionItem(
           isExpanded: true,
           Text(
-            'Shared Drives',
+            appLocalizationsOf(context).sharedDrives,
             style: ArDriveTypography.body.buttonLargeBold(),
           ),
           state.sharedDrives
@@ -435,20 +436,21 @@ class _AppSideBarState extends State<AppSideBar> {
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
           if (isExpanded) {
-            return NewButton(
-              anchor: isMobile
-                  ? const Aligned(
-                      follower: Alignment.topLeft,
-                      target: Alignment.bottomLeft,
-                    )
-                  : const Aligned(
-                      follower: Alignment.topLeft,
-                      target: Alignment.topRight,
-                    ),
-              drive: state.currentDrive,
-              driveDetailState: state,
-              currentFolder: state.folderInView,
-              child: InkWell(
+            return ArDriveClickArea(
+              tooltip: appLocalizationsOf(context).showMenu,
+              child: NewButton(
+                anchor: isMobile
+                    ? const Aligned(
+                        follower: Alignment.topLeft,
+                        target: Alignment.bottomLeft,
+                      )
+                    : const Aligned(
+                        follower: Alignment.topLeft,
+                        target: Alignment.topRight,
+                      ),
+                drive: state.currentDrive,
+                driveDetailState: state,
+                currentFolder: state.folderInView,
                 child: Container(
                   width: 128,
                   height: 40,
@@ -474,6 +476,7 @@ class _AppSideBarState extends State<AppSideBar> {
             );
           } else {
             return ArDriveClickArea(
+              tooltip: appLocalizationsOf(context).showMenu,
               child: NewButton(
                 anchor: const Aligned(
                   follower: Alignment.topLeft,
@@ -512,10 +515,10 @@ class DriveListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 32.0, bottom: 8.0, top: 8.0),
-      child: GestureDetector(
-        onTap: onTap,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 32.0, bottom: 8.0, top: 8.0),
         child: Text(
           drive.name,
           style: ArDriveTypography.body.buttonNormalBold(
@@ -538,6 +541,35 @@ class HelpButton extends StatelessWidget {
       child: ArDriveIcons.help(),
       onTap: () {
         openUrl(url: Resources.helpLink);
+      },
+    );
+  }
+}
+
+class AppVersionWidget extends StatelessWidget {
+  const AppVersionWidget({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: PackageInfo.fromPlatform(),
+      builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
+        final info = snapshot.data;
+        if (info == null) {
+          return const SizedBox(
+            height: 32,
+            width: 32,
+          );
+        }
+        final literalVersion =
+            kIsWeb ? info.version : '${info.version}+${info.buildNumber}';
+        return Text(
+          appLocalizationsOf(context).appVersion(literalVersion),
+          style: ArDriveTypography.body.buttonNormalRegular(
+            color: Colors.grey,
+          ),
+          textAlign: TextAlign.center,
+        );
       },
     );
   }

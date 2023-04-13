@@ -515,9 +515,9 @@
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
-  "sharedDrivesEmphasized": "SHARED DRIVES",
-  "@sharedDrivesEmphasized": {
-    "description": "Sub-header for the shared drives list. Emphasized with upper case"
+  "sharedDrives": "Shared Drives",
+  "@sharedDrives": {
+    "description": "Sub-header for the shared drives list"
   },
   "help": "Help",
   "@help": {
@@ -1761,5 +1761,17 @@
   "lightMode": "LIGHT MODE",
   "@lightMode": {
     "description": "LIGHT MODE"
+  },
+  "showMenu": "Show menu",
+  "@showMenu": {
+    "description": "show menu text"
+  },
+  "publicDrives": "Public Drives",
+  "@publicDrives": {
+    "description": "Public drives accordion title"
+  },
+  "privateDrives": "Private Drives",
+  "@privateDrives": {
+    "description": "Private drives accordion title"
   }
 }
