@@ -240,8 +240,9 @@ class AppState extends State<App> {
                   Locale.fromSubtags(
                     languageCode: 'zh',
                     countryCode: 'HK',
-                  ), // generic traditional Chinese 'zh_Hant'
+                  ), // Traditional Chinese, Cantonese
                   Locale('ja', ''), // Japanese, no country code
+                  Locale('hi', ''), // Hindi, no country code
                 ],
                 builder: (context, child) => ListTileTheme(
                   textColor: kOnSurfaceBodyTextColor,

@@ -1,0 +1,1 @@
+- Improves performance on the Sync process
