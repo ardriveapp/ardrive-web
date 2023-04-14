@@ -72,6 +72,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       looping: true,
       showControls: true,
       allowFullScreen: false,
+      errorBuilder: (context, errorMessage) {
+        return Center(
+          child: Text(
+            errorMessage,
+            style: ArDriveTypography.body.buttonXLargeRegular(
+              color:
+                  ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+            ),
+          ),
+        );
+      },
     );
   }
 

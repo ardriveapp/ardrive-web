@@ -68,13 +68,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       final previewType = contentType.split('/').first;
       final previewUrl = '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
 
+      if (!_supportedExtension(previewType, fileExtension)) {
+        emit(FsEntryPreviewUnavailable());
+        return;
+      }
+
       switch (previewType) {
         case 'image':
-          if (!_supportedExtension(previewType, fileExtension)) {
-            emit(FsEntryPreviewUnavailable());
-            return;
-          }
-
           final data = await _getPreviewData(file, previewUrl);
 
           if (data != null) {
@@ -85,13 +85,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
           break;
         case 'video':
-          if (_fileKey != null) {
-            emit(FsEntryPreviewUnavailable());
-            return;
-          }
-
-          emit(FsEntryPreviewVideo(previewUrl: previewUrl));
+          _previewVideo(
+            fileKey != null,
+            selectedItem,
+            previewUrl,
+          );
           break;
+
         default:
           emit(FsEntryPreviewUnavailable());
       }
@@ -170,12 +170,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
                 emitImagePreview(file, previewUrl);
                 break;
               case 'video':
-                if (drive.isPrivate) {
-                  emit(FsEntryPreviewUnavailable());
-                  return;
-                }
-
-                emit(FsEntryPreviewVideo(previewUrl: previewUrl));
+                _previewVideo(
+                  drive.isPrivate,
+                  selectedItem as FileDataTableItem,
+                  previewUrl,
+                );
                 break;
               default:
                 emit(FsEntryPreviewUnavailable());
@@ -186,6 +185,22 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     } else {
       emit(FsEntryPreviewUnavailable());
     }
+  }
+
+  void _previewVideo(
+      bool isPrivate, FileDataTableItem selectedItem, previewUrl) {
+    if (isPrivate) {
+      emit(FsEntryPreviewUnavailable());
+      return;
+    }
+
+    if (selectedItem.fileStatusFromTransactions !=
+        TransactionStatus.confirmed) {
+      emit(FsEntryPreviewUnavailable());
+      return;
+    }
+
+    emit(FsEntryPreviewVideo(previewUrl: previewUrl));
   }
 
   Future<void> emitImagePreview(FileEntry file, String dataUrl) async {
