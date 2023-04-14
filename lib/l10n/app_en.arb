@@ -1456,7 +1456,7 @@
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{Uploading 1 file...} =other{Uploading {numberOfFiles} files...}}",
+  "uploadingNFiles": "{numberOfFiles, plural, =1{Uploading 1 file...} =other{Uploading {numberOfFiles} files...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
