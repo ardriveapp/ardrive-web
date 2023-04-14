@@ -529,15 +529,13 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                       text: appLocalizationsOf(context).proceed,
                     ),
                   ),
+                  const SizedBox(height: 16),
                   BiometricToggle(
                     onEnableBiometric: () {
                       /// Biometrics was enabled
                       context
                           .read<LoginBloc>()
                           .add(const UnLockWithBiometrics());
-                    },
-                    onDisableBiometric: () {
-                      // context.read<LoginBloc>().add(const CheckIfUserIsLoggedIn());
                     },
                   ),
                 ],
@@ -748,18 +746,6 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               text: appLocalizationsOf(context).proceed,
             ),
           ),
-          // const SizedBox(
-          //   height: 53,
-          // ),
-          // BiometricToggle(
-          //   onEnableBiometric: () {
-          //     /// Biometrics was enabled
-          //     _onSubmit();
-          //   },
-          //   onDisableBiometric: () {
-          //     context.read<LoginBloc>().add(const CheckIfUserIsLoggedIn());
-          //   },
-          // ),
           Align(
             alignment: Alignment.bottomCenter,
             child: ArDriveButton(
