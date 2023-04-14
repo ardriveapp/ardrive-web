@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 1.44.1
+version: 1.45.3
 
 environment:
   sdk: '>=2.18.5 <3.0.0'
@@ -123,7 +123,6 @@ flutter:
     - assets/images/
     - assets/images/brand/
     - assets/images/profile/
-    - assets/images/inferno/
     - assets/images/login/
     - assets/images/login/onboarding/
     - assets/animations/

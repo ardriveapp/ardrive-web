@@ -127,8 +127,9 @@ class ArweaveService {
 
   Stream<SnapshotEntityTransaction> getAllSnapshotsOfDrive(
     String driveId,
-    int? lastBlockHeight,
-  ) async* {
+    int? lastBlockHeight, {
+    required String ownerAddress,
+  }) async* {
     String cursor = '';
 
     while (true) {
@@ -139,6 +140,7 @@ class ArweaveService {
             driveId: driveId,
             lastBlockHeight: lastBlockHeight,
             after: cursor,
+            ownerAddress: ownerAddress,
           ),
         ),
       );
@@ -161,17 +163,20 @@ class ArweaveService {
   Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
       getAllTransactionsFromDrive(
     String driveId, {
+    required String ownerAddress,
     int? lastBlockHeight,
   }) {
     return getSegmentedTransactionsFromDrive(
       driveId,
       minBlockHeight: lastBlockHeight,
+      ownerAddress: ownerAddress,
     );
   }
 
   Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
       getSegmentedTransactionsFromDrive(
     String driveId, {
+    required String ownerAddress,
     int? minBlockHeight,
     int? maxBlockHeight,
   }) async* {
@@ -186,6 +191,7 @@ class ArweaveService {
             minBlockHeight: minBlockHeight,
             maxBlockHeight: maxBlockHeight,
             after: cursor,
+            ownerAddress: ownerAddress,
           ),
         ),
       );
@@ -211,18 +217,33 @@ class ArweaveService {
     List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
         entityTxs,
     SecretKey? driveKey,
-    String? owner,
     int lastBlockHeight, {
+    required String ownerAddress,
     required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
     final List<Uint8List> responses = await Future.wait(
       entityTxs.map(
-        (entity) => _getEntityData(
-          entityId: entity.id,
-          driveId: driveId,
-          isPrivate: driveKey != null,
-        ),
+        (entity) async {
+          final tags = entity.tags;
+          final isSnapshot = tags.any(
+            (tag) =>
+                tag.name == EntityTag.entityType &&
+                tag.value == EntityType.snapshot.toString(),
+          );
+
+          // don't fetch data for snapshots
+          if (isSnapshot) {
+            print('skipping unnecessary request for snapshot data');
+            return Uint8List(0);
+          }
+
+          return _getEntityData(
+            entityId: entity.id,
+            driveId: driveId,
+            isPrivate: driveKey != null,
+          );
+        },
       ),
     );
 
@@ -294,7 +315,7 @@ class ArweaveService {
       block.entities.removeWhere((e) => e == null);
       block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
       //Remove entities with spoofed owners
-      block.entities.removeWhere((e) => e!.ownerAddress != owner);
+      block.entities.removeWhere((e) => e!.ownerAddress != ownerAddress);
     }
 
     return DriveEntityHistory(
