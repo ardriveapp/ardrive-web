@@ -216,7 +216,7 @@ void main() {
 
   group('CheckIfUserIsLoggedIn', () {
     blocTest(
-      'should emit the event to prompt password when user is an existing one',
+      'should emit the event to prompt password when user is an existing one and biometrics are disabled',
       build: () {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
@@ -226,6 +226,67 @@ void main() {
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
             .thenAnswer((_) async => true);
+
+        when(() => mockArDriveAuth.isBiometricsEnabled())
+            .thenAnswer((invocation) => Future.value(false));
+      },
+      act: (bloc) async {
+        bloc.add(const CheckIfUserIsLoggedIn());
+      },
+      expect: () => [LoginLoading(), const PromptPassword()],
+    );
+
+    blocTest(
+      'should login with biometrics when user is an existing one and biometrics are enabled',
+      build: () {
+        return LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+        );
+      },
+      setUp: () {
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((_) async => true);
+
+        when(() => mockArDriveAuth.isBiometricsEnabled())
+            .thenAnswer((invocation) => Future.value(true));
+
+        when(() => mockArDriveAuth.unlockWithBiometrics(
+              localizedReason: any(named: 'localizedReason'),
+            )).thenAnswer((_) async => User(
+              password: 'password',
+              wallet: wallet,
+              walletAddress: 'walletAddress',
+              walletBalance: BigInt.one,
+              cipherKey: SecretKey([]),
+              profileType: ProfileType.json,
+            ));
+      },
+      act: (bloc) async {
+        bloc.add(const CheckIfUserIsLoggedIn());
+      },
+      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+    );
+
+    // should emit PromptPassword when user is an existing one and biometrics are enabled but login with biometrics fails
+    blocTest(
+      'should emit PromptPassword when user is an existing one and biometrics are enabled but login with biometrics fails',
+      build: () {
+        return LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+        );
+      },
+      setUp: () {
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((_) async => true);
+
+        when(() => mockArDriveAuth.isBiometricsEnabled())
+            .thenAnswer((invocation) => Future.value(true));
+
+        when(() => mockArDriveAuth.unlockWithBiometrics(
+              localizedReason: any(named: 'localizedReason'),
+            )).thenThrow(Exception('some error'));
       },
       act: (bloc) async {
         bloc.add(const CheckIfUserIsLoggedIn());
@@ -245,6 +306,7 @@ void main() {
         // user doesn't exist
         when(() => mockArDriveAuth.isUserLoggedIn())
             .thenAnswer((_) async => false);
+
         when(() => mockArConnectService.isExtensionPresent())
             .thenAnswer((invocation) => false);
       },
@@ -597,6 +659,67 @@ void main() {
         bloc.add(FinishOnboarding(wallet: wallet));
       },
       expect: () => [const TypeMatcher<CreatingNewPassword>()],
+    );
+  });
+
+  // group for test the UnLockWithBiometrics event
+  group('testing LoginBloc UnLockWithBiometrics event', () {
+    final loggedUser = User(
+      password: 'password',
+      wallet: wallet,
+      walletAddress: 'walletAddress',
+      walletBalance: BigInt.one,
+      cipherKey: SecretKey([]),
+      profileType: ProfileType.json,
+    );
+
+    blocTest(
+      'should emit the state to create password',
+      build: () {
+        return LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+        );
+      },
+      setUp: () {
+        when(() => mockArDriveAuth.unlockWithBiometrics(
+                localizedReason: any(named: 'localizedReason')))
+            .thenAnswer((invocation) => Future.value(loggedUser));
+      },
+      act: (bloc) async {
+        bloc.add(const UnLockWithBiometrics());
+      },
+      expect: () => [
+        LoginLoading(),
+        const TypeMatcher<LoginSuccess>(),
+      ],
+    );
+
+    blocTest(
+      'should emit a failure when biometrics fails',
+      build: () {
+        return LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+        );
+      },
+      setUp: () {
+        when(() => mockArDriveAuth.unlockWithBiometrics(
+                localizedReason: any(named: 'localizedReason')))
+            .thenThrow(Exception('some error'));
+      },
+      act: (bloc) async {
+        // when an error occurs we go back to the last state, so use it to test
+        bloc.emit(const PromptPassword());
+
+        bloc.add(const UnLockWithBiometrics());
+      },
+      expect: () => [
+        const PromptPassword(),
+        LoginLoading(),
+        const TypeMatcher<LoginFailure>(),
+        const PromptPassword()
+      ],
     );
   });
 }

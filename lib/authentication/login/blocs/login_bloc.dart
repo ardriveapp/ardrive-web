@@ -61,9 +61,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final previousState = state;
 
     try {
-      await _loginWithBiometrics(emit: emit);
+      if (await _arDriveAuth.isUserLoggedIn()) {
+        await _loginWithBiometrics(emit: emit);
+      }
     } catch (e) {
       logger.e('Failed to unlock user with biometrics: $e');
+
+      emit(LoginFailure(e));
 
       emit(previousState);
     }
@@ -133,6 +137,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       if (await _arDriveAuth.isBiometricsEnabled()) {
         try {
           await _loginWithBiometrics(emit: emit);
+          return;
         } catch (e) {
           logger.e('Failed to unlock user with biometrics: $e');
         }
@@ -268,7 +273,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required Emitter<LoginState> emit,
   }) async {
     emit(LoginLoading());
-    
+
     final user = await _arDriveAuth.unlockWithBiometrics(
         localizedReason: 'Login using credentials stored on this device');
 
