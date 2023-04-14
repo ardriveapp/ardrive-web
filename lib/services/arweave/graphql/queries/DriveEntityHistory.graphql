@@ -3,8 +3,10 @@ query DriveEntityHistory(
   $after: String
   $minBlockHeight: Int
   $maxBlockHeight: Int
+  $ownerAddress: String!
 ) {
   transactions(
+    owners: [$ownerAddress]
     first: 100
     sort: HEIGHT_ASC
     tags: [

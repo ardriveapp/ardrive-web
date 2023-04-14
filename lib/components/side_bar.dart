@@ -2,7 +2,6 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/sync/sync_cubit.dart';
-import 'package:ardrive/components/app_drawer/app_drawer.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/theme_switcher.dart';
 import 'package:ardrive/misc/resources.dart';
@@ -11,8 +10,10 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class AppSideBar extends StatefulWidget {
@@ -33,11 +34,12 @@ class _AppSideBarState extends State<AppSideBar> {
   @override
   Widget build(BuildContext context) {
     return Material(
-        color: ArDriveTheme.of(context).themeData.backgroundColor,
-        child: ScreenTypeLayout(
-          mobile: _mobileView(),
-          desktop: _desktopView(),
-        ));
+      color: ArDriveTheme.of(context).themeData.backgroundColor,
+      child: ScreenTypeLayout(
+        mobile: _mobileView(),
+        desktop: _desktopView(),
+      ),
+    );
   }
 
   Widget _mobileView() {
@@ -86,24 +88,13 @@ class _AppSideBarState extends State<AppSideBar> {
           const SizedBox(
             height: 16,
           ),
-          Padding(
-            padding: const EdgeInsets.only(
-              left: 24.0,
-              right: 16,
-              bottom: 16,
-            ),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: InkWell(
-                child: ArDriveIcons.help(),
-                onTap: () {},
-              ),
-            ),
-          ),
           const SizedBox(
             height: 16,
           ),
-          const ThemeSwitcher(),
+          const Padding(
+            padding: EdgeInsets.only(left: 16.0),
+            child: ThemeSwitcher(),
+          ),
           const Padding(
             padding: EdgeInsets.only(left: 16.0),
             child: AppVersionWidget(),
@@ -120,154 +111,85 @@ class _AppSideBarState extends State<AppSideBar> {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       child: SizedBox(
-        width: _isExpanded ? 240 : 64,
-        child: _isExpanded
-            ? Column(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        const SizedBox(
-                          height: 62,
-                        ),
-                        _buildLogo(),
-                        const SizedBox(
-                          height: 56,
-                        ),
-                        _buildDriveActionsButton(
-                          context,
-                          false,
-                        ),
-                        const SizedBox(
-                          height: 56,
-                        ),
-                        BlocBuilder<DrivesCubit, DrivesState>(
-                          builder: (context, state) {
-                            if (state is DrivesLoadSuccess &&
-                                (state.userDrives.isNotEmpty ||
-                                    state.sharedDrives.isEmpty)) {
-                              return Flexible(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 43.0),
-                                  child: _buildAccordion(
-                                    state,
+          width: _isExpanded ? 240 : 64,
+          child: Column(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    const SizedBox(
+                      height: 24,
+                    ),
+                    _buildLogo(),
+                    const SizedBox(
+                      height: 24,
+                    ),
+                    _buildDriveActionsButton(
+                      context,
+                      false,
+                    ),
+                    const SizedBox(
+                      height: 56,
+                    ),
+                    _isExpanded
+                        ? BlocBuilder<DrivesCubit, DrivesState>(
+                            builder: (context, state) {
+                              if (state is DrivesLoadSuccess &&
+                                  (state.userDrives.isNotEmpty ||
+                                      state.sharedDrives.isEmpty)) {
+                                return Flexible(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 43.0),
+                                    child: _buildAccordion(
+                                      state,
+                                    ),
                                   ),
-                                ),
-                              );
-                            }
-                            return const SizedBox();
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 51.0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: InkWell(
-                        child: ArDriveIcons.help(),
-                        onTap: () {},
-                      ),
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 43.0,
-                      right: 24,
-                      bottom: 24,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          children: const [
-                            ThemeSwitcher(),
-                            AppVersionWidget(),
-                          ],
-                        ),
-                        InkWell(
-                          child: ArDriveIcons.arrowBackFilled(),
-                          onTap: () {
-                            setState(() {
-                              _isExpanded = !_isExpanded;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  ArDriveImage(
-                    image: AssetImage(
-                      Resources.images.brand.logo,
-                    ),
-                  ),
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.1,
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeAccentBrand,
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(8.0),
-                    child: _newButton(false, false),
-                  ),
-                  const SizedBox(
-                    height: 32,
-                  ),
-                  const Spacer(),
-                  InkWell(
-                    child: ArDriveIcons.help(),
-                    onTap: () {},
-                  ),
-                  const SizedBox(
-                    height: 32,
-                  ),
-                  InkWell(
-                    child: ArDriveIcons.arrowForwardFilled(),
-                    onTap: () {
-                      setState(() {
-                        _isExpanded = !_isExpanded;
-                      });
-                    },
-                  ),
-                  const SizedBox(
-                    height: 32,
-                  ),
-                  const AppVersionWidget(),
-                  const SizedBox(
-                    height: 32,
-                  ),
-                ],
+                                );
+                              }
+                              return const SizedBox();
+                            },
+                          )
+                        : const SizedBox(),
+                  ],
+                ),
               ),
-      ),
+              const SizedBox(
+                height: 16,
+              ),
+              _isExpanded
+                  ? const SizedBox(
+                      height: 16,
+                    )
+                  : const Spacer(),
+              _buildSideBarBottom(),
+            ],
+          )),
     );
   }
 
   Widget _buildLogo() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Image.asset(
-        ArDriveTheme.of(context).themeData.name == 'light'
-            ? Resources.images.brand.logoHorizontalNoSubtitleLight
-            : Resources.images.brand.logoHorizontalNoSubtitleDark,
-        height: 32,
-        fit: BoxFit.contain,
+    return SizedBox(
+      height: 64,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        child: _isExpanded
+            ? Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Image.asset(
+                  ArDriveTheme.of(context).themeData.name == 'light'
+                      ? Resources.images.brand.logoHorizontalNoSubtitleLight
+                      : Resources.images.brand.logoHorizontalNoSubtitleDark,
+                  height: 32,
+                  fit: BoxFit.contain,
+                ),
+              )
+            : ArDriveImage(
+                width: 62,
+                height: 62,
+                image: AssetImage(
+                  Resources.images.brand.logo,
+                ),
+              ),
       ),
     );
   }
@@ -279,7 +201,7 @@ class _AppSideBarState extends State<AppSideBar> {
         ArDriveAccordionItem(
           isExpanded: true,
           Text(
-            'Public Drives',
+            appLocalizationsOf(context).publicDrives,
             style: ArDriveTypography.body.buttonLargeBold(),
           ),
           state.userDrives
@@ -288,6 +210,11 @@ class _AppSideBarState extends State<AppSideBar> {
                 (d) => DriveListTile(
                   drive: d,
                   onTap: () {
+                    if (state.selectedDriveId == d.id) {
+                      // opens the root folder
+                      context.read<DriveDetailCubit>().openFolder(path: '');
+                      return;
+                    }
                     context.read<DrivesCubit>().selectDrive(d.id);
                   },
                   isSelected: state.selectedDriveId == d.id,
@@ -298,7 +225,7 @@ class _AppSideBarState extends State<AppSideBar> {
         ArDriveAccordionItem(
           isExpanded: true,
           Text(
-            'Private Drives',
+            appLocalizationsOf(context).privateDrives,
             style: ArDriveTypography.body.buttonLargeBold(),
           ),
           state.userDrives
@@ -317,7 +244,7 @@ class _AppSideBarState extends State<AppSideBar> {
         ArDriveAccordionItem(
           isExpanded: true,
           Text(
-            'Shared Drives',
+            appLocalizationsOf(context).sharedDrives,
             style: ArDriveTypography.body.buttonLargeBold(),
           ),
           state.sharedDrives
@@ -334,6 +261,73 @@ class _AppSideBarState extends State<AppSideBar> {
         ),
       ],
     );
+  }
+
+  Widget _buildSideBarBottom() {
+    return _isExpanded
+        ? Padding(
+            padding: const EdgeInsets.only(
+              left: 43.0,
+              right: 24,
+              bottom: 24,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: HelpButton(),
+                    ),
+                    SizedBox(
+                      height: 8,
+                    ),
+                    ThemeSwitcher(),
+                    SizedBox(
+                      height: 8,
+                    ),
+                    AppVersionWidget(),
+                  ],
+                ),
+                InkWell(
+                  child: ArDriveIcons.arrowBackFilled(),
+                  onTap: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
+                  },
+                ),
+              ],
+            ),
+          )
+        : Column(
+            children: [
+              const HelpButton(),
+              const SizedBox(
+                height: 32,
+              ),
+              InkWell(
+                child: ArDriveIcons.arrowForwardFilled(),
+                onTap: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+              ),
+              const SizedBox(
+                height: 32,
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                child: AppVersionWidget(),
+              ),
+              const SizedBox(
+                height: 32,
+              ),
+            ],
+          );
   }
 
   Widget _buildSyncButton() {
@@ -392,32 +386,47 @@ class _AppSideBarState extends State<AppSideBar> {
         minimumWalletBalance: minimumWalletBalance,
       );
 
-      return Column(
-        children: [
-          Align(
-            alignment: Alignment.center,
-            child: _newButton(_isExpanded, isMobile),
-          ),
-          if (notEnoughARInWallet) ...{
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                appLocalizationsOf(context).insufficientARWarning,
-                style: ArDriveTypography.body.captionRegular(
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: _isExpanded
+            ? Column(
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: _newButton(_isExpanded, isMobile),
+                  ),
+                  if (notEnoughARInWallet) ...{
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        appLocalizationsOf(context).insufficientARWarning,
+                        style: ArDriveTypography.body.captionRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeAccentDisabled,
+                        ),
+                      ),
+                    ),
+                    ArDriveButton(
+                      style: ArDriveButtonStyle.tertiary,
+                      onPressed: () => openUrl(url: Resources.arHelpLink),
+                      text: appLocalizationsOf(context).howDoIGetAR,
+                    ),
+                  }
+                ],
+              )
+            : Container(
+                decoration: BoxDecoration(
                   color: ArDriveTheme.of(context)
                       .themeData
                       .colors
-                      .themeAccentDisabled,
+                      .themeAccentBrand,
+                  shape: BoxShape.circle,
                 ),
+                padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 10),
+                child: _newButton(false, false),
               ),
-            ),
-            ArDriveButton(
-              style: ArDriveButtonStyle.primary,
-              onPressed: () => openUrl(url: Resources.arHelpLink),
-              text: appLocalizationsOf(context).howDoIGetAR,
-            ),
-          }
-        ],
       );
     } else {
       return _newButton(_isExpanded, isMobile);
@@ -428,68 +437,68 @@ class _AppSideBarState extends State<AppSideBar> {
     bool isExpanded,
     bool isMobile,
   ) {
-    return BlocBuilder<DriveDetailCubit, DriveDetailState>(
-      builder: (context, state) {
-        if (state is DriveDetailLoadSuccess) {
-          if (isExpanded) {
-            return NewButton(
-              anchor: isMobile
-                  ? const Aligned(
-                      follower: Alignment.topLeft,
-                      target: Alignment.bottomLeft,
-                    )
-                  : const Aligned(
-                      follower: Alignment.topLeft,
-                      target: Alignment.topRight,
-                    ),
-              drive: state.currentDrive,
-              driveDetailState: state,
-              currentFolder: state.folderInView,
-              child: InkWell(
-                child: Container(
-                  width: 128,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeAccentBrand,
-                    borderRadius: const BorderRadius.all(
-                      Radius.circular(8),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      appLocalizationsOf(context).newString,
-                      style: ArDriveTypography.headline.headline5Bold(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+    Drive? currentDrive;
+    FolderWithContents? currentFolder;
+    final state = context.watch<DriveDetailCubit>().state;
+
+    if (state is DriveDetailLoadSuccess) {
+      currentDrive = state.currentDrive;
+      currentFolder = state.folderInView;
+    }
+
+    if (isExpanded) {
+      return ArDriveClickArea(
+        tooltip: appLocalizationsOf(context).showMenu,
+        child: NewButton(
+          anchor: isMobile
+              ? const Aligned(
+                  follower: Alignment.topLeft,
+                  target: Alignment.bottomLeft,
+                )
+              : const Aligned(
+                  follower: Alignment.topLeft,
+                  target: Alignment.topRight,
+                ),
+          drive: currentDrive,
+          driveDetailState: context.read<DriveDetailCubit>().state,
+          currentFolder: currentFolder,
+          child: Container(
+            width: 128,
+            height: 40,
+            decoration: BoxDecoration(
+              color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+              borderRadius: const BorderRadius.all(
+                Radius.circular(8),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                appLocalizationsOf(context).newString,
+                style: ArDriveTypography.headline.headline5Bold(
+                  color: Colors.white,
                 ),
               ),
-            );
-          } else {
-            return NewButton(
-              anchor: const Aligned(
-                follower: Alignment.topLeft,
-                target: Alignment.topRight,
-              ),
-              drive: state.currentDrive,
-              driveDetailState: state,
-              currentFolder: state.folderInView,
-              child: ArDriveIcons.plus(
-                color: Colors.white,
-              ),
-            );
-          }
-        }
-
-        return const SizedBox(
-          height: 40,
-        );
-      },
-    );
+            ),
+          ),
+        ),
+      );
+    } else {
+      return ArDriveClickArea(
+        tooltip: appLocalizationsOf(context).showMenu,
+        child: NewButton(
+          anchor: const Aligned(
+            follower: Alignment.topLeft,
+            target: Alignment.topRight,
+          ),
+          drive: currentDrive,
+          driveDetailState: state,
+          currentFolder: currentFolder,
+          child: ArDriveIcons.plus(
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
   }
 }
 
@@ -507,10 +516,10 @@ class DriveListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 32.0, bottom: 8.0, top: 8.0),
-      child: GestureDetector(
-        onTap: onTap,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 32.0, bottom: 8.0, top: 8.0),
         child: Text(
           drive.name,
           style: ArDriveTypography.body.buttonNormalBold(
@@ -520,6 +529,49 @@ class DriveListTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class HelpButton extends StatelessWidget {
+  const HelpButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      child: ArDriveIcons.help(),
+      onTap: () {
+        openUrl(url: Resources.helpLink);
+      },
+    );
+  }
+}
+
+class AppVersionWidget extends StatelessWidget {
+  const AppVersionWidget({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: PackageInfo.fromPlatform(),
+      builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
+        final info = snapshot.data;
+        if (info == null) {
+          return const SizedBox(
+            height: 32,
+            width: 32,
+          );
+        }
+        final literalVersion =
+            kIsWeb ? info.version : '${info.version}+${info.buildNumber}';
+        return Text(
+          appLocalizationsOf(context).appVersion(literalVersion),
+          style: ArDriveTypography.body.buttonNormalRegular(
+            color: Colors.grey,
+          ),
+          textAlign: TextAlign.center,
+        );
+      },
     );
   }
 }

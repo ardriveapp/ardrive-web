@@ -23,15 +23,22 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
             ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
         width: double.infinity,
         content: Column(
-          mainAxisSize: MainAxisSize.max,
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const Flexible(
+              child: SizedBox(
+                height: 45,
+              ),
+            ),
             Text(
               appLocalizationsOf(context).noFiles,
               style: ArDriveTypography.headline.headline5Regular(),
             ),
-            const SizedBox(
-              height: 45,
+            const Flexible(
+              child: SizedBox(
+                height: 45,
+              ),
             ),
             if (promptToAddFiles)
               InkWell(
@@ -66,6 +73,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                       Text(
                         appLocalizationsOf(context).uploadYourFirstFile,
                         style: ArDriveTypography.headline.headline5Regular(),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),

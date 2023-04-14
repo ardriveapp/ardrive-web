@@ -5,6 +5,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
@@ -50,6 +51,25 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleForgetWalletEvent(event, emit);
     } else if (event is FinishOnboarding) {
       await _handleFinishOnboardingEvent(event, emit);
+    } else if (event is UnLockWithBiometrics) {
+      await _handleUnlockUserWithBiometricsEvent(event, emit);
+    }
+  }
+
+  Future<void> _handleUnlockUserWithBiometricsEvent(
+      UnLockWithBiometrics event, Emitter<LoginState> emit) async {
+    final previousState = state;
+
+    try {
+      if (await _arDriveAuth.isUserLoggedIn()) {
+        await _loginWithBiometrics(emit: emit);
+      }
+    } catch (e) {
+      logger.e('Failed to unlock user with biometrics: $e');
+
+      emit(LoginFailure(e));
+
+      emit(previousState);
     }
   }
 
@@ -114,6 +134,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(LoginLoading());
 
     if (await _arDriveAuth.isUserLoggedIn()) {
+      if (await _arDriveAuth.isBiometricsEnabled()) {
+        try {
+          await _loginWithBiometrics(emit: emit);
+          return;
+        } catch (e) {
+          logger.e('Failed to unlock user with biometrics: $e');
+        }
+      }
+
       emit(const PromptPassword());
       return;
     }
@@ -132,6 +161,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       emit(LoginSuccess(user));
     } catch (e) {
+      logger.e('Failed to unlock user with password: $e');
+
       emit(LoginFailure(e));
       emit(previousState);
 
@@ -236,5 +267,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   bool _isArConnectWallet() {
     return profileType == ProfileType.arConnect;
+  }
+
+  Future<void> _loginWithBiometrics({
+    required Emitter<LoginState> emit,
+  }) async {
+    emit(LoginLoading());
+
+    final user = await _arDriveAuth.unlockWithBiometrics(
+        localizedReason: 'Login using credentials stored on this device');
+
+    emit(LoginSuccess(user));
+
+    return;
   }
 }

@@ -148,12 +148,13 @@ void main() {
       });
 
       blocTest<DriveAttachCubit, DriveAttachState>(
-        'does nothing when submitted without valid drive key',
+        'emits invalid key state and the previous state when given invalid private drive details',
         build: () => driveAttachCubit,
         act: (bloc) async {
           await Future.microtask(() {
             bloc.driveIdController.text = validPrivateDriveId;
           });
+
           await Future.delayed(const Duration(milliseconds: 1000));
 
           bloc.driveKeyController.text = invalidDriveKeyBase64;
@@ -161,10 +162,13 @@ void main() {
           await bloc.drivePrivacyLoader();
 
           await Future.delayed(const Duration(milliseconds: 1000));
+
           bloc.submit();
         },
         expect: () => [
           DriveAttachPrivate(),
+          DriveAttachInvalidDriveKey(),
+          DriveAttachPrivate()
         ],
         wait: const Duration(milliseconds: 1200),
         verify: (_) async {
@@ -202,7 +206,7 @@ void main() {
       'does nothing when submitted without valid form',
       build: () => driveAttachCubit,
       act: (bloc) => bloc.submit(),
-      expect: () => [],
+      expect: () => [DriveAttachDriveNotFound(), DriveAttachInitial()],
       verify: (_) {
         verifyZeroInteractions(arweave);
         verifyZeroInteractions(syncBloc);

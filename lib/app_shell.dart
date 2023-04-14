@@ -1,4 +1,3 @@
-import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/utils/html/html_util.dart';
@@ -8,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import 'blocs/blocs.dart';
+import 'components/app_top_bar.dart';
 import 'components/components.dart';
 import 'components/progress_bar.dart';
 import 'components/wallet_switch_dialog.dart';
@@ -66,6 +66,7 @@ class AppShellState extends State<AppShell> {
                                     return Align(
                                       alignment: Alignment.center,
                                       child: Material(
+                                        borderRadius: BorderRadius.circular(8),
                                         child: ProgressDialog(
                                             progressBar: ProgressBar(
                                               percentage: context
@@ -184,13 +185,13 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
             const Spacer(),
-            Padding(
-              padding: const EdgeInsets.only(right: 12.0),
-              child: ProfileCard(
-                walletAddress:
-                    context.read<ArDriveAuth>().currentUser?.walletAddress ??
-                        '',
-              ),
+            const SyncButton(),
+            const SizedBox(
+              width: 24,
+            ),
+            const Padding(
+              padding: EdgeInsets.only(right: 12.0),
+              child: ProfileCard(),
             ),
           ],
         ),

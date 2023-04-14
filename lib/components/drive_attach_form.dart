@@ -84,7 +84,28 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DriveAttachCubit, DriveAttachState>(
+    return BlocConsumer<DriveAttachCubit, DriveAttachState>(
+      listener: (context, state) {
+        if (state is DriveAttachInvalidDriveKey) {
+          showAnimatedDialog(
+            context,
+            content: ArDriveStandardModal(
+              title: appLocalizationsOf(context).error,
+              description: appLocalizationsOf(context).invalidKeyFile,
+            ),
+          );
+        } else if (state is DriveAttachDriveNotFound) {
+          showAnimatedDialog(
+            context,
+            content: ArDriveStandardModal(
+              title: appLocalizationsOf(context).error,
+              description: appLocalizationsOf(context)
+                  .validationAttachDriveCouldNotBeFound,
+            ),
+          );
+        }
+      },
+      buildWhen: (previous, current) => current is! DriveAttachInvalidDriveKey,
       builder: (context, state) {
         if (state is DriveAttachInProgress) {
           return ProgressDialog(

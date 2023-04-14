@@ -5,12 +5,14 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
-import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -98,7 +100,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         resizeToAvoidBottomInset: true,
         body: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
             child: Center(child: _buildContent(context)),
           ),
         ),
@@ -186,6 +191,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               ),
             );
             return;
+          } else if (state.error is BiometricException) {
+            showBiometricExceptionDialogForException(
+                context, state.error as BiometricException, () {});
+            return;
           }
 
           showAnimatedDialog(
@@ -217,9 +226,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             wallet: state.walletFile,
           );
         } else if (state is LoginLoading) {
-          content = ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
-            child: const _LoginCard(
+          content = const MaxDeviceSizesConstrainedBox(
+            child: _LoginCard(
               content: Center(
                 child: CircularProgressIndicator(),
               ),
@@ -261,23 +269,12 @@ class PromptWalletView extends StatefulWidget {
 }
 
 class _PromptWalletViewState extends State<PromptWalletView> {
-  bool _isTermsChecked = false;
-  bool _isArConnectSelected = false;
-  IOFile? _file;
   late ArDriveDropAreaSingleInputController _dropAreaController;
 
   @override
   void initState() {
     _dropAreaController = ArDriveDropAreaSingleInputController(
       onFileAdded: (file) {
-        _file = file;
-        _isArConnectSelected = false;
-
-        if (!_isTermsChecked) {
-          showAnimatedDialog(context, content: _showAcceptTermsModal());
-          return;
-        }
-
         context.read<LoginBloc>().add(AddWalletFile(file));
       },
       validateFile: (file) async {
@@ -296,19 +293,23 @@ class _PromptWalletViewState extends State<PromptWalletView> {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 798),
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxWidth: 512,
+      defaultMaxHeight: 798,
+      maxHeightPercent: 0.9,
       child: _LoginCard(
         content: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             Align(
               alignment: Alignment.topCenter,
               child: Text(
-                appLocalizationsOf(context).welcomeBack,
+                appLocalizationsOf(context).welcome,
                 style: ArDriveTypography.headline.headline4Regular(),
               ),
             ),
+            heightSpacing(),
             Column(
               children: [
                 ArDriveDropAreaSingleInput(
@@ -329,9 +330,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   },
                   platformSupportsDragAndDrop: !AppPlatform.isMobile,
                 ),
-                const SizedBox(
-                  height: 24,
-                ),
+                heightSpacing(),
                 if (widget.isArConnectAvailable) ...[
                   Align(
                     alignment: Alignment.centerLeft,
@@ -353,6 +352,10 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             icon: Padding(
                               padding: const EdgeInsets.only(right: 20),
                               child: ArDriveImage(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
                                 height: 24,
                                 width: 22,
                                 image: AssetImage(
@@ -362,20 +365,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             ),
                             style: ArDriveButtonStyle.secondary,
                             onPressed: () {
-                              if (!_isTermsChecked) {
-                                showAnimatedDialog(
-                                  context,
-                                  content: _showAcceptTermsModal(),
-                                );
-
-                                _dropAreaController.reset();
-
-                                _file = null;
-                                _isArConnectSelected = true;
-
-                                return;
-                              }
-
                               context
                                   .read<LoginBloc>()
                                   .add(const AddWalletFromArConnect());
@@ -390,55 +379,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                 const SizedBox(
                   height: 24,
                 ),
-                Row(
-                  children: [
-                    ArDriveCheckBox(
-                        title: '',
-                        checked: _isTermsChecked,
-                        onChange: ((value) {
-                          if (_file != null && value) {
-                            context
-                                .read<LoginBloc>()
-                                .add(AddWalletFile(_file!));
-                          } else if (_isArConnectSelected && value) {
-                            context
-                                .read<LoginBloc>()
-                                .add(const AddWalletFromArConnect());
-                          }
-
-                          setState(() => _isTermsChecked = value);
-                        })),
-                    Flexible(
-                      child: GestureDetector(
-                        onTap: () => openUrl(
-                          url: Resources.agreementLink,
-                        ),
-                        child: ArDriveClickArea(
-                          child: Text.rich(
-                            TextSpan(
-                              children: splitTranslationsWithMultipleStyles<
-                                  InlineSpan>(
-                                originalText: appLocalizationsOf(context)
-                                    .aggreeToTerms_body,
-                                defaultMapper: (text) => TextSpan(text: text),
-                                parts: {
-                                  appLocalizationsOf(context).aggreeToTerms_link:
-                                      (text) => TextSpan(
-                                            text: text,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
             ArDriveTextButton(
@@ -451,15 +391,9 @@ class _PromptWalletViewState extends State<PromptWalletView> {
     );
   }
 
-  Widget _showAcceptTermsModal() {
-    return ArDriveIconModal(
-      title: appLocalizationsOf(context).termsAndConditions,
-      content: appLocalizationsOf(context).pleaseAcceptTheTermsToContinue,
-      icon: ArDriveIcons.warning(
-        size: 88,
-        color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
-      ),
-    );
+  SizedBox heightSpacing() {
+    return SizedBox(
+        height: MediaQuery.of(context).size.height < 700 ? 8.0 : 24.0);
   }
 }
 
@@ -502,13 +436,29 @@ class _LoginCard extends StatelessWidget {
         boxShadow: BoxShadowCard.shadow80,
         contentPadding: EdgeInsets.fromLTRB(
           horizontalPadding,
-          53,
+          _topPadding(context),
           horizontalPadding,
-          43,
+          _bottomPadding(context),
         ),
         content: content,
       );
     });
+  }
+
+  double _topPadding(BuildContext context) {
+    if (MediaQuery.of(context).size.height * 0.05 > 53) {
+      return 53;
+    } else {
+      return MediaQuery.of(context).size.height * 0.05;
+    }
+  }
+
+  double _bottomPadding(BuildContext context) {
+    if (MediaQuery.of(context).size.height * 0.05 > 43) {
+      return 43;
+    } else {
+      return MediaQuery.of(context).size.height * 0.05;
+    }
   }
 }
 
@@ -528,8 +478,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
+    return MaxDeviceSizesConstrainedBox(
       child: _LoginCard(
         content: AutofillGroup(
           child: Column(
@@ -579,6 +528,15 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                       },
                       text: appLocalizationsOf(context).proceed,
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  BiometricToggle(
+                    onEnableBiometric: () {
+                      /// Biometrics was enabled
+                      context
+                          .read<LoginBloc>()
+                          .add(const UnLockWithBiometrics());
+                    },
                   ),
                 ],
               ),
@@ -631,6 +589,8 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<ArDriveFormState>();
 
+  bool _isTermsChecked = false;
+
   bool _passwordIsValid = false;
   bool _confirmPasswordIsValid = false;
 
@@ -641,25 +601,30 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 618),
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxHeight: 798,
+      maxHeightPercent: 1,
       child: _LoginCard(
-        content: Column(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ArDriveImage(
-              image: SvgImage.asset('assets/images/brand/ArDrive-Logo.svg'),
-              height: 73,
-            ),
-            Text(
-              appLocalizationsOf(context).createAndConfirmPassword,
-              textAlign: TextAlign.center,
-              style: ArDriveTypography.headline.headline5Regular(),
-            ),
-            const SizedBox(height: 16),
-            _createPasswordForm(),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ArDriveImage(
+                image: SvgImage.asset(
+                  'assets/images/brand/ArDrive-Logo.svg',
+                ),
+                height: 73,
+              ),
+              Text(
+                appLocalizationsOf(context).createAndConfirmPassword,
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.headline.headline5Regular(),
+              ),
+              const SizedBox(height: 16),
+              _createPasswordForm(),
+            ],
+          ),
         ),
       ),
     );
@@ -723,23 +688,63 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               return null;
             },
             onFieldSubmitted: (_) {
-              if (_passwordIsValid && _confirmPasswordIsValid) {
+              if (_passwordIsValid &&
+                  _confirmPasswordIsValid &&
+                  _isTermsChecked) {
                 _onSubmit();
               }
             },
           ),
           const SizedBox(height: 16),
+          Row(
+            children: [
+              ArDriveCheckBox(
+                title: '',
+                checked: _isTermsChecked,
+                onChange: ((value) {
+                  setState(() => _isTermsChecked = value);
+                }),
+              ),
+              Flexible(
+                child: GestureDetector(
+                  onTap: () => openUrl(
+                    url: Resources.agreementLink,
+                  ),
+                  child: ArDriveClickArea(
+                    child: Text.rich(
+                      TextSpan(
+                        children:
+                            splitTranslationsWithMultipleStyles<InlineSpan>(
+                          originalText:
+                              appLocalizationsOf(context).aggreeToTerms_body,
+                          defaultMapper: (text) => TextSpan(text: text),
+                          parts: {
+                            appLocalizationsOf(context).aggreeToTerms_link:
+                                (text) => TextSpan(
+                                      text: text,
+                                      style: const TextStyle(
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ArDriveButton(
-              isDisabled:
-                  _passwordIsValid == false || _confirmPasswordIsValid == false,
+              isDisabled: !_isTermsChecked ||
+                  _passwordIsValid == false ||
+                  _confirmPasswordIsValid == false,
               onPressed: _onSubmit,
               text: appLocalizationsOf(context).proceed,
             ),
-          ),
-          const SizedBox(
-            height: 53,
           ),
           Align(
             alignment: Alignment.bottomCenter,
@@ -936,15 +941,14 @@ class OnBoardingViewState extends State<OnBoardingView> {
               child: Container(
                 color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
                 child: Align(
-                  child: ConstrainedBox(
-                    constraints:
-                        const BoxConstraints(maxWidth: 512, maxHeight: 489),
+                  child: MaxDeviceSizesConstrainedBox(
                     child: _FadeThroughTransitionSwitcher(
-                        fillColor: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeBgSurface,
-                        child: _buildOnBoardingContent()),
+                      fillColor: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeBgSurface,
+                      child: _buildOnBoardingContent(),
+                    ),
                   ),
                 ),
               ),
@@ -963,8 +967,7 @@ class OnBoardingViewState extends State<OnBoardingView> {
         body: Container(
           color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
           child: Align(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
+            child: MaxDeviceSizesConstrainedBox(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: _buildOnBoardingContent(),
@@ -1042,7 +1045,9 @@ class _OnBoardingContent extends StatelessWidget {
             const SizedBox(width: 32),
             ArDriveButton(
               iconAlignment: IconButtonAlignment.right,
-              icon: ArDriveIcons.arrowRightCircle(),
+              icon: ArDriveIcons.arrowRightCircle(
+                color: Colors.white,
+              ),
               text: onBoarding.primaryButtonText,
               onPressed: () => onBoarding.primaryButtonAction(),
             ),
@@ -1127,3 +1132,34 @@ void _forgetWallet(
     actions: actions,
   );
 }
+
+class MaxDeviceSizesConstrainedBox extends StatelessWidget {
+  final double maxHeightPercent;
+  final double defaultMaxHeight;
+  final double defaultMaxWidth;
+  final Widget child;
+
+  const MaxDeviceSizesConstrainedBox({
+    Key? key,
+    this.maxHeightPercent = 0.8,
+    this.defaultMaxWidth = _defaultLoginCardMaxWidth,
+    this.defaultMaxHeight = _defaultLoginCardMaxHeight,
+    required this.child,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxHeight = screenHeight * maxHeightPercent;
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: defaultMaxWidth,
+        maxHeight: defaultMaxHeight > maxHeight ? maxHeight : defaultMaxHeight,
+      ),
+      child: child,
+    );
+  }
+}
+
+const double _defaultLoginCardMaxWidth = 512;
+const double _defaultLoginCardMaxHeight = 489;

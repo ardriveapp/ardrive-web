@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    CFPropertyList (3.0.5)
+    CFPropertyList (3.0.6)
       rexml
     activesupport (6.1.7)
       concurrent-ruby (~> 1.0, >= 1.0.2)
@@ -16,17 +16,17 @@ GEM
       jwt (~> 2.1)
     atomos (0.1.3)
     aws-eventstream (1.2.0)
-    aws-partitions (1.644.0)
-    aws-sdk-core (3.159.0)
+    aws-partitions (1.726.0)
+    aws-sdk-core (3.170.0)
       aws-eventstream (~> 1, >= 1.0.2)
-      aws-partitions (~> 1, >= 1.525.0)
-      aws-sigv4 (~> 1.1)
+      aws-partitions (~> 1, >= 1.651.0)
+      aws-sigv4 (~> 1.5)
       jmespath (~> 1, >= 1.6.1)
-    aws-sdk-kms (1.58.0)
-      aws-sdk-core (~> 3, >= 3.127.0)
+    aws-sdk-kms (1.63.0)
+      aws-sdk-core (~> 3, >= 3.165.0)
       aws-sigv4 (~> 1.1)
-    aws-sdk-s3 (1.114.0)
-      aws-sdk-core (~> 3, >= 3.127.0)
+    aws-sdk-s3 (1.119.1)
+      aws-sdk-core (~> 3, >= 3.165.0)
       aws-sdk-kms (~> 1)
       aws-sigv4 (~> 1.4)
     aws-sigv4 (1.5.2)
@@ -45,8 +45,8 @@ GEM
       unf (>= 0.0.5, < 1.0.0)
     dotenv (2.8.1)
     emoji_regex (3.2.3)
-    excon (0.93.0)
-    faraday (1.10.2)
+    excon (0.99.0)
+    faraday (1.10.3)
       faraday-em_http (~> 1.0)
       faraday-em_synchrony (~> 1.0)
       faraday-excon (~> 1.1)
@@ -75,7 +75,7 @@ GEM
     faraday_middleware (1.2.0)
       faraday (~> 1.0)
     fastimage (2.2.6)
-    fastlane (2.210.1)
+    fastlane (2.212.1)
       CFPropertyList (>= 2.3, < 4.0.0)
       addressable (>= 2.8, < 3.0.0)
       artifactory (~> 3.0)
@@ -114,11 +114,11 @@ GEM
       xcodeproj (>= 1.13.0, < 2.0.0)
       xcpretty (~> 0.3.0)
       xcpretty-travis-formatter (>= 0.0.3)
-    fastlane-plugin-firebase_app_distribution (0.3.7)
+    fastlane-plugin-firebase_app_distribution (0.5.0)
     gh_inspector (1.1.3)
-    google-apis-androidpublisher_v3 (0.29.0)
-      google-apis-core (>= 0.9.0, < 2.a)
-    google-apis-core (0.9.0)
+    google-apis-androidpublisher_v3 (0.36.0)
+      google-apis-core (>= 0.11.0, < 2.a)
+    google-apis-core (0.11.0)
       addressable (~> 2.5, >= 2.5.1)
       googleauth (>= 0.16.2, < 2.a)
       httpclient (>= 2.8.1, < 3.a)
@@ -127,10 +127,10 @@ GEM
       retriable (>= 2.0, < 4.a)
       rexml
       webrick
-    google-apis-iamcredentials_v1 (0.15.0)
-      google-apis-core (>= 0.9.0, < 2.a)
-    google-apis-playcustomapp_v1 (0.11.0)
-      google-apis-core (>= 0.9.0, < 2.a)
+    google-apis-iamcredentials_v1 (0.17.0)
+      google-apis-core (>= 0.11.0, < 2.a)
+    google-apis-playcustomapp_v1 (0.13.0)
+      google-apis-core (>= 0.11.0, < 2.a)
     google-apis-storage_v1 (0.19.0)
       google-apis-core (>= 0.9.0, < 2.a)
     google-cloud-core (1.6.0)
@@ -138,8 +138,8 @@ GEM
       google-cloud-errors (~> 1.0)
     google-cloud-env (1.6.0)
       faraday (>= 0.17.3, < 3.0)
-    google-cloud-errors (1.3.0)
-    google-cloud-storage (1.43.0)
+    google-cloud-errors (1.3.1)
+    google-cloud-storage (1.44.0)
       addressable (~> 2.8)
       digest-crc (~> 0.4)
       google-apis-iamcredentials_v1 (~> 0.1)
@@ -147,7 +147,7 @@ GEM
       google-cloud-core (~> 1.6)
       googleauth (>= 0.16.2, < 2.a)
       mini_mime (~> 1.0)
-    googleauth (1.2.0)
+    googleauth (1.3.0)
       faraday (>= 0.17.3, < 3.a)
       jwt (>= 1.4, < 3.0)
       memoist (~> 0.16)
@@ -166,11 +166,11 @@ GEM
       atlassian-jwt
       multipart-post
       oauth (~> 0.5, >= 0.5.0)
-    jmespath (1.6.1)
-    json (2.6.2)
-    jwt (2.5.0)
+    jmespath (1.6.2)
+    json (2.6.3)
+    jwt (2.7.0)
     memoist (0.16.2)
-    mini_magick (4.11.0)
+    mini_magick (4.12.0)
     mini_mime (1.1.2)
     minitest (5.16.3)
     multi_json (1.15.0)
@@ -182,8 +182,8 @@ GEM
       version_gem (~> 1.1)
     optparse (0.1.1)
     os (1.1.4)
-    plist (3.6.0)
-    public_suffix (5.0.0)
+    plist (3.7.0)
+    public_suffix (5.0.1)
     rake (13.0.6)
     representable (3.2.0)
       declarative (< 0.1.0)
@@ -200,7 +200,7 @@ GEM
       faraday (>= 0.17.5, < 3.a)
       jwt (>= 1.5, < 3.0)
       multi_json (~> 1.10)
-    simctl (1.6.8)
+    simctl (1.6.10)
       CFPropertyList
       naturally
     snaky_hash (2.0.1)
@@ -222,7 +222,7 @@ GEM
     unf_ext (0.0.8.2)
     unicode-display_width (1.8.0)
     version_gem (1.1.1)
-    webrick (1.7.0)
+    webrick (1.8.1)
     word_wrap (1.0.0)
     xcodeproj (1.22.0)
       CFPropertyList (>= 2.3.3, < 4.0)
@@ -239,6 +239,7 @@ GEM
 
 PLATFORMS
   arm64-darwin-21
+  universal-darwin-22
 
 DEPENDENCIES
   fastlane
@@ -246,4 +247,4 @@ DEPENDENCIES
   jira-ruby
 
 BUNDLED WITH
-   2.3.20
+   2.4.6

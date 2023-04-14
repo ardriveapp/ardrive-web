@@ -34,7 +34,10 @@ class LoginWithPassword extends LoginEvent {
   final String password;
   final Wallet wallet;
 
-  const LoginWithPassword({required this.password, required this.wallet});
+  const LoginWithPassword({
+    required this.password,
+    required this.wallet,
+  });
 
   @override
   List<Object> get props => [password];
@@ -69,4 +72,8 @@ class FinishOnboarding extends LoginEvent {
   const FinishOnboarding({required this.wallet});
 
   final Wallet wallet;
+}
+
+class UnLockWithBiometrics extends LoginEvent {
+  const UnLockWithBiometrics();
 }
