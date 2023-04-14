@@ -230,15 +230,15 @@ class _ArDriveAuth implements ArDriveAuth {
   }) async {
     logger.i('Unlocking with biometrics');
 
-    final isAuthenticated = await _biometricAuthentication.authenticate(
-      localizedReason: localizedReason,
-      useCached: true,
-    );
+    if (await isUserLoggedIn()) {
+      final isAuthenticated = await _biometricAuthentication.authenticate(
+        localizedReason: localizedReason,
+        useCached: true,
+      );
 
-    logger.d('Biometric authentication result: $isAuthenticated');
+      logger.d('Biometric authentication result: $isAuthenticated');
 
-    if (isAuthenticated) {
-      if (await isUserLoggedIn()) {
+      if (isAuthenticated) {
         logger.i('User is logged in, unlocking with password');
         // load from local storage
         final storedPassword = await _secureKeyValueStore.getString('password');

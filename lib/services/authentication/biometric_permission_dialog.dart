@@ -113,8 +113,6 @@ Future<void> showBiometricExceptionDialog(
       title: appLocalizationsOf(context).enableBiometricLogin,
       description: description,
       actions: [
-        if (action != null && actionTitle != null)
-          ModalAction(action: action, title: actionTitle),
         ModalAction(
           action: () {
             Navigator.pop(context);
@@ -123,6 +121,8 @@ Future<void> showBiometricExceptionDialog(
           },
           title: cancelTitle,
         ),
+        if (action != null && actionTitle != null)
+          ModalAction(action: action, title: actionTitle),
       ],
     ),
   );
