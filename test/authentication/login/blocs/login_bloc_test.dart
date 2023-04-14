@@ -682,6 +682,9 @@ void main() {
         );
       },
       setUp: () {
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((invocation) => Future.value(true));
+
         when(() => mockArDriveAuth.unlockWithBiometrics(
                 localizedReason: any(named: 'localizedReason')))
             .thenAnswer((invocation) => Future.value(loggedUser));
@@ -704,6 +707,9 @@ void main() {
         );
       },
       setUp: () {
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((invocation) => Future.value(true));
+
         when(() => mockArDriveAuth.unlockWithBiometrics(
                 localizedReason: any(named: 'localizedReason')))
             .thenThrow(Exception('some error'));
