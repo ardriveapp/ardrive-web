@@ -195,12 +195,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
-    if (selectedItem.fileStatusFromTransactions !=
-        TransactionStatus.confirmed) {
-      emit(FsEntryPreviewUnavailable());
-      return;
-    }
-
     emit(FsEntryPreviewVideo(previewUrl: previewUrl));
   }
 
