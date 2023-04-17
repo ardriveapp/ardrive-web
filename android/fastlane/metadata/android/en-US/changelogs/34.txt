@@ -1,0 +1,2 @@
+- Reduces network usage at the last stage of sync
+- Removes the link to the Inferno Leaderboard
