@@ -161,12 +161,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             final previewUrl =
                 '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
 
+            if (!_supportedExtension(previewType, fileExtension)) {
+              emit(FsEntryPreviewUnavailable());
+              return;
+            }
+
             switch (previewType) {
               case 'image':
-                if (!_supportedExtension(previewType, fileExtension)) {
-                  emit(FsEntryPreviewUnavailable());
-                  return;
-                }
                 emitImagePreview(file, previewUrl);
                 break;
               case 'video':
