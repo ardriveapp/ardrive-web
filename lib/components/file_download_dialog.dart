@@ -99,6 +99,7 @@ Future<void> promptToDownloadSharedFile({
   );
   return showAnimatedDialog(
     context,
+    barrierDismissible: false,
     content: BlocProvider<FileDownloadCubit>.value(
       value: cubit,
       child: const FileDownloadDialog(),
