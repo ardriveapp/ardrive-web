@@ -60,24 +60,46 @@ class SharedFilePage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Row(
-                          children: [
-                            Lottie.asset(
-                              'assets/animations/lottie.json',
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.fill,
-                            ),
-                            const SizedBox(width: 16),
-                            Text(
-                              'ardrive',
-                              style: ArDriveTypography.headline
-                                  .heroBold()
-                                  .copyWith(
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                            )
-                          ],
+                        ScreenTypeLayout(
+                          desktop: Row(
+                            children: [
+                              Lottie.asset(
+                                'assets/animations/lottie.json',
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.fill,
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'ardrive',
+                                style: ArDriveTypography.headline
+                                    .heroBold()
+                                    .copyWith(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              )
+                            ],
+                          ),
+                          mobile: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Lottie.asset(
+                                'assets/animations/lottie.json',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.fill,
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'ardrive',
+                                style: ArDriveTypography.headline
+                                    .headline1Bold()
+                                    .copyWith(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              )
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 32),
                         if (state is SharedFileIsPrivate) ...[
@@ -201,16 +223,24 @@ class SharedFilePage extends StatelessWidget {
                   }
                 ],
               ),
-              mobile: ListView(
-                children: [
-                  shareCard(),
-                  const SizedBox(
-                    height: 16,
+              mobile: SingleChildScrollView(
+                primary: true,
+                child: SizedBox(
+                  child: Column(
+                    children: [
+                      shareCard(),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      if (state is SharedFileLoadSuccess) ...{
+                        SizedBox(
+                          height: 600,
+                          child: activityPanel(state),
+                        )
+                      }
+                    ],
                   ),
-                  if (state is SharedFileLoadSuccess) ...{
-                    activityPanel(state),
-                  }
-                ],
+                ),
               ),
             ),
           );
