@@ -190,12 +190,18 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   void _previewVideo(
       bool isPrivate, FileDataTableItem selectedItem, previewUrl) {
-    if (isPrivate) {
-      emit(FsEntryPreviewUnavailable());
+    if (_config.enableVideoPreview) {
+      if (isPrivate) {
+        emit(FsEntryPreviewUnavailable());
+        return;
+      }
+
+      emit(FsEntryPreviewVideo(previewUrl: previewUrl));
+
       return;
     }
 
-    emit(FsEntryPreviewVideo(previewUrl: previewUrl));
+    emit(FsEntryPreviewUnavailable());
   }
 
   Future<void> emitImagePreview(FileEntry file, String dataUrl) async {
@@ -265,16 +271,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           emit(FsEntryPreviewFailure());
       }
     } catch (err) {
-      addError(err);
+      emit(FsEntryPreviewFailure());
     }
-  }
-
-  @override
-  void onError(Object error, StackTrace stackTrace) {
-    emit(FsEntryPreviewFailure());
-    super.onError(error, stackTrace);
-
-    print('Failed to load entity activity: $error $stackTrace');
   }
 
   bool _supportedExtension(String? previewType, String? fileExtension) {
