@@ -811,8 +811,7 @@ class DetailsPanelToolbar extends StatelessWidget {
               },
             ),
           ],
-          if (drive.ownerAddress ==
-              context.read<ArDriveAuth>().currentUser?.walletAddress)
+          if (context.read<ArDriveAuth>().isOwner(drive.ownerAddress))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).rename,
               icon: ArDriveIcons.edit(size: 21),
@@ -826,8 +825,7 @@ class DetailsPanelToolbar extends StatelessWidget {
                 );
               },
             ),
-          if (drive.ownerAddress ==
-              context.read<ArDriveAuth>().currentUser?.walletAddress)
+          if (context.read<ArDriveAuth>().isOwner(drive.ownerAddress))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).move,
               icon: ArDriveIcons.move(size: 21),

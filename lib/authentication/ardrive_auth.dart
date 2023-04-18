@@ -18,18 +18,12 @@ abstract class ArDriveAuth {
   Future<bool> isExistingUser(Wallet wallet);
   Future<User> login(Wallet wallet, String password, ProfileType profileType);
   Future<User> unlockWithBiometrics({required String localizedReason});
-
-  // Future<User> loginWithBiometrics(
-  //   Wallet wallet,
-  //   String password,
-  //   ProfileType profileType, {
-  //   required String localizedReason,
-  // });
   Future<User> unlockUser({required String password});
   Future<void> logout();
   User? get currentUser;
   Stream<User?> onAuthStateChanged();
   Future<bool> isBiometricsEnabled();
+  bool isOwner(String walletAddress);
 
   factory ArDriveAuth({
     required ArweaveService arweave,
@@ -266,6 +260,15 @@ class _ArDriveAuth implements ArDriveAuth {
   @override
   Future<bool> isBiometricsEnabled() {
     return _biometricAuthentication.isEnabled();
+  }
+
+  @override
+  bool isOwner(String walletAddress) {
+    if (_currentUser == null) {
+      return false;
+    }
+
+    return currentUser.walletAddress == walletAddress;
   }
 }
 

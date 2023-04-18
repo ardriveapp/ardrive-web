@@ -204,8 +204,9 @@ class _DriveExplorerItemTileTrailingState
 
   List<ArDriveDropdownItem> _getItems(
       ArDriveDataTableItem item, BuildContext context) {
-    final isDriveOwner = widget.drive.ownerAddress ==
-        context.read<ArDriveAuth>().currentUser?.walletAddress;
+    final isDriveOwner =
+        context.read<ArDriveAuth>().isOwner(widget.drive.ownerAddress);
+
     if (item is FolderDataTableItem) {
       return [
         if (isDriveOwner) ...[

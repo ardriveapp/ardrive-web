@@ -62,97 +62,107 @@ class NewButton extends StatelessWidget {
     final drivesState = context.read<DrivesCubit>().state;
     final appLocalizations = appLocalizationsOf(context);
     final profileState = context.read<ProfileCubit>().state;
-    final profile = profileState as ProfileLoggedIn;
+    final profile = profileState;
     final minimumWalletBalance = BigInt.from(10000000);
 
-    final canUpload = profile.canUpload(
-      minimumWalletBalance: minimumWalletBalance,
-    );
+    if (profile is ProfileLoggedIn) {
+      final canUpload = profile.canUpload(
+        minimumWalletBalance: minimumWalletBalance,
+      );
 
-    return [
-      if (drivesState is DrivesLoadSuccess) ...[
-        _buildDriveDropdownItem(
-          onClick: () {
-            promptToCreateDrive(context);
-          },
-          isDisabled: !drivesState.canCreateNewDrive || !canUpload,
-          name: appLocalizations.newDrive,
-          icon: ArDriveIcons.drive(size: 24),
-        ),
+      return [
+        if (drivesState is DrivesLoadSuccess) ...[
+          _buildDriveDropdownItem(
+            onClick: () {
+              promptToCreateDrive(context);
+            },
+            isDisabled: !drivesState.canCreateNewDrive || !canUpload,
+            name: appLocalizations.newDrive,
+            icon: ArDriveIcons.drive(size: 24),
+          ),
+          _buildDriveDropdownItem(
+            onClick: () => attachDrive(context: context),
+            name: appLocalizations.attachDrive,
+            icon: ArDriveIcons.drive(size: 24),
+          ),
+        ],
+        if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
+          _buildDriveDropdownItem(
+            onClick: () => promptToCreateFolder(
+              context,
+              driveId: driveDetailState.currentDrive.id,
+              parentFolderId: currentFolder!.folder.id,
+            ),
+            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+            name: appLocalizations.newFolder,
+            icon: ArDriveIcons.folderAdd(size: 24),
+          ),
+          _buildDriveDropdownItem(
+            onClick: () => promptToUpload(
+              context,
+              driveId: drive!.id,
+              parentFolderId: currentFolder!.folder.id,
+              isFolderUpload: true,
+            ),
+            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+            name: appLocalizations.uploadFolder,
+            icon: ArDriveIcons.folderAdd(size: 24),
+          ),
+          _buildDriveDropdownItem(
+            onClick: () {
+              promptToUpload(
+                context,
+                driveId: drive!.id,
+                parentFolderId: currentFolder!.folder.id,
+                isFolderUpload: false,
+              );
+            },
+            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+            name: appLocalizations.uploadFiles,
+            icon: ArDriveIcons.uploadCloud(size: 24),
+          ),
+        ],
+        if (driveDetailState is DriveDetailLoadSuccess &&
+            driveDetailState.currentDrive.privacy == 'public' &&
+            drive != null)
+          _buildDriveDropdownItem(
+            onClick: () {
+              promptToCreateManifest(
+                context,
+                drive: drive!,
+              );
+            },
+            isDisabled: driveDetailState.driveIsEmpty || !canUpload,
+            name: appLocalizations.createManifest,
+            icon: ArDriveIcons.manifest(size: 24),
+          ),
+        if (context.read<AppConfig>().enableQuickSyncAuthoring &&
+            driveDetailState is DriveDetailLoadSuccess &&
+            drive != null)
+          _buildDriveDropdownItem(
+            onClick: () {
+              promptToCreateSnapshot(
+                context,
+                drive!,
+              );
+            },
+            isDisabled: driveDetailState.driveIsEmpty ||
+                !profile.hasMinimumBalanceForUpload(
+                  minimumWalletBalance: minimumWalletBalance,
+                ),
+            name: appLocalizations.createSnapshot,
+            icon: ArDriveIcons.camera(size: 24),
+          ),
+      ];
+    } else {
+      return [
         _buildDriveDropdownItem(
           onClick: () => attachDrive(context: context),
           name: appLocalizations.attachDrive,
           icon: ArDriveIcons.drive(size: 24),
         ),
-      ],
-      if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
-        _buildDriveDropdownItem(
-          onClick: () => promptToCreateFolder(
-            context,
-            driveId: driveDetailState.currentDrive.id,
-            parentFolderId: currentFolder!.folder.id,
-          ),
-          isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-          name: appLocalizations.newFolder,
-          icon: ArDriveIcons.folderAdd(size: 24),
-        ),
-        _buildDriveDropdownItem(
-          onClick: () => promptToUpload(
-            context,
-            driveId: drive!.id,
-            parentFolderId: currentFolder!.folder.id,
-            isFolderUpload: true,
-          ),
-          isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-          name: appLocalizations.uploadFolder,
-          icon: ArDriveIcons.folderAdd(size: 24),
-        ),
-        _buildDriveDropdownItem(
-          onClick: () {
-            promptToUpload(
-              context,
-              driveId: drive!.id,
-              parentFolderId: currentFolder!.folder.id,
-              isFolderUpload: false,
-            );
-          },
-          isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-          name: appLocalizations.uploadFiles,
-          icon: ArDriveIcons.uploadCloud(size: 24),
-        ),
-      ],
-      if (driveDetailState is DriveDetailLoadSuccess &&
-          driveDetailState.currentDrive.privacy == 'public' &&
-          drive != null)
-        _buildDriveDropdownItem(
-          onClick: () {
-            promptToCreateManifest(
-              context,
-              drive: drive!,
-            );
-          },
-          isDisabled: driveDetailState.driveIsEmpty || !canUpload,
-          name: appLocalizations.createManifest,
-          icon: ArDriveIcons.manifest(size: 24),
-        ),
-      if (context.read<AppConfig>().enableQuickSyncAuthoring &&
-          driveDetailState is DriveDetailLoadSuccess &&
-          drive != null)
-        _buildDriveDropdownItem(
-          onClick: () {
-            promptToCreateSnapshot(
-              context,
-              drive!,
-            );
-          },
-          isDisabled: driveDetailState.driveIsEmpty ||
-              !profile.hasMinimumBalanceForUpload(
-                minimumWalletBalance: minimumWalletBalance,
-              ),
-          name: appLocalizations.createSnapshot,
-          icon: ArDriveIcons.camera(size: 24),
-        ),
-    ];
+      ];
+    }
   }
 
   ArDriveDropdownItem _buildDriveDropdownItem({

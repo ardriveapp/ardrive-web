@@ -69,8 +69,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           } else if (state is DriveDetailLoadSuccess) {
             final hasSubfolders = state.folderInView.subfolders.isNotEmpty;
 
-            final isDriveOwner = state.currentDrive.ownerAddress ==
-                context.read<ArDriveAuth>().currentUser?.walletAddress;
+            final isDriveOwner = context.read<ArDriveAuth>().isOwner(
+                  state.currentDrive.ownerAddress,
+                );
 
             final hasFiles =
                 state.folderInView.files.isNotEmpty && isDriveOwner;
@@ -709,8 +710,10 @@ class MobileFolderNavigation extends StatelessWidget {
           BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {
               if (state is DriveDetailLoadSuccess) {
-                final isDriveOwner = state.currentDrive.ownerAddress ==
-                    context.read<ArDriveAuth>().currentUser?.walletAddress;
+                final isDriveOwner = context
+                    .read<ArDriveAuth>()
+                    .isOwner(state.currentDrive.ownerAddress);
+
                 return ArDriveDropdown(
                   width: 250,
                   anchor: const Aligned(

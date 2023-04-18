@@ -584,4 +584,70 @@ void main() {
       );
     });
   });
+
+  // test the method isOwner
+  group('isOwner', () {
+    test('should return true if the user is the owner of the drive', () async {
+      // arrange
+      final user = User(
+        password: 'password',
+        wallet: wallet,
+        walletAddress: 'walletAddress',
+        walletBalance: BigInt.one,
+        cipherKey: SecretKey([]),
+        profileType: ProfileType.json,
+      );
+
+      // set user
+      when(() => mockUserRepository.hasUser()).thenAnswer((_) async => true);
+
+      when(() => mockUserRepository.getUser('password'))
+          .thenAnswer((invocation) async => user);
+
+      await arDriveAuth.unlockUser(password: 'password');
+
+      // act
+      final result = arDriveAuth.isOwner('walletAddress');
+
+      // assert
+      expect(result, true);
+    });
+
+    test('should return false if the user is not logged in', () async {
+      // act
+      final result = arDriveAuth.isOwner('walletAddress');
+
+      // assert
+      expect(result, false);
+    });
+
+    test(
+        'should return false if the user is logged in but the wallet address is different',
+        () async {
+      // arrange
+      final user = User(
+        password: 'password',
+        wallet: wallet,
+        walletAddress: 'walletAddress',
+        walletBalance: BigInt.one,
+        cipherKey: SecretKey([]),
+        profileType: ProfileType.json,
+      );
+
+      // set user
+      when(() => mockUserRepository.hasUser()).thenAnswer((_) async => true);
+
+      when(() => mockUserRepository.getUser('password'))
+          .thenAnswer((invocation) async => user);
+
+      await arDriveAuth.unlockUser(password: 'password');
+
+      // act
+
+      final result = arDriveAuth.isOwner('walletAddress2');
+
+      // assert
+      expect(result, false);
+    });
+  });
 }
