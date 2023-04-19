@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/ghost_fixer/ghost_fixer_cubit.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -14,11 +15,11 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'components.dart';
 
 Future<void> promptToReCreateFolder(BuildContext context,
-    {required FolderEntry ghostFolder}) {
+    {required FolderDataTableItem ghostFolder}) {
   if (ghostFolder.parentFolderId != null) {
-    return showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
+    return showAnimatedDialog(
+      context,
+      content: BlocProvider(
         create: (context) => GhostFixerCubit(
             ghostFolder: ghostFolder,
             profileCubit: context.read<ProfileCubit>(),
