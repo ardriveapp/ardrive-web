@@ -169,22 +169,27 @@ Stream<double> _syncDrive(
     ''',
   );
 
-  yield* _parseDriveTransactionsIntoDatabaseEntities(
-    ghostFolders: ghostFolders,
-    driveDao: driveDao,
-    arweave: arweave,
-    database: database,
-    transactions: transactions,
-    drive: drive,
-    driveKey: driveKey,
-    currentBlockHeight: currentBlockHeight,
-    lastBlockHeight: lastBlockHeight,
-    batchSize: transactionParseBatchSize,
-    snapshotDriveHistory: snapshotDriveHistory,
-    ownerAddress: ownerAddress,
-  ).map(
-    (parseProgress) => parseProgress * 0.9,
-  );
+  try {
+    yield* _parseDriveTransactionsIntoDatabaseEntities(
+      ghostFolders: ghostFolders,
+      driveDao: driveDao,
+      arweave: arweave,
+      database: database,
+      transactions: transactions,
+      drive: drive,
+      driveKey: driveKey,
+      currentBlockHeight: currentBlockHeight,
+      lastBlockHeight: lastBlockHeight,
+      batchSize: transactionParseBatchSize,
+      snapshotDriveHistory: snapshotDriveHistory,
+      ownerAddress: ownerAddress,
+    ).map(
+      (parseProgress) => parseProgress * 0.9,
+    );
+  } catch (e) {
+    print('[Sync Drive] Error while parsing transactions: $e');
+    rethrow;
+  }
 
   await SnapshotItemOnChain.dispose(drive.id);
 
