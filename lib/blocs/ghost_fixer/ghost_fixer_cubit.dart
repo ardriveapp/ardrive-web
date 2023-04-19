@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
@@ -15,7 +16,7 @@ part 'ghost_fixer_state.dart';
 class GhostFixerCubit extends Cubit<GhostFixerState> {
   late FormGroup form;
 
-  final FolderEntry ghostFolder;
+  final FolderDataTableItem ghostFolder;
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
@@ -131,13 +132,17 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
                 targetFolder.driveId, profile.cipherKey)
             : null;
 
-        final folder = ghostFolder.copyWith(
+        final folder = FolderEntry(
           id: ghostFolder.id,
+          driveId: ghostFolder.driveId,
           name: folderName,
           parentFolderId: parentFolder.id,
           path: '${parentFolder.path}/$folderName',
           isGhost: false,
+          lastUpdated: ghostFolder.lastUpdated,
+          dateCreated: ghostFolder.dateCreated,
         );
+
         final folderEntity = folder.asEntity();
         if (_turboService.useTurbo) {
           final folderDataItem = await _arweave.prepareEntityDataItem(
