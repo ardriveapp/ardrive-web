@@ -130,7 +130,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                     // ignore: use_build_context_synchronously
                     if (context.read<DriveAttachCubit>().state
                         is! DriveAttachPrivate) {
-                      addDebounce(() {
+                      debounce(() {
                         context.read<DriveAttachCubit>().driveNameLoader();
                       });
                     }

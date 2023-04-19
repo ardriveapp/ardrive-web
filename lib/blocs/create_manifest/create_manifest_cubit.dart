@@ -17,7 +17,6 @@ import 'package:uuid/uuid.dart';
 part 'create_manifest_state.dart';
 
 class CreateManifestCubit extends Cubit<CreateManifestState> {
-  // late FormGroup form;
   late FolderNode rootFolderNode;
 
   final ProfileCubit _profileCubit;

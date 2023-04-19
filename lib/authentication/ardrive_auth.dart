@@ -146,7 +146,6 @@ class _ArDriveAuth implements ArDriveAuth {
 
       return currentUser;
     } catch (e) {
-      logger.e(e.toString());
       logger.e('Failed to unlock user with password', e);
       throw AuthenticationFailedException('Incorrect password.');
     }

@@ -267,13 +267,8 @@ class _BiometricToggleState extends State<BiometricToggle> {
           }
 
           return ArDriveToggleSwitch(
-            // contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-            // title: Text(biometricText),
             text: biometricText,
             value: _isEnabled,
-            // activeColor: Colors.white,
-            // activeTrackColor: Colors.black,
-            // controlAffinity: ListTileControlAffinity.leading,
             onChanged: (value) async {
               _isEnabled = value;
 
