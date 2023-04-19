@@ -53,8 +53,6 @@ late TurboService _turbo;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // await precacheIcons();
-
   _configService = ConfigService(appFlavors: AppFlavors());
 
   _config = await _configService.getConfig(
