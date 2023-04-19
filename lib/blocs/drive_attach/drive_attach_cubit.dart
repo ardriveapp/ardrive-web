@@ -16,8 +16,6 @@ part 'drive_attach_state.dart';
 
 /// [DriveAttachCubit] includes logic for attaching drives to the user's profile.
 class DriveAttachCubit extends Cubit<DriveAttachState> {
-  // late FormGroup form;
-
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final SyncCubit _syncBloc;

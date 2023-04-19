@@ -205,7 +205,6 @@ Future<bool> verifyStoragePermissionAndShowModalWhenDenied(
   return true;
 }
 
-// TODO: check this
 Future<void> showStoragePermissionModal(BuildContext context) async {
   return showDialog(
       context: context,
