@@ -18,13 +18,6 @@ abstract class ArDriveAuth {
   Future<bool> isExistingUser(Wallet wallet);
   Future<User> login(Wallet wallet, String password, ProfileType profileType);
   Future<User> unlockWithBiometrics({required String localizedReason});
-
-  // Future<User> loginWithBiometrics(
-  //   Wallet wallet,
-  //   String password,
-  //   ProfileType profileType, {
-  //   required String localizedReason,
-  // });
   Future<User> unlockUser({required String password});
   Future<void> logout();
   User? get currentUser;
@@ -152,7 +145,6 @@ class _ArDriveAuth implements ArDriveAuth {
 
       return currentUser;
     } catch (e) {
-      logger.e(e.toString());
       logger.e('Failed to unlock user with password', e);
       throw AuthenticationFailedException('Incorrect password.');
     }
