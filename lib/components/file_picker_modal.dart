@@ -26,7 +26,6 @@ Future<IOFile> showFilePickerModal(BuildContext context) async {
       () => io.pickFile(fileSource: FileSource.camera));
 }
 
-// TODO: check this
 Future<T> _showModal<T>(
   BuildContext context,
   Future<T> Function() pickFromFileSystem,
@@ -205,7 +204,6 @@ Future<bool> verifyStoragePermissionAndShowModalWhenDenied(
   return true;
 }
 
-// TODO: check this
 Future<void> showStoragePermissionModal(BuildContext context) async {
   return showDialog(
       context: context,
