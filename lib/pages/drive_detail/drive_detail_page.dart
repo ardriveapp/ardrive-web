@@ -10,7 +10,6 @@ import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
-import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
@@ -263,7 +262,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         ),
                                       )
                                     ],
-                                    child: ArDriveIcons.options(),
+                                    child: ArDriveIcons.dotsVert(
+                                      size: 16,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -303,32 +304,27 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       duration: const Duration(milliseconds: 300),
                       child: Align(
                         alignment: Alignment.center,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 120),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                                maxWidth:
-                                    _getMaxWidthForDetailsPanel(state, context),
-                                minWidth:
-                                    _getMinWidthForDetailsPanel(state, context),
-                                maxHeight:
-                                    MediaQuery.of(context).size.height - 120),
-                            child: state.showSelectedItemDetails &&
-                                    context
-                                            .read<DriveDetailCubit>()
-                                            .selectedItem !=
-                                        null
-                                ? DetailsPanel(
-                                    isSharePage: false,
-                                    drivePrivacy: state.currentDrive.privacy,
-                                    maybeSelectedItem:
-                                        state.maybeSelectedItem(),
-                                    item: context
-                                        .read<DriveDetailCubit>()
-                                        .selectedItem!,
-                                  )
-                                : const SizedBox(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth:
+                                _getMaxWidthForDetailsPanel(state, context),
+                            minWidth:
+                                _getMinWidthForDetailsPanel(state, context),
                           ),
+                          child: state.showSelectedItemDetails &&
+                                  context
+                                          .read<DriveDetailCubit>()
+                                          .selectedItem !=
+                                      null
+                              ? DetailsPanel(
+                                  isSharePage: false,
+                                  drivePrivacy: state.currentDrive.privacy,
+                                  maybeSelectedItem: state.maybeSelectedItem(),
+                                  item: context
+                                      .read<DriveDetailCubit>()
+                                      .selectedItem!,
+                                )
+                              : const SizedBox(),
                         ),
                       ))
                 ],
@@ -765,7 +761,9 @@ class MobileFolderNavigation extends StatelessWidget {
                       horizontal: 16.0,
                       vertical: 8,
                     ),
-                    child: ArDriveIcons.options(),
+                    child: ArDriveIcons.dotsVert(
+                      size: 16,
+                    ),
                   ),
                 );
               }
