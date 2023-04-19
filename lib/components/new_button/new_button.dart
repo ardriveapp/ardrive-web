@@ -83,7 +83,7 @@ class NewButton extends StatelessWidget {
           _buildDriveDropdownItem(
             onClick: () => attachDrive(context: context),
             name: appLocalizations.attachDrive,
-            icon: ArDriveIcons.drive(size: 24),
+            icon: ArDriveIcons.attachDrive(size: 24),
           ),
         ],
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
@@ -151,7 +151,7 @@ class NewButton extends StatelessWidget {
                   minimumWalletBalance: minimumWalletBalance,
                 ),
             name: appLocalizations.createSnapshot,
-            icon: ArDriveIcons.camera(size: 24),
+            icon: ArDriveIcons.snapshot(size: 24),
           ),
       ];
     } else {

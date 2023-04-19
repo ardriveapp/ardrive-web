@@ -1,7 +1,9 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_helper.dart';
@@ -153,52 +155,53 @@ class _DriveExplorerItemTileTrailingState
   Alignment alignment = Alignment.topRight;
 
   @override
-  void didChangeDependencies() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final renderBox = context.findRenderObject() as RenderBox?;
-
-      final position = renderBox?.localToGlobal(Offset.zero);
-      if (position != null) {
-        final y = position.dy;
-
-        final screenHeight = MediaQuery.of(context).size.height;
-
-        if (y > screenHeight / 2) {
-          alignment = Alignment.bottomRight;
-        }
-      }
-
-      setState(() {});
-    });
-
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveClickArea(
-      tooltip: appLocalizationsOf(context).showMenu,
-      child: ArDriveDropdown(
-        height: isMobile(context) ? 44 : 60,
-        key: ValueKey(alignment),
-        anchor: Aligned(
-          follower: alignment,
-          target: Alignment.topLeft,
-        ),
-        items: _getItems(widget.item, context),
-        // ignore: sized_box_for_whitespace
-        child: Container(
-          height: 40,
-          width: 40,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ArDriveIcons.dots(),
-            ],
+    final item = widget.item;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (item is FolderDataTableItem && item.isGhostFolder) ...[
+          ArDriveButton(
+            maxHeight: 36,
+            style: ArDriveButtonStyle.primary,
+            onPressed: () => showCongestionDependentModalDialog(
+              context,
+              () => promptToReCreateFolder(
+                context,
+                ghostFolder: item,
+              ),
+            ),
+            fontStyle: ArDriveTypography.body.smallRegular(),
+            text: appLocalizationsOf(context).fix,
           ),
+        ],
+        const Spacer(),
+        ArDriveDropdown(
+          height: isMobile(context) ? 44 : 60,
+          calculateVerticalAlignment: (isAboveHalfScreen) {
+            if (isAboveHalfScreen) {
+              return Alignment.bottomRight;
+            } else {
+              return Alignment.topRight;
+            }
+          },
+          anchor: Aligned(
+            follower: alignment,
+            target: Alignment.topLeft,
+          ),
+          items: _getItems(widget.item, context),
+          // ignore: sized_box_for_whitespace
+          child: ArDriveIcons.dots(),
         ),
-      ),
+      ],
     );
   }
 

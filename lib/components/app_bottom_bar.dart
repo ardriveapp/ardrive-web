@@ -11,13 +11,15 @@ class ResizableComponent extends StatefulWidget {
   final double maxHeight;
   final ScrollController scrollController;
 
-  ResizableComponent({
+  const ResizableComponent({
+    super.key,
     required this.child,
     required this.scrollController,
     this.maxHeight = 87.0,
   });
 
   @override
+  // ignore: library_private_types_in_public_api
   _ResizableComponentState createState() => _ResizableComponentState();
 }
 

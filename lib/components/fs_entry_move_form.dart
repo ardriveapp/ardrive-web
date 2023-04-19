@@ -209,8 +209,12 @@ class FsEntryMoveForm extends StatelessWidget {
                                       ),
                                     );
                               },
-                              child: ArDriveIcons.arrowBack(
-                                size: 20,
+                              child: AnimatedScale(
+                                duration: const Duration(milliseconds: 200),
+                                scale: !state.viewingRootFolder ? 1 : 0,
+                                child: ArDriveIcons.arrowBack(
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),

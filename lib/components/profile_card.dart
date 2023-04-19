@@ -54,7 +54,7 @@ class ProfileCard extends StatelessWidget {
   Widget _loggedInView(BuildContext context) {
     final state = context.read<ProfileCubit>().state as ProfileLoggedIn;
     final walletAddress = state.walletAddress;
-    
+
     return ArDriveClickArea(
       tooltip: appLocalizationsOf(context).profile,
       child: ArDriveDropdown(
@@ -62,6 +62,7 @@ class ProfileCard extends StatelessWidget {
         anchor: const Aligned(
           follower: Alignment.topRight,
           target: Alignment.bottomRight,
+          offset: Offset(0, 4),
         ),
         items: [
           ArDriveDropdownItem(
@@ -148,7 +149,7 @@ class ProfileCard extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ArDriveIcons.person(),
+              ArDriveIcons.person(size: 14),
               if (walletAddress.isNotEmpty)
                 Text(
                   '${walletAddress.substring(0, 2)}...${walletAddress.substring(walletAddress.length - 2)}',
