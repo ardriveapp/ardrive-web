@@ -7,6 +7,7 @@ import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_helper.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -207,12 +208,12 @@ class _DriveExplorerItemTileTrailingState
 
   List<ArDriveDropdownItem> _getItems(
       ArDriveDataTableItem item, BuildContext context) {
-    final isDriveOwner =
-        context.read<ArDriveAuth>().isOwner(widget.drive.ownerAddress);
+    final isOwner =
+        isDriveOwner(context.read<ArDriveAuth>(), widget.drive.ownerAddress);
 
     if (item is FolderDataTableItem) {
       return [
-        if (isDriveOwner) ...[
+        if (isOwner) ...[
           ArDriveDropdownItem(
             onClick: () {
               promptToMove(
@@ -293,7 +294,7 @@ class _DriveExplorerItemTileTrailingState
           ArDriveIcons.externalLink(),
         ),
       ),
-      if (isDriveOwner) ...[
+      if (isOwner) ...[
         ArDriveDropdownItem(
           onClick: () {
             promptToRenameModal(

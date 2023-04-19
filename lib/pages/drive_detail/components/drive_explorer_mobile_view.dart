@@ -9,6 +9,7 @@ import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.d
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -285,9 +286,9 @@ class MobileFolderNavigation extends StatelessWidget {
           BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {
               if (state is DriveDetailLoadSuccess) {
-                final isDriveOwner = context
-                    .read<ArDriveAuth>()
-                    .isOwner(state.currentDrive.ownerAddress);
+                final isOwner = isDriveOwner(context.read<ArDriveAuth>(),
+                    state.currentDrive.ownerAddress);
+
                 return ArDriveDropdown(
                   width: 250,
                   anchor: const Aligned(
@@ -295,7 +296,7 @@ class MobileFolderNavigation extends StatelessWidget {
                     target: Alignment.bottomRight,
                   ),
                   items: [
-                    if (isDriveOwner)
+                    if (isOwner)
                       ArDriveDropdownItem(
                         onClick: () {
                           promptToRenameDrive(

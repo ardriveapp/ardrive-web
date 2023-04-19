@@ -26,6 +26,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:chewie/chewie.dart';
@@ -69,12 +70,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           } else if (state is DriveDetailLoadSuccess) {
             final hasSubfolders = state.folderInView.subfolders.isNotEmpty;
 
-            final isDriveOwner = context.read<ArDriveAuth>().isOwner(
-                  state.currentDrive.ownerAddress,
-                );
+            final isOwner = isDriveOwner(
+              context.read<ArDriveAuth>(),
+              state.currentDrive.ownerAddress,
+            );
 
-            final hasFiles =
-                state.folderInView.files.isNotEmpty && isDriveOwner;
+            final hasFiles = state.folderInView.files.isNotEmpty && isOwner;
 
             final canDownloadMultipleFiles = state.multiselect &&
                 state.currentDrive.isPublic &&
@@ -82,7 +83,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
             return ScreenTypeLayout(
               desktop: _desktopView(
-                isDriveOwner: isDriveOwner,
+                isDriveOwner: isOwner,
                 state: state,
                 hasSubfolders: hasSubfolders,
                 hasFiles: hasFiles,
@@ -707,9 +708,8 @@ class MobileFolderNavigation extends StatelessWidget {
           BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {
               if (state is DriveDetailLoadSuccess) {
-                final isDriveOwner = context
-                    .read<ArDriveAuth>()
-                    .isOwner(state.currentDrive.ownerAddress);
+                final isOwner = isDriveOwner(context.read<ArDriveAuth>(),
+                    state.currentDrive.ownerAddress);
 
                 return ArDriveDropdown(
                   width: 250,
@@ -718,7 +718,7 @@ class MobileFolderNavigation extends StatelessWidget {
                     target: Alignment.bottomRight,
                   ),
                   items: [
-                    if (isDriveOwner)
+                    if (isOwner)
                       ArDriveDropdownItem(
                         onClick: () {
                           promptToRenameDrive(

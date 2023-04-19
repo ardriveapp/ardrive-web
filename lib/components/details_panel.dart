@@ -15,6 +15,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
@@ -815,7 +816,7 @@ class DetailsPanelToolbar extends StatelessWidget {
               },
             ),
           ],
-          if (context.read<ArDriveAuth>().isOwner(drive.ownerAddress))
+          if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
             _buildActionIcon(
               padding: 18,
               tooltip: appLocalizationsOf(context).rename,
@@ -830,7 +831,7 @@ class DetailsPanelToolbar extends StatelessWidget {
                 );
               },
             ),
-          if (context.read<ArDriveAuth>().isOwner(drive.ownerAddress))
+          if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).move,
               icon: ArDriveIcons.move(size: 21),

@@ -23,7 +23,6 @@ abstract class ArDriveAuth {
   User? get currentUser;
   Stream<User?> onAuthStateChanged();
   Future<bool> isBiometricsEnabled();
-  bool isOwner(String walletAddress);
 
   factory ArDriveAuth({
     required ArweaveService arweave,
@@ -259,15 +258,6 @@ class _ArDriveAuth implements ArDriveAuth {
   @override
   Future<bool> isBiometricsEnabled() {
     return _biometricAuthentication.isEnabled();
-  }
-
-  @override
-  bool isOwner(String walletAddress) {
-    if (_currentUser == null) {
-      return false;
-    }
-
-    return currentUser.walletAddress == walletAddress;
   }
 }
 
