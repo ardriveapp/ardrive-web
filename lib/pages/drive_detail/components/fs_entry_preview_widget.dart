@@ -12,15 +12,9 @@ class FsEntryPreviewWidget extends StatefulWidget {
   State<FsEntryPreviewWidget> createState() => _FsEntryPreviewWidgetState();
 }
 
-class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
+class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-
     switch (widget.state.runtimeType) {
       case FsEntryPreviewLoading:
         return const Center(
@@ -33,10 +27,12 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget>
 
       case FsEntryPreviewImage:
         return ArDriveImage(
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
           height: double.maxFinite,
           width: double.maxFinite,
-          image: MemoryImage((widget.state as FsEntryPreviewImage).imageBytes),
+          image: MemoryImage(
+            (widget.state as FsEntryPreviewImage).imageBytes,
+          ),
         );
 
       default:
@@ -64,6 +60,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void initState() {
+    debugPrint('Initializing video player: ${widget.videoUrl}');
     super.initState();
     _videoPlayerController = VideoPlayerController.network(widget.videoUrl);
     _chewieController = ChewieController(
@@ -72,31 +69,48 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       looping: true,
       showControls: true,
       allowFullScreen: false,
+      aspectRatio: 1,
+      errorBuilder: (context, errorMessage) {
+        return Center(
+          child: Text(
+            errorMessage,
+            style: ArDriveTypography.body.buttonXLargeRegular(
+              color:
+                  ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+            ),
+          ),
+        );
+      },
     );
   }
 
   @override
   void dispose() {
-    _videoPlayerController.dispose();
+    debugPrint('Disposing video player');
+    _chewieController.videoPlayerController.dispose();
     _chewieController.dispose();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-  return VisibilityDetector(
-      key: Key(widget.videoUrl),
+    debugPrint('Building video player');
+    return VisibilityDetector(
+      key: const Key('video-player'),
       onVisibilityChanged: (VisibilityInfo info) {
-        setState(
-          () {
-            if (_videoPlayerController.value.isInitialized) {
-              _isPlaying = info.visibleFraction > 0.5;
-              _isPlaying
-                  ? _videoPlayerController.play()
-                  : _videoPlayerController.pause();
-            }
-          },
-        );
+        if (mounted) {
+          setState(
+            () {
+              if (_videoPlayerController.value.isInitialized) {
+                _isPlaying = info.visibleFraction > 0.5;
+                _isPlaying
+                    ? _videoPlayerController.play()
+                    : _videoPlayerController.pause();
+              }
+            },
+          );
+        }
       },
       child: Chewie(
         controller: _chewieController,

@@ -118,7 +118,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   fileKey: sharedFileKey,
                   arweave: context.read<ArweaveService>(),
                 ),
-                child: const SharedFilePage(),
+                child: SharedFilePage(),
               );
             } else if (signingIn) {
               shell = const LoginPage();

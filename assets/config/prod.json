@@ -4,5 +4,6 @@
   "defaultTurboUrl": "https://upload.ardrive.io",
   "allowedDataItemSizeForTurbo": 100000,
   "enableQuickSyncAuthoring": true,
-  "enableMultipleFileDownload": false
+  "enableMultipleFileDownload": false,
+  "enableVideoPreview": false
 }

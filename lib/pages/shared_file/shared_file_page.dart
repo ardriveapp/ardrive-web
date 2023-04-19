@@ -1,7 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
-import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -11,7 +10,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
-import 'package:reactive_forms/reactive_forms.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../components/details_panel.dart';
@@ -20,12 +18,28 @@ import '../drive_detail/components/drive_explorer_item_tile.dart';
 /// [SharedFilePage] displays details of a shared file and controls for downloading and previewing it
 /// from a parent [SharedFileCubit].
 class SharedFilePage extends StatelessWidget {
-  const SharedFilePage({Key? key}) : super(key: key);
+  SharedFilePage({Key? key}) : super(key: key);
+
+  final _fileKeyController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      child: BlocBuilder<SharedFileCubit, SharedFileState>(
+      child: BlocConsumer<SharedFileCubit, SharedFileState>(
+        buildWhen: (previous, current) {
+          return current is! SharedFileKeyInvalid;
+        },
+        listener: (context, state) {
+          if (state is SharedFileKeyInvalid) {
+            showAnimatedDialog(
+              context,
+              content: ArDriveStandardModal(
+                title: appLocalizationsOf(context).error,
+                description: appLocalizationsOf(context).invalidKeyFile,
+              ),
+            );
+          }
+        },
         builder: (context, state) {
           Widget shareCard() {
             return ArDriveCard(
@@ -46,53 +60,67 @@ class SharedFilePage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Row(
-                          children: [
-                            Lottie.asset(
-                              'assets/animations/lottie.json',
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.fill,
-                            ),
-                            const SizedBox(width: 16),
-                            Text(
-                              'ardrive',
-                              style: ArDriveTypography.headline
-                                  .heroBold()
-                                  .copyWith(
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                            )
-                          ],
+                        ScreenTypeLayout(
+                          desktop: Row(
+                            children: [
+                              Lottie.asset(
+                                'assets/animations/lottie.json',
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.fill,
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'ardrive',
+                                style: ArDriveTypography.headline
+                                    .heroBold()
+                                    .copyWith(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              )
+                            ],
+                          ),
+                          mobile: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Lottie.asset(
+                                'assets/animations/lottie.json',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.fill,
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'ardrive',
+                                style: ArDriveTypography.headline
+                                    .headline1Bold()
+                                    .copyWith(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              )
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 32),
                         if (state is SharedFileIsPrivate) ...[
                           Text(appLocalizationsOf(context)
                               .sharedFileIsEncrypted),
                           const SizedBox(height: 16),
-                          ReactiveForm(
-                            formGroup: context.watch<SharedFileCubit>().form,
-                            child: ReactiveTextField(
-                              formControlName: 'fileKey',
-                              autofocus: true,
-                              obscureText: true,
-                              decoration: InputDecoration(
-                                labelText:
-                                    appLocalizationsOf(context).enterFileKey,
-                              ),
-                              validationMessages: kValidationMessages(
-                                  appLocalizationsOf(context)),
-                              onEditingComplete: (_) => context
-                                  .read<SharedFileCubit>()
-                                  .form
-                                  .updateValueAndValidity(),
-                            ),
+                          ArDriveTextField(
+                            controller: _fileKeyController,
+                            autofocus: true,
+                            obscureText: true,
+                            hintText: appLocalizationsOf(context).enterFileKey,
+                            onFieldSubmitted: (_) => context
+                                .read<SharedFileCubit>()
+                                .submit(_fileKeyController.text),
                           ),
                           const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () =>
-                                context.read<SharedFileCubit>().submit(),
-                            child: Text(appLocalizationsOf(context).unlock),
+                          ArDriveButton(
+                            onPressed: () => context
+                                .read<SharedFileCubit>()
+                                .submit(_fileKeyController.text),
+                            text: appLocalizationsOf(context).unlock,
                           ),
                         ],
                         if (state is SharedFileLoadInProgress)
@@ -195,16 +223,24 @@ class SharedFilePage extends StatelessWidget {
                   }
                 ],
               ),
-              mobile: ListView(
-                children: [
-                  shareCard(),
-                  const SizedBox(
-                    height: 16,
+              mobile: SingleChildScrollView(
+                primary: true,
+                child: SizedBox(
+                  child: Column(
+                    children: [
+                      shareCard(),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      if (state is SharedFileLoadSuccess) ...{
+                        SizedBox(
+                          height: 600,
+                          child: activityPanel(state),
+                        )
+                      }
+                    ],
                   ),
-                  if (state is SharedFileLoadSuccess) ...{
-                    activityPanel(state),
-                  }
-                ],
+                ),
               ),
             ),
           );
