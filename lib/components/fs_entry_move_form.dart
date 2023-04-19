@@ -65,21 +65,18 @@ class FsEntryMoveForm extends StatelessWidget {
           if (state is FsEntryMoveNameConflict) {
             return ArDriveStandardModal(
               title: appLocalizationsOf(context).nameConflict,
-              content: SizedBox(
-                width: kSmallDialogWidth,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      appLocalizationsOf(context)
-                          .itemMoveNameConflict(state.folderInView.name),
-                    ),
-                    for (final itemName in state.conflictingFileNames() +
-                        state.conflictingFolderNames())
-                      Text(itemName),
-                  ],
-                ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    appLocalizationsOf(context)
+                        .itemMoveNameConflict(state.folderInView.name),
+                  ),
+                  for (final itemName in state.conflictingFileNames() +
+                      state.conflictingFolderNames())
+                    Text(itemName),
+                ],
               ),
               actions: [
                 ModalAction(
@@ -124,6 +121,7 @@ class FsEntryMoveForm extends StatelessWidget {
                             }
                           : null,
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           ArDriveIcons.folderOutlined(
                             size: 16,
@@ -175,98 +173,137 @@ class FsEntryMoveForm extends StatelessWidget {
               ),
             ];
 
-            return ArDriveCard(
-              height: 441,
-              contentPadding: EdgeInsets.zero,
-              width: kMediumDialogWidth,
-              content: SizedBox(
-                height: 325,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.only(left: 16, right: 16),
-                      width: double.infinity,
-                      height: 77,
-                      alignment: Alignment.centerLeft,
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeBgCanvas,
-                      child: Row(
-                        children: [
-                          AnimatedContainer(
-                            width: !state.viewingRootFolder ? 20 : 0,
-                            duration: const Duration(milliseconds: 200),
-                            child: GestureDetector(
-                              onTap: () {
-                                context.read<FsEntryMoveBloc>().add(
-                                      FsEntryMoveGoBackToParent(
-                                        folderInView:
-                                            state.viewingFolder.folder,
-                                      ),
-                                    );
-                              },
-                              child: AnimatedScale(
-                                duration: const Duration(milliseconds: 200),
-                                scale: !state.viewingRootFolder ? 1 : 0,
-                                child: ArDriveIcons.arrowBack(
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                          AnimatedPadding(
-                            duration: const Duration(milliseconds: 200),
-                            padding: !state.viewingRootFolder
-                                ? const EdgeInsets.only(left: 8)
-                                : const EdgeInsets.only(left: 0),
-                            child: Text(
-                              appLocalizationsOf(context).moveItems,
-                              style: ArDriveTypography.headline.headline5Bold(),
-                            ),
-                          ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pop(context);
-                            },
-                            child: ArDriveIcons.closeIcon(
-                              size: 24,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        itemCount: items.length,
-                        itemBuilder: (context, index) {
-                          return items[index];
-                        },
-                      ),
-                    ),
-                    const Divider(),
-                    Container(
-                      decoration: BoxDecoration(
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ArDriveCard(
+                height: 441,
+                width: kMediumDialogWidth,
+                contentPadding: EdgeInsets.zero,
+                content: SizedBox(
+                  height: 325,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.only(left: 16, right: 16),
+                        width: double.infinity,
+                        height: 77,
+                        alignment: Alignment.centerLeft,
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
-                            .themeBgSurface,
+                            .themeBgCanvas,
+                        child: Row(
+                          children: [
+                            AnimatedContainer(
+                              width: !state.viewingRootFolder ? 20 : 0,
+                              duration: const Duration(milliseconds: 200),
+                              child: GestureDetector(
+                                onTap: () {
+                                  context.read<FsEntryMoveBloc>().add(
+                                        FsEntryMoveGoBackToParent(
+                                          folderInView:
+                                              state.viewingFolder.folder,
+                                        ),
+                                      );
+                                },
+                                child: AnimatedScale(
+                                  duration: const Duration(milliseconds: 200),
+                                  scale: !state.viewingRootFolder ? 1 : 0,
+                                  child: ArDriveIcons.arrowBack(
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            AnimatedPadding(
+                              duration: const Duration(milliseconds: 200),
+                              padding: !state.viewingRootFolder
+                                  ? const EdgeInsets.only(left: 8)
+                                  : const EdgeInsets.only(left: 0),
+                              child: Text(
+                                appLocalizationsOf(context).moveItems,
+                                style:
+                                    ArDriveTypography.headline.headline5Bold(),
+                              ),
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pop(context);
+                              },
+                              child: ArDriveIcons.closeIcon(
+                                size: 24,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
+                      Expanded(
+                        child: ListView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            return items[index];
+                          },
+                        ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          ArDriveButton(
+                      const Divider(),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeBgSurface,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ArDriveButton(
+                                maxHeight: 36,
+                                style: ArDriveButtonStyle.secondary,
+                                backgroundColor: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
+                                fontStyle:
+                                    ArDriveTypography.body.buttonNormalRegular(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgDefault,
+                                ),
+                                icon: ArDriveIcons.folderAdd(),
+                                text: appLocalizationsOf(context)
+                                    .createFolderEmphasized,
+                                onPressed: () {
+                                  showAnimatedDialog(
+                                    context,
+                                    content: BlocProvider(
+                                      create: (context) => FolderCreateCubit(
+                                        driveId:
+                                            state.viewingFolder.folder.driveId,
+                                        parentFolderId:
+                                            state.viewingFolder.folder.id,
+                                        profileCubit:
+                                            context.read<ProfileCubit>(),
+                                        arweave: context.read<ArweaveService>(),
+                                        turboService:
+                                            context.read<TurboService>(),
+                                        driveDao: context.read<DriveDao>(),
+                                      ),
+                                      child: const FolderCreateForm(),
+                                    ),
+                                  );
+                                }),
+                            ArDriveButton(
                               maxHeight: 36,
-                              style: ArDriveButtonStyle.secondary,
                               backgroundColor: ArDriveTheme.of(context)
                                   .themeData
                                   .colors
@@ -276,61 +313,27 @@ class FsEntryMoveForm extends StatelessWidget {
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
-                                    .themeFgDefault,
+                                    .themeAccentSubtle,
                               ),
-                              icon: ArDriveIcons.folderAdd(),
                               text: appLocalizationsOf(context)
-                                  .createFolderEmphasized,
+                                  .moveHereEmphasized,
                               onPressed: () {
-                                showAnimatedDialog(
-                                  context,
-                                  content: BlocProvider(
-                                    create: (context) => FolderCreateCubit(
-                                      driveId:
-                                          state.viewingFolder.folder.driveId,
-                                      parentFolderId:
-                                          state.viewingFolder.folder.id,
-                                      profileCubit:
-                                          context.read<ProfileCubit>(),
-                                      arweave: context.read<ArweaveService>(),
-                                      turboService:
-                                          context.read<TurboService>(),
-                                      driveDao: context.read<DriveDao>(),
-                                    ),
-                                    child: const FolderCreateForm(),
-                                  ),
-                                );
-                              }),
-                          ArDriveButton(
-                            maxHeight: 36,
-                            backgroundColor: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                            fontStyle:
-                                ArDriveTypography.body.buttonNormalRegular(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeAccentSubtle,
+                                context.read<FsEntryMoveBloc>().add(
+                                      FsEntryMoveSubmit(
+                                        folderInView:
+                                            state.viewingFolder.folder,
+                                      ),
+                                    );
+                                context
+                                    .read<DriveDetailCubit>()
+                                    .forceDisableMultiselect = true;
+                              },
                             ),
-                            text:
-                                appLocalizationsOf(context).moveHereEmphasized,
-                            onPressed: () {
-                              context.read<FsEntryMoveBloc>().add(
-                                    FsEntryMoveSubmit(
-                                      folderInView: state.viewingFolder.folder,
-                                    ),
-                                  );
-                              context
-                                  .read<DriveDetailCubit>()
-                                  .forceDisableMultiselect = true;
-                            },
-                          ),
-                        ],
-                      ),
-                    )
-                  ],
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
                 ),
               ),
             );
