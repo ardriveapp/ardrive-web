@@ -7,7 +7,6 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
 import 'package:ardrive/pst/community_oracle.dart';
 import 'package:ardrive/pst/contract_oracle.dart';
@@ -22,6 +21,7 @@ import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -295,40 +295,6 @@ class AppState extends State<App> {
           ),
         ),
       ),
-    );
-  }
-}
-
-void preCacheLoginAssets(BuildContext context) {
-  List<String> assetPaths = [
-    Resources.images.login.login1,
-    Resources.images.login.login2,
-    Resources.images.login.login3,
-    Resources.images.login.login4,
-  ];
-
-  for (String assetPath in assetPaths) {
-    precacheImage(
-      AssetImage(assetPath),
-      context,
-    );
-  }
-}
-
-void preCacheOnBoardingAssets(BuildContext context) {
-  List<String> assetPaths = [
-    Resources.images.login.onboarding.onboarding1,
-    Resources.images.login.onboarding.onboarding2,
-    Resources.images.login.onboarding.onboarding3,
-    Resources.images.login.onboarding.onboarding4,
-    Resources.images.login.onboarding.onboarding5,
-    Resources.images.login.onboarding.onboarding6,
-  ];
-
-  for (String assetPath in assetPaths) {
-    precacheImage(
-      AssetImage(assetPath),
-      context,
     );
   }
 }

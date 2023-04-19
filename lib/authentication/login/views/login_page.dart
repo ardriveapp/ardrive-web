@@ -4,7 +4,6 @@ import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -13,6 +12,7 @@ import 'package:ardrive/services/authentication/biometric_permission_dialog.dart
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
