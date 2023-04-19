@@ -7,10 +7,10 @@ abstract class ARFSFactory {
   ARFSFileEntity getARFSFileFromFileRevisionWithTransactions(
     FileRevisionWithTransactions file,
   );
+  ARFSFileEntity getARFSFileFromFileRevision(FileRevision file);
   ARFSFileEntity getARFSFileFromFileDataItemTable(FileDataTableItem file);
 
   ARFSDriveEntity getARFSDriveFromDriveDAOEntity(Drive drive);
-
   factory ARFSFactory() => _ARFSFactory();
 }
 
@@ -33,6 +33,7 @@ class _ARFSFactory implements ARFSFactory {
       parentFolderId: file.parentFolderId,
       size: file.size,
       id: file.id,
+      dataTxId: file.dataTxId,
     );
   }
 
@@ -90,6 +91,26 @@ class _ARFSFactory implements ARFSFactory {
       parentFolderId: file.parentFolderId,
       size: file.size ?? 0,
       id: file.id,
+    );
+  }
+
+  @override
+  ARFSFileEntity getARFSFileFromFileRevision(FileRevision fileRevision) {
+    return _ARFSFileEntity(
+      appName: '',
+      appVersion: '',
+      arFS: '',
+      driveId: fileRevision.driveId,
+      entityType: EntityType.file,
+      name: fileRevision.name,
+      txId: fileRevision.metadataTxId,
+      unixTime: fileRevision.dateCreated,
+      id: fileRevision.fileId,
+      size: fileRevision.size,
+      lastModifiedDate: fileRevision.lastModifiedDate,
+      parentFolderId: fileRevision.parentFolderId,
+      contentType: fileRevision.dataContentType,
+      dataTxId: fileRevision.dataTxId,
     );
   }
 }

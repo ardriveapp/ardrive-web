@@ -1,5 +1,4 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/components/app_bottom_bar.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -125,36 +124,15 @@ class AppShellState extends State<AppShell> {
                 children: [
                   const AppDrawer(),
                   Expanded(
-                    child: Scaffold(body: widget.page),
+                    child: Scaffold(
+                      body: widget.page,
+                    ),
                   ),
                 ],
               ),
             ),
             mobile: buildPage(
-              Scaffold(
-                appBar: const MobileAppBar(),
-                drawer: const AppDrawer(),
-                body: Row(
-                  children: [
-                    Expanded(
-                      child: widget.page,
-                    ),
-                  ],
-                ),
-                bottomNavigationBar:
-                    BlocBuilder<DriveDetailCubit, DriveDetailState>(
-                  builder: (context, state) {
-                    if (state is! DriveDetailLoadSuccess) {
-                      return Container();
-                    }
-                    return AppBottomBar(
-                      currentFolder: state.folderInView,
-                      drive: (state).currentDrive,
-                      driveDetailState: state,
-                    );
-                  },
-                ),
-              ),
+              widget.page,
             ),
           );
         },
@@ -174,7 +152,9 @@ class AppShellState extends State<AppShell> {
 }
 
 class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const MobileAppBar({super.key});
+  const MobileAppBar({super.key, this.leading});
+
+  final Widget? leading;
 
   @override
   Size get preferredSize =>
@@ -189,12 +169,16 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            IconButton(
-              icon: ArDriveIcons.menuArrow(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-              ),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            ),
+            leading ??
+                IconButton(
+                  icon: ArDriveIcons.menuArrow(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
             const Spacer(),
             Padding(
               padding: const EdgeInsets.only(right: 12.0),

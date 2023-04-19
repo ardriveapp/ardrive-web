@@ -1,32 +1,52 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
-import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/l11n/validation_messages.dart';
-import 'package:ardrive/misc/misc.dart';
-import 'package:ardrive/pages/shared_file/shared_file_side_sheet/shared_file_side_sheet.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:reactive_forms/reactive_forms.dart';
+import 'package:lottie/lottie.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+
+import '../../components/details_panel.dart';
+import '../drive_detail/components/drive_explorer_item_tile.dart';
 
 /// [SharedFilePage] displays details of a shared file and controls for downloading and previewing it
 /// from a parent [SharedFileCubit].
 class SharedFilePage extends StatelessWidget {
-  const SharedFilePage({Key? key}) : super(key: key);
+  SharedFilePage({Key? key}) : super(key: key);
+
+  final _fileKeyController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      child: BlocBuilder<SharedFileCubit, SharedFileState>(
+      child: BlocConsumer<SharedFileCubit, SharedFileState>(
+        buildWhen: (previous, current) {
+          return current is! SharedFileKeyInvalid;
+        },
+        listener: (context, state) {
+          if (state is SharedFileKeyInvalid) {
+            showAnimatedDialog(
+              context,
+              content: ArDriveStandardModal(
+                title: appLocalizationsOf(context).error,
+                description: appLocalizationsOf(context).invalidKeyFile,
+              ),
+            );
+          }
+        },
         builder: (context, state) {
           Widget shareCard() {
-            return Card(
+            return ArDriveCard(
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
               elevation: 2,
-              child: Padding(
+              content: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Center(
                   child: ConstrainedBox(
@@ -40,39 +60,67 @@ class SharedFilePage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Image.asset(
-                          Resources.images.brand.logoHorizontalNoSubtitleLight,
-                          height: 96,
-                          fit: BoxFit.contain,
+                        ScreenTypeLayout(
+                          desktop: Row(
+                            children: [
+                              Lottie.asset(
+                                'assets/animations/lottie.json',
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.fill,
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'ardrive',
+                                style: ArDriveTypography.headline
+                                    .heroBold()
+                                    .copyWith(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              )
+                            ],
+                          ),
+                          mobile: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Lottie.asset(
+                                'assets/animations/lottie.json',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.fill,
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'ardrive',
+                                style: ArDriveTypography.headline
+                                    .headline1Bold()
+                                    .copyWith(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              )
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 32),
                         if (state is SharedFileIsPrivate) ...[
                           Text(appLocalizationsOf(context)
                               .sharedFileIsEncrypted),
                           const SizedBox(height: 16),
-                          ReactiveForm(
-                            formGroup: context.watch<SharedFileCubit>().form,
-                            child: ReactiveTextField(
-                              formControlName: 'fileKey',
-                              autofocus: true,
-                              obscureText: true,
-                              decoration: InputDecoration(
-                                labelText:
-                                    appLocalizationsOf(context).enterFileKey,
-                              ),
-                              validationMessages: kValidationMessages(
-                                  appLocalizationsOf(context)),
-                              onEditingComplete: (_) => context
-                                  .read<SharedFileCubit>()
-                                  .form
-                                  .updateValueAndValidity(),
-                            ),
+                          ArDriveTextField(
+                            controller: _fileKeyController,
+                            autofocus: true,
+                            obscureText: true,
+                            hintText: appLocalizationsOf(context).enterFileKey,
+                            onFieldSubmitted: (_) => context
+                                .read<SharedFileCubit>()
+                                .submit(_fileKeyController.text),
                           ),
                           const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () =>
-                                context.read<SharedFileCubit>().submit(),
-                            child: Text(appLocalizationsOf(context).unlock),
+                          ArDriveButton(
+                            onPressed: () => context
+                                .read<SharedFileCubit>()
+                                .submit(_fileKeyController.text),
+                            text: appLocalizationsOf(context).unlock,
                           ),
                         ],
                         if (state is SharedFileLoadInProgress)
@@ -80,20 +128,45 @@ class SharedFilePage extends StatelessWidget {
                         else if (state is SharedFileLoadSuccess) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.text_snippet),
-                            title: Text(state.fileRevisions.first.name),
-                            subtitle:
-                                Text(filesize(state.fileRevisions.first.size)),
+                            leading: DriveExplorerItemTileLeading(
+                              item: DriveDataTableItemMapper.fromRevision(
+                                state.fileRevisions.first,
+                              ),
+                            ),
+                            title: Text(
+                              state.fileRevisions.first.name,
+                              style: ArDriveTypography.body.buttonLargeBold(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
+                              ),
+                            ),
+                            subtitle: Text(
+                              filesize(state.fileRevisions.first.size),
+                              style: ArDriveTypography.body.buttonNormalRegular(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeAccentDisabled,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.file_download),
-                            label: Text(appLocalizationsOf(context).download),
-                            onPressed: () => promptToDownloadSharedFile(
-                              revision: state.fileRevisions.first,
-                              context: context,
-                              fileKey: state.fileKey,
-                            ),
+                          ArDriveButton(
+                            icon: ArDriveIcons.download(),
+                            onPressed: () {
+                              final file =
+                                  ARFSFactory().getARFSFileFromFileRevision(
+                                state.fileRevisions.first,
+                              );
+                              return promptToDownloadSharedFile(
+                                revision: file,
+                                context: context,
+                                fileKey: state.fileKey,
+                              );
+                            },
+                            text: appLocalizationsOf(context).download,
                           ),
                           const SizedBox(height: 16),
                           _buildReturnToAppLink(context),
@@ -117,19 +190,17 @@ class SharedFilePage extends StatelessWidget {
           }
 
           Widget activityPanel(SharedFileLoadSuccess state) {
-            return Card(
-              elevation: 2,
-              child: SharedFileSideSheet(
-                fileKey: state.fileKey,
-                revisions: state.fileRevisions,
-                privacy: state.fileKey != null
-                    ? DrivePrivacy.private
-                    : DrivePrivacy.public,
+            return DetailsPanel(
+              item: DriveDataTableItemMapper.fromRevision(
+                state.fileRevisions.first,
               ),
+              isSharePage: true,
+              maybeSelectedItem: null,
+              fileKey: state.fileKey,
+              revisions: state.fileRevisions,
+              drivePrivacy: state.fileKey != null ? 'private' : 'public',
             );
           }
-
-          final pageHeight = MediaQuery.of(context).size.height;
 
           return Padding(
             padding: const EdgeInsets.all(24.0),
@@ -138,30 +209,38 @@ class SharedFilePage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Flexible(
-                    flex: 3,
+                    flex: 2,
                     child: shareCard(),
                   ),
                   if (state is SharedFileLoadSuccess) ...{
                     Flexible(
                       flex: 1,
-                      child: activityPanel(state),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 24.0),
+                        child: activityPanel(state),
+                      ),
                     )
                   }
                 ],
               ),
-              mobile: ListView(
-                children: [
-                  shareCard(),
-                  if (state is SharedFileLoadSuccess) ...{
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: 100,
-                        maxHeight: pageHeight / 2,
+              mobile: SingleChildScrollView(
+                primary: true,
+                child: SizedBox(
+                  child: Column(
+                    children: [
+                      shareCard(),
+                      const SizedBox(
+                        height: 16,
                       ),
-                      child: activityPanel(state),
-                    ),
-                  }
-                ],
+                      if (state is SharedFileLoadSuccess) ...{
+                        SizedBox(
+                          height: 600,
+                          child: activityPanel(state),
+                        )
+                      }
+                    ],
+                  ),
+                ),
               ),
             ),
           );
@@ -171,9 +250,10 @@ class SharedFilePage extends StatelessWidget {
   }
 
   Widget _buildReturnToAppLink(BuildContext context) {
-    return TextButton(
+    return ArDriveButton(
+      style: ArDriveButtonStyle.tertiary,
       onPressed: () => openUrl(url: 'https://ardrive.io/'),
-      child: Text(appLocalizationsOf(context).whatIsArDrive),
+      text: appLocalizationsOf(context).whatIsArDrive,
     );
   }
 }
