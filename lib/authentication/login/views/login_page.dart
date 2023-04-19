@@ -4,6 +4,7 @@ import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -34,7 +35,12 @@ class _LoginPageState extends State<LoginPage> {
         arConnectService: ArConnectService(),
         arDriveAuth: context.read<ArDriveAuth>(),
       )..add(const CheckIfUserIsLoggedIn()),
-      child: BlocBuilder<LoginBloc, LoginState>(
+      child: BlocConsumer<LoginBloc, LoginState>(
+        listener: (context, state) {
+          if (state is LoginOnBoarding) {
+            preCacheOnBoardingAssets(context);
+          }
+        },
         builder: (context, state) {
           return _FadeThroughTransitionSwitcher(
             fillColor: Colors.transparent,
