@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
 import 'package:ardrive/pst/community_oracle.dart';
 import 'package:ardrive/pst/contract_oracle.dart';
@@ -51,6 +52,8 @@ late ArweaveService _arweave;
 late TurboService _turbo;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // await precacheIcons();
 
   _configService = ConfigService(appFlavors: AppFlavors());
 
@@ -144,147 +147,188 @@ class AppState extends State<App> {
   final _routeInformationParser = AppRouteInformationParser();
 
   @override
-  Widget build(BuildContext context) => MultiRepositoryProvider(
-        providers: [
-          RepositoryProvider<ArweaveService>(create: (_) => _arweave),
-          // repository provider for UploadFileChecker
-          RepositoryProvider<UploadFileChecker>(
-            create: (_) => UploadFileChecker(
-              privateFileSafeSizeLimit:
-                  kIsWeb ? privateFileSizeLimit : mobilePrivateFileSizeLimit,
-              publicFileSafeSizeLimit: publicFileSafeSizeLimit,
-            ),
+  void initState() {
+    super.initState();
+    preCacheLoginAssets(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        // repository provider for UploadFileChecker
+        RepositoryProvider<UploadFileChecker>(
+          create: (_) => UploadFileChecker(
+            privateFileSafeSizeLimit:
+                kIsWeb ? privateFileSizeLimit : mobilePrivateFileSizeLimit,
+            publicFileSafeSizeLimit: publicFileSafeSizeLimit,
           ),
-          RepositoryProvider<ArweaveService>(create: (_) => _arweave),
-          RepositoryProvider<TurboService>(
-            create: (_) => _turbo,
-          ),
-          RepositoryProvider<PstService>(
-            create: (_) => PstService(
-              communityOracle: CommunityOracle(
-                ArDriveContractOracle([
-                  ContractOracle(VertoContractReader()),
-                  ContractOracle(RedstoneContractReader()),
-                  ContractOracle(SmartweaveContractReader()),
-                ]),
-              ),
-            ),
-          ),
-          RepositoryProvider<BiometricAuthentication>(
-            create: (_) => BiometricAuthentication(
-              LocalAuthentication(),
-              SecureKeyValueStore(
-                const FlutterSecureStorage(),
-              ),
-            ),
-          ),
-          RepositoryProvider<AppConfig>(create: (_) => _config),
-          RepositoryProvider<Database>(create: (_) => Database()),
-          RepositoryProvider<ProfileDao>(
-              create: (context) => context.read<Database>().profileDao),
-          RepositoryProvider<DriveDao>(
-              create: (context) => context.read<Database>().driveDao),
-          RepositoryProvider<UserRepository>(
-            create: (context) => UserRepository(
-              context.read<ProfileDao>(),
-              context.read<ArweaveService>(),
-            ),
-          ),
-          RepositoryProvider(
-            create: (context) => ArDriveAuth(
-              biometricAuthentication: context.read<BiometricAuthentication>(),
-              secureKeyValueStore: SecureKeyValueStore(
-                const FlutterSecureStorage(),
-              ),
-              crypto: ArDriveCrypto(),
-              arweave: _arweave,
-              userRepository: context.read<UserRepository>(),
-            ),
-          ),
-          RepositoryProvider(
-            create: (_) => UserPreferencesRepository(
-              themeDetector: ThemeDetector(),
-            ),
-          ),
-        ],
-        child: KeyboardHandler(
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (context) => ThemeSwitcherBloc(
-                  userPreferencesRepository:
-                      context.read<UserPreferencesRepository>(),
-                )..add(LoadTheme()),
-              ),
-              BlocProvider(
-                create: (context) => ProfileCubit(
-                  arweave: context.read<ArweaveService>(),
-                  turboService: context.read<TurboService>(),
-                  profileDao: context.read<ProfileDao>(),
-                  db: context.read<Database>(),
-                ),
-              ),
-              BlocProvider(
-                create: (context) => ActivityCubit(),
-              ),
-              BlocProvider(
-                create: (context) =>
-                    FeedbackSurveyCubit(FeedbackSurveyInitialState()),
-              ),
-            ],
-            child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
-              listener: (context, state) {
-                if (state is ThemeSwitcherDarkTheme) {
-                  ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
-                } else if (state is ThemeSwitcherLightTheme) {
-                  ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
-                }
-              },
-              builder: (context, state) {
-                return ArDriveApp(
-                  key: arDriveAppKey,
-                  builder: (context) => MaterialApp.router(
-                    title: 'ArDrive',
-                    theme: ArDriveTheme.of(context)
-                        .themeData
-                        .materialThemeData
-                        .copyWith(
-                          scaffoldBackgroundColor: ArDriveTheme.of(context)
-                              .themeData
-                              .backgroundColor,
-                        ),
-                    debugShowCheckedModeBanner: false,
-                    routeInformationParser: _routeInformationParser,
-                    routerDelegate: _routerDelegate,
-                    localizationsDelegates: const [
-                      AppLocalizations.delegate,
-                      GlobalMaterialLocalizations.delegate,
-                      GlobalWidgetsLocalizations.delegate,
-                    ],
-                    supportedLocales: const [
-                      Locale('en', ''), // English, no country code
-                      Locale('es', ''), // Spanish, no country code
-                      Locale.fromSubtags(
-                          languageCode: 'zh'), // generic Chinese 'zh'
-                      Locale.fromSubtags(
-                        languageCode: 'zh',
-                        countryCode: 'HK',
-                      ), // Traditional Chinese, Cantonese
-                      Locale('ja', ''), // Japanese, no country code
-                      Locale('hi', ''), // Hindi, no country code
-                    ],
-                    builder: (context, child) => ListTileTheme(
-                      textColor: kOnSurfaceBodyTextColor,
-                      iconColor: kOnSurfaceBodyTextColor,
-                      child: Portal(
-                        child: child!,
-                      ),
-                    ),
-                  ),
-                );
-              },
+        ),
+        RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        RepositoryProvider<TurboService>(
+          create: (_) => _turbo,
+        ),
+        RepositoryProvider<PstService>(
+          create: (_) => PstService(
+            communityOracle: CommunityOracle(
+              ArDriveContractOracle([
+                ContractOracle(VertoContractReader()),
+                ContractOracle(RedstoneContractReader()),
+                ContractOracle(SmartweaveContractReader()),
+              ]),
             ),
           ),
         ),
-      );
+        RepositoryProvider<BiometricAuthentication>(
+          create: (_) => BiometricAuthentication(
+            LocalAuthentication(),
+            SecureKeyValueStore(
+              const FlutterSecureStorage(),
+            ),
+          ),
+        ),
+        RepositoryProvider<AppConfig>(create: (_) => _config),
+        RepositoryProvider<Database>(create: (_) => Database()),
+        RepositoryProvider<ProfileDao>(
+            create: (context) => context.read<Database>().profileDao),
+        RepositoryProvider<DriveDao>(
+            create: (context) => context.read<Database>().driveDao),
+        RepositoryProvider<UserRepository>(
+          create: (context) => UserRepository(
+            context.read<ProfileDao>(),
+            context.read<ArweaveService>(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (context) => ArDriveAuth(
+            biometricAuthentication: context.read<BiometricAuthentication>(),
+            secureKeyValueStore: SecureKeyValueStore(
+              const FlutterSecureStorage(),
+            ),
+            crypto: ArDriveCrypto(),
+            arweave: _arweave,
+            userRepository: context.read<UserRepository>(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (_) => UserPreferencesRepository(
+            themeDetector: ThemeDetector(),
+          ),
+        ),
+      ],
+      child: KeyboardHandler(
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => ThemeSwitcherBloc(
+                userPreferencesRepository:
+                    context.read<UserPreferencesRepository>(),
+              )..add(LoadTheme()),
+            ),
+            BlocProvider(
+              create: (context) => ProfileCubit(
+                arweave: context.read<ArweaveService>(),
+                turboService: context.read<TurboService>(),
+                profileDao: context.read<ProfileDao>(),
+                db: context.read<Database>(),
+              ),
+            ),
+            BlocProvider(
+              create: (context) => ActivityCubit(),
+            ),
+            BlocProvider(
+              create: (context) =>
+                  FeedbackSurveyCubit(FeedbackSurveyInitialState()),
+            ),
+          ],
+          child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
+            listener: (context, state) {
+              if (state is ThemeSwitcherDarkTheme) {
+                ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
+              } else if (state is ThemeSwitcherLightTheme) {
+                ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
+              }
+            },
+            builder: (context, state) {
+              return ArDriveApp(
+                key: arDriveAppKey,
+                builder: (context) => MaterialApp.router(
+                  title: 'ArDrive',
+                  theme: ArDriveTheme.of(context)
+                      .themeData
+                      .materialThemeData
+                      .copyWith(
+                        scaffoldBackgroundColor:
+                            ArDriveTheme.of(context).themeData.backgroundColor,
+                      ),
+                  debugShowCheckedModeBanner: false,
+                  routeInformationParser: _routeInformationParser,
+                  routerDelegate: _routerDelegate,
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                  ],
+                  supportedLocales: const [
+                    Locale('en', ''), // English, no country code
+                    Locale('es', ''), // Spanish, no country code
+                    Locale.fromSubtags(
+                        languageCode: 'zh'), // generic Chinese 'zh'
+                    Locale.fromSubtags(
+                      languageCode: 'zh',
+                      countryCode: 'HK',
+                    ), // Traditional Chinese, Cantonese
+                    Locale('ja', ''), // Japanese, no country code
+                    Locale('hi', ''), // Hindi, no country code
+                  ],
+                  builder: (context, child) => ListTileTheme(
+                    textColor: kOnSurfaceBodyTextColor,
+                    iconColor: kOnSurfaceBodyTextColor,
+                    child: Portal(
+                      child: child!,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void preCacheLoginAssets(BuildContext context) {
+  List<String> assetPaths = [
+    Resources.images.login.login1,
+    Resources.images.login.login2,
+    Resources.images.login.login3,
+    Resources.images.login.login4,
+  ];
+
+  for (String assetPath in assetPaths) {
+    precacheImage(
+      AssetImage(assetPath),
+      context,
+    );
+  }
+}
+
+void preCacheOnBoardingAssets(BuildContext context) {
+  List<String> assetPaths = [
+    Resources.images.login.onboarding.onboarding1,
+    Resources.images.login.onboarding.onboarding2,
+    Resources.images.login.onboarding.onboarding3,
+    Resources.images.login.onboarding.onboarding4,
+    Resources.images.login.onboarding.onboarding5,
+    Resources.images.login.onboarding.onboarding6,
+  ];
+
+  for (String assetPath in assetPaths) {
+    precacheImage(
+      AssetImage(assetPath),
+      context,
+    );
+  }
 }
