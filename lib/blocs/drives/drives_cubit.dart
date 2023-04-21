@@ -48,8 +48,6 @@ class DrivesCubit extends Cubit<DrivesState> {
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drives, _, __) => drives,
     ).listen((drives) async {
-      logger.d('Drives loaded: $drives');
-
       final state = this.state;
 
       final profile = _profileCubit.state;
@@ -68,22 +66,12 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       final ghostFolders = await _driveDao.ghostFolders().get();
 
-      logger.i('Drives loaded: $drives');
-
-      for (final drive in drives) {
-        logger.i('Drive: $drive');
-      }
-
       logger.d('Ghost folders: ${ghostFolders.length}');
-      logger.d('profile: $profile');
+      logger.d('Drives: ${drives.length}');
+      logger.d('Selected drive: $selectedDriveId');
 
       final sharedDrives =
           drives.where((d) => !isDriveOwner(auth, d.ownerAddress)).toList();
-
-      // log shared drives
-      for (final drive in sharedDrives) {
-        logger.d('Shared Drive: $drive');
-      }
 
       emit(
         DrivesLoadSuccess(
