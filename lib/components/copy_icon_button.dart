@@ -1,3 +1,4 @@
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -17,8 +18,7 @@ class CopyIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(
-        Icons.copy,
+      icon: ArDriveIcons.copy(
         color: Colors.black54,
         size: size,
       ),

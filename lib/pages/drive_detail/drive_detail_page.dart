@@ -10,7 +10,6 @@ import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
-import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
@@ -20,12 +19,14 @@ import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:chewie/chewie.dart';
@@ -69,11 +70,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           } else if (state is DriveDetailLoadSuccess) {
             final hasSubfolders = state.folderInView.subfolders.isNotEmpty;
 
-            final isDriveOwner = state.currentDrive.ownerAddress ==
-                context.read<ArDriveAuth>().currentUser?.walletAddress;
+            final isOwner = isDriveOwner(
+              context.read<ArDriveAuth>(),
+              state.currentDrive.ownerAddress,
+            );
 
-            final hasFiles =
-                state.folderInView.files.isNotEmpty && isDriveOwner;
+            final hasFiles = state.folderInView.files.isNotEmpty && isOwner;
 
             final canDownloadMultipleFiles = state.multiselect &&
                 state.currentDrive.isPublic &&
@@ -81,7 +83,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
             return ScreenTypeLayout(
               desktop: _desktopView(
-                isDriveOwner: isDriveOwner,
+                isDriveOwner: isOwner,
                 state: state,
                 hasSubfolders: hasSubfolders,
                 hasFiles: hasFiles,
@@ -262,7 +264,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         ),
                                       )
                                     ],
-                                    child: ArDriveIcons.options(),
+                                    child: ArDriveIcons.dotsVert(
+                                      size: 16,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -302,32 +306,27 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       duration: const Duration(milliseconds: 300),
                       child: Align(
                         alignment: Alignment.center,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 120),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                                maxWidth:
-                                    _getMaxWidthForDetailsPanel(state, context),
-                                minWidth:
-                                    _getMinWidthForDetailsPanel(state, context),
-                                maxHeight:
-                                    MediaQuery.of(context).size.height - 120),
-                            child: state.showSelectedItemDetails &&
-                                    context
-                                            .read<DriveDetailCubit>()
-                                            .selectedItem !=
-                                        null
-                                ? DetailsPanel(
-                                    isSharePage: false,
-                                    drivePrivacy: state.currentDrive.privacy,
-                                    maybeSelectedItem:
-                                        state.maybeSelectedItem(),
-                                    item: context
-                                        .read<DriveDetailCubit>()
-                                        .selectedItem!,
-                                  )
-                                : const SizedBox(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth:
+                                _getMaxWidthForDetailsPanel(state, context),
+                            minWidth:
+                                _getMinWidthForDetailsPanel(state, context),
                           ),
+                          child: state.showSelectedItemDetails &&
+                                  context
+                                          .read<DriveDetailCubit>()
+                                          .selectedItem !=
+                                      null
+                              ? DetailsPanel(
+                                  isSharePage: false,
+                                  drivePrivacy: state.currentDrive.privacy,
+                                  maybeSelectedItem: state.maybeSelectedItem(),
+                                  item: context
+                                      .read<DriveDetailCubit>()
+                                      .selectedItem!,
+                                )
+                              : const SizedBox(),
                         ),
                       ))
                 ],
@@ -709,8 +708,9 @@ class MobileFolderNavigation extends StatelessWidget {
           BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {
               if (state is DriveDetailLoadSuccess) {
-                final isDriveOwner = state.currentDrive.ownerAddress ==
-                    context.read<ArDriveAuth>().currentUser?.walletAddress;
+                final isOwner = isDriveOwner(context.read<ArDriveAuth>(),
+                    state.currentDrive.ownerAddress);
+
                 return ArDriveDropdown(
                   width: 250,
                   anchor: const Aligned(
@@ -718,7 +718,7 @@ class MobileFolderNavigation extends StatelessWidget {
                     target: Alignment.bottomRight,
                   ),
                   items: [
-                    if (isDriveOwner)
+                    if (isOwner)
                       ArDriveDropdownItem(
                         onClick: () {
                           promptToRenameDrive(
@@ -762,7 +762,9 @@ class MobileFolderNavigation extends StatelessWidget {
                       horizontal: 16.0,
                       vertical: 8,
                     ),
-                    child: ArDriveIcons.options(),
+                    child: ArDriveIcons.dotsVert(
+                      size: 16,
+                    ),
                   ),
                 );
               }

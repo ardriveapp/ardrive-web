@@ -12,6 +12,7 @@ import 'package:ardrive/services/authentication/biometric_permission_dialog.dart
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
@@ -34,7 +35,12 @@ class _LoginPageState extends State<LoginPage> {
         arConnectService: ArConnectService(),
         arDriveAuth: context.read<ArDriveAuth>(),
       )..add(const CheckIfUserIsLoggedIn()),
-      child: BlocBuilder<LoginBloc, LoginState>(
+      child: BlocConsumer<LoginBloc, LoginState>(
+        listener: (context, state) {
+          if (state is LoginOnBoarding) {
+            preCacheOnBoardingAssets(context);
+          }
+        },
         builder: (context, state) {
           return _FadeThroughTransitionSwitcher(
             fillColor: Colors.transparent,

@@ -14,7 +14,7 @@ packages:
       name: _flutterfire_internals
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.0"
+    version: "1.1.1"
   analyzer:
     dependency: transitive
     description:
@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: redesign-feedbacks-implementations
-      resolved-ref: d41a789dda0b40697c7a3829ee466c2117b285a3
+      ref: redesign-fine-tune-pre-release
+      resolved-ref: d4eeac4833f2c8e7eb58765d7cfa28e56c96f334
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -523,7 +523,7 @@ packages:
       name: firebase_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.9.0"
+    version: "2.10.0"
   firebase_core_platform_interface:
     dependency: transitive
     description:
@@ -544,14 +544,14 @@ packages:
       name: firebase_crashlytics
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.0"
+    version: "3.1.1"
   firebase_crashlytics_platform_interface:
     dependency: transitive
     description:
       name: firebase_crashlytics_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.4.0"
+    version: "3.4.1"
   fixnum:
     dependency: transitive
     description:
@@ -846,14 +846,14 @@ packages:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.7+2"
+    version: "0.8.7+3"
   image_picker_android:
     dependency: transitive
     description:
       name: image_picker_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.6+6"
+    version: "0.8.6+7"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -965,7 +965,7 @@ packages:
       name: local_auth_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.21"
+    version: "1.0.23"
   local_auth_ios:
     dependency: transitive
     description:
@@ -1154,7 +1154,7 @@ packages:
       name: path_provider_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.24"
+    version: "2.0.25"
   path_provider_foundation:
     dependency: transitive
     description:
@@ -1350,7 +1350,7 @@ packages:
       name: shared_preferences_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.0"
+    version: "2.1.2"
   shared_preferences_foundation:
     dependency: transitive
     description:

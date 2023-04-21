@@ -15,6 +15,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
@@ -618,15 +619,23 @@ class _CopyButtonState extends State<CopyButton> {
     return InkWell(
       onTap: () {
         Clipboard.setData(ClipboardData(text: widget.text));
-        setState(() {
-          _showCheck = true;
-          if (mounted) {
+        if (mounted) {
+          if (_showCheck) {
+            return;
+          }
+
+          setState(() {
+            _showCheck = true;
             if (widget.showCopyText) {
               _overlayEntry = _createOverlayEntry(context);
               Overlay.of(context)?.insert(_overlayEntry!);
             }
 
             Future.delayed(const Duration(seconds: 2), () {
+              if (!mounted) {
+                return;
+              }
+
               setState(() {
                 _showCheck = false;
                 if (_overlayEntry != null && _overlayEntry!.mounted) {
@@ -634,8 +643,8 @@ class _CopyButtonState extends State<CopyButton> {
                 }
               });
             });
-          }
-        });
+          });
+        }
       },
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
@@ -660,23 +669,18 @@ class _CopyButtonState extends State<CopyButton> {
       builder: (context) => Positioned(
         left: buttonPosition.dx - 28,
         top: buttonPosition.dy - 40,
-        child: Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: ArDriveTheme.of(parentContext)
-                .themeData
-                .dropdownTheme
-                .backgroundColor,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
+        child: Material(
+          color: ArDriveTheme.of(parentContext)
+              .themeData
+              .dropdownTheme
+              .backgroundColor,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Center(
-              child: Material(
-                child: Text(
-                  'Copied!',
-                  style: ArDriveTypography.body.smallRegular(),
-                ),
+              child: Text(
+                'Copied!',
+                style: ArDriveTypography.body.smallRegular(),
               ),
             ),
           ),
@@ -793,6 +797,7 @@ class DetailsPanelToolbar extends StatelessWidget {
             ),
           if (item is FileDataTableItem) ...[
             _buildActionIcon(
+              padding: 20,
               tooltip: appLocalizationsOf(context).download,
               icon: ArDriveIcons.download(size: 21),
               onTap: () {
@@ -811,9 +816,9 @@ class DetailsPanelToolbar extends StatelessWidget {
               },
             ),
           ],
-          if (drive.ownerAddress ==
-              context.read<ArDriveAuth>().currentUser?.walletAddress)
+          if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
             _buildActionIcon(
+              padding: 18,
               tooltip: appLocalizationsOf(context).rename,
               icon: ArDriveIcons.edit(size: 21),
               onTap: () {
@@ -826,8 +831,7 @@ class DetailsPanelToolbar extends StatelessWidget {
                 );
               },
             ),
-          if (drive.ownerAddress ==
-              context.read<ArDriveAuth>().currentUser?.walletAddress)
+          if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).move,
               icon: ArDriveIcons.move(size: 21),
@@ -862,11 +866,12 @@ class DetailsPanelToolbar extends StatelessWidget {
     required Widget icon,
     required VoidCallback onTap,
     String? tooltip,
+    double padding = 18,
   }) {
     return ArDriveClickArea(
       tooltip: tooltip,
       child: Padding(
-        padding: const EdgeInsets.only(right: 16.0),
+        padding: EdgeInsets.only(right: padding),
         child: InkWell(
           onTap: onTap,
           child: icon,

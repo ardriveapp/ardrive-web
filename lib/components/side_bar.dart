@@ -380,8 +380,8 @@ class _AppSideBarState extends State<AppSideBar> {
 
     final profileState = context.watch<ProfileCubit>().state;
 
-    if (profileState.runtimeType == ProfileLoggedIn) {
-      final profile = profileState as ProfileLoggedIn;
+    if (profileState is ProfileLoggedIn) {
+      final profile = profileState;
       final notEnoughARInWallet = !profile.hasMinimumBalanceForUpload(
         minimumWalletBalance: minimumWalletBalance,
       );
@@ -483,7 +483,23 @@ class _AppSideBarState extends State<AppSideBar> {
         ),
       );
     } else {
-      return ArDriveClickArea(
+      return _roundedPlusButton(context, currentDrive, currentFolder, state);
+    }
+  }
+
+  Widget _roundedPlusButton(
+    BuildContext context,
+    Drive? currentDrive,
+    FolderWithContents? currentFolder,
+    DriveDetailState state,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+        shape: BoxShape.circle,
+      ),
+      padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 10),
+      child: ArDriveClickArea(
         tooltip: appLocalizationsOf(context).showMenu,
         child: NewButton(
           anchor: const Aligned(
@@ -497,8 +513,8 @@ class _AppSideBarState extends State<AppSideBar> {
             color: Colors.white,
           ),
         ),
-      );
-    }
+      ),
+    );
   }
 }
 

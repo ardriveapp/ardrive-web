@@ -84,6 +84,7 @@ class DriveDataItem extends ArDriveDataTableItem {
 
 class FolderDataTableItem extends ArDriveDataTableItem {
   final String? parentFolderId;
+  final bool isGhostFolder;
 
   FolderDataTableItem({
     required String driveId,
@@ -96,6 +97,7 @@ class FolderDataTableItem extends ArDriveDataTableItem {
     String? fileStatusFromTransactions,
     required Function(ArDriveDataTableItem) onPressed,
     this.parentFolderId,
+    this.isGhostFolder = false,
     required int index,
   }) : super(
           driveId: driveId,
@@ -315,6 +317,7 @@ class DriveDataTableItemMapper {
     int index,
   ) {
     return FolderDataTableItem(
+      isGhostFolder: folderEntry.isGhost,
       index: index,
       path: folderEntry.path,
       driveId: folderEntry.driveId,

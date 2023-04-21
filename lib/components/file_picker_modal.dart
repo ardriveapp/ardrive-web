@@ -26,7 +26,6 @@ Future<IOFile> showFilePickerModal(BuildContext context) async {
       () => io.pickFile(fileSource: FileSource.camera));
 }
 
-// TODO: check this
 Future<T> _showModal<T>(
   BuildContext context,
   Future<T> Function() pickFromFileSystem,
