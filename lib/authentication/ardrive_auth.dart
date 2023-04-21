@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/models/database/database_helpers.dart';
+import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -30,13 +32,17 @@ abstract class ArDriveAuth {
     required ArDriveCrypto crypto,
     required BiometricAuthentication biometricAuthentication,
     required SecureKeyValueStore secureKeyValueStore,
+    required ArConnectService arConnectService,
+    required DatabaseHelpers databaseHelpers,
   }) =>
       _ArDriveAuth(
         arweave: arweave,
         userRepository: userRepository,
         crypto: crypto,
+        databaseHelpers: databaseHelpers,
         biometricAuthentication: biometricAuthentication,
         secureKeyValueStore: secureKeyValueStore,
+        arConnectService: arConnectService,
       );
 }
 
@@ -47,8 +53,12 @@ class _ArDriveAuth implements ArDriveAuth {
     required ArDriveCrypto crypto,
     required BiometricAuthentication biometricAuthentication,
     required SecureKeyValueStore secureKeyValueStore,
+    required ArConnectService arConnectService,
+    required DatabaseHelpers databaseHelpers,
   })  : _arweave = arweave,
         _crypto = crypto,
+        _databaseHelpers = databaseHelpers,
+        _arConnectService = arConnectService,
         _secureKeyValueStore = secureKeyValueStore,
         _biometricAuthentication = biometricAuthentication,
         _userRepository = userRepository;
@@ -58,12 +68,16 @@ class _ArDriveAuth implements ArDriveAuth {
   final ArDriveCrypto _crypto;
   final BiometricAuthentication _biometricAuthentication;
   final SecureKeyValueStore _secureKeyValueStore;
+  final ArConnectService _arConnectService;
+  final DatabaseHelpers _databaseHelpers;
 
   User? _currentUser;
 
   // getters and setters
   @override
   User get currentUser {
+    logger.i('Getting current user');
+
     if (_currentUser == null) {
       throw const AuthenticationUserIsNotLoggedInException();
     }
@@ -152,11 +166,32 @@ class _ArDriveAuth implements ArDriveAuth {
 
   @override
   Future<void> logout() async {
-    currentUser = null;
+    logger.i('Logging out user');
 
-    _userStreamController.add(null);
+    try {
+      if (_currentUser != null) {
+        if (currentUser.profileType == ProfileType.arConnect) {
+          try {
+            await _arConnectService.disconnect();
+          } catch (e) {
+            logger.e('Failed to disconnect from ArConnect', e);
+          }
+        }
 
-    await _userRepository.deleteUser();
+        _secureKeyValueStore.remove('password');
+        _secureKeyValueStore.remove('biometricEnabled');
+
+        currentUser = null;
+
+        _userStreamController.add(null);
+      }
+
+      await _databaseHelpers.deleteAllTables();
+    } catch (e) {
+      logger.e(e.toString()); 
+      logger.e('Failed to logout user', e);
+      throw AuthenticationFailedException('Failed to logout user');
+    }
   }
 
   @override
