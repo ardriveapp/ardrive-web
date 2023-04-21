@@ -10,6 +10,7 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
+import 'package:ardrive/utils/ar_cost_to_usd.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -344,16 +345,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   ) async {
     final arUploadCost = winstonToAr(totalCost);
 
-    late double? usdUploadCost;
-
-    try {
-      // TODO: snapshot creation is not backed off by Turbo
-      usdUploadCost = await _arweave.getArUsdConversionRate().then(
-          (conversionRate) => double.parse(arUploadCost) * conversionRate);
-    } catch (e, s) {
-      usdUploadCost = null;
-      print('Error getting USD conversion rate for Snapshot Creation: $e\n$s');
-    }
+    final double? usdUploadCost = await arCostToUsdOrNull(
+      _arweave,
+      double.parse(arUploadCost),
+    );
 
     emit(ConfirmingSnapshotCreation(
       snapshotSize: dataSize,
