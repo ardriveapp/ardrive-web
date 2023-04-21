@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,21 +18,27 @@ part 'drives_state.dart';
 class DrivesCubit extends Cubit<DrivesState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
+  final ArDriveAuth _auth;
 
   late StreamSubscription _drivesSubscription;
   String? initialSelectedDriveId;
   DrivesCubit({
+    required ArDriveAuth auth,
     this.initialSelectedDriveId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
+        _auth = auth,
         super(DrivesLoadInProgress()) {
-    _profileCubit.stream.listen((state) {
-      if (state is ProfileLoggingOut) {
+    _auth.onAuthStateChanged().listen((user) {
+      logger.d('User logged in: $user');
+      if (user == null) {
+        logger.d('User logged out');
         cleanDrives();
       }
     });
+
     _drivesSubscription =
         Rx.combineLatest3<List<Drive>, List<FolderEntry>, void, List<Drive>>(
       _driveDao
@@ -39,6 +48,8 @@ class DrivesCubit extends Cubit<DrivesState> {
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drives, _, __) => drives,
     ).listen((drives) async {
+      logger.d('Drives loaded: $drives');
+
       final state = this.state;
 
       final profile = _profileCubit.state;
@@ -57,7 +68,22 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       final ghostFolders = await _driveDao.ghostFolders().get();
 
-      print('selected drive id: $selectedDriveId');
+      logger.i('Drives loaded: $drives');
+
+      for (final drive in drives) {
+        logger.i('Drive: $drive');
+      }
+
+      logger.d('Ghost folders: ${ghostFolders.length}');
+      logger.d('profile: $profile');
+
+      final sharedDrives =
+          drives.where((d) => isDriveOwner(auth, d.ownerAddress)).toList();
+
+      // log shared drives
+      for (final drive in sharedDrives) {
+        logger.d('Shared Drive: $drive');
+      }
 
       emit(
         DrivesLoadSuccess(
@@ -68,11 +94,7 @@ class DrivesCubit extends Cubit<DrivesState> {
                   ? d.ownerAddress == walletAddress
                   : false)
               .toList(),
-          sharedDrives: drives
-              .where((d) => profile is ProfileLoggedIn
-                  ? d.ownerAddress != walletAddress
-                  : true)
-              .toList(),
+          sharedDrives: sharedDrives,
           drivesWithAlerts: ghostFolders.map((e) => e.driveId).toList(),
           canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
         ),
@@ -91,12 +113,18 @@ class DrivesCubit extends Cubit<DrivesState> {
   void cleanDrives() {
     initialSelectedDriveId = null;
 
+    _driveDao.deleteDrivesAndItsChildren();
+
     final state = DrivesLoadSuccess(
         selectedDriveId: null,
         userDrives: const [],
         sharedDrives: const [],
         drivesWithAlerts: const [],
         canCreateNewDrive: false);
+
+    logger.i('Drives cleaned');
+    logger.d('Drives state: $state');
+
     emit(state);
   }
 
