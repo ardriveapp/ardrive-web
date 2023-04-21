@@ -275,39 +275,45 @@ class _AppSideBarState extends State<AppSideBar> {
               right: 24,
               bottom: 24,
             ),
-            child: Row(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: HelpButton(),
-                    ),
-                    SizedBox(
-                      height: 8,
-                    ),
-                    ThemeSwitcher(),
-                    SizedBox(
-                      height: 8,
-                    ),
-                    AppVersionWidget(),
-                  ],
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: HelpButton(),
                 ),
-                Tooltip(
-                  message: appLocalizationsOf(context).collapseSideBar,
-                  child: InkWell(
-                    child: AnimatedScale(
-                        duration: const Duration(milliseconds: 200),
-                        scale: _isExpanded ? 1 : 0,
-                        child: ArDriveIcons.arrowBackFilled()),
-                    onTap: () {
-                      setState(() {
-                        _isExpanded = !_isExpanded;
-                      });
-                    },
-                  ),
+                const SizedBox(
+                  height: 24,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        ThemeSwitcher(),
+                        SizedBox(
+                          height: 8,
+                        ),
+                        AppVersionWidget(),
+                      ],
+                    ),
+                    Tooltip(
+                      message: appLocalizationsOf(context).collapseSideBar,
+                      child: InkWell(
+                        child: AnimatedScale(
+                            duration: const Duration(milliseconds: 200),
+                            scale: _isExpanded ? 1 : 0,
+                            child: ArDriveIcons.arrowBackFilled()),
+                        onTap: () {
+                          setState(() {
+                            _isExpanded = !_isExpanded;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -316,7 +322,7 @@ class _AppSideBarState extends State<AppSideBar> {
             children: [
               const HelpButton(),
               const SizedBox(
-                height: 32,
+                height: 24,
               ),
               Tooltip(
                 message: appLocalizationsOf(context).expandSideBar,
@@ -533,6 +539,9 @@ class _AppSideBarState extends State<AppSideBar> {
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 class DriveListTile extends StatelessWidget {
@@ -552,9 +561,16 @@ class DriveListTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.only(left: 32.0, bottom: 8.0, top: 8.0),
+        padding: const EdgeInsets.only(
+          left: 32.0,
+          bottom: 8.0,
+          top: 8.0,
+          right: 8.0,
+        ),
         child: Text(
           drive.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: ArDriveTypography.body.buttonNormalBold(
             color: isSelected
                 ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
