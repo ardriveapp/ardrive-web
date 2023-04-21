@@ -1490,6 +1490,10 @@
   "@username": {
     "description": "Label for the username"
   },
+  "usdPriceNotAvailable": "(USD price not available at the moment)",
+  "@usdPriceNotAvailable": {
+    "description": "Fallback message for when the USD price is not available"
+  },
   "validationAttachDriveCouldNotBeFound": "The specified drive could not be found.",
   "@validationAttachDriveCouldNotBeFound": {
     "description": "Input validation error: The given drive ID does not exist"

@@ -330,6 +330,11 @@ class UploadForm extends StatelessWidget {
                                 text: usdUploadCostToString(
                                   state.costEstimate.usdUploadCost!,
                                 ),
+                              )
+                            else
+                              TextSpan(
+                                text:
+                                    ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
                               ),
                           ],
                         ],
