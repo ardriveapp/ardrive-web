@@ -20,6 +20,8 @@ void main() {
   late MockArDriveCrypto mockArDriveCrypto;
   late MockBiometricAuthentication mockBiometricAuthentication;
   late MockSecureKeyValueStore mockSecureKeyValueStore;
+  late MockArConnectService mockArConnectService;
+  late MockDatabaseHelpers mockDatabaseHelpers;
 
   final wallet = getTestWallet();
 
@@ -29,11 +31,15 @@ void main() {
     mockArDriveCrypto = MockArDriveCrypto();
     mockBiometricAuthentication = MockBiometricAuthentication();
     mockSecureKeyValueStore = MockSecureKeyValueStore();
+    mockArConnectService = MockArConnectService();
+    mockDatabaseHelpers = MockDatabaseHelpers();
 
     arDriveAuth = ArDriveAuth(
       arweave: mockArweaveService,
       userRepository: mockUserRepository,
       crypto: mockArDriveCrypto,
+      databaseHelpers: mockDatabaseHelpers,
+      arConnectService: mockArConnectService,
       biometricAuthentication: mockBiometricAuthentication,
       secureKeyValueStore: mockSecureKeyValueStore,
     );
@@ -369,16 +375,65 @@ void main() {
   });
 
   group('testing ArDriveAuth logout method', () {
-    test('should delete the current user and delete it', () async {
+    final unlockedUser = User(
+      password: 'password',
+      wallet: wallet,
+      walletAddress: 'walletAddress',
+      walletBalance: BigInt.one,
+      cipherKey: SecretKey([]),
+      profileType: ProfileType.json,
+    );
+
+    test('should delete the current user and delete it when user is logged in',
+        () async {
+      when(() => mockUserRepository.hasUser())
+          .thenAnswer((invocation) => Future.value(true));
+      when(() => mockUserRepository.getUser('password'))
+          .thenAnswer((invocation) async => unlockedUser);
+
+      // act
+      await arDriveAuth.unlockUser(password: 'password');
+
       // arrange
       when(() => mockUserRepository.deleteUser())
+          .thenAnswer((invocation) async {});
+      when(() => mockSecureKeyValueStore.remove('password'))
+          .thenAnswer((invocation) => Future.value(true));
+      when(() => mockSecureKeyValueStore.remove('biometricEnabled'))
+          .thenAnswer((invocation) => Future.value(true));
+      when(() => mockDatabaseHelpers.deleteAllTables())
           .thenAnswer((invocation) async {});
 
       // act
       await arDriveAuth.logout();
 
       // assert
-      verify(() => mockUserRepository.deleteUser()).called(1);
+      verify(() => mockSecureKeyValueStore.remove('password')).called(1);
+      verify(() => mockSecureKeyValueStore.remove('biometricEnabled'))
+          .called(1);
+      verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+      expect(() => arDriveAuth.currentUser,
+          throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
+    });
+
+    /// This is for the case when has user is true but the user is not logged in
+    /// one example is the forget wallet page before the user is logged in
+    test('should delete the current user and delete it when user is not logged',
+        () async {
+      when(() => mockUserRepository.hasUser())
+          .thenAnswer((invocation) => Future.value(false));
+
+      // arrange
+      when(() => mockDatabaseHelpers.deleteAllTables())
+          .thenAnswer((invocation) async {});
+
+      // act
+      await arDriveAuth.logout();
+
+      // assert
+      verifyNever(() => mockSecureKeyValueStore.remove('password'));
+      verifyNever(() => mockSecureKeyValueStore.remove('biometricEnabled'));
+      verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
       expect(() => arDriveAuth.currentUser,
           throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
     });
