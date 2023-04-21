@@ -25,6 +25,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -158,17 +159,20 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 ),
                                 const Spacer(),
                                 if (state.multiselect && isDriveOwner)
-                                  InkWell(
-                                    child: ArDriveIcons.move(),
-                                    onTap: () {
-                                      promptToMove(
-                                        context,
-                                        driveId: state.currentDrive.id,
-                                        selectedItems: context
-                                            .read<DriveDetailCubit>()
-                                            .selectedItems,
-                                      );
-                                    },
+                                  Tooltip(
+                                    message: appLocalizationsOf(context).move,
+                                    child: InkWell(
+                                      child: ArDriveIcons.move(),
+                                      onTap: () {
+                                        promptToMove(
+                                          context,
+                                          driveId: state.currentDrive.id,
+                                          selectedItems: context
+                                              .read<DriveDetailCubit>()
+                                              .selectedItems,
+                                        );
+                                      },
+                                    ),
                                   ),
                                 const SizedBox(width: 16),
                                 if (canDownloadMultipleFiles &&
@@ -255,6 +259,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                               state.currentDrive,
                                               (_) => null,
                                               0,
+                                              isDriveOwner,
                                             ),
                                           );
                                         },
@@ -364,6 +369,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
   Widget _mobileView(
       DriveDetailLoadSuccess state, bool hasSubfolders, bool hasFiles) {
+    final driveOwner = isDriveOwner(
+        context.read<ArDriveAuth>(), state.currentDrive.ownerAddress);
+
     if (state.showSelectedItemDetails &&
         context.read<DriveDetailCubit>().selectedItem != null) {
       return Material(
@@ -391,6 +399,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           bloc.openFolder(path: folder.path);
         },
         index++,
+        driveOwner,
       ),
     );
 
@@ -406,6 +415,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           }
         },
         index++,
+        driveOwner,
       ),
     );
 
@@ -450,6 +460,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
   Widget _mobileViewContent(DriveDetailLoadSuccess state, bool hasSubfolders,
       bool hasFiles, List<ArDriveDataTableItem> items) {
+    logger.i('Mobile View');
+
     return Column(
       children: [
         Padding(
@@ -466,45 +478,31 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           ),
         ),
         Expanded(
-          child: Scrollbar(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 8,
-                horizontal: 16,
-              ),
-              child: Stack(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (hasSubfolders || hasFiles) ...[
-                        Expanded(
-                          child: ListView.separated(
-                            controller: _scrollController,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(
-                              height: 5,
-                            ),
-                            itemCount: items.length,
-                            itemBuilder: (context, index) {
-                              return ArDriveItemListTile(
-                                  key: ObjectKey([items[index]]),
-                                  drive: state.currentDrive,
-                                  item: items[index]);
-                            },
-                          ),
-                        ),
-                      ] else
-                        DriveDetailFolderEmptyCard(
-                          promptToAddFiles: state.hasWritePermissions,
-                          driveId: state.currentDrive.id,
-                          parentFolderId: state.folderInView.folder.id,
-                        ),
-                    ],
-                  ),
-                ],
-              ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: 8,
+              horizontal: 16,
             ),
+            child: (hasSubfolders || hasFiles)
+                ? ListView.separated(
+                    controller: _scrollController,
+                    separatorBuilder: (context, index) => const SizedBox(
+                      height: 5,
+                    ),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      return ArDriveItemListTile(
+                        key: ObjectKey([items[index]]),
+                        drive: state.currentDrive,
+                        item: items[index],
+                      );
+                    },
+                  )
+                : DriveDetailFolderEmptyCard(
+                    promptToAddFiles: state.hasWritePermissions,
+                    driveId: state.currentDrive.id,
+                    parentFolderId: state.folderInView.folder.id,
+                  ),
           ),
         ),
       ],
@@ -650,7 +648,12 @@ class ArDriveItemListTile extends StatelessWidget {
             const SizedBox(
               width: 12,
             ),
-            DriveExplorerItemTileTrailing(item: item, drive: drive)
+            Flexible(
+              child: DriveExplorerItemTileTrailing(
+                item: item,
+                drive: drive,
+              ),
+            )
           ],
         ),
       ),
