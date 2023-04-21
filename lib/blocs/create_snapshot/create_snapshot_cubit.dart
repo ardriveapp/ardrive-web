@@ -343,9 +343,17 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     int dataSize,
   ) async {
     final arUploadCost = winstonToAr(totalCost);
-    final usdUploadCost = await _arweave
-        .getArUsdConversionRate()
-        .then((conversionRate) => double.parse(arUploadCost) * conversionRate);
+
+    late double? usdUploadCost;
+
+    try {
+      // TODO: snapshot creation is not backed off by Turbo
+      usdUploadCost = await _arweave.getArUsdConversionRate().then(
+          (conversionRate) => double.parse(arUploadCost) * conversionRate);
+    } catch (e, s) {
+      usdUploadCost = null;
+      print('Error getting USD conversion rate for Snapshot Creation: $e\n$s');
+    }
 
     emit(ConfirmingSnapshotCreation(
       snapshotSize: dataSize,
