@@ -269,12 +269,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       final arUploadCost = winstonToAr(totalCost);
 
-      late double? usdUploadCost;
+      double? usdUploadCost;
       try {
         usdUploadCost = await _arweave.getArUsdConversionRate().then(
             (conversionRate) => double.parse(arUploadCost) * conversionRate);
       } catch (e, s) {
-        usdUploadCost = null;
         print(
           'Error getting USD conversion rate for Manifest creation: $e\n$s',
         );
