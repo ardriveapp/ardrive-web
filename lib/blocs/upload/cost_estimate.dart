@@ -57,13 +57,10 @@ class CostEstimate {
 
     final arUploadCost = winstonToAr(totalCost);
 
-    late double? usdUploadCost;
+    double? usdUploadCost;
 
     try {
-      if (uploadPlan.useTurbo) {
-        // No need to ask for conversion rate if using Turbo.
-        usdUploadCost = null;
-      } else {
+      if (!uploadPlan.useTurbo) {
         usdUploadCost = await arweaveService.getArUsdConversionRate().then(
             (conversionRate) => double.parse(arUploadCost) * conversionRate);
       }
