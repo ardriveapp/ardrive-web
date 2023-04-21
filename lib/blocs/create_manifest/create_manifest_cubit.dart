@@ -268,8 +268,17 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       }
 
       final arUploadCost = winstonToAr(totalCost);
-      final usdUploadCost = await _arweave.getArUsdConversionRate().then(
-          (conversionRate) => double.parse(arUploadCost) * conversionRate);
+
+      late double? usdUploadCost;
+      try {
+        usdUploadCost = await _arweave.getArUsdConversionRate().then(
+            (conversionRate) => double.parse(arUploadCost) * conversionRate);
+      } catch (e, s) {
+        usdUploadCost = null;
+        print(
+          'Error getting USD conversion rate for Manifest creation: $e\n$s',
+        );
+      }
 
       // Sign bundle tx and preserve bundle tx ID on entity
       await bundleTx.sign(wallet);
