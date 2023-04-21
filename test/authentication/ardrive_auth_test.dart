@@ -511,6 +511,24 @@ void main() {
     });
 
     test('should change the state when user logs out', () async {
+      when(() => mockUserRepository.hasUser())
+          .thenAnswer((invocation) => Future.value(true));
+      when(() => mockUserRepository.getUser('password'))
+          .thenAnswer((invocation) async => loggedUser);
+
+      // act
+      await arDriveAuth.unlockUser(password: 'password');
+
+      // arrange
+      when(() => mockUserRepository.deleteUser())
+          .thenAnswer((invocation) async {});
+      when(() => mockSecureKeyValueStore.remove('password'))
+          .thenAnswer((invocation) => Future.value(true));
+      when(() => mockSecureKeyValueStore.remove('biometricEnabled'))
+          .thenAnswer((invocation) => Future.value(true));
+      when(() => mockDatabaseHelpers.deleteAllTables())
+          .thenAnswer((invocation) async {});
+
       // act
       arDriveAuth.onAuthStateChanged().listen((user) {
         // assert
