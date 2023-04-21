@@ -56,9 +56,21 @@ class CostEstimate {
         v2FilesPstFee.value;
 
     final arUploadCost = winstonToAr(totalCost);
-    final usdUploadCost = await arweaveService
-        .getArUsdConversionRate()
-        .then((conversionRate) => double.parse(arUploadCost) * conversionRate);
+
+    late double? usdUploadCost;
+
+    try {
+      if (uploadPlan.useTurbo) {
+        // No need to ask for conversion rate if using Turbo.
+        usdUploadCost = null;
+      } else {
+        usdUploadCost = await arweaveService.getArUsdConversionRate().then(
+            (conversionRate) => double.parse(arUploadCost) * conversionRate);
+      }
+    } catch (e, s) {
+      usdUploadCost = null;
+      print('Error getting USD conversion rate: $e\n$s');
+    }
 
     return CostEstimate._create(
       totalCost: totalCost,

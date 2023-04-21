@@ -293,7 +293,8 @@ class UploadCubit extends Cubit<UploadState> {
           isFreeThanksToTurbo: uploadPlan.useTurbo,
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      print('Error while creating cost estimate: $error - $stackTrace');
       addError(error);
     }
   }

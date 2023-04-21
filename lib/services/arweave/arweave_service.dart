@@ -920,7 +920,7 @@ class ArweaveService {
     const String coinGeckoApi =
         'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd';
 
-    final response = await ArDriveHTTP().getJson(coinGeckoApi);
+    final response = await ArDriveHTTP(retries: 3).getJson(coinGeckoApi);
 
     return response.data?['arweave']['usd'];
   }
