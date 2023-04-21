@@ -159,6 +159,10 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   /// WE'll keep this function until move to go router.
   Future<void> logoutProfile() async {
+    if (state is ProfileLoggingOut) {
+      emit(ProfilePromptAdd());
+      return;
+    }
     emit(ProfileLoggingOut());
   }
 

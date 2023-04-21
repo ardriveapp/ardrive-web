@@ -78,7 +78,7 @@ class DrivesCubit extends Cubit<DrivesState> {
       logger.d('profile: $profile');
 
       final sharedDrives =
-          drives.where((d) => isDriveOwner(auth, d.ownerAddress)).toList();
+          drives.where((d) => !isDriveOwner(auth, d.ownerAddress)).toList();
 
       // log shared drives
       for (final drive in sharedDrives) {
