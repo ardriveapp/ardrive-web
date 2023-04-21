@@ -76,8 +76,6 @@ class _ArDriveAuth implements ArDriveAuth {
   // getters and setters
   @override
   User get currentUser {
-    logger.i('Getting current user');
-
     if (_currentUser == null) {
       throw const AuthenticationUserIsNotLoggedInException();
     }
@@ -188,7 +186,7 @@ class _ArDriveAuth implements ArDriveAuth {
 
       await _databaseHelpers.deleteAllTables();
     } catch (e) {
-      logger.e(e.toString()); 
+      logger.e(e.toString());
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');
     }
