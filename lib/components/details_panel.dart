@@ -831,7 +831,8 @@ class DetailsPanelToolbar extends StatelessWidget {
                 );
               },
             ),
-          if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
+          if (item.isOwner &&
+              (item is FileDataTableItem || item is FolderDataTableItem))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).move,
               icon: ArDriveIcons.move(size: 21),
