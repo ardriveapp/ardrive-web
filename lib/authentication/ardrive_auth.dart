@@ -186,7 +186,6 @@ class _ArDriveAuth implements ArDriveAuth {
 
       await _databaseHelpers.deleteAllTables();
     } catch (e) {
-      logger.e(e.toString());
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');
     }
