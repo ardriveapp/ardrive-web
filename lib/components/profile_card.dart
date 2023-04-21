@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -132,7 +133,10 @@ class ProfileCard extends StatelessWidget {
                 ],
               ),
             ),
-            onClick: () => context.read<ProfileCubit>().logoutProfile(),
+            onClick: () {
+              context.read<ProfileCubit>().logoutProfile();
+              context.read<ArDriveAuth>().logout();
+            },
           ),
         ],
         child: Container(
