@@ -133,6 +133,10 @@ void main() {
     // mock limit for UploadFileChecker
     when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
         files: any(named: 'files'))).thenAnswer((invocation) async => false);
+    const double stubArToUsdFactor = 10;
+    when(() => mockArweave.getArUsdConversionRateOrNull()).thenAnswer(
+      (_) => Future.value(stubArToUsdFactor),
+    );
   });
 
   UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
@@ -184,8 +188,7 @@ void main() {
           .thenAnswer((i) => Future.value(false));
       when(() => mockPst.getPSTFee(BigInt.zero))
           .thenAnswer((invocation) => Future.value(Winston(BigInt.zero)));
-      when(() => mockArweave.getArUsdConversionRate())
-          .thenAnswer((invocation) => Future.value(10));
+
       setDumbUploadPlan();
     });
     blocTest<UploadCubit, UploadState>(
