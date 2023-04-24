@@ -8,10 +8,12 @@ import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../test_utils/mocks.dart';
 import 'snapshot_test_helpers.dart';
 
 void main() {
   group('SnapshotItem class', () {
+    final ArweaveService arweave = MockArweaveService();
     group('fromGQLNode factory', () {
       test('getStreamForIndex returns a valid stream of nodes', () async {
         final r = Range(start: 0, end: 10);
@@ -36,7 +38,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
-          arweaveUrl: 'https://arweave.dev',
+          arweave: arweave,
           fakeSource: await fakeSnapshotSource(r),
         );
         expect(item.subRanges.rangeSegments.length, 1);
@@ -77,7 +79,7 @@ void main() {
             () => SnapshotItem.instantiateSingle(
                   snapshotTxWithBadRange,
                   obscuredBy: HeightRange(rangeSegments: []),
-                  arweaveUrl: 'https://arweave.dev',
+                  arweave: arweave,
                 ),
             throwsA(isA<BadRange>()));
       });
@@ -113,7 +115,7 @@ void main() {
         SnapshotItem item = SnapshotItem.instantiateSingle(
           snapshotTx,
           obscuredBy: obscuredBy,
-          arweaveUrl: 'https://arweave.dev',
+          arweave: arweave,
           fakeSource: snapshotItemSource,
         );
 
@@ -162,7 +164,7 @@ void main() {
           SnapshotItem item = SnapshotItem.instantiateSingle(
             snapshotTx,
             obscuredBy: obscuredBy,
-            arweaveUrl: 'https://arweave.dev',
+            arweave: arweave,
             fakeSource: snapshotItemSource,
           );
 
@@ -209,7 +211,7 @@ void main() {
 
           List<SnapshotItem> allItems = await SnapshotItem.instantiateAll(
             Stream.fromIterable([snapshotTx, snapshotTx, snapshotTx]),
-            arweaveUrl: 'https://arweave.dev',
+            arweave: arweave,
             fakeSource: snapshotItemSource,
           ).toList();
 
@@ -271,7 +273,7 @@ void main() {
           List<SnapshotItem> allItems = await SnapshotItem.instantiateAll(
             Stream.fromIterable([snapshotTx, snapshotTx]),
             lastBlockHeight: 100,
-            arweaveUrl: 'https://arweave.dev',
+            arweave: arweave,
             fakeSource: snapshotItemSource,
           ).toList();
 
@@ -316,7 +318,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
-          arweaveUrl: 'https://arweave.dev',
+          arweave: arweave,
           fakeSource: await fakeSnapshotSource(r),
         ) as SnapshotItemOnChain;
 
@@ -363,7 +365,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
-          arweaveUrl: 'https://arweave.dev',
+          arweave: arweave,
           fakeSource: await fakeSnapshotSource(r),
         ) as SnapshotItemOnChain;
 
