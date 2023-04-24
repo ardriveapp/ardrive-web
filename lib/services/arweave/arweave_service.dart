@@ -340,7 +340,7 @@ class ArweaveService {
       return cachedData;
     }
 
-    return _getEntityDataFromNetwork(txId: txId);
+    return getEntityDataFromNetwork(txId: txId);
   }
 
   Future<Uint8List?> _getCachedEntityDataFromSnapshot({
@@ -366,7 +366,7 @@ class ArweaveService {
     return null;
   }
 
-  Future<Uint8List> _getEntityDataFromNetwork({required String txId}) async {
+  Future<Uint8List> getEntityDataFromNetwork({required String txId}) async {
     final Response data =
         (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
 
