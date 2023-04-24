@@ -4,14 +4,11 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/local_key_value_store.dart';
-import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 part 'profile_state.dart';
 
@@ -160,28 +157,13 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(profile.copyWith(walletBalance: walletBalance));
   }
 
-  /// Removes the user's existing profile and its associated data then prompts them to add another.
-  ///
-  /// Works even when the user is not authenticated.
+  /// WE'll keep this function until move to go router.
   Future<void> logoutProfile() async {
-    final profile = await _profileDao.defaultProfile().getSingleOrNull();
-    final arconnect = ArConnectService();
-
-    if (profile != null && profile.profileType == ProfileType.arConnect.index) {
-      try {
-        await arconnect.disconnect();
-      } catch (e) {
-        print(e);
-      }
+    if (state is ProfileLoggingOut) {
+      emit(ProfilePromptAdd());
+      return;
     }
-
-    await deleteTables();
-    SecureKeyValueStore(const FlutterSecureStorage()).remove('password');
-    (await LocalKeyValueStore.getInstance()).remove('biometricEnabled');
-
     emit(ProfileLoggingOut());
-
-    unawaited(promptToAuthenticate());
   }
 
   Future<void> deleteTables() async {

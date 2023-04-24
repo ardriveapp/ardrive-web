@@ -1,4 +1,5 @@
 import 'package:ardrive/app_shell.dart';
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -163,6 +164,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                             if (state is DriveDetailLoadSuccess) {
                               driveId = state.currentDrive.id;
                               driveFolderId = state.folderInView.folder.id;
+
                               //Can be null at the root folder of the drive
                               notifyListeners();
                             } else if (state is DriveDetailLoadNotFound) {
@@ -247,6 +249,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   ),
                   BlocProvider(
                     create: (context) => DrivesCubit(
+                      auth: context.read<ArDriveAuth>(),
                       initialSelectedDriveId: driveId,
                       profileCubit: context.read<ProfileCubit>(),
                       driveDao: context.read<DriveDao>(),

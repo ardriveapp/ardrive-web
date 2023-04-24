@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
 import 'package:ardrive/pst/community_oracle.dart';
 import 'package:ardrive/pst/contract_oracle.dart';
@@ -200,6 +201,10 @@ class AppState extends State<App> {
         ),
         RepositoryProvider(
           create: (context) => ArDriveAuth(
+            databaseHelpers: DatabaseHelpers(
+              context.read<Database>(),
+            ),
+            arConnectService: ArConnectService(),
             biometricAuthentication: context.read<BiometricAuthentication>(),
             secureKeyValueStore: SecureKeyValueStore(
               const FlutterSecureStorage(),

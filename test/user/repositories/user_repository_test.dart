@@ -163,13 +163,38 @@ void main() {
   });
 
   group('testing deleteUser method', () {
-    test('should delete the user', () async {
+    test('should delete the user when has user', () async {
       when(() => mockProfileDao.deleteProfile())
           .thenAnswer((_) async => Future.value());
+      when(() => mockProfileDao.getDefaultProfile()).thenAnswer(
+        (_) async => Future.value(
+          Profile(
+            encryptedPublicKey: Uint8List.fromList([]),
+            encryptedWallet: Uint8List.fromList([]),
+            keySalt: Uint8List.fromList([]),
+            profileType: 0, //json
+            username: '',
+            walletPublicKey: '',
+            id: 'id',
+          ),
+        ),
+      );
 
       await userRepository.deleteUser();
 
+      verify(() => mockProfileDao.getDefaultProfile()).called(1);
       verify(() => mockProfileDao.deleteProfile()).called(1);
+    });
+    
+    test('should do nothing when there is no user ', () async {
+      when(() => mockProfileDao.deleteProfile())
+          .thenAnswer((_) async => Future.value());
+      when(() => mockProfileDao.getDefaultProfile())
+          .thenAnswer((_) async => Future.value(null));
+
+      await userRepository.deleteUser();
+
+      verifyNever(() => mockProfileDao.deleteProfile());
     });
   });
 }

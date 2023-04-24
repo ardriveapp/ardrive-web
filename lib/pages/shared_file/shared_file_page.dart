@@ -131,6 +131,7 @@ class SharedFilePage extends StatelessWidget {
                             leading: DriveExplorerItemTileLeading(
                               item: DriveDataTableItemMapper.fromRevision(
                                 state.fileRevisions.first,
+                                false, // in this page we don't have the information about the current drive, so it's impossible to know if the file is from the user logged in
                               ),
                             ),
                             title: Text(
@@ -193,6 +194,7 @@ class SharedFilePage extends StatelessWidget {
             return DetailsPanel(
               item: DriveDataTableItemMapper.fromRevision(
                 state.fileRevisions.first,
+                false,
               ),
               isSharePage: true,
               maybeSelectedItem: null,

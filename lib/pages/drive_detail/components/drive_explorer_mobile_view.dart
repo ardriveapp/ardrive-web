@@ -40,6 +40,9 @@ class _DriveExplorerMobileViewState extends State<DriveExplorerMobileView> {
 
   Widget _mobileView(
       DriveDetailLoadSuccess state, bool hasSubfolders, bool hasFiles) {
+    final isOwner = isDriveOwner(
+        context.read<ArDriveAuth>(), state.currentDrive.ownerAddress);
+
     int index = 0;
     final folders = state.folderInView.subfolders.map(
       (folder) => DriveDataTableItemMapper.fromFolderEntry(
@@ -49,6 +52,7 @@ class _DriveExplorerMobileViewState extends State<DriveExplorerMobileView> {
           bloc.openFolder(path: folder.path);
         },
         index++,
+        isOwner,
       ),
     );
 
@@ -64,6 +68,7 @@ class _DriveExplorerMobileViewState extends State<DriveExplorerMobileView> {
           }
         },
         index++,
+        isOwner,
       ),
     );
 
@@ -106,9 +111,10 @@ class _DriveExplorerMobileViewState extends State<DriveExplorerMobileView> {
                             itemCount: folders.length + files.length,
                             itemBuilder: (context, index) {
                               return ArDriveItemListTile(
-                                  key: ObjectKey([items[index]]),
-                                  drive: state.currentDrive,
-                                  item: items[index]);
+                                key: ObjectKey([items[index]]),
+                                drive: state.currentDrive,
+                                item: items[index],
+                              );
                             },
                           ),
                         ),
