@@ -16,6 +16,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart' show TestWidgetsFlutterBinding;
 import 'package:mocktail/mocktail.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/utils.dart';
@@ -29,7 +30,7 @@ void main() {
   final pstService = MockPstService();
   final wallet = getTestWallet();
   final cipherKey = SecretKeyData.random(length: 32);
-  const double winstonToArFactor = 1000000000000;
+
   const double stubByteCountToWinstonFactor = 2;
   const double stubArToUsdFactor = 3;
   const double stubPstFeeFactor = .15;
@@ -54,6 +55,15 @@ void main() {
     setUp(() async {
       arweave = MockArweaveService();
 
+      // mocks PackageInfo
+      PackageInfo.setMockInitialValues(
+        appName: 'appName',
+        packageName: 'packageName',
+        version: '1.2.3',
+        buildNumber: 'buildNumber',
+        buildSignature: 'buildSignature',
+      );
+
       stubDrive = Drive(
         id: stubEntityId,
         rootFolderId: stubEntityId,
@@ -71,6 +81,9 @@ void main() {
                 invocation.namedArguments[const Symbol('byteSize')],
           ),
         ),
+      );
+      when(() => arweave.getArUsdConversionRateOrNull()).thenAnswer(
+        (_) => Future.value(stubArToUsdFactor),
       );
 
       registerFallbackValue(BigInt.zero);
@@ -151,7 +164,7 @@ void main() {
             targetFolder: stubRootFolderEntry,
           );
 
-          final estimate = await CostEstimate.create(
+          final CostEstimate estimate = await CostEstimate.create(
             uploadPlan: uploadPlan,
             arweaveService: arweave,
             pstService: pstService,
