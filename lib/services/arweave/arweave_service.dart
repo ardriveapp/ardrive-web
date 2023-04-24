@@ -916,6 +916,14 @@ class ArweaveService {
         dryRun: dryRun,
       );
 
+  Future<double?> getArUsdConversionRateOrNull() async {
+    try {
+      return await getArUsdConversionRate();
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<double> getArUsdConversionRate() async {
     const String coinGeckoApi =
         'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd';

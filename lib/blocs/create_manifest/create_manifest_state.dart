@@ -3,7 +3,7 @@ part of 'create_manifest_cubit.dart';
 @immutable
 abstract class CreateManifestState extends Equatable {
   @override
-  List<Object> get props => [];
+  List get props => [];
 }
 
 /// Initial state where user begins by selecting a name for the manifest
@@ -93,7 +93,7 @@ class CreateManifestUploadConfirmation extends CreateManifestState {
   final String manifestName;
 
   final String arUploadCost;
-  final double usdUploadCost;
+  final double? usdUploadCost;
 
   final UploadManifestParams uploadManifestParams;
 
@@ -106,7 +106,7 @@ class CreateManifestUploadConfirmation extends CreateManifestState {
   });
 
   @override
-  List<Object> get props => [
+  List get props => [
         manifestSize,
         manifestName,
         arUploadCost,
