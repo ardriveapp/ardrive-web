@@ -10,23 +10,26 @@ class ThemeSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        context.read<ThemeSwitcherBloc>().add(ChangeTheme());
-      },
-      child: BlocBuilder<ThemeSwitcherBloc, ThemeSwitcherState>(
-        builder: (context, state) {
-          if (state is ThemeSwitcherInProgress) {
-            return const SizedBox.shrink();
-          }
-
-          return Text(
-            state is ThemeSwitcherDarkTheme?
-                ? appLocalizationsOf(context).darkMode
-                : appLocalizationsOf(context).lightMode,
-            style: ArDriveTypography.body.buttonNormalBold(),
-          );
+    return Tooltip(
+      message: appLocalizationsOf(context).changeTheme,
+      child: InkWell(
+        onTap: () {
+          context.read<ThemeSwitcherBloc>().add(ChangeTheme());
         },
+        child: BlocBuilder<ThemeSwitcherBloc, ThemeSwitcherState>(
+          builder: (context, state) {
+            if (state is ThemeSwitcherInProgress) {
+              return const SizedBox.shrink();
+            }
+
+            return Text(
+              state is ThemeSwitcherDarkTheme?
+                  ? appLocalizationsOf(context).darkMode
+                  : appLocalizationsOf(context).lightMode,
+              style: ArDriveTypography.body.buttonNormalBold(),
+            );
+          },
+        ),
       ),
     );
   }

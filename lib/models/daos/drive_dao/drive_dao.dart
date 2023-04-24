@@ -461,4 +461,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>
       into(networkTransactions).insertOnConflictUpdate(transaction);
+
+  Future<void> deleteDrivesAndItsChildren() async {
+    await db.transaction(() async {
+      await delete(drives).go();
+      await delete(fileEntries).go();
+      await delete(folderEntries).go();
+      await delete(fileRevisions).go();
+      await delete(folderRevisions).go();
+      await delete(driveRevisions).go();
+      await delete(networkTransactions).go();
+    });
+  }
 }

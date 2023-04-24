@@ -1785,5 +1785,17 @@
   "fileFailedToDownloadFileAbovePublicLimit": "The file(s) you have selected is too large to download",
   "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
+  },
+  "changeTheme": "Change Theme",
+  "@changeTheme": {
+    "description": "Theme switcher tooltip"
+  },
+  "collapseSideBar": "Collapse sidebar",
+  "@changeTheme": {
+    "description": "Collapse side bar tooltip"
+  },
+  "expandSideBar": "Expand sidebar",
+  "@expandSideBar": {
+    "description": "Expand side bar tooltip"
   }
 }
