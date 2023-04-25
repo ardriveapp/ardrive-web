@@ -133,9 +133,9 @@ class ProfileCard extends StatelessWidget {
                 ],
               ),
             ),
-            onClick: () {
-              context.read<ProfileCubit>().logoutProfile();
-              context.read<ArDriveAuth>().logout();
+            onClick: () async {
+              context.read<ArDriveAuth>().logout().then(
+                  (value) => context.read<ProfileCubit>().logoutProfile());
             },
           ),
         ],

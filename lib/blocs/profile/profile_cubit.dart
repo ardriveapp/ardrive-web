@@ -4,6 +4,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -157,12 +158,15 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(profile.copyWith(walletBalance: walletBalance));
   }
 
-  /// WE'll keep this function until move to go router.
   Future<void> logoutProfile() async {
+    logger.i('Logging out profile. state: $state');
     if (state is ProfileLoggingOut) {
       emit(ProfilePromptAdd());
+
+      logger.i('Profile logout already in progress. state: $state');
       return;
     }
+
     emit(ProfileLoggingOut());
   }
 
