@@ -33,6 +33,23 @@ void onTabGetsVisible(Function onFocus) {
   });
 }
 
+Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
+  final completer = Completer<void>();
+  final subscription = onTabGetsFocused(() async {
+    await onFocus;
+    completer.complete();
+  });
+  await completer.future; // wait for the completer to be resolved
+  await subscription.cancel();
+}
+
+StreamSubscription<Event> onTabGetsFocused(Function onFocus) {
+  final subscription = document.onFocus.listen((event) {
+    onFocus();
+  });
+  return subscription;
+}
+
 Future<void> closeVisibilityChangeStream() async =>
     await _onVisibilityChangeStream.cancel();
 

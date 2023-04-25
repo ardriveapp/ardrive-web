@@ -23,6 +23,12 @@ class TabVisibilitySingleton {
   void onTabGetsVisible(Function onFocus) =>
       implementation.onTabGetsVisible(onFocus);
 
+  Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async =>
+      implementation.onTabGetsFocusedFuture(onFocus);
+
+  void onTabGetsFocused(Function onFocus) =>
+      implementation.onTabGetsFocused(onFocus);
+
   Future<void> closeVisibilityChangeStream() =>
       implementation.closeVisibilityChangeStream();
 }
