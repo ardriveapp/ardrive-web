@@ -138,7 +138,6 @@ class SnapshotItemOnChain implements SnapshotItem {
   String? _cachedSource;
   int _currentIndex = -1;
 
-  @override
   final ArweaveService _arweave;
 
   static final Map<String, Cache<Uint8List>> _jsonMetadataCaches = {};
