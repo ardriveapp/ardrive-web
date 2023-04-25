@@ -7,6 +7,8 @@ bool isTabFocused() {
   return isDocumentFocused();
 }
 
+late StreamSubscription _onVisibilityChangeStream;
+
 Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
   final completer = Completer<void>();
   final subscription = onTabGetsFocused(() async {
@@ -23,6 +25,9 @@ StreamSubscription<Event> onTabGetsFocused(Function onFocus) {
   });
   return subscription;
 }
+
+Future<void> closeVisibilityChangeStream() async =>
+    await _onVisibilityChangeStream.cancel();
 
 void onWalletSwitch(Function onWalletSwitch) {
   window.addEventListener('walletSwitch', (event) {

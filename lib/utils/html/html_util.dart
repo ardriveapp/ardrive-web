@@ -20,6 +20,9 @@ class TabVisibilitySingleton {
 
   StreamSubscription onTabGetsFocused(Function onFocus) =>
       implementation.onTabGetsFocused(onFocus);
+
+  Future<void> closeVisibilityChangeStream() =>
+      implementation.closeVisibilityChangeStream();
 }
 
 void onArConnectWalletSwitch(Function onWalletSwitch) =>
