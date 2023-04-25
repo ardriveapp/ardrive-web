@@ -322,11 +322,11 @@ void main() {
 
           // mocks the TabVisibilitySingleton class
           final responses = [false, false, true];
-          when(() => tabVisibility.isTabVisible()).thenAnswer(
+          when(() => tabVisibility.isTabFocused()).thenAnswer(
             (_) => responses.removeAt(0),
           );
 
-          when(() => tabVisibility.onTabGetsVisibleFuture(any())).thenAnswer(
+          when(() => tabVisibility.onTabGetsFocusedFuture(any())).thenAnswer(
             (invocation) async {
               await Future.delayed(const Duration(milliseconds: 10));
               await invocation.positionalArguments.first();
