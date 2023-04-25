@@ -58,6 +58,8 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
 
+  StreamSubscription? _restartOnFocusStreamSubscription;
+  StreamSubscription? _restartArConnectOnFocusStreamSubscription;
   StreamSubscription? _syncSub;
   StreamSubscription? _arconnectSyncSub;
   final StreamController<SyncProgress> syncProgressController =
@@ -106,7 +108,8 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    _tabVisibility.onTabGetsVisible(_restartSync);
+    _restartOnFocusStreamSubscription =
+        _tabVisibility.onTabGetsFocused(_restartSync);
   }
 
   void _restartSync() {
@@ -161,9 +164,13 @@ class SyncCubit extends Cubit<SyncState> {
 
   void restartArConnectSyncOnFocus() async {
     if (await _profileCubit.isCurrentProfileArConnect()) {
-      _tabVisibility.onTabGetsVisible(() {
-        Future.delayed(const Duration(seconds: 2))
-            .then((value) => createArConnectSyncStream());
+      _restartArConnectOnFocusStreamSubscription =
+          _tabVisibility.onTabGetsFocused(() {
+        Future.delayed(
+          const Duration(seconds: 2),
+        ).then(
+          (value) => createArConnectSyncStream(),
+        );
       });
     }
   }
@@ -205,7 +212,7 @@ class SyncCubit extends Cubit<SyncState> {
 
         logSync('User is ar connect? $isArConnect');
 
-        if (isArConnect && !_tabVisibility.isTabVisible()) {
+        if (isArConnect && !_tabVisibility.isTabFocused()) {
           logSync('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
@@ -394,7 +401,14 @@ class SyncCubit extends Cubit<SyncState> {
     logSync('Closing SyncCubit...');
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
-    await _tabVisibility.closeVisibilityChangeStream();
+    await _restartOnFocusStreamSubscription?.cancel();
+    await _restartArConnectOnFocusStreamSubscription?.cancel();
+
+    _syncSub = null;
+    _arconnectSyncSub = null;
+    _restartOnFocusStreamSubscription = null;
+    _restartArConnectOnFocusStreamSubscription = null;
+
     await super.close();
   }
 }
