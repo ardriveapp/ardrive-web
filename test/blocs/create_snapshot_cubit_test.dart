@@ -120,6 +120,11 @@ void main() {
           (_) => Future<double>.value(0.1),
         );
 
+        const double stubArToUsdFactor = 10;
+        when(() => arweave.getArUsdConversionRateOrNull()).thenAnswer(
+          (_) => Future.value(stubArToUsdFactor),
+        );
+
         // mocks PackageInfo
         PackageInfo.setMockInitialValues(
           appName: 'appName',
