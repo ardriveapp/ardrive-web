@@ -326,7 +326,7 @@ void main() {
             (_) => responses.removeAt(0),
           );
 
-          when(() => tabVisibility.onTabGetsFocusedFuture(any())).thenAnswer(
+          when(() => tabVisibility.onTabGetsVisibleFuture(any())).thenAnswer(
             (invocation) async {
               await Future.delayed(const Duration(milliseconds: 10));
               await invocation.positionalArguments.first();

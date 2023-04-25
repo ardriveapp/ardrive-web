@@ -8,11 +8,11 @@ bool isTabFocused() {
   return true;
 }
 
-Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
+Future<void> onTabGetsVisibleFuture(FutureOr<Function> onFocus) async {
   return;
 }
 
-void onTabGetsFocused(Function onFocus) {
+void onTabGetsVisible(Function onFocus) {
   return;
 }
 

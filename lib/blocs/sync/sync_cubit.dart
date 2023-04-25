@@ -106,7 +106,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    _tabVisibility.onTabGetsFocused(_restartSync);
+    _tabVisibility.onTabGetsVisible(_restartSync);
   }
 
   void _restartSync() {
@@ -161,7 +161,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   void restartArConnectSyncOnFocus() async {
     if (await _profileCubit.isCurrentProfileArConnect()) {
-      _tabVisibility.onTabGetsFocused(() {
+      _tabVisibility.onTabGetsVisible(() {
         Future.delayed(const Duration(seconds: 2))
             .then((value) => createArConnectSyncStream());
       });
