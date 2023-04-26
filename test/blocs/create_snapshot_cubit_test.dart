@@ -339,7 +339,7 @@ void main() {
             );
           });
 
-          when(() => tabVisibility.onTabGetsVisibleFuture(any())).thenAnswer(
+          when(() => tabVisibility.onTabGetsFocusedFuture(any())).thenAnswer(
             (invocation) async {
               await Future.delayed(const Duration(milliseconds: 10));
               await invocation.positionalArguments.first();
