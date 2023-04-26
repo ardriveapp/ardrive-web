@@ -44,9 +44,11 @@ Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
 }
 
 StreamSubscription<Event> onTabGetsFocused(Function onFocus) {
-  final subscription = document.onFocus.listen((event) {
-    onFocus();
-  });
+  final subscription = window.onFocus.listen(
+    (event) {
+      onFocus();
+    },
+  );
   return subscription;
 }
 
