@@ -76,7 +76,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               state.currentDrive.ownerAddress,
             );
 
-            final hasFiles = state.folderInView.files.isNotEmpty && isOwner;
+            final hasFiles = state.folderInView.files.isNotEmpty;
 
             final canDownloadMultipleFiles = state.multiselect &&
                 state.currentDrive.isPublic &&
