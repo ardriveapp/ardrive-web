@@ -33,10 +33,10 @@ void onTabGetsVisible(Function onFocus) {
   });
 }
 
-Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
+Future<void> onTabGetsFocusedFuture(Future Function() onFocus) async {
   final completer = Completer<void>();
   final subscription = onTabGetsFocused(() async {
-    await onFocus;
+    await onFocus();
     completer.complete();
   });
   await completer.future; // wait for the completer to be resolved
