@@ -1,0 +1,1 @@
+- Allows to upload a file even when the USD quote is not available.

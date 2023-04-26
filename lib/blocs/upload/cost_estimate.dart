@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/types/winston.dart';
+import 'package:ardrive/utils/ar_cost_to_usd.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 
@@ -56,9 +57,15 @@ class CostEstimate {
         v2FilesPstFee.value;
 
     final arUploadCost = winstonToAr(totalCost);
-    final usdUploadCost = await arweaveService
-        .getArUsdConversionRate()
-        .then((conversionRate) => double.parse(arUploadCost) * conversionRate);
+
+    double? usdUploadCost;
+
+    if (!uploadPlan.useTurbo) {
+      usdUploadCost = await arCostToUsdOrNull(
+        arweaveService,
+        double.parse(arUploadCost),
+      );
+    }
 
     return CostEstimate._create(
       totalCost: totalCost,
