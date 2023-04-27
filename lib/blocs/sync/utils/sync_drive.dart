@@ -48,7 +48,7 @@ Stream<double> _syncDrive(
   );
   final List<SnapshotItem> snapshotItems = await SnapshotItem.instantiateAll(
     snapshotsStream,
-    arweaveUrl: arweave.client.api.gatewayUrl.toString(),
+    arweave: arweave,
   ).toList();
   final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
     items: snapshotItems,
