@@ -44,6 +44,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
     state.folderInView.folder,
     state.currentDrive,
     state.multiselect,
+    datatableKey: state.dataTableKey,
   );
 }
 
@@ -183,10 +184,23 @@ ArDriveDataTable _buildDataListContent(
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
   Drive drive,
-  bool isMultiselecting,
-) {
+  bool isMultiselecting, {
+  String? datatableKey,
+}) {
+  logger.d('Building data list content with key $datatableKey');
+  // if (context.read<DriveDetailCubit>().shouldRebuildDataTable) {
+  //   final cubit = context.read<DriveDetailCubit>();
+
+  //   context.read<DriveDetailCubit>().shouldRebuildDataTable = false;
+
+  //   if (cubit.selectedItem != null) {
+  //     cubit.selectDataItem(
+  //         items.where((element) => element.id == cubit.selectedItem!.id).first);
+  //   }
+  // }
+
   return ArDriveDataTable<ArDriveDataTableItem>(
-    key: ValueKey(folder.id + items.length.toString()),
+    key: ValueKey(folder.id + items.length.toString() + (datatableKey ?? '')),
     lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress,
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,
