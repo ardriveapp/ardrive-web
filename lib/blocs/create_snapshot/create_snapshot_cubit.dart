@@ -259,7 +259,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           'Signing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await _tabVisibility.onTabGetsFocusedFuture(
-          () => signTx(isArConnectProfile),
+          () async {
+            await signTx(isArConnectProfile);
+          },
         );
       } else {
         // ignore: avoid_print
