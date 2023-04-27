@@ -7,7 +7,6 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:drift/drift.dart';
@@ -33,7 +32,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   bool _forceDisableMultiselect = false;
 
-  String? _datatableKey;
+  bool _refreshSelectedItem = false;
 
   DriveDetailCubit({
     required this.driveId,
@@ -109,33 +108,56 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         final rootFolderNode =
             await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
-        if (state?.dataTableKey != _datatableKey) {
-          logger.d('Resetting selected item');
+        if (_selectedItem != null && _refreshSelectedItem) {
+          if (_refreshSelectedItem) {
+            if (_selectedItem is FileDataTableItem) {
+              final index = folderContents.files.indexWhere(
+                (element) => element.id == _selectedItem!.id,
+              );
 
-          _datatableKey = state?.dataTableKey;
+              if (index >= 0) {
+                _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
+                  folderContents.files[index],
+                  _selectedItem!.onPressed,
+                  _selectedItem!.index,
+                  _selectedItem!.isOwner,
+                );
+              }
+            } else if (_selectedItem is FolderDataTableItem) {
+              final index = folderContents.subfolders.indexWhere(
+                (element) => element.id == _selectedItem!.id,
+              );
 
-          if (_selectedItem != null) {
-            logger.d('Selected item is not null');
+              if (index >= 0) {
+                _selectedItem = DriveDataTableItemMapper.fromFolderEntry(
+                  folderContents.subfolders[index],
+                  _selectedItem!.onPressed,
+                  _selectedItem!.index,
+                  _selectedItem!.isOwner,
+                );
+              }
+            } else {
+              _selectedItem = DriveDataTableItemMapper.fromDrive(
+                drive,
+                (item) => null,
+                0,
+                _selectedItem!.isOwner,
+              );
+            }
 
-            final file = folderContents.files
-                .firstWhere((element) => element.id == _selectedItem!.id);
-
-            _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
-              file,
-              _selectedItem!.onPressed,
-              _selectedItem!.index,
-              _selectedItem!.isOwner,
-            );
-
-            logger.d('Selected item is now: $_selectedItem');
-
-            selectDataItem(_selectedItem!);
+            _refreshSelectedItem = false;
           }
         }
+
+        final currentFolderContents = parseEntitiesToDatatableItem(
+          folder: folderContents,
+          isOwner: isDriveOwner(_auth, drive.ownerAddress),
+        );
 
         if (state != null) {
           emit(
             state.copyWith(
+              selectedItem: _selectedItem,
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoggedIn &&
                   drive.ownerAddress == profile.walletAddress,
@@ -144,16 +166,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               contentOrderingMode: contentOrderingMode,
               rowsPerPage: availableRowsPerPage.first,
               availableRowsPerPage: availableRowsPerPage,
-              dataTableKey: _datatableKey,
-              currentFolderContents: parseEntitiesToDatatableItem(
-                folder: folderContents,
-                isOwner: isDriveOwner(_auth, drive.ownerAddress),
-              ),
+              currentFolderContents: currentFolderContents,
             ),
           );
         } else {
           emit(
             DriveDetailLoadSuccess(
+              selectedItem: _selectedItem,
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoggedIn &&
                   drive.ownerAddress == profile.walletAddress,
@@ -164,11 +183,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               availableRowsPerPage: availableRowsPerPage,
               driveIsEmpty: rootFolderNode.isEmpty(),
               multiselect: false,
-              dataTableKey: _datatableKey,
-              currentFolderContents: parseEntitiesToDatatableItem(
-                folder: folderContents,
-                isOwner: isDriveOwner(_auth, drive.ownerAddress),
-              ),
+              currentFolderContents: currentFolderContents,
             ),
           );
         }
@@ -347,16 +362,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void toggleSelectedItemDetails() {
     final state = this.state as DriveDetailLoadSuccess;
+    if (state.showSelectedItemDetails) {
+      _selectedItem = null;
+    }
+
     emit(
       state.copyWith(showSelectedItemDetails: !state.showSelectedItemDetails),
     );
   }
 
   void refreshDriveDataTable() {
+    _refreshSelectedItem = true;
+
     if (state is DriveDetailLoadSuccess) {
-      emit((state as DriveDetailLoadSuccess).copyWith(
-        dataTableKey: DateTime.now().toIso8601String(),
-      ));
+      emit((state as DriveDetailLoadSuccess).copyWith());
     }
   }
 

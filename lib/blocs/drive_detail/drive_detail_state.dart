@@ -23,8 +23,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final List<SelectedItem> selectedItems;
   final bool showSelectedItemDetails;
 
-  final String? dataTableKey;
-
   /// The preview URL for the selected file.
   ///
   /// Null if no file is selected.
@@ -52,7 +50,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.selectedFilePreviewUrl,
     required this.driveIsEmpty,
     this.selectedItem,
-    this.dataTableKey,
     required this.currentFolderContents,
   });
 
@@ -71,7 +68,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     bool? multiselect,
     bool? hasFoldersSelected,
     ArDriveDataTableItem? selectedItem,
-    String? dataTableKey,
     List<ArDriveDataTableItem>? currentFolderContents,
   }) =>
       DriveDetailLoadSuccess(
@@ -91,7 +87,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         availableRowsPerPage: availableRowsPerPage ?? this.availableRowsPerPage,
         rowsPerPage: rowsPerPage ?? this.rowsPerPage,
         driveIsEmpty: driveIsEmpty ?? this.driveIsEmpty,
-        dataTableKey: dataTableKey ?? this.dataTableKey,
         currentFolderContents:
             currentFolderContents ?? this.currentFolderContents,
       );
@@ -110,7 +105,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         _equatableBust,
         driveIsEmpty,
         multiselect,
-        dataTableKey,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;

@@ -10,7 +10,6 @@ Widget _buildDataList(
     state.folderInView.folder,
     state.currentDrive,
     state.multiselect,
-    datatableKey: state.dataTableKey,
   );
 }
 
@@ -150,11 +149,10 @@ ArDriveDataTable _buildDataListContent(
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
   Drive drive,
-  bool isMultiselecting, {
-  String? datatableKey,
-}) {
+  bool isMultiselecting,
+) {
   return ArDriveDataTable<ArDriveDataTableItem>(
-    key: ValueKey(folder.id + items.length.toString() + (datatableKey ?? '')),
+    key: ValueKey(folder.id),
     lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress,
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,
