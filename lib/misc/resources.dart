@@ -50,8 +50,6 @@ class Login {
   const Login();
 
   final String gridImage = 'assets/images/login/grid_images.jpg';
-  final String ardrivePlates1 = 'assets/images/login/ardrive_plates_1.png';
-  final String ardrivePlates2 = 'assets/images/login/ardrive_plates_2.png';
   final String ardrivePlates3 = 'assets/images/login/ardrive_plates_3.png';
   final String arconnectLogo = 'assets/images/login/arconnect_logo.png';
 }
