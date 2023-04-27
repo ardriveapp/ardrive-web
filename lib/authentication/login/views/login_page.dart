@@ -482,12 +482,6 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ArDriveImage(
-                image: SvgImage.asset(
-                  'assets/images/brand/ArDrive-Logo.svg',
-                ),
-                height: 73,
-              ),
               Text(
                 appLocalizationsOf(context).welcomeBackEmphasized,
                 textAlign: TextAlign.center,
@@ -944,10 +938,6 @@ class OnBoardingViewState extends State<OnBoardingView> {
   }
 
   Widget _buildOnBoardingIllustration(int index) {
-    index >= 2 ? index = 2 : index = index;
-
-    final ardrivePlateImage = _ardrivePlateImages()[index];
-
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -964,31 +954,31 @@ class OnBoardingViewState extends State<OnBoardingView> {
           alignment: Alignment.center,
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ArDriveImage(
-                image: AssetImage(ardrivePlateImage),
+                image: AssetImage(
+                  Resources.images.login.ardrivePlates3,
+                ),
                 fit: BoxFit.contain,
-                height: 200,
-                width: 400,
+                height: 175,
+                width: 175,
               ),
-              const SizedBox(height: 32),
-              ArDrivePaginationDots(
-                currentPage: _currentPage,
-                numberOfPages: _list.length,
+              const SizedBox(
+                height: 48,
+              ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: ArDrivePaginationDots(
+                  currentPage: _currentPage,
+                  numberOfPages: _list.length,
+                ),
               ),
             ],
           ),
         ),
       ],
     );
-  }
-
-  List<String> _ardrivePlateImages() {
-    return [
-      Resources.images.login.ardrivePlates1,
-      Resources.images.login.ardrivePlates2,
-      Resources.images.login.ardrivePlates3,
-    ];
   }
 
   Widget _buildOnBoardingContent() {
@@ -1011,37 +1001,46 @@ class _OnBoardingContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          onBoarding.title,
-          style: ArDriveTypography.headline.headline3Bold(),
+        Expanded(
+          flex: 1,
+          child: Text(
+            onBoarding.title,
+            style: ArDriveTypography.headline.headline3Bold(),
+          ),
         ),
-        Text(
-          onBoarding.description,
-          style: ArDriveTypography.body.buttonXLargeBold(),
+        Expanded(
+          flex: 2,
+          child: Text(
+            onBoarding.description,
+            style: ArDriveTypography.body.buttonXLargeBold(),
+          ),
         ),
-        Row(
-          key: const ValueKey('buttons'),
-          children: [
-            ArDriveButton(
-              icon: onBoarding.secundaryButtonHasIcon
-                  ? ArDriveIcons.arrowLeftCircle()
-                  : null,
-              style: ArDriveButtonStyle.secondary,
-              text: onBoarding.secundaryButtonText,
-              onPressed: () => onBoarding.secundaryButtonAction(),
-            ),
-            const SizedBox(width: 32),
-            ArDriveButton(
-              iconAlignment: IconButtonAlignment.right,
-              icon: ArDriveIcons.arrowRightCircle(
-                color: Colors.white,
+        Expanded(
+          flex: 1,
+          child: Row(
+            key: const ValueKey('buttons'),
+            children: [
+              ArDriveButton(
+                icon: onBoarding.secundaryButtonHasIcon
+                    ? ArDriveIcons.arrowLeftCircle()
+                    : null,
+                style: ArDriveButtonStyle.secondary,
+                text: onBoarding.secundaryButtonText,
+                onPressed: () => onBoarding.secundaryButtonAction(),
               ),
-              text: onBoarding.primaryButtonText,
-              onPressed: () => onBoarding.primaryButtonAction(),
-            ),
-          ],
+              const SizedBox(width: 32),
+              ArDriveButton(
+                iconAlignment: IconButtonAlignment.right,
+                icon: ArDriveIcons.arrowRightCircle(
+                  color: Colors.white,
+                ),
+                text: onBoarding.primaryButtonText,
+                onPressed: () => onBoarding.primaryButtonAction(),
+              ),
+            ],
+          ),
         ),
       ],
     );
