@@ -25,7 +25,6 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -109,6 +108,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   state,
                   hasSubfolders,
                   hasFiles,
+                  state.currentFolderContents,
                 ),
               ),
             );
@@ -368,10 +368,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   }
 
   Widget _mobileView(
-      DriveDetailLoadSuccess state, bool hasSubfolders, bool hasFiles) {
-    final driveOwner = isDriveOwner(
-        context.read<ArDriveAuth>(), state.currentDrive.ownerAddress);
-
+    DriveDetailLoadSuccess state,
+    bool hasSubfolders,
+    bool hasFiles,
+    List<ArDriveDataTableItem> items,
+  ) {
     if (state.showSelectedItemDetails &&
         context.read<DriveDetailCubit>().selectedItem != null) {
       return Material(
@@ -389,37 +390,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         ),
       );
     }
-
-    int index = 0;
-    final folders = state.folderInView.subfolders.map(
-      (folder) => DriveDataTableItemMapper.fromFolderEntry(
-        folder,
-        (selected) {
-          final bloc = context.read<DriveDetailCubit>();
-          bloc.openFolder(path: folder.path);
-        },
-        index++,
-        driveOwner,
-      ),
-    );
-
-    final files = state.folderInView.files.map(
-      (file) => DriveDataTableItemMapper.toFileDataTableItem(
-        file,
-        (selected) async {
-          final bloc = context.read<DriveDetailCubit>();
-          if (file.id == state.maybeSelectedItem()?.id) {
-            bloc.toggleSelectedItemDetails();
-          } else {
-            await bloc.selectDataItem(selected);
-          }
-        },
-        index++,
-        driveOwner,
-      ),
-    );
-
-    final items = [...folders, ...files];
 
     return Scaffold(
       drawer: const AppSideBar(),
@@ -460,8 +430,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
   Widget _mobileViewContent(DriveDetailLoadSuccess state, bool hasSubfolders,
       bool hasFiles, List<ArDriveDataTableItem> items) {
-    logger.i('Mobile View');
-
     return Column(
       children: [
         Padding(

@@ -1,49 +1,16 @@
 part of '../drive_detail_page.dart';
 
-Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
-  int index = 0;
-
-  logger.d('Building data list');
-
-  bool isOwner = isDriveOwner(
-    context.read<ArDriveAuth>(),
-    state.currentDrive.ownerAddress,
-  );
-
-  final folders = state.folderInView.subfolders.map(
-    (folder) => DriveDataTableItemMapper.fromFolderEntry(
-      folder,
-      (selected) {
-        final bloc = context.read<DriveDetailCubit>();
-        bloc.openFolder(path: folder.path);
-      },
-      index++,
-      isOwner,
-    ),
-  );
-
-  final files = state.folderInView.files.map(
-    (file) => DriveDataTableItemMapper.toFileDataTableItem(
-      file,
-      (selected) async {
-        final bloc = context.read<DriveDetailCubit>();
-        if (file.id == state.maybeSelectedItem()?.id) {
-          bloc.toggleSelectedItemDetails();
-        } else {
-          bloc.selectDataItem(selected);
-        }
-      },
-      index++,
-      isOwner,
-    ),
-  );
-
+Widget _buildDataList(
+  BuildContext context,
+  DriveDetailLoadSuccess state,
+) {
   return _buildDataListContent(
     context,
-    [...folders, ...files],
+    state.currentFolderContents,
     state.folderInView.folder,
     state.currentDrive,
     state.multiselect,
+    datatableKey: state.dataTableKey,
   );
 }
 
@@ -183,10 +150,11 @@ ArDriveDataTable _buildDataListContent(
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
   Drive drive,
-  bool isMultiselecting,
-) {
+  bool isMultiselecting, {
+  String? datatableKey,
+}) {
   return ArDriveDataTable<ArDriveDataTableItem>(
-    key: ValueKey(folder.id + items.length.toString()),
+    key: ValueKey(folder.id + items.length.toString() + (datatableKey ?? '')),
     lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress,
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,

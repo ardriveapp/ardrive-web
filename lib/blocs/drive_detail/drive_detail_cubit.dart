@@ -1,12 +1,15 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -20,6 +23,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final AppConfig _config;
+  final ArDriveAuth _auth;
 
   StreamSubscription? _folderSubscription;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
@@ -29,14 +33,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   bool _forceDisableMultiselect = false;
 
+  String? _datatableKey;
+
   DriveDetailCubit({
     required this.driveId,
     String? initialFolderId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required AppConfig config,
+    required ArDriveAuth auth,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
+        _auth = auth,
         _config = config,
         super(DriveDetailLoadInProgress()) {
     if (driveId.isEmpty) {
@@ -89,6 +97,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         final state = this.state is DriveDetailLoadSuccess
             ? this.state as DriveDetailLoadSuccess
             : null;
+
         final profile = _profileCubit.state;
 
         var availableRowsPerPage = _defaultAvailableRowsPerPage;
@@ -99,6 +108,30 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
         final rootFolderNode =
             await _driveDao.getFolderTree(driveId, drive.rootFolderId);
+
+        if (state?.dataTableKey != _datatableKey) {
+          logger.d('Resetting selected item');
+
+          _datatableKey = state?.dataTableKey;
+
+          if (_selectedItem != null) {
+            logger.d('Selected item is not null');
+
+            final file = folderContents.files
+                .firstWhere((element) => element.id == _selectedItem!.id);
+
+            _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
+              file,
+              _selectedItem!.onPressed,
+              _selectedItem!.index,
+              _selectedItem!.isOwner,
+            );
+
+            logger.d('Selected item is now: $_selectedItem');
+
+            selectDataItem(_selectedItem!);
+          }
+        }
 
         if (state != null) {
           emit(
@@ -111,24 +144,76 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               contentOrderingMode: contentOrderingMode,
               rowsPerPage: availableRowsPerPage.first,
               availableRowsPerPage: availableRowsPerPage,
+              dataTableKey: _datatableKey,
+              currentFolderContents: parseEntitiesToDatatableItem(
+                folder: folderContents,
+                isOwner: isDriveOwner(_auth, drive.ownerAddress),
+              ),
             ),
           );
         } else {
-          emit(DriveDetailLoadSuccess(
-            currentDrive: drive,
-            hasWritePermissions: profile is ProfileLoggedIn &&
-                drive.ownerAddress == profile.walletAddress,
-            folderInView: folderContents,
-            contentOrderBy: contentOrderBy,
-            contentOrderingMode: contentOrderingMode,
-            rowsPerPage: availableRowsPerPage.first,
-            availableRowsPerPage: availableRowsPerPage,
-            driveIsEmpty: rootFolderNode.isEmpty(),
-            multiselect: false,
-          ));
+          emit(
+            DriveDetailLoadSuccess(
+              currentDrive: drive,
+              hasWritePermissions: profile is ProfileLoggedIn &&
+                  drive.ownerAddress == profile.walletAddress,
+              folderInView: folderContents,
+              contentOrderBy: contentOrderBy,
+              contentOrderingMode: contentOrderingMode,
+              rowsPerPage: availableRowsPerPage.first,
+              availableRowsPerPage: availableRowsPerPage,
+              driveIsEmpty: rootFolderNode.isEmpty(),
+              multiselect: false,
+              dataTableKey: _datatableKey,
+              currentFolderContents: parseEntitiesToDatatableItem(
+                folder: folderContents,
+                isOwner: isDriveOwner(_auth, drive.ownerAddress),
+              ),
+            ),
+          );
         }
       },
     ).listen((_) {});
+  }
+
+  List<ArDriveDataTableItem> parseEntitiesToDatatableItem({
+    required FolderWithContents folder,
+    required bool isOwner,
+  }) {
+    int index = 0;
+
+    final folders = folder.subfolders.map(
+      (folder) => DriveDataTableItemMapper.fromFolderEntry(
+        folder,
+        (selected) {
+          openFolder(path: folder.path);
+        },
+        index++,
+        isOwner,
+      ),
+    );
+
+    final files = folder.files.map(
+      (file) => DriveDataTableItemMapper.toFileDataTableItem(
+        file,
+        (selected) async {
+          if (file.id == _selectedItem?.id) {
+            toggleSelectedItemDetails();
+          } else {
+            selectDataItem(selected);
+          }
+        },
+        index++,
+        isOwner,
+      ),
+    );
+
+    final items = [
+      ...folders,
+      ...files,
+    ];
+
+    return items;
   }
 
   List<int> calculateRowsPerPage(int totalEntries) {
@@ -265,6 +350,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     emit(
       state.copyWith(showSelectedItemDetails: !state.showSelectedItemDetails),
     );
+  }
+
+  void refreshDriveDataTable() {
+    if (state is DriveDetailLoadSuccess) {
+      emit((state as DriveDetailLoadSuccess).copyWith(
+        dataTableKey: DateTime.now().toIso8601String(),
+      ));
+    }
   }
 
   @override

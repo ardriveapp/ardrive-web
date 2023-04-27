@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
+import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -54,7 +55,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     return MultiBlocProvider(
       // Specify a key to ensure a new cubit is provided when the folder/file id changes.
       key: ValueKey(
-        '${widget.item.driveId}${widget.item.id}',
+        '${widget.item.driveId}${widget.item.id}${widget.item.name}',
       ),
       providers: [
         BlocProvider<FsEntryInfoCubit>(
@@ -822,6 +823,15 @@ class DetailsPanelToolbar extends StatelessWidget {
               tooltip: appLocalizationsOf(context).rename,
               icon: ArDriveIcons.edit(size: 21),
               onTap: () {
+                if (item is DriveDataItem) {
+                  promptToRenameDrive(
+                    context,
+                    driveId: drive.id,
+                    driveName: drive.name,
+                  );
+                  return;
+                }
+
                 promptToRenameModal(
                   context,
                   driveId: drive.id,
