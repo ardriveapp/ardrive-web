@@ -9,7 +9,7 @@ class AppConfig {
   final String? defaultTurboUrl;
   final int? allowedDataItemSizeForTurbo;
   final bool enableQuickSyncAuthoring;
-  final bool enableMultipleFileDownload;
+  final bool enableMultipleFileDownload = true;
   final bool enableVideoPreview;
 
   AppConfig({
@@ -18,7 +18,7 @@ class AppConfig {
     this.defaultTurboUrl,
     this.allowedDataItemSizeForTurbo,
     this.enableQuickSyncAuthoring = false,
-    this.enableMultipleFileDownload = false,
+    // this.enableMultipleFileDownload = true,
     this.enableVideoPreview = false,
   });
 
@@ -38,8 +38,8 @@ class AppConfig {
       defaultTurboUrl: defaultTurboUrl ?? this.defaultTurboUrl,
       allowedDataItemSizeForTurbo:
           allowedDataItemSizeForTurbo ?? this.allowedDataItemSizeForTurbo,
-      enableMultipleFileDownload:
-          enableMultipleFileDownload ?? this.enableMultipleFileDownload,
+      // enableMultipleFileDownload:
+      //     enableMultipleFileDownload ?? this.enableMultipleFileDownload,
       enableQuickSyncAuthoring:
           enableQuickSyncAuthoring ?? this.enableQuickSyncAuthoring,
       enableVideoPreview: enableVideoPreview ?? this.enableVideoPreview,

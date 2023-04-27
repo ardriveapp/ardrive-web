@@ -155,6 +155,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   return BlocProvider(
                     key: ValueKey(driveId),
                     create: (context) => DriveDetailCubit(
+                      auth: context.read<ArDriveAuth>(),
                       driveId: driveId!,
                       initialFolderId: driveFolderId,
                       profileCubit: context.read<ProfileCubit>(),

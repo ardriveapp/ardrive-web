@@ -41,6 +41,7 @@ void main() {
       );
 
       driveDetailCubit = DriveDetailCubit(
+        auth: MockArDriveAuth(),
         driveId: mockDriveId,
         profileCubit: profileCubit,
         driveDao: driveDao,
