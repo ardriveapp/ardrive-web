@@ -1,3 +1,4 @@
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -6,6 +7,7 @@ import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../test_utils/utils.dart';
 import 'snapshot_test_helpers.dart';
 
 void main() {
@@ -40,9 +42,15 @@ void main() {
   ];
 
   group('SnapshotDriveHistory class', () {
+    late ArweaveService arweave = MockArweaveService();
+
     test('returns a single stream if the sub-ranges are composable', () async {
-      final fakeItems = await Future.wait(
-          composableRanges.map(fakeSnapshotItemFromRange).toList());
+      final fakeItems = await Future.wait(composableRanges
+          .map((h) => fakeSnapshotItemFromRange(
+                h,
+                arweave,
+              ))
+          .toList());
       final snapshotDriveHistory = SnapshotDriveHistory(items: fakeItems);
 
       expect(snapshotDriveHistory.subRanges.rangeSegments.length, 1);
@@ -58,8 +66,12 @@ void main() {
 
     test('returns multiple streams if the sub-ranges are not composable',
         () async {
-      final fakeItems = await Future.wait(
-          nonComposableRanges.map(fakeSnapshotItemFromRange).toList());
+      final fakeItems = await Future.wait(nonComposableRanges
+          .map((h) => fakeSnapshotItemFromRange(
+                h,
+                arweave,
+              ))
+          .toList());
       final snapshotDriveHistory = SnapshotDriveHistory(items: fakeItems);
 
       expect(snapshotDriveHistory.subRanges.rangeSegments.length, 4);
@@ -88,10 +100,13 @@ Range heightRangeToRange(HeightRange hr) {
       end: hr.rangeSegments[hr.rangeSegments.length - 1].end);
 }
 
-Future<SnapshotItem> fakeSnapshotItemFromRange(HeightRange r) async {
+Future<SnapshotItem> fakeSnapshotItemFromRange(
+  HeightRange r,
+  ArweaveService arweave,
+) async {
   final range = heightRangeToRange(r);
   return SnapshotItem.fromGQLNode(
-    arweaveUrl: 'https://arweave.net',
+    arweave: arweave,
     node:
         SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
             .fromJson(
