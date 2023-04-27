@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -15,7 +16,14 @@ class ConfigService {
 
   Future<AppConfig> getConfig({required LocalKeyValueStore localStore}) async {
     if (_config == null) {
-      const environment = kReleaseMode ? 'prod' : 'dev';
+      String environment;
+
+      if (kIsWeb && const String.fromEnvironment('environment').isNotEmpty) {
+        environment = const String.fromEnvironment('environment');
+      } else {
+        environment = kReleaseMode ? 'prod' : 'dev';
+      }
+
       final configContent = await rootBundle.loadString(
         'assets/config/$environment.json',
       );
@@ -32,7 +40,7 @@ class ConfigService {
       );
     }
 
-    debugPrint('Config: ${_config.toString()}');
+    logger.i('Config: ${_config.toString()}');
 
     return _config!;
   }
