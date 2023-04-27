@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 
 void preCacheLoginAssets(BuildContext context) {
   List<String> assetPaths = [
-    Resources.images.login.login1,
-    Resources.images.login.login2,
-    Resources.images.login.login3,
-    Resources.images.login.login4,
+    Resources.images.login.gridImage,
+    Resources.images.login.arconnectLogo,
   ];
 
   for (String assetPath in assetPaths) {
@@ -19,12 +17,7 @@ void preCacheLoginAssets(BuildContext context) {
 
 void preCacheOnBoardingAssets(BuildContext context) {
   List<String> assetPaths = [
-    Resources.images.login.onboarding.onboarding1,
-    Resources.images.login.onboarding.onboarding2,
-    Resources.images.login.onboarding.onboarding3,
-    Resources.images.login.onboarding.onboarding4,
-    Resources.images.login.onboarding.onboarding5,
-    Resources.images.login.onboarding.onboarding6,
+    Resources.images.login.ardrivePlates3,
   ];
 
   for (String assetPath in assetPaths) {

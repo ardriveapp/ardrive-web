@@ -14,6 +14,7 @@ import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
@@ -72,6 +73,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           listener: (context, state) {
             // Clear state to prevent the last drive from being attached on new login
             if (state is ProfileLoggingOut) {
+              logger.d('Clearing App state');
+
               clearState();
             }
 
@@ -148,6 +151,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
                   shellPage ??= const SizedBox();
                   driveId = driveId ?? rootPath;
+
                   return BlocProvider(
                     key: ValueKey(driveId),
                     create: (context) => DriveDetailCubit(
@@ -170,10 +174,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                             } else if (state is DriveDetailLoadNotFound) {
                               // Do not prompt the user to attach an unfound drive if they are logging out.
                               final profileCubit = context.read<ProfileCubit>();
+
                               if (profileCubit.state is ProfileLoggingOut) {
+                                logger.d(
+                                    'Drive not found, but user is logging out. Not prompting to attach drive.');
+
                                 clearState();
+
                                 return;
                               }
+
                               attachDrive(
                                 context: context,
                                 driveId: driveId,

@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
+import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -9,12 +10,14 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:cryptography/cryptography.dart';
@@ -54,7 +57,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     return MultiBlocProvider(
       // Specify a key to ensure a new cubit is provided when the folder/file id changes.
       key: ValueKey(
-        '${widget.item.driveId}${widget.item.id}',
+        '${widget.item.driveId}${widget.item.id}${widget.item.name}',
       ),
       providers: [
         BlocProvider<FsEntryInfoCubit>(
@@ -158,8 +161,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           Expanded(
                             child: Text(
                               widget.item.name,
+                              softWrap: false,
                               style: ArDriveTypography.body.buttonLargeBold(),
-                              overflow: TextOverflow.ellipsis,
+                              overflow: TextOverflow.fade,
                             ),
                           ),
                         ],
@@ -362,9 +366,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            InkWell(
-              child: ArDriveIcons.externalLink(size: 16),
-              onTap: () {
+            ArDriveIconButton(
+              tooltip: appLocalizationsOf(context).viewOnViewBlock,
+              icon: ArDriveIcons.externalLink(size: 16),
+              onPressed: () {
                 openUrl(
                   url:
                       'https://viewblock.io/arweave/tx/${(widget.item as FileDataTableItem).dataTxId}',
@@ -616,39 +621,40 @@ class _CopyButtonState extends State<CopyButton> {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        Clipboard.setData(ClipboardData(text: widget.text));
-        if (mounted) {
-          if (_showCheck) {
-            return;
-          }
-
-          setState(() {
-            _showCheck = true;
-            if (widget.showCopyText) {
-              _overlayEntry = _createOverlayEntry(context);
-              Overlay.of(context)?.insert(_overlayEntry!);
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: ArDriveIconButton(
+        tooltip: _showCheck ? '' : appLocalizationsOf(context).copyTooltip,
+        onPressed: () {
+          Clipboard.setData(ClipboardData(text: widget.text));
+          if (mounted) {
+            if (_showCheck) {
+              return;
             }
 
-            Future.delayed(const Duration(seconds: 2), () {
-              if (!mounted) {
-                return;
+            setState(() {
+              _showCheck = true;
+              if (widget.showCopyText) {
+                _overlayEntry = _createOverlayEntry(context);
+                Overlay.of(context)?.insert(_overlayEntry!);
               }
 
-              setState(() {
-                _showCheck = false;
-                if (_overlayEntry != null && _overlayEntry!.mounted) {
-                  _overlayEntry?.remove();
+              Future.delayed(const Duration(seconds: 2), () {
+                if (!mounted) {
+                  return;
                 }
+
+                setState(() {
+                  _showCheck = false;
+                  if (_overlayEntry != null && _overlayEntry!.mounted) {
+                    _overlayEntry?.remove();
+                  }
+                });
               });
             });
-          });
-        }
-      },
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
-        child: _showCheck
+          }
+        },
+        icon: _showCheck
             ? ArDriveIcons.checkSuccess(
                 size: widget.size,
                 color: ArDriveTheme.of(context)
@@ -706,8 +712,8 @@ class _DownloadOrPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
+    return ArDriveIconButton(
+      onPressed: () {
         return downloadOrPreviewRevision(
           drivePrivacy: privacy,
           context: context,
@@ -716,7 +722,8 @@ class _DownloadOrPreview extends StatelessWidget {
           isSharedFile: isSharedFile,
         );
       },
-      child: ArDriveIcons.download(
+      tooltip: appLocalizationsOf(context).download,
+      icon: ArDriveIcons.download(
         size: 16,
       ),
     );
@@ -779,7 +786,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           if (item is FileDataTableItem || item is DriveDataItem)
             _buildActionIcon(
               tooltip: _getShareTooltip(item, context),
-              icon: ArDriveIcons.share(size: 21),
+              icon: ArDriveIcons.share(size: dropdownIconSize),
               onTap: () {
                 if (item is FileDataTableItem) {
                   promptToShareFile(
@@ -797,9 +804,8 @@ class DetailsPanelToolbar extends StatelessWidget {
             ),
           if (item is FileDataTableItem) ...[
             _buildActionIcon(
-              padding: 20,
               tooltip: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download(size: 21),
+              icon: ArDriveIcons.download(size: dropdownIconSize),
               onTap: () {
                 promptToDownloadProfileFile(
                   context: context,
@@ -809,7 +815,7 @@ class DetailsPanelToolbar extends StatelessWidget {
             ),
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).preview,
-              icon: ArDriveIcons.externalLink(size: 21),
+              icon: ArDriveIcons.externalLink(size: dropdownIconSize),
               onTap: () {
                 final bloc = context.read<DriveDetailCubit>();
                 bloc.launchPreview((item as FileDataTableItem).dataTxId);
@@ -818,10 +824,18 @@ class DetailsPanelToolbar extends StatelessWidget {
           ],
           if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
             _buildActionIcon(
-              padding: 18,
               tooltip: appLocalizationsOf(context).rename,
-              icon: ArDriveIcons.edit(size: 21),
+              icon: ArDriveIcons.edit(size: dropdownIconSize),
               onTap: () {
+                if (item is DriveDataItem) {
+                  promptToRenameDrive(
+                    context,
+                    driveId: drive.id,
+                    driveName: drive.name,
+                  );
+                  return;
+                }
+
                 promptToRenameModal(
                   context,
                   driveId: drive.id,
@@ -835,14 +849,15 @@ class DetailsPanelToolbar extends StatelessWidget {
               (item is FileDataTableItem || item is FolderDataTableItem))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).move,
-              icon: ArDriveIcons.move(size: 21),
+              icon: ArDriveIcons.move(size: dropdownIconSize),
               onTap: () {
                 promptToMove(context, driveId: drive.id, selectedItems: [item]);
               },
             ),
           const Spacer(),
           _buildActionIcon(
-            icon: ArDriveIcons.closeButton(size: 21),
+            tooltip: appLocalizationsOf(context).close,
+            icon: ArDriveIcons.closeButton(size: dropdownIconSize),
             onTap: () {
               final bloc = context.read<DriveDetailCubit>();
               bloc.toggleSelectedItemDetails();
@@ -864,19 +879,17 @@ class DetailsPanelToolbar extends StatelessWidget {
   }
 
   Widget _buildActionIcon({
-    required Widget icon,
+    required ArDriveIcon icon,
     required VoidCallback onTap,
     String? tooltip,
-    double padding = 18,
+    double padding = 8,
   }) {
-    return ArDriveClickArea(
-      tooltip: tooltip,
-      child: Padding(
-        padding: EdgeInsets.only(right: padding),
-        child: InkWell(
-          onTap: onTap,
-          child: icon,
-        ),
+    return Padding(
+      padding: EdgeInsets.only(right: padding),
+      child: ArDriveIconButton(
+        tooltip: tooltip,
+        onPressed: onTap,
+        icon: icon,
       ),
     );
   }

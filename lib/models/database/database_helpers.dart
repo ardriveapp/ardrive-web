@@ -7,11 +7,15 @@ class DatabaseHelpers {
   DatabaseHelpers(this._db);
 
   Future<void> deleteAllTables() async {
-    logger.i('Deleting all tables');
-    await _db.transaction(() async {
-      for (final table in _db.allTables) {
-        await _db.delete(table).go();
-      }
-    });
+    try {
+      logger.i('Deleting all tables');
+      await _db.transaction(() async {
+        for (final table in _db.allTables) {
+          await _db.delete(table).go();
+        }
+      });
+    } catch (e) {
+      logger.e('Error deleting all tables: $e');
+    }
   }
 }

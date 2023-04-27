@@ -36,6 +36,7 @@ class DrivesCubit extends Cubit<DrivesState> {
       if (user == null) {
         logger.d('User logged out');
         cleanDrives();
+        return;
       }
     });
 
@@ -100,8 +101,6 @@ class DrivesCubit extends Cubit<DrivesState> {
 
   void cleanDrives() {
     initialSelectedDriveId = null;
-
-    _driveDao.deleteDrivesAndItsChildren();
 
     final state = DrivesLoadSuccess(
         selectedDriveId: null,

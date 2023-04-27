@@ -6,6 +6,7 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
@@ -28,6 +29,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   List<ArDriveDataTableItem> get selectedItems => _selectedItems;
 
   bool _forceDisableMultiselect = false;
+
+  String? _datatableKey;
 
   DriveDetailCubit({
     required this.driveId,
@@ -100,6 +103,30 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         final rootFolderNode =
             await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
+        if (state?.dataTableKey != _datatableKey) {
+          logger.d('Resetting selected item');
+
+          _datatableKey = state?.dataTableKey;
+
+          if (_selectedItem != null) {
+            logger.d('Selected item is not null');
+
+            final file = folderContents.files
+                .firstWhere((element) => element.id == _selectedItem!.id);
+
+            _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
+              file,
+              _selectedItem!.onPressed,
+              _selectedItem!.index,
+              _selectedItem!.isOwner,
+            );
+
+            logger.d('Selected item is now: $_selectedItem');
+
+            selectDataItem(_selectedItem!);
+          }
+        }
+
         if (state != null) {
           emit(
             state.copyWith(
@@ -111,6 +138,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               contentOrderingMode: contentOrderingMode,
               rowsPerPage: availableRowsPerPage.first,
               availableRowsPerPage: availableRowsPerPage,
+              dataTableKey: _datatableKey,
             ),
           );
         } else {
@@ -125,6 +153,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             availableRowsPerPage: availableRowsPerPage,
             driveIsEmpty: rootFolderNode.isEmpty(),
             multiselect: false,
+            dataTableKey: _datatableKey,
           ));
         }
       },
@@ -265,6 +294,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     emit(
       state.copyWith(showSelectedItemDetails: !state.showSelectedItemDetails),
     );
+  }
+
+  void refreshDriveDataTable() {
+    if (state is DriveDetailLoadSuccess) {
+      emit((state as DriveDetailLoadSuccess).copyWith(
+        dataTableKey: DateTime.now().toIso8601String(),
+      ));
+    }
   }
 
   @override
