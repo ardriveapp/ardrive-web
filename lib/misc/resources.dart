@@ -49,21 +49,9 @@ class Profile {
 class Login {
   const Login();
 
-  final String login1 = 'assets/images/login/login_1.png';
-  final String login2 = 'assets/images/login/login_2.png';
-  final String login3 = 'assets/images/login/login_3.png';
-  final String login4 = 'assets/images/login/login_4.png';
+  final String gridImage = 'assets/images/login/grid_images.jpg';
+  final String ardrivePlates1 = 'assets/images/login/ardrive_plates_1.png';
+  final String ardrivePlates2 = 'assets/images/login/ardrive_plates_2.png';
+  final String ardrivePlates3 = 'assets/images/login/ardrive_plates_3.png';
   final String arconnectLogo = 'assets/images/login/arconnect_logo.png';
-  final OnBoarding onboarding = const OnBoarding();
-}
-
-class OnBoarding {
-  const OnBoarding();
-
-  final String onboarding1 = 'assets/images/login/onboarding/onboarding_1.png';
-  final String onboarding2 = 'assets/images/login/onboarding/onboarding_2.png';
-  final String onboarding3 = 'assets/images/login/onboarding/onboarding_3.png';
-  final String onboarding4 = 'assets/images/login/onboarding/onboarding_4.png';
-  final String onboarding5 = 'assets/images/login/onboarding/onboarding_5.png';
-  final String onboarding6 = 'assets/images/login/onboarding/onboarding_6.png';
 }
