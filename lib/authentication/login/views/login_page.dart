@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -66,19 +64,9 @@ class LoginPageScaffold extends StatefulWidget {
 class _LoginPageScaffoldState extends State<LoginPageScaffold> {
   final globalKey = GlobalKey();
 
-  final images = [
-    Resources.images.login.login1,
-    Resources.images.login.login2,
-    Resources.images.login.login3,
-    Resources.images.login.login4,
-  ];
-
-  late int imageIndex;
-
   @override
   void initState() {
     super.initState();
-    imageIndex = Random().nextInt(images.length);
   }
 
   @override
@@ -89,7 +77,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         child: Row(
           children: [
             Expanded(
-              child: _buildIllustration(context, images[imageIndex]),
+              child: _buildIllustration(
+                context,
+                Resources.images.login.gridImage,
+              ),
             ),
             Expanded(
               child: FractionallySizedBox(
@@ -491,6 +482,12 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
+              ArDriveImage(
+                image: SvgImage.asset(
+                  'assets/images/brand/ArDrive-Logo.svg',
+                ),
+                height: 73,
+              ),
               Text(
                 appLocalizationsOf(context).welcomeBackEmphasized,
                 textAlign: TextAlign.center,
@@ -856,8 +853,7 @@ class OnBoardingViewState extends State<OnBoardingView> {
           },
           title: appLocalizationsOf(context).onboarding1Title,
           description: appLocalizationsOf(context).onboarding1Description,
-          illustration:
-              AssetImage(Resources.images.login.onboarding.onboarding6),
+          illustration: AssetImage(Resources.images.login.gridImage),
         ),
         _OnBoarding(
           primaryButtonText: appLocalizationsOf(context).next,
@@ -874,44 +870,7 @@ class OnBoardingViewState extends State<OnBoardingView> {
           },
           title: appLocalizationsOf(context).onboarding2Title,
           description: appLocalizationsOf(context).onboarding2Description,
-          illustration:
-              AssetImage(Resources.images.login.onboarding.onboarding2),
-        ),
-        _OnBoarding(
-          primaryButtonText: appLocalizationsOf(context).next,
-          primaryButtonAction: () {
-            setState(() {
-              _currentPage++;
-            });
-          },
-          secundaryButtonText: appLocalizationsOf(context).backButtonOnboarding,
-          secundaryButtonAction: () {
-            setState(() {
-              _currentPage--;
-            });
-          },
-          title: appLocalizationsOf(context).onboarding3Title,
-          description: appLocalizationsOf(context).onboarding3Description,
-          illustration:
-              AssetImage(Resources.images.login.onboarding.onboarding5),
-        ),
-        _OnBoarding(
-          primaryButtonText: appLocalizationsOf(context).next,
-          primaryButtonAction: () {
-            setState(() {
-              _currentPage++;
-            });
-          },
-          secundaryButtonText: appLocalizationsOf(context).backButtonOnboarding,
-          secundaryButtonAction: () {
-            setState(() {
-              _currentPage--;
-            });
-          },
-          title: appLocalizationsOf(context).onboarding4Title,
-          description: appLocalizationsOf(context).onboarding4Description,
-          illustration:
-              AssetImage(Resources.images.login.onboarding.onboarding4),
+          illustration: AssetImage(Resources.images.login.gridImage),
         ),
         _OnBoarding(
           primaryButtonText: appLocalizationsOf(context).diveInButtonOnboarding,
@@ -928,10 +887,9 @@ class OnBoardingViewState extends State<OnBoardingView> {
               _currentPage--;
             });
           },
-          title: appLocalizationsOf(context).onboarding5Title,
-          description: appLocalizationsOf(context).onboarding5Description,
-          illustration:
-              AssetImage(Resources.images.login.onboarding.onboarding3),
+          title: appLocalizationsOf(context).onboarding3Title,
+          description: appLocalizationsOf(context).onboarding3Description,
+          illustration: AssetImage(Resources.images.login.gridImage),
         ),
       ];
 
@@ -961,8 +919,8 @@ class OnBoardingViewState extends State<OnBoardingView> {
             ),
             Expanded(
               child: FractionallySizedBox(
-                widthFactor: 0.5,
-                child: Center(child: _buildOnBoardingIllustration()),
+                heightFactor: 1,
+                child: _buildOnBoardingIllustration(_currentPage),
               ),
             ),
           ],
@@ -985,26 +943,52 @@ class OnBoardingViewState extends State<OnBoardingView> {
     );
   }
 
-  Widget _buildOnBoardingIllustration() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildOnBoardingIllustration(int index) {
+    index >= 2 ? index = 2 : index = index;
+
+    final ardrivePlateImage = _ardrivePlateImages()[index];
+
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        // image
-        ArDriveImage(
-          image: _list[_currentPage].illustration,
-          height: 272,
-          width: 372,
+        Opacity(
+          opacity: 0.25,
+          child: ArDriveImage(
+            image: _list[_currentPage].illustration,
+            fit: BoxFit.cover,
+            height: double.maxFinite,
+            width: double.maxFinite,
+          ),
         ),
-        const SizedBox(
-          height: 92,
-        ),
-        // pagination dots
-        ArDrivePaginationDots(
-          currentPage: _currentPage,
-          numberOfPages: _list.length,
+        Align(
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ArDriveImage(
+                image: AssetImage(ardrivePlateImage),
+                fit: BoxFit.contain,
+                height: 200,
+                width: 400,
+              ),
+              const SizedBox(height: 32),
+              ArDrivePaginationDots(
+                currentPage: _currentPage,
+                numberOfPages: _list.length,
+              ),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  List<String> _ardrivePlateImages() {
+    return [
+      Resources.images.login.ardrivePlates1,
+      Resources.images.login.ardrivePlates2,
+      Resources.images.login.ardrivePlates3,
+    ];
   }
 
   Widget _buildOnBoardingContent() {
