@@ -376,7 +376,14 @@ Widget _confirmDialog(
                           ),
                           if (state.usdUploadCost != null)
                             TextSpan(
-                              text: usdUploadCostToString(state.usdUploadCost!),
+                              text: usdUploadCostToString(
+                                state.usdUploadCost!,
+                              ),
+                            )
+                          else
+                            TextSpan(
+                              text:
+                                  ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
                             ),
                         ],
                         style: Theme.of(context).textTheme.bodyText1,

@@ -3,9 +3,11 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_helper.dart';
+import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,7 +21,11 @@ class DriveExplorerItemTile extends TableRowWidget {
     required Function() onPressed,
   }) : super(
           [
-            Text(name, style: ArDriveTypography.body.buttonNormalBold()),
+            Text(
+              name,
+              style: ArDriveTypography.body.buttonNormalBold(),
+              overflow: TextOverflow.fade,
+            ),
             Text(size, style: ArDriveTypography.body.xSmallRegular()),
             Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),
             Text(dateCreated, style: ArDriveTypography.body.captionRegular()),
@@ -164,7 +170,7 @@ class _DriveExplorerItemTileTrailingState
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         if (item is FolderDataTableItem && item.isGhostFolder) ...[
@@ -181,8 +187,10 @@ class _DriveExplorerItemTileTrailingState
             fontStyle: ArDriveTypography.body.smallRegular(),
             text: appLocalizationsOf(context).fix,
           ),
+          const SizedBox(
+            width: 4,
+          ),
         ],
-        const Spacer(),
         ArDriveDropdown(
           height: isMobile(context) ? 44 : 60,
           calculateVerticalAlignment: (isAboveHalfScreen) {
@@ -198,7 +206,12 @@ class _DriveExplorerItemTileTrailingState
           ),
           items: _getItems(widget.item, context),
           // ignore: sized_box_for_whitespace
-          child: ArDriveIcons.dots(),
+          child: HoverWidget(
+            tooltip: appLocalizationsOf(context).showMenu,
+            child: ArDriveIcons.dots(
+              size: 20,
+            ),
+          ),
         ),
       ],
     );
@@ -223,7 +236,9 @@ class _DriveExplorerItemTileTrailingState
             },
             content: _buildItem(
               appLocalizationsOf(context).move,
-              ArDriveIcons.move(),
+              ArDriveIcons.move(
+                size: dropdownIconSize,
+              ),
             ),
           ),
           ArDriveDropdownItem(
@@ -237,7 +252,9 @@ class _DriveExplorerItemTileTrailingState
             },
             content: _buildItem(
               appLocalizationsOf(context).rename,
-              ArDriveIcons.edit(),
+              ArDriveIcons.edit(
+                size: dropdownIconSize,
+              ),
             ),
           ),
         ],
@@ -249,7 +266,9 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).moreInfo,
-            ArDriveIcons.info(),
+            ArDriveIcons.info(
+              size: dropdownIconSize,
+            ),
           ),
         ),
       ];
@@ -264,7 +283,9 @@ class _DriveExplorerItemTileTrailingState
         },
         content: _buildItem(
           appLocalizationsOf(context).download,
-          ArDriveIcons.download(),
+          ArDriveIcons.download(
+            size: dropdownIconSize,
+          ),
         ),
       ),
       ArDriveDropdownItem(
@@ -277,7 +298,9 @@ class _DriveExplorerItemTileTrailingState
         },
         content: _buildItem(
           appLocalizationsOf(context).shareFile,
-          ArDriveIcons.share(),
+          ArDriveIcons.share(
+            size: dropdownIconSize,
+          ),
         ),
       ),
       ArDriveDropdownItem(
@@ -288,7 +311,9 @@ class _DriveExplorerItemTileTrailingState
         },
         content: _buildItem(
           appLocalizationsOf(context).preview,
-          ArDriveIcons.externalLink(),
+          ArDriveIcons.externalLink(
+            size: dropdownIconSize,
+          ),
         ),
       ),
       if (isOwner) ...[
@@ -303,7 +328,9 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).rename,
-            ArDriveIcons.edit(),
+            ArDriveIcons.edit(
+              size: dropdownIconSize,
+            ),
           ),
         ),
         ArDriveDropdownItem(
@@ -316,7 +343,9 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).move,
-            ArDriveIcons.move(),
+            ArDriveIcons.move(
+              size: dropdownIconSize,
+            ),
           ),
         ),
       ],
@@ -327,7 +356,11 @@ class _DriveExplorerItemTileTrailingState
           bloc.selectDataItem(item);
         },
         content: _buildItem(
-            appLocalizationsOf(context).moreInfo, ArDriveIcons.info()),
+          appLocalizationsOf(context).moreInfo,
+          ArDriveIcons.info(
+            size: dropdownIconSize,
+          ),
+        ),
       ),
     ];
   }

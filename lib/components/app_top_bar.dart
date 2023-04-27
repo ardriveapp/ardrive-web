@@ -1,6 +1,7 @@
 // implement a widget that has 145 of height and maximum widget, and has a row as child
 import 'package:ardrive/blocs/sync/sync_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +35,7 @@ class SyncButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveClickArea(
+    return HoverWidget(
       tooltip: appLocalizationsOf(context).resyncTooltip,
       child: ArDriveDropdown(
         anchor: const Aligned(

@@ -65,6 +65,7 @@ void main() {
             .map(
               (r) => fakeSnapshotItemFromRange(
                 HeightRange(rangeSegments: [r]),
+                arweave,
               ),
             )
             .toList()),
@@ -107,6 +108,7 @@ void main() {
             .map(
               (r) => fakeSnapshotItemFromRange(
                 HeightRange(rangeSegments: [r]),
+                arweave,
               ),
             )
             .toList()),

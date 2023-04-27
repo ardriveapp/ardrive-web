@@ -6,6 +6,7 @@ import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/ar_cost_to_usd.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:collection/collection.dart';
@@ -253,8 +254,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       }
 
       final arUploadCost = winstonToAr(totalCost);
-      final usdUploadCost = await _arweave.getArUsdConversionRate().then(
-          (conversionRate) => double.parse(arUploadCost) * conversionRate);
+
+      final double? usdUploadCost =
+          await arCostToUsdOrNull(_arweave, double.parse(arUploadCost));
 
       // Sign bundle tx and preserve bundle tx ID on entity
       await bundleTx.sign(wallet);
