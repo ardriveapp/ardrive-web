@@ -129,7 +129,7 @@ class ProfileCard extends StatelessWidget {
                     appLocalizationsOf(context).logout,
                     style: ArDriveTypography.body.buttonNormalRegular(),
                   ),
-                  ArDriveIcons.logout(),
+                  ArDriveIcons.logout(size: 16),
                 ],
               ),
             ),
