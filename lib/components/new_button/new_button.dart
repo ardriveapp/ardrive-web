@@ -1,6 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
-import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/create_manifest_form.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/drive_attach_form.dart';
@@ -12,6 +10,7 @@ import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,7 +26,7 @@ class NewButton extends StatelessWidget {
       follower: Alignment.bottomCenter,
       target: Alignment.topCenter,
     ),
-    this.dropdownWidth = 275,
+    this.dropdownWidth = 225,
   });
 
   final Drive? drive;
@@ -78,12 +77,12 @@ class NewButton extends StatelessWidget {
             },
             isDisabled: !drivesState.canCreateNewDrive || !canUpload,
             name: appLocalizations.newDrive,
-            icon: ArDriveIcons.drive(size: 24),
+            icon: ArDriveIcons.drive(size: dropdownIconSize),
           ),
           _buildDriveDropdownItem(
             onClick: () => attachDrive(context: context),
             name: appLocalizations.attachDrive,
-            icon: ArDriveIcons.attachDrive(size: 24),
+            icon: ArDriveIcons.attachDrive(size: dropdownIconSize),
           ),
         ],
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
@@ -95,7 +94,7 @@ class NewButton extends StatelessWidget {
             ),
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.newFolder,
-            icon: ArDriveIcons.folderAdd(size: 24),
+            icon: ArDriveIcons.folderAdd(size: dropdownIconSize),
           ),
           _buildDriveDropdownItem(
             onClick: () => promptToUpload(
@@ -106,7 +105,7 @@ class NewButton extends StatelessWidget {
             ),
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.uploadFolder,
-            icon: ArDriveIcons.folderAdd(size: 24),
+            icon: ArDriveIcons.folderAdd(size: dropdownIconSize),
           ),
           _buildDriveDropdownItem(
             onClick: () {
@@ -119,7 +118,7 @@ class NewButton extends StatelessWidget {
             },
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.uploadFiles,
-            icon: ArDriveIcons.uploadCloud(size: 24),
+            icon: ArDriveIcons.uploadCloud(size: dropdownIconSize),
           ),
         ],
         if (driveDetailState is DriveDetailLoadSuccess &&
@@ -134,7 +133,7 @@ class NewButton extends StatelessWidget {
             },
             isDisabled: driveDetailState.driveIsEmpty || !canUpload,
             name: appLocalizations.createManifest,
-            icon: ArDriveIcons.manifest(size: 24),
+            icon: ArDriveIcons.manifest(size: dropdownIconSize),
           ),
         if (context.read<AppConfig>().enableQuickSyncAuthoring &&
             driveDetailState is DriveDetailLoadSuccess &&
@@ -151,7 +150,7 @@ class NewButton extends StatelessWidget {
                   minimumWalletBalance: minimumWalletBalance,
                 ),
             name: appLocalizations.createSnapshot,
-            icon: ArDriveIcons.snapshot(size: 24),
+            icon: ArDriveIcons.snapshot(size: dropdownIconSize),
           ),
       ];
     } else {
@@ -159,7 +158,7 @@ class NewButton extends StatelessWidget {
         _buildDriveDropdownItem(
           onClick: () => attachDrive(context: context),
           name: appLocalizations.attachDrive,
-          icon: ArDriveIcons.drive(size: 24),
+          icon: ArDriveIcons.drive(size: dropdownIconSize),
         ),
       ];
     }

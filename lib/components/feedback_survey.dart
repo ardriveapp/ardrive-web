@@ -66,6 +66,9 @@ class FeedbackSurveyModal extends StatelessWidget {
                         },
                         text: appLocalizationsOf(context).leaveFeedback,
                       ),
+                      const SizedBox(
+                        height: 8,
+                      ),
                       ArDriveButton(
                         style: ArDriveButtonStyle.tertiary,
                         onPressed: () {

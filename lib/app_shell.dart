@@ -1,6 +1,8 @@
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -130,6 +132,8 @@ class AppShellState extends State<AppShell> {
                   const AppSideBar(),
                   Expanded(
                     child: Scaffold(
+                      backgroundColor:
+                          ArDriveTheme.of(context).themeData.backgroundColor,
                       body: widget.page,
                     ),
                   ),
@@ -174,16 +178,20 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            leading ??
-                IconButton(
-                  icon: ArDriveIcons.menuArrow(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
+            Padding(
+              padding: const EdgeInsets.only(left: 7.0),
+              child: leading ??
+                  ArDriveIconButton(
+                    icon: ArDriveIcons.menuArrow(
+                      size: dropdownIconSize,
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
                   ),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
+            ),
             const Spacer(),
             const SyncButton(),
             const SizedBox(

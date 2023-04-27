@@ -75,7 +75,7 @@ class SharedFilePage extends StatelessWidget {
                                 style: ArDriveTypography.headline
                                     .heroBold()
                                     .copyWith(
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                     ),
                               )
                             ],
@@ -155,7 +155,7 @@ class SharedFilePage extends StatelessWidget {
                           ),
                           const SizedBox(height: 24),
                           ArDriveButton(
-                            icon: ArDriveIcons.download(),
+                            icon: ArDriveIcons.download(color: Colors.white),
                             onPressed: () {
                               final file =
                                   ARFSFactory().getARFSFileFromFileRevision(

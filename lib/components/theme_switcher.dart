@@ -1,3 +1,4 @@
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -10,9 +11,9 @@ class ThemeSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: appLocalizationsOf(context).changeTheme,
-      child: InkWell(
+    return HoverWidget(
+      tooltip: appLocalizationsOf(context).changeTheme,
+      child: GestureDetector(
         onTap: () {
           context.read<ThemeSwitcherBloc>().add(ChangeTheme());
         },
@@ -24,8 +25,8 @@ class ThemeSwitcher extends StatelessWidget {
 
             return Text(
               state is ThemeSwitcherDarkTheme?
-                  ? appLocalizationsOf(context).darkMode
-                  : appLocalizationsOf(context).lightMode,
+                  ? appLocalizationsOf(context).lightMode
+                  : appLocalizationsOf(context).darkMode,
               style: ArDriveTypography.body.buttonNormalBold(),
             );
           },
