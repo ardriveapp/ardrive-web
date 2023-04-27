@@ -170,7 +170,7 @@ class _DriveExplorerItemTileTrailingState
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         if (item is FolderDataTableItem && item.isGhostFolder) ...[
@@ -187,8 +187,10 @@ class _DriveExplorerItemTileTrailingState
             fontStyle: ArDriveTypography.body.smallRegular(),
             text: appLocalizationsOf(context).fix,
           ),
+          const SizedBox(
+            width: 4,
+          ),
         ],
-        const Spacer(),
         ArDriveDropdown(
           height: isMobile(context) ? 44 : 60,
           calculateVerticalAlignment: (isAboveHalfScreen) {

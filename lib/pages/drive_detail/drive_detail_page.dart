@@ -587,6 +587,7 @@ class ArDriveItemListTile extends StatelessWidget {
         backgroundColor:
             ArDriveTheme.of(context).themeData.tableTheme.cellColor,
         content: Row(
+          mainAxisSize: MainAxisSize.max,
           children: [
             DriveExplorerItemTileLeading(
               item: item,
@@ -599,13 +600,16 @@ class ArDriveItemListTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisSize: MainAxisSize.max,
                     children: [
-                      Flexible(
+                      Expanded(
                         child: Text(
                           item.name,
                           style: ArDriveTypography.body
                               .captionRegular()
                               .copyWith(fontWeight: FontWeight.w700),
+                          maxLines: 1,
+                          softWrap: false,
                           overflow: TextOverflow.fade,
                         ),
                       ),
@@ -662,11 +666,9 @@ class ArDriveItemListTile extends StatelessWidget {
             const SizedBox(
               width: 12,
             ),
-            Flexible(
-              child: DriveExplorerItemTileTrailing(
-                item: item,
-                drive: drive,
-              ),
+            DriveExplorerItemTileTrailing(
+              item: item,
+              drive: drive,
             )
           ],
         ),
