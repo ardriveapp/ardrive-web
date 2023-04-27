@@ -4,7 +4,6 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
@@ -32,9 +31,7 @@ class DrivesCubit extends Cubit<DrivesState> {
         _auth = auth,
         super(DrivesLoadInProgress()) {
     _auth.onAuthStateChanged().listen((user) {
-      logger.d('User logged in: $user');
       if (user == null) {
-        logger.d('User logged out');
         cleanDrives();
         return;
       }
@@ -66,10 +63,6 @@ class DrivesCubit extends Cubit<DrivesState> {
           profile is ProfileLoggedIn ? profile.walletAddress : null;
 
       final ghostFolders = await _driveDao.ghostFolders().get();
-
-      logger.d('Ghost folders: ${ghostFolders.length}');
-      logger.d('Drives: ${drives.length}');
-      logger.d('Selected drive: $selectedDriveId');
 
       final sharedDrives =
           drives.where((d) => !isDriveOwner(auth, d.ownerAddress)).toList();
@@ -108,9 +101,6 @@ class DrivesCubit extends Cubit<DrivesState> {
         sharedDrives: const [],
         drivesWithAlerts: const [],
         canCreateNewDrive: false);
-
-    logger.i('Drives cleaned');
-    logger.d('Drives state: $state');
 
     emit(state);
   }

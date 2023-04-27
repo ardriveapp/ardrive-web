@@ -71,10 +71,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         },
         builder: (context, _) => BlocConsumer<ProfileCubit, ProfileState>(
           listener: (context, state) {
-            logger.d('Profile state changed: $state');
             // Clear state to prevent the last drive from being attached on new login
             if (state is ProfileLoggingOut) {
-              logger.d('Clearing state');
+              logger.d('Cleaning state');
 
               clearState();
             }
@@ -130,16 +129,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
               shell = BlocConsumer<DrivesCubit, DrivesState>(
                 listener: (context, state) {
-                  logger.d('Drives state changed: ${state.runtimeType}');
-
                   if (state is DrivesLoadSuccess) {
                     final selectedDriveChanged =
                         driveId != state.selectedDriveId;
                     if (selectedDriveChanged) {
                       driveFolderId = null;
                     }
-
-                    logger.d('Selected drive ID: ${state.selectedDriveId}');
 
                     driveId = state.selectedDriveId;
                     notifyListeners();
@@ -148,8 +143,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 builder: (context, state) {
                   Widget? shellPage;
                   if (state is DrivesLoadSuccess) {
-                    logger.d('DrivesLoadSuccess');
-
                     shellPage = !state.hasNoDrives
                         ? const DriveDetailPage()
                         : const NoDrivesPage();
@@ -167,6 +160,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       profileCubit: context.read<ProfileCubit>(),
                       driveDao: context.read<DriveDao>(),
                       config: context.read<AppConfig>(),
+                      auth: context.read<ArDriveAuth>(),
                     ),
                     child: MultiBlocListener(
                       listeners: [
@@ -252,9 +246,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             );
 
             if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
-              logger.d('ProfileLoggedIn or anonymouslyShowDriveDetail');
-              logger.d('Drive ID: $driveId');
-
               return MultiBlocProvider(
                 providers: [
                   BlocProvider(
