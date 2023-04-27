@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: redesign-fine-tune-pre-release
-      resolved-ref: d4eeac4833f2c8e7eb58765d7cfa28e56c96f334
+      resolved-ref: "4fa1ee902ce86053d69f3d987a554465250073c6"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -846,7 +846,7 @@ packages:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.7+3"
+    version: "0.8.7+4"
   image_picker_android:
     dependency: transitive
     description:
@@ -965,7 +965,7 @@ packages:
       name: local_auth_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.23"
+    version: "1.0.24"
   local_auth_ios:
     dependency: transitive
     description:
@@ -1467,14 +1467,14 @@ packages:
       name: sqflite
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.6"
+    version: "2.2.7"
   sqflite_common:
     dependency: transitive
     description:
       name: sqflite_common
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.3"
+    version: "2.4.4"
   sqlite3:
     dependency: transitive
     description:
@@ -1551,7 +1551,7 @@ packages:
       name: synchronized
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1"
+    version: "3.1.0"
   term_glyph:
     dependency: transitive
     description:
