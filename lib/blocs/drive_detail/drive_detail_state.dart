@@ -35,6 +35,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final List<int> availableRowsPerPage;
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
 
+  final List<ArDriveDataTableItem> currentFolderContents;
+
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
@@ -51,6 +53,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.driveIsEmpty,
     this.selectedItem,
     this.dataTableKey,
+    required this.currentFolderContents,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -69,6 +72,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     bool? hasFoldersSelected,
     ArDriveDataTableItem? selectedItem,
     String? dataTableKey,
+    List<ArDriveDataTableItem>? currentFolderContents,
   }) =>
       DriveDetailLoadSuccess(
         selectedItem: selectedItem ?? this.selectedItem,
@@ -88,6 +92,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         rowsPerPage: rowsPerPage ?? this.rowsPerPage,
         driveIsEmpty: driveIsEmpty ?? this.driveIsEmpty,
         dataTableKey: dataTableKey ?? this.dataTableKey,
+        currentFolderContents:
+            currentFolderContents ?? this.currentFolderContents,
       );
 
   @override
