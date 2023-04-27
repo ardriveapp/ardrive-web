@@ -8,7 +8,7 @@ class Resources {
 
   static const helpLink = 'https://ar-io.zendesk.com/hc/en-us';
   static const agreementLink = 'https://ardrive.io/tos-and-privacy/';
-  static const getWalletLink = 'https://www.arconnect.io/';
+  static const getWalletLink = 'https://tokens.arweave.org/';
 }
 
 class Images {
