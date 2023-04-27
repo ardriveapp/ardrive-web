@@ -222,6 +222,14 @@ class ArweaveService {
     required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
+    // FIXME - PE-3440
+    /// Make use of `eagerError: true` to make it fail on first error
+    /// Also, when there's no internet connection and when we're getting
+    /// rate-limited (TODO: check the latter), many requests will be retrying.
+    /// We shall find another way to fail faster.
+
+    // MAYBE FIX: set a narrow concurrency limit
+
     final List<Uint8List> responses = await Future.wait(
       entityTxs.map(
         (entity) async {
@@ -356,7 +364,7 @@ class ArweaveService {
       return cachedData;
     }
 
-    return _getEntityDataFromNetwork(txId: txId);
+    return getEntityDataFromNetwork(txId: txId);
   }
 
   Future<Uint8List?> _getCachedEntityDataFromSnapshot({
@@ -382,7 +390,7 @@ class ArweaveService {
     return null;
   }
 
-  Future<Uint8List> _getEntityDataFromNetwork({required String txId}) async {
+  Future<Uint8List> getEntityDataFromNetwork({required String txId}) async {
     final Response data =
         (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
 
@@ -791,9 +799,7 @@ class ArweaveService {
       for (final transactionId in transactionIds) transactionId: -1
     };
 
-    // Chunk the transaction confirmation query to workaround the 10 item limit of the gateway API
-    // and run it in parallel.
-    const chunkSize = 10;
+    const chunkSize = 100;
 
     final confirmationFutures = <Future<void>>[];
 
@@ -803,10 +809,14 @@ class ArweaveService {
             ? i + chunkSize
             : transactionIds.length;
 
-        final query = await _graphQLRetry.execute(TransactionStatusesQuery(
+        final query = await _graphQLRetry.execute(
+          TransactionStatusesQuery(
             variables: TransactionStatusesArguments(
-                transactionIds:
-                    transactionIds.sublist(i, chunkEnd) as List<String>?)));
+              transactionIds:
+                  transactionIds.sublist(i, chunkEnd) as List<String>?,
+            ),
+          ),
+        );
 
         final currentBlockHeight = query.data!.blocks.edges.first.node.height;
 
@@ -950,11 +960,19 @@ class ArweaveService {
         dryRun: dryRun,
       );
 
+  Future<double?> getArUsdConversionRateOrNull() async {
+    try {
+      return await getArUsdConversionRate();
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<double> getArUsdConversionRate() async {
     const String coinGeckoApi =
         'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd';
 
-    final response = await ArDriveHTTP().getJson(coinGeckoApi);
+    final response = await ArDriveHTTP(retries: 3).getJson(coinGeckoApi);
 
     return response.data?['arweave']['usd'];
   }

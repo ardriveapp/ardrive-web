@@ -384,6 +384,13 @@ class UploadForm extends StatelessWidget {
                                 ),
                                 style: ArDriveTypography.body
                                     .buttonNormalRegular(),
+                              )
+                            else
+                              TextSpan(
+                                text:
+                                    ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
+                                style: ArDriveTypography.body
+                                    .buttonNormalRegular(),
                               ),
                           ],
                         ],

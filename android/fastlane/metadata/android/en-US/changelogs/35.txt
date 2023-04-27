@@ -1,0 +1,1 @@
+- Improves error handling on sync time

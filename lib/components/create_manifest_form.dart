@@ -364,9 +364,17 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                           text: appLocalizationsOf(context)
                               .cost(state.arUploadCost),
                         ),
-                        TextSpan(
-                          text: usdUploadCostToString(state.usdUploadCost),
-                        ),
+                        if (state.usdUploadCost != null)
+                          TextSpan(
+                            text: usdUploadCostToString(
+                              state.usdUploadCost!,
+                            ),
+                          )
+                        else
+                          TextSpan(
+                            text:
+                                ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
+                          ),
                       ],
                       style: Theme.of(context).textTheme.bodyText1,
                     ),

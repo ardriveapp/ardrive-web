@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/string_types.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
-import 'package:ardrive_http/ardrive_http.dart';
 import 'package:flutter/foundation.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';
@@ -25,7 +25,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   factory SnapshotItem.fromGQLNode({
     required SnapshotEntityTransaction node,
     required HeightRange subRanges,
-    required String arweaveUrl,
+    required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
   }) {
     final tags = node.tags;
@@ -45,7 +45,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
       timestamp: timestamp,
       txId: txId,
       subRanges: subRanges,
-      arweaveUrl: arweaveUrl,
+      arweave: arweave,
       fakeSource: fakeSource,
     );
   }
@@ -54,7 +54,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   static Stream<SnapshotItem> instantiateAll(
     Stream<SnapshotEntityTransaction> itemsStream, {
     int? lastBlockHeight,
-    required String arweaveUrl,
+    required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
   }) async* {
     HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
@@ -68,8 +68,8 @@ abstract class SnapshotItem implements SegmentedGQLData {
         snapshotItem = instantiateSingle(
           item,
           obscuredBy: obscuredByAccumulator,
-          arweaveUrl: arweaveUrl,
           fakeSource: fakeSource,
+          arweave: arweave,
         );
       } catch (e) {
         print(
@@ -94,7 +94,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   static SnapshotItem instantiateSingle(
     SnapshotEntityTransaction item, {
     required HeightRange obscuredBy,
-    required String arweaveUrl,
+    required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
   }) {
     late Range totalRange;
@@ -120,7 +120,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
     SnapshotItem snapshotItem = SnapshotItem.fromGQLNode(
       node: item,
       subRanges: subRanges,
-      arweaveUrl: arweaveUrl,
+      arweave: arweave,
       fakeSource: fakeSource,
     );
     return snapshotItem;
@@ -135,9 +135,10 @@ abstract class SnapshotItem implements SegmentedGQLData {
 class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
   final TxID txId;
-  final String arweaveUrl;
   String? _cachedSource;
   int _currentIndex = -1;
+
+  final ArweaveService _arweave;
 
   static final Map<String, Cache<Uint8List>> _jsonMetadataCaches = {};
 
@@ -148,9 +149,10 @@ class SnapshotItemOnChain implements SnapshotItem {
     required this.timestamp,
     required this.txId,
     required this.subRanges,
-    required this.arweaveUrl,
+    required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
-  }) : _cachedSource = fakeSource;
+  })  : _cachedSource = fakeSource,
+        _arweave = arweave;
 
   @override
   final HeightRange subRanges;
@@ -167,10 +169,8 @@ class SnapshotItemOnChain implements SnapshotItem {
     if (_cachedSource != null) {
       return _cachedSource!;
     }
-
-    final dataBytes = await ArDriveHTTP().getAsBytes('$arweaveUrl/$txId');
-
-    final dataBytesAsString = String.fromCharCodes(dataBytes.data);
+    final dataBytes = await _arweave.getEntityDataFromNetwork(txId: txId);
+    final dataBytesAsString = String.fromCharCodes(dataBytes);
     return _cachedSource = dataBytesAsString;
   }
 

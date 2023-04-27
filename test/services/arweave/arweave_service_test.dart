@@ -1,6 +1,7 @@
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive/utils/ar_cost_to_usd.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -71,7 +72,7 @@ void main() {
               'Cannot stub a single method to verify that the actual method gets called once');
     });
 
-    group('getAllFileEntittiesWithId method', () {
+    group('getAllFileEntitiesWithId method', () {
       test('returns all the file entities for a known file id', () async {
         final fileEntities =
             await arweave.getAllFileEntitiesWithId(knownFileId);
@@ -83,6 +84,26 @@ void main() {
           unknownFileId,
         );
         expect(fileEntities, equals(null));
+      });
+    });
+
+    group('arCostToUsdOrNull method', () {
+      const arCost = 100.0;
+
+      test('returns the correct USD value', () async {
+        when(() => arweave.getArUsdConversionRateOrNull()).thenAnswer(
+          (_) => Future.value(1),
+        );
+
+        expect(await arCostToUsdOrNull(arweave, arCost), equals(arCost));
+      });
+
+      test('returns null if the conversion rate is null', () async {
+        when(() => arweave.getArUsdConversionRateOrNull()).thenAnswer(
+          (_) => Future.value(null),
+        );
+
+        expect(await arCostToUsdOrNull(arweave, arCost), equals(null));
       });
     });
   });
