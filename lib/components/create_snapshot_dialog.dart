@@ -78,7 +78,7 @@ class CreateSnapshotDialog extends StatelessWidget {
 Widget _explanationDialog(BuildContext context, Drive drive) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
 
-  return AppDialog(
+  return ArDriveStandardModal(
     title: appLocalizationsOf(context).createSnapshot,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -120,15 +120,15 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
       ),
     ),
     actions: [
-      TextButton(
-        child: Text(appLocalizationsOf(context).cancelEmphasized),
-        onPressed: () {
+      ModalAction(
+        title: appLocalizationsOf(context).cancelEmphasized,
+        action: () {
           Navigator.of(context).pop();
         },
       ),
-      TextButton(
-        child: Text(appLocalizationsOf(context).proceedEmphasized),
-        onPressed: () {
+      ModalAction(
+        title: appLocalizationsOf(context).proceedEmphasized,
+        action: () {
           createSnapshotCubit.confirmDriveAndHeighRange(drive.id);
         },
       ),
@@ -199,7 +199,7 @@ String _loadingDialogDescription(
 }
 
 Widget _successDialog(BuildContext context, String driveName) {
-  return AppDialog(
+  return ArDriveStandardModal(
     title: appLocalizationsOf(context).snapshotSuceeded,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -224,9 +224,9 @@ Widget _successDialog(BuildContext context, String driveName) {
       ),
     ),
     actions: [
-      TextButton(
-        child: Text(appLocalizationsOf(context).ok),
-        onPressed: () {
+      ModalAction(
+        title: appLocalizationsOf(context).ok,
+        action: () {
           Navigator.of(context).pop();
         },
       ),
@@ -240,7 +240,7 @@ Widget _failureDialog(
 ) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
 
-  return AppDialog(
+  return ArDriveStandardModal(
     title: appLocalizationsOf(context).snapshotFailed,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -264,17 +264,15 @@ Widget _failureDialog(
       ),
     ),
     actions: [
-      ElevatedButton(
-        onPressed: () {
+      ModalAction(
+        action: () {
           createSnapshotCubit.confirmDriveAndHeighRange(driveId);
         },
-        child: Text(
-          appLocalizationsOf(context).tryAgainEmphasized,
-        ),
+        title: appLocalizationsOf(context).tryAgainEmphasized,
       ),
-      TextButton(
-        child: Text(appLocalizationsOf(context).ok),
-        onPressed: () {
+      ModalAction(
+        title: appLocalizationsOf(context).ok,
+        action: () {
           Navigator.of(context).pop();
         },
       ),
@@ -286,7 +284,7 @@ Widget _insufficientBalanceDialog(
   BuildContext context,
   CreateSnapshotInsufficientBalance state,
 ) {
-  return AppDialog(
+  return ArDriveStandardModal(
     title: appLocalizationsOf(context).insufficientARForUpload,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -314,9 +312,9 @@ Widget _insufficientBalanceDialog(
       ),
     ),
     actions: [
-      TextButton(
-        child: Text(appLocalizationsOf(context).ok),
-        onPressed: () {
+      ModalAction(
+        title: appLocalizationsOf(context).ok,
+        action: () {
           Navigator.of(context).pop();
         },
       ),
@@ -330,7 +328,7 @@ Widget _confirmDialog(
   CreateSnapshotCubit createSnapshotCubit,
   CreateSnapshotState state,
 ) {
-  return AppDialog(
+  return ArDriveStandardModal(
     title: appLocalizationsOf(context).createSnapshot,
     content: SizedBox(
         width: kMediumDialogWidth,
@@ -404,21 +402,21 @@ Widget _confirmDialog(
             }
           ],
         )),
-    actions: <Widget>[
+    actions: [
       if (state is ConfirmingSnapshotCreation) ...{
-        TextButton(
-          child: Text(appLocalizationsOf(context).cancelEmphasized),
-          onPressed: () {
+        ModalAction(
+          title: appLocalizationsOf(context).cancelEmphasized,
+          action: () {
             print('Cancel snapshot creation');
             Navigator.of(context).pop();
           },
         ),
-        ElevatedButton(
-          onPressed: () async => {
+        ModalAction(
+          action: () async => {
             print('Confirm snapshot creation'),
             await createSnapshotCubit.confirmSnapshotCreation(),
           },
-          child: Text(appLocalizationsOf(context).uploadEmphasized),
+          title: appLocalizationsOf(context).uploadEmphasized,
         ),
       }
     ],

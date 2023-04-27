@@ -19,18 +19,25 @@ void promptToRenameModal(
 }) {
   showAnimatedDialog(
     context,
-    content: BlocProvider(
-      create: (context) => FsEntryRenameCubit(
-        crypto: ArDriveCrypto(),
-        driveId: driveId,
-        folderId: folderId,
-        fileId: fileId,
-        arweave: context.read<ArweaveService>(),
-        turboService: context.read<TurboService>(),
-        driveDao: context.read<DriveDao>(),
-        profileCubit: context.read<ProfileCubit>(),
-        syncCubit: context.read<SyncCubit>(),
-      ),
+    content: MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => FsEntryRenameCubit(
+            crypto: ArDriveCrypto(),
+            driveId: driveId,
+            folderId: folderId,
+            fileId: fileId,
+            arweave: context.read<ArweaveService>(),
+            turboService: context.read<TurboService>(),
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            syncCubit: context.read<SyncCubit>(),
+          ),
+        ),
+        BlocProvider.value(
+          value: context.read<DriveDetailCubit>(),
+        ),
+      ],
       child: FsEntryRenameForm(
         entryName: initialName,
       ),
@@ -77,6 +84,8 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
             );
           } else if (state is FolderEntryRenameSuccess ||
               state is FileEntryRenameSuccess) {
+            context.read<DriveDetailCubit>().refreshDriveDataTable();
+
             Navigator.pop(context);
             Navigator.pop(context);
           } else if (state is FolderEntryRenameWalletMismatch ||
@@ -115,8 +124,7 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                         }
                       },
                       validator: (value) {
-                        final validation =
-                            validateFolderAndDriveName(value, context);
+                        final validation = validateEntityName(value, context);
 
                         if (validation == null) {
                           setState(() => _validForm = true);

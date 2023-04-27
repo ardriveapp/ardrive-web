@@ -4,6 +4,68 @@ import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+
+class ResizableComponent extends StatefulWidget {
+  final Widget child;
+  final double maxHeight;
+  final ScrollController scrollController;
+
+  const ResizableComponent({
+    super.key,
+    required this.child,
+    required this.scrollController,
+    this.maxHeight = 87.0,
+  });
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _ResizableComponentState createState() => _ResizableComponentState();
+}
+
+class _ResizableComponentState extends State<ResizableComponent> {
+  double _height = 100.0; // initial height of the component
+
+  @override
+  void initState() {
+    super.initState();
+    widget.scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    widget.scrollController.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (widget.scrollController.position.userScrollDirection ==
+        ScrollDirection.forward) {
+      setState(() {
+        if (_height < widget.maxHeight) {
+          _height += 10.0; // increase height when scrolling up
+        }
+      });
+    } else if (widget.scrollController.position.userScrollDirection ==
+        ScrollDirection.reverse) {
+      setState(() {
+        _height -= 10.0; // decrease height when scrolling down
+        if (_height < 0.0) {
+          _height = 0.0; // cap height at 0
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      height: _height,
+      child: widget.child,
+    );
+  }
+}
 
 class AppBottomBar extends StatelessWidget {
   const AppBottomBar({

@@ -6,9 +6,12 @@ import 'package:ardrive/components/drive_share_dialog.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/size_constants.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +42,9 @@ class _DriveExplorerMobileViewState extends State<DriveExplorerMobileView> {
 
   Widget _mobileView(
       DriveDetailLoadSuccess state, bool hasSubfolders, bool hasFiles) {
+    final isOwner = isDriveOwner(
+        context.read<ArDriveAuth>(), state.currentDrive.ownerAddress);
+
     int index = 0;
     final folders = state.folderInView.subfolders.map(
       (folder) => DriveDataTableItemMapper.fromFolderEntry(
@@ -48,6 +54,7 @@ class _DriveExplorerMobileViewState extends State<DriveExplorerMobileView> {
           bloc.openFolder(path: folder.path);
         },
         index++,
+        isOwner,
       ),
     );
 
@@ -63,6 +70,7 @@ class _DriveExplorerMobileViewState extends State<DriveExplorerMobileView> {
           }
         },
         index++,
+        isOwner,
       ),
     );
 
@@ -105,9 +113,10 @@ class _DriveExplorerMobileViewState extends State<DriveExplorerMobileView> {
                             itemCount: folders.length + files.length,
                             itemBuilder: (context, index) {
                               return ArDriveItemListTile(
-                                  key: ObjectKey([items[index]]),
-                                  drive: state.currentDrive,
-                                  item: items[index]);
+                                key: ObjectKey([items[index]]),
+                                drive: state.currentDrive,
+                                item: items[index],
+                              );
                             },
                           ),
                         ),
@@ -171,7 +180,7 @@ class ArDriveItemListTile extends StatelessWidget {
                           style: ArDriveTypography.body
                               .captionRegular()
                               .copyWith(fontWeight: FontWeight.w700),
-                          overflow: TextOverflow.ellipsis,
+                          overflow: TextOverflow.fade,
                         ),
                       ),
                     ],
@@ -209,7 +218,7 @@ class ArDriveItemListTile extends StatelessWidget {
                       Flexible(
                         child: Text(
                           'Last updated: ${yMMdDateFormatter.format(item.lastUpdated)}',
-                          overflow: TextOverflow.ellipsis,
+                          overflow: TextOverflow.fade,
                           style: ArDriveTypography.body.xSmallRegular(
                             color: ArDriveTheme.of(context)
                                 .themeData
@@ -251,42 +260,37 @@ class MobileFolderNavigation extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: InkWell(
-              onTap: () {
-                context
-                    .read<DriveDetailCubit>()
-                    .openFolder(path: getParentFolderPath(path));
-              },
-              child: Row(
-                children: [
-                  if (path.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 15,
-                      ),
-                      child: ArDriveIcons.arrowBack(),
-                    ),
-                  Expanded(
-                    child: Padding(
-                      padding: path.isEmpty
-                          ? const EdgeInsets.only(left: 16)
-                          : EdgeInsets.zero,
-                      child: Text(
-                        _pathToName(path),
-                        style: ArDriveTypography.body.buttonNormalBold(),
-                      ),
+            child: Row(
+              children: [
+                if (path.isNotEmpty)
+                  ArDriveIconButton(
+                    onPressed: () {
+                      context
+                          .read<DriveDetailCubit>()
+                          .openFolder(path: getParentFolderPath(path));
+                    },
+                    icon: ArDriveIcons.arrowBack(),
+                  ),
+                Expanded(
+                  child: Padding(
+                    padding: path.isEmpty
+                        ? const EdgeInsets.only(left: 16, bottom: 4, top: 4)
+                        : const EdgeInsets.only(top: 4, bottom: 4),
+                    child: Text(
+                      _pathToName(path),
+                      style: ArDriveTypography.body.buttonNormalBold(),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {
               if (state is DriveDetailLoadSuccess) {
-                final isDriveOwner = state.currentDrive.ownerAddress ==
-                    context.read<ArDriveAuth>().currentUser?.walletAddress;
+                final isOwner = isDriveOwner(context.read<ArDriveAuth>(),
+                    state.currentDrive.ownerAddress);
+
                 return ArDriveDropdown(
                   width: 250,
                   anchor: const Aligned(
@@ -294,7 +298,7 @@ class MobileFolderNavigation extends StatelessWidget {
                     target: Alignment.bottomRight,
                   ),
                   items: [
-                    if (isDriveOwner)
+                    if (isOwner)
                       ArDriveDropdownItem(
                         onClick: () {
                           promptToRenameDrive(
@@ -338,7 +342,9 @@ class MobileFolderNavigation extends StatelessWidget {
                       horizontal: 16.0,
                       vertical: 8,
                     ),
-                    child: ArDriveIcons.options(),
+                    child: ArDriveIconButton(
+                      icon: ArDriveIcons.dotsVert(size: dropdownIconSize),
+                    ),
                   ),
                 );
               }

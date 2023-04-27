@@ -18,9 +18,9 @@ Future<void> promptToCreateFolder(
 }) =>
     showCongestionDependentModalDialog(
       context,
-      () => showDialog(
-        context: context,
-        builder: (_) => BlocProvider(
+      () => showAnimatedDialog(
+        context,
+        content: BlocProvider(
           create: (context) => FolderCreateCubit(
             driveId: driveId,
             parentFolderId: parentFolderId,
@@ -39,9 +39,9 @@ Future<void> promptToCreateFolderWithoutCongestionWarning(
   required String driveId,
   required String parentFolderId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
+    showAnimatedDialog(
+      context,
+      content: BlocProvider(
         create: (context) => FolderCreateCubit(
           driveId: driveId,
           parentFolderId: parentFolderId,
@@ -105,7 +105,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
                 }
               },
               validator: (value) {
-                final validation = validateFolderAndDriveName(value, context);
+                final validation = validateEntityName(value, context);
 
                 if (validation == null) {
                   setState(() => _isFolderNameValid = true);

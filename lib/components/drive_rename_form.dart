@@ -98,8 +98,7 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
                             .validationNameUnchanged;
                       }
 
-                      final validation =
-                          validateFolderAndDriveName(value, context);
+                      final validation = validateEntityName(value, context);
 
                       if (validation == null) {
                         setState(() => _isFolderNameValid = true);

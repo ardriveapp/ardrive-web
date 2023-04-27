@@ -3,6 +3,13 @@ part of '../drive_detail_page.dart';
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
   int index = 0;
 
+  logger.d('Building data list');
+
+  bool isOwner = isDriveOwner(
+    context.read<ArDriveAuth>(),
+    state.currentDrive.ownerAddress,
+  );
+
   final folders = state.folderInView.subfolders.map(
     (folder) => DriveDataTableItemMapper.fromFolderEntry(
       folder,
@@ -11,6 +18,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
         bloc.openFolder(path: folder.path);
       },
       index++,
+      isOwner,
     ),
   );
 
@@ -26,6 +34,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
         }
       },
       index++,
+      isOwner,
     ),
   );
 
@@ -35,6 +44,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
     state.folderInView.folder,
     state.currentDrive,
     state.multiselect,
+    datatableKey: state.dataTableKey,
   );
 }
 
@@ -49,6 +59,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final String id;
   final String driveId;
   final String path;
+  final bool isOwner;
 
   ArDriveDataTableItem({
     required this.id,
@@ -62,6 +73,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     required this.onPressed,
     required this.path,
     required int index,
+    required this.isOwner,
   }) : super(index);
 }
 
@@ -76,6 +88,7 @@ class DriveDataItem extends ArDriveDataTableItem {
     required super.onPressed,
     super.path = '',
     required super.index,
+    required super.isOwner,
   });
 
   @override
@@ -84,6 +97,7 @@ class DriveDataItem extends ArDriveDataTableItem {
 
 class FolderDataTableItem extends ArDriveDataTableItem {
   final String? parentFolderId;
+  final bool isGhostFolder;
 
   FolderDataTableItem({
     required String driveId,
@@ -96,7 +110,9 @@ class FolderDataTableItem extends ArDriveDataTableItem {
     String? fileStatusFromTransactions,
     required Function(ArDriveDataTableItem) onPressed,
     this.parentFolderId,
+    this.isGhostFolder = false,
     required int index,
+    required bool isOwner,
   }) : super(
           driveId: driveId,
           path: path,
@@ -109,6 +125,7 @@ class FolderDataTableItem extends ArDriveDataTableItem {
           fileStatusFromTransactions: fileStatusFromTransactions,
           onPressed: onPressed,
           index: index,
+          isOwner: isOwner,
         );
 
   @override
@@ -142,6 +159,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
     required Function(ArDriveDataTableItem) onPressed,
     this.bundledIn,
     required int index,
+    required bool isOwner,
   }) : super(
           path: path,
           driveId: driveId,
@@ -154,6 +172,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
           fileStatusFromTransactions: fileStatusFromTransactions,
           onPressed: onPressed,
           index: index,
+          isOwner: isOwner,
         );
 
   @override
@@ -165,10 +184,23 @@ ArDriveDataTable _buildDataListContent(
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
   Drive drive,
-  bool isMultiselecting,
-) {
+  bool isMultiselecting, {
+  String? datatableKey,
+}) {
+  logger.d('Building data list content with key $datatableKey');
+  // if (context.read<DriveDetailCubit>().shouldRebuildDataTable) {
+  //   final cubit = context.read<DriveDetailCubit>();
+
+  //   context.read<DriveDetailCubit>().shouldRebuildDataTable = false;
+
+  //   if (cubit.selectedItem != null) {
+  //     cubit.selectDataItem(
+  //         items.where((element) => element.id == cubit.selectedItem!.id).first);
+  //   }
+  // }
+
   return ArDriveDataTable<ArDriveDataTableItem>(
-    key: ValueKey(folder.id),
+    key: ValueKey(folder.id + items.length.toString() + (datatableKey ?? '')),
     lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress,
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,
@@ -282,10 +314,13 @@ class ColumnIndexes {
 
 class DriveDataTableItemMapper {
   static FileDataTableItem toFileDataTableItem(
-      FileWithLatestRevisionTransactions file,
-      Function(ArDriveDataTableItem) onPressed,
-      int index) {
+    FileWithLatestRevisionTransactions file,
+    Function(ArDriveDataTableItem) onPressed,
+    int index,
+    bool isOwner,
+  ) {
     return FileDataTableItem(
+      isOwner: isOwner,
       path: file.path,
       lastModifiedDate: file.lastModifiedDate,
       name: file.name,
@@ -313,8 +348,11 @@ class DriveDataTableItemMapper {
     FolderEntry folderEntry,
     Function(ArDriveDataTableItem) onPressed,
     int index,
+    bool isOwner,
   ) {
     return FolderDataTableItem(
+      isOwner: isOwner,
+      isGhostFolder: folderEntry.isGhost,
       index: index,
       path: folderEntry.path,
       driveId: folderEntry.driveId,
@@ -333,8 +371,10 @@ class DriveDataTableItemMapper {
     Drive drive,
     Function(ArDriveDataTableItem) onPressed,
     int index,
+    bool isOwner,
   ) {
     return DriveDataItem(
+      isOwner: isOwner,
       index: index,
       driveId: drive.id,
       name: drive.name,
@@ -346,8 +386,9 @@ class DriveDataTableItemMapper {
     );
   }
 
-  static FileDataTableItem fromRevision(FileRevision revision) {
+  static FileDataTableItem fromRevision(FileRevision revision, bool isOwner) {
     return FileDataTableItem(
+      isOwner: isOwner,
       path: '',
       lastModifiedDate: revision.lastModifiedDate,
       name: revision.name,

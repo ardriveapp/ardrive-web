@@ -9,8 +9,9 @@ abstract class MultipleDownloadEvent extends Equatable {
 
 class StartDownload extends MultipleDownloadEvent {
   final List<ARFSFileEntity> items;
+  final String? folderName;
 
-  const StartDownload(this.items);
+  const StartDownload(this.items, {this.folderName});
 
   @override
   List<Object> get props => [items];

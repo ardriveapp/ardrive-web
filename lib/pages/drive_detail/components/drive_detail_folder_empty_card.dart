@@ -23,9 +23,14 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
             ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
         width: double.infinity,
         content: Column(
-          mainAxisSize: MainAxisSize.max,
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const Flexible(
+              child: SizedBox(
+                height: 45,
+              ),
+            ),
             Text(
               appLocalizationsOf(context).noFiles,
               style: ArDriveTypography.headline.headline5Regular(),

@@ -1666,41 +1666,25 @@
   "@onboarding1Title": {
     "description": "Title of 1st page of onboarding"
   },
-  "onboarding1Description": "ArDrive isn't just another cloud sync app. It's the beginning of a permanent hard drive. Any files you upload here will outlive you! That means we do a few things differently.",
+  "onboarding1Description": "ArDrive isn’t just another cloud sync app. It’s your personal permanent hard drive. Files stored on ArDrive can't be deleted or altered by any single entity and anything you upload will outlast you!",
   "@onboarding1Description": {
     "description": "Description of 1st page of onboarding"
   },
-  "onboarding2Title": "Pay Per File",
+  "onboarding2Title": "Pay Per File, Not Per Month",
   "@onboarding2Title": {
     "description": "Title of 2nd page of onboarding"
   },
-  "onboarding2Description": "No subscriptions are needed! Instead of another monthly charge for empty space you don't use, pay a few cents once and store your files forever on ArDrive.",
+  "onboarding2Description": "Say goodbye to cloud storage subscriptions. Instead of paying for space you don’t use, just pay once to store your data forever.",
   "@onboarding2Description": {
     "description": "Description of 2nd page of onboarding"
   },
-    "onboarding3Title": "Seconds from Forever",
+  "onboarding3Title": "Total Privacy Control",
   "@onboarding3Title": {
-    "description": "Title of 3rd page of onboarding"
-  },
-  "onboarding3Description": "Decentralized, permanent data storage doesn't happen in an instant. When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.",
-  "@onboarding3Description": {
-    "description": "Description of 3rd page of onboarding"
-  },
-  "onboarding4Title": "Total Privacy Control",
-  "@onboarding4Title": {
     "description": "Title of 4th page of onboarding"
   },
-  "onboarding4Description": "Your choice: you can permanently make files public or private, using the best encryption available today. No one will see what you don't want them to.",
-  "@onboarding4Description": {
+  "onboarding3Description": "Your choice: make the files you upload public for anybody to access or leverage state of the art encryption that puts you in control of who can see your files.",
+  "@onboarding3Description": {
     "description": "Description of 4th page of onboarding"
-  },
-    "onboarding5Title": "Never Deleted",
-  "@onboarding5Title": {
-    "description": "Title of 5th page of onboarding"
-  },
-  "onboarding5Description": "Remember: There is no delete button (for you or us)! Once uploaded, your data can’t be removed, so think twice before uploading all your teenage love poetry...",
-  "@onboarding5Description": {
-    "description": "Description of 5th page of onboarding"
   },
   "diveInButtonOnboarding": "Dive in",
   "@diveInButtonOnboarding": {
@@ -1785,5 +1769,29 @@
   "fileFailedToDownloadFileAbovePublicLimit": "The file(s) you have selected is too large to download",
   "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
+  },
+  "changeTheme": "Change Theme",
+  "@changeTheme": {
+    "description": "Theme switcher tooltip"
+  },
+  "collapseSideBar": "Collapse sidebar",
+  "@changeTheme": {
+    "description": "Collapse side bar tooltip"
+  },
+  "expandSideBar": "Expand sidebar",
+  "@expandSideBar": {
+    "description": "Expand side bar tooltip"
+  },
+  "viewOnViewBlock": "View on viewblock.io",
+  "@viewOnViewBlock": {
+    "description": "Tooltip for external link for viewBlock"
+  },
+  "copyTooltip": "Copy",
+  "@copyTooltip": {
+    "description": "Tooltip for copy button"
+  },
+  "close": "Close",
+  "@close": {
+    "description": "close"
   }
 }

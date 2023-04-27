@@ -1,10 +1,15 @@
 import 'dart:async';
 
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/models/database/database_helpers.dart';
+import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 
@@ -14,20 +19,30 @@ abstract class ArDriveAuth {
   Future<bool> isUserLoggedIn();
   Future<bool> isExistingUser(Wallet wallet);
   Future<User> login(Wallet wallet, String password, ProfileType profileType);
+  Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
   Future<void> logout();
   User? get currentUser;
   Stream<User?> onAuthStateChanged();
+  Future<bool> isBiometricsEnabled();
 
   factory ArDriveAuth({
     required ArweaveService arweave,
     required UserRepository userRepository,
     required ArDriveCrypto crypto,
+    required BiometricAuthentication biometricAuthentication,
+    required SecureKeyValueStore secureKeyValueStore,
+    required ArConnectService arConnectService,
+    required DatabaseHelpers databaseHelpers,
   }) =>
       _ArDriveAuth(
         arweave: arweave,
         userRepository: userRepository,
         crypto: crypto,
+        databaseHelpers: databaseHelpers,
+        biometricAuthentication: biometricAuthentication,
+        secureKeyValueStore: secureKeyValueStore,
+        arConnectService: arConnectService,
       );
 }
 
@@ -36,13 +51,25 @@ class _ArDriveAuth implements ArDriveAuth {
     required ArweaveService arweave,
     required UserRepository userRepository,
     required ArDriveCrypto crypto,
+    required BiometricAuthentication biometricAuthentication,
+    required SecureKeyValueStore secureKeyValueStore,
+    required ArConnectService arConnectService,
+    required DatabaseHelpers databaseHelpers,
   })  : _arweave = arweave,
         _crypto = crypto,
+        _databaseHelpers = databaseHelpers,
+        _arConnectService = arConnectService,
+        _secureKeyValueStore = secureKeyValueStore,
+        _biometricAuthentication = biometricAuthentication,
         _userRepository = userRepository;
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
   final ArDriveCrypto _crypto;
+  final BiometricAuthentication _biometricAuthentication;
+  final SecureKeyValueStore _secureKeyValueStore;
+  final ArConnectService _arConnectService;
+  final DatabaseHelpers _databaseHelpers;
 
   User? _currentUser;
 
@@ -90,6 +117,12 @@ class _ArDriveAuth implements ArDriveAuth {
       throw AuthenticationFailedException('Incorrect password');
     }
 
+    if (await _biometricAuthentication.isEnabled()) {
+      logger.i('Saving password in secure storage');
+
+      _savePasswordInSecureStorage(password);
+    }
+
     currentUser = await _addUser(wallet, password, profileType);
 
     _userStreamController.add(_currentUser);
@@ -114,23 +147,48 @@ class _ArDriveAuth implements ArDriveAuth {
   @override
   Future<User> unlockUser({required String password}) async {
     try {
+      logger.i('Unlocking user with password');
+
       currentUser = await _userRepository.getUser(password);
+
+      logger.d('User unlocked');
 
       _userStreamController.add(_currentUser);
 
       return currentUser;
     } catch (e) {
+      logger.e('Failed to unlock user with password', e);
       throw AuthenticationFailedException('Incorrect password.');
     }
   }
 
   @override
   Future<void> logout() async {
-    currentUser = null;
+    logger.i('Logging out user');
 
-    _userStreamController.add(null);
+    try {
+      if (_currentUser != null) {
+        if (currentUser.profileType == ProfileType.arConnect) {
+          try {
+            await _arConnectService.disconnect();
+          } catch (e) {
+            logger.e('Failed to disconnect from ArConnect', e);
+          }
+        }
 
-    await _userRepository.deleteUser();
+        _secureKeyValueStore.remove('password');
+        _secureKeyValueStore.remove('biometricEnabled');
+
+        currentUser = null;
+
+        _userStreamController.add(null);
+      }
+
+      await _databaseHelpers.deleteAllTables();
+    } catch (e) {
+      logger.e('Failed to logout user', e);
+      throw AuthenticationFailedException('Failed to logout user');
+    }
   }
 
   @override
@@ -189,12 +247,59 @@ class _ArDriveAuth implements ArDriveAuth {
       wallet,
     );
   }
+
+  @override
+  Future<User> unlockWithBiometrics({
+    required String localizedReason,
+  }) async {
+    logger.i('Unlocking with biometrics');
+
+    if (await isUserLoggedIn()) {
+      final isAuthenticated = await _biometricAuthentication.authenticate(
+        localizedReason: localizedReason,
+        useCached: true,
+      );
+
+      logger.d('Biometric authentication result: $isAuthenticated');
+
+      if (isAuthenticated) {
+        logger.i('User is logged in, unlocking with password');
+        // load from local storage
+        final storedPassword = await _secureKeyValueStore.getString('password');
+
+        logger.d('Password from secure storage: $storedPassword');
+
+        if (storedPassword == null) {
+          throw AuthenticationUnknownException(
+            'Biometric authentication failed. Password not found',
+          );
+        }
+
+        return await unlockUser(password: storedPassword);
+      }
+    }
+
+    throw AuthenticationFailedException('Biometric authentication failed');
+  }
+
+  Future<void> _savePasswordInSecureStorage(String password) async {
+    // save password
+    await _secureKeyValueStore.putString('password', password);
+  }
+
+  @override
+  Future<bool> isBiometricsEnabled() {
+    return _biometricAuthentication.isEnabled();
+  }
 }
 
 class AuthenticationFailedException implements Exception {
   final String message;
 
   AuthenticationFailedException(this.message);
+
+  @override
+  String toString() => message;
 }
 
 class WalletMismatchException implements Exception {

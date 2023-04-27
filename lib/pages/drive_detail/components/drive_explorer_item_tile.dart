@@ -1,10 +1,13 @@
-import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_helper.dart';
+import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,7 +21,11 @@ class DriveExplorerItemTile extends TableRowWidget {
     required Function() onPressed,
   }) : super(
           [
-            Text(name, style: ArDriveTypography.body.buttonNormalBold()),
+            Text(
+              name,
+              style: ArDriveTypography.body.buttonNormalBold(),
+              overflow: TextOverflow.fade,
+            ),
             Text(size, style: ArDriveTypography.body.xSmallRegular()),
             Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),
             Text(dateCreated, style: ArDriveTypography.body.captionRegular()),
@@ -153,54 +160,70 @@ class _DriveExplorerItemTileTrailingState
   Alignment alignment = Alignment.topRight;
 
   @override
-  void didChangeDependencies() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final renderBox = context.findRenderObject() as RenderBox?;
-
-      final position = renderBox?.localToGlobal(Offset.zero);
-      if (position != null) {
-        final y = position.dy;
-
-        final screenHeight = MediaQuery.of(context).size.height;
-
-        if (y > screenHeight / 2) {
-          alignment = Alignment.bottomRight;
-        }
-      }
-
-      setState(() {});
-    });
-
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveDropdown(
-      height: isMobile(context) ? 44 : 60,
-      key: ValueKey(alignment),
-      anchor: Aligned(
-        follower: alignment,
-        target: Alignment.topLeft,
-      ),
-      items: _getItems(widget.item, context),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ArDriveIcons.dots(),
+    final item = widget.item;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (item is FolderDataTableItem && item.isGhostFolder) ...[
+          ArDriveButton(
+            maxHeight: 36,
+            style: ArDriveButtonStyle.primary,
+            onPressed: () => showCongestionDependentModalDialog(
+              context,
+              () => promptToReCreateFolder(
+                context,
+                ghostFolder: item,
+              ),
+            ),
+            fontStyle: ArDriveTypography.body.smallRegular(),
+            text: appLocalizationsOf(context).fix,
+          ),
+          const SizedBox(
+            width: 4,
+          ),
         ],
-      ),
+        ArDriveDropdown(
+          height: isMobile(context) ? 44 : 60,
+          calculateVerticalAlignment: (isAboveHalfScreen) {
+            if (isAboveHalfScreen) {
+              return Alignment.bottomRight;
+            } else {
+              return Alignment.topRight;
+            }
+          },
+          anchor: Aligned(
+            follower: alignment,
+            target: Alignment.topLeft,
+          ),
+          items: _getItems(widget.item, context),
+          // ignore: sized_box_for_whitespace
+          child: HoverWidget(
+            tooltip: appLocalizationsOf(context).showMenu,
+            child: ArDriveIcons.dots(
+              size: 20,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   List<ArDriveDropdownItem> _getItems(
       ArDriveDataTableItem item, BuildContext context) {
-    final isDriveOwner = widget.drive.ownerAddress ==
-        context.read<ArDriveAuth>().currentUser?.walletAddress;
+    final isOwner = item.isOwner;
+
     if (item is FolderDataTableItem) {
       return [
-        if (isDriveOwner) ...[
+        if (isOwner) ...[
           ArDriveDropdownItem(
             onClick: () {
               promptToMove(
@@ -213,7 +236,9 @@ class _DriveExplorerItemTileTrailingState
             },
             content: _buildItem(
               appLocalizationsOf(context).move,
-              ArDriveIcons.move(),
+              ArDriveIcons.move(
+                size: dropdownIconSize,
+              ),
             ),
           ),
           ArDriveDropdownItem(
@@ -227,7 +252,9 @@ class _DriveExplorerItemTileTrailingState
             },
             content: _buildItem(
               appLocalizationsOf(context).rename,
-              ArDriveIcons.edit(),
+              ArDriveIcons.edit(
+                size: dropdownIconSize,
+              ),
             ),
           ),
         ],
@@ -239,7 +266,9 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).moreInfo,
-            ArDriveIcons.info(),
+            ArDriveIcons.info(
+              size: dropdownIconSize,
+            ),
           ),
         ),
       ];
@@ -254,7 +283,9 @@ class _DriveExplorerItemTileTrailingState
         },
         content: _buildItem(
           appLocalizationsOf(context).download,
-          ArDriveIcons.download(),
+          ArDriveIcons.download(
+            size: dropdownIconSize,
+          ),
         ),
       ),
       ArDriveDropdownItem(
@@ -267,21 +298,25 @@ class _DriveExplorerItemTileTrailingState
         },
         content: _buildItem(
           appLocalizationsOf(context).shareFile,
-          ArDriveIcons.share(),
+          ArDriveIcons.share(
+            size: dropdownIconSize,
+          ),
         ),
       ),
       ArDriveDropdownItem(
         onClick: () {
           final bloc = context.read<DriveDetailCubit>();
 
-          bloc.selectDataItem(item);
+          bloc.launchPreview((item as FileDataTableItem).dataTxId);
         },
         content: _buildItem(
           appLocalizationsOf(context).preview,
-          ArDriveIcons.externalLink(),
+          ArDriveIcons.externalLink(
+            size: dropdownIconSize,
+          ),
         ),
       ),
-      if (isDriveOwner) ...[
+      if (isOwner) ...[
         ArDriveDropdownItem(
           onClick: () {
             promptToRenameModal(
@@ -293,7 +328,9 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).rename,
-            ArDriveIcons.edit(),
+            ArDriveIcons.edit(
+              size: dropdownIconSize,
+            ),
           ),
         ),
         ArDriveDropdownItem(
@@ -306,7 +343,9 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).move,
-            ArDriveIcons.move(),
+            ArDriveIcons.move(
+              size: dropdownIconSize,
+            ),
           ),
         ),
       ],
@@ -317,7 +356,11 @@ class _DriveExplorerItemTileTrailingState
           bloc.selectDataItem(item);
         },
         content: _buildItem(
-            appLocalizationsOf(context).moreInfo, ArDriveIcons.info()),
+          appLocalizationsOf(context).moreInfo,
+          ArDriveIcons.info(
+            size: dropdownIconSize,
+          ),
+        ),
       ),
     ];
   }
@@ -340,16 +383,6 @@ class _DriveExplorerItemTileTrailingState
             icon,
           ],
         ),
-      ),
-    );
-  }
-
-  void _comingSoonModal() {
-    showAnimatedDialog(
-      context,
-      content: const ArDriveStandardModal(
-        title: 'Not ready',
-        description: 'Coming soon',
       ),
     );
   }

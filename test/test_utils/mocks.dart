@@ -4,12 +4,14 @@ import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
+import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
@@ -68,3 +70,7 @@ class MockTabVisibilitySingleton extends Mock
     implements TabVisibilitySingleton {}
 
 class MockUploadFileChecker extends Mock implements UploadFileChecker {}
+
+class MockSecureKeyValueStore extends Mock implements SecureKeyValueStore {}
+
+class MockDatabaseHelpers extends Mock implements DatabaseHelpers {}

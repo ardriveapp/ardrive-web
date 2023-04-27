@@ -29,31 +29,49 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
   }
 
   Widget _buildBreadcrumbs(int breadCrumbcount, BuildContext context) {
-    final breadCrumbSplit = _pathSegments.length - breadCrumbcount;
-    final segmentStyle = ArDriveTypography.body.captionBold(
-      color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-    );
-
     bool isLastSegment(int index) => index == _pathSegments.length - 1;
 
+    final breadCrumbSplit = _pathSegments.length - breadCrumbcount;
+    TextStyle segmentStyle(int index) {
+      return ArDriveTypography.body
+          .captionBold(
+            color: isLastSegment(index)
+                ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
+                : ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+          )
+          .copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          );
+    }
+
     Widget buildSegment(int index) {
-      return TextButton(
-        onPressed: () {
+      return GestureDetector(
+        onTap: () {
           final path = _pathSegments.sublist(0, index + 1).join('/');
           context.read<DriveDetailCubit>().openFolder(path: '/$path');
         },
-        child: Text(_pathSegments[index], style: segmentStyle),
+        child: HoverText(
+          text: _pathSegments[index],
+          style: segmentStyle(index),
+        ),
       );
     }
 
-    Widget buildSeparator() {
+    Widget buildSeparator(bool isDrive) {
       final segmentStyle = ArDriveTypography.body.captionBold(
         color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
       );
 
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        child: Text('/', style: segmentStyle),
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Text(
+          '/',
+          style: segmentStyle.copyWith(
+            color:
+                ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+          ),
+        ),
       );
     }
 
@@ -65,23 +83,46 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
         breadCrumbcount: breadCrumbcount,
       ));
       segments.addAll(
-          _pathSegments.sublist(breadCrumbSplit).asMap().entries.expand((s) => [
+        _pathSegments.sublist(breadCrumbSplit).asMap().entries.expand(
+              (s) => [
                 buildSegment(s.key + breadCrumbSplit),
-                if (!isLastSegment(s.key + breadCrumbSplit)) buildSeparator()
-              ]));
+                if (!isLastSegment(s.key + breadCrumbSplit))
+                  buildSeparator(false)
+              ],
+            ),
+      );
     } else {
-      segments.addAll([
-        TextButton(
-            onPressed: () =>
-                context.read<DriveDetailCubit>().openFolder(path: entities.rootPath),
-            child: Text(driveName, style: segmentStyle)),
-      ]);
+      segments.addAll(
+        [
+          GestureDetector(
+            onTap: () => context
+                .read<DriveDetailCubit>()
+                .openFolder(path: entities.rootPath),
+            child: HoverText(
+              text: driveName,
+              style: segmentStyle(_pathSegments.length).copyWith(
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .colors
+                    .themeAccentDisabled,
+                // decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      );
       if (_pathSegments.isNotEmpty) {
-        segments.add(buildSeparator());
+        segments.add(buildSeparator(true));
       }
 
-      segments.addAll(_pathSegments.asMap().entries.expand((s) =>
-          [buildSegment(s.key), if (!isLastSegment(s.key)) buildSeparator()]));
+      segments.addAll(
+        _pathSegments.asMap().entries.expand(
+              (s) => [
+                buildSegment(s.key),
+                if (!isLastSegment(s.key)) buildSeparator(false)
+              ],
+            ),
+      );
     }
 
     return Row(children: segments);
@@ -99,7 +140,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           onClick: () => context.read<DriveDetailCubit>().openFolder(
                 path: '/${path.sublist(0, s.key + 1).join('/')}',
               ),
-          content: _buildDropdownItemContent(context, s.value),
+          content: _buildDropdownItemContent(
+            context,
+            s.value,
+            false,
+          ),
         ),
       ];
     }).toList();
@@ -109,15 +154,19 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
         onClick: () => context.read<DriveDetailCubit>().openFolder(
               path: entities.rootPath,
             ),
-        content: _buildDropdownItemContent(context, driveName),
+        content: _buildDropdownItemContent(
+          context,
+          driveName,
+          true,
+        ),
       ),
     );
     return ArDriveDropdown(
       items: items,
       child: Padding(
         padding: const EdgeInsets.only(right: 8.0),
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
+        child: HoverWidget(
+          // cursor: SystemMouseCursors.click,
           child: ArDriveIcons.chevronLeft(
             color: Colors.white,
             size: 16,
@@ -127,7 +176,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     );
   }
 
-  Widget _buildDropdownItemContent(BuildContext context, String text) {
+  Widget _buildDropdownItemContent(
+    BuildContext context,
+    String text,
+    bool isDrive,
+  ) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
@@ -137,9 +190,52 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           style: ArDriveTypography.body.captionBold(
             color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
           ),
-          overflow: TextOverflow.ellipsis,
+          overflow: TextOverflow.fade,
           maxLines: 1,
         ),
+      ),
+    );
+  }
+}
+
+class HoverText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+
+  const HoverText({
+    super.key,
+    required this.text,
+    required this.style,
+  });
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _HoverTextState createState() => _HoverTextState();
+}
+
+class _HoverTextState extends State<HoverText> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) {
+        setState(() {
+          _isHovering = true;
+        });
+      },
+      onExit: (_) {
+        setState(() {
+          _isHovering = false;
+        });
+      },
+      child: Text(
+        widget.text,
+        style: _isHovering
+            ? widget.style.copyWith(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault)
+            : widget.style,
       ),
     );
   }

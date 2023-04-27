@@ -1,6 +1,7 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
 import 'app_dialog.dart';
@@ -207,29 +208,23 @@ Future<void> showStoragePermissionModal(BuildContext context) async {
   return showDialog(
       context: context,
       builder: (context) {
-        return AppDialog(
+        return ArDriveStandardModal(
           title: appLocalizationsOf(context).enableStorageAccessTitle,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(appLocalizationsOf(context).enableStorageAccess),
-              const SizedBox(
-                height: 24,
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  AppSettings.openAppSettings();
-                },
-                child: Text(appLocalizationsOf(context).goToDeviceSettings),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text(appLocalizationsOf(context).cancel),
-              )
-            ],
-          ),
+          description: appLocalizationsOf(context).enableStorageAccess,
+          actions: [
+            ModalAction(
+              action: () {
+                Navigator.pop(context);
+              },
+              title: appLocalizationsOf(context).cancel,
+            ),
+            ModalAction(
+              action: () {
+                AppSettings.openAppSettings();
+              },
+              title: appLocalizationsOf(context).goToDeviceSettings,
+            ),
+          ],
         );
       });
 }

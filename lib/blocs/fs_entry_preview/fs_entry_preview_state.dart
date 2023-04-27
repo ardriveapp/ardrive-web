@@ -54,6 +54,15 @@ class FsEntryPreviewVideo extends FsEntryPreviewSuccess {
   List<Object> get props => [previewUrl];
 }
 
+class FsEntryPreviewMemory extends FsEntryPreviewSuccess {
+  const FsEntryPreviewMemory({
+    required Uint8List memoryBytes,
+  }) : super(previewUrl: '');
+
+  @override
+  List<Object> get props => [previewUrl];
+}
+
 class FsEntryPreviewText extends FsEntryPreviewSuccess {
   const FsEntryPreviewText({
     required String previewUrl,

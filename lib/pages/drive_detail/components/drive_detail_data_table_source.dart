@@ -142,10 +142,8 @@ DataRow _buildFolderRow({
                   textStyle: const TextStyle(
                       color: LightColors.kOnDarkSurfaceHighEmphasis),
                 ),
-                onPressed: () => showCongestionDependentModalDialog(
-                  context,
-                  () => promptToReCreateFolder(context, ghostFolder: folder),
-                ),
+                onPressed: () =>
+                    showCongestionDependentModalDialog(context, () => null),
                 child: Text(appLocalizationsOf(context).fix),
               ),
             )
