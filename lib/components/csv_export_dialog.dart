@@ -74,7 +74,7 @@ class FileDownloadDialog extends StatelessWidget {
                   title: Text(
                     appLocalizationsOf(context).exportingData,
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    overflow: TextOverflow.fade,
                   ),
                   trailing: const CircularProgressIndicator(),
                 ),
