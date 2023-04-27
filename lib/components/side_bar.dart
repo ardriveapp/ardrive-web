@@ -88,8 +88,12 @@ class _AppSideBarState extends State<AppSideBar> {
           const SizedBox(
             height: 16,
           ),
+          const Padding(
+            padding: EdgeInsets.only(left: 16.0),
+            child: HelpButton(),
+          ),
           const SizedBox(
-            height: 16,
+            height: 32,
           ),
           const Padding(
             padding: EdgeInsets.only(left: 16.0),
@@ -197,6 +201,7 @@ class _AppSideBarState extends State<AppSideBar> {
 
   Widget _buildAccordion(DrivesLoadSuccess state) {
     return ArDriveAccordion(
+      key: ValueKey(state.userDrives.map((e) => e.name)),
       backgroundColor: ArDriveTheme.of(context).themeData.backgroundColor,
       children: [
         if (state.userDrives.isNotEmpty)
@@ -559,6 +564,7 @@ class DriveListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      key: key,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(
