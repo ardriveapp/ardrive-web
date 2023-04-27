@@ -70,7 +70,7 @@ class _AppSideBarState extends State<AppSideBar> {
                   builder: (context, state) {
                     if (state is DrivesLoadSuccess &&
                         (state.userDrives.isNotEmpty ||
-                            state.sharedDrives.isEmpty)) {
+                            state.sharedDrives.isNotEmpty)) {
                       return Flexible(
                         child: Padding(
                           padding: const EdgeInsets.only(left: 16.0),
