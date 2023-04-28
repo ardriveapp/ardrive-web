@@ -3,7 +3,6 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -11,34 +10,32 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/split_localizations.dart';
-import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../utils/usd_upload_cost_to_string.dart';
 
 Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
-) {
-  return showModalDialog(
-      context,
-      () => showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) {
-              return BlocProvider(
-                create: (_) => CreateSnapshotCubit(
-                  arweave: context.read<ArweaveService>(),
-                  driveDao: context.read<DriveDao>(),
-                  profileCubit: context.read<ProfileCubit>(),
-                  pst: context.read<PstService>(),
-                  tabVisibility: TabVisibilitySingleton(),
-                ),
-                child: CreateSnapshotDialog(
-                  drive: drive,
-                ),
-              );
-            },
-          ));
+) async {
+  return showAnimatedDialog(
+    context,
+    barrierDismissible: false,
+    content: BlocProvider(
+      create: (_) => CreateSnapshotCubit(
+        arweave: context.read<ArweaveService>(),
+        driveDao: context.read<DriveDao>(),
+        profileCubit: context.read<ProfileCubit>(),
+        pst: context.read<PstService>(),
+        tabVisibility: TabVisibilitySingleton(),
+      ),
+      child: CreateSnapshotDialog(
+        drive: drive,
+      ),
+    ),
+  );
 }
 
 class CreateSnapshotDialog extends StatelessWidget {
@@ -81,7 +78,7 @@ class CreateSnapshotDialog extends StatelessWidget {
 Widget _explanationDialog(BuildContext context, Drive drive) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
 
-  return AppDialog(
+  return ArDriveStandardModal(
     title: appLocalizationsOf(context).createSnapshot,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -123,15 +120,15 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
       ),
     ),
     actions: [
-      TextButton(
-        child: Text(appLocalizationsOf(context).cancelEmphasized),
-        onPressed: () {
+      ModalAction(
+        title: appLocalizationsOf(context).cancelEmphasized,
+        action: () {
           Navigator.of(context).pop();
         },
       ),
-      TextButton(
-        child: Text(appLocalizationsOf(context).proceedCongestionEmphasized),
-        onPressed: () {
+      ModalAction(
+        title: appLocalizationsOf(context).proceedEmphasized,
+        action: () {
           createSnapshotCubit.confirmDriveAndHeighRange(drive.id);
         },
       ),
@@ -163,19 +160,11 @@ Widget _loadingDialog(
       ),
     ),
     actions: [
-      if (onDismiss != null) ...{
-        TextButton(
-          onPressed: onDismiss,
-          child: Text(
-            appLocalizationsOf(context).cancelEmphasized,
-          ),
-        ),
-      } else if (state is PreparingAndSigningTransaction &&
-          !isArConnectProfile) ...{
-        SizedBox(
-          height: Theme.of(context).buttonTheme.height,
-        ),
-      }
+      if (onDismiss != null)
+        ModalAction(
+          action: onDismiss,
+          title: appLocalizationsOf(context).cancelEmphasized,
+        )
     ],
   );
 }
@@ -210,7 +199,7 @@ String _loadingDialogDescription(
 }
 
 Widget _successDialog(BuildContext context, String driveName) {
-  return AppDialog(
+  return ArDriveStandardModal(
     title: appLocalizationsOf(context).snapshotSuceeded,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -235,9 +224,9 @@ Widget _successDialog(BuildContext context, String driveName) {
       ),
     ),
     actions: [
-      TextButton(
-        child: Text(appLocalizationsOf(context).ok),
-        onPressed: () {
+      ModalAction(
+        title: appLocalizationsOf(context).ok,
+        action: () {
           Navigator.of(context).pop();
         },
       ),
@@ -251,7 +240,7 @@ Widget _failureDialog(
 ) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
 
-  return AppDialog(
+  return ArDriveStandardModal(
     title: appLocalizationsOf(context).snapshotFailed,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -275,17 +264,15 @@ Widget _failureDialog(
       ),
     ),
     actions: [
-      ElevatedButton(
-        onPressed: () {
+      ModalAction(
+        action: () {
           createSnapshotCubit.confirmDriveAndHeighRange(driveId);
         },
-        child: Text(
-          appLocalizationsOf(context).tryAgainEmphasized,
-        ),
+        title: appLocalizationsOf(context).tryAgainEmphasized,
       ),
-      TextButton(
-        child: Text(appLocalizationsOf(context).ok),
-        onPressed: () {
+      ModalAction(
+        title: appLocalizationsOf(context).ok,
+        action: () {
           Navigator.of(context).pop();
         },
       ),
@@ -297,7 +284,7 @@ Widget _insufficientBalanceDialog(
   BuildContext context,
   CreateSnapshotInsufficientBalance state,
 ) {
-  return AppDialog(
+  return ArDriveStandardModal(
     title: appLocalizationsOf(context).insufficientARForUpload,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -325,9 +312,9 @@ Widget _insufficientBalanceDialog(
       ),
     ),
     actions: [
-      TextButton(
-        child: Text(appLocalizationsOf(context).ok),
-        onPressed: () {
+      ModalAction(
+        title: appLocalizationsOf(context).ok,
+        action: () {
           Navigator.of(context).pop();
         },
       ),
@@ -341,7 +328,7 @@ Widget _confirmDialog(
   CreateSnapshotCubit createSnapshotCubit,
   CreateSnapshotState state,
 ) {
-  return AppDialog(
+  return ArDriveStandardModal(
     title: appLocalizationsOf(context).createSnapshot,
     content: SizedBox(
         width: kMediumDialogWidth,
@@ -422,21 +409,21 @@ Widget _confirmDialog(
             }
           ],
         )),
-    actions: <Widget>[
+    actions: [
       if (state is ConfirmingSnapshotCreation) ...{
-        TextButton(
-          child: Text(appLocalizationsOf(context).cancelEmphasized),
-          onPressed: () {
+        ModalAction(
+          title: appLocalizationsOf(context).cancelEmphasized,
+          action: () {
             print('Cancel snapshot creation');
             Navigator.of(context).pop();
           },
         ),
-        ElevatedButton(
-          onPressed: () async => {
+        ModalAction(
+          action: () async => {
             print('Confirm snapshot creation'),
             await createSnapshotCubit.confirmSnapshotCreation(),
           },
-          child: Text(appLocalizationsOf(context).uploadEmphasized),
+          title: appLocalizationsOf(context).uploadEmphasized,
         ),
       }
     ],

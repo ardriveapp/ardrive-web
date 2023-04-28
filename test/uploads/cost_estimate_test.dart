@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -143,6 +144,7 @@ void main() {
           AppPlatform.setMockPlatform(platform: stubPlatform);
 
           uploadPlanUtis = UploadPlanUtils(
+            crypto: ArDriveCrypto(),
             arweave: arweave,
             driveDao: driveDao,
             turboService: DontUseTurbo(),
@@ -200,6 +202,7 @@ void main() {
           AppPlatform.setMockPlatform(platform: stubPlatform);
 
           uploadPlanUtis = UploadPlanUtils(
+            crypto: ArDriveCrypto(),
             arweave: arweave,
             driveDao: driveDao,
             turboService: DontUseTurbo(),

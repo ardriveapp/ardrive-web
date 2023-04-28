@@ -4,12 +4,14 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/upload_form.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
@@ -80,17 +82,17 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
       final selectedFiles = <UploadFile>[];
 
       if (source == 'folder') {
-        await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: Text(appLocalizationsOf(context).error),
+        await showAnimatedDialog(
+          context,
+          content: ArDriveStandardModal(
+            title: appLocalizationsOf(context).error,
             content: Text(
               appLocalizationsOf(context).errorDragAndDropFolder,
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(appLocalizationsOf(context).ok),
+              ModalAction(
+                action: () => Navigator.of(context).pop(false),
+                title: appLocalizationsOf(context).ok,
               ),
             ],
           ),
@@ -121,14 +123,16 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
         parentFolderId: parentFolderId,
       ));
 
+      // ignore: use_build_context_synchronously
       await showCongestionDependentModalDialog(
         context,
-        () => showDialog(
-          context: context,
-          builder: (_) => BlocProvider<UploadCubit>(
+        () => showAnimatedDialog(
+          context,
+          content: BlocProvider<UploadCubit>(
             create: (context) => UploadCubit(
               uploadFileChecker: context.read<UploadFileChecker>(),
               uploadPlanUtils: UploadPlanUtils(
+                crypto: ArDriveCrypto(),
                 arweave: context.read<ArweaveService>(),
                 turboService: context.read<TurboService>(),
                 driveDao: context.read<DriveDao>(),

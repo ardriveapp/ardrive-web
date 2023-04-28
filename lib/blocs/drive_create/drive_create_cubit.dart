@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -13,13 +12,6 @@ part 'drive_create_state.dart';
 
 class DriveCreateCubit extends Cubit<DriveCreateState> {
   final form = FormGroup({
-    'name': FormControl(
-      validators: [
-        Validators.required,
-        Validators.pattern(kDriveNameRegex),
-        Validators.pattern(kTrimTrailingRegex),
-      ],
-    ),
     'privacy': FormControl<String>(
         value: DrivePrivacy.private, validators: [Validators.required]),
   });
@@ -43,13 +35,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         _drivesCubit = drivesCubit,
         super(DriveCreateInitial());
 
-  Future<void> submit() async {
-    form.markAllAsTouched();
-
-    if (form.invalid) {
-      return;
-    }
-
+  Future<void> submit(
+    String driveName,
+  ) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(DriveCreateWalletMismatch());
@@ -62,10 +50,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       emit(DriveCreateZeroBalance());
       return;
     }
+
     emit(DriveCreateInProgress());
 
     try {
-      final driveName = form.control('name').value.toString().trim();
       final String drivePrivacy = form.control('privacy').value;
       final walletAddress = await profile.wallet.getAddress();
       final createRes = await _driveDao.createDrive(

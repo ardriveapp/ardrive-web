@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:equatable/equatable.dart';
@@ -10,8 +9,6 @@ import 'package:reactive_forms/reactive_forms.dart';
 part 'drive_rename_state.dart';
 
 class DriveRenameCubit extends Cubit<DriveRenameState> {
-  late FormGroup form;
-
   final String driveId;
 
   final ArweaveService _arweave;
@@ -31,44 +28,31 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         super(DriveRenameInitial()) {
-    form = FormGroup({
-      'name': FormControl<String>(
-        validators: [
-          Validators.required,
-          Validators.pattern(kFolderNameRegex),
-          Validators.pattern(kTrimTrailingRegex),
-        ],
-        asyncValidators: [
-          _uniqueDriveName,
-        ],
-      ),
-    });
-
     () async {
-      final name = await _driveDao
-          .driveById(driveId: driveId)
-          .map((f) => f.name)
-          .getSingle();
-      form.control('name').value = name;
       emit(DriveRenameInitial());
     }();
   }
 
-  Future<void> submit() async {
-    form.markAllAsTouched();
-
-    if (form.invalid) {
-      return;
-    }
-
+  Future<void> submit({
+    required String newName,
+  }) async {
     try {
-      final newName = form.control('name').value.toString().trim();
       final profile = _profileCubit.state as ProfileLoggedIn;
+
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
+
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(DriveRenameWalletMismatch());
         return;
       }
+
+      if (await _fileWithSameNameExistis(newName)) {
+        final previousState = state;
+        emit(DriveNameAlreadyExists(newName));
+        emit(previousState);
+        return;
+      }
+
       emit(DriveRenameInProgress());
 
       await _driveDao.transaction(() async {
@@ -105,6 +89,15 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
     } catch (err) {
       addError(err);
     }
+  }
+
+  Future<bool> _fileWithSameNameExistis(String newName) async {
+    final drivesWithName = (await _driveDao.allDrives().get())
+        .where((element) => element.name == newName);
+
+    final nameAlreadyExists = drivesWithName.isNotEmpty;
+
+    return nameAlreadyExists;
   }
 
   Future<Map<String, dynamic>?> _uniqueDriveName(

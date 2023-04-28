@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/utils.dart';
@@ -106,10 +105,9 @@ void main() {
       build: () => driveAttachCubit,
       setUp: () {},
       act: (bloc) {
-        bloc.form.value = {
-          'driveId': validDriveId,
-          'name': validDriveName,
-        };
+        bloc.driveIdController.text = validDriveId;
+        bloc.driveNameController.text = validDriveName;
+
         bloc.submit();
       },
       expect: () => [
@@ -127,15 +125,13 @@ void main() {
       build: () => driveAttachCubit,
       setUp: () {},
       act: (bloc) {
-        bloc.form.value = {
-          'driveId': validPrivateDriveId,
-        };
-        bloc.form.updateValueAndValidity();
+        bloc.driveIdController.text = validPrivateDriveId;
+        bloc.drivePrivacyLoader();
       },
+      expect: () => [
+        DriveAttachPrivate(),
+      ],
       wait: const Duration(milliseconds: 1000),
-      verify: (bloc) {
-        expect(bloc.form.contains('driveKey'), isTrue);
-      },
     );
 
     group('attach private drive while logged in', () {
@@ -152,19 +148,27 @@ void main() {
       });
 
       blocTest<DriveAttachCubit, DriveAttachState>(
-        'does nothing when submitted without valid drive key',
+        'emits invalid key state and the previous state when given invalid private drive details',
         build: () => driveAttachCubit,
         act: (bloc) async {
           await Future.microtask(() {
-            bloc.form.control('driveId').updateValue(validPrivateDriveId);
+            bloc.driveIdController.text = validPrivateDriveId;
           });
+
           await Future.delayed(const Duration(milliseconds: 1000));
-          bloc.form.control('driveKey').updateValue(invalidDriveKeyBase64);
+
+          bloc.driveKeyController.text = invalidDriveKeyBase64;
+
+          await bloc.drivePrivacyLoader();
+
           await Future.delayed(const Duration(milliseconds: 1000));
+
           bloc.submit();
         },
         expect: () => [
           DriveAttachPrivate(),
+          DriveAttachInvalidDriveKey(),
+          DriveAttachPrivate()
         ],
         wait: const Duration(milliseconds: 1200),
         verify: (_) async {
@@ -186,10 +190,9 @@ void main() {
           initialDriveKey: validPrivateDriveKey,
         ),
         expect: () => [
+          DriveAttachPrivate(),
           DriveAttachInProgress(),
           DriveAttachSuccess(),
-          // This state is here after DriveAttachSuccess due to debounced validation after drive attaches
-          DriveAttachPrivate(),
         ],
         wait: const Duration(milliseconds: 1200),
         verify: (_) async {
@@ -200,26 +203,10 @@ void main() {
     });
 
     blocTest<DriveAttachCubit, DriveAttachState>(
-      'set form "${AppValidationMessage.driveAttachDriveNotFound}" error when no valid drive could be found',
-      build: () => driveAttachCubit,
-      act: (bloc) {
-        bloc.form.value = {
-          'driveId': notFoundDriveId,
-          'name': 'fake',
-        };
-        bloc.submit();
-      },
-      expect: () => [
-        DriveAttachInProgress(),
-        DriveAttachInitial(),
-      ],
-    );
-
-    blocTest<DriveAttachCubit, DriveAttachState>(
       'does nothing when submitted without valid form',
       build: () => driveAttachCubit,
       act: (bloc) => bloc.submit(),
-      expect: () => [],
+      expect: () => [DriveAttachDriveNotFound(), DriveAttachInitial()],
       verify: (_) {
         verifyZeroInteractions(arweave);
         verifyZeroInteractions(syncBloc);
