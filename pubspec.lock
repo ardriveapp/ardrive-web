@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: redesign-fine-tune-pre-release
-      resolved-ref: b95f496978df50d04872f2052df02f07d01a08d5
+      resolved-ref: d2b8c46a4deb0dcb73792708d6e90bd89416b6d2
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -853,7 +853,7 @@ packages:
       name: image_picker_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.6+9"
+    version: "0.8.6+10"
   image_picker_for_web:
     dependency: transitive
     description:
