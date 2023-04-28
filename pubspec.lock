@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: redesign-fine-tune-pre-release
-      resolved-ref: bb38edb7ba4e2c0416f73a6b4f6bf231eff24342
+      resolved-ref: "727d90af5596e42d7b45e453d9ee21ab56066aba"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"

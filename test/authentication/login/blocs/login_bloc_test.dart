@@ -616,6 +616,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(null));
         when(() => mockArConnectService.isExtensionPresent())
             .thenAnswer((invocation) => false);
+        when(() => mockArConnectService.disconnect())
+            .thenAnswer((invocation) => Future.value(null));
       },
       act: (bloc) async {
         bloc.add(const ForgetWallet());
@@ -637,6 +639,9 @@ void main() {
 
         when(() => mockArConnectService.isExtensionPresent())
             .thenAnswer((invocation) => false);
+
+        when(() => mockArConnectService.disconnect())
+            .thenAnswer((invocation) => Future.value(null));
       },
       act: (bloc) async {
         bloc.add(const ForgetWallet());
