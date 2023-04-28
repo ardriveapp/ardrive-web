@@ -73,7 +73,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           listener: (context, state) {
             // Clear state to prevent the last drive from being attached on new login
             if (state is ProfileLoggingOut) {
-              logger.d('Clearing App state');
+              logger.d('Cleaning state');
 
               clearState();
             }
@@ -160,6 +160,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       profileCubit: context.read<ProfileCubit>(),
                       driveDao: context.read<DriveDao>(),
                       config: context.read<AppConfig>(),
+                      auth: context.read<ArDriveAuth>(),
                     ),
                     child: MultiBlocListener(
                       listeners: [
