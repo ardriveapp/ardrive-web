@@ -9,6 +9,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
@@ -363,7 +364,7 @@ class SyncCubit extends Cubit<SyncState> {
     Map<String, FolderEntriesCompanion> foldersByIdMap,
     Map<String, FileEntriesCompanion> filesByIdMap,
   ) async {
-    print('Generating fs entry paths...');
+    logger.i('Generating fs entry paths...');
     ghostFolders = await _generateFsEntryPaths(
       ghostFolders: ghostFolders,
       driveDao: _driveDao,

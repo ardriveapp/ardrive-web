@@ -74,13 +74,12 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
       if (_isRenamingFolder) {
         emit(const FolderEntryRenameInProgress());
+        var folder = await _driveDao
+            .folderById(driveId: driveId, folderId: folderId!)
+            .getSingle();
+        folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
 
         await _driveDao.transaction(() async {
-          var folder = await _driveDao
-              .folderById(driveId: driveId, folderId: folderId!)
-              .getSingle();
-          folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
-
           final folderEntity = folder.asEntity();
           if (_turboService.useTurbo) {
             final folderDataItem = await _arweave.prepareEntityDataItem(
@@ -103,10 +102,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
           await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
               performedAction: RevisionAction.rename));
-
-          final folderMap = {folder.id: folder.toCompanion(false)};
-          await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });
+
+        final folderMap = {folder.id: folder.toCompanion(false)};
+        await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
 
         emit(const FolderEntryRenameSuccess());
       } else {

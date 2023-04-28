@@ -21,15 +21,22 @@ Future<void> promptToRenameDrive(
       context,
       () => showAnimatedDialog(
         context,
-        content: BlocProvider(
-          create: (context) => DriveRenameCubit(
-            driveId: driveId,
-            arweave: context.read<ArweaveService>(),
-            turboService: context.read<TurboService>(),
-            driveDao: context.read<DriveDao>(),
-            profileCubit: context.read<ProfileCubit>(),
-            syncCubit: context.read<SyncCubit>(),
-          ),
+        content: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => DriveRenameCubit(
+                driveId: driveId,
+                arweave: context.read<ArweaveService>(),
+                turboService: context.read<TurboService>(),
+                driveDao: context.read<DriveDao>(),
+                profileCubit: context.read<ProfileCubit>(),
+                syncCubit: context.read<SyncCubit>(),
+              ),
+            ),
+            BlocProvider.value(
+              value: context.read<DriveDetailCubit>(),
+            ),
+          ],
           child: DriveRenameForm(
             driveName: driveName,
           ),
@@ -69,6 +76,7 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
               title: appLocalizationsOf(context).renamingDriveEmphasized,
             );
           } else if (state is DriveRenameSuccess) {
+            context.read<DriveDetailCubit>().refreshDriveDataTable();
             Navigator.pop(context);
             Navigator.pop(context);
           } else if (state is DriveRenameWalletMismatch) {

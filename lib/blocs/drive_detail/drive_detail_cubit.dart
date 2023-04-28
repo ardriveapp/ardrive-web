@@ -109,44 +109,41 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
         if (_selectedItem != null && _refreshSelectedItem) {
-          if (_refreshSelectedItem) {
-            if (_selectedItem is FileDataTableItem) {
-              final index = folderContents.files.indexWhere(
-                (element) => element.id == _selectedItem!.id,
-              );
+          if (_selectedItem is FileDataTableItem) {
+            final index = folderContents.files.indexWhere(
+              (element) => element.id == _selectedItem!.id,
+            );
 
-              if (index >= 0) {
-                _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
-                  folderContents.files[index],
-                  _selectedItem!.onPressed,
-                  _selectedItem!.index,
-                  _selectedItem!.isOwner,
-                );
-              }
-            } else if (_selectedItem is FolderDataTableItem) {
-              final index = folderContents.subfolders.indexWhere(
-                (element) => element.id == _selectedItem!.id,
-              );
-
-              if (index >= 0) {
-                _selectedItem = DriveDataTableItemMapper.fromFolderEntry(
-                  folderContents.subfolders[index],
-                  _selectedItem!.onPressed,
-                  _selectedItem!.index,
-                  _selectedItem!.isOwner,
-                );
-              }
-            } else {
-              _selectedItem = DriveDataTableItemMapper.fromDrive(
-                drive,
-                (item) => null,
-                0,
+            if (index >= 0) {
+              _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
+                folderContents.files[index],
+                _selectedItem!.onPressed,
+                _selectedItem!.index,
                 _selectedItem!.isOwner,
               );
             }
-
-            _refreshSelectedItem = false;
+          } else if (_selectedItem is FolderDataTableItem) {
+            final index = folderContents.subfolders.indexWhere(
+              (element) => element.id == _selectedItem!.id,
+            );
+            if (index >= 0) {
+              _selectedItem = DriveDataTableItemMapper.fromFolderEntry(
+                folderContents.subfolders[index],
+                _selectedItem!.onPressed,
+                _selectedItem!.index,
+                _selectedItem!.isOwner,
+              );
+            }
+          } else {
+            _selectedItem = DriveDataTableItemMapper.fromDrive(
+              drive,
+              (item) => null,
+              0,
+              _selectedItem!.isOwner,
+            );
           }
+
+          _refreshSelectedItem = false;
         }
 
         final currentFolderContents = parseEntitiesToDatatableItem(
