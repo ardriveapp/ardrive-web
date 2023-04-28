@@ -105,7 +105,7 @@ class NewButton extends StatelessWidget {
             ),
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.uploadFolder,
-            icon: ArDriveIcons.folderAdd(size: dropdownIconSize),
+            icon: ArDriveIcons.uploadFolder(size: dropdownIconSize),
           ),
           _buildDriveDropdownItem(
             onClick: () {

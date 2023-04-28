@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: redesign-fine-tune-pre-release
-      resolved-ref: "727d90af5596e42d7b45e453d9ee21ab56066aba"
+      resolved-ref: b95f496978df50d04872f2052df02f07d01a08d5
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -642,7 +642,7 @@ packages:
       name: flutter_plugin_android_lifecycle
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.12"
+    version: "2.0.13"
   flutter_portal:
     dependency: transitive
     description:
@@ -818,7 +818,7 @@ packages:
       name: http_methods
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.0"
+    version: "1.1.1"
   http_multi_server:
     dependency: transitive
     description:
@@ -853,7 +853,7 @@ packages:
       name: image_picker_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.6+8"
+    version: "0.8.6+9"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -965,7 +965,7 @@ packages:
       name: local_auth_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.26"
+    version: "1.0.27"
   local_auth_ios:
     dependency: transitive
     description:
@@ -1154,7 +1154,7 @@ packages:
       name: path_provider_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.26"
+    version: "2.0.27"
   path_provider_foundation:
     dependency: transitive
     description:
@@ -1350,7 +1350,7 @@ packages:
       name: shared_preferences_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.3"
+    version: "2.1.4"
   shared_preferences_foundation:
     dependency: transitive
     description:
@@ -1467,14 +1467,14 @@ packages:
       name: sqflite
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.7"
+    version: "2.2.8"
   sqflite_common:
     dependency: transitive
     description:
       name: sqflite_common
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.4"
+    version: "2.4.5"
   sqlite3:
     dependency: transitive
     description:
@@ -1628,7 +1628,7 @@ packages:
       name: url_launcher_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.30"
+    version: "6.0.31"
   url_launcher_ios:
     dependency: transitive
     description:
@@ -1698,7 +1698,7 @@ packages:
       name: video_player_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.5"
+    version: "2.4.6"
   video_player_avfoundation:
     dependency: transitive
     description:
