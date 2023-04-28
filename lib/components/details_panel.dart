@@ -813,14 +813,15 @@ class DetailsPanelToolbar extends StatelessWidget {
                 );
               },
             ),
-            _buildActionIcon(
-              tooltip: appLocalizationsOf(context).preview,
-              icon: ArDriveIcons.externalLink(size: dropdownIconSize),
-              onTap: () {
-                final bloc = context.read<DriveDetailCubit>();
-                bloc.launchPreview((item as FileDataTableItem).dataTxId);
-              },
-            ),
+            if (drive.isPublic)
+              _buildActionIcon(
+                tooltip: appLocalizationsOf(context).preview,
+                icon: ArDriveIcons.externalLink(size: dropdownIconSize),
+                onTap: () {
+                  final bloc = context.read<DriveDetailCubit>();
+                  bloc.launchPreview((item as FileDataTableItem).dataTxId);
+                },
+              ),
           ],
           if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
             _buildActionIcon(
