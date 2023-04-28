@@ -225,7 +225,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             name: appLocalizationsOf(context)
                                                 .renameDrive,
                                             icon: ArDriveIcons.edit(
-                                              size: dropdownIconSize,
+                                              size: defaultIconSize,
                                             ),
                                           ),
                                         ),
@@ -240,7 +240,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           name: appLocalizationsOf(context)
                                               .shareDrive,
                                           icon: ArDriveIcons.share(
-                                            size: dropdownIconSize,
+                                            size: defaultIconSize,
                                           ),
                                         ),
                                       ),
@@ -255,7 +255,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           name: appLocalizationsOf(context)
                                               .exportDriveContents,
                                           icon: ArDriveIcons.download(
-                                            size: dropdownIconSize,
+                                            size: defaultIconSize,
                                           ),
                                         ),
                                       ),
@@ -276,7 +276,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         content: _buildItem(
                                           appLocalizationsOf(context).moreInfo,
                                           ArDriveIcons.info(
-                                            size: dropdownIconSize,
+                                            size: defaultIconSize,
                                           ),
                                         ),
                                       )
@@ -717,7 +717,7 @@ class MobileFolderNavigation extends StatelessWidget {
                         content: _buildItem(
                           appLocalizationsOf(context).renameDrive,
                           ArDriveIcons.edit(
-                            size: dropdownIconSize,
+                            size: defaultIconSize,
                           ),
                         ),
                       ),
@@ -731,7 +731,7 @@ class MobileFolderNavigation extends StatelessWidget {
                       content: _buildItem(
                         appLocalizationsOf(context).shareDrive,
                         ArDriveIcons.share(
-                          size: dropdownIconSize,
+                          size: defaultIconSize,
                         ),
                       ),
                     ),
@@ -745,7 +745,7 @@ class MobileFolderNavigation extends StatelessWidget {
                       content: _buildItem(
                         appLocalizationsOf(context).exportDriveContents,
                         ArDriveIcons.download(
-                          size: dropdownIconSize,
+                          size: defaultIconSize,
                         ),
                       ),
                     ),
@@ -862,14 +862,14 @@ class CustomBottomNavigation extends StatelessWidget {
                     promptToCreateDrive(context);
                   },
                   content: _buildItem(
-                    ArDriveIcons.drive(size: dropdownIconSize),
+                    ArDriveIcons.addDrive(size: newButtonIconSize),
                     appLocalizationsOf(context).newDrive,
                   ),
                 ),
                 ArDriveDropdownItem(
                   onClick: () => attachDrive(context: context),
                   content: _buildItem(
-                    ArDriveIcons.drive(size: dropdownIconSize),
+                    ArDriveIcons.attachDrive(size: newButtonIconSize),
                     appLocalizationsOf(context).attachDrive,
                   ),
                 ),
@@ -880,7 +880,7 @@ class CustomBottomNavigation extends StatelessWidget {
                     parentFolderId: currentFolder!.folder.id,
                   ),
                   content: _buildItem(
-                    ArDriveIcons.folderAdd(size: dropdownIconSize),
+                    ArDriveIcons.folderAdd(size: newButtonIconSize),
                     appLocalizationsOf(context).newFolder,
                   ),
                 ),
@@ -892,7 +892,7 @@ class CustomBottomNavigation extends StatelessWidget {
                     isFolderUpload: true,
                   ),
                   content: _buildItem(
-                    ArDriveIcons.folderAdd(size: dropdownIconSize),
+                    ArDriveIcons.uploadFolder(size: newButtonIconSize),
                     appLocalizationsOf(context).uploadFolder,
                   ),
                 ),
@@ -906,7 +906,7 @@ class CustomBottomNavigation extends StatelessWidget {
                     );
                   },
                   content: _buildItem(
-                    ArDriveIcons.uploadCloud(size: dropdownIconSize),
+                    ArDriveIcons.addFile(size: newButtonIconSize),
                     appLocalizationsOf(context).uploadFiles,
                   ),
                 ),
@@ -918,7 +918,7 @@ class CustomBottomNavigation extends StatelessWidget {
                     );
                   },
                   content: _buildItem(
-                    ArDriveIcons.manifest(size: dropdownIconSize),
+                    ArDriveIcons.manifest(size: newButtonIconSize),
                     appLocalizationsOf(context).createManifest,
                   ),
                 ),
@@ -930,7 +930,7 @@ class CustomBottomNavigation extends StatelessWidget {
                     );
                   },
                   content: _buildItem(
-                    ArDriveIcons.camera(size: dropdownIconSize),
+                    ArDriveIcons.snapshot(size: newButtonIconSize),
                     appLocalizationsOf(context).createSnapshot,
                   ),
                 ),

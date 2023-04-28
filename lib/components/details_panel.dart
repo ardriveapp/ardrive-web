@@ -786,7 +786,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           if (item is FileDataTableItem || item is DriveDataItem)
             _buildActionIcon(
               tooltip: _getShareTooltip(item, context),
-              icon: ArDriveIcons.share(size: dropdownIconSize),
+              icon: ArDriveIcons.share(size: defaultIconSize),
               onTap: () {
                 if (item is FileDataTableItem) {
                   promptToShareFile(
@@ -805,7 +805,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           if (item is FileDataTableItem) ...[
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download(size: dropdownIconSize),
+              icon: ArDriveIcons.download(size: defaultIconSize),
               onTap: () {
                 promptToDownloadProfileFile(
                   context: context,
@@ -815,7 +815,7 @@ class DetailsPanelToolbar extends StatelessWidget {
             ),
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).preview,
-              icon: ArDriveIcons.externalLink(size: dropdownIconSize),
+              icon: ArDriveIcons.externalLink(size: defaultIconSize),
               onTap: () {
                 final bloc = context.read<DriveDetailCubit>();
                 bloc.launchPreview((item as FileDataTableItem).dataTxId);
@@ -825,7 +825,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).rename,
-              icon: ArDriveIcons.edit(size: dropdownIconSize),
+              icon: ArDriveIcons.edit(size: defaultIconSize),
               onTap: () {
                 if (item is DriveDataItem) {
                   promptToRenameDrive(
@@ -849,7 +849,7 @@ class DetailsPanelToolbar extends StatelessWidget {
               (item is FileDataTableItem || item is FolderDataTableItem))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).move,
-              icon: ArDriveIcons.move(size: dropdownIconSize),
+              icon: ArDriveIcons.move(size: defaultIconSize),
               onTap: () {
                 promptToMove(context, driveId: drive.id, selectedItems: [item]);
               },
@@ -857,7 +857,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           const Spacer(),
           _buildActionIcon(
             tooltip: appLocalizationsOf(context).close,
-            icon: ArDriveIcons.closeButton(size: dropdownIconSize),
+            icon: ArDriveIcons.closeButton(size: defaultIconSize),
             onTap: () {
               final bloc = context.read<DriveDetailCubit>();
               bloc.toggleSelectedItemDetails();

@@ -237,7 +237,7 @@ class _DriveExplorerItemTileTrailingState
             content: _buildItem(
               appLocalizationsOf(context).move,
               ArDriveIcons.move(
-                size: dropdownIconSize,
+                size: defaultIconSize,
               ),
             ),
           ),
@@ -253,7 +253,7 @@ class _DriveExplorerItemTileTrailingState
             content: _buildItem(
               appLocalizationsOf(context).rename,
               ArDriveIcons.edit(
-                size: dropdownIconSize,
+                size: defaultIconSize,
               ),
             ),
           ),
@@ -267,7 +267,7 @@ class _DriveExplorerItemTileTrailingState
           content: _buildItem(
             appLocalizationsOf(context).moreInfo,
             ArDriveIcons.info(
-              size: dropdownIconSize,
+              size: defaultIconSize,
             ),
           ),
         ),
@@ -284,7 +284,7 @@ class _DriveExplorerItemTileTrailingState
         content: _buildItem(
           appLocalizationsOf(context).download,
           ArDriveIcons.download(
-            size: dropdownIconSize,
+            size: defaultIconSize,
           ),
         ),
       ),
@@ -299,7 +299,7 @@ class _DriveExplorerItemTileTrailingState
         content: _buildItem(
           appLocalizationsOf(context).shareFile,
           ArDriveIcons.share(
-            size: dropdownIconSize,
+            size: defaultIconSize,
           ),
         ),
       ),
@@ -312,7 +312,7 @@ class _DriveExplorerItemTileTrailingState
         content: _buildItem(
           appLocalizationsOf(context).preview,
           ArDriveIcons.externalLink(
-            size: dropdownIconSize,
+            size: defaultIconSize,
           ),
         ),
       ),
@@ -329,7 +329,7 @@ class _DriveExplorerItemTileTrailingState
           content: _buildItem(
             appLocalizationsOf(context).rename,
             ArDriveIcons.edit(
-              size: dropdownIconSize,
+              size: defaultIconSize,
             ),
           ),
         ),
@@ -344,7 +344,7 @@ class _DriveExplorerItemTileTrailingState
           content: _buildItem(
             appLocalizationsOf(context).move,
             ArDriveIcons.move(
-              size: dropdownIconSize,
+              size: defaultIconSize,
             ),
           ),
         ),
@@ -358,7 +358,7 @@ class _DriveExplorerItemTileTrailingState
         content: _buildItem(
           appLocalizationsOf(context).moreInfo,
           ArDriveIcons.info(
-            size: dropdownIconSize,
+            size: defaultIconSize,
           ),
         ),
       ),

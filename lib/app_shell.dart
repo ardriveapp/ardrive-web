@@ -183,7 +183,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
               child: leading ??
                   ArDriveIconButton(
                     icon: ArDriveIcons.menuArrow(
-                      size: dropdownIconSize,
+                      size: defaultIconSize,
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors

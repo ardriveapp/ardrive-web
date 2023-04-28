@@ -343,7 +343,7 @@ class MobileFolderNavigation extends StatelessWidget {
                       vertical: 8,
                     ),
                     child: ArDriveIconButton(
-                      icon: ArDriveIcons.dotsVert(size: dropdownIconSize),
+                      icon: ArDriveIcons.dotsVert(size: defaultIconSize),
                     ),
                   ),
                 );
