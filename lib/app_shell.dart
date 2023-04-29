@@ -182,7 +182,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
               padding: const EdgeInsets.only(left: 7.0),
               child: leading ??
                   ArDriveIconButton(
-                    icon: ArDriveIcons.menuArrow(
+                    icon: ArDriveIcons.menu(
                       size: defaultIconSize,
                       color: ArDriveTheme.of(context)
                           .themeData

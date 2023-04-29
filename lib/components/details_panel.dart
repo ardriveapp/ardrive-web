@@ -368,7 +368,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           children: [
             ArDriveIconButton(
               tooltip: appLocalizationsOf(context).viewOnViewBlock,
-              icon: ArDriveIcons.externalLink(size: 16),
+              icon: ArDriveIcons.newWindow(size: 20),
               onPressed: () {
                 openUrl(
                   url:
@@ -655,14 +655,14 @@ class _CopyButtonState extends State<CopyButton> {
           }
         },
         icon: _showCheck
-            ? ArDriveIcons.checkSuccess(
+            ? ArDriveIcons.checkCirle(
                 size: widget.size,
                 color: ArDriveTheme.of(context)
                     .themeData
                     .colors
                     .themeSuccessDefault,
               )
-            : ArDriveIcons.copy(size: 16),
+            : ArDriveIcons.copy(size: widget.size),
       ),
     );
   }
@@ -723,9 +723,7 @@ class _DownloadOrPreview extends StatelessWidget {
         );
       },
       tooltip: appLocalizationsOf(context).download,
-      icon: ArDriveIcons.download(
-        size: 16,
-      ),
+      icon: ArDriveIcons.download(size: 20),
     );
   }
 }
@@ -815,7 +813,7 @@ class DetailsPanelToolbar extends StatelessWidget {
             ),
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).preview,
-              icon: ArDriveIcons.externalLink(size: defaultIconSize),
+              icon: ArDriveIcons.newWindow(size: defaultIconSize),
               onTap: () {
                 final bloc = context.read<DriveDetailCubit>();
                 bloc.launchPreview((item as FileDataTableItem).dataTxId);
@@ -857,7 +855,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           const Spacer(),
           _buildActionIcon(
             tooltip: appLocalizationsOf(context).close,
-            icon: ArDriveIcons.closeButton(size: defaultIconSize),
+            icon: ArDriveIcons.x(size: defaultIconSize),
             onTap: () {
               final bloc = context.read<DriveDetailCubit>();
               bloc.toggleSelectedItemDetails();

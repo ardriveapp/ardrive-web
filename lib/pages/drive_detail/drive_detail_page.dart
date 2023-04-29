@@ -97,7 +97,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         context.read<DriveDetailCubit>().selectedItem != null)
                     ? MobileAppBar(
                         leading: ArDriveIconButton(
-                          icon: ArDriveIcons.arrowBack(size: 16),
+                          icon: ArDriveIcons.arrowLeft(),
                           onPressed: () {
                             context
                                 .read<DriveDetailCubit>()
@@ -163,7 +163,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 if (state.multiselect && isDriveOwner)
                                   ArDriveIconButton(
                                     tooltip: appLocalizationsOf(context).move,
-                                    icon: ArDriveIcons.move(size: 18),
+                                    icon: ArDriveIcons.move(),
                                     onPressed: () {
                                       promptToMove(
                                         context,
@@ -181,7 +181,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         .enableMultipleFileDownload) ...[
                                   ArDriveIconButton(
                                     tooltip: 'Download selected files',
-                                    icon: ArDriveIcons.download(size: 18),
+                                    icon: ArDriveIcons.download(),
                                     onPressed: () {
                                       final files = context
                                           .read<DriveDetailCubit>()
@@ -282,9 +282,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       )
                                     ],
                                     child: HoverWidget(
-                                      child: ArDriveIcons.dotsVert(
-                                        size: 16,
-                                      ),
+                                      child: ArDriveIcons.kebabMenu(),
                                     ),
                                   ),
                                 ),
@@ -411,7 +409,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         leading: (state.showSelectedItemDetails &&
                 context.read<DriveDetailCubit>().selectedItem != null)
             ? ArDriveIconButton(
-                icon: ArDriveIcons.arrowBack(size: 16),
+                icon: ArDriveIcons.arrowLeft(),
                 onPressed: () {
                   context.read<DriveDetailCubit>().toggleSelectedItemDetails();
                 },
@@ -675,7 +673,7 @@ class MobileFolderNavigation extends StatelessWidget {
                         horizontal: 15,
                         vertical: 15,
                       ),
-                      child: ArDriveIcons.arrowBack(size: 16),
+                      child: ArDriveIcons.arrowLeft(),
                     ),
                   Expanded(
                     child: Padding(
@@ -756,9 +754,7 @@ class MobileFolderNavigation extends StatelessWidget {
                       vertical: 8,
                     ),
                     child: HoverWidget(
-                      child: ArDriveIcons.dotsVert(
-                        size: 16,
-                      ),
+                      child: ArDriveIcons.kebabMenu(),
                     ),
                   ),
                 );
@@ -862,14 +858,14 @@ class CustomBottomNavigation extends StatelessWidget {
                     promptToCreateDrive(context);
                   },
                   content: _buildItem(
-                    ArDriveIcons.addDrive(size: newButtonIconSize),
+                    ArDriveIcons.addDrive(size: defaultIconSize),
                     appLocalizationsOf(context).newDrive,
                   ),
                 ),
                 ArDriveDropdownItem(
                   onClick: () => attachDrive(context: context),
                   content: _buildItem(
-                    ArDriveIcons.attachDrive(size: newButtonIconSize),
+                    ArDriveIcons.iconAttachDrive(size: defaultIconSize),
                     appLocalizationsOf(context).attachDrive,
                   ),
                 ),
@@ -880,7 +876,7 @@ class CustomBottomNavigation extends StatelessWidget {
                     parentFolderId: currentFolder!.folder.id,
                   ),
                   content: _buildItem(
-                    ArDriveIcons.folderAdd(size: newButtonIconSize),
+                    ArDriveIcons.iconNewFolder1(size: defaultIconSize),
                     appLocalizationsOf(context).newFolder,
                   ),
                 ),
@@ -892,7 +888,7 @@ class CustomBottomNavigation extends StatelessWidget {
                     isFolderUpload: true,
                   ),
                   content: _buildItem(
-                    ArDriveIcons.uploadFolder(size: newButtonIconSize),
+                    ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
                     appLocalizationsOf(context).uploadFolder,
                   ),
                 ),
@@ -906,7 +902,7 @@ class CustomBottomNavigation extends StatelessWidget {
                     );
                   },
                   content: _buildItem(
-                    ArDriveIcons.addFile(size: newButtonIconSize),
+                    ArDriveIcons.iconUploadFiles(size: defaultIconSize),
                     appLocalizationsOf(context).uploadFiles,
                   ),
                 ),
@@ -918,7 +914,7 @@ class CustomBottomNavigation extends StatelessWidget {
                     );
                   },
                   content: _buildItem(
-                    ArDriveIcons.manifest(size: newButtonIconSize),
+                    ArDriveIcons.tournament(size: defaultIconSize),
                     appLocalizationsOf(context).createManifest,
                   ),
                 ),
@@ -930,7 +926,7 @@ class CustomBottomNavigation extends StatelessWidget {
                     );
                   },
                   content: _buildItem(
-                    ArDriveIcons.snapshot(size: newButtonIconSize),
+                    ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
                     appLocalizationsOf(context).createSnapshot,
                   ),
                 ),

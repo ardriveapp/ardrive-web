@@ -123,7 +123,7 @@ class FsEntryMoveForm extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          ArDriveIcons.folderOutlined(
+                          ArDriveIcons.folderOutline(
                             size: 16,
                             color: enabled ? null : _colorDisabled(context),
                           ),
@@ -136,7 +136,7 @@ class FsEntryMoveForm extends StatelessWidget {
                               ),
                             ),
                           ),
-                          ArDriveIcons.chevronRight(
+                          ArDriveIcons.carretRight(
                             size: 18,
                             color: enabled ? null : _colorDisabled(context),
                           ),
@@ -212,7 +212,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                 child: AnimatedScale(
                                   duration: const Duration(milliseconds: 200),
                                   scale: !state.viewingRootFolder ? 1 : 0,
-                                  child: ArDriveIcons.arrowBack(
+                                  child: ArDriveIcons.arrowLeft(
                                     size: 20,
                                   ),
                                 ),
@@ -234,7 +234,7 @@ class FsEntryMoveForm extends StatelessWidget {
                               onTap: () {
                                 Navigator.pop(context);
                               },
-                              child: ArDriveIcons.closeIcon(
+                              child: ArDriveIcons.x(
                                 size: 24,
                               ),
                             ),
@@ -279,7 +279,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                       .colors
                                       .themeFgDefault,
                                 ),
-                                icon: ArDriveIcons.folderAdd(),
+                                icon: ArDriveIcons.iconNewFolder1(),
                                 text: appLocalizationsOf(context)
                                     .createFolderEmphasized,
                                 onPressed: () {

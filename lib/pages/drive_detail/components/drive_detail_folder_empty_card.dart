@@ -66,7 +66,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ArDriveIcons.uploadCloud(size: 45),
+                      ArDriveIcons.upload(size: 45),
                       const SizedBox(
                         height: 10,
                       ),

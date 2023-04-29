@@ -102,14 +102,14 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
   }
 
   ArDriveIcon _getIconForContentType(String contentType) {
-    const size = 15.0;
+    const size = 18.0;
 
     if (contentType == 'folder') {
-      return ArDriveIcons.folderOutlined(
+      return ArDriveIcons.folderOutline(
         size: size,
       );
     } else if (FileTypeHelper.isZip(contentType)) {
-      return ArDriveIcons.fileZip(
+      return ArDriveIcons.zip(
         size: size,
       );
     } else if (FileTypeHelper.isImage(contentType)) {
@@ -117,19 +117,19 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
         size: size,
       );
     } else if (FileTypeHelper.isVideo(contentType)) {
-      return ArDriveIcons.fileVideo(
+      return ArDriveIcons.video(
         size: size,
       );
     } else if (FileTypeHelper.isAudio(contentType)) {
-      return ArDriveIcons.fileMusic(
+      return ArDriveIcons.music(
         size: size,
       );
     } else if (FileTypeHelper.isDoc(contentType)) {
-      return ArDriveIcons.fileDoc(
+      return ArDriveIcons.fileOutlined(
         size: size,
       );
     } else if (FileTypeHelper.isCode(contentType)) {
-      return ArDriveIcons.fileCode(
+      return ArDriveIcons.fileOutlined(
         size: size,
       );
     } else {
@@ -208,9 +208,7 @@ class _DriveExplorerItemTileTrailingState
           // ignore: sized_box_for_whitespace
           child: HoverWidget(
             tooltip: appLocalizationsOf(context).showMenu,
-            child: ArDriveIcons.dots(
-              size: 20,
-            ),
+            child: ArDriveIcons.dots(),
           ),
         ),
       ],
@@ -311,7 +309,7 @@ class _DriveExplorerItemTileTrailingState
         },
         content: _buildItem(
           appLocalizationsOf(context).preview,
-          ArDriveIcons.externalLink(
+          ArDriveIcons.newWindow(
             size: defaultIconSize,
           ),
         ),
