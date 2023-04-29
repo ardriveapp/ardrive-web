@@ -205,7 +205,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 ArDriveClickArea(
                                   tooltip: appLocalizationsOf(context).showMenu,
                                   child: ArDriveDropdown(
-                                    width: 240,
+                                    width: 260,
                                     anchor: const Aligned(
                                       follower: Alignment.topRight,
                                       target: Alignment.bottomRight,
