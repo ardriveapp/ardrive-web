@@ -38,6 +38,7 @@ class SyncButton extends StatelessWidget {
     return HoverWidget(
       tooltip: appLocalizationsOf(context).resyncTooltip,
       child: ArDriveDropdown(
+        width: 208,
         anchor: const Aligned(
           follower: Alignment.topRight,
           target: Alignment.bottomRight,

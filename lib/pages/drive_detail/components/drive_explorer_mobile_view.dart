@@ -6,6 +6,7 @@ import 'package:ardrive/components/drive_share_dialog.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
+import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -292,7 +293,7 @@ class MobileFolderNavigation extends StatelessWidget {
                     state.currentDrive.ownerAddress);
 
                 return ArDriveDropdown(
-                  width: 250,
+                  width: 230,
                   anchor: const Aligned(
                     follower: Alignment.topRight,
                     target: Alignment.bottomRight,
@@ -357,25 +358,7 @@ class MobileFolderNavigation extends StatelessWidget {
   }
 
   _buildItem(String name, ArDriveIcon icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 41.0),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: 375,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              name,
-              style: ArDriveTypography.body.buttonNormalBold(),
-            ),
-            icon,
-          ],
-        ),
-      ),
-    );
+    return ArDriveDropdownItemTile(name: name, icon: icon);
   }
 
   String _pathToName(String path) {

@@ -60,7 +60,7 @@ class ProfileCard extends StatelessWidget {
     return ArDriveClickArea(
       tooltip: appLocalizationsOf(context).profile,
       child: ArDriveDropdown(
-        width: 250,
+        width: 205,
         anchor: const Aligned(
           follower: Alignment.topRight,
           target: Alignment.bottomRight,
@@ -82,10 +82,9 @@ class ProfileCard extends StatelessWidget {
                   if (walletAddress.isNotEmpty)
                     Text(
                       '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
-                      style:
-                          ArDriveTypography.body.buttonNormalRegular().copyWith(
-                                decoration: TextDecoration.underline,
-                              ),
+                      style: ArDriveTypography.body.buttonNormalBold().copyWith(
+                            decoration: TextDecoration.underline,
+                          ),
                     ),
                   CopyButton(
                     size: 24,

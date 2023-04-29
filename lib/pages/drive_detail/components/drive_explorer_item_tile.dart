@@ -3,6 +3,7 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
+import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -41,7 +42,7 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsetsDirectional.only(end: 8.0),
+      padding: const EdgeInsetsDirectional.only(end: 0),
       child: _buildFileIcon(context),
     );
   }
@@ -363,26 +364,8 @@ class _DriveExplorerItemTileTrailingState
     ];
   }
 
-  _buildItem(String name, ArDriveIcon icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 41.0),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: 375,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              name,
-              style: ArDriveTypography.body.buttonNormalBold(),
-            ),
-            icon,
-          ],
-        ),
-      ),
-    );
+  ArDriveDropdownItemTile _buildItem(String name, ArDriveIcon icon) {
+    return ArDriveDropdownItemTile(name: name, icon: icon);
   }
 }
 

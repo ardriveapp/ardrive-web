@@ -26,7 +26,7 @@ class NewButton extends StatelessWidget {
       follower: Alignment.bottomCenter,
       target: Alignment.topCenter,
     ),
-    this.dropdownWidth = 225,
+    this.dropdownWidth = 208,
   });
 
   final Drive? drive;

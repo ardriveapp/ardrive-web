@@ -16,15 +16,22 @@ class ArDriveDropdownItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 41.0),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: 375,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+      child: SizedBox(
+        height: 48,
         child: Row(
           mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            icon.copyWith(
+              color: isDisabled
+                  ? ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentDisabled
+                  : null,
+            ),
+            const SizedBox(width: 20),
             Text(
               name,
               style: ArDriveTypography.body.buttonNormalBold(
@@ -35,14 +42,6 @@ class ArDriveDropdownItemTile extends StatelessWidget {
                         .themeAccentDisabled
                     : null,
               ),
-            ),
-            icon.copyWith(
-              color: isDisabled
-                  ? ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentDisabled
-                  : null,
             ),
           ],
         ),

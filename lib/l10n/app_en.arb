@@ -1702,9 +1702,9 @@
   "@welcomeBack": {
     "description": "welcome back"
   },
-  "welcome": "Welcome",
+  "welcome": "Welcome to ArDrive",
   "@welcome": {
-    "description": "welcome"
+    "description": "welcome to ArDrive"
   },
   "dragAndDropButtonTitle": "Browse Json",
   "@dragAndDropButtonTitle": {

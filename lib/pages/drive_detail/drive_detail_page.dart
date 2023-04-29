@@ -140,7 +140,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 children: [
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 0, 24, 0),
+                      padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -205,7 +205,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 ArDriveClickArea(
                                   tooltip: appLocalizationsOf(context).showMenu,
                                   child: ArDriveDropdown(
-                                    width: 250,
+                                    width: 240,
                                     anchor: const Aligned(
                                       follower: Alignment.topRight,
                                       target: Alignment.bottomRight,
@@ -511,6 +511,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   }
 
   _buildItem(String name, ArDriveIcon icon) {
+    return ArDriveDropdownItemTile(name: name, icon: icon);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 41.0),
       child: ConstrainedBox(
@@ -697,7 +698,7 @@ class MobileFolderNavigation extends StatelessWidget {
                     state.currentDrive.ownerAddress);
 
                 return ArDriveDropdown(
-                  width: 250,
+                  width: 208,
                   anchor: const Aligned(
                     follower: Alignment.topRight,
                     target: Alignment.bottomRight,
@@ -768,6 +769,10 @@ class MobileFolderNavigation extends StatelessWidget {
   }
 
   _buildItem(String name, ArDriveIcon icon) {
+    return ArDriveDropdownItemTile(
+      name: name,
+      icon: icon,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 41.0),
       child: ConstrainedBox(
@@ -950,21 +955,8 @@ class CustomBottomNavigation extends StatelessWidget {
     );
   }
 
-  Widget _buildItem(Widget icon, String text) {
-    return ArDriveDropdownItem(
-      content: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 22.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(text, style: ArDriveTypography.body.buttonNormalBold()),
-            const SizedBox(width: 8),
-            icon,
-          ],
-        ),
-      ),
-    );
+  Widget _buildItem(ArDriveIcon icon, String text) {
+    return ArDriveDropdownItemTile(name: text, icon: icon);
   }
 }
 
