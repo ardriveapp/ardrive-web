@@ -25,7 +25,7 @@ class Brand {
       'assets/images/brand/ArDrive-Logo-Wordmark-Light.png';
   final logoHorizontalNoSubtitleLight =
       'assets/images/brand/ArDrive-Logo-Wordmark-Dark.png';
-  final logo = 'assets/images/brand/ArDrive-Logo.png';
+  final logo = 'assets/images/brand/ardrive_logo.png';
 }
 
 class Profile {

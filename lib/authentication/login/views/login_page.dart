@@ -14,6 +14,7 @@ import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -288,6 +289,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
     super.initState();
   }
 
+  bool _showSecurityOverlay = false;
+
   @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
@@ -299,6 +302,11 @@ class _PromptWalletViewState extends State<PromptWalletView> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            ArDriveImage(
+              image: AssetImage(Resources.images.brand.logo),
+              height: 50,
+            ),
+            heightSpacing(),
             Align(
               alignment: Alignment.topCenter,
               child: Text(
@@ -328,7 +336,58 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   platformSupportsDragAndDrop: !AppPlatform.isMobile,
                 ),
                 heightSpacing(),
+                ArDriveOverlay(
+                  visible: _showSecurityOverlay,
+                  content: ArDriveCard(
+                    boxShadow: BoxShadowCard.shadow100,
+                    contentPadding: const EdgeInsets.all(16),
+                    width: 300,
+                    content: Text.rich(
+                      TextSpan(
+                        children: [
+                          // TODO: add localized string
+                          TextSpan(
+                              text:
+                                  'Your keyfile is encrypted, it never leaves your device, and it can be removed from your device at any time. ',
+                              style: ArDriveTypography.body.smallBold()),
+                          TextSpan(
+                            text: 'Learn more',
+                            style: ArDriveTypography.body.smallBold().copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                openUrl(
+                                    url:
+                                        'https://docs.ardrive.io/docs/using-ardrive/keyfile-encryption');
+                              },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  anchor: const Aligned(
+                    follower: Alignment.bottomCenter,
+                    target: Alignment.topCenter,
+                    offset: Offset(0, 4),
+                  ),
+                  onVisibleChange: (visible) {
+                    setState(() {
+                      _showSecurityOverlay = visible;
+                    });
+                  },
+                  child: ArDriveButton(
+                    onPressed: () {
+                      setState(() {
+                        _showSecurityOverlay = !_showSecurityOverlay;
+                      });
+                    },
+                    text: 'How does keyfile log in work?',
+                    style: ArDriveButtonStyle.tertiary,
+                  ),
+                ),
                 if (widget.isArConnectAvailable) ...[
+                  heightSpacing(),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -603,10 +662,8 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ArDriveImage(
-                image: SvgImage.asset(
-                  'assets/images/brand/ArDrive-Logo.svg',
-                ),
-                height: 73,
+                image: AssetImage(Resources.images.brand.logo),
+                height: 50,
               ),
               Text(
                 appLocalizationsOf(context).createAndConfirmPassword,

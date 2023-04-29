@@ -226,7 +226,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arDriveAuth.logout();
     }
 
-    await _arConnectService.disconnect();
+    if (_isArConnectWallet()) {
+      await _arConnectService.disconnect();
+    }
 
     emit(LoginInitial(_arConnectService.isExtensionPresent()));
   }
