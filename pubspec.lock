@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3590-use-correct-icon-for-folder-upload
-      resolved-ref: "9f0c88423982e66af8e7c5e3ecf6f41c4d29f257"
+      ref: PE-3598-automatic-change-the-theme-based-on-the-user-os-theme
+      resolved-ref: "34218dfa28e46e2385287a1432df2181052fb1b8"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
