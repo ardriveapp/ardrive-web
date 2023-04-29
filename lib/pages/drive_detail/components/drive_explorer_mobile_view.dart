@@ -269,7 +269,7 @@ class MobileFolderNavigation extends StatelessWidget {
                           .read<DriveDetailCubit>()
                           .openFolder(path: getParentFolderPath(path));
                     },
-                    icon: ArDriveIcons.arrowBack(),
+                    icon: ArDriveIcons.arrowLeft(),
                   ),
                 Expanded(
                   child: Padding(
@@ -343,7 +343,7 @@ class MobileFolderNavigation extends StatelessWidget {
                       vertical: 8,
                     ),
                     child: ArDriveIconButton(
-                      icon: ArDriveIcons.dotsVert(size: defaultIconSize),
+                      icon: ArDriveIcons.kebabMenu(size: defaultIconSize),
                     ),
                   ),
                 );

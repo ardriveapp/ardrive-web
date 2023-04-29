@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: redesign-fine-tune-pre-release
-      resolved-ref: d2b8c46a4deb0dcb73792708d6e90bd89416b6d2
+      ref: PE-3590-use-correct-icon-for-folder-upload
+      resolved-ref: "9f0c88423982e66af8e7c5e3ecf6f41c4d29f257"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -516,7 +516,7 @@ packages:
       name: file_selector_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.1+8"
+    version: "0.9.2"
   firebase_core:
     dependency: "direct main"
     description:

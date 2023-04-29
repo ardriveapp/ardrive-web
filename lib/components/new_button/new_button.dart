@@ -77,12 +77,12 @@ class NewButton extends StatelessWidget {
             },
             isDisabled: !drivesState.canCreateNewDrive || !canUpload,
             name: appLocalizations.newDrive,
-            icon: ArDriveIcons.addDrive(size: newButtonIconSize),
+            icon: ArDriveIcons.addDrive(size: defaultIconSize),
           ),
           _buildDriveDropdownItem(
             onClick: () => attachDrive(context: context),
             name: appLocalizations.attachDrive,
-            icon: ArDriveIcons.attachDrive(size: newButtonIconSize),
+            icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
           ),
         ],
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
@@ -94,7 +94,7 @@ class NewButton extends StatelessWidget {
             ),
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.newFolder,
-            icon: ArDriveIcons.folderAdd(size: newButtonIconSize),
+            icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
           ),
           _buildDriveDropdownItem(
             onClick: () => promptToUpload(
@@ -105,7 +105,7 @@ class NewButton extends StatelessWidget {
             ),
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.uploadFolder,
-            icon: ArDriveIcons.uploadFolder(size: newButtonIconSize),
+            icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
           ),
           _buildDriveDropdownItem(
             onClick: () {
@@ -118,7 +118,7 @@ class NewButton extends StatelessWidget {
             },
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.uploadFiles,
-            icon: ArDriveIcons.addFile(size: newButtonIconSize),
+            icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
           ),
         ],
         if (driveDetailState is DriveDetailLoadSuccess &&
@@ -133,7 +133,7 @@ class NewButton extends StatelessWidget {
             },
             isDisabled: driveDetailState.driveIsEmpty || !canUpload,
             name: appLocalizations.createManifest,
-            icon: ArDriveIcons.manifest(size: newButtonIconSize),
+            icon: ArDriveIcons.tournament(size: defaultIconSize),
           ),
         if (context.read<AppConfig>().enableQuickSyncAuthoring &&
             driveDetailState is DriveDetailLoadSuccess &&
@@ -150,7 +150,7 @@ class NewButton extends StatelessWidget {
                   minimumWalletBalance: minimumWalletBalance,
                 ),
             name: appLocalizations.createSnapshot,
-            icon: ArDriveIcons.snapshot(size: newButtonIconSize),
+            icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
           ),
       ];
     } else {
@@ -158,7 +158,7 @@ class NewButton extends StatelessWidget {
         _buildDriveDropdownItem(
           onClick: () => attachDrive(context: context),
           name: appLocalizations.attachDrive,
-          icon: ArDriveIcons.attachDrive(size: newButtonIconSize),
+          icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
       ];
     }

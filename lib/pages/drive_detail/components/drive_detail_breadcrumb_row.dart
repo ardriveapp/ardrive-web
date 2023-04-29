@@ -167,10 +167,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
         padding: const EdgeInsets.only(right: 8.0),
         child: HoverWidget(
           // cursor: SystemMouseCursors.click,
-          child: ArDriveIcons.chevronLeft(
-            color: Colors.white,
-            size: 16,
-          ),
+          child: ArDriveIcons.carretLeft(color: Colors.white),
         ),
       ),
     );

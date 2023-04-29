@@ -178,7 +178,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                 title: appLocalizationsOf(context).loginFailed,
                 content: appLocalizationsOf(context)
                     .arConnectWalletDoestNotMatchArDriveWallet,
-                icon: ArDriveIcons.warning(
+                icon: ArDriveIcons.triangle(
                   size: 88,
                   color: ArDriveTheme.of(context)
                       .themeData
@@ -199,7 +199,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             content: ArDriveIconModal(
               title: appLocalizationsOf(context).loginFailed,
               content: appLocalizationsOf(context).pleaseTryAgain,
-              icon: ArDriveIcons.warning(
+              icon: ArDriveIcons.triangle(
                 size: 88,
                 color:
                     ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
@@ -348,16 +348,11 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                           child: ArDriveButton(
                             icon: Padding(
                               padding: const EdgeInsets.only(right: 20),
-                              child: ArDriveImage(
+                              child: ArDriveIcons.arconnectIcon1(
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
                                     .themeFgDefault,
-                                height: 24,
-                                width: 22,
-                                image: AssetImage(
-                                  const Images().login.arconnectLogo,
-                                ),
                               ),
                             ),
                             style: ArDriveButtonStyle.secondary,
@@ -764,7 +759,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     if (!isValid) {
       showAnimatedDialog(context,
           content: ArDriveIconModal(
-            icon: ArDriveIcons.warning(
+            icon: ArDriveIcons.triangle(
               size: 88,
               color:
                   ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
@@ -786,7 +781,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     if (_passwordController.text != _confirmPasswordController.text) {
       showAnimatedDialog(context,
           content: ArDriveIconModal(
-            icon: ArDriveIcons.warning(
+            icon: ArDriveIcons.triangle(
               size: 88,
               color:
                   ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
@@ -1024,7 +1019,7 @@ class _OnBoardingContent extends StatelessWidget {
             children: [
               ArDriveButton(
                 icon: onBoarding.secundaryButtonHasIcon
-                    ? ArDriveIcons.arrowLeftCircle()
+                    ? ArDriveIcons.arrowLeftOutline()
                     : null,
                 style: ArDriveButtonStyle.secondary,
                 text: onBoarding.secundaryButtonText,
@@ -1033,7 +1028,7 @@ class _OnBoardingContent extends StatelessWidget {
               const SizedBox(width: 32),
               ArDriveButton(
                 iconAlignment: IconButtonAlignment.right,
-                icon: ArDriveIcons.arrowRightCircle(
+                icon: ArDriveIcons.arrowRightOutline(
                   color: Colors.white,
                 ),
                 text: onBoarding.primaryButtonText,

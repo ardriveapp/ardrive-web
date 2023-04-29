@@ -328,7 +328,7 @@ class _AppSideBarState extends State<AppSideBar> {
                           });
                         },
                         tooltip: appLocalizationsOf(context).collapseSideBar,
-                        icon: ArDriveIcons.arrowBackFilled(),
+                        icon: ArDriveIcons.arrowLeftFilled(),
                       ),
                     ),
                   ],
@@ -344,7 +344,7 @@ class _AppSideBarState extends State<AppSideBar> {
               ),
               ArDriveIconButton(
                 tooltip: appLocalizationsOf(context).expandSideBar,
-                icon: ArDriveIcons.arrowForwardFilled(),
+                icon: ArDriveIcons.arrowRightFilled(),
                 onPressed: () {
                   setState(() {
                     _isExpanded = !_isExpanded;
@@ -549,15 +549,12 @@ class _AppSideBarState extends State<AppSideBar> {
             color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
             shape: BoxShape.circle,
           ),
-          padding: const EdgeInsets.fromLTRB(4.0, 4.0, 4.0, 2.0),
-          child: ArDriveIcons.plus(color: Colors.white, size: 14),
+          padding: const EdgeInsets.only(top: 2),
+          child: ArDriveIcons.plus(color: Colors.white),
         ),
       ),
     );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }
 
 class DriveListTile extends StatelessWidget {
@@ -612,7 +609,7 @@ class HelpButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ArDriveIconButton(
       tooltip: appLocalizationsOf(context).help,
-      icon: ArDriveIcons.help(),
+      icon: ArDriveIcons.question(),
       onPressed: () {
         openUrl(url: Resources.helpLink);
       },
