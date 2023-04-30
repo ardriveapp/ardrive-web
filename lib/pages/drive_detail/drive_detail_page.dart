@@ -698,7 +698,7 @@ class MobileFolderNavigation extends StatelessWidget {
                     state.currentDrive.ownerAddress);
 
                 return ArDriveDropdown(
-                  width: 208,
+                  width: 250,
                   anchor: const Aligned(
                     follower: Alignment.topRight,
                     target: Alignment.bottomRight,
@@ -852,7 +852,7 @@ class CustomBottomNavigation extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ArDriveDropdown(
-              width: MediaQuery.of(context).size.width * 0.6,
+              width: 208,
               anchor: const Aligned(
                 follower: Alignment.bottomCenter,
                 target: Alignment.topCenter,
