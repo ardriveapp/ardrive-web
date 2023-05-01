@@ -26,7 +26,7 @@ download:
     - file: lib/l10n/app_ja.arb
       locale_code: ja
     - file: lib/l10n/app_zh-HK.arb
-      locale_code: zh-HK
+      locale_code: zh_HK
     - file: lib/l10n/app_zh.arb
       locale_code: zh
     - file: lib/l10n/app_hi.arb

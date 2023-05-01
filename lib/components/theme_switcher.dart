@@ -25,8 +25,8 @@ class ThemeSwitcher extends StatelessWidget {
 
             return Text(
               state is ThemeSwitcherDarkTheme?
-                  ? appLocalizationsOf(context).lightMode
-                  : appLocalizationsOf(context).darkMode,
+                  ? appLocalizationsOf(context).lightModeEmphasized
+                  : appLocalizationsOf(context).darkModeEmphasized,
               style: ArDriveTypography.body.buttonNormalBold(),
             );
           },
