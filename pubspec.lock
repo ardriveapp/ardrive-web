@@ -79,8 +79,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: redesign-fine-tune-pre-release
-      resolved-ref: d2b8c46a4deb0dcb73792708d6e90bd89416b6d2
+      ref: PE-3592
+      resolved-ref: b6459f29199e299ce3548b7203d418e08899a763
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
