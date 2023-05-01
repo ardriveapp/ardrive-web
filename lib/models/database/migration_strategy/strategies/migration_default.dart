@@ -14,5 +14,4 @@ Future<void> onUpgradeDefault(
 
     await m.createAll();
   }
-  return;
 }
