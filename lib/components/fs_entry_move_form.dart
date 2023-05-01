@@ -32,9 +32,9 @@ Future<void> promptToMove(
             syncCubit: context.read<SyncCubit>(),
           )..add(const FsEntryMoveInitial()),
         ),
-        BlocProvider.value(
-          value: context.read<DriveDetailCubit>(),
-        )
+        // BlocProvider.value(
+        //   value: context.read<DriveDetailCubit>(),
+        // )
       ],
       child: const FsEntryMoveForm(),
     ),
@@ -324,9 +324,9 @@ class FsEntryMoveForm extends StatelessWidget {
                                             state.viewingFolder.folder,
                                       ),
                                     );
-                                context
-                                    .read<DriveDetailCubit>()
-                                    .forceDisableMultiselect = true;
+                                // context
+                                //     .read<DriveDetailCubit>()
+                                //     .forceDisableMultiselect = true;
                               },
                             ),
                           ],

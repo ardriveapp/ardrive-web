@@ -1,9 +1,9 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
-import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/sync/sync_cubit.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/theme_switcher.dart';
+import 'package:ardrive/drive_explorer/provider/drives_provider.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -15,6 +15,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class AppSideBar extends StatefulWidget {
@@ -66,23 +67,12 @@ class _AppSideBarState extends State<AppSideBar> {
                 const SizedBox(
                   height: 16,
                 ),
-                BlocBuilder<DrivesCubit, DrivesState>(
-                  builder: (context, state) {
-                    if (state is DrivesLoadSuccess &&
-                        (state.userDrives.isNotEmpty ||
-                            state.sharedDrives.isNotEmpty)) {
-                      return Flexible(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 16.0),
-                          child: _buildAccordion(
-                            state,
-                          ),
-                        ),
-                      );
-                    }
-                    return const SizedBox();
-                  },
-                ),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 16.0),
+                    child: _buildAccordion(),
+                  ),
+                )
               ],
             ),
           ),
@@ -146,22 +136,11 @@ class _AppSideBarState extends State<AppSideBar> {
                       height: 56,
                     ),
                     _isExpanded
-                        ? BlocBuilder<DrivesCubit, DrivesState>(
-                            builder: (context, state) {
-                              if (state is DrivesLoadSuccess &&
-                                  (state.userDrives.isNotEmpty ||
-                                      state.sharedDrives.isNotEmpty)) {
-                                return Flexible(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(left: 43.0),
-                                    child: _buildAccordion(
-                                      state,
-                                    ),
-                                  ),
-                                );
-                              }
-                              return const SizedBox();
-                            },
+                        ? Flexible(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 43.0),
+                              child: _buildAccordion(),
+                            ),
                           )
                         : const SizedBox(),
                   ],
@@ -210,76 +189,76 @@ class _AppSideBarState extends State<AppSideBar> {
     );
   }
 
-  Widget _buildAccordion(DrivesLoadSuccess state) {
+  Widget _buildAccordion() {
+    final provider = context.watch<DrivesProvider>();
+    final userPublicDrives = provider.userPublicDrives;
+    final userPrivateDrives = provider.userPrivateDrives;
+    final sharedDrives = provider.sharedDrives;
+
     return ArDriveAccordion(
-      key: ValueKey(state.userDrives.map((e) => e.name)),
       backgroundColor: ArDriveTheme.of(context).themeData.backgroundColor,
       children: [
-        if (state.userDrives.isNotEmpty)
+        if (userPublicDrives.isNotEmpty)
           ArDriveAccordionItem(
             isExpanded: true,
             Text(
               appLocalizationsOf(context).publicDrives,
               style: ArDriveTypography.body.buttonLargeBold(),
             ),
-            state.userDrives
+            userPublicDrives
                 .where((element) => element.isPublic)
                 .map(
-                  (d) => DriveListTile(
-                    drive: d,
-                    onTap: () {
-                      if (state.selectedDriveId == d.id) {
-                        // opens the root folder
-                        context.read<DriveDetailCubit>().openFolder(path: '');
-                        return;
-                      }
-                      context.read<DrivesCubit>().selectDrive(d.id);
-                    },
-                    isSelected: state.selectedDriveId == d.id,
+                  (d) => Consumer<DrivesProvider>(
+                    builder: (context, value, child) => DriveListTile(
+                      drive: d,
+                      onTap: () {
+                        context.read<DrivesProvider>().selectDrive(d);
+                      },
+                      isSelected: provider.currentDrive?.id == d.id,
+                    ),
                   ),
                 )
                 .toList(),
           ),
-        if (state.userDrives.isNotEmpty)
+        if (userPrivateDrives.isNotEmpty)
           ArDriveAccordionItem(
             isExpanded: true,
             Text(
               appLocalizationsOf(context).privateDrives,
               style: ArDriveTypography.body.buttonLargeBold(),
             ),
-            state.userDrives
-                .where((element) => element.isPrivate)
-                .map(
-                  (d) => DriveListTile(
-                    drive: d,
-                    onTap: () {
-                      context.read<DrivesCubit>().selectDrive(d.id);
-                    },
-                    isSelected: state.selectedDriveId == d.id,
-                  ),
-                )
-                .toList(),
+            userPrivateDrives.map((d) => _driveNameWidget(d)).toList(),
           ),
-        if (state.sharedDrives.isNotEmpty)
+        if (sharedDrives.isNotEmpty)
           ArDriveAccordionItem(
             isExpanded: true,
             Text(
               appLocalizationsOf(context).sharedDrives,
               style: ArDriveTypography.body.buttonLargeBold(),
             ),
-            state.sharedDrives
-                .map(
-                  (d) => DriveListTile(
-                    drive: d,
-                    onTap: () {
-                      context.read<DrivesCubit>().selectDrive(d.id);
-                    },
-                    isSelected: state.selectedDriveId == d.id,
-                  ),
-                )
-                .toList(),
+            sharedDrives.map(_driveNameWidget).toList(),
           ),
       ],
+    );
+  }
+
+  Widget _driveNameWidget(Drive d) {
+    final provider = context.watch<DrivesProvider>();
+
+    return Consumer<DrivesProvider>(
+      builder: (context, value, child) => DriveListTile(
+        drive: d,
+        onTap: () {
+          context.read<DrivesProvider>().selectDrive(d);
+          // if (provider.currentDrive?.id == d.id) {
+          //   // opens the root folder
+          //   context.read<DriveDetailCubit>().openFolder(path: '');
+          //   return;
+          // }
+          // context.read<DrivesCubit>().selectDrive(d.id);
+        },
+        isSelected: provider.currentDrive?.id == d.id,
+      ),
     );
   }
 
@@ -472,59 +451,60 @@ class _AppSideBarState extends State<AppSideBar> {
     bool isExpanded,
     bool isMobile,
   ) {
-    Drive? currentDrive;
-    FolderWithContents? currentFolder;
-    final state = context.watch<DriveDetailCubit>().state;
+    return Container();
+    // Drive? currentDrive;
+    // FolderWithContents? currentFolder;
+    // final state = context.watch<DriveDetailCubit>().state;
 
-    if (state is DriveDetailLoadSuccess) {
-      currentDrive = state.currentDrive;
-      currentFolder = state.folderInView;
-    }
+    // if (state is DriveDetailLoadSuccess) {
+    //   currentDrive = state.currentDrive;
+    //   currentFolder = state.folderInView;
+    // }
 
-    if (isExpanded) {
-      return ArDriveClickArea(
-        tooltip: appLocalizationsOf(context).showMenu,
-        child: NewButton(
-          anchor: isMobile
-              ? const Aligned(
-                  follower: Alignment.topLeft,
-                  target: Alignment.bottomLeft,
-                )
-              : const Aligned(
-                  follower: Alignment.topLeft,
-                  target: Alignment.topRight,
-                ),
-          drive: currentDrive,
-          driveDetailState: context.read<DriveDetailCubit>().state,
-          currentFolder: currentFolder,
-          child: Container(
-            width: 128,
-            height: 40,
-            decoration: BoxDecoration(
-              color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-              borderRadius: const BorderRadius.all(
-                Radius.circular(8),
-              ),
-            ),
-            child: Center(
-              child: Text(
-                appLocalizationsOf(context).newString,
-                style: ArDriveTypography.headline.headline5Bold(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    } else {
-      return _roundedPlusButton(
-        context,
-        currentDrive,
-        currentFolder,
-        state,
-      );
-    }
+    // if (isExpanded) {
+    //   return ArDriveClickArea(
+    //     tooltip: appLocalizationsOf(context).showMenu,
+    //     child: NewButton(
+    //       anchor: isMobile
+    //           ? const Aligned(
+    //               follower: Alignment.topLeft,
+    //               target: Alignment.bottomLeft,
+    //             )
+    //           : const Aligned(
+    //               follower: Alignment.topLeft,
+    //               target: Alignment.topRight,
+    //             ),
+    //       drive: currentDrive,
+    //       driveDetailState: context.read<DriveDetailCubit>().state,
+    //       currentFolder: currentFolder,
+    //       child: Container(
+    //         width: 128,
+    //         height: 40,
+    //         decoration: BoxDecoration(
+    //           color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+    //           borderRadius: const BorderRadius.all(
+    //             Radius.circular(8),
+    //           ),
+    //         ),
+    //         child: Center(
+    //           child: Text(
+    //             appLocalizationsOf(context).newString,
+    //             style: ArDriveTypography.headline.headline5Bold(
+    //               color: Colors.white,
+    //             ),
+    //           ),
+    //         ),
+    //       ),
+    //     ),
+    //   );
+    // } else {
+    //   return _roundedPlusButton(
+    //     context,
+    //     currentDrive,
+    //     currentFolder,
+    //     state,
+    //   );
+    // }
   }
 
   Widget _roundedPlusButton(

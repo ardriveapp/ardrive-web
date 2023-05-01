@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/drive_explorer/provider/drive_explorer_provider.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
 import 'package:ardrive/pst/community_oracle.dart';
@@ -39,6 +40,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:provider/provider.dart';
 
 import 'blocs/blocs.dart';
 import 'firebase_options.dart';
@@ -219,6 +221,7 @@ class AppState extends State<App> {
             themeDetector: ThemeDetector(),
           ),
         ),
+        RepositoryProvider(create: (_) => AppActivity()),
       ],
       child: KeyboardHandler(
         child: MultiBlocProvider(

@@ -6,6 +6,10 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/feedback_survey.dart';
+import 'package:ardrive/components/progress_bar.dart';
+import 'package:ardrive/drive_explorer/drive_explorer.dart';
+import 'package:ardrive/drive_explorer/provider/drive_explorer_provider.dart';
+import 'package:ardrive/drive_explorer/provider/drives_provider.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
@@ -19,6 +23,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
@@ -147,6 +152,107 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         ? const DriveDetailPage()
                         : const NoDrivesPage();
                     driveId = state.selectedDriveId;
+
+                    if (state.userDrives.isEmpty) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+
+                    return BlocListener<SyncCubit, SyncState>(
+                      // listenWhen: (previous, current) =>
+                      //     previous is SyncInProgress && current is SyncIdle,
+                      listener: (context, state) {
+                        logger.d('Sync state changed: $state');
+                        if (state is SyncIdle) {
+                          Navigator.of(context).pop();
+                        }
+
+                        if (state is SyncInProgress) {
+                          showAnimatedDialog(
+                            context,
+                            content: BlocBuilder<ProfileCubit, ProfileState>(
+                              builder: (context, state) {
+                                logger.d('Profile state: $state');
+                                return FutureBuilder(
+                                  future: context
+                                      .read<ProfileCubit>()
+                                      .isCurrentProfileArConnect(),
+                                  builder: (BuildContext context,
+                                      AsyncSnapshot snapshot) {
+                                    logger.d('Snapshot: $snapshot');
+                                    return Align(
+                                      alignment: Alignment.center,
+                                      child: Material(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: ProgressDialog(
+                                          progressBar: ProgressBar(
+                                            percentage: context
+                                                .read<SyncCubit>()
+                                                .syncProgressController
+                                                .stream,
+                                          ),
+                                          percentageDetails: _syncStreamBuilder(
+                                              context: context,
+                                              builderWithData: (syncProgress) =>
+                                                  Text(appLocalizationsOf(
+                                                          context)
+                                                      .syncProgressPercentage(
+                                                          (syncProgress
+                                                                      .progress *
+                                                                  100)
+                                                              .roundToDouble()
+                                                              .toString()))),
+                                          progressDescription:
+                                              _syncStreamBuilder(
+                                            context: context,
+                                            builderWithData: (syncProgress) =>
+                                                Text(
+                                              syncProgress.drivesCount == 0
+                                                  ? ''
+                                                  : syncProgress.drivesCount > 1
+                                                      ? appLocalizationsOf(
+                                                              context)
+                                                          .driveSyncedOfDrivesCount(
+                                                              syncProgress
+                                                                  .drivesSynced,
+                                                              syncProgress
+                                                                  .drivesCount)
+                                                      : appLocalizationsOf(
+                                                              context)
+                                                          .syncingOnlyOneDrive,
+                                              style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          title: snapshot.data ?? false
+                                              ? appLocalizationsOf(context)
+                                                  .syncingPleaseRemainOnThisTab
+                                              : appLocalizationsOf(context)
+                                                  .syncingPleaseWait,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          );
+                        }
+                      },
+                      child: ChangeNotifierProvider<DrivesProvider>(
+                        create: (context) {
+                          return DrivesProvider(
+                            driveDao: context.read<DriveDao>(),
+                            auth: context.read<ArDriveAuth>(),
+                          );
+                        },
+                        child: ArDriveExplorerPageProvider(
+                          drive: state.userDrives.first,
+                        ),
+                      ),
+                    );
                   }
 
                   shellPage ??= const SizedBox();
@@ -250,6 +356,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 providers: [
                   BlocProvider(
                     create: (context) => SyncCubit(
+                      appActivity: context.read<AppActivity>(),
                       profileCubit: context.read<ProfileCubit>(),
                       activityCubit: context.read<ActivityCubit>(),
                       arweave: context.read<ArweaveService>(),
@@ -319,6 +426,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileKey = null;
     sharedRawFileKey = null;
   }
+
+  Widget _syncStreamBuilder({
+    required Widget Function(SyncProgress s) builderWithData,
+    required BuildContext context,
+  }) =>
+      StreamBuilder<SyncProgress>(
+        stream: context.read<SyncCubit>().syncProgressController.stream,
+        builder: (context, snapshot) =>
+            snapshot.hasData ? builderWithData(snapshot.data!) : Container(),
+      );
 }
 
 extension RouterExtensions on Router {

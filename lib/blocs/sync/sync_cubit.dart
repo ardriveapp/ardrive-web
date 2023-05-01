@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
+import 'package:ardrive/drive_explorer/provider/drive_explorer_provider.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
@@ -58,6 +59,7 @@ class SyncCubit extends Cubit<SyncState> {
   final DriveDao _driveDao;
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
+  final AppActivity _appActivity;
 
   StreamSubscription? _syncSub;
   StreamSubscription? _arconnectSyncSub;
@@ -74,12 +76,14 @@ class SyncCubit extends Cubit<SyncState> {
     required DriveDao driveDao,
     required Database db,
     required TabVisibilitySingleton tabVisibility,
+    required AppActivity appActivity,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
         _tabVisibility = tabVisibility,
+        _appActivity = appActivity,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     logSync('Building Sync Cubit...');
@@ -174,6 +178,8 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> startSync({bool syncDeep = false}) async {
     logSync('Starting Sync');
     logSync('SyncCubit is currently active? ${!isClosed}');
+
+    _appActivity.addEvent(_appActivity.currentEvent.copyWith(isSyncing: true));
 
     if (state is SyncInProgress) {
       logSync('Sync state is SyncInProgress, aborting sync...');
@@ -346,6 +352,8 @@ class SyncCubit extends Cubit<SyncState> {
 
     logSync('The sync process took: '
         '${_lastSync!.difference(_initSync).inMilliseconds} milliseconds to finish.\n');
+
+    _appActivity.addEvent(_appActivity.currentEvent.copyWith(isSyncing: false));
 
     emit(SyncIdle());
   }

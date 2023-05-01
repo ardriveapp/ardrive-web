@@ -6,6 +6,8 @@ import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/drive_explorer/provider/drive_explorer_provider.dart';
+import 'package:ardrive/drive_explorer/provider/drives_provider.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
@@ -56,9 +58,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       // Specify a key to ensure a new cubit is provided when the folder/file id changes.
-      key: ValueKey(
-        '${widget.item.driveId}${widget.item.id}${widget.item.name}',
-      ),
+      // key: ValueKey(
+      //   '${widget.item.driveId}${widget.item.id}${widget.item.name}',
+      // ),
       providers: [
         BlocProvider<FsEntryInfoCubit>(
           create: (context) => FsEntryInfoCubit(
@@ -758,9 +760,7 @@ class DetailsPanelToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final drive =
-        (context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess)
-            .currentDrive;
+    final drive = context.read<DrivesProvider>().currentDrive!;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -857,8 +857,7 @@ class DetailsPanelToolbar extends StatelessWidget {
             tooltip: appLocalizationsOf(context).close,
             icon: ArDriveIcons.x(size: defaultIconSize),
             onTap: () {
-              final bloc = context.read<DriveDetailCubit>();
-              bloc.toggleSelectedItemDetails();
+              context.read<DriveExplorerProvider>().unselectItem();
             },
           ),
         ],

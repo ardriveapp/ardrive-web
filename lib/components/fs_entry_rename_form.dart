@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/drive_explorer/provider/drive_explorer_provider.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -9,6 +10,7 @@ import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 
 void promptToRenameModal(
   BuildContext context, {
@@ -23,6 +25,7 @@ void promptToRenameModal(
       providers: [
         BlocProvider(
           create: (context) => FsEntryRenameCubit(
+            appActivity: context.read<AppActivity>(),
             crypto: ArDriveCrypto(),
             driveId: driveId,
             folderId: folderId,
@@ -34,8 +37,8 @@ void promptToRenameModal(
             syncCubit: context.read<SyncCubit>(),
           ),
         ),
-        BlocProvider.value(
-          value: context.read<DriveDetailCubit>(),
+        ChangeNotifierProvider.value(
+          value: context.read<DriveExplorerProvider>(),
         ),
       ],
       child: FsEntryRenameForm(
@@ -84,7 +87,8 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
             );
           } else if (state is FolderEntryRenameSuccess ||
               state is FileEntryRenameSuccess) {
-            context.read<DriveDetailCubit>().refreshDriveDataTable();
+            // context.read<DriveDetailCubit>().refreshDriveDataTable();
+            // context.read<DriveExplorerProvider>().updateSelectedItem();
 
             Navigator.pop(context);
             Navigator.pop(context);

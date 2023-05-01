@@ -1,7 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/drive_explorer/provider/drive_explorer_provider.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -21,6 +23,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
   final ArDriveCrypto _crypto;
+  final AppActivity _appActivity;
 
   bool get _isRenamingFolder => folderId != null;
 
@@ -34,12 +37,14 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
     required ArDriveCrypto crypto,
+    required AppActivity appActivity,
   })  : _arweave = arweave,
         _turboService = turboService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
         _crypto = crypto,
+        _appActivity = appActivity,
         assert(folderId != null || fileId != null),
         super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
     emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
@@ -78,6 +83,9 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
             .folderById(driveId: driveId, folderId: folderId!)
             .getSingle();
         folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
+
+        _appActivity.addEvent(
+            _appActivity.currentEvent.copyWith(isGeneratingPaths: true));
 
         await _driveDao.transaction(() async {
           final folderEntity = folder.asEntity();
@@ -148,6 +156,11 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
         emit(const FileEntryRenameSuccess());
       }
+
+      logger.i('Generating paths for renamed file');
+
+      _appActivity.addEvent(
+          _appActivity.currentEvent.copyWith(isGeneratingPaths: false));
     } catch (err) {
       addError(err);
     }
