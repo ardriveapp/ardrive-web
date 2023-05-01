@@ -23,11 +23,10 @@ CustomOnUpgrade resolveMigration(
 CustomOnUpgrade _fallbackToDefault(
   int from,
   int to,
-) =>
-    (allTables, m, from, to) async {
-      debugPrint(
-        'WARNING: Fallbacking to default DB migration: drop and re-create all'
-        ' tables - from v$from to v$to',
-      );
-      return onUpgradeDefault(allTables, m, from, to);
-    };
+) {
+  debugPrint(
+    'WARNING: Fallbacking to default DB migration: drop and re-create all'
+    ' tables - from v$from to v$to',
+  );
+  return onUpgradeDefault;
+}
