@@ -1,6 +1,6 @@
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/migration_strategy/resolve_migration.dart';
-import 'package:ardrive/models/database/migration_strategy/strategies/migration_default.dart';
+import 'package:ardrive/models/database/migration_strategy/types.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
@@ -27,13 +27,18 @@ class Database extends _$Database {
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          final migration = resolveMigration(from, to);
+          CustomOnUpgrade migration = resolveMigration(from, to);
           try {
             await migration(allTables, m, from, to);
           } catch (e, s) {
             debugPrint('Database migration failed (v$from -> v$to): $e\n$s');
             // Fallback to default migration
-            await onUpgradeDefault(allTables, m, from, to);
+            migration = resolveMigration(
+              from,
+              to,
+              forceFallbackToDefault: true,
+            );
+            await migration(allTables, m, from, to);
           }
         },
       );
