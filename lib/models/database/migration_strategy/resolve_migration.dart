@@ -13,7 +13,8 @@ CustomOnUpgrade resolveMigration(
   }
 
   debugPrint(
-    'WARNING: Fallbacking to default DB migration: drop and re-create all tables',
+    'WARNING: Fallbacking to default DB migration: drop and re-create all'
+    ' tables - from v$from to v$to',
   );
   return onUpgradeDefault;
 }
