@@ -26,11 +26,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.9'
-          channel: 'stable'
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install script_runner
         run: flutter pub global activate script_runner
@@ -50,11 +53,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.9'
-          channel: 'stable'
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install script_runner
         run: flutter pub global activate script_runner
@@ -91,11 +97,14 @@ jobs:
         with:
           ruby-version: '3.1'
 
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.9'
-          channel: 'stable'
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Set FIREBASE_JSON env var
         run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
@@ -134,11 +143,14 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.9'
-          channel: 'stable'
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Set FIREBASE_JSON env var
         run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
