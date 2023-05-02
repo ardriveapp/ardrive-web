@@ -73,5 +73,68 @@ void main() {
         expect(revision.customJsonMetaData, equals('{"Custom": "Metadata"}'));
       });
     });
+
+    group('for the folder_revisions table', () {
+      final folderWithNoCustomMetadata = FolderRevisionsCompanion.insert(
+        folderId: 'folderId-no-custom-metadata',
+        driveId: 'driveId',
+        parentFolderId: const Value<String>('parentFolderId'),
+        name: 'name',
+        action: 'action',
+        metadataTxId: 'metadataTxId',
+      );
+      final folderWithCustomMetadata = FolderRevisionsCompanion.insert(
+        folderId: 'folderId-custom-metadata',
+        driveId: 'driveId',
+        parentFolderId: const Value<String>('parentFolderId'),
+        name: 'name',
+        action: 'action',
+        metadataTxId: 'metadataTxId',
+        customJsonMetaData: const Value<String>('{"Custom": "Metadata"}'),
+      );
+
+      test('can write one with no custom metadata', () {
+        final dbFuture =
+            db.driveDao.insertFolderRevision(folderWithNoCustomMetadata);
+        expect(dbFuture, completes);
+      });
+
+      test('can read the previously written entry', () async {
+        final folderRevisionsTable = db.folderRevisions;
+
+        final selectStatement = db.select(folderRevisionsTable)
+          ..where(
+            (folderRevision) =>
+                folderRevision.folderId.equals('folderId-no-custom-metadata'),
+          );
+
+        final revision = await selectStatement.getSingle();
+
+        expect(revision, isA<FolderRevision>());
+        expect(revision.customJsonMetaData, isNull);
+      });
+
+      test('can write one with custom metadata', () {
+        final dbFuture =
+            db.driveDao.insertFolderRevision(folderWithCustomMetadata);
+        expect(dbFuture, completes);
+      });
+
+      test('can read the previously written entry', () async {
+        final folderRevisionsTable = db.folderRevisions;
+
+        final selectStatement = db.select(folderRevisionsTable)
+          ..where(
+            (folderRevision) =>
+                folderRevision.folderId.equals('folderId-custom-metadata'),
+          );
+
+        final revision = await selectStatement.getSingle();
+
+        expect(revision, isA<FolderRevision>());
+        expect(revision.customJsonMetaData, isNotNull);
+        expect(revision.customJsonMetaData, equals('{"Custom": "Metadata"}'));
+      });
+    });
   });
 }
