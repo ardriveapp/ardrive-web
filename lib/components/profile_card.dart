@@ -158,7 +158,9 @@ class ProfileCard extends StatelessWidget {
               if (walletAddress.isNotEmpty)
                 Text(
                   '${walletAddress.substring(0, 2)}...${walletAddress.substring(walletAddress.length - 2)}',
-                  style: ArDriveTypography.body.buttonNormalBold(),
+                  style: ArDriveTypography.body
+                      .buttonNormalBold()
+                      .copyWith(fontWeight: FontWeight.w800),
                 ),
             ],
           ),
