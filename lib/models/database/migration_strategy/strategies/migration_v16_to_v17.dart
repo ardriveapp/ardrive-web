@@ -7,6 +7,28 @@ Future<void> onUpgradeV16ToV17(
   int from,
   int to,
 ) async {
-  logger.i('Migrating schema from v16 to v17');
-  throw UnimplementedError('TODO: implement migration from v16 to v17');
+  if (from == 16 && to == 17) {
+    logger.i('Migrating schema from v16 to v17');
+    final driveRevisionsTable = allTables.firstWhere(
+      (element) => element.actualTableName == 'drive_revisions',
+    );
+
+    await m.alterTable(
+      TableMigration(
+        driveRevisionsTable,
+        newColumns: [
+          GeneratedColumn<String?>(
+            'customJsonMetaData',
+            'drive_revisions',
+            true,
+            type: const StringType(),
+            defaultValue: null,
+            clientDefault: null,
+          ),
+        ],
+      ),
+    );
+  } else {
+    throw Exception('Asked to migrate v16 -> v17, but got v$from -> v$to');
+  }
 }
