@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3597-use-correct-size-and-icons-on-the-drop-down
-      resolved-ref: "67779a2bf8f25cc82e81910e5aa1eb8ca9e4b719"
+      resolved-ref: c3cf6d78d1e2d03f28935ca6e7234a58bfe62e59
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
