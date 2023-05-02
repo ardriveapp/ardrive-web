@@ -24,7 +24,11 @@ class DriveEntity extends Entity {
   String? name;
   String? rootFolderId;
 
-  @JsonKey(fromJson: CustomMetadata.fromJson, toJson: CustomMetadata.toJson)
+  @JsonKey(
+    ignore: true,
+    fromJson: CustomMetadata.fromJson,
+    toJson: CustomMetadata.toJson,
+  )
   CustomMetadata? customMetadata;
 
   DriveEntity({

@@ -28,8 +28,7 @@ class CustomMetadata extends MapMixin<String, dynamic> {
   dynamic remove(Object? key) => _data?.remove(key);
 
   // CustomMetadata fromJson function
-  static CustomMetadata? fromJson(Map<String, dynamic>? json) {
-    if (json == null) return null;
+  static CustomMetadata fromJson(Map<String, dynamic>? json) {
     return CustomMetadata(json);
   }
 
