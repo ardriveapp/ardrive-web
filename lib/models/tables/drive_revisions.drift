@@ -1,4 +1,5 @@
 import 'network_transactions.drift';
+import '../custom_metadata_type_converter.dart';
 
 CREATE TABLE drive_revisions (
     driveId TEXT NOT NULL,
@@ -10,10 +11,12 @@ CREATE TABLE drive_revisions (
     privacy TEXT NOT NULL,
 
     metadataTxId TEXT NOT NULL,
-    
+
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
 
     [action] TEXT NOT NULL,
+
+    customJsonMetaData TEXT MAPPED BY `const CustomMetadataConverter()`,
 
     bundledIn TEXT,
 

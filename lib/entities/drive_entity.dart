@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/models/custom_metadata_type.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -22,10 +23,15 @@ class DriveEntity extends Entity {
 
   String? name;
   String? rootFolderId;
+
+  @JsonKey(fromJson: CustomMetadata.fromJson, toJson: CustomMetadata.toJson)
+  CustomMetadata? customMetadata;
+
   DriveEntity({
     this.id,
     this.name,
     this.rootFolderId,
+    this.customMetadata,
     this.privacy,
     this.authMode,
   }) : super(ArDriveCrypto());
