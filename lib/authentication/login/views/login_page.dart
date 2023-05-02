@@ -302,9 +302,11 @@ class _PromptWalletViewState extends State<PromptWalletView> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            ArDriveImage(
-              image: AssetImage(Resources.images.brand.logo),
-              height: 50,
+            ScreenTypeLayout(
+              mobile: ArDriveImage(
+                image: AssetImage(Resources.images.brand.logo),
+                height: 50,
+              ),
             ),
             heightSpacing(),
             Align(
@@ -661,9 +663,11 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ArDriveImage(
-                image: AssetImage(Resources.images.brand.logo),
-                height: 50,
+              ScreenTypeLayout(
+                mobile: ArDriveImage(
+                  image: AssetImage(Resources.images.brand.logo),
+                  height: 50,
+                ),
               ),
               Text(
                 appLocalizationsOf(context).createAndConfirmPassword,
