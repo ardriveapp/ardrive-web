@@ -136,5 +136,73 @@ void main() {
         expect(revision.customJsonMetaData, equals('{"Custom": "Metadata"}'));
       });
     });
+
+    group('for the file_revisions table', () {
+      final fileWithNoCustomMetadata = FileRevisionsCompanion.insert(
+        fileId: 'fileId-no-custom-metadata',
+        driveId: 'driveId',
+        name: 'name',
+        action: 'action',
+        metadataTxId: 'metadataTxId',
+        size: 0,
+        dataTxId: 'dataTxId',
+        lastModifiedDate: DateTime(1234),
+        parentFolderId: 'parentFolderId',
+      );
+      final fileWithCustomMetadata = FileRevisionsCompanion.insert(
+        fileId: 'fileId-custom-metadata',
+        driveId: 'driveId',
+        name: 'name',
+        action: 'action',
+        metadataTxId: 'metadataTxId',
+        size: 0,
+        dataTxId: 'dataTxId',
+        lastModifiedDate: DateTime(1234),
+        parentFolderId: 'parentFolderId',
+        customJsonMetaData: const Value<String>('{"Custom": "Metadata"}'),
+      );
+
+      test('can write one with no custom metadata', () {
+        final dbFuture =
+            db.driveDao.insertFileRevision(fileWithNoCustomMetadata);
+        expect(dbFuture, completes);
+      });
+
+      test('can read the previously written entry', () async {
+        final fileRevisionsTable = db.fileRevisions;
+
+        final selectStatement = db.select(fileRevisionsTable)
+          ..where(
+            (fileRevision) =>
+                fileRevision.fileId.equals('fileId-no-custom-metadata'),
+          );
+
+        final revision = await selectStatement.getSingle();
+
+        expect(revision, isA<FileRevision>());
+        expect(revision.customJsonMetaData, isNull);
+      });
+
+      test('can write one with custom metadata', () {
+        final dbFuture = db.driveDao.insertFileRevision(fileWithCustomMetadata);
+        expect(dbFuture, completes);
+      });
+
+      test('can read the previously written entry', () async {
+        final fileRevisionsTable = db.fileRevisions;
+
+        final selectStatement = db.select(fileRevisionsTable)
+          ..where(
+            (fileRevision) =>
+                fileRevision.fileId.equals('fileId-custom-metadata'),
+          );
+
+        final revision = await selectStatement.getSingle();
+
+        expect(revision, isA<FileRevision>());
+        expect(revision.customJsonMetaData, isNotNull);
+        expect(revision.customJsonMetaData, equals('{"Custom": "Metadata"}'));
+      });
+    });
   });
 }
