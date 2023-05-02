@@ -303,6 +303,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ScreenTypeLayout(
+              desktop: const SizedBox.shrink(),
               mobile: ArDriveImage(
                 image: AssetImage(Resources.images.brand.logo),
                 height: 50,
@@ -664,6 +665,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ScreenTypeLayout(
+                desktop: const SizedBox.shrink(),
                 mobile: ArDriveImage(
                   image: AssetImage(Resources.images.brand.logo),
                   height: 50,
