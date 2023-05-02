@@ -336,6 +336,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           .selectedItem !=
                                       null
                               ? DetailsPanel(
+                                  currentDrive: state.currentDrive,
                                   isSharePage: false,
                                   drivePrivacy: state.currentDrive.privacy,
                                   maybeSelectedItem: state.maybeSelectedItem(),
@@ -394,6 +395,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             return false;
           },
           child: DetailsPanel(
+            currentDrive: state.currentDrive,
             isSharePage: false,
             drivePrivacy: state.currentDrive.privacy,
             maybeSelectedItem: state.maybeSelectedItem(),
@@ -658,6 +660,7 @@ class MobileFolderNavigation extends StatelessWidget {
     return SizedBox(
       height: 45,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: InkWell(
@@ -667,12 +670,14 @@ class MobileFolderNavigation extends StatelessWidget {
                     .openFolder(path: getParentFolderPath(path));
               },
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (path.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 15,
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 8,
+                        top: 4,
                       ),
                       child: ArDriveIcons.arrowLeft(),
                     ),
@@ -698,7 +703,7 @@ class MobileFolderNavigation extends StatelessWidget {
                     state.currentDrive.ownerAddress);
 
                 return ArDriveDropdown(
-                  width: 250,
+                  width: 240,
                   anchor: const Aligned(
                     follower: Alignment.topRight,
                     target: Alignment.bottomRight,
@@ -748,10 +753,30 @@ class MobileFolderNavigation extends StatelessWidget {
                         ),
                       ),
                     ),
+                    ArDriveDropdownItem(
+                      onClick: () {
+                        final bloc = context.read<DriveDetailCubit>();
+
+                        bloc.selectDataItem(
+                          DriveDataTableItemMapper.fromDrive(
+                            state.currentDrive,
+                            (_) => null,
+                            0,
+                            isOwner,
+                          ),
+                        );
+                      },
+                      content: _buildItem(
+                        appLocalizationsOf(context).moreInfo,
+                        ArDriveIcons.info(
+                          size: defaultIconSize,
+                        ),
+                      ),
+                    )
                   ],
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
+                      horizontal: 24.0,
                       vertical: 8,
                     ),
                     child: HoverWidget(

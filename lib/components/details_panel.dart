@@ -38,6 +38,7 @@ class DetailsPanel extends StatefulWidget {
     this.revisions,
     this.fileKey,
     required this.isSharePage,
+    this.currentDrive,
   });
 
   final ArDriveDataTableItem item;
@@ -46,6 +47,7 @@ class DetailsPanel extends StatefulWidget {
   final List<FileRevision>? revisions;
   final SecretKey? fileKey;
   final bool isSharePage;
+  final Drive? currentDrive;
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
@@ -158,6 +160,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           DriveExplorerItemTileLeading(
                             item: widget.item,
                           ),
+                          const SizedBox(
+                            width: 8,
+                          ),
                           Expanded(
                             child: Text(
                               widget.item.name,
@@ -166,6 +171,21 @@ class _DetailsPanelState extends State<DetailsPanel> {
                               overflow: TextOverflow.fade,
                             ),
                           ),
+                          if (widget.currentDrive != null &&
+                              !widget.isSharePage)
+                            ScreenTypeLayout(
+                              desktop: const SizedBox.shrink(),
+                              mobile: EntityActionsMenu(
+                                drive: widget.currentDrive,
+                                withInfo: false,
+                                item: widget.item,
+                                alignment: const Aligned(
+                                  follower: Alignment.topRight,
+                                  target: Alignment.bottomRight,
+                                  offset: Offset(24, 32),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -600,7 +620,7 @@ class CopyButton extends StatefulWidget {
   const CopyButton({
     Key? key,
     required this.text,
-    this.size = 16,
+    this.size = 20,
     this.showCopyText = true,
   }) : super(key: key);
 
