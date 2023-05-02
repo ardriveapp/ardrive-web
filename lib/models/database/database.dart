@@ -1,6 +1,7 @@
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/migration_strategy/resolve_migration.dart';
 import 'package:ardrive/models/database/migration_strategy/types.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
@@ -23,7 +24,7 @@ class Database extends _$Database {
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
-          debugPrint('Creating all tables');
+          logger.i('Creating all tables');
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
@@ -31,7 +32,7 @@ class Database extends _$Database {
           try {
             await migration(allTables, m, from, to);
           } catch (e, s) {
-            debugPrint('Database migration failed (v$from -> v$to): $e\n$s');
+            logger.i('Database migration failed (v$from -> v$to): $e\n$s');
             // Fallback to default migration
             migration = resolveMigration(
               from,
