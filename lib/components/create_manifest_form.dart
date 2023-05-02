@@ -29,7 +29,7 @@ Future<void> promptToCreateManifest(
         drive: drive,
         profileCubit: context.read<ProfileCubit>(),
         arweave: context.read<ArweaveService>(),
-        turboService: context.read<TurboService>(),
+        turboUploadService: context.read<UploadService>(),
         driveDao: context.read<DriveDao>(),
         pst: context.read<PstService>(),
       ),

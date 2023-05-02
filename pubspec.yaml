@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ar-io/ardrive_http.git
-      ref: v1.1.4
+      ref: bb481d79bfa8d9048972f344dce3d55dc245c66f
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
@@ -44,7 +44,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.5.1
+      ref: 2e92e97ad90a0a156b18ef59dded14cfd25f0858
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   file_selector: ^0.9.0
@@ -102,6 +102,8 @@ dependencies:
   lottie: ^2.3.0
   visibility_detector: ^0.4.0+2
   logger: ^1.3.0
+  flutter_stripe: ^9.1.1
+  flutter_stripe_web: ^4.0.1
 
 dev_dependencies:
   flutter_test:

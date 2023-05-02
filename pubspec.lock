@@ -54,8 +54,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.1.4"
-      resolved-ref: "2e7165fbe9316668cd4d521202f64ae1dcf1de50"
+      ref: bb481d79bfa8d9048972f344dce3d55dc245c66f
+      resolved-ref: bb481d79bfa8d9048972f344dce3d55dc245c66f
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.1.3"
@@ -95,8 +95,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.5.1"
-      resolved-ref: "224bfe4a84d0bfe622f28b0a2305e060a70d08c4"
+      ref: "2e92e97ad90a0a156b18ef59dded14cfd25f0858"
+      resolved-ref: "2e92e97ad90a0a156b18ef59dded14cfd25f0858"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.5.1"
@@ -692,6 +692,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.3"
+  flutter_stripe:
+    dependency: "direct main"
+    description:
+      name: flutter_stripe
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "9.1.1"
+  flutter_stripe_web:
+    dependency: "direct main"
+    description:
+      name: flutter_stripe_web
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.0.1"
   flutter_svg:
     dependency: "direct main"
     description:
@@ -716,6 +730,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  freezed_annotation:
+    dependency: transitive
+    description:
+      name: freezed_annotation
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.2.0"
   frontend_server_client:
     dependency: transitive
     description:
@@ -1538,6 +1559,34 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.1"
+  stripe_android:
+    dependency: transitive
+    description:
+      name: stripe_android
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "9.1.0"
+  stripe_ios:
+    dependency: transitive
+    description:
+      name: stripe_ios
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "9.1.0"
+  stripe_js:
+    dependency: transitive
+    description:
+      name: stripe_js
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.0"
+  stripe_platform_interface:
+    dependency: transitive
+    description:
+      name: stripe_platform_interface
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "9.1.0"
   sync_http:
     dependency: transitive
     description:

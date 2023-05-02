@@ -28,7 +28,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
-  final TurboService _turbo;
+  final UploadService _turbo;
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
   final UploadFileChecker _uploadFileChecker;
@@ -53,7 +53,7 @@ class UploadCubit extends Cubit<UploadState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
-    required TurboService turbo,
+    required UploadService turbo,
     required PstService pst,
     required UploadPlanUtils uploadPlanUtils,
     required UploadFileChecker uploadFileChecker,
@@ -331,7 +331,7 @@ class UploadCubit extends Cubit<UploadState> {
 
         await bundleHandle.prepareAndSignBundleTransaction(
           arweaveService: _arweave,
-          turboService: _turbo,
+          turboUploadService: _turbo,
           pstService: _pst,
           wallet: profile.wallet,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
