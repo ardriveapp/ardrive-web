@@ -130,6 +130,10 @@ class AppShellState extends State<AppShell> {
               Row(
                 children: [
                   const AppSideBar(),
+                  Container(
+                    color: ArDriveTheme.of(context).themeData.backgroundColor,
+                    width: 16,
+                  ),
                   Expanded(
                     child: Scaffold(
                       backgroundColor:
