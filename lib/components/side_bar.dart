@@ -187,7 +187,7 @@ class _AppSideBarState extends State<AppSideBar> {
     return SizedBox(
       height: 64,
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 200),
         child: _isExpanded
             ? Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -200,8 +200,8 @@ class _AppSideBarState extends State<AppSideBar> {
                 ),
               )
             : ArDriveImage(
-                width: 62,
-                height: 62,
+                width: 42,
+                height: 42,
                 image: AssetImage(
                   Resources.images.brand.logo,
                 ),
@@ -423,45 +423,33 @@ class _AppSideBarState extends State<AppSideBar> {
 
       return AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
-        child: _isExpanded
-            ? Column(
-                children: [
-                  Align(
-                    alignment: Alignment.center,
-                    child: _newButton(_isExpanded, isMobile),
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: _newButton(_isExpanded, isMobile),
+            ),
+            if (notEnoughARInWallet) ...{
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  appLocalizationsOf(context).insufficientARWarning,
+                  style: ArDriveTypography.body.captionRegular(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
                   ),
-                  if (notEnoughARInWallet) ...{
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        appLocalizationsOf(context).insufficientARWarning,
-                        style: ArDriveTypography.body.captionRegular(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeAccentDisabled,
-                        ),
-                      ),
-                    ),
-                    ArDriveButton(
-                      style: ArDriveButtonStyle.tertiary,
-                      onPressed: () => openUrl(url: Resources.arHelpLink),
-                      text: appLocalizationsOf(context).howDoIGetAR,
-                    ),
-                  }
-                ],
-              )
-            : Container(
-                decoration: BoxDecoration(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentBrand,
-                  shape: BoxShape.circle,
                 ),
-                padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 10),
-                child: _newButton(false, false),
               ),
+              ArDriveButton(
+                style: ArDriveButtonStyle.tertiary,
+                onPressed: () => openUrl(url: Resources.arHelpLink),
+                text: appLocalizationsOf(context).howDoIGetAR,
+              ),
+            }
+          ],
+        ),
       );
     } else {
       return _newButton(_isExpanded, isMobile);
@@ -481,76 +469,43 @@ class _AppSideBarState extends State<AppSideBar> {
       currentFolder = state.folderInView;
     }
 
-    if (isExpanded) {
-      return ArDriveClickArea(
-        tooltip: appLocalizationsOf(context).showMenu,
-        child: NewButton(
-          anchor: isMobile
-              ? const Aligned(
-                  follower: Alignment.topLeft,
-                  target: Alignment.bottomLeft,
-                )
-              : const Aligned(
-                  follower: Alignment.topLeft,
-                  target: Alignment.topRight,
-                ),
-          drive: currentDrive,
-          driveDetailState: context.read<DriveDetailCubit>().state,
-          currentFolder: currentFolder,
-          child: Container(
-            width: 128,
-            height: 40,
-            decoration: BoxDecoration(
-              color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-              borderRadius: const BorderRadius.all(
-                Radius.circular(8),
-              ),
-            ),
-            child: Center(
-              child: Text(
-                appLocalizationsOf(context).newString,
-                style: ArDriveTypography.headline.headline5Bold(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    } else {
-      return _roundedPlusButton(
-        context,
-        currentDrive,
-        currentFolder,
-        state,
-      );
-    }
-  }
-
-  Widget _roundedPlusButton(
-    BuildContext context,
-    Drive? currentDrive,
-    FolderWithContents? currentFolder,
-    DriveDetailState state,
-  ) {
     return ArDriveClickArea(
       tooltip: appLocalizationsOf(context).showMenu,
       child: NewButton(
-        anchor: const Aligned(
-          follower: Alignment.topLeft,
-          target: Alignment.topRight,
-        ),
+        anchor: isMobile
+            ? const Aligned(
+                follower: Alignment.topLeft,
+                target: Alignment.bottomLeft,
+              )
+            : const Aligned(
+                follower: Alignment.topLeft,
+                target: Alignment.topRight,
+              ),
         drive: currentDrive,
-        driveDetailState: state,
+        driveDetailState: context.read<DriveDetailCubit>().state,
         currentFolder: currentFolder,
         child: Container(
-          alignment: Alignment.center,
+          width: _isExpanded ? 128 : 40,
+          height: 40,
           decoration: BoxDecoration(
             color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-            shape: BoxShape.circle,
+            shape: _isExpanded ? BoxShape.rectangle : BoxShape.circle,
+            borderRadius: _isExpanded
+                ? const BorderRadius.all(
+                    Radius.circular(8),
+                  )
+                : null,
           ),
-          padding: const EdgeInsets.only(top: 2),
-          child: ArDriveIcons.plus(color: Colors.white),
+          child: isExpanded
+              ? Center(
+                  child: Text(
+                    appLocalizationsOf(context).newString,
+                    style: ArDriveTypography.headline.headline5Bold(
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+              : ArDriveIcons.plus(color: Colors.white),
         ),
       ),
     );
