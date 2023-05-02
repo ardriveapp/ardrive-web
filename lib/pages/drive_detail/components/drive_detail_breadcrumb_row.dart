@@ -164,10 +164,10 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     return ArDriveDropdown(
       items: items,
       child: Padding(
-        padding: const EdgeInsets.only(right: 8.0),
+        padding: const EdgeInsets.only(right: 8.0, top: 4),
         child: HoverWidget(
           // cursor: SystemMouseCursors.click,
-          child: ArDriveIcons.carretLeft(color: Colors.white),
+          child: ArDriveIcons.carretLeft(),
         ),
       ),
     );
