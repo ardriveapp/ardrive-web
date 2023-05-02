@@ -128,7 +128,7 @@ class ProfileCard extends StatelessWidget {
                 children: [
                   Text(
                     appLocalizationsOf(context).logout,
-                    style: ArDriveTypography.body.buttonNormalRegular(),
+                    style: ArDriveTypography.body.buttonNormalBold(),
                   ),
                   HoverWidget(child: ArDriveIcons.logout()),
                 ],
