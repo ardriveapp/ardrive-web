@@ -35,7 +35,7 @@ void main() {
 
     test('can be created from null JSON', () {
       final customMetadata = CustomMetadata.fromJson(null);
-      expect(customMetadata, isNull);
+      expect(customMetadata, isA<CustomMetadata>());
     });
 
     test('can be created from empty JSON', () {
