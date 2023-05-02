@@ -8,12 +8,12 @@ CustomOnUpgrade resolveMigration(
   bool forceFallbackToDefault = false,
 }) {
   if (forceFallbackToDefault) {
-    return onUpgradeDefault;
+    return onUpgradeReCreate;
   }
 
   if (from == 16 && to == 17) {
     return onUpgradeV16ToV17;
   }
 
-  return onUpgradeDefault;
+  return onUpgradeReCreate;
 }

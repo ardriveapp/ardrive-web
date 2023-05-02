@@ -1,7 +1,7 @@
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:drift/drift.dart';
 
-Future<void> onUpgradeDefault(
+Future<void> onUpgradeReCreate(
   Iterable<TableInfo<Table, dynamic>> allTables,
   Migrator m,
   int from,

@@ -7,12 +7,12 @@ void main() {
   group('resolveMigration method', () {
     test('fallbacks to default migration', () {
       final migration = resolveMigration(1, 2);
-      expect(migration, onUpgradeDefault);
+      expect(migration, onUpgradeReCreate);
     });
 
     test('fallbacks to default migration when forced', () {
       final migration = resolveMigration(16, 17, forceFallbackToDefault: true);
-      expect(migration, onUpgradeDefault);
+      expect(migration, onUpgradeReCreate);
     });
 
     test('returns v16 to v17 migration', () {
