@@ -101,11 +101,12 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
             child: HoverText(
               text: driveName,
               style: segmentStyle(_pathSegments.length).copyWith(
-                color: ArDriveTheme.of(context)
-                    .themeData
-                    .colors
-                    .themeAccentDisabled,
-                // decoration: TextDecoration.underline,
+                color: _pathSegments.isEmpty
+                    ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
+                    : ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
               ),
             ),
           ),
