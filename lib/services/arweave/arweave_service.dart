@@ -221,9 +221,41 @@ class ArweaveService {
     required String ownerAddress,
     required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
-    required List<Uint8List> entitiesData,
   }) async {
     final blockHistory = <BlockEntities>[];
+
+    // FIXME - PE-3440
+    /// Make use of `eagerError: true` to make it fail on first error
+    /// Also, when there's no internet connection and when we're getting
+    /// rate-limited (TODO: check the latter), many requests will be retrying.
+    /// We shall find another way to fail faster.
+
+    // MAYBE FIX: set a narrow concurrency limit
+
+    final List<Uint8List> entitiesData = await Future.wait(
+      entityTxs.map(
+        (entity) async {
+          final tags = entity.tags;
+          final isSnapshot = tags.any(
+            (tag) =>
+                tag.name == EntityTag.entityType &&
+                tag.value == EntityType.snapshot.toString(),
+          );
+
+          // don't fetch data for snapshots
+          if (isSnapshot) {
+            print('skipping unnecessary request for snapshot data');
+            return Uint8List(0);
+          }
+
+          return _getEntityData(
+            entityId: entity.id,
+            driveId: ownerAddress,
+            isPrivate: driveKey != null,
+          );
+        },
+      ),
+    );
 
     for (var i = 0; i < entityTxs.length; i++) {
       final transaction = entityTxs[i];
@@ -315,7 +347,7 @@ class ArweaveService {
     return privateDriveTxs.isNotEmpty;
   }
 
-  Future<Uint8List> getEntityData({
+  Future<Uint8List> _getEntityData({
     required String entityId,
     required String driveId,
     required bool isPrivate,
