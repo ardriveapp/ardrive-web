@@ -1,5 +1,9 @@
 import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/models/database/migration_strategy/resolve_migration.dart';
+import 'package:ardrive/models/database/migration_strategy/types.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import 'unsupported.dart'
     if (dart.library.html) 'web.dart'
@@ -20,17 +24,22 @@ class Database extends _$Database {
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
+          logger.i('Creating all tables');
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          print('schema changed from $from to $to ');
-          if (from >= 1 && from < schemaVersion) {
-            // Reset the database.
-            for (final table in allTables) {
-              await m.deleteTable(table.actualTableName);
-            }
-
-            await m.createAll();
+          CustomOnUpgrade migration = resolveMigration(from, to);
+          try {
+            await migration(allTables, m, from, to);
+          } catch (e, s) {
+            logger.i('Database migration failed (v$from -> v$to): $e\n$s');
+            // Fallback to default migration
+            migration = resolveMigration(
+              from,
+              to,
+              forceFallbackToDefault: true,
+            );
+            await migration(allTables, m, from, to);
           }
         },
       );
