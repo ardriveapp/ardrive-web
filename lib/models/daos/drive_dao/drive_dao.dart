@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/models/custom_metadata_type.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
