@@ -24,10 +24,15 @@ class DriveExplorerItemTile extends TableRowWidget {
     required Function() onPressed,
   }) : super(
           [
-            Text(
-              name,
-              style: ArDriveTypography.body.buttonNormalBold(),
-              overflow: TextOverflow.fade,
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Text(
+                name,
+                style: ArDriveTypography.body.buttonNormalBold(),
+                overflow: TextOverflow.fade,
+                maxLines: 1,
+                softWrap: false,
+              ),
             ),
             Text(size, style: ArDriveTypography.body.captionRegular()),
             Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),
