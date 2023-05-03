@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3597-use-correct-size-and-icons-on-the-drop-down
-      resolved-ref: "3f602e0ee53c8645a6d2a08b61e057735b8b3b35"
+      resolved-ref: "798629dbd20629f11301274ea6453f80b683a8ce"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -502,7 +502,7 @@ packages:
       name: file_selector_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.1"
+    version: "2.5.0"
   file_selector_web:
     dependency: "direct main"
     description:
