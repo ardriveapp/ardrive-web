@@ -43,5 +43,36 @@ void main() {
       expect(customMetadata, isNotNull);
       expect(customMetadata, isEmpty);
     });
+
+    test('can recover the same JSON it was created from', () {
+      final customMetadata = CustomMetadata.fromJson(
+        {
+          'Custom-Key': 'Custom-Value',
+          'Null-Key': null,
+          'An-Array': [1, 2, 3],
+          'Nested-Object': {
+            'Key': {'Foo': 'Bar'},
+            'ArDriveRocks': true
+          },
+        },
+      );
+      final customMetadataAsJson = CustomMetadata.toJson(customMetadata);
+      expect(customMetadataAsJson, isNotNull);
+      expect(customMetadataAsJson, isNotEmpty);
+      expect(
+        customMetadataAsJson,
+        equals(
+          {
+            'Custom-Key': 'Custom-Value',
+            'Null-Key': null,
+            'An-Array': [1, 2, 3],
+            'Nested-Object': {
+              'Key': {'Foo': 'Bar'},
+              'ArDriveRocks': true
+            },
+          },
+        ),
+      );
+    });
   });
 }
