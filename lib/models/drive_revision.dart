@@ -32,8 +32,10 @@ extension DriveEntityExtensions on DriveEntity {
   /// Converts the entity to an instance of [DriveRevisionsCompanion].
   ///
   /// This requires a `performedAction` to be specified.
-  DriveRevisionsCompanion toRevisionCompanion(
-          {required String performedAction}) =>
+  DriveRevisionsCompanion toRevisionCompanion({
+    required String performedAction,
+    required Value<String?> customJsonMetaData,
+  }) =>
       DriveRevisionsCompanion.insert(
         driveId: id!,
         ownerAddress: ownerAddress,
@@ -44,6 +46,7 @@ extension DriveEntityExtensions on DriveEntity {
         dateCreated: Value(createdAt),
         action: performedAction,
         bundledIn: Value(bundledIn),
+        customJsonMetaData: customJsonMetaData,
       );
 
   /// Returns the action performed on the Drive that lead to the new revision.

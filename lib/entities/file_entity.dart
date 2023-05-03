@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/models/custom_metadata_type.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -32,13 +31,6 @@ class FileEntity extends Entity {
 
   String? dataTxId;
   String? dataContentType;
-
-  @JsonKey(
-    ignore: true,
-    fromJson: CustomMetadata.fromJson,
-    toJson: CustomMetadata.toJson,
-  )
-  CustomMetadata? customMetadata;
 
   FileEntity({
     this.id,
