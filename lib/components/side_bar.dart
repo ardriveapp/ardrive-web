@@ -220,7 +220,9 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).publicDrives,
-              style: ArDriveTypography.body.buttonLargeBold(),
+              style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
             state.userDrives
                 .where((element) => element.isPublic)
@@ -246,7 +248,9 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).privateDrives,
-              style: ArDriveTypography.body.buttonLargeBold(),
+              style: ArDriveTypography.body
+                  .buttonLargeBold()
+                  .copyWith(fontWeight: FontWeight.w700),
             ),
             state.userDrives
                 .where((element) => element.isPrivate)
@@ -267,7 +271,9 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).sharedDrives,
-              style: ArDriveTypography.body.buttonLargeBold(),
+              style: ArDriveTypography.body
+                  .buttonLargeBold()
+                  .copyWith(fontWeight: FontWeight.w700),
             ),
             state.sharedDrives
                 .map(
@@ -543,19 +549,29 @@ class DriveListTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           mainAxisSize: MainAxisSize.max,
           children: [
-            HoverWidget(
-              hoverScale: 1,
-              child: Text(
-                drive.name,
-                maxLines: 1,
-                overflow: TextOverflow.fade,
-                style: ArDriveTypography.body.buttonNormalBold(
-                  color: isSelected
-                      ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
-                      : ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeAccentDisabled,
+            Flexible(
+              child: HoverWidget(
+                hoverScale: 1,
+                child: Text(
+                  drive.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  softWrap: false,
+                  style: isSelected
+                      ? ArDriveTypography.body
+                          .buttonNormalBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          )
+                          .copyWith(fontWeight: FontWeight.w700)
+                      : ArDriveTypography.body.buttonNormalRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeAccentDisabled,
+                        ),
                 ),
               ),
             ),
