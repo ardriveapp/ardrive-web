@@ -80,8 +80,9 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
 
                     return _onLeave();
                   },
-                  child:
-                      isHovering ? _buildDropZoneOnHover() : SizedBox.expand()),
+                  child: isHovering
+                      ? _buildDropZoneOnHover()
+                      : const SizedBox.expand()),
             ),
           ],
         ),
@@ -166,7 +167,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
                 width: 16,
               ),
               Text(
-                appLocalizationsOf(context).uploadDragAndDrop,
+                appLocalizationsOf(context).uploadFiles,
                 style: ArDriveTypography.headline.headline2Bold(),
               ),
             ],
