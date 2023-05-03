@@ -1,1 +1,1 @@
-const double dropdownIconSize = 16;
+const double defaultIconSize = 20;

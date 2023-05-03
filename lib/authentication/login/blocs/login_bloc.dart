@@ -5,6 +5,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
@@ -32,6 +33,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         _arConnectService = arConnectService,
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
+    _listenToWalletChange();
   }
 
   Future<void> _onLoginEvent(LoginEvent event, Emitter<LoginState> emit) async {
@@ -144,6 +146,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
 
       emit(const PromptPassword());
+
       return;
     }
 
@@ -226,7 +229,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arDriveAuth.logout();
     }
 
-    await _arConnectService.disconnect();
+    if (_isArConnectWallet()) {
+      await _arConnectService.disconnect();
+    }
 
     emit(LoginInitial(_arConnectService.isExtensionPresent()));
   }
@@ -269,6 +274,23 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   bool _isArConnectWallet() {
     return profileType == ProfileType.arConnect;
+  }
+
+  void _listenToWalletChange() {
+    if (!_arConnectService.isExtensionPresent()) {
+      return;
+    }
+
+    onArConnectWalletSwitch(() {
+      logger.i('ArConnect wallet switched');
+      // ignore: invalid_use_of_visible_for_testing_member
+      emit(const LoginFailure(WalletMismatchException()));
+
+      _arDriveAuth.logout();
+
+      // ignore: invalid_use_of_visible_for_testing_member
+      emit(const LoginInitial(true));
+    });
   }
 
   Future<void> _loginWithBiometrics({

@@ -26,6 +26,7 @@ class AppSideBar extends StatefulWidget {
 
 class _AppSideBarState extends State<AppSideBar> {
   bool _isExpanded = true;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -113,70 +114,78 @@ class _AppSideBarState extends State<AppSideBar> {
   }
 
   Widget _desktopView() {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          right: BorderSide(
-            color: ArDriveTheme.of(context).themeData.colors.shadow,
-            width: 1,
+    return ArDriveScrollBar(
+      controller: _scrollController,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        child: Container(
+          height: MediaQuery.of(context).size.height,
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(
+                color: ArDriveTheme.of(context).themeData.colors.shadow,
+                width: 1,
+              ),
+            ),
           ),
-        ),
-      ),
-      child: AnimatedSize(
-        duration: const Duration(milliseconds: 300),
-        child: SizedBox(
-          width: _isExpanded ? 240 : 64,
-          child: Column(
-            children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    const SizedBox(
-                      height: 24,
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            child: SizedBox(
+              width: _isExpanded ? 240 : 64,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Column(
+                      children: [
+                        const SizedBox(
+                          height: 24,
+                        ),
+                        _buildLogo(),
+                        const SizedBox(
+                          height: 24,
+                        ),
+                        _buildDriveActionsButton(
+                          context,
+                          false,
+                        ),
+                        const SizedBox(
+                          height: 56,
+                        ),
+                        _isExpanded
+                            ? BlocBuilder<DrivesCubit, DrivesState>(
+                                builder: (context, state) {
+                                  if (state is DrivesLoadSuccess &&
+                                      (state.userDrives.isNotEmpty ||
+                                          state.sharedDrives.isNotEmpty)) {
+                                    return Flexible(
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.only(left: 43.0),
+                                        child: _buildAccordion(
+                                          state,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox();
+                                },
+                              )
+                            : const SizedBox(),
+                      ],
                     ),
-                    _buildLogo(),
-                    const SizedBox(
-                      height: 24,
-                    ),
-                    _buildDriveActionsButton(
-                      context,
-                      false,
-                    ),
-                    const SizedBox(
-                      height: 56,
-                    ),
-                    _isExpanded
-                        ? BlocBuilder<DrivesCubit, DrivesState>(
-                            builder: (context, state) {
-                              if (state is DrivesLoadSuccess &&
-                                  (state.userDrives.isNotEmpty ||
-                                      state.sharedDrives.isNotEmpty)) {
-                                return Flexible(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(left: 43.0),
-                                    child: _buildAccordion(
-                                      state,
-                                    ),
-                                  ),
-                                );
-                              }
-                              return const SizedBox();
-                            },
-                          )
-                        : const SizedBox(),
-                  ],
-                ),
+                  ),
+                  const SizedBox(
+                    height: 16,
+                  ),
+                  _isExpanded
+                      ? const SizedBox(
+                          height: 16,
+                        )
+                      : const Spacer(),
+                  _buildSideBarBottom(),
+                ],
               ),
-              const SizedBox(
-                height: 16,
-              ),
-              _isExpanded
-                  ? const SizedBox(
-                      height: 16,
-                    )
-                  : const Spacer(),
-              _buildSideBarBottom(),
-            ],
+            ),
           ),
         ),
       ),
@@ -187,23 +196,23 @@ class _AppSideBarState extends State<AppSideBar> {
     return SizedBox(
       height: 64,
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 200),
         child: _isExpanded
             ? Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Image.asset(
                   ArDriveTheme.of(context).themeData.name == 'light'
-                      ? Resources.images.brand.logoHorizontalNoSubtitleLight
-                      : Resources.images.brand.logoHorizontalNoSubtitleDark,
+                      ? Resources.images.brand.blackLogo1
+                      : Resources.images.brand.whiteLogo1,
                   height: 32,
                   fit: BoxFit.contain,
                 ),
               )
             : ArDriveImage(
-                width: 62,
-                height: 62,
+                width: 42,
+                height: 42,
                 image: AssetImage(
-                  Resources.images.brand.logo,
+                  Resources.images.brand.logo1,
                 ),
               ),
       ),
@@ -220,12 +229,15 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).publicDrives,
-              style: ArDriveTypography.body.buttonLargeBold(),
+              style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
             state.userDrives
                 .where((element) => element.isPublic)
                 .map(
                   (d) => DriveListTile(
+                    hasAlert: state.drivesWithAlerts.contains(d.id),
                     drive: d,
                     onTap: () {
                       if (state.selectedDriveId == d.id) {
@@ -245,12 +257,15 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).privateDrives,
-              style: ArDriveTypography.body.buttonLargeBold(),
+              style: ArDriveTypography.body
+                  .buttonLargeBold()
+                  .copyWith(fontWeight: FontWeight.w700),
             ),
             state.userDrives
                 .where((element) => element.isPrivate)
                 .map(
                   (d) => DriveListTile(
+                    hasAlert: state.drivesWithAlerts.contains(d.id),
                     drive: d,
                     onTap: () {
                       context.read<DrivesCubit>().selectDrive(d.id);
@@ -265,11 +280,14 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).sharedDrives,
-              style: ArDriveTypography.body.buttonLargeBold(),
+              style: ArDriveTypography.body
+                  .buttonLargeBold()
+                  .copyWith(fontWeight: FontWeight.w700),
             ),
             state.sharedDrives
                 .map(
                   (d) => DriveListTile(
+                    hasAlert: state.drivesWithAlerts.contains(d.id),
                     drive: d,
                     onTap: () {
                       context.read<DrivesCubit>().selectDrive(d.id);
@@ -328,7 +346,7 @@ class _AppSideBarState extends State<AppSideBar> {
                           });
                         },
                         tooltip: appLocalizationsOf(context).collapseSideBar,
-                        icon: ArDriveIcons.arrowBackFilled(),
+                        icon: ArDriveIcons.arrowLeftFilled(),
                       ),
                     ),
                   ],
@@ -344,7 +362,7 @@ class _AppSideBarState extends State<AppSideBar> {
               ),
               ArDriveIconButton(
                 tooltip: appLocalizationsOf(context).expandSideBar,
-                icon: ArDriveIcons.arrowForwardFilled(),
+                icon: ArDriveIcons.arrowRightFilled(),
                 onPressed: () {
                   setState(() {
                     _isExpanded = !_isExpanded;
@@ -423,45 +441,33 @@ class _AppSideBarState extends State<AppSideBar> {
 
       return AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
-        child: _isExpanded
-            ? Column(
-                children: [
-                  Align(
-                    alignment: Alignment.center,
-                    child: _newButton(_isExpanded, isMobile),
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: _newButton(_isExpanded, isMobile),
+            ),
+            if (notEnoughARInWallet) ...{
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  appLocalizationsOf(context).insufficientARWarning,
+                  style: ArDriveTypography.body.captionRegular(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
                   ),
-                  if (notEnoughARInWallet) ...{
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        appLocalizationsOf(context).insufficientARWarning,
-                        style: ArDriveTypography.body.captionRegular(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeAccentDisabled,
-                        ),
-                      ),
-                    ),
-                    ArDriveButton(
-                      style: ArDriveButtonStyle.tertiary,
-                      onPressed: () => openUrl(url: Resources.arHelpLink),
-                      text: appLocalizationsOf(context).howDoIGetAR,
-                    ),
-                  }
-                ],
-              )
-            : Container(
-                decoration: BoxDecoration(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentBrand,
-                  shape: BoxShape.circle,
                 ),
-                padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 10),
-                child: _newButton(false, false),
               ),
+              ArDriveButton(
+                style: ArDriveButtonStyle.tertiary,
+                onPressed: () => openUrl(url: Resources.arHelpLink),
+                text: appLocalizationsOf(context).howDoIGetAR,
+              ),
+            }
+          ],
+        ),
       );
     } else {
       return _newButton(_isExpanded, isMobile);
@@ -481,87 +487,52 @@ class _AppSideBarState extends State<AppSideBar> {
       currentFolder = state.folderInView;
     }
 
-    if (isExpanded) {
-      return ArDriveClickArea(
-        tooltip: appLocalizationsOf(context).showMenu,
-        child: NewButton(
-          anchor: isMobile
-              ? const Aligned(
-                  follower: Alignment.topLeft,
-                  target: Alignment.bottomLeft,
-                )
-              : const Aligned(
-                  follower: Alignment.topLeft,
-                  target: Alignment.topRight,
-                ),
-          drive: currentDrive,
-          driveDetailState: context.read<DriveDetailCubit>().state,
-          currentFolder: currentFolder,
-          child: Container(
-            width: 128,
-            height: 40,
-            decoration: BoxDecoration(
-              color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-              borderRadius: const BorderRadius.all(
-                Radius.circular(8),
-              ),
-            ),
-            child: Center(
-              child: Text(
-                appLocalizationsOf(context).newString,
-                style: ArDriveTypography.headline.headline5Bold(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    } else {
-      return _roundedPlusButton(
-        context,
-        currentDrive,
-        currentFolder,
-        state,
-      );
-    }
-  }
-
-  Widget _roundedPlusButton(
-    BuildContext context,
-    Drive? currentDrive,
-    FolderWithContents? currentFolder,
-    DriveDetailState state,
-  ) {
     return ArDriveClickArea(
       tooltip: appLocalizationsOf(context).showMenu,
       child: NewButton(
-        anchor: const Aligned(
-          follower: Alignment.topLeft,
-          target: Alignment.topRight,
-        ),
+        anchor: isMobile
+            ? const Aligned(
+                follower: Alignment.topLeft,
+                target: Alignment.bottomLeft,
+              )
+            : const Aligned(
+                follower: Alignment.topLeft,
+                target: Alignment.topRight,
+              ),
         drive: currentDrive,
-        driveDetailState: state,
+        driveDetailState: context.read<DriveDetailCubit>().state,
         currentFolder: currentFolder,
         child: Container(
-          alignment: Alignment.center,
+          width: _isExpanded ? 128 : 40,
+          height: 40,
           decoration: BoxDecoration(
             color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-            shape: BoxShape.circle,
+            shape: _isExpanded ? BoxShape.rectangle : BoxShape.circle,
+            borderRadius: _isExpanded
+                ? const BorderRadius.all(
+                    Radius.circular(8),
+                  )
+                : null,
           ),
-          padding: const EdgeInsets.fromLTRB(4.0, 4.0, 4.0, 2.0),
-          child: ArDriveIcons.plus(color: Colors.white, size: 14),
+          child: isExpanded
+              ? Center(
+                  child: Text(
+                    appLocalizationsOf(context).newString,
+                    style: ArDriveTypography.headline.headline5Bold(
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+              : ArDriveIcons.plus(color: Colors.white),
         ),
       ),
     );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }
 
 class DriveListTile extends StatelessWidget {
   final Drive drive;
+  final bool hasAlert;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -570,6 +541,7 @@ class DriveListTile extends StatelessWidget {
     required this.drive,
     required this.isSelected,
     required this.onTap,
+    this.hasAlert = false,
   }) : super(key: key);
 
   @override
@@ -580,25 +552,53 @@ class DriveListTile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(
           left: 32.0,
-          // bottom: 8.0,
-          // top: 8.0,
           right: 8.0,
         ),
-        child: HoverWidget(
-          hoverScale: 1,
-          child: Text(
-            drive.name,
-            maxLines: 1,
-            overflow: TextOverflow.fade,
-            style: ArDriveTypography.body.buttonNormalBold(
-              color: isSelected
-                  ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
-                  : ArDriveTheme.of(context)
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Flexible(
+              child: HoverWidget(
+                hoverScale: 1,
+                child: Text(
+                  drive.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  softWrap: false,
+                  style: isSelected
+                      ? ArDriveTypography.body
+                          .buttonNormalBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          )
+                          .copyWith(fontWeight: FontWeight.w700)
+                      : ArDriveTypography.body.buttonNormalRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeAccentDisabled,
+                        ),
+                ),
+              ),
+            ),
+            if (hasAlert) ...{
+              const SizedBox(width: 8),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: ArDriveTheme.of(context)
                       .themeData
                       .colors
-                      .themeAccentDisabled,
-            ),
-          ),
+                      .themeErrorOnEmphasis,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            }
+          ],
         ),
       ),
     );
@@ -612,7 +612,7 @@ class HelpButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ArDriveIconButton(
       tooltip: appLocalizationsOf(context).help,
-      icon: ArDriveIcons.help(),
+      icon: ArDriveIcons.question(),
       onPressed: () {
         openUrl(url: Resources.helpLink);
       },

@@ -71,6 +71,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
+    _selectedItem = null;
+
     emit(DriveDetailLoadInProgress());
 
     await _folderSubscription?.cancel();
@@ -198,7 +200,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       (folder) => DriveDataTableItemMapper.fromFolderEntry(
         folder,
         (selected) {
-          openFolder(path: folder.path);
+          if (folder.id == _selectedItem?.id) {
+            openFolder(path: folder.path);
+          } else {
+            selectDataItem(selected);
+          }
         },
         index++,
         isOwner,

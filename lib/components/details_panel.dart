@@ -38,6 +38,7 @@ class DetailsPanel extends StatefulWidget {
     this.revisions,
     this.fileKey,
     required this.isSharePage,
+    this.currentDrive,
   });
 
   final ArDriveDataTableItem item;
@@ -46,6 +47,7 @@ class DetailsPanel extends StatefulWidget {
   final List<FileRevision>? revisions;
   final SecretKey? fileKey;
   final bool isSharePage;
+  final Drive? currentDrive;
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
@@ -158,6 +160,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           DriveExplorerItemTileLeading(
                             item: widget.item,
                           ),
+                          const SizedBox(
+                            width: 8,
+                          ),
                           Expanded(
                             child: Text(
                               widget.item.name,
@@ -166,6 +171,21 @@ class _DetailsPanelState extends State<DetailsPanel> {
                               overflow: TextOverflow.fade,
                             ),
                           ),
+                          if (widget.currentDrive != null &&
+                              !widget.isSharePage)
+                            ScreenTypeLayout(
+                              desktop: const SizedBox.shrink(),
+                              mobile: EntityActionsMenu(
+                                drive: widget.currentDrive,
+                                withInfo: false,
+                                item: widget.item,
+                                alignment: const Aligned(
+                                  follower: Alignment.topRight,
+                                  target: Alignment.bottomRight,
+                                  offset: Offset(24, 32),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -368,7 +388,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           children: [
             ArDriveIconButton(
               tooltip: appLocalizationsOf(context).viewOnViewBlock,
-              icon: ArDriveIcons.externalLink(size: 16),
+              icon: ArDriveIcons.newWindow(size: 20),
               onPressed: () {
                 openUrl(
                   url:
@@ -600,7 +620,7 @@ class CopyButton extends StatefulWidget {
   const CopyButton({
     Key? key,
     required this.text,
-    this.size = 16,
+    this.size = 20,
     this.showCopyText = true,
   }) : super(key: key);
 
@@ -655,14 +675,14 @@ class _CopyButtonState extends State<CopyButton> {
           }
         },
         icon: _showCheck
-            ? ArDriveIcons.checkSuccess(
+            ? ArDriveIcons.checkCirle(
                 size: widget.size,
                 color: ArDriveTheme.of(context)
                     .themeData
                     .colors
                     .themeSuccessDefault,
               )
-            : ArDriveIcons.copy(size: 16),
+            : ArDriveIcons.copy(size: widget.size),
       ),
     );
   }
@@ -723,9 +743,7 @@ class _DownloadOrPreview extends StatelessWidget {
         );
       },
       tooltip: appLocalizationsOf(context).download,
-      icon: ArDriveIcons.download(
-        size: 16,
-      ),
+      icon: ArDriveIcons.download(size: 20),
     );
   }
 }
@@ -786,7 +804,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           if (item is FileDataTableItem || item is DriveDataItem)
             _buildActionIcon(
               tooltip: _getShareTooltip(item, context),
-              icon: ArDriveIcons.share(size: dropdownIconSize),
+              icon: ArDriveIcons.share(size: defaultIconSize),
               onTap: () {
                 if (item is FileDataTableItem) {
                   promptToShareFile(
@@ -805,7 +823,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           if (item is FileDataTableItem) ...[
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download(size: dropdownIconSize),
+              icon: ArDriveIcons.download(size: defaultIconSize),
               onTap: () {
                 promptToDownloadProfileFile(
                   context: context,
@@ -816,7 +834,7 @@ class DetailsPanelToolbar extends StatelessWidget {
             if (drive.isPublic)
               _buildActionIcon(
                 tooltip: appLocalizationsOf(context).preview,
-                icon: ArDriveIcons.externalLink(size: dropdownIconSize),
+                icon: ArDriveIcons.newWindow(size: defaultIconSize),
                 onTap: () {
                   final bloc = context.read<DriveDetailCubit>();
                   bloc.launchPreview((item as FileDataTableItem).dataTxId);
@@ -826,7 +844,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).rename,
-              icon: ArDriveIcons.edit(size: dropdownIconSize),
+              icon: ArDriveIcons.edit(size: defaultIconSize),
               onTap: () {
                 if (item is DriveDataItem) {
                   promptToRenameDrive(
@@ -850,7 +868,7 @@ class DetailsPanelToolbar extends StatelessWidget {
               (item is FileDataTableItem || item is FolderDataTableItem))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).move,
-              icon: ArDriveIcons.move(size: dropdownIconSize),
+              icon: ArDriveIcons.move(size: defaultIconSize),
               onTap: () {
                 promptToMove(context, driveId: drive.id, selectedItems: [item]);
               },
@@ -858,7 +876,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           const Spacer(),
           _buildActionIcon(
             tooltip: appLocalizationsOf(context).close,
-            icon: ArDriveIcons.closeButton(size: dropdownIconSize),
+            icon: ArDriveIcons.x(size: defaultIconSize),
             onTap: () {
               final bloc = context.read<DriveDetailCubit>();
               bloc.toggleSelectedItemDetails();

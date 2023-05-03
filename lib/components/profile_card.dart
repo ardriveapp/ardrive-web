@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -59,7 +60,7 @@ class ProfileCard extends StatelessWidget {
     return ArDriveClickArea(
       tooltip: appLocalizationsOf(context).profile,
       child: ArDriveDropdown(
-        width: 250,
+        width: 205,
         anchor: const Aligned(
           follower: Alignment.topRight,
           target: Alignment.bottomRight,
@@ -81,12 +82,12 @@ class ProfileCard extends StatelessWidget {
                   if (walletAddress.isNotEmpty)
                     Text(
                       '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
-                      style:
-                          ArDriveTypography.body.buttonNormalRegular().copyWith(
-                                decoration: TextDecoration.underline,
-                              ),
+                      style: ArDriveTypography.body.buttonNormalBold().copyWith(
+                            decoration: TextDecoration.underline,
+                          ),
                     ),
                   CopyButton(
+                    size: 24,
                     text: walletAddress,
                     showCopyText: false,
                   ),
@@ -127,9 +128,9 @@ class ProfileCard extends StatelessWidget {
                 children: [
                   Text(
                     appLocalizationsOf(context).logout,
-                    style: ArDriveTypography.body.buttonNormalRegular(),
+                    style: ArDriveTypography.body.buttonNormalBold(),
                   ),
-                  ArDriveIcons.logout(size: 16),
+                  HoverWidget(child: ArDriveIcons.logout()),
                 ],
               ),
             ),
@@ -153,11 +154,13 @@ class ProfileCard extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ArDriveIcons.person(size: 14),
+              ArDriveIcons.user(size: 14),
               if (walletAddress.isNotEmpty)
                 Text(
                   '${walletAddress.substring(0, 2)}...${walletAddress.substring(walletAddress.length - 2)}',
-                  style: ArDriveTypography.body.buttonNormalBold(),
+                  style: ArDriveTypography.body
+                      .buttonNormalBold()
+                      .copyWith(fontWeight: FontWeight.w800),
                 ),
             ],
           ),

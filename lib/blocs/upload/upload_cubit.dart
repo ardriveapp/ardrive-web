@@ -286,6 +286,10 @@ class UploadCubit extends Cubit<UploadState> {
 
       emit(
         UploadReady(
+          uploadSize: uploadPlan.bundleUploadHandles
+                  .fold(0, (a, item) => item.size + a) +
+              uploadPlan.fileV2UploadHandles.values
+                  .fold(0, (a, item) => item.size + a),
           costEstimate: costEstimate,
           uploadIsPublic: _targetDrive.isPublic,
           sufficientArBalance: profile.walletBalance >= costEstimate.totalCost,

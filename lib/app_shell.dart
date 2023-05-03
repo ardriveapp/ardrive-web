@@ -130,6 +130,10 @@ class AppShellState extends State<AppShell> {
               Row(
                 children: [
                   const AppSideBar(),
+                  Container(
+                    color: ArDriveTheme.of(context).themeData.backgroundColor,
+                    width: 16,
+                  ),
                   Expanded(
                     child: Scaffold(
                       backgroundColor:
@@ -140,9 +144,7 @@ class AppShellState extends State<AppShell> {
                 ],
               ),
             ),
-            mobile: buildPage(
-              widget.page,
-            ),
+            mobile: buildPage(widget.page),
           );
         },
       );
@@ -182,8 +184,8 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
               padding: const EdgeInsets.only(left: 7.0),
               child: leading ??
                   ArDriveIconButton(
-                    icon: ArDriveIcons.menuArrow(
-                      size: dropdownIconSize,
+                    icon: ArDriveIcons.menu(
+                      size: defaultIconSize,
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors

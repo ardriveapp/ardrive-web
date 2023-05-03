@@ -38,6 +38,7 @@ class SyncButton extends StatelessWidget {
     return HoverWidget(
       tooltip: appLocalizationsOf(context).resyncTooltip,
       child: ArDriveDropdown(
+        width: 208,
         anchor: const Aligned(
           follower: Alignment.topRight,
           target: Alignment.bottomRight,
@@ -53,12 +54,11 @@ class SyncButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 children: [
-                  ArDriveIcons.sync(
+                  ArDriveIcons.refresh(
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
                         .themeFgDefault,
-                    size: 20,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -91,9 +91,8 @@ class SyncButton extends StatelessWidget {
             ),
           ),
         ],
-        child: ArDriveIcons.sync(
+        child: ArDriveIcons.refresh(
           color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-          size: 24,
         ),
       ),
     );
