@@ -79,9 +79,9 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           children: [
             Expanded(
               child: _buildIllustration(
-                context,
-                Resources.images.login.gridImage,
-              ),
+                  context,
+                  // verify theme light
+                  Resources.images.login.gridImage),
             ),
             Expanded(
               child: FractionallySizedBox(
@@ -114,13 +114,26 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       fit: StackFit.expand,
       children: [
         Opacity(
-          opacity: 0.25,
-          child: ArDriveImage(
-            key: const Key('loginPageIllustration'),
-            image: AssetImage(
-              image,
-            ),
-            fit: BoxFit.cover,
+          opacity: 1,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ArDriveImage(
+                key: const Key('loginPageIllustration'),
+                image: AssetImage(
+                  image,
+                ),
+                height: 600,
+                width: 600,
+                fit: BoxFit.cover,
+              ),
+              Container(
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .backgroundColor
+                    .withOpacity(0.5),
+              ),
+            ],
           ),
         ),
         Center(
@@ -131,8 +144,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               ArDriveImage(
                 image: AssetImage(
                   ArDriveTheme.of(context).themeData.name == 'light'
-                      ? Resources.images.brand.logoHorizontalNoSubtitleLight
-                      : Resources.images.brand.logoHorizontalNoSubtitleDark,
+                      ? Resources.images.brand.blackLogo2
+                      : Resources.images.brand.whiteLogo2,
                 ),
                 height: 65,
                 fit: BoxFit.contain,
@@ -305,7 +318,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
             ScreenTypeLayout(
               desktop: const SizedBox.shrink(),
               mobile: ArDriveImage(
-                image: AssetImage(Resources.images.brand.logo),
+                image: AssetImage(Resources.images.brand.logo1),
                 height: 50,
               ),
             ),
@@ -667,7 +680,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               ScreenTypeLayout(
                 desktop: const SizedBox.shrink(),
                 mobile: ArDriveImage(
-                  image: AssetImage(Resources.images.brand.logo),
+                  image: AssetImage(Resources.images.brand.logo1),
                   height: 50,
                 ),
               ),
@@ -1016,11 +1029,11 @@ class OnBoardingViewState extends State<OnBoardingView> {
             children: [
               ArDriveImage(
                 image: AssetImage(
-                  Resources.images.login.ardrivePlates3,
+                  Resources.images.login.ardriveLogoOnboarding,
                 ),
                 fit: BoxFit.contain,
-                height: 175,
-                width: 175,
+                height: 240,
+                width: 240,
               ),
               const SizedBox(
                 height: 48,

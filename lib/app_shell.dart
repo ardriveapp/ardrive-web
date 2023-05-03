@@ -144,9 +144,7 @@ class AppShellState extends State<AppShell> {
                 ],
               ),
             ),
-            mobile: buildPage(
-              widget.page,
-            ),
+            mobile: buildPage(widget.page),
           );
         },
       );

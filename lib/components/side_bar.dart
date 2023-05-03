@@ -193,8 +193,8 @@ class _AppSideBarState extends State<AppSideBar> {
                 padding: const EdgeInsets.all(16.0),
                 child: Image.asset(
                   ArDriveTheme.of(context).themeData.name == 'light'
-                      ? Resources.images.brand.logoHorizontalNoSubtitleLight
-                      : Resources.images.brand.logoHorizontalNoSubtitleDark,
+                      ? Resources.images.brand.blackLogo1
+                      : Resources.images.brand.whiteLogo1,
                   height: 32,
                   fit: BoxFit.contain,
                 ),
@@ -203,7 +203,7 @@ class _AppSideBarState extends State<AppSideBar> {
                 width: 42,
                 height: 42,
                 image: AssetImage(
-                  Resources.images.brand.logo,
+                  Resources.images.brand.logo05,
                 ),
               ),
       ),
