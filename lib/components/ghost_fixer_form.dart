@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/ghost_fixer/ghost_fixer_cubit.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -215,21 +216,35 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
                       ),
                       const SizedBox(height: 16),
                       Text(appLocalizationsOf(context).targetFolderEmphasized),
+                      const SizedBox(height: 16),
                       if (!state.viewingRootFolder)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: TextButton(
-                            style: TextButton.styleFrom(
-                                textStyle:
-                                    Theme.of(context).textTheme.subtitle2,
-                                padding: const EdgeInsets.all(16)),
-                            onPressed: () => context
+                        AnimatedContainer(
+                          width: !state.viewingRootFolder ? 100 : 0,
+                          duration: const Duration(milliseconds: 200),
+                          child: GestureDetector(
+                            onTap: () => context
                                 .read<GhostFixerCubit>()
                                 .loadParentFolder(),
-                            child: ListTile(
-                              dense: true,
-                              leading: const Icon(Icons.arrow_back),
-                              title: Text(appLocalizationsOf(context).back),
+                            child: AnimatedScale(
+                              duration: const Duration(milliseconds: 200),
+                              scale: !state.viewingRootFolder ? 1 : 0,
+                              child: Row(children: [
+                                ArDriveIconButton(
+                                  icon: ArDriveIcons.arrowLeft(),
+                                  size: 32,
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Text(
+                                      appLocalizationsOf(context).back,
+                                      style: ArDriveTypography.body
+                                          .inputNormalRegular(),
+                                    ),
+                                  ),
+                                ),
+                              ]),
                             ),
                           ),
                         ),

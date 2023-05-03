@@ -213,7 +213,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                   duration: const Duration(milliseconds: 200),
                                   scale: !state.viewingRootFolder ? 1 : 0,
                                   child: ArDriveIcons.arrowLeft(
-                                    size: 20,
+                                    size: 32,
                                   ),
                                 ),
                               ),

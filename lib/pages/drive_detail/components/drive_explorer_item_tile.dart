@@ -176,7 +176,9 @@ class _DriveExplorerItemTileTrailingState
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (item is FolderDataTableItem && item.isGhostFolder) ...[
+        if (item is FolderDataTableItem &&
+            item.isGhostFolder &&
+            item.isOwner) ...[
           ArDriveButton(
             maxHeight: 36,
             style: ArDriveButtonStyle.primary,
