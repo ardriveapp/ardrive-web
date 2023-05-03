@@ -22,6 +22,7 @@ class DriveEntity extends Entity {
 
   String? name;
   String? rootFolderId;
+
   DriveEntity({
     this.id,
     this.name,

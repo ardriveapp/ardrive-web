@@ -21,8 +21,11 @@ Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions({
     if (revisionPerformedAction == null) {
       continue;
     }
-    final revision =
-        entity.toRevisionCompanion(performedAction: revisionPerformedAction);
+    final revision = entity.toRevisionCompanion(
+      performedAction: revisionPerformedAction,
+      customJsonMetaData:
+          latestRevision?.customJsonMetaData ?? const Value.absent(),
+    );
 
     if (revision.action.value.isEmpty) {
       continue;
