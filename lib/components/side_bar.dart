@@ -203,7 +203,7 @@ class _AppSideBarState extends State<AppSideBar> {
                 width: 42,
                 height: 42,
                 image: AssetImage(
-                  Resources.images.brand.logo05,
+                  Resources.images.brand.logo1,
                 ),
               ),
       ),
@@ -226,6 +226,7 @@ class _AppSideBarState extends State<AppSideBar> {
                 .where((element) => element.isPublic)
                 .map(
                   (d) => DriveListTile(
+                    hasAlert: state.drivesWithAlerts.contains(d.id),
                     drive: d,
                     onTap: () {
                       if (state.selectedDriveId == d.id) {
@@ -251,6 +252,7 @@ class _AppSideBarState extends State<AppSideBar> {
                 .where((element) => element.isPrivate)
                 .map(
                   (d) => DriveListTile(
+                    hasAlert: state.drivesWithAlerts.contains(d.id),
                     drive: d,
                     onTap: () {
                       context.read<DrivesCubit>().selectDrive(d.id);
@@ -270,6 +272,7 @@ class _AppSideBarState extends State<AppSideBar> {
             state.sharedDrives
                 .map(
                   (d) => DriveListTile(
+                    hasAlert: state.drivesWithAlerts.contains(d.id),
                     drive: d,
                     onTap: () {
                       context.read<DrivesCubit>().selectDrive(d.id);
@@ -514,6 +517,7 @@ class _AppSideBarState extends State<AppSideBar> {
 
 class DriveListTile extends StatelessWidget {
   final Drive drive;
+  final bool hasAlert;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -522,6 +526,7 @@ class DriveListTile extends StatelessWidget {
     required this.drive,
     required this.isSelected,
     required this.onTap,
+    this.hasAlert = false,
   }) : super(key: key);
 
   @override
@@ -532,25 +537,43 @@ class DriveListTile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(
           left: 32.0,
-          // bottom: 8.0,
-          // top: 8.0,
           right: 8.0,
         ),
-        child: HoverWidget(
-          hoverScale: 1,
-          child: Text(
-            drive.name,
-            maxLines: 1,
-            overflow: TextOverflow.fade,
-            style: ArDriveTypography.body.buttonNormalBold(
-              color: isSelected
-                  ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
-                  : ArDriveTheme.of(context)
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            HoverWidget(
+              hoverScale: 1,
+              child: Text(
+                drive.name,
+                maxLines: 1,
+                overflow: TextOverflow.fade,
+                style: ArDriveTypography.body.buttonNormalBold(
+                  color: isSelected
+                      ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
+                      : ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeAccentDisabled,
+                ),
+              ),
+            ),
+            if (hasAlert) ...{
+              const SizedBox(width: 8),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: ArDriveTheme.of(context)
                       .themeData
                       .colors
-                      .themeAccentDisabled,
-            ),
-          ),
+                      .themeErrorOnEmphasis,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            }
+          ],
         ),
       ),
     );
