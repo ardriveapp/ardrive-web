@@ -10,7 +10,6 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_helper.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +29,7 @@ class DriveExplorerItemTile extends TableRowWidget {
               style: ArDriveTypography.body.buttonNormalBold(),
               overflow: TextOverflow.fade,
             ),
-            Text(size, style: ArDriveTypography.body.xSmallRegular()),
+            Text(size, style: ArDriveTypography.body.captionRegular()),
             Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),
             Text(dateCreated, style: ArDriveTypography.body.captionRegular()),
           ],
@@ -78,9 +77,6 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
 
   Widget _buildFileStatus(BuildContext context) {
     late Color indicatorColor;
-
-    logger.d(
-        'item.fileStatusFromTransactions: ${item.fileStatusFromTransactions}');
 
     switch (item.fileStatusFromTransactions) {
       case TransactionStatus.pending:
@@ -199,7 +195,6 @@ class _DriveExplorerItemTileTrailingState
           ),
         ],
         ArDriveDropdown(
-          height: isMobile(context) ? 44 : 60,
           calculateVerticalAlignment: (isAboveHalfScreen) {
             if (isAboveHalfScreen) {
               return Alignment.bottomRight;
