@@ -554,7 +554,7 @@ class ArDriveItemListTile extends StatelessWidget {
       },
       child: ArDriveCard(
         backgroundColor:
-            ArDriveTheme.of(context).themeData.tableTheme.cellColor,
+            ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
         content: Row(
           mainAxisSize: MainAxisSize.max,
           children: [
@@ -1005,7 +1005,7 @@ class ArDriveGridItem extends StatelessWidget {
       child: ArDriveCard(
         contentPadding: const EdgeInsets.all(0),
         backgroundColor:
-            ArDriveTheme.of(context).themeData.tableTheme.cellColor,
+            ArDriveTheme.of(context).themeData.colors.themeBorderDefault,
         content: Column(
           children: [
             Expanded(

@@ -56,7 +56,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors
-                          .themeFgOnAccent,
+                          .themeFgDefault,
                       width: 1,
                     ),
                     borderRadius: BorderRadius.circular(10),
