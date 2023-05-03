@@ -416,6 +416,33 @@ class UploadForm extends StatelessWidget {
                             .copyWith(color: Theme.of(context).errorColor),
                       ),
                     },
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Total size: ',
+                            style: ArDriveTypography.body.buttonNormalRegular(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgOnDisabled,
+                            ),
+                          ),
+                          TextSpan(
+                            text: filesize(
+                              state.uploadSize,
+                            ),
+                            style: ArDriveTypography.body
+                                .buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgOnDisabled)
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    )
                   ],
                 ),
               ),
