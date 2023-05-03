@@ -22,11 +22,15 @@ class FolderEntity extends Entity {
 
   String? name;
 
+  @JsonKey(ignore: true)
+  String? customJsonMetaData;
+
   FolderEntity({
     this.id,
     this.driveId,
     this.parentFolderId,
     this.name,
+    this.customJsonMetaData,
   }) : super(ArDriveCrypto());
 
   static Future<FolderEntity> fromTransaction(
@@ -53,10 +57,18 @@ class FolderEntity extends Entity {
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
+        ..customJsonMetaData = customMetaDataFromData(entityJson)
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
+  }
+
+  static String customMetaDataFromData(Map<String, dynamic> metadata) {
+    metadata.remove('name');
+    final customMetadataAsString = json.encode(metadata);
+    print('Custom metadata for folder: $customMetadataAsString');
+    return customMetadataAsString;
   }
 
   @override

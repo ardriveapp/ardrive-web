@@ -65,7 +65,10 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     await driveDao.transaction(() async {
       await driveDao.writeFileEntity(entity, path);
       await driveDao.insertFileRevision(
-        entity.toRevisionCompanion(performedAction: revisionAction),
+        entity.toRevisionCompanion(
+          performedAction: revisionAction,
+          customMetaData: null,
+        ),
       );
     });
   }

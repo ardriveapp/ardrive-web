@@ -28,8 +28,10 @@ Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions({
     if (revisionPerformedAction == null) {
       continue;
     }
-    final revision =
-        entity.toRevisionCompanion(performedAction: revisionPerformedAction);
+    final revision = entity.toRevisionCompanion(
+      performedAction: revisionPerformedAction,
+      customJsonMetaData: entity.customJsonMetaData,
+    );
 
     if (revision.action.value.isEmpty) {
       continue;

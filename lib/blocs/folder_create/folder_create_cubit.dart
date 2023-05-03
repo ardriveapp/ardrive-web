@@ -95,6 +95,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create,
+          customJsonMetaData: null,
         ));
       });
     } catch (err) {

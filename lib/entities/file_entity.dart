@@ -32,6 +32,9 @@ class FileEntity extends Entity {
   String? dataTxId;
   String? dataContentType;
 
+  @JsonKey(ignore: true)
+  String? customJsonMetaData;
+
   FileEntity({
     this.id,
     this.driveId,
@@ -41,6 +44,7 @@ class FileEntity extends Entity {
     this.lastModifiedDate,
     this.dataTxId,
     this.dataContentType,
+    this.customJsonMetaData,
   }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({
@@ -81,10 +85,22 @@ class FileEntity extends Entity {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
+        ..customJsonMetaData = customMetaDataFromData(entityJson)
         ..createdAt = commitTime;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
+  }
+
+  static String customMetaDataFromData(Map<String, dynamic> metadata) {
+    metadata.remove('name');
+    metadata.remove('size');
+    metadata.remove('lastModifiedDate');
+    metadata.remove('dataTxId');
+    metadata.remove('dataContentType');
+    final customMetadataAsString = json.encode(metadata);
+    print('Custom metadata for file: $customMetadataAsString');
+    return customMetadataAsString;
   }
 
   @override

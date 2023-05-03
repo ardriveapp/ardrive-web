@@ -51,6 +51,39 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           logSync('Getting metadata from drive ${drive.name}');
         }
 
+        // FIXME - PE-3440
+        /// Make use of `eagerError: true` to make it fail on first error
+        /// Also, when there's no internet connection and when we're getting
+        /// rate-limited (TODO: check the latter), many requests will be retrying.
+        /// We shall find another way to fail faster.
+
+        // MAYBE FIX: set a narrow concurrency limit
+
+        final List<Uint8List> entitiesData = await Future.wait(
+          items.map(
+            (entity) async {
+              final tags = entity.tags;
+              final isSnapshot = tags.any(
+                (tag) =>
+                    tag.name == EntityTag.entityType &&
+                    tag.value == EntityType.snapshot.toString(),
+              );
+
+              // don't fetch data for snapshots
+              if (isSnapshot) {
+                print('skipping unnecessary request for snapshot data');
+                return Uint8List(0);
+              }
+
+              return arweave.getEntityData(
+                entityId: entity.id,
+                driveId: ownerAddress,
+                isPrivate: driveKey != null,
+              );
+            },
+          ),
+        );
+
         final entityHistory =
             await arweave.createDriveEntityHistoryFromTransactions(
           items,
@@ -59,6 +92,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           snapshotDriveHistory: snapshotDriveHistory,
           driveId: drive.id,
           ownerAddress: ownerAddress,
+          entitiesData: entitiesData,
         );
 
         // Create entries for all the new revisions of file and folders in this drive.

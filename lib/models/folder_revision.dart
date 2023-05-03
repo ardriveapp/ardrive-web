@@ -32,8 +32,10 @@ extension FolderEntityExtensions on FolderEntity {
   /// Converts the entity to an instance of [FolderRevisionsCompanion].
   ///
   /// This requires a `performedAction` to be specified.
-  FolderRevisionsCompanion toRevisionCompanion(
-          {required String performedAction}) =>
+  FolderRevisionsCompanion toRevisionCompanion({
+    required String performedAction,
+    required String? customJsonMetaData,
+  }) =>
       FolderRevisionsCompanion.insert(
         folderId: id!,
         driveId: driveId!,
@@ -42,6 +44,7 @@ extension FolderEntityExtensions on FolderEntity {
         metadataTxId: txId,
         dateCreated: Value(createdAt),
         action: performedAction,
+        customJsonMetaData: Value<String?>(customJsonMetaData),
       );
 
   /// Returns the action performed on the folder that lead to the new revision.

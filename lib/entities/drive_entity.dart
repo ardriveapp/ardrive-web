@@ -23,10 +23,14 @@ class DriveEntity extends Entity {
   String? name;
   String? rootFolderId;
 
+  @JsonKey(ignore: true)
+  String? customMetadata;
+
   DriveEntity({
     this.id,
     this.name,
     this.rootFolderId,
+    this.customMetadata,
     this.privacy,
     this.authMode,
   }) : super(ArDriveCrypto());
@@ -56,6 +60,7 @@ class DriveEntity extends Entity {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
+        ..customMetadata = customMetaDataFromData(entityJson)
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
@@ -75,6 +80,14 @@ class DriveEntity extends Entity {
     if (privacy == DrivePrivacy.private) {
       tx.addTag(EntityTag.driveAuthMode, authMode!);
     }
+  }
+
+  static String customMetaDataFromData(Map<String, dynamic> metadata) {
+    metadata.remove('name');
+    metadata.remove('rootFolderId');
+    final customMetadataAsString = json.encode(metadata);
+    print('Custom metadata for drive: $customMetadataAsString');
+    return customMetadataAsString;
   }
 
   factory DriveEntity.fromJson(Map<String, dynamic> json) =>

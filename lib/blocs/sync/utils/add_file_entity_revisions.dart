@@ -31,8 +31,10 @@ Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions({
     // If Parent-Folder-Id is missing for a file, put it in the root folder
 
     entity.parentFolderId = entity.parentFolderId ?? rootPath;
-    final revision =
-        entity.toRevisionCompanion(performedAction: revisionPerformedAction);
+    final revision = entity.toRevisionCompanion(
+      performedAction: revisionPerformedAction,
+      customMetaData: entity.customJsonMetaData,
+    );
 
     if (revision.action.value.isEmpty) {
       continue;
