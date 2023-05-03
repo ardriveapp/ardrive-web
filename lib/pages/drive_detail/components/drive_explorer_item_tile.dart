@@ -10,6 +10,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_helper.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -77,6 +78,9 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
 
   Widget _buildFileStatus(BuildContext context) {
     late Color indicatorColor;
+
+    logger.d(
+        'item.fileStatusFromTransactions: ${item.fileStatusFromTransactions}');
 
     switch (item.fileStatusFromTransactions) {
       case TransactionStatus.pending:
@@ -304,19 +308,20 @@ class _DriveExplorerItemTileTrailingState
           ),
         ),
       ),
-      ArDriveDropdownItem(
-        onClick: () {
-          final bloc = context.read<DriveDetailCubit>();
+      if (widget.drive.isPublic)
+        ArDriveDropdownItem(
+          onClick: () {
+            final bloc = context.read<DriveDetailCubit>();
 
-          bloc.launchPreview((item as FileDataTableItem).dataTxId);
-        },
-        content: _buildItem(
-          appLocalizationsOf(context).preview,
-          ArDriveIcons.eyeOpen(
-            size: defaultIconSize,
+            bloc.launchPreview((item as FileDataTableItem).dataTxId);
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).preview,
+            ArDriveIcons.eyeOpen(
+              size: defaultIconSize,
+            ),
           ),
         ),
-      ),
       if (isOwner) ...[
         ArDriveDropdownItem(
           onClick: () {
