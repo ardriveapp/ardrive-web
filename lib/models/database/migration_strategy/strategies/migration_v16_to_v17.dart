@@ -12,6 +12,12 @@ Future<void> onUpgradeV16ToV17(
     final driveRevisionsTable = allTables.firstWhere(
       (element) => element.actualTableName == 'drive_revisions',
     );
+    final folderRevisionsTable = allTables.firstWhere(
+      (element) => element.actualTableName == 'folder_revisions',
+    );
+    final fileRevisionsTable = allTables.firstWhere(
+      (element) => element.actualTableName == 'file_revisions',
+    );
 
     await m.alterTable(
       TableMigration(
@@ -20,6 +26,38 @@ Future<void> onUpgradeV16ToV17(
           GeneratedColumn<String?>(
             'customJsonMetaData',
             'drive_revisions',
+            true,
+            type: const StringType(),
+            defaultValue: null,
+            clientDefault: null,
+          ),
+        ],
+      ),
+    );
+
+    await m.alterTable(
+      TableMigration(
+        folderRevisionsTable,
+        newColumns: [
+          GeneratedColumn<String?>(
+            'customJsonMetaData',
+            'folder_revisions',
+            true,
+            type: const StringType(),
+            defaultValue: null,
+            clientDefault: null,
+          ),
+        ],
+      ),
+    );
+
+    await m.alterTable(
+      TableMigration(
+        fileRevisionsTable,
+        newColumns: [
+          GeneratedColumn<String?>(
+            'customJsonMetaData',
+            'file_revisions',
             true,
             type: const StringType(),
             defaultValue: null,
