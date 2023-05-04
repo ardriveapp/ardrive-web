@@ -14,6 +14,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -127,6 +128,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
             ];
             return SizedBox(
               child: ArDriveCard(
+                borderRadius: AppPlatform.isMobile || AppPlatform.isMobileWeb()
+                    ? 0
+                    : null,
                 backgroundColor: ArDriveTheme.of(context)
                     .themeData
                     .tableTheme

@@ -26,6 +26,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
@@ -67,6 +68,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     return SizedBox.expand(
       child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
         builder: (context, state) {
+          logger.d('DriveDetailPage: $state');
           if (state is DriveDetailLoadInProgress) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is DriveDetailLoadSuccess) {
@@ -566,14 +568,14 @@ class ArDriveItemListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        item.onPressed(item);
-      },
-      child: ArDriveCard(
-        backgroundColor:
-            ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-        content: Row(
+    return ArDriveCard(
+      backgroundColor:
+          ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+      content: InkWell(
+        onTap: () {
+          item.onPressed(item);
+        },
+        child: Row(
           mainAxisSize: MainAxisSize.max,
           children: [
             DriveExplorerItemTileLeading(
@@ -881,11 +883,11 @@ class MobileFolderNavigation extends StatelessWidget {
 class CustomBottomNavigation extends StatelessWidget {
   const CustomBottomNavigation({
     super.key,
-    required this.drive,
-    required this.currentFolder,
+    this.drive,
+    this.currentFolder,
   });
 
-  final Drive drive;
+  final Drive? drive;
   final FolderWithContents? currentFolder;
 
   @override
@@ -933,74 +935,76 @@ class CustomBottomNavigation extends StatelessWidget {
                     appLocalizationsOf(context).newDrive,
                   ),
                 ),
-                ArDriveDropdownItem(
-                  onClick: () => attachDrive(context: context),
-                  content: _buildItem(
-                    ArDriveIcons.iconAttachDrive(size: defaultIconSize),
-                    appLocalizationsOf(context).attachDrive,
+                if (drive != null) ...[
+                  ArDriveDropdownItem(
+                    onClick: () => attachDrive(context: context),
+                    content: _buildItem(
+                      ArDriveIcons.iconAttachDrive(size: defaultIconSize),
+                      appLocalizationsOf(context).attachDrive,
+                    ),
                   ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () => promptToCreateFolder(
-                    context,
-                    driveId: drive.id,
-                    parentFolderId: currentFolder!.folder.id,
-                  ),
-                  content: _buildItem(
-                    ArDriveIcons.iconNewFolder1(size: defaultIconSize),
-                    appLocalizationsOf(context).newFolder,
-                  ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () => promptToUpload(
-                    context,
-                    driveId: drive.id,
-                    parentFolderId: currentFolder!.folder.id,
-                    isFolderUpload: true,
-                  ),
-                  content: _buildItem(
-                    ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
-                    appLocalizationsOf(context).uploadFolder,
-                  ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () {
-                    promptToUpload(
+                  ArDriveDropdownItem(
+                    onClick: () => promptToCreateFolder(
                       context,
-                      driveId: drive.id,
+                      driveId: drive!.id,
                       parentFolderId: currentFolder!.folder.id,
-                      isFolderUpload: false,
-                    );
-                  },
-                  content: _buildItem(
-                    ArDriveIcons.iconUploadFiles(size: defaultIconSize),
-                    appLocalizationsOf(context).uploadFiles,
+                    ),
+                    content: _buildItem(
+                      ArDriveIcons.iconNewFolder1(size: defaultIconSize),
+                      appLocalizationsOf(context).newFolder,
+                    ),
                   ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () {
-                    promptToCreateManifest(
+                  ArDriveDropdownItem(
+                    onClick: () => promptToUpload(
                       context,
-                      drive: drive,
-                    );
-                  },
-                  content: _buildItem(
-                    ArDriveIcons.tournament(size: defaultIconSize),
-                    appLocalizationsOf(context).createManifest,
+                      driveId: drive!.id,
+                      parentFolderId: currentFolder!.folder.id,
+                      isFolderUpload: true,
+                    ),
+                    content: _buildItem(
+                      ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
+                      appLocalizationsOf(context).uploadFolder,
+                    ),
                   ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () {
-                    promptToCreateSnapshot(
-                      context,
-                      drive,
-                    );
-                  },
-                  content: _buildItem(
-                    ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
-                    appLocalizationsOf(context).createSnapshot,
+                  ArDriveDropdownItem(
+                    onClick: () {
+                      promptToUpload(
+                        context,
+                        driveId: drive!.id,
+                        parentFolderId: currentFolder!.folder.id,
+                        isFolderUpload: false,
+                      );
+                    },
+                    content: _buildItem(
+                      ArDriveIcons.iconUploadFiles(size: defaultIconSize),
+                      appLocalizationsOf(context).uploadFiles,
+                    ),
                   ),
-                ),
+                  ArDriveDropdownItem(
+                    onClick: () {
+                      promptToCreateManifest(
+                        context,
+                        drive: drive!,
+                      );
+                    },
+                    content: _buildItem(
+                      ArDriveIcons.tournament(size: defaultIconSize),
+                      appLocalizationsOf(context).createManifest,
+                    ),
+                  ),
+                  ArDriveDropdownItem(
+                    onClick: () {
+                      promptToCreateSnapshot(
+                        context,
+                        drive!,
+                      );
+                    },
+                    content: _buildItem(
+                      ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
+                      appLocalizationsOf(context).createSnapshot,
+                    ),
+                  ),
+                ]
               ],
               child: Padding(
                 padding: const EdgeInsets.only(top: 8),
