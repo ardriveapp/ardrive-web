@@ -447,7 +447,7 @@ class _AppSideBarState extends State<AppSideBar> {
               alignment: Alignment.center,
               child: _newButton(_isExpanded, isMobile),
             ),
-            if (notEnoughARInWallet) ...{
+            if (notEnoughARInWallet && _isExpanded) ...{
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
