@@ -7,6 +7,7 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:drift/drift.dart';
@@ -200,7 +201,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       (folder) => DriveDataTableItemMapper.fromFolderEntry(
         folder,
         (selected) {
-          if (folder.id == _selectedItem?.id) {
+          if (folder.id == _selectedItem?.id ||
+              AppPlatform.isMobileWeb() ||
+              AppPlatform.isMobile) {
             openFolder(path: folder.path);
           } else {
             selectDataItem(selected);
@@ -268,6 +271,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           selectedFilePreviewUrl:
               '${_config.defaultArweaveGatewayUrl}/$dataTxId');
     }
+
     _selectedItem = item;
 
     emit(state.copyWith(selectedItem: item, showSelectedItemDetails: true));
