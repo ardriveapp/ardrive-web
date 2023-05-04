@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -130,8 +132,9 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               Container(
                 color: ArDriveTheme.of(context)
                     .themeData
-                    .backgroundColor
-                    .withOpacity(0.5),
+                    .colors
+                    .themeBgCanvas
+                    .withOpacity(0.8),
               ),
             ],
           ),
@@ -153,12 +156,12 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               Padding(
                 padding: const EdgeInsets.only(top: 42),
                 child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.25,
+                  width: MediaQuery.of(context).size.width * 0.32,
                   child: Text(
                     appLocalizationsOf(context)
                         .yourPrivateSecureAndPermanentDrive,
                     textAlign: TextAlign.start,
-                    style: ArDriveTypography.headline.headline4Regular(
+                    style: ArDriveTypography.headline.headline3Regular(
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors
@@ -1072,46 +1075,37 @@ class _OnBoardingContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        Expanded(
-          flex: 1,
-          child: Text(
-            onBoarding.title,
-            style: ArDriveTypography.headline.headline3Bold(),
-          ),
+        Text(
+          onBoarding.title,
+          style: ArDriveTypography.headline.headline3Bold(),
         ),
-        Expanded(
-          flex: 2,
-          child: Text(
-            onBoarding.description,
-            style: ArDriveTypography.body.buttonXLargeBold(),
-          ),
+        Text(
+          onBoarding.description,
+          style: ArDriveTypography.body.buttonXLargeBold(),
         ),
-        Expanded(
-          flex: 1,
-          child: Row(
-            key: const ValueKey('buttons'),
-            children: [
-              ArDriveButton(
-                icon: onBoarding.secundaryButtonHasIcon
-                    ? ArDriveIcons.arrowLeftOutline()
-                    : null,
-                style: ArDriveButtonStyle.secondary,
-                text: onBoarding.secundaryButtonText,
-                onPressed: () => onBoarding.secundaryButtonAction(),
+        Row(
+          key: const ValueKey('buttons'),
+          children: [
+            ArDriveButton(
+              icon: onBoarding.secundaryButtonHasIcon
+                  ? ArDriveIcons.arrowLeftOutline()
+                  : null,
+              style: ArDriveButtonStyle.secondary,
+              text: onBoarding.secundaryButtonText,
+              onPressed: () => onBoarding.secundaryButtonAction(),
+            ),
+            const SizedBox(width: 32),
+            ArDriveButton(
+              iconAlignment: IconButtonAlignment.right,
+              icon: ArDriveIcons.arrowRightOutline(
+                color: Colors.white,
               ),
-              const SizedBox(width: 32),
-              ArDriveButton(
-                iconAlignment: IconButtonAlignment.right,
-                icon: ArDriveIcons.arrowRightOutline(
-                  color: Colors.white,
-                ),
-                text: onBoarding.primaryButtonText,
-                onPressed: () => onBoarding.primaryButtonAction(),
-              ),
-            ],
-          ),
+              text: onBoarding.primaryButtonText,
+              onPressed: () => onBoarding.primaryButtonAction(),
+            ),
+          ],
         ),
       ],
     );
