@@ -81,7 +81,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final profileState = _profileCubit.state as ProfileLoggedIn;
     _ownerAddress = profileState.walletAddress;
 
-    await _setTrustedRange(range);
+    _setTrustedRange(range);
 
     emit(PrepareSnapshotCreation());
 
@@ -211,7 +211,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
   }
 
-  Future<void> _setTrustedRange(Range? range) async {
+  void _setTrustedRange(Range? range) {
     final maximumHeightToSnapshot =
         _currentHeight - kRequiredTxConfirmationCount;
 
