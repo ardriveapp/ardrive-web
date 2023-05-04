@@ -573,7 +573,16 @@ class ArDriveItemListTile extends StatelessWidget {
           ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
       content: InkWell(
         onTap: () {
-          item.onPressed(item);
+          final cubit = context.read<DriveDetailCubit>();
+          if (item is FolderDataTableItem) {
+            cubit.openFolder(path: item.path);
+          } else if (item is FileDataTableItem) {
+            if (item.id == cubit.selectedItem?.id) {
+              cubit.toggleSelectedItemDetails();
+              return;
+            }
+            cubit.selectDataItem(item);
+          }
         },
         child: Row(
           mainAxisSize: MainAxisSize.max,
@@ -1045,7 +1054,7 @@ class ArDriveGridItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        item.onPressed(item);
+        // item.onPressed(item);
       },
       child: ArDriveCard(
         contentPadding: const EdgeInsets.all(0),

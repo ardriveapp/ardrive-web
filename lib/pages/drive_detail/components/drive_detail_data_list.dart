@@ -20,7 +20,6 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final DateTime dateCreated;
   final String contentType;
   final String? fileStatusFromTransactions;
-  final Function(ArDriveDataTableItem) onPressed;
   final String id;
   final String driveId;
   final String path;
@@ -35,7 +34,6 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     required this.dateCreated,
     required this.contentType,
     this.fileStatusFromTransactions,
-    required this.onPressed,
     required this.path,
     required int index,
     required this.isOwner,
@@ -50,7 +48,6 @@ class DriveDataItem extends ArDriveDataTableItem {
     required super.lastUpdated,
     required super.dateCreated,
     super.contentType = 'drive',
-    required super.onPressed,
     super.path = '',
     required super.index,
     required super.isOwner,
@@ -73,7 +70,6 @@ class FolderDataTableItem extends ArDriveDataTableItem {
     required String contentType,
     required String path,
     String? fileStatusFromTransactions,
-    required Function(ArDriveDataTableItem) onPressed,
     this.parentFolderId,
     this.isGhostFolder = false,
     required int index,
@@ -88,7 +84,6 @@ class FolderDataTableItem extends ArDriveDataTableItem {
           dateCreated: dateCreated,
           contentType: contentType,
           fileStatusFromTransactions: fileStatusFromTransactions,
-          onPressed: onPressed,
           index: index,
           isOwner: isOwner,
         );
@@ -121,7 +116,6 @@ class FileDataTableItem extends ArDriveDataTableItem {
     required String contentType,
     required String path,
     String? fileStatusFromTransactions,
-    required Function(ArDriveDataTableItem) onPressed,
     this.bundledIn,
     required int index,
     required bool isOwner,
@@ -135,7 +129,6 @@ class FileDataTableItem extends ArDriveDataTableItem {
           dateCreated: dateCreated,
           contentType: contentType,
           fileStatusFromTransactions: fileStatusFromTransactions,
-          onPressed: onPressed,
           index: index,
           isOwner: isOwner,
         );
@@ -192,7 +185,23 @@ ArDriveDataTable _buildDataListContent(
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
     ),
-    onRowTap: (item) => item.onPressed(item),
+    onRowTap: (item) {
+      final cubit = context.read<DriveDetailCubit>();
+      if (item is FolderDataTableItem) {
+        if (item.id == cubit.selectedItem?.id) {
+          cubit.openFolder(path: item.path);
+        } else {
+          cubit.selectDataItem(item);
+        }
+      } else if (item is FileDataTableItem) {
+        if (item.id == cubit.selectedItem?.id) {
+          cubit.toggleSelectedItemDetails();
+          return;
+        }
+
+        cubit.selectDataItem(item);
+      }
+    },
     sortRows: (list, columnIndex, ascDescSort) {
       // Separate folders and files
       List<ArDriveDataTableItem> folders = [];
@@ -219,7 +228,22 @@ ArDriveDataTable _buildDataListContent(
         size: row.size == null ? '-' : filesize(row.size),
         lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
         dateCreated: yMMdDateFormatter.format(row.dateCreated),
-        onPressed: () => row.onPressed(row),
+        onPressed: () {
+          final cubit = context.read<DriveDetailCubit>();
+          if (row is FolderDataTableItem) {
+            if (row.id == cubit.selectedItem?.id) {
+              cubit.openFolder(path: folder.path);
+            } else {
+              cubit.selectDataItem(row);
+            }
+          } else if (row is FileDataTableItem) {
+            if (row.id == cubit.selectedItem?.id) {
+              cubit.toggleSelectedItemDetails();
+              return;
+            }
+            cubit.selectDataItem(row);
+          }
+        },
       );
     },
     rows: items,
@@ -267,7 +291,6 @@ class ColumnIndexes {
 class DriveDataTableItemMapper {
   static FileDataTableItem toFileDataTableItem(
     FileWithLatestRevisionTransactions file,
-    Function(ArDriveDataTableItem) onPressed,
     int index,
     bool isOwner,
   ) {
@@ -285,7 +308,6 @@ class DriveDataTableItemMapper {
         file.dataTx,
       ).toString(),
       fileId: file.id,
-      onPressed: onPressed,
       driveId: file.driveId,
       parentFolderId: file.parentFolderId,
       dataTxId: file.dataTxId,
@@ -298,7 +320,6 @@ class DriveDataTableItemMapper {
 
   static FolderDataTableItem fromFolderEntry(
     FolderEntry folderEntry,
-    Function(ArDriveDataTableItem) onPressed,
     int index,
     bool isOwner,
   ) {
@@ -315,7 +336,6 @@ class DriveDataTableItemMapper {
       dateCreated: folderEntry.dateCreated,
       contentType: 'folder',
       fileStatusFromTransactions: null,
-      onPressed: onPressed,
     );
   }
 
@@ -333,7 +353,6 @@ class DriveDataTableItemMapper {
       lastUpdated: drive.lastUpdated,
       dateCreated: drive.dateCreated,
       contentType: 'drive',
-      onPressed: onPressed,
       id: drive.id,
     );
   }
@@ -350,7 +369,6 @@ class DriveDataTableItemMapper {
       contentType: revision.dataContentType ?? '',
       fileStatusFromTransactions: null,
       fileId: revision.fileId,
-      onPressed: (_) {},
       driveId: revision.driveId,
       parentFolderId: revision.parentFolderId,
       dataTxId: revision.dataTxId,
