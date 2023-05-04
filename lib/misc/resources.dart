@@ -25,7 +25,23 @@ class Brand {
       'assets/images/brand/ArDrive-Logo-Wordmark-Light.png';
   final logoHorizontalNoSubtitleLight =
       'assets/images/brand/ArDrive-Logo-Wordmark-Dark.png';
-  final logo = 'assets/images/brand/ArDrive-Logo.png';
+  final logo05 = 'assets/images/brand/0.5x.png';
+  final logo1 = 'assets/images/brand/1x.png';
+  final logo2 = 'assets/images/brand/2x.png';
+  final logo3 = 'assets/images/brand/3x.png';
+  final logo4 = 'assets/images/brand/4x.png';
+
+  final whiteLogo1 = 'assets/images/brand/white_logo_1x.png';
+  final whiteLogo2 = 'assets/images/brand/white_logo_2x.png';
+  final whiteLogo3 = 'assets/images/brand/white_logo_3x.png';
+  final whiteLogo4 = 'assets/images/brand/white_logo_4x.png';
+  final whiteLogo025 = 'assets/images/brand/white_logo_0.25x.png';
+  final whiteLogo05 = 'assets/images/brand/white_logo_0.5x.png';
+
+  final blackLogo1 = 'assets/images/brand/black_logo_1x.png';
+  final blackLogo2 = 'assets/images/brand/black_logo_2x.png';
+  final blackLogo025 = 'assets/images/brand/black_logo_0.25x.png';
+  final blackLogo05 = 'assets/images/brand/black_logo_0.5x.png';
 }
 
 class Profile {
@@ -49,7 +65,7 @@ class Profile {
 class Login {
   const Login();
 
-  final String gridImage = 'assets/images/login/grid_images.jpg';
-  final String ardrivePlates3 = 'assets/images/login/ardrive_plates_3.png';
+  final String gridImage = 'assets/images/login/grid_images.png';
+  final String ardriveLogoOnboarding = 'assets/images/brand/2x.png';
   final String arconnectLogo = 'assets/images/login/arconnect_logo.png';
 }

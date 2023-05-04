@@ -14,6 +14,7 @@ import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -78,9 +79,9 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           children: [
             Expanded(
               child: _buildIllustration(
-                context,
-                Resources.images.login.gridImage,
-              ),
+                  context,
+                  // verify theme light
+                  Resources.images.login.gridImage),
             ),
             Expanded(
               child: FractionallySizedBox(
@@ -113,13 +114,26 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       fit: StackFit.expand,
       children: [
         Opacity(
-          opacity: 0.25,
-          child: ArDriveImage(
-            key: const Key('loginPageIllustration'),
-            image: AssetImage(
-              image,
-            ),
-            fit: BoxFit.cover,
+          opacity: 1,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ArDriveImage(
+                key: const Key('loginPageIllustration'),
+                image: AssetImage(
+                  image,
+                ),
+                height: 600,
+                width: 600,
+                fit: BoxFit.cover,
+              ),
+              Container(
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .backgroundColor
+                    .withOpacity(0.5),
+              ),
+            ],
           ),
         ),
         Center(
@@ -130,8 +144,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               ArDriveImage(
                 image: AssetImage(
                   ArDriveTheme.of(context).themeData.name == 'light'
-                      ? Resources.images.brand.logoHorizontalNoSubtitleLight
-                      : Resources.images.brand.logoHorizontalNoSubtitleDark,
+                      ? Resources.images.brand.blackLogo2
+                      : Resources.images.brand.whiteLogo2,
                 ),
                 height: 65,
                 fit: BoxFit.contain,
@@ -178,7 +192,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                 title: appLocalizationsOf(context).loginFailed,
                 content: appLocalizationsOf(context)
                     .arConnectWalletDoestNotMatchArDriveWallet,
-                icon: ArDriveIcons.warning(
+                icon: ArDriveIcons.triangle(
                   size: 88,
                   color: ArDriveTheme.of(context)
                       .themeData
@@ -199,7 +213,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             content: ArDriveIconModal(
               title: appLocalizationsOf(context).loginFailed,
               content: appLocalizationsOf(context).pleaseTryAgain,
-              icon: ArDriveIcons.warning(
+              icon: ArDriveIcons.triangle(
                 size: 88,
                 color:
                     ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
@@ -288,6 +302,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
     super.initState();
   }
 
+  bool _showSecurityOverlay = false;
+
   @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
@@ -299,6 +315,14 @@ class _PromptWalletViewState extends State<PromptWalletView> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            ScreenTypeLayout(
+              desktop: const SizedBox.shrink(),
+              mobile: ArDriveImage(
+                image: AssetImage(Resources.images.brand.logo1),
+                height: 50,
+              ),
+            ),
+            heightSpacing(),
             Align(
               alignment: Alignment.topCenter,
               child: Text(
@@ -328,7 +352,58 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   platformSupportsDragAndDrop: !AppPlatform.isMobile,
                 ),
                 heightSpacing(),
+                ArDriveOverlay(
+                  visible: _showSecurityOverlay,
+                  content: ArDriveCard(
+                    boxShadow: BoxShadowCard.shadow100,
+                    contentPadding: const EdgeInsets.all(16),
+                    width: 300,
+                    content: Text.rich(
+                      TextSpan(
+                        children: [
+                          // TODO: add localized string
+                          TextSpan(
+                              text:
+                                  'Your keyfile is encrypted, it never leaves your device, and it can be removed from your device at any time. ',
+                              style: ArDriveTypography.body.smallBold()),
+                          TextSpan(
+                            text: 'Learn more',
+                            style: ArDriveTypography.body.smallBold().copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                openUrl(
+                                    url:
+                                        'https://docs.ardrive.io/docs/using-ardrive/keyfile-encryption');
+                              },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  anchor: const Aligned(
+                    follower: Alignment.bottomCenter,
+                    target: Alignment.topCenter,
+                    offset: Offset(0, 4),
+                  ),
+                  onVisibleChange: (visible) {
+                    setState(() {
+                      _showSecurityOverlay = visible;
+                    });
+                  },
+                  child: ArDriveButton(
+                    onPressed: () {
+                      setState(() {
+                        _showSecurityOverlay = !_showSecurityOverlay;
+                      });
+                    },
+                    text: 'How does keyfile log in work?',
+                    style: ArDriveButtonStyle.tertiary,
+                  ),
+                ),
                 if (widget.isArConnectAvailable) ...[
+                  heightSpacing(),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -348,16 +423,11 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                           child: ArDriveButton(
                             icon: Padding(
                               padding: const EdgeInsets.only(right: 20),
-                              child: ArDriveImage(
+                              child: ArDriveIcons.arconnectIcon1(
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
                                     .themeFgDefault,
-                                height: 24,
-                                width: 22,
-                                image: AssetImage(
-                                  const Images().login.arconnectLogo,
-                                ),
                               ),
                             ),
                             style: ArDriveButtonStyle.secondary,
@@ -607,11 +677,12 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ArDriveImage(
-                image: SvgImage.asset(
-                  'assets/images/brand/ArDrive-Logo.svg',
+              ScreenTypeLayout(
+                desktop: const SizedBox.shrink(),
+                mobile: ArDriveImage(
+                  image: AssetImage(Resources.images.brand.logo1),
+                  height: 50,
                 ),
-                height: 73,
               ),
               Text(
                 appLocalizationsOf(context).createAndConfirmPassword,
@@ -764,7 +835,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     if (!isValid) {
       showAnimatedDialog(context,
           content: ArDriveIconModal(
-            icon: ArDriveIcons.warning(
+            icon: ArDriveIcons.triangle(
               size: 88,
               color:
                   ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
@@ -786,7 +857,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     if (_passwordController.text != _confirmPasswordController.text) {
       showAnimatedDialog(context,
           content: ArDriveIconModal(
-            icon: ArDriveIcons.warning(
+            icon: ArDriveIcons.triangle(
               size: 88,
               color:
                   ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
@@ -958,11 +1029,11 @@ class OnBoardingViewState extends State<OnBoardingView> {
             children: [
               ArDriveImage(
                 image: AssetImage(
-                  Resources.images.login.ardrivePlates3,
+                  Resources.images.login.ardriveLogoOnboarding,
                 ),
                 fit: BoxFit.contain,
-                height: 175,
-                width: 175,
+                height: 240,
+                width: 240,
               ),
               const SizedBox(
                 height: 48,
@@ -1024,7 +1095,7 @@ class _OnBoardingContent extends StatelessWidget {
             children: [
               ArDriveButton(
                 icon: onBoarding.secundaryButtonHasIcon
-                    ? ArDriveIcons.arrowLeftCircle()
+                    ? ArDriveIcons.arrowLeftOutline()
                     : null,
                 style: ArDriveButtonStyle.secondary,
                 text: onBoarding.secundaryButtonText,
@@ -1033,7 +1104,7 @@ class _OnBoardingContent extends StatelessWidget {
               const SizedBox(width: 32),
               ArDriveButton(
                 iconAlignment: IconButtonAlignment.right,
-                icon: ArDriveIcons.arrowRightCircle(
+                icon: ArDriveIcons.arrowRightOutline(
                   color: Colors.white,
                 ),
                 text: onBoarding.primaryButtonText,

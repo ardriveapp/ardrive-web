@@ -22,7 +22,6 @@ import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -255,9 +254,10 @@ class AppState extends State<App> {
               }
             },
             builder: (context, state) {
-              logger.d('ThemeSwitcherState: $state');
-
               return ArDriveApp(
+                onThemeChanged: (theme) {
+                  context.read<ThemeSwitcherBloc>().add(ChangeTheme());
+                },
                 key: arDriveAppKey,
                 builder: (context) => MaterialApp.router(
                   title: 'ArDrive',

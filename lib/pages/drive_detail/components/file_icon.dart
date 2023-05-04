@@ -68,11 +68,11 @@ class ArDriveFileIcon extends StatelessWidget {
 
   ArDriveIcon _getIconForContentType(String contentType) {
     if (contentType == 'folder') {
-      return ArDriveIcons.folderOutlined(
+      return ArDriveIcons.folderOutline(
         size: size,
       );
     } else if (FileTypeHelper.isZip(contentType)) {
-      return ArDriveIcons.fileZip(
+      return ArDriveIcons.zip(
         size: size,
       );
     } else if (FileTypeHelper.isImage(contentType)) {
@@ -80,19 +80,19 @@ class ArDriveFileIcon extends StatelessWidget {
         size: size,
       );
     } else if (FileTypeHelper.isVideo(contentType)) {
-      return ArDriveIcons.fileVideo(
+      return ArDriveIcons.video(
         size: size,
       );
     } else if (FileTypeHelper.isAudio(contentType)) {
-      return ArDriveIcons.fileMusic(
+      return ArDriveIcons.music(
         size: size,
       );
     } else if (FileTypeHelper.isDoc(contentType)) {
-      return ArDriveIcons.fileDoc(
+      return ArDriveIcons.fileOutlined(
         size: size,
       );
     } else if (FileTypeHelper.isCode(contentType)) {
-      return ArDriveIcons.fileCode(
+      return ArDriveIcons.fileOutlined(
         size: size,
       );
     } else {

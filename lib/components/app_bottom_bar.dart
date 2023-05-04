@@ -112,6 +112,7 @@ class AppBottomBar extends StatelessWidget {
               drive: drive,
               currentFolder: currentFolder,
               driveDetailState: driveDetailState,
+              dropdownWidth: 208,
             ),
           ],
         ),

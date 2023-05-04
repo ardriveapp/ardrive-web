@@ -440,7 +440,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                   : null,
               child: Row(
                 children: [
-                  ArDriveIcons.folderOutlined(
+                  ArDriveIcons.folderOutline(
                     size: 16,
                     color: enabled ? null : _colorDisabled(context),
                   ),
@@ -453,7 +453,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                       ),
                     ),
                   ),
-                  ArDriveIcons.chevronRight(
+                  ArDriveIcons.carretRight(
                     size: 18,
                     color: enabled ? null : _colorDisabled(context),
                   ),
@@ -472,7 +472,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ),
               child: Row(
                 children: [
-                  ArDriveIcons.fileOutlined(
+                  ArDriveIcons.file(
                     size: 16,
                     color: _colorDisabled(context),
                   ),
@@ -518,7 +518,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                       onTap: () {
                         cubit.loadParentFolder();
                       },
-                      child: ArDriveIcons.arrowBack(
+                      child: ArDriveIcons.arrowLeft(
                         size: 20,
                       ),
                     ),
@@ -538,7 +538,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                     onTap: () {
                       Navigator.pop(context);
                     },
-                    child: ArDriveIcons.closeIcon(
+                    child: ArDriveIcons.x(
                       size: 24,
                     ),
                   ),

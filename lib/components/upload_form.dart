@@ -77,7 +77,7 @@ Future<void> promptToUpload(
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
         )..startUploadPreparation(),
-        child: const UploadForm(),
+        child: UploadForm(),
       ),
       barrierDismissible: false,
     ),
@@ -85,7 +85,9 @@ Future<void> promptToUpload(
 }
 
 class UploadForm extends StatelessWidget {
-  const UploadForm({Key? key}) : super(key: key);
+  UploadForm({Key? key}) : super(key: key);
+
+  final _scrollController = ScrollController();
 
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
@@ -299,8 +301,11 @@ class UploadForm extends StatelessWidget {
                   children: [
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxHeight: 256),
-                      child: Scrollbar(
+                      child: ArDriveScrollBar(
+                        controller: _scrollController,
+                        alwaysVisible: true,
                         child: ListView(
+                          controller: _scrollController,
                           shrinkWrap: true,
                           children: [
                             for (final file in state
@@ -416,6 +421,33 @@ class UploadForm extends StatelessWidget {
                             .copyWith(color: Theme.of(context).errorColor),
                       ),
                     },
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Total size: ',
+                            style: ArDriveTypography.body.buttonNormalRegular(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgOnDisabled,
+                            ),
+                          ),
+                          TextSpan(
+                            text: filesize(
+                              state.uploadSize,
+                            ),
+                            style: ArDriveTypography.body
+                                .buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgOnDisabled)
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    )
                   ],
                 ),
               ),

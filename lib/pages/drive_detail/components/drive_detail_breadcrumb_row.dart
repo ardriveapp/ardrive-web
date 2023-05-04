@@ -101,11 +101,12 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
             child: HoverText(
               text: driveName,
               style: segmentStyle(_pathSegments.length).copyWith(
-                color: ArDriveTheme.of(context)
-                    .themeData
-                    .colors
-                    .themeAccentDisabled,
-                // decoration: TextDecoration.underline,
+                color: _pathSegments.isEmpty
+                    ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
+                    : ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
               ),
             ),
           ),
@@ -164,13 +165,10 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     return ArDriveDropdown(
       items: items,
       child: Padding(
-        padding: const EdgeInsets.only(right: 8.0),
+        padding: const EdgeInsets.only(right: 8.0, top: 4),
         child: HoverWidget(
           // cursor: SystemMouseCursors.click,
-          child: ArDriveIcons.chevronLeft(
-            color: Colors.white,
-            size: 16,
-          ),
+          child: ArDriveIcons.carretLeft(),
         ),
       ),
     );

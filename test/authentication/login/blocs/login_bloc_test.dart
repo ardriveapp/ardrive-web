@@ -27,6 +27,11 @@ void main() {
   });
 
   group('AddWalletFile', () {
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+    });
+
     blocTest(
       'should emit the event to prompt password when user is an existing one',
       build: () {
@@ -79,6 +84,11 @@ void main() {
   });
 
   group('LoginWithPassword', () {
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+    });
+
     final loggedUser = User(
       password: 'password',
       wallet: wallet,
@@ -215,6 +225,11 @@ void main() {
   });
 
   group('CheckIfUserIsLoggedIn', () {
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+    });
+
     blocTest(
       'should emit the event to prompt password when user is an existing one and biometrics are disabled',
       build: () {
@@ -318,6 +333,11 @@ void main() {
   });
 
   group('UnlockUserWithPassword', () {
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+    });
+
     final loggedUser = User(
       password: 'password',
       wallet: wallet,
@@ -383,6 +403,11 @@ void main() {
   });
 
   group('CreatePassword event', () {
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+    });
+
     final loggedUser = User(
       password: 'password',
       wallet: wallet,
@@ -521,6 +546,11 @@ void main() {
   });
 
   group('testing LoginBloc AddWalletFromArConnect event', () {
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+    });
+
     blocTest(
       'should get the wallet from arconnect and emit prompt password',
       build: () {
@@ -601,6 +631,11 @@ void main() {
   });
 
   group('testing ArDriveAuth ForgetWallet event', () {
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+    });
+
     blocTest(
       'should emit the initial login state and call logout when user is logged in',
       build: () {
@@ -652,6 +687,11 @@ void main() {
   });
 
   group('testing ArDriveAuth FinishOnboarding event', () {
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+    });
+
     blocTest(
       'should emit the state to create password',
       build: () {
@@ -669,6 +709,11 @@ void main() {
 
   // group for test the UnLockWithBiometrics event
   group('testing LoginBloc UnLockWithBiometrics event', () {
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+    });
+
     final loggedUser = User(
       password: 'password',
       wallet: wallet,
