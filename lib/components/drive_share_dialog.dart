@@ -87,7 +87,12 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                             .anyoneCanAccessThisDrivePublic
                         : appLocalizationsOf(context)
                             .anyoneCanAccessThisDrivePrivate,
-                    style: Theme.of(context).textTheme.subtitle2,
+                    style: ArDriveTypography.body.buttonLargeRegular(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
                   ),
                 } else if (state is DriveShareLoadFail)
                   Text(state.message)

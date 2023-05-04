@@ -103,10 +103,8 @@ class AppShellState extends State<AppShell> {
                                                         : appLocalizationsOf(
                                                                 context)
                                                             .syncingOnlyOneDrive,
-                                                style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                                style: ArDriveTypography.body
+                                                    .buttonNormalBold(),
                                               ),
                                             ),
                                             title: snapshot.data ?? false

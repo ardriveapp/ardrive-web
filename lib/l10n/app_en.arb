@@ -1797,5 +1797,9 @@
   "close": "Close",
   "@close": {
     "description": "close"
+  },
+  "costUpload": "Cost",
+  "@costUpload": {
+    "description": "Cost"
   }
 }
