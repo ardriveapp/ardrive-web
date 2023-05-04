@@ -27,6 +27,10 @@ latestDriveRevisionsByDriveIdWithTransactions AS DriveRevisionWithTransaction:
     WHERE driveId = :driveId
     ORDER BY rev.dateCreated DESC;
 
+driveRevisionsWithMissingCustomJsonMetaData:
+    SELECT rev.* FROM drive_revisions rev
+    WHERE rev.driveId = :driveId AND rev.customJsonMetaData IS NULL;
+
 folderById:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND id = :folderId;
@@ -72,6 +76,10 @@ latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction
     INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
     WHERE driveId = :driveId AND folderId = :folderId
     ORDER BY rev.dateCreated DESC;
+
+folderRevisionsWithMissingCustomJsonMetaData:
+    SELECT rev.* FROM folder_revisions rev
+    WHERE rev.driveId = :driveId AND rev.customJsonMetaData IS NULL;
 
 fileById:
     SELECT * FROM file_entries
@@ -161,6 +169,10 @@ latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
     JOIN network_transactions AS dataTx ON dataTx.id = rev.dataTxId
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY rev.dateCreated DESC;
+
+fileRevisionsWithMissingCustomJsonMetaData:
+    SELECT rev.* FROM file_revisions rev
+    WHERE rev.driveId = :driveId AND rev.customJsonMetaData IS NULL;
 
 pendingTransactions:
     SELECT * FROM network_transactions

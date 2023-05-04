@@ -57,7 +57,8 @@ class FolderEntity extends Entity {
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
-        ..customJsonMetaData = customMetaDataFromData(entityJson)
+        // TODO: Uncomment this
+        /// ..customJsonMetaData = customMetaDataFromData(entityJson)
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);

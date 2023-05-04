@@ -12,11 +12,13 @@ import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/utils/ar_cost_to_usd.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,6 +40,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   bool returnWithoutSigningForTesting;
 
   late DriveID _driveId;
+  SecretKey? _maybeDriveKey;
   late String _ownerAddress;
   late Range _range;
   late int _currentHeight;
@@ -78,8 +81,78 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final profileState = _profileCubit.state as ProfileLoggedIn;
     _ownerAddress = profileState.walletAddress;
 
-    _setTrustedRange(range);
+    await _setTrustedRange(range);
 
+    emit(PrepareSnapshotCreation());
+
+    await fetchMissingCustomMetadata();
+    await computeSnapshotData();
+  }
+
+  Future<void> fetchMissingCustomMetadata() async {
+    logger.i('Fetching missing custom metadata');
+    await _fetchMissingCustomMetadataForDrive();
+    await _fetchMissingCustomMetadataForFolder();
+    await _fetchMissingCustomMetadataForFile();
+    logger.i('Finished fetching missing custom metadata');
+  }
+
+  Future<void> _fetchMissingCustomMetadataForDrive() async {
+    final driveRevisions =
+        await _driveDao.revisionsForDrivesWithNoMetadata(_driveId);
+    logger.d('There are ${driveRevisions.length} drives with no metadata');
+    for (final driveRevision in driveRevisions) {
+      final txId = driveRevision.metadataTxId;
+      final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+      final metadataAsString = utf8.decode(metadata);
+      final metadataAsJson = jsonDecode(metadataAsString);
+      final customMetaData = DriveEntity.customMetaDataFromData(metadataAsJson);
+      await _driveDao.updateCustomJsonMetadataForDrive(
+        _driveId,
+        txId,
+        customMetaData,
+      );
+    }
+  }
+
+  Future<void> _fetchMissingCustomMetadataForFolder() async {
+    final folderRevisions =
+        await _driveDao.revisionsForFoldersWithNoMetadata(_driveId);
+    logger.d('There are ${folderRevisions.length} folders with no metadata');
+    for (final folderRevision in folderRevisions) {
+      final txId = folderRevision.metadataTxId;
+      final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+      final metadataAsString = utf8.decode(metadata);
+      final metadataAsJson = jsonDecode(metadataAsString);
+      final customMetaData =
+          FolderEntity.customMetaDataFromData(metadataAsJson);
+      await _driveDao.updateCustomJsonMetadataForFolder(
+        _driveId,
+        txId,
+        customMetaData,
+      );
+    }
+  }
+
+  Future<void> _fetchMissingCustomMetadataForFile() async {
+    final fileRevisions =
+        await _driveDao.revisionsForFilesWithNoMetadata(_driveId);
+    logger.d('There are ${fileRevisions.length} files with no metadata');
+    for (final fileRevision in fileRevisions) {
+      final txId = fileRevision.metadataTxId;
+      final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+      final metadataAsString = utf8.decode(metadata);
+      final metadataAsJson = jsonDecode(metadataAsString);
+      final customMetaData = FileEntity.customMetaDataFromData(metadataAsJson);
+      await _driveDao.updateCustomJsonMetadataForFile(
+        _driveId,
+        txId,
+        customMetaData,
+      );
+    }
+  }
+
+  Future<void> computeSnapshotData() async {
     late Uint8List data;
     try {
       data = await _getSnapshotData();
@@ -122,9 +195,23 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _itemToBeCreated = null;
     _snapshotEntity = null;
     _wasSnapshotDataComputingCanceled = false;
+
+    final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+    final isPrivate = drive.privacy == DrivePrivacy.private;
+
+    if (isPrivate) {
+      // TODO: re-visit
+      if (_profileCubit.state is ProfileLoggedIn) {
+        final profileState = (_profileCubit.state as ProfileLoggedIn);
+        final profileKey = profileState.cipherKey;
+        _maybeDriveKey = await _driveDao.getDriveKey(driveId, profileKey);
+      } else {
+        _maybeDriveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+      }
+    }
   }
 
-  void _setTrustedRange(Range? range) {
+  Future<void> _setTrustedRange(Range? range) async {
     final maximumHeightToSnapshot =
         _currentHeight - kRequiredTxConfirmationCount;
 

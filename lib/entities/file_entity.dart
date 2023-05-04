@@ -85,7 +85,8 @@ class FileEntity extends Entity {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
-        ..customJsonMetaData = customMetaDataFromData(entityJson)
+        // TODO: Uncomment this
+        /// ..customJsonMetaData = customMetaDataFromData(entityJson)
         ..createdAt = commitTime;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
