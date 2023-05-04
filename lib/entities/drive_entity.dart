@@ -60,8 +60,7 @@ class DriveEntity extends Entity {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
-        // TODO: Uncomment this
-        /// ..customMetadata = customMetaDataFromData(entityJson)
+        ..customMetadata = customMetaDataFromData(entityJson)
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
