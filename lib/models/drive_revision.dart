@@ -34,7 +34,6 @@ extension DriveEntityExtensions on DriveEntity {
   /// This requires a `performedAction` to be specified.
   DriveRevisionsCompanion toRevisionCompanion({
     required String performedAction,
-    required Value<String?> customJsonMetaData,
   }) =>
       DriveRevisionsCompanion.insert(
         driveId: id!,
@@ -46,7 +45,7 @@ extension DriveEntityExtensions on DriveEntity {
         dateCreated: Value(createdAt),
         action: performedAction,
         bundledIn: Value(bundledIn),
-        customJsonMetaData: customJsonMetaData,
+        customJsonMetaData: Value(customJsonMetaData),
       );
 
   /// Returns the action performed on the Drive that lead to the new revision.

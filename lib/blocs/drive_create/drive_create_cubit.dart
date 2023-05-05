@@ -3,7 +3,6 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
-import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -119,7 +118,6 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await _driveDao.insertFolderRevision(
         rootFolderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create,
-          customJsonMetaData: null,
         ),
       );
 
@@ -140,8 +138,6 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await _driveDao.insertDriveRevision(
         drive.toRevisionCompanion(
           performedAction: RevisionAction.create,
-          customJsonMetaData:
-              Value<String?>(latestRevision?.customJsonMetaData),
         ),
       );
       _drivesCubit.selectDrive(drive.id!);

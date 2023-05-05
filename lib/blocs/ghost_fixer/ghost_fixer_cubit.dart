@@ -169,7 +169,6 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         await _driveDao.insertFolderRevision(
           folderEntity.toRevisionCompanion(
             performedAction: RevisionAction.create,
-            customJsonMetaData: null,
           ),
         );
         final folderMap = {folder.id: folder.toCompanion(false)};

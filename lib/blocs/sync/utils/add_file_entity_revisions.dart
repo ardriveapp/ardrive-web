@@ -33,7 +33,6 @@ Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions({
     entity.parentFolderId = entity.parentFolderId ?? rootPath;
     final revision = entity.toRevisionCompanion(
       performedAction: revisionPerformedAction,
-      customMetaData: entity.customJsonMetaData,
     );
 
     if (revision.action.value.isEmpty) {

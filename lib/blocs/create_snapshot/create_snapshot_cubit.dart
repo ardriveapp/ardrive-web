@@ -4,6 +4,7 @@ import 'dart:io' show BytesBuilder;
 
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/entities/custom_metadata.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -106,7 +107,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
       final metadataAsString = utf8.decode(metadata);
       final metadataAsJson = jsonDecode(metadataAsString);
-      final customMetaData = DriveEntity.customMetaDataFromData(metadataAsJson);
+      final customMetaData = extractCustomMetadataForEntityType(
+        metadataAsJson,
+        entityType: EntityType.drive,
+      );
       await _driveDao.updateCustomJsonMetadataForDrive(
         _driveId,
         txId,
@@ -124,8 +128,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
       final metadataAsString = utf8.decode(metadata);
       final metadataAsJson = jsonDecode(metadataAsString);
-      final customMetaData =
-          FolderEntity.customMetaDataFromData(metadataAsJson);
+      final customMetaData = extractCustomMetadataForEntityType(
+        metadataAsJson,
+        entityType: EntityType.folder,
+      );
       await _driveDao.updateCustomJsonMetadataForFolder(
         _driveId,
         txId,
@@ -143,7 +149,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
       final metadataAsString = utf8.decode(metadata);
       final metadataAsJson = jsonDecode(metadataAsString);
-      final customMetaData = FileEntity.customMetaDataFromData(metadataAsJson);
+      final customMetaData = extractCustomMetadataForEntityType(
+        metadataAsJson,
+        entityType: EntityType.file,
+      );
       await _driveDao.updateCustomJsonMetadataForFile(
         _driveId,
         txId,

@@ -34,7 +34,6 @@ extension FolderEntityExtensions on FolderEntity {
   /// This requires a `performedAction` to be specified.
   FolderRevisionsCompanion toRevisionCompanion({
     required String performedAction,
-    required String? customJsonMetaData,
   }) =>
       FolderRevisionsCompanion.insert(
         folderId: id!,

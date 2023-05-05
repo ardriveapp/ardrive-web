@@ -30,7 +30,6 @@ Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions({
     }
     final revision = entity.toRevisionCompanion(
       performedAction: revisionPerformedAction,
-      customJsonMetaData: entity.customJsonMetaData,
     );
 
     if (revision.action.value.isEmpty) {

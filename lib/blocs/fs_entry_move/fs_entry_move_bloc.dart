@@ -216,7 +216,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
         await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
           performedAction: RevisionAction.move,
-          customMetaData: null,
         ));
       }
 
@@ -246,7 +245,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
           performedAction: RevisionAction.move,
-          customJsonMetaData: null,
         ));
 
         folderMap.addAll({folder.id: folder.toCompanion(false)});
