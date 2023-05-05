@@ -71,9 +71,11 @@ packages:
   ardrive_ui:
     dependency: "direct main"
     description:
-      path: "../ardrive_ui"
-      relative: true
-    source: path
+      path: "."
+      ref: mobile-view-fixes
+      resolved-ref: "04552cfeb00e47cd2721fd727d5606ec0e852159"
+      url: "https://github.com/ar-io/ardrive_ui.git"
+    source: git
     version: "1.0.0"
   args:
     dependency: transitive

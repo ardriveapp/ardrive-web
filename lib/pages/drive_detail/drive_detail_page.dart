@@ -94,6 +94,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 canDownloadMultipleFiles: canDownloadMultipleFiles,
               ),
               mobile: Scaffold(
+                drawerScrimColor: Colors.transparent,
                 drawer: const AppSideBar(),
                 appBar: (state.showSelectedItemDetails &&
                         context.read<DriveDetailCubit>().selectedItem != null)
@@ -426,6 +427,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     }
 
     return Scaffold(
+      drawerScrimColor: ArDriveTheme.of(context)
+          .themeData
+          .colors
+          .themeBgSurface
+          .withOpacity(0.5),
       drawer: const AppSideBar(),
       appBar: MobileAppBar(
         leading: (state.showSelectedItemDetails &&
@@ -883,51 +889,49 @@ class CustomBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backgroundColor = ArDriveTheme.of(context).themeData.backgroundColor;
-    return SafeArea(
-      bottom: true,
-      child: Container(
-        height: 87,
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: ArDriveTheme.of(context)
-                  .themeData
-                  .colors
-                  .themeFgDefault
-                  .withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+    return Container(
+      height: 87,
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: ArDriveTheme.of(context)
+                .themeData
+                .colors
+                .themeFgDefault
+                .withOpacity(0.2),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+          BoxShadow(color: backgroundColor, offset: const Offset(0, 2)),
+          BoxShadow(color: backgroundColor, offset: const Offset(-0, 8)),
+        ],
+        color: ArDriveTheme.of(context).themeData.backgroundColor,
+      ),
+      width: MediaQuery.of(context).size.width,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          NewButton(
+            isBottomNavigationButton: true,
+            driveDetailState: context.read<DriveDetailCubit>().state,
+            currentFolder: currentFolder,
+            dropdownWidth: 208,
+            anchor: const Aligned(
+              follower: Alignment.bottomCenter,
+              target: Alignment.topCenter,
             ),
-            BoxShadow(color: backgroundColor, offset: const Offset(0, 2)),
-            BoxShadow(color: backgroundColor, offset: const Offset(-0, 8)),
-          ],
-          color: ArDriveTheme.of(context).themeData.backgroundColor,
-        ),
-        width: MediaQuery.of(context).size.width,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            NewButton(
-              driveDetailState: context.read<DriveDetailCubit>().state,
-              currentFolder: currentFolder,
-              dropdownWidth: 208,
-              anchor: const Aligned(
-                follower: Alignment.bottomCenter,
-                target: Alignment.topCenter,
-              ),
-              drive: drive,
-              child: ArDriveFAB(
-                backgroundColor:
-                    ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-                child: ArDriveIcons.plus(
-                  color: Colors.white,
-                ),
+            drive: drive,
+            child: ArDriveFAB(
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+              child: ArDriveIcons.plus(
+                color: Colors.white,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
