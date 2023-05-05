@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -99,7 +100,7 @@ class FileEntity extends Entity {
     metadata.remove('dataTxId');
     metadata.remove('dataContentType');
     final customMetadataAsString = json.encode(metadata);
-    print('Custom metadata for file: $customMetadataAsString');
+    logger.d('Custom metadata for file: $customMetadataAsString');
     return customMetadataAsString;
   }
 

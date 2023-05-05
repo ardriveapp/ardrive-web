@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -67,7 +68,7 @@ class FolderEntity extends Entity {
   static String customMetaDataFromData(Map<String, dynamic> metadata) {
     metadata.remove('name');
     final customMetadataAsString = json.encode(metadata);
-    print('Custom metadata for folder: $customMetadataAsString');
+    logger.d('Custom metadata for folder: $customMetadataAsString');
     return customMetadataAsString;
   }
 
