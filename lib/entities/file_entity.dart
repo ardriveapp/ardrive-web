@@ -96,14 +96,7 @@ class FileEntity extends Entity {
   static String customMetaDataFromData(Map<String, dynamic> metadata) =>
       customMetadataFactory(
         metadata,
-        [
-          'name',
-          'size',
-          'lastModifiedDate',
-          'dataTxId',
-          'dataContentType',
-        ],
-        entityType: 'file',
+        entityType: EntityType.file,
       )();
 
   @override

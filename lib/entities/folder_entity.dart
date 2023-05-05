@@ -66,7 +66,10 @@ class FolderEntity extends Entity {
   }
 
   static String customMetaDataFromData(Map<String, dynamic> metadata) =>
-      customMetadataFactory(metadata, ['name'], entityType: 'folder')();
+      customMetadataFactory(
+        metadata,
+        entityType: EntityType.folder,
+      )();
 
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
