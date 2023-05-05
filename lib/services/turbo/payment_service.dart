@@ -14,24 +14,23 @@ class PaymentService {
     required this.httpClient,
   });
 
-  Future<int> getPrice({
-    required int dataItemSize,
-    required Wallet wallet,
+  Future<BigInt> getPrice({
+    required int byteSize,
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
     final priceResponse = await httpClient.get(
-      url: '$paymentUri/v1/price/bytes/$dataItemSize',
+      url: '$paymentUri/v1/price/bytes/$byteSize',
     );
     if (!acceptedStatusCodes.contains(priceResponse.statusCode)) {
       throw Exception(
         'Turbo price fetch failed with status code ${priceResponse.statusCode}',
       );
     }
-    final price = int.parse(priceResponse.data);
+    final price = BigInt.parse(priceResponse.data);
     return price;
   }
 
-  Future getBalance({
+  Future<BigInt> getBalance({
     required Wallet wallet,
   }) async {
     final nonce = const Uuid().v4();
@@ -50,15 +49,15 @@ class PaymentService {
     );
 
     if (result.data == 'User not found') {
-      return 0;
+      return BigInt.zero;
     }
 
-    return int.tryParse(result.data);
+    return BigInt.parse(result.data);
   }
 
   Future topUp({
     required Wallet wallet,
-    required int amount,
+    required BigInt amount,
     String currency = 'usd',
   }) async {
     final nonce = const Uuid().v4();
@@ -71,7 +70,7 @@ class PaymentService {
 
     final result = await httpClient.get(
       url:
-          '$paymentUri/v1/top-up/payment-intent/$walletAddress/$currency/$amount',
+          '$paymentUri/v1/top-up/payment-BigIntent/$walletAddress/$currency/$amount',
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
@@ -88,18 +87,20 @@ class DontUsePaymentService implements PaymentService {
   late ArDriveHTTP httpClient;
 
   @override
-  Future<int> getPrice({required int dataItemSize, required Wallet wallet}) {
+  Future<BigInt> getPrice({required int byteSize}) {
     throw UnimplementedError();
   }
 
   @override
-  Future getBalance({required Wallet wallet}) {
+  Future<BigInt> getBalance({required Wallet wallet}) {
     throw UnimplementedError();
   }
 
   @override
   Future topUp(
-      {required Wallet wallet, required int amount, String currency = 'usd'}) {
+      {required Wallet wallet,
+      required BigInt amount,
+      String currency = 'usd'}) {
     throw UnimplementedError();
   }
 }
