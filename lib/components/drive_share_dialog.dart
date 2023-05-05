@@ -1,11 +1,11 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> promptToShareDrive({
@@ -68,16 +68,29 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      ArDriveButton(
-                          style: ArDriveButtonStyle.tertiary,
-                          text: appLocalizationsOf(context).copyLink,
-                          onPressed: () {
-                            Clipboard.setData(
-                              ClipboardData(
-                                text: state.driveShareLink.toString(),
+                      CopyButton(
+                        positionX: 4,
+                        positionY: 40,
+                        copyMessageColor: ArDriveTheme.of(context)
+                            .themeData
+                            .tableTheme
+                            .selectedItemColor,
+                        showCopyText: true,
+                        text: state.driveShareLink.toString(),
+                        child: Text(
+                          appLocalizationsOf(context).copyLink,
+                          style: ArDriveTypography.body
+                              .buttonLargeRegular(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
+                              )
+                              .copyWith(
+                                decoration: TextDecoration.underline,
                               ),
-                            );
-                          }),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
