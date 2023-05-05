@@ -7,7 +7,8 @@ void main() {
     test('customMetadataFactory throws for unknown entityType', () {
       const unknownEntityType = 'La magia de la amistad';
       expect(
-        () => customMetadataFactory({}, entityType: unknownEntityType),
+        () => extractCustomMetadataForEntityType({},
+            entityType: unknownEntityType),
         throwsException,
       );
     });
@@ -18,7 +19,7 @@ void main() {
         'reserved': 'reserved',
       };
       final customMetadata =
-          customMetadataFactory(metadata, entityType: 'test')();
+          extractCustomMetadataForEntityType(metadata, entityType: 'test');
       expect(customMetadata, '{"name":"test"}');
     });
 
@@ -34,7 +35,10 @@ void main() {
           'anyone tell you otherwise'
         ],
       };
-      final customMetadata = DriveEntity.customMetaDataFromData(metadata);
+      final customMetadata = extractCustomMetadataForEntityType(
+        metadata,
+        entityType: EntityType.drive,
+      );
       expect(
         customMetadata,
         '{"Foo":"Bar","Mati rocks":"Of course","Dont let":["me down","your dreams be dreams","anyone tell you otherwise"]}',
@@ -52,7 +56,10 @@ void main() {
           'anyone tell you otherwise'
         ],
       };
-      final customMetadata = FolderEntity.customMetaDataFromData(metadata);
+      final customMetadata = extractCustomMetadataForEntityType(
+        metadata,
+        entityType: EntityType.folder,
+      );
       expect(
         customMetadata,
         '{"Foo":"Bar","Mati rocks":"Of course","Dont let":["me down","your dreams be dreams","anyone tell you otherwise"]}',
@@ -74,7 +81,10 @@ void main() {
           'anyone tell you otherwise'
         ],
       };
-      final customMetadata = FileEntity.customMetaDataFromData(metadata);
+      final customMetadata = extractCustomMetadataForEntityType(
+        metadata,
+        entityType: EntityType.file,
+      );
       expect(
         customMetadata,
         '{"Foo":"Bar","Mati rocks":"Of course","Dont let":["me down","your dreams be dreams","anyone tell you otherwise"]}',
