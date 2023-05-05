@@ -58,15 +58,15 @@ class FolderEntity extends Entity {
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
-        ..customJsonMetaData = customMetaDataFromData(entityJson)
+        ..customJsonMetaData = extractCustomMetadataForEntityType(
+          entityJson,
+          entityType: EntityType.folder,
+        )
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }
-
-  static String customMetaDataFromData(Map<String, dynamic> metadata) =>
-      customMetadataFactory(metadata, ['name'])();
 
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {

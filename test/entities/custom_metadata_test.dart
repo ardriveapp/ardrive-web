@@ -4,12 +4,22 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Custom metadata', () {
+    test('customMetadataFactory throws for unknown entityType', () {
+      const unknownEntityType = 'La magia de la amistad';
+      expect(
+        () => extractCustomMetadataForEntityType({},
+            entityType: unknownEntityType),
+        throwsException,
+      );
+    });
+
     test('customMetadataFactory method removes reserved keys', () {
       final metadata = {
         'name': 'test',
         'reserved': 'reserved',
       };
-      final customMetadata = customMetadataFactory(metadata, ['reserved'])();
+      final customMetadata =
+          extractCustomMetadataForEntityType(metadata, entityType: 'test');
       expect(customMetadata, '{"name":"test"}');
     });
 
@@ -25,7 +35,10 @@ void main() {
           'anyone tell you otherwise'
         ],
       };
-      final customMetadata = DriveEntity.customMetaDataFromData(metadata);
+      final customMetadata = extractCustomMetadataForEntityType(
+        metadata,
+        entityType: EntityType.drive,
+      );
       expect(
         customMetadata,
         '{"Foo":"Bar","Mati rocks":"Of course","Dont let":["me down","your dreams be dreams","anyone tell you otherwise"]}',
@@ -43,7 +56,10 @@ void main() {
           'anyone tell you otherwise'
         ],
       };
-      final customMetadata = FolderEntity.customMetaDataFromData(metadata);
+      final customMetadata = extractCustomMetadataForEntityType(
+        metadata,
+        entityType: EntityType.folder,
+      );
       expect(
         customMetadata,
         '{"Foo":"Bar","Mati rocks":"Of course","Dont let":["me down","your dreams be dreams","anyone tell you otherwise"]}',
@@ -65,7 +81,10 @@ void main() {
           'anyone tell you otherwise'
         ],
       };
-      final customMetadata = FileEntity.customMetaDataFromData(metadata);
+      final customMetadata = extractCustomMetadataForEntityType(
+        metadata,
+        entityType: EntityType.file,
+      );
       expect(
         customMetadata,
         '{"Foo":"Bar","Mati rocks":"Of course","Dont let":["me down","your dreams be dreams","anyone tell you otherwise"]}',
