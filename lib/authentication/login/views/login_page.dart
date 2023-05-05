@@ -1,10 +1,9 @@
-import 'dart:ui';
-
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
@@ -197,7 +196,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                     .arConnectWalletDoestNotMatchArDriveWallet,
                 icon: ArDriveIcons.triangle(
                   size: 88,
-                  color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
                 ),
               ),
             );
@@ -215,7 +215,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               content: appLocalizationsOf(context).pleaseTryAgain,
               icon: ArDriveIcons.triangle(
                 size: 88,
-                color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
               ),
             ),
           );
@@ -360,23 +361,10 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     content: Text.rich(
                       TextSpan(
                         children: [
-                          // TODO: add localized string
                           TextSpan(
-                              text:
-                                  'Your keyfile is encrypted, it never leaves your device, and it can be removed from your device at any time. ',
+                              text: appLocalizationsOf(context)
+                                  .securityWalletOverlay,
                               style: ArDriveTypography.body.smallBold()),
-                          TextSpan(
-                            text: 'Learn more',
-                            style: ArDriveTypography.body.smallBold().copyWith(
-                                  decoration: TextDecoration.underline,
-                                ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                openUrl(
-                                    url:
-                                        'https://docs.ardrive.io/docs/using-ardrive/keyfile-encryption');
-                              },
-                          ),
                         ],
                       ),
                     ),
@@ -391,14 +379,18 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       _showSecurityOverlay = visible;
                     });
                   },
-                  child: ArDriveButton(
-                    onPressed: () {
+                  child: GestureDetector(
+                    onTap: () {
                       setState(() {
                         _showSecurityOverlay = !_showSecurityOverlay;
                       });
                     },
-                    text: 'How does keyfile log in work?',
-                    style: ArDriveButtonStyle.tertiary,
+                    child: HoverWidget(
+                      hoverScale: 1,
+                      child: Text(
+                          appLocalizationsOf(context).howDoesKeyfileLoginWork,
+                          style: ArDriveTypography.body.smallBold()),
+                    ),
                   ),
                 ),
                 if (widget.isArConnectAvailable) ...[
@@ -447,9 +439,29 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                 ),
               ],
             ),
-            ArDriveTextButton(
-              onPressed: () => openUrl(url: Resources.getWalletLink),
-              text: appLocalizationsOf(context).getAWallet,
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                      text: appLocalizationsOf(context).dontHaveAWallet1Part,
+                      style: ArDriveTypography.body.smallBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgMuted,
+                      )),
+                  TextSpan(
+                    text: appLocalizationsOf(context).dontHaveAWallet2Part,
+                    style: ArDriveTypography.body.smallBold().copyWith(
+                          decoration: TextDecoration.underline,
+                        ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () {
+                        openUrl(url: Resources.getWalletLink);
+                      },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -497,7 +509,7 @@ class _LoginCard extends StatelessWidget {
 
       return ArDriveCard(
         backgroundColor:
-            ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+            ArDriveTheme.of(context).themeData.colors.themeBgSurface,
         borderRadius: 24,
         boxShadow: BoxShadowCard.shadow80,
         contentPadding: EdgeInsets.fromLTRB(
