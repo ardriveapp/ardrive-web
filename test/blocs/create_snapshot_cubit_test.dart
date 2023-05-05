@@ -1,6 +1,8 @@
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
+import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -36,10 +38,15 @@ void main() {
     () {
       final arweave = MockArweaveService();
       final profileCubit = MockProfileCubit();
-      final driveDao = MockDriveDao();
+      final db = getTestDb();
+      final driveDao = DriveDao(db);
       final pst = MockPstService();
       final tabVisibility = MockTabVisibilitySingleton();
       final testWallet = getTestWallet();
+
+      tearDownAll(() {
+        db.close();
+      });
 
       setUpAll(() async {
         registerFallbackValue(SnapshotEntity());
@@ -48,6 +55,16 @@ void main() {
           await getTestTransaction('test/fixtures/signed_v2_tx.json'),
         );
         registerFallbackValue(Future.value());
+
+        var insertDriveOp = DrivesCompanion.insert(
+          id: 'driveId',
+          name: 'name',
+          ownerAddress: 'ownerAddress',
+          rootFolderId: 'rootFolderId',
+          privacy: 'public',
+        );
+
+        await db.into(db.drives).insert(insertDriveOp);
       });
 
       setUp(() async {
@@ -161,6 +178,7 @@ void main() {
           range: Range(start: 0, end: 1),
         ),
         expect: () => [
+          PrepareSnapshotCreation(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
@@ -187,6 +205,7 @@ void main() {
             )
             .then((value) => cubit.confirmSnapshotCreation()),
         expect: () => [
+          PrepareSnapshotCreation(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
@@ -214,6 +233,7 @@ void main() {
           range: Range(start: 0, end: 1),
         ),
         expect: () => [
+          PrepareSnapshotCreation(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
@@ -236,6 +256,7 @@ void main() {
           range: Range(start: 0, end: 101),
         ),
         expect: () => [
+          PrepareSnapshotCreation(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 85),
@@ -260,6 +281,7 @@ void main() {
           range: Range(start: 0, end: 1),
         ),
         expect: () => [
+          PrepareSnapshotCreation(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
@@ -292,6 +314,7 @@ void main() {
           ]);
         },
         expect: () => [
+          PrepareSnapshotCreation(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
@@ -355,6 +378,7 @@ void main() {
             );
           },
           expect: () => [
+            PrepareSnapshotCreation(),
             ComputingSnapshotData(
               driveId: 'driveId',
               range: Range(start: 0, end: 1),

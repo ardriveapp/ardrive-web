@@ -196,18 +196,23 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _snapshotEntity = null;
     _wasSnapshotDataComputingCanceled = false;
 
-    final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-    final isPrivate = drive.privacy == DrivePrivacy.private;
+    try {
+      final drive =
+          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+      final isPrivate = drive!.privacy == DrivePrivacy.private;
 
-    if (isPrivate) {
-      // TODO: re-visit
-      if (_profileCubit.state is ProfileLoggedIn) {
-        final profileState = (_profileCubit.state as ProfileLoggedIn);
-        final profileKey = profileState.cipherKey;
-        _maybeDriveKey = await _driveDao.getDriveKey(driveId, profileKey);
-      } else {
-        _maybeDriveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+      if (isPrivate) {
+        // TODO: re-visit
+        if (_profileCubit.state is ProfileLoggedIn) {
+          final profileState = (_profileCubit.state as ProfileLoggedIn);
+          final profileKey = profileState.cipherKey;
+          _maybeDriveKey = await _driveDao.getDriveKey(driveId, profileKey);
+        } else {
+          _maybeDriveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+        }
       }
+    } catch (e) {
+      throw Exception('Failed to get drive key: $e');
     }
   }
 
@@ -223,8 +228,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       _range = Range(start: 0, end: maximumHeightToSnapshot);
     }
 
-    // ignore: avoid_print
-    print(
+    logger.i(
       'Trusted range to be snapshotted (Current height: $_currentHeight): $_range',
     );
   }
@@ -267,8 +271,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     SnapshotEntity snapshotEntity,
     Uint8List data,
   ) async {
-    // ignore: avoid_print
-    print('About to prepare and sign snapshot transaction');
+    logger.i('About to prepare and sign snapshot transaction');
 
     final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
 
@@ -289,8 +292,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
 
     try {
-      // ignore: avoid_print
-      print(
+      logger.i(
         'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
@@ -303,17 +305,16 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       );
     } catch (e) {
       if (isArConnectProfile && !_tabVisibility.isTabVisible()) {
-        // ignore: avoid_print
-        print(
+        logger.i(
           'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await _tabVisibility.onTabGetsFocusedFuture(
           () async => await prepareTx(isArConnectProfile),
         );
       } else {
-        // ignore: avoid_print
-        print(
-            'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabVisible()}');
+        logger.i(
+          'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabVisible()}',
+        );
         rethrow;
       }
     }
@@ -325,8 +326,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
 
     try {
-      // ignore: avoid_print
-      print(
+      logger.i(
         'Signing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
@@ -339,25 +339,23 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       await _preparedTx.sign(wallet);
     } catch (e) {
       if (isArConnectProfile && !_tabVisibility.isTabVisible()) {
-        // ignore: avoid_print
-        print(
+        logger.i(
           'Signing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await _tabVisibility.onTabGetsFocusedFuture(
           () => signTx(isArConnectProfile),
         );
       } else {
-        // ignore: avoid_print
-        print(
-            'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabVisible()}');
+        logger.i(
+          'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabVisible()}',
+        );
         rethrow;
       }
     }
   }
 
   Future<Uint8List> _getSnapshotData() async {
-    // ignore: avoid_print
-    print('Computing snapshot data');
+    logger.i('Computing snapshot data');
 
     emit(ComputingSnapshotData(
       driveId: _driveId,
@@ -384,8 +382,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       dataBuffer.add(chunk);
     }
 
-    // ignore: avoid_print
-    print('Finished computing snapshot data');
+    logger.i('Finished computing snapshot data');
 
     final data = dataBuffer.takeBytes();
     return data;
@@ -468,8 +465,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
-      // ignore: avoid_print
-      print('Failed to confirm the upload: Wallet mismatch');
+      logger.i('Failed to confirm the upload: Wallet mismatch');
       emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
       return;
     }
@@ -481,16 +477,15 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
       emit(SnapshotUploadSuccess());
     } catch (err) {
-      // ignore: avoid_print
-      print(
-          'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}');
+      logger.i(
+        'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}',
+      );
       emit(SnapshotUploadFailure(errorMessage: '$err'));
     }
   }
 
   void cancelSnapshotCreation() {
-    // ignore: avoid_print
-    print('User cancelled the snapshot creation');
+    logger.i('User cancelled the snapshot creation');
 
     _wasSnapshotDataComputingCanceled = true;
   }
