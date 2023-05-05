@@ -86,18 +86,15 @@ class FileEntity extends Entity {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
-        ..customJsonMetaData = customMetaDataFromData(entityJson)
+        ..customJsonMetaData = extractCustomMetadataForEntityType(
+          entityJson,
+          entityType: EntityType.file,
+        )
         ..createdAt = commitTime;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }
-
-  static String customMetaDataFromData(Map<String, dynamic> metadata) =>
-      customMetadataFactory(
-        metadata,
-        entityType: EntityType.file,
-      )();
 
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {

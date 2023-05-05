@@ -61,7 +61,10 @@ class DriveEntity extends Entity {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
-        ..customMetadata = customMetaDataFromData(entityJson)
+        ..customMetadata = extractCustomMetadataForEntityType(
+          entityJson,
+          entityType: EntityType.drive,
+        )
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
@@ -82,12 +85,6 @@ class DriveEntity extends Entity {
       tx.addTag(EntityTag.driveAuthMode, authMode!);
     }
   }
-
-  static String customMetaDataFromData(Map<String, dynamic> metadata) =>
-      customMetadataFactory(
-        metadata,
-        entityType: EntityType.drive,
-      )();
 
   factory DriveEntity.fromJson(Map<String, dynamic> json) =>
       _$DriveEntityFromJson(json);

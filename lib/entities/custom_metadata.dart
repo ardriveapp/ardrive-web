@@ -9,7 +9,7 @@ const Map<String, List<String>> reservedFieldsPerEntityType = {
   'test': ['reserved'],
 };
 
-String Function() customMetadataFactory(
+String extractCustomMetadataForEntityType(
   Map<String, dynamic> metadata, {
   required String entityType,
 }) {
@@ -19,10 +19,8 @@ String Function() customMetadataFactory(
 
   final reservedFields = reservedFieldsPerEntityType[entityType]!;
 
-  return () {
-    metadata.removeWhere((key, value) => reservedFields.contains(key));
-    final customMetadataAsString = json.encode(metadata);
-    logger.d('Custom metadata for $entityType: $customMetadataAsString');
-    return customMetadataAsString;
-  };
+  metadata.removeWhere((key, value) => reservedFields.contains(key));
+  final customMetadataAsString = json.encode(metadata);
+  logger.d('Custom metadata for $entityType: $customMetadataAsString');
+  return customMetadataAsString;
 }
