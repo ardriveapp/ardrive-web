@@ -84,10 +84,14 @@ class DriveEntity extends Entity {
   }
 
   static String customMetaDataFromData(Map<String, dynamic> metadata) =>
-      customMetadataFactory(metadata, [
-        'name',
-        'rootFolderId',
-      ])();
+      customMetadataFactory(
+        metadata,
+        [
+          'name',
+          'rootFolderId',
+        ],
+        entityType: 'drive',
+      )();
 
   factory DriveEntity.fromJson(Map<String, dynamic> json) =>
       _$DriveEntityFromJson(json);
