@@ -137,117 +137,122 @@ class FileDataTableItem extends ArDriveDataTableItem {
   List<Object?> get props => [fileId, name];
 }
 
-ArDriveDataTable _buildDataListContent(
+Widget _buildDataListContent(
   BuildContext context,
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
   Drive drive,
   bool isMultiselecting,
 ) {
-  return ArDriveDataTable<ArDriveDataTableItem>(
-    key: ValueKey(folder.id),
-    lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress,
-    rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
-    maxItemsPerPage: 100,
-    pageItemsDivisorFactor: 25,
-    onSelectedRows: (boxes) {
-      final bloc = context.read<DriveDetailCubit>();
+  return LayoutBuilder(builder: (context, constraints) {
+    return ArDriveDataTable<ArDriveDataTableItem>(
+      key: ValueKey(folder.id),
+      lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress,
+      rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
+      maxItemsPerPage: 100,
+      pageItemsDivisorFactor: 25,
+      onSelectedRows: (boxes) {
+        final bloc = context.read<DriveDetailCubit>();
 
-      if (boxes.isEmpty) {
-        bloc.setMultiSelect(false);
-        return;
-      }
-
-      final multiSelectedItems = boxes
-          .map((e) => e.selectedItems.map((e) => e))
-          .expand((e) => e)
-          .toList();
-
-      bloc.selectItems(multiSelectedItems);
-    },
-    onChangeMultiSelecting: (isMultiselecting) {
-      context.read<DriveDetailCubit>().setMultiSelect(isMultiselecting);
-    },
-    forceDisableMultiSelect:
-        context.read<DriveDetailCubit>().forceDisableMultiselect,
-    columns: [
-      TableColumn(appLocalizationsOf(context).name, 2),
-      TableColumn(appLocalizationsOf(context).size, 1),
-      TableColumn(appLocalizationsOf(context).lastUpdated, 1),
-      TableColumn(appLocalizationsOf(context).dateCreated, 1),
-    ],
-    trailing: (file) => isMultiselecting
-        ? const SizedBox.shrink()
-        : DriveExplorerItemTileTrailing(
-            drive: drive,
-            item: file,
-          ),
-    leading: (file) => DriveExplorerItemTileLeading(
-      item: file,
-    ),
-    onRowTap: (item) {
-      final cubit = context.read<DriveDetailCubit>();
-      if (item is FolderDataTableItem) {
-        if (item.id == cubit.selectedItem?.id) {
-          cubit.openFolder(path: item.path);
-        } else {
-          cubit.selectDataItem(item);
-        }
-      } else if (item is FileDataTableItem) {
-        if (item.id == cubit.selectedItem?.id) {
-          cubit.toggleSelectedItemDetails();
+        if (boxes.isEmpty) {
+          bloc.setMultiSelect(false);
           return;
         }
 
-        cubit.selectDataItem(item);
-      }
-    },
-    sortRows: (list, columnIndex, ascDescSort) {
-      // Separate folders and files
-      List<ArDriveDataTableItem> folders = [];
-      List<ArDriveDataTableItem> files = [];
+        final multiSelectedItems = boxes
+            .map((e) => e.selectedItems.map((e) => e))
+            .expand((e) => e)
+            .toList();
 
-      final lenght = list.length;
+        bloc.selectItems(multiSelectedItems);
+      },
+      onChangeMultiSelecting: (isMultiselecting) {
+        context.read<DriveDetailCubit>().setMultiSelect(isMultiselecting);
+      },
+      forceDisableMultiSelect:
+          context.read<DriveDetailCubit>().forceDisableMultiselect,
+      columns: [
+        TableColumn(appLocalizationsOf(context).name, 3),
+        if (constraints.maxWidth > 500)
+          TableColumn(appLocalizationsOf(context).size, 1),
+        if (constraints.maxWidth > 640)
+          TableColumn(appLocalizationsOf(context).lastUpdated, 1),
+        if (constraints.maxWidth > 700)
+          TableColumn(appLocalizationsOf(context).dateCreated, 1),
+      ],
+      trailing: (file) => isMultiselecting
+          ? const SizedBox.shrink()
+          : DriveExplorerItemTileTrailing(
+              drive: drive,
+              item: file,
+            ),
+      leading: (file) => DriveExplorerItemTileLeading(
+        item: file,
+      ),
+      onRowTap: (item) {
+        final cubit = context.read<DriveDetailCubit>();
+        if (item is FolderDataTableItem) {
+          if (item.id == cubit.selectedItem?.id) {
+            cubit.openFolder(path: item.path);
+          } else {
+            cubit.selectDataItem(item);
+          }
+        } else if (item is FileDataTableItem) {
+          if (item.id == cubit.selectedItem?.id) {
+            cubit.toggleSelectedItemDetails();
+            return;
+          }
 
-      for (int i = 0; i < lenght; i++) {
-        if (list[i] is FolderDataTableItem) {
-          folders.add(list[i]);
-        } else {
-          files.add(list[i]);
+          cubit.selectDataItem(item);
         }
-      }
+      },
+      sortRows: (list, columnIndex, ascDescSort) {
+        // Separate folders and files
+        List<ArDriveDataTableItem> folders = [];
+        List<ArDriveDataTableItem> files = [];
 
-      // Sort folders and files
-      _sortFoldersAndFiles(folders, files, columnIndex, ascDescSort);
+        final lenght = list.length;
 
-      return folders + files;
-    },
-    buildRow: (row) {
-      return DriveExplorerItemTile(
-        name: row.name,
-        size: row.size == null ? '-' : filesize(row.size),
-        lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
-        dateCreated: yMMdDateFormatter.format(row.dateCreated),
-        onPressed: () {
-          final cubit = context.read<DriveDetailCubit>();
-          if (row is FolderDataTableItem) {
-            if (row.id == cubit.selectedItem?.id) {
-              cubit.openFolder(path: folder.path);
-            } else {
+        for (int i = 0; i < lenght; i++) {
+          if (list[i] is FolderDataTableItem) {
+            folders.add(list[i]);
+          } else {
+            files.add(list[i]);
+          }
+        }
+
+        // Sort folders and files
+        _sortFoldersAndFiles(folders, files, columnIndex, ascDescSort);
+
+        return folders + files;
+      },
+      buildRow: (row) {
+        return DriveExplorerItemTile(
+          name: row.name,
+          size: row.size == null ? '-' : filesize(row.size),
+          lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
+          dateCreated: yMMdDateFormatter.format(row.dateCreated),
+          onPressed: () {
+            final cubit = context.read<DriveDetailCubit>();
+            if (row is FolderDataTableItem) {
+              if (row.id == cubit.selectedItem?.id) {
+                cubit.openFolder(path: folder.path);
+              } else {
+                cubit.selectDataItem(row);
+              }
+            } else if (row is FileDataTableItem) {
+              if (row.id == cubit.selectedItem?.id) {
+                cubit.toggleSelectedItemDetails();
+                return;
+              }
               cubit.selectDataItem(row);
             }
-          } else if (row is FileDataTableItem) {
-            if (row.id == cubit.selectedItem?.id) {
-              cubit.toggleSelectedItemDetails();
-              return;
-            }
-            cubit.selectDataItem(row);
-          }
-        },
-      );
-    },
-    rows: items,
-  );
+          },
+        );
+      },
+      rows: items,
+    );
+  });
 }
 
 void _sortFoldersAndFiles(List<ArDriveDataTableItem> folders,
