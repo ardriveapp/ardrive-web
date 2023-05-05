@@ -197,10 +197,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                     .arConnectWalletDoestNotMatchArDriveWallet,
                 icon: ArDriveIcons.triangle(
                   size: 88,
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeErrorDefault,
+                  color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
                 ),
               ),
             );
@@ -218,8 +215,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               content: appLocalizationsOf(context).pleaseTryAgain,
               icon: ArDriveIcons.triangle(
                 size: 88,
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+                color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
               ),
             ),
           );
@@ -840,8 +836,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
           content: ArDriveIconModal(
             icon: ArDriveIcons.triangle(
               size: 88,
-              color:
-                  ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+              color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
             ),
             title: appLocalizationsOf(context).passwordCannotBeEmpty,
             content: appLocalizationsOf(context).pleaseTryAgain,
@@ -862,8 +857,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
           content: ArDriveIconModal(
             icon: ArDriveIcons.triangle(
               size: 88,
-              color:
-                  ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+              color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
             ),
             title: appLocalizationsOf(context).passwordDoNotMatch,
             content: appLocalizationsOf(context).pleaseTryAgain,
