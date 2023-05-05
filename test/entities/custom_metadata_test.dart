@@ -4,12 +4,21 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Custom metadata', () {
+    test('customMetadataFactory throws for unknown entityType', () {
+      const unknownEntityType = 'La magia de la amistad';
+      expect(
+        () => customMetadataFactory({}, entityType: unknownEntityType),
+        throwsException,
+      );
+    });
+
     test('customMetadataFactory method removes reserved keys', () {
       final metadata = {
         'name': 'test',
         'reserved': 'reserved',
       };
-      final customMetadata = customMetadataFactory(metadata, ['reserved'])();
+      final customMetadata =
+          customMetadataFactory(metadata, entityType: 'test')();
       expect(customMetadata, '{"name":"test"}');
     });
 
