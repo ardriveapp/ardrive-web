@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/custom_metadata.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -93,16 +93,14 @@ class FileEntity extends Entity {
     }
   }
 
-  static String customMetaDataFromData(Map<String, dynamic> metadata) {
-    metadata.remove('name');
-    metadata.remove('size');
-    metadata.remove('lastModifiedDate');
-    metadata.remove('dataTxId');
-    metadata.remove('dataContentType');
-    final customMetadataAsString = json.encode(metadata);
-    logger.d('Custom metadata for file: $customMetadataAsString');
-    return customMetadataAsString;
-  }
+  static String customMetaDataFromData(Map<String, dynamic> metadata) =>
+      customMetadataFactory(metadata, [
+        'name',
+        'size',
+        'lastModifiedDate',
+        'dataTxId',
+        'dataContentType',
+      ])();
 
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
