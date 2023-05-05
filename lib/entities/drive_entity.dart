@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/custom_metadata.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -82,13 +83,11 @@ class DriveEntity extends Entity {
     }
   }
 
-  static String customMetaDataFromData(Map<String, dynamic> metadata) {
-    metadata.remove('name');
-    metadata.remove('rootFolderId');
-    final customMetadataAsString = json.encode(metadata);
-    print('Custom metadata for drive: $customMetadataAsString');
-    return customMetadataAsString;
-  }
+  static String customMetaDataFromData(Map<String, dynamic> metadata) =>
+      customMetadataFactory(metadata, [
+        'name',
+        'rootFolderId',
+      ])();
 
   factory DriveEntity.fromJson(Map<String, dynamic> json) =>
       _$DriveEntityFromJson(json);

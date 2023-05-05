@@ -250,7 +250,7 @@ class ArweaveService {
 
           return _getEntityData(
             entityId: entity.id,
-            driveId: ownerAddress,
+            driveId: driveId,
             isPrivate: driveKey != null,
           );
         },
