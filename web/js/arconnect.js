@@ -6,12 +6,16 @@ const permissions = [
   'ACCESS_ALL_ADDRESSES',
 ];
 
+const appInfo = {
+  logo: 'https://app.ardrive.io/favicon.png',
+}
+
 function isExtensionPresent() {
   return window.arweaveWallet != null && window.arweaveWallet != 'undefined';
 }
 
 async function connect() {
-  return await window.arweaveWallet.connect(permissions);
+  return await window.arweaveWallet.connect(permissions, appInfo);
 }
 
 async function checkPermissions() {
