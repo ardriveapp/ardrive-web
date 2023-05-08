@@ -101,63 +101,81 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   Future<void> _fetchMissingCustomMetadataForDrive() async {
     final driveRevisions =
         await _driveDao.revisionsForDrivesWithNoMetadata(_driveId);
+    final revisionsInBatches = batchify(driveRevisions, 100);
     logger.d('There are ${driveRevisions.length} drives with no metadata');
-    for (final driveRevision in driveRevisions) {
-      final txId = driveRevision.metadataTxId;
-      final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
-      final metadataAsString = utf8.decode(metadata);
-      final metadataAsJson = jsonDecode(metadataAsString);
-      final customMetaData = extractCustomMetadataForEntityType(
-        metadataAsJson,
-        entityType: EntityType.drive,
-      );
-      await _driveDao.updateCustomJsonMetadataForDrive(
-        _driveId,
-        txId,
-        customMetaData,
-      );
+
+    for (final batch in revisionsInBatches) {
+      final futuresBatch = batch.map((driveRevision) async {
+        final txId = driveRevision.metadataTxId;
+        final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+        final metadataAsString = utf8.decode(metadata);
+        final metadataAsJson = jsonDecode(metadataAsString);
+        final customMetaData = extractCustomMetadataForEntityType(
+          metadataAsJson,
+          entityType: EntityType.drive,
+        );
+        await _driveDao.updateCustomJsonMetadataForDrive(
+          _driveId,
+          txId,
+          customMetaData,
+        );
+      });
+
+      await Future.wait(futuresBatch);
     }
   }
 
   Future<void> _fetchMissingCustomMetadataForFolder() async {
     final folderRevisions =
         await _driveDao.revisionsForFoldersWithNoMetadata(_driveId);
+    final revisionsInBatches = batchify(folderRevisions, 100);
     logger.d('There are ${folderRevisions.length} folders with no metadata');
-    for (final folderRevision in folderRevisions) {
-      final txId = folderRevision.metadataTxId;
-      final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
-      final metadataAsString = utf8.decode(metadata);
-      final metadataAsJson = jsonDecode(metadataAsString);
-      final customMetaData = extractCustomMetadataForEntityType(
-        metadataAsJson,
-        entityType: EntityType.folder,
-      );
-      await _driveDao.updateCustomJsonMetadataForFolder(
-        _driveId,
-        txId,
-        customMetaData,
-      );
+
+    for (final batch in revisionsInBatches) {
+      final futuresBatch = batch.map((folderRevision) async {
+        final txId = folderRevision.metadataTxId;
+        final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+        final metadataAsString = utf8.decode(metadata);
+        final metadataAsJson = jsonDecode(metadataAsString);
+        final customMetaData = extractCustomMetadataForEntityType(
+          metadataAsJson,
+          entityType: EntityType.folder,
+        );
+        await _driveDao.updateCustomJsonMetadataForFolder(
+          _driveId,
+          txId,
+          customMetaData,
+        );
+      });
+
+      await Future.wait(futuresBatch);
     }
   }
 
   Future<void> _fetchMissingCustomMetadataForFile() async {
     final fileRevisions =
         await _driveDao.revisionsForFilesWithNoMetadata(_driveId);
+    final revisionsInBatches = batchify(fileRevisions, 100);
     logger.d('There are ${fileRevisions.length} files with no metadata');
-    for (final fileRevision in fileRevisions) {
-      final txId = fileRevision.metadataTxId;
-      final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
-      final metadataAsString = utf8.decode(metadata);
-      final metadataAsJson = jsonDecode(metadataAsString);
-      final customMetaData = extractCustomMetadataForEntityType(
-        metadataAsJson,
-        entityType: EntityType.file,
-      );
-      await _driveDao.updateCustomJsonMetadataForFile(
-        _driveId,
-        txId,
-        customMetaData,
-      );
+
+    for (final batch in revisionsInBatches) {
+      final futuresBatch = batch.map((fileRevision) async {
+        final txId = fileRevision.metadataTxId;
+        final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+        final metadataAsString = utf8.decode(metadata);
+        final metadataAsJson = jsonDecode(metadataAsString);
+        final customMetaData = extractCustomMetadataForEntityType(
+          metadataAsJson,
+          entityType: EntityType.file,
+        );
+        await _driveDao.updateCustomJsonMetadataForFile(
+          _driveId,
+          txId,
+          customMetaData,
+        );
+      });
+
+      await Future.wait(futuresBatch);
     }
   }
 
@@ -498,4 +516,16 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _wasSnapshotDataComputingCanceled = true;
   }
+}
+
+List<List<D>> batchify<D>(List<D> revisions, int batchSize) {
+  final List<List<D>> batchedRevisions = [];
+
+  for (var i = 0; i < revisions.length; i += batchSize) {
+    final batch = revisions.sublist(i, i + batchSize);
+
+    batchedRevisions.add(batch);
+  }
+
+  return batchedRevisions;
 }
