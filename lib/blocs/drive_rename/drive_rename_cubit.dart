@@ -12,19 +12,19 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
   final String driveId;
 
   final ArweaveService _arweave;
-  final TurboService _turboService;
+  final UploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
 
   DriveRenameCubit({
     required this.driveId,
     required ArweaveService arweave,
-    required TurboService turboService,
+    required UploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
   })  : _arweave = arweave,
-        _turboService = turboService,
+        _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         super(DriveRenameInitial()) {
@@ -60,13 +60,13 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         drive = drive.copyWith(name: newName, lastUpdated: DateTime.now());
         final driveEntity = drive.asEntity();
 
-        if (_turboService.useTurbo) {
+        if (_turboUploadService.useTurbo) {
           final driveDataItem = await _arweave.prepareEntityDataItem(
             driveEntity,
             profile.wallet,
             key: driveKey,
           );
-          await _turboService.postDataItem(dataItem: driveDataItem);
+          await _turboUploadService.postDataItem(dataItem: driveDataItem);
           driveEntity.txId = driveDataItem.id;
         } else {
           final driveTx = await _arweave.prepareEntityTx(

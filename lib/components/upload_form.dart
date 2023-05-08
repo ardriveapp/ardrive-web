@@ -64,7 +64,7 @@ Future<void> promptToUpload(
           uploadPlanUtils: UploadPlanUtils(
             crypto: ArDriveCrypto(),
             arweave: context.read<ArweaveService>(),
-            turboService: context.read<TurboService>(),
+            turboUploadService: context.read<UploadService>(),
             driveDao: context.read<DriveDao>(),
           ),
           driveId: driveId,
@@ -72,7 +72,7 @@ Future<void> promptToUpload(
           files: selectedFiles,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
-          turbo: context.read<TurboService>(),
+          turbo: context.read<UploadService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
