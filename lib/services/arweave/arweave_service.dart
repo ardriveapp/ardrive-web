@@ -222,6 +222,8 @@ class ArweaveService {
     required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
+    final blockHistory = <BlockEntities>[];
+
     // FIXME - PE-3440
     /// Make use of `eagerError: true` to make it fail on first error
     /// Also, when there's no internet connection and when we're getting
@@ -230,7 +232,7 @@ class ArweaveService {
 
     // MAYBE FIX: set a narrow concurrency limit
 
-    final List<Uint8List> responses = await Future.wait(
+    final List<Uint8List> entitiesData = await Future.wait(
       entityTxs.map(
         (entity) async {
           final tags = entity.tags;
@@ -255,8 +257,6 @@ class ArweaveService {
       ),
     );
 
-    final blockHistory = <BlockEntities>[];
-
     for (var i = 0; i < entityTxs.length; i++) {
       final transaction = entityTxs[i];
       // If we encounter a transaction that has yet to be mined, we stop moving through history.
@@ -273,7 +273,7 @@ class ArweaveService {
 
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
-        final entityResponse = responses[i];
+        final entityResponse = entitiesData[i];
         final rawEntityData = entityResponse;
 
         Entity? entity;

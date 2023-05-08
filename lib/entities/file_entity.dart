@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/custom_metadata.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -32,6 +33,9 @@ class FileEntity extends Entity {
   String? dataTxId;
   String? dataContentType;
 
+  @JsonKey(ignore: true)
+  String? customJsonMetaData;
+
   FileEntity({
     this.id,
     this.driveId,
@@ -41,6 +45,7 @@ class FileEntity extends Entity {
     this.lastModifiedDate,
     this.dataTxId,
     this.dataContentType,
+    this.customJsonMetaData,
   }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({
@@ -81,6 +86,10 @@ class FileEntity extends Entity {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
+        ..customJsonMetaData = extractCustomMetadataForEntityType(
+          entityJson,
+          entityType: EntityType.file,
+        )
         ..createdAt = commitTime;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);

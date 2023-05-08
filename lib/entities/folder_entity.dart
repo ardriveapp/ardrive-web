@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/custom_metadata.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -22,11 +23,15 @@ class FolderEntity extends Entity {
 
   String? name;
 
+  @JsonKey(ignore: true)
+  String? customJsonMetaData;
+
   FolderEntity({
     this.id,
     this.driveId,
     this.parentFolderId,
     this.name,
+    this.customJsonMetaData,
   }) : super(ArDriveCrypto());
 
   static Future<FolderEntity> fromTransaction(
@@ -53,6 +58,10 @@ class FolderEntity extends Entity {
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
+        ..customJsonMetaData = extractCustomMetadataForEntityType(
+          entityJson,
+          entityType: EntityType.folder,
+        )
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);

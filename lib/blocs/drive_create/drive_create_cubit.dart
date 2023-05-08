@@ -116,8 +116,12 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       }
 
       rootFolderEntity.txId = rootFolderDataItem.id;
-      await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
-          performedAction: RevisionAction.create));
+      await _driveDao.insertFolderRevision(
+        rootFolderEntity.toRevisionCompanion(
+          performedAction: RevisionAction.create,
+          customJsonMetaData: null,
+        ),
+      );
 
       // Update drive with bundledIn
       // Creates a drive revision immediately after creation

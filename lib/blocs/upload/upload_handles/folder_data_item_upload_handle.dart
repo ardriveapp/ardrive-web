@@ -85,6 +85,7 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
       await driveDao.insertFolderRevision(
         folderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create,
+          customJsonMetaData: null,
         ),
       );
     });

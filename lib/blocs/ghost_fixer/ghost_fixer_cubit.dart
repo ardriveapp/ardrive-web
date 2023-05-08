@@ -154,8 +154,12 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
 
         await _driveDao.writeToFolder(folder);
 
-        await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
-            performedAction: RevisionAction.create));
+        await _driveDao.insertFolderRevision(
+          folderEntity.toRevisionCompanion(
+            performedAction: RevisionAction.create,
+            customJsonMetaData: null,
+          ),
+        );
         final folderMap = {folder.id: folder.toCompanion(false)};
         await _syncCubit.generateFsEntryPaths(folder.driveId, folderMap, {});
       });

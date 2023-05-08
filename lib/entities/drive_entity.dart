@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/custom_metadata.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -23,10 +24,14 @@ class DriveEntity extends Entity {
   String? name;
   String? rootFolderId;
 
+  @JsonKey(ignore: true)
+  String? customMetadata;
+
   DriveEntity({
     this.id,
     this.name,
     this.rootFolderId,
+    this.customMetadata,
     this.privacy,
     this.authMode,
   }) : super(ArDriveCrypto());
@@ -56,6 +61,10 @@ class DriveEntity extends Entity {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
+        ..customMetadata = extractCustomMetadataForEntityType(
+          entityJson,
+          entityType: EntityType.drive,
+        )
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);

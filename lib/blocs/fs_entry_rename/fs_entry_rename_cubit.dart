@@ -100,8 +100,12 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
           await _driveDao.writeToFolder(folder);
 
-          await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
-              performedAction: RevisionAction.rename));
+          await _driveDao.insertFolderRevision(
+            folderEntity.toRevisionCompanion(
+              performedAction: RevisionAction.rename,
+              customJsonMetaData: null,
+            ),
+          );
         });
 
         final folderMap = {folder.id: folder.toCompanion(false)};
@@ -142,8 +146,12 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
           await _driveDao.writeToFile(file);
 
-          await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
-              performedAction: RevisionAction.rename));
+          await _driveDao.insertFileRevision(
+            fileEntity.toRevisionCompanion(
+              performedAction: RevisionAction.rename,
+              customMetaData: null,
+            ),
+          );
         });
 
         emit(const FileEntryRenameSuccess());
