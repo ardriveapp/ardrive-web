@@ -459,7 +459,7 @@
       }
     }
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{एक डुप्लीकेट फ़ाइल मिली} =other{डुप्लीकेट फ़ाइलें मिली}}",
+  "duplicateFiles": "{numberOfDuplicateFiles, plural, zero{} one{एक डुप्लीकेट फ़ाइल मिली} other{डुप्लीकेट फ़ाइलें मिली}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -470,7 +470,7 @@
       }
     }
   },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{एक डुप्लीकेट फ़ोल्डर मिला} =other{डुप्लीकेट फ़ोल्डर्स मिलें}}",
+  "duplicateFolders": "{numberOfDuplicateFolders, plural, zero{} one{एक डुप्लीकेट फ़ोल्डर मिला} other{डुप्लीकेट फ़ोल्डर्स मिलें}}",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title",
     "placeholders": {
@@ -608,7 +608,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{1 फ़ाइल बहुत बड़ी है} =other{{numberOfFiles} फ़ाइलें बहुत बड़ी हैं}}",
+  "filesTooLarge": "{numberOfFiles, plural, zero{} one{1 फ़ाइल बहुत बड़ी है} other{{numberOfFiles} फ़ाइलें बहुत बड़ी हैं}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -635,7 +635,7 @@
   "@filesWillBePermanentlyPublicWarning": {
     "description": "Make the user aware that it is uploading permanent data publicly"
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{यह फ़ाइल पब्लिक्ली अपलोड की जाएगी।} =other{ये फ़ाइलें पब्लिक्ली अपलोड की जाएंगी।}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles, plural, zero{} one{यह फ़ाइल पब्लिक्ली अपलोड की जाएगी।} other{ये फ़ाइलें पब्लिक्ली अपलोड की जाएंगी।}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -646,7 +646,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{इस लोकेशन पर इसी नाम की एक फ़ाइल पहले से मौजूद है। क्या आप जारी रखना चाहते हैं और इस फ़ाइल को एक नए वर्ज़न के तौर पर अपलोड करना चाहते हैं?} =other{इस लोकेशन पर इसी नाम की {numberOfFiles} फ़ाइलें पहले से मौजूद हैं। क्या आप जारी रखना चाहते हैं और इन फ़ाइलों को एक नए वर्ज़न के तौर पर अपलोड करना चाहते हैं?}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles, plural, zero{} one{इस लोकेशन पर इसी नाम की एक फ़ाइल पहले से मौजूद है। क्या आप जारी रखना चाहते हैं और इस फ़ाइल को एक नए वर्ज़न के तौर पर अपलोड करना चाहते हैं?} other{इस लोकेशन पर इसी नाम की {numberOfFiles} फ़ाइलें पहले से मौजूद हैं। क्या आप जारी रखना चाहते हैं और इन फ़ाइलों को एक नए वर्ज़न के तौर पर अपलोड करना चाहते हैं?}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -730,7 +730,7 @@
   "@folderName": {
     "description": "The name of certain folder"
   },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{इस लोकेशन पर इसी नाम का एक फ़ोल्डर पहले से मौजूद है। कृपया इसका नाम बदलें और दोबारा अपलोड करने की कोशिश करें।}  =other{इस लोकेशन पर इसी नाम के {numberOfFolders} फ़ोल्डर्स पहले से मौजूद हैं। कृपया उनके नाम बदलें और दोबारा अपलोड करने की कोशिश करें।}}",
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders, plural, zero{} one{इस लोकेशन पर इसी नाम का एक फ़ोल्डर पहले से मौजूद है। कृपया इसका नाम बदलें और दोबारा अपलोड करने की कोशिश करें।} other{इस लोकेशन पर इसी नाम के {numberOfFolders} फ़ोल्डर्स पहले से मौजूद हैं। कृपया उनके नाम बदलें और दोबारा अपलोड करने की कोशिश करें।}}",
   "@foldersWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with folder name conflicts",
     "placeholders": {
@@ -1444,7 +1444,7 @@
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{1 फ़ाइल अपलोड हो रही है...} =other{{numberOfFiles} फ़ाइलें अपलोड हो रही हैं...}}",
+  "uploadingNFiles": "{numberOfFiles, plural, zero{} one{1 फ़ाइल अपलोड हो रही है...} other{{numberOfFiles} फ़ाइलें अपलोड हो रही हैं...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -1459,7 +1459,7 @@
   "@uploadingSnapshot": {
     "description": "Uploading Snapshot"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{1 फ़ाइल अपलोड करें} =other{{numberOfFiles} फ़ाइलें अपलोड करें}}",
+  "uploadNFiles": "{numberOfFiles, plural, zero{} one{1 फ़ाइल अपलोड करें} other{{numberOfFiles} फ़ाइलें अपलोड करें}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {

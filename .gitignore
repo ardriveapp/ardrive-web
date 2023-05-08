@@ -71,3 +71,6 @@ app.*.map.json
 
 # fvm
 /.fvm/flutter_sdk
+
+# direnv
+.direnv
