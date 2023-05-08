@@ -599,7 +599,7 @@ class ArDriveItemListTile extends StatelessWidget {
             const SizedBox(
               width: 12,
             ),
-            Expanded(
+            Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -608,9 +608,6 @@ class ArDriveItemListTile extends StatelessWidget {
                     style: ArDriveTypography.body
                         .captionRegular()
                         .copyWith(fontWeight: FontWeight.w700),
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.fade,
                   ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
