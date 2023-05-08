@@ -614,7 +614,7 @@ class ArDriveItemListTile extends StatelessWidget {
                               .copyWith(fontWeight: FontWeight.w700),
                           maxLines: 1,
                           softWrap: false,
-                          overflow: TextOverflow.fade,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -652,7 +652,7 @@ class ArDriveItemListTile extends StatelessWidget {
                       Flexible(
                         child: Text(
                           'Last updated: ${yMMdDateFormatter.format(item.lastUpdated)}',
-                          overflow: TextOverflow.fade,
+                          overflow: TextOverflow.ellipsis,
                           style: ArDriveTypography.body.xSmallRegular(
                             color: ArDriveTheme.of(context)
                                 .themeData
@@ -985,7 +985,7 @@ class ArDriveGridItem extends StatelessWidget {
                           child: Text(
                             item.name,
                             style: ArDriveTypography.body.buttonNormalBold(),
-                            overflow: TextOverflow.fade,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Flexible(
@@ -1018,7 +1018,7 @@ class ArDriveGridItem extends StatelessWidget {
                                       .copyWith(
                                         fontSize: 8,
                                       ),
-                                  overflow: TextOverflow.fade,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],

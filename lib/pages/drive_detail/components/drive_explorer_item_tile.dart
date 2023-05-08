@@ -29,7 +29,7 @@ class DriveExplorerItemTile extends TableRowWidget {
               child: Text(
                 name,
                 style: ArDriveTypography.body.buttonNormalBold(),
-                overflow: TextOverflow.fade,
+                overflow: TextOverflow.ellipsis,
                 maxLines: 1,
                 softWrap: false,
               ),

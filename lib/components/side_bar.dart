@@ -598,7 +598,7 @@ class DriveListTile extends StatelessWidget {
                 child: Text(
                   drive.name,
                   maxLines: 1,
-                  overflow: TextOverflow.fade,
+                  overflow: TextOverflow.ellipsis,
                   softWrap: false,
                   style: isSelected
                       ? ArDriveTypography.body

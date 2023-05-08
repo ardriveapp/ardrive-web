@@ -172,7 +172,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                               widget.item.name,
                               softWrap: false,
                               style: ArDriveTypography.body.buttonLargeBold(),
-                              overflow: TextOverflow.fade,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (widget.currentDrive != null &&
