@@ -603,21 +603,14 @@ class ArDriveItemListTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.name,
-                          style: ArDriveTypography.body
-                              .captionRegular()
-                              .copyWith(fontWeight: FontWeight.w700),
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.fade,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    item.name,
+                    style: ArDriveTypography.body
+                        .captionRegular()
+                        .copyWith(fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.fade,
                   ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
