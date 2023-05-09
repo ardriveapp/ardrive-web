@@ -60,8 +60,10 @@ Map<String, dynamic>? _metadataOfDriveRevision(DriveRevision revision) {
     metaData['rootFolderId'] = rootFolderId;
 
     return metaData;
-  } catch (e) {
-    throw Exception('Bad custom metadata: $maybeCustomMetaData');
+  } catch (_) {
+    throw Exception(
+      'Bad custom metadata for drive revision: $maybeCustomMetaData',
+    );
   }
 }
 
@@ -79,8 +81,10 @@ Map<String, dynamic>? _metadataOfFolderRevision(FolderRevision revision) {
     metaData['name'] = folderName;
 
     return metaData;
-  } catch (e) {
-    throw Exception('Bad custom metadata: $maybeCustomMetaData');
+  } catch (_) {
+    throw Exception(
+      'Bad custom metadata for folder revision: $maybeCustomMetaData',
+    );
   }
 }
 
@@ -107,7 +111,9 @@ Map<String, dynamic>? _metadataOfFileRevision(FileRevision revision) {
     metaData['dataContentType'] = fileDataContentType;
 
     return metaData;
-  } catch (e, s) {
-    throw Exception('Bad custom metadata: $maybeCustomMetaData - $e \n|$s');
+  } catch (_) {
+    throw Exception(
+      'Bad custom metadata for file revision: $maybeCustomMetaData',
+    );
   }
 }
