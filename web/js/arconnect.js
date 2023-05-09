@@ -8,6 +8,7 @@ const permissions = [
 
 const appInfo = {
   logo: 'https://app.ardrive.io/favicon.png',
+  name: 'ArDrive',
 }
 
 function isExtensionPresent() {
