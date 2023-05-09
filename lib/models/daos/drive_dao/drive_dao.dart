@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/models/daos/drive_dao/metadata_from_entity_revision.dart';
+import 'package:ardrive/models/daos/drive_dao/metadata_of_entity_revision.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';

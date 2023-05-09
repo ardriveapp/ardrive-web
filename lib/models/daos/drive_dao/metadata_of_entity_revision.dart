@@ -98,7 +98,7 @@ Map<String, dynamic>? _metadataOfFileRevision(FileRevision revision) {
     final int fileLastModifiedDate =
         revision.lastModifiedDate.millisecondsSinceEpoch;
     final String fileDataTxId = revision.dataTxId;
-    final String fileDataContentType = revision.dataContentType!;
+    final String? fileDataContentType = revision.dataContentType;
 
     metaData['name'] = fileName;
     metaData['size'] = fileSize;
@@ -107,7 +107,7 @@ Map<String, dynamic>? _metadataOfFileRevision(FileRevision revision) {
     metaData['dataContentType'] = fileDataContentType;
 
     return metaData;
-  } catch (e) {
-    throw Exception('Bad custom metadata: $maybeCustomMetaData');
+  } catch (e, s) {
+    throw Exception('Bad custom metadata: $maybeCustomMetaData - $e \n|$s');
   }
 }
