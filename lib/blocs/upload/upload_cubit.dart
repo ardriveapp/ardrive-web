@@ -163,7 +163,7 @@ class UploadCubit extends Cubit<UploadState> {
           .getSingleOrNull();
 
       if (existingFileId != null) {
-        conflictingFiles[file.getIdentifier()] = existingFileId;
+        conflictingFiles[file.ioFile.name] = existingFileId;
       }
     }
     if (conflictingFiles.isNotEmpty) {

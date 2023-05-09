@@ -96,14 +96,13 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
                           .createSnapshotExplanation(drive.name),
                       defaultMapper: (t) => TextSpan(
                         text: t,
-                        style: Theme.of(context).textTheme.bodyText1,
+                        style: ArDriveTypography.body.buttonNormalRegular(),
                       ),
                       parts: {
                         drive.name: (t) => TextSpan(
                               text: t,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyText1!
+                              style: ArDriveTypography.body
+                                  .buttonNormalBold()
                                   .copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -111,7 +110,7 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
                       },
                     ),
                   ),
-                  style: Theme.of(context).textTheme.bodyText1,
+                  style: ArDriveTypography.body.buttonNormalRegular(),
                 ),
               ],
             ),
@@ -157,6 +156,7 @@ Widget _loadingDialog(
     progressDescription: Center(
       child: Text(
         _loadingDialogDescription(context, state, isArConnectProfile),
+        style: ArDriveTypography.body.buttonNormalRegular(),
       ),
     ),
     actions: [
@@ -215,7 +215,7 @@ Widget _successDialog(BuildContext context, String driveName) {
                     text: appLocalizationsOf(context)
                         .snapshotCreationSucceeded(driveName),
                   ),
-                  style: Theme.of(context).textTheme.bodyText1,
+                  style: ArDriveTypography.body.buttonNormalRegular(),
                 ),
               ],
             ),
@@ -255,7 +255,7 @@ Widget _failureDialog(
                   TextSpan(
                     text: appLocalizationsOf(context).snapshotCreationFailed,
                   ),
-                  style: Theme.of(context).textTheme.bodyText1,
+                  style: ArDriveTypography.body.buttonNormalRegular(),
                 ),
               ],
             ),
@@ -303,7 +303,7 @@ Widget _insufficientBalanceDialog(
                       state.arCost,
                     ),
                   ),
-                  style: Theme.of(context).textTheme.bodyText1,
+                  style: ArDriveTypography.body.buttonNormalRegular(),
                 ),
               ],
             ),
@@ -347,14 +347,13 @@ Widget _confirmDialog(
                               .snapshotOfDrive(drive.name),
                           defaultMapper: (t) => TextSpan(
                             text: t,
-                            style: Theme.of(context).textTheme.bodyText1,
+                            style: ArDriveTypography.body.buttonNormalRegular(),
                           ),
                           parts: {
                             drive.name: (t) => TextSpan(
                                   text: t,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyText1!
+                                  style: ArDriveTypography.body
+                                      .buttonNormalBold()
                                       .copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -362,7 +361,7 @@ Widget _confirmDialog(
                           },
                         ),
                       ),
-                      style: Theme.of(context).textTheme.bodyText1,
+                      style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
@@ -386,7 +385,7 @@ Widget _confirmDialog(
                                   ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
                             ),
                         ],
-                        style: Theme.of(context).textTheme.bodyText1,
+                        style: ArDriveTypography.body.buttonNormalRegular(),
                       ),
                     ),
                     Text.rich(
@@ -398,7 +397,7 @@ Widget _confirmDialog(
                             ),
                           ),
                         ],
-                        style: Theme.of(context).textTheme.bodyText1,
+                        style: ArDriveTypography.body.buttonNormalRegular(),
                       ),
                     ),
                   ],

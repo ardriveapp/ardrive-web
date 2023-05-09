@@ -1,7 +1,8 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: depend_on_referenced_packages
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform, visibleForTesting;
 import 'package:platform/platform.dart' as platform;
 
 class AppPlatform {
@@ -40,6 +41,12 @@ class AppPlatform {
   static bool get isMobile =>
       getPlatform() == SystemPlatform.Android ||
       getPlatform() == SystemPlatform.iOS;
+
+  static bool isMobileWeb() {
+    return kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.android);
+  }
 }
 
 enum SystemPlatform { Android, iOS, Web, unknown }

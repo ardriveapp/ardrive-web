@@ -5,12 +5,14 @@ class ArDriveDropdownItemTile extends StatelessWidget {
   final String name;
   final ArDriveIcon icon;
   final bool isDisabled;
+  final TextStyle? fontStyle;
 
   const ArDriveDropdownItemTile({
     Key? key,
     required this.name,
     required this.icon,
     this.isDisabled = false,
+    this.fontStyle,
   }) : super(key: key);
 
   @override
@@ -34,14 +36,15 @@ class ArDriveDropdownItemTile extends StatelessWidget {
             const SizedBox(width: 20),
             Text(
               name,
-              style: ArDriveTypography.body.buttonNormalBold(
-                color: isDisabled
-                    ? ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeAccentDisabled
-                    : null,
-              ),
+              style: fontStyle ??
+                  ArDriveTypography.body.buttonNormalBold(
+                    color: isDisabled
+                        ? ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeAccentDisabled
+                        : null,
+                  ),
             ),
           ],
         ),

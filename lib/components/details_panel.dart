@@ -14,6 +14,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -127,6 +128,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
             ];
             return SizedBox(
               child: ArDriveCard(
+                borderRadius: AppPlatform.isMobile || AppPlatform.isMobileWeb()
+                    ? 0
+                    : null,
                 backgroundColor: ArDriveTheme.of(context)
                     .themeData
                     .tableTheme
@@ -616,12 +620,20 @@ class CopyButton extends StatefulWidget {
   final String text;
   final double size;
   final bool showCopyText;
+  final Widget? child;
+  final int positionY;
+  final int positionX;
+  final Color? copyMessageColor;
 
   const CopyButton({
     Key? key,
     required this.text,
     this.size = 20,
     this.showCopyText = true,
+    this.child,
+    this.positionY = 40,
+    this.positionX = 20,
+    this.copyMessageColor,
   }) : super(key: key);
 
   @override
@@ -641,39 +653,21 @@ class _CopyButtonState extends State<CopyButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.child != null) {
+      return GestureDetector(
+        onTap: _copy,
+        child: HoverWidget(
+          hoverScale: 1,
+          child: widget.child!,
+        ),
+      );
+    }
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
       child: ArDriveIconButton(
         tooltip: _showCheck ? '' : appLocalizationsOf(context).copyTooltip,
-        onPressed: () {
-          Clipboard.setData(ClipboardData(text: widget.text));
-          if (mounted) {
-            if (_showCheck) {
-              return;
-            }
-
-            setState(() {
-              _showCheck = true;
-              if (widget.showCopyText) {
-                _overlayEntry = _createOverlayEntry(context);
-                Overlay.of(context)?.insert(_overlayEntry!);
-              }
-
-              Future.delayed(const Duration(seconds: 2), () {
-                if (!mounted) {
-                  return;
-                }
-
-                setState(() {
-                  _showCheck = false;
-                  if (_overlayEntry != null && _overlayEntry!.mounted) {
-                    _overlayEntry?.remove();
-                  }
-                });
-              });
-            });
-          }
-        },
+        onPressed: _copy,
         icon: _showCheck
             ? ArDriveIcons.checkCirle(
                 size: widget.size,
@@ -687,19 +681,47 @@ class _CopyButtonState extends State<CopyButton> {
     );
   }
 
+  void _copy() {
+    Clipboard.setData(ClipboardData(text: widget.text));
+    if (mounted) {
+      if (_showCheck) {
+        return;
+      }
+
+      setState(() {
+        _showCheck = true;
+        if (widget.showCopyText) {
+          _overlayEntry = _createOverlayEntry(context);
+          Overlay.of(context)?.insert(_overlayEntry!);
+        }
+
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            _showCheck = false;
+            if (_overlayEntry != null && _overlayEntry!.mounted) {
+              _overlayEntry?.remove();
+            }
+          });
+        });
+      });
+    }
+  }
+
   OverlayEntry _createOverlayEntry(BuildContext parentContext) {
     final RenderBox button = context.findRenderObject() as RenderBox;
     final Offset buttonPosition = button.localToGlobal(Offset.zero);
 
     return OverlayEntry(
       builder: (context) => Positioned(
-        left: buttonPosition.dx - 28,
-        top: buttonPosition.dy - 40,
+        left: buttonPosition.dx - widget.positionX,
+        top: buttonPosition.dy - widget.positionY,
         child: Material(
-          color: ArDriveTheme.of(parentContext)
-              .themeData
-              .dropdownTheme
-              .backgroundColor,
+          color: widget.copyMessageColor ??
+              ArDriveTheme.of(context).themeData.backgroundColor,
           borderRadius: BorderRadius.circular(20),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

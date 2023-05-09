@@ -89,7 +89,7 @@ class FileShareDialogState extends State<FileShareDialog> {
                 const SizedBox(height: 16),
                 Text(
                   appLocalizationsOf(context).anyoneCanAccessThisFile,
-                  style: Theme.of(context).textTheme.subtitle2,
+                  style: ArDriveTypography.body.buttonNormalBold(),
                 ),
               }
             ],

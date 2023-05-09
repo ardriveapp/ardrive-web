@@ -1702,9 +1702,9 @@
   "@welcomeBack": {
     "description": "welcome back"
   },
-  "welcome": "Welcome to ArDrive",
+  "welcome": "Welcome",
   "@welcome": {
-    "description": "welcome to ArDrive"
+    "description": "welcome message on prompt wallet page"
   },
   "dragAndDropButtonTitle": "Browse Json",
   "@dragAndDropButtonTitle": {
@@ -1797,5 +1797,25 @@
   "close": "Close",
   "@close": {
     "description": "close"
+  },
+  "costUpload": "Cost",
+  "@costUpload": {
+    "description": "Cost"
+  },
+  "securityWalletOverlay": "Your keyfile is encrypted, it never leaves your device, and it can be removed from your device at any time.",
+  "@securityWalletOverlay": {
+    "description": "The text on the security overlay text on login"
+  },
+  "howDoesKeyfileLoginWork": "How does keyfile log in work?",
+  "@securityWalletOverlay": {
+    "description": "The cta text to check keyfile security"
+  },
+  "dontHaveAWallet1Part": "Don't have a wallet? Get one ",
+  "@dontHaveAWallet1Part": {
+    "description": "text to open the url to get a wallet"
+  },
+  "dontHaveAWallet2Part": "Here!",
+  "@dontHaveAWallet2Part": {
+    "description": "text to open the url to get a wallet"
   }
 }
