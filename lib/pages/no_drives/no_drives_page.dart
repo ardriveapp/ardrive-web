@@ -45,7 +45,9 @@ class NoDrivesPage extends StatelessWidget {
               return const CustomBottomNavigation();
             },
           ),
-          appBar: const MobileAppBar(),
+          appBar: const MobileAppBar(
+            showDrawerButton: false,
+          ),
           body: Stack(
             children: [
               Center(
