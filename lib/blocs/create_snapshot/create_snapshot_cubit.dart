@@ -489,7 +489,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final isPrivate = drive != null && drive.privacy != DrivePrivacy.public;
 
     // gather from arweave if not cached
-    final Uint8List entityJsonData = _cachedMetadata[txId] ??
+    final Uint8List entityJsonData = _cachedMetadata.remove(txId) ??
         await _arweave.dataFromTxId(
           txId,
           null, // key is null because we don't re-encrypt the snapshot data
