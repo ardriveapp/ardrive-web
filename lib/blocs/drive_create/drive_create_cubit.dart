@@ -17,19 +17,19 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   });
 
   final ArweaveService _arweave;
-  final TurboService _turboService;
+  final UploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
 
   DriveCreateCubit({
     required ArweaveService arweave,
-    required TurboService turboService,
+    required UploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required DrivesCubit drivesCubit,
   })  : _arweave = arweave,
-        _turboService = turboService,
+        _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
@@ -46,7 +46,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
     final minimumWalletBalance = BigInt.from(10000000);
     if (profile.walletBalance <= minimumWalletBalance &&
-        !_turboService.useTurbo) {
+        !_turboUploadService.useTurbo) {
       emit(DriveCreateZeroBalance());
       return;
     }
@@ -96,14 +96,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await rootFolderDataItem.sign(profile.wallet);
       await driveDataItem.sign(profile.wallet);
       late TransactionBase createTx;
-      if (_turboService.useTurbo) {
+      if (_turboUploadService.useTurbo) {
         createTx = await _arweave.prepareBundledDataItem(
           await DataBundle.fromDataItems(
             items: [driveDataItem, rootFolderDataItem],
           ),
           profile.wallet,
         );
-        await _turboService.postDataItem(dataItem: createTx as DataItem);
+        await _turboUploadService.postDataItem(dataItem: createTx as DataItem);
       } else {
         createTx = await _arweave.prepareDataBundleTx(
           await DataBundle.fromDataItems(

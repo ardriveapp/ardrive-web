@@ -24,7 +24,7 @@ void main() {
     late Database db;
     late DriveDao driveDao;
     late ArweaveService arweave;
-    late TurboService turboService;
+    late UploadService turboUploadService;
 
     late ProfileCubit profileCubit;
     late SyncCubit syncBloc;
@@ -230,7 +230,7 @@ void main() {
         (_) async =>
             await getTestTransaction('test/fixtures/signed_v2_tx.json'),
       );
-      turboService = DontUseTurbo();
+      turboUploadService = DontUseUploadService();
       syncBloc = MockSyncBloc();
       when(() => syncBloc.generateFsEntryPaths(any(), any(), any())).thenAnswer(
         (_) async => Future.value(),
@@ -270,7 +270,7 @@ void main() {
       'throws when selectedItems is empty',
       build: () => FsEntryMoveBloc(
         arweave: arweave,
-        turboService: turboService,
+        turboUploadService: turboUploadService,
         syncCubit: syncBloc,
         driveId: driveId,
         driveDao: driveDao,
@@ -297,7 +297,7 @@ void main() {
       build: () => FsEntryMoveBloc(
         crypto: ArDriveCrypto(),
         arweave: arweave,
-        turboService: turboService,
+        turboUploadService: turboUploadService,
         syncCubit: syncBloc,
         driveId: driveId,
         driveDao: driveDao,

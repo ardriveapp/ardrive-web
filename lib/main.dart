@@ -15,6 +15,7 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
@@ -38,6 +39,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'blocs/blocs.dart';
@@ -50,8 +52,12 @@ import 'theme/theme.dart';
 late ConfigService _configService;
 late AppConfig _config;
 late ArweaveService _arweave;
-late TurboService _turbo;
+late UploadService _turboUpload;
+late PaymentService _turboPayment;
 void main() async {
+  Stripe.publishableKey =
+      'pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z';
+
   WidgetsFlutterBinding.ensureInitialized();
 
   _configService = ConfigService(appFlavors: AppFlavors());
@@ -92,13 +98,19 @@ Future<void> _initialize() async {
     ),
     ArDriveCrypto(),
   );
-  _turbo = _config.useTurbo
-      ? TurboService(
+  _turboUpload = _config.useTurbo
+      ? UploadService(
           turboUri: Uri.parse(_config.defaultTurboUrl!),
           allowedDataItemSize: _config.allowedDataItemSizeForTurbo!,
           httpClient: ArDriveHTTP(),
         )
-      : DontUseTurbo();
+      : DontUseUploadService();
+
+  _turboPayment = _config.useTurbo
+      ? PaymentService(
+          httpClient: ArDriveHTTP(),
+        )
+      : DontUsePaymentService();
 
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
@@ -165,8 +177,11 @@ class AppState extends State<App> {
           ),
         ),
         RepositoryProvider<ArweaveService>(create: (_) => _arweave),
-        RepositoryProvider<TurboService>(
-          create: (_) => _turbo,
+        RepositoryProvider<UploadService>(
+          create: (_) => _turboUpload,
+        ),
+        RepositoryProvider<PaymentService>(
+          create: (_) => _turboPayment,
         ),
         RepositoryProvider<PstService>(
           create: (_) => PstService(
@@ -232,7 +247,7 @@ class AppState extends State<App> {
             BlocProvider(
               create: (context) => ProfileCubit(
                 arweave: context.read<ArweaveService>(),
-                turboService: context.read<TurboService>(),
+                turboUploadService: context.read<UploadService>(),
                 profileDao: context.read<ProfileDao>(),
                 db: context.read<Database>(),
               ),

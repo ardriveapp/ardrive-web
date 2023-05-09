@@ -64,7 +64,7 @@ Future<void> promptToUpload(
           uploadPlanUtils: UploadPlanUtils(
             crypto: ArDriveCrypto(),
             arweave: context.read<ArweaveService>(),
-            turboService: context.read<TurboService>(),
+            turboUploadService: context.read<UploadService>(),
             driveDao: context.read<DriveDao>(),
           ),
           driveId: driveId,
@@ -72,7 +72,7 @@ Future<void> promptToUpload(
           files: selectedFiles,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
-          turbo: context.read<TurboService>(),
+          turbo: context.read<UploadService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
@@ -362,70 +362,12 @@ class UploadForm extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Divider(),
                     const SizedBox(height: 16),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          if (state.isFreeThanksToTurbo) ...[
-                            TextSpan(
-                              text: appLocalizationsOf(context)
-                                  .freeTurboTransaction,
-                              style:
-                                  ArDriveTypography.body.buttonNormalRegular(),
-                            ),
-                          ] else ...[
-                            TextSpan(
-                              text: appLocalizationsOf(context).cost(
-                                state.costEstimate.arUploadCost,
-                              ),
-                              style:
-                                  ArDriveTypography.body.buttonNormalRegular(),
-                            ),
-                            if (state.costEstimate.usdUploadCost != null)
-                              TextSpan(
-                                text: usdUploadCostToString(
-                                  state.costEstimate.usdUploadCost!,
-                                ),
-                                style: ArDriveTypography.body
-                                    .buttonNormalRegular(),
-                              )
-                            else
-                              TextSpan(
-                                text:
-                                    ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
-                                style: ArDriveTypography.body
-                                    .buttonNormalRegular(),
-                              ),
-                          ],
-                        ],
-                        style: Theme.of(context).textTheme.bodyText1,
-                      ),
-                    ),
-                    if (state.uploadIsPublic) ...{
-                      const SizedBox(height: 8),
-                      Text(
-                        appLocalizationsOf(context).filesWillBeUploadedPublicly(
-                          numberOfFilesInBundles + numberOfV2Files,
-                        ),
-                        style: ArDriveTypography.body.buttonNormalRegular(),
-                      ),
-                    },
-                    if (!state.sufficientArBalance &&
-                        !state.isFreeThanksToTurbo) ...{
-                      const SizedBox(height: 8),
-                      Text(
-                        appLocalizationsOf(context).insufficientARForUpload,
-                        style: DefaultTextStyle.of(context)
-                            .style
-                            .copyWith(color: Theme.of(context).errorColor),
-                      ),
-                    },
                     RichText(
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Total size: ',
+                            text: 'Size: ',
                             style: ArDriveTypography.body.buttonNormalRegular(
                               color: ArDriveTheme.of(context)
                                   .themeData
@@ -442,12 +384,86 @@ class UploadForm extends StatelessWidget {
                                     color: ArDriveTheme.of(context)
                                         .themeData
                                         .colors
-                                        .themeFgOnDisabled)
+                                        .themeFgDefault)
                                 .copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
-                    )
+                    ),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          if (state.isFreeThanksToTurbo) ...[
+                            TextSpan(
+                              text: appLocalizationsOf(context)
+                                  .freeTurboTransaction,
+                              style:
+                                  ArDriveTypography.body.buttonNormalRegular(),
+                            ),
+                          ] else ...[
+                            TextSpan(
+                              text: appLocalizationsOf(context).costUpload,
+                              style: ArDriveTypography.body.buttonNormalRegular(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgOnDisabled,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ': ${state.costEstimate.arUploadCost} AR',
+                              style: ArDriveTypography.body
+                                  .buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgDefault,
+                                  )
+                                  .copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            if (state.costEstimate.usdUploadCost != null)
+                              TextSpan(
+                                text: usdUploadCostToString(
+                                  state.costEstimate.usdUploadCost!,
+                                ),
+                                style: ArDriveTypography.body
+                                    .buttonNormalBold()
+                                    .copyWith(fontWeight: FontWeight.bold),
+                              )
+                            else
+                              TextSpan(
+                                text:
+                                    ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
+                                style: ArDriveTypography.body
+                                    .buttonNormalRegular(),
+                              ),
+                          ],
+                        ],
+                        style: ArDriveTypography.body.buttonNormalRegular(),
+                      ),
+                    ),
+                    const Divider(),
+                    if (state.uploadIsPublic) ...{
+                      Text(
+                        appLocalizationsOf(context).filesWillBeUploadedPublicly(
+                          numberOfFilesInBundles + numberOfV2Files,
+                        ),
+                        style: ArDriveTypography.body.buttonNormalRegular(),
+                      ),
+                    },
+                    if (!state.sufficientArBalance &&
+                        !state.isFreeThanksToTurbo) ...{
+                      const SizedBox(height: 8),
+                      Text(
+                        appLocalizationsOf(context).insufficientARForUpload,
+                        style: ArDriveTypography.body.buttonNormalRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeErrorDefault,
+                        ),
+                      ),
+                    },
                   ],
                 ),
               ),
