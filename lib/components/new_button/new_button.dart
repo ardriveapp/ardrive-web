@@ -50,6 +50,8 @@ class NewButton extends StatelessWidget {
             color: Colors.white,
           ),
           onPressed: () {
+            final scrollController = ScrollController();
+
             showModalBottomSheet(
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(
@@ -70,43 +72,48 @@ class NewButton extends StatelessWidget {
                           .tableTheme
                           .backgroundColor,
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: List.generate(items.length, (index) {
-                            return Column(
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    items[index].onClick();
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                      horizontal: 16,
-                                    ),
-                                    child: ArDriveDropdownItemTile(
-                                      icon:
-                                          items[index].icon.copyWith(size: 24),
-                                      name: items[index].name,
-                                      isDisabled: items[index].isDisabled,
-                                      fontStyle: ArDriveTypography.body
-                                          .buttonLargeBold(),
-                                    ),
-                                  ),
-                                ),
-                                if (index != items.length - 1)
-                                  const Padding(
-                                    padding:
-                                        EdgeInsets.symmetric(horizontal: 24.0),
-                                    child: Divider(
-                                      height: 1,
-                                      thickness: 1,
+                      child: ArDriveScrollBar(
+                        controller: scrollController,
+                        alwaysVisible: true,
+                        child: ListView(
+                            controller: scrollController,
+                            children: List.generate(items.length, (index) {
+                              return Column(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      items[index].onClick();
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 16,
+                                      ),
+                                      child: ArDriveDropdownItemTile(
+                                        icon: items[index]
+                                            .icon
+                                            .copyWith(size: 24),
+                                        name: items[index].name,
+                                        isDisabled: items[index].isDisabled,
+                                        fontStyle: ArDriveTypography.body
+                                            .buttonLargeBold(),
+                                      ),
                                     ),
                                   ),
-                              ],
-                            );
-                          })),
+                                  if (index != items.length - 1)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 24.0),
+                                      child: Divider(
+                                        height: 1,
+                                        thickness: 1,
+                                      ),
+                                    ),
+                                ],
+                              );
+                            })),
+                      ),
                     ),
                   );
                 });
