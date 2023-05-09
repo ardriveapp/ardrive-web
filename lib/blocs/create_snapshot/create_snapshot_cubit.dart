@@ -9,6 +9,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/utils/ar_cost_to_usd.dart';
@@ -73,8 +74,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     DriveID driveId, {
     Range? range,
   }) async {
+    late bool isPrivate;
+
     try {
-      await _reset(driveId);
+      final drive =
+          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+      isPrivate = drive!.privacy == DrivePrivacy.private;
+      await _reset(drive);
     } catch (e) {
       emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
       return;
@@ -85,11 +91,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _setTrustedRange(range);
 
-    emit(PrepareSnapshotCreation());
+    if (!isPrivate) {
+      // TODO: supported for public drives only
 
-    await fetchMissingCustomMetadata();
-
-    _cachedMetadata = await _driveDao.getCachedMetadataForDrive(driveId);
+      emit(PrepareSnapshotCreation());
+      await fetchMissingCustomMetadata();
+      _cachedMetadata = await _driveDao.getCachedMetadataForDrive(driveId);
+    }
 
     await computeSnapshotData();
   }
@@ -220,26 +228,24 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     return false;
   }
 
-  Future<void> _reset(DriveID driveId) async {
+  Future<void> _reset(Drive drive) async {
     _currentHeight = await _arweave.getCurrentBlockHeight();
-    _driveId = driveId;
+    _driveId = drive.id;
     _itemToBeCreated = null;
     _snapshotEntity = null;
     _wasSnapshotDataComputingCanceled = false;
 
     try {
-      final drive =
-          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
-      final isPrivate = drive!.privacy == DrivePrivacy.private;
+      final isPrivate = drive.privacy == DrivePrivacy.private;
 
       if (isPrivate) {
         // TODO: re-visit
         if (_profileCubit.state is ProfileLoggedIn) {
           final profileState = (_profileCubit.state as ProfileLoggedIn);
           final profileKey = profileState.cipherKey;
-          _maybeDriveKey = await _driveDao.getDriveKey(driveId, profileKey);
+          _maybeDriveKey = await _driveDao.getDriveKey(drive.id, profileKey);
         } else {
-          _maybeDriveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+          _maybeDriveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
         }
       }
     } catch (e) {
