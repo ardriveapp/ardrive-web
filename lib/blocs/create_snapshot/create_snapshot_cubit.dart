@@ -97,9 +97,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       emit(PrepareSnapshotCreation());
       await fetchMissingCustomMetadata();
       _cachedMetadata = await _driveDao.getCachedMetadataForDrive(driveId);
+    } else {
+      _cachedMetadata = {};
+      logger.i('Drive is private, cache won\'t be used for snapshot creation');
     }
 
     await computeSnapshotData();
+
+    _cachedMetadata = {};
   }
 
   Future<void> fetchMissingCustomMetadata() async {
