@@ -181,6 +181,116 @@ void main() {
 
     //     expect(filesInFolderTree.length, equals(0));
     //   });
+
+    group('queries for revisions with null custom metadata -', () {
+      final driveRevision1 = DriveRevision(
+        driveId: driveId,
+        action: '',
+        dateCreated: DateTime(1234),
+        metadataTxId: '',
+        name: '',
+        ownerAddress: '',
+        privacy: '',
+        rootFolderId: '',
+        customJsonMetaData: '{}',
+      );
+      final driveRevision2 = DriveRevision(
+        driveId: driveId,
+        action: '',
+        dateCreated: DateTime(12345),
+        metadataTxId: '',
+        name: '',
+        ownerAddress: '',
+        privacy: '',
+        rootFolderId: '',
+        customJsonMetaData: null,
+      );
+      final folderRevision1 = FolderRevision(
+        driveId: driveId,
+        action: '',
+        dateCreated: DateTime(1234),
+        metadataTxId: '',
+        name: '',
+        folderId: '',
+        customJsonMetaData: null,
+      );
+      final folderRevision2 = FolderRevision(
+        driveId: driveId,
+        action: '',
+        dateCreated: DateTime(12345),
+        metadataTxId: '',
+        name: '',
+        folderId: '',
+        customJsonMetaData: '{}',
+      );
+      final fileRevision1 = FileRevision(
+        driveId: driveId,
+        fileId: 'fileId',
+        action: '',
+        dateCreated: DateTime(1234),
+        metadataTxId: '',
+        name: '',
+        customJsonMetaData: null,
+        dataTxId: '',
+        lastModifiedDate: DateTime(1234),
+        parentFolderId: '',
+        size: 0,
+      );
+      final fileRevision2 = FileRevision(
+        driveId: driveId,
+        fileId: 'fileId',
+        action: '',
+        dateCreated: DateTime(12345),
+        metadataTxId: '',
+        name: '',
+        customJsonMetaData: '{}',
+        dataTxId: '',
+        lastModifiedDate: DateTime(12345),
+        parentFolderId: '',
+        size: 0,
+      );
+
+      setUp(() {
+        driveDao.insertDriveRevision(driveRevision1.toCompanion(false));
+        driveDao.insertDriveRevision(driveRevision2.toCompanion(false));
+
+        driveDao.insertFolderRevision(folderRevision1.toCompanion(false));
+        driveDao.insertFolderRevision(folderRevision2.toCompanion(false));
+      });
+
+      test(
+        'revisionsForDrivesWithNoMetadata returns correct revisions',
+        () async {
+          final revisions = await driveDao.revisionsForDrivesWithNoMetadata(
+            driveId,
+          );
+
+          expect(revisions.length, equals(1));
+        },
+      );
+
+      test(
+        'revisionsForDrivesWithNoMetadata returns correct revisions',
+        () async {
+          final revisions = await driveDao.revisionsForFoldersWithNoMetadata(
+            driveId,
+          );
+
+          expect(revisions.length, equals(1));
+        },
+      );
+
+      test(
+        'revisionsForDrivesWithNoMetadata returns correct revisions',
+        () async {
+          final revisions = await driveDao.revisionsForFilesWithNoMetadata(
+            driveId,
+          );
+
+          expect(revisions.length, equals(10));
+        },
+      );
+    });
   });
 }
 

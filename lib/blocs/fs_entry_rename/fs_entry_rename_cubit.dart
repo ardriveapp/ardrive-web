@@ -103,7 +103,6 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           await _driveDao.insertFolderRevision(
             folderEntity.toRevisionCompanion(
               performedAction: RevisionAction.rename,
-              customJsonMetaData: null,
             ),
           );
         });
@@ -149,7 +148,6 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           await _driveDao.insertFileRevision(
             fileEntity.toRevisionCompanion(
               performedAction: RevisionAction.rename,
-              customMetaData: null,
             ),
           );
         });

@@ -51,7 +51,8 @@ class CreateSnapshotDialog extends StatelessWidget {
       builder: (context, state) {
         if (state is CreateSnapshotInitial) {
           return _explanationDialog(context, drive);
-        } else if (state is ComputingSnapshotData ||
+        } else if (state is PrepareSnapshotCreation ||
+            state is ComputingSnapshotData ||
             state is UploadingSnapshot ||
             state is PreparingAndSigningTransaction) {
           return _loadingDialog(context, state);
@@ -170,7 +171,9 @@ Widget _loadingDialog(
 }
 
 String _loadingDialogTitle(BuildContext context, CreateSnapshotState state) {
-  if (state is ComputingSnapshotData) {
+  if (state is PrepareSnapshotCreation) {
+    return appLocalizationsOf(context).preparingSnapshot;
+  } else if (state is ComputingSnapshotData) {
     return appLocalizationsOf(context).determiningSizeAndCostOfSnapshot;
   } else if (state is PreparingAndSigningTransaction) {
     return appLocalizationsOf(context).finishingThingsUp;
@@ -193,7 +196,7 @@ String _loadingDialogDescription(
       return appLocalizationsOf(context).thisMayTakeAWhile;
     }
   } else {
-    // Description for uploading snapshot
+    // Description for preparing and uploading snapshot
     return '';
   }
 }

@@ -4,6 +4,7 @@ import 'dart:io' show BytesBuilder;
 
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/entities/custom_metadata.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -12,11 +13,13 @@ import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/utils/ar_cost_to_usd.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,6 +41,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   bool returnWithoutSigningForTesting;
 
   late DriveID _driveId;
+  SecretKey? _maybeDriveKey;
   late String _ownerAddress;
   late Range _range;
   late int _currentHeight;
@@ -80,6 +84,102 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _setTrustedRange(range);
 
+    emit(PrepareSnapshotCreation());
+
+    await fetchMissingCustomMetadata();
+    await computeSnapshotData();
+  }
+
+  Future<void> fetchMissingCustomMetadata() async {
+    logger.i('Fetching missing custom metadata');
+    await _fetchMissingCustomMetadataForDrive();
+    await _fetchMissingCustomMetadataForFolder();
+    await _fetchMissingCustomMetadataForFile();
+    logger.i('Finished fetching missing custom metadata');
+  }
+
+  Future<void> _fetchMissingCustomMetadataForDrive() async {
+    final driveRevisions =
+        await _driveDao.revisionsForDrivesWithNoMetadata(_driveId);
+    final revisionsInBatches = batchify(driveRevisions, 100);
+    logger.d('There are ${driveRevisions.length} drives with no metadata');
+
+    for (final batch in revisionsInBatches) {
+      final futuresBatch = batch.map((driveRevision) async {
+        final txId = driveRevision.metadataTxId;
+        final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+        final metadataAsString = utf8.decode(metadata);
+        final metadataAsJson = jsonDecode(metadataAsString);
+        final customMetaData = extractCustomMetadataForEntityType(
+          metadataAsJson,
+          entityType: EntityType.drive,
+        );
+        await _driveDao.updateCustomJsonMetadataForDrive(
+          _driveId,
+          txId,
+          customMetaData,
+        );
+      });
+
+      await Future.wait(futuresBatch);
+    }
+  }
+
+  Future<void> _fetchMissingCustomMetadataForFolder() async {
+    final folderRevisions =
+        await _driveDao.revisionsForFoldersWithNoMetadata(_driveId);
+    final revisionsInBatches = batchify(folderRevisions, 100);
+    logger.d('There are ${folderRevisions.length} folders with no metadata');
+
+    for (final batch in revisionsInBatches) {
+      final futuresBatch = batch.map((folderRevision) async {
+        final txId = folderRevision.metadataTxId;
+        final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+        final metadataAsString = utf8.decode(metadata);
+        final metadataAsJson = jsonDecode(metadataAsString);
+        final customMetaData = extractCustomMetadataForEntityType(
+          metadataAsJson,
+          entityType: EntityType.folder,
+        );
+        await _driveDao.updateCustomJsonMetadataForFolder(
+          _driveId,
+          txId,
+          customMetaData,
+        );
+      });
+
+      await Future.wait(futuresBatch);
+    }
+  }
+
+  Future<void> _fetchMissingCustomMetadataForFile() async {
+    final fileRevisions =
+        await _driveDao.revisionsForFilesWithNoMetadata(_driveId);
+    final revisionsInBatches = batchify(fileRevisions, 100);
+    logger.d('There are ${fileRevisions.length} files with no metadata');
+
+    for (final batch in revisionsInBatches) {
+      final futuresBatch = batch.map((fileRevision) async {
+        final txId = fileRevision.metadataTxId;
+        final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+        final metadataAsString = utf8.decode(metadata);
+        final metadataAsJson = jsonDecode(metadataAsString);
+        final customMetaData = extractCustomMetadataForEntityType(
+          metadataAsJson,
+          entityType: EntityType.file,
+        );
+        await _driveDao.updateCustomJsonMetadataForFile(
+          _driveId,
+          txId,
+          customMetaData,
+        );
+      });
+
+      await Future.wait(futuresBatch);
+    }
+  }
+
+  Future<void> computeSnapshotData() async {
     late Uint8List data;
     try {
       data = await _getSnapshotData();
@@ -122,6 +222,25 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _itemToBeCreated = null;
     _snapshotEntity = null;
     _wasSnapshotDataComputingCanceled = false;
+
+    try {
+      final drive =
+          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+      final isPrivate = drive!.privacy == DrivePrivacy.private;
+
+      if (isPrivate) {
+        // TODO: re-visit
+        if (_profileCubit.state is ProfileLoggedIn) {
+          final profileState = (_profileCubit.state as ProfileLoggedIn);
+          final profileKey = profileState.cipherKey;
+          _maybeDriveKey = await _driveDao.getDriveKey(driveId, profileKey);
+        } else {
+          _maybeDriveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+        }
+      }
+    } catch (e) {
+      throw Exception('Failed to get drive key: $e');
+    }
   }
 
   void _setTrustedRange(Range? range) {
@@ -136,8 +255,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       _range = Range(start: 0, end: maximumHeightToSnapshot);
     }
 
-    // ignore: avoid_print
-    print(
+    logger.i(
       'Trusted range to be snapshotted (Current height: $_currentHeight): $_range',
     );
   }
@@ -180,8 +298,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     SnapshotEntity snapshotEntity,
     Uint8List data,
   ) async {
-    // ignore: avoid_print
-    print('About to prepare and sign snapshot transaction');
+    logger.i('About to prepare and sign snapshot transaction');
 
     final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
 
@@ -202,8 +319,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
 
     try {
-      // ignore: avoid_print
-      print(
+      logger.i(
         'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
@@ -216,17 +332,16 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       );
     } catch (e) {
       if (isArConnectProfile && !_tabVisibility.isTabVisible()) {
-        // ignore: avoid_print
-        print(
+        logger.i(
           'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await _tabVisibility.onTabGetsFocusedFuture(
           () async => await prepareTx(isArConnectProfile),
         );
       } else {
-        // ignore: avoid_print
-        print(
-            'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabVisible()}');
+        logger.i(
+          'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabVisible()}',
+        );
         rethrow;
       }
     }
@@ -238,8 +353,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
 
     try {
-      // ignore: avoid_print
-      print(
+      logger.i(
         'Signing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
@@ -252,25 +366,23 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       await _preparedTx.sign(wallet);
     } catch (e) {
       if (isArConnectProfile && !_tabVisibility.isTabVisible()) {
-        // ignore: avoid_print
-        print(
+        logger.i(
           'Signing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await _tabVisibility.onTabGetsFocusedFuture(
           () => signTx(isArConnectProfile),
         );
       } else {
-        // ignore: avoid_print
-        print(
-            'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabVisible()}');
+        logger.i(
+          'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabVisible()}',
+        );
         rethrow;
       }
     }
   }
 
   Future<Uint8List> _getSnapshotData() async {
-    // ignore: avoid_print
-    print('Computing snapshot data');
+    logger.i('Computing snapshot data');
 
     emit(ComputingSnapshotData(
       driveId: _driveId,
@@ -297,8 +409,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       dataBuffer.add(chunk);
     }
 
-    // ignore: avoid_print
-    print('Finished computing snapshot data');
+    logger.i('Finished computing snapshot data');
 
     final data = dataBuffer.takeBytes();
     return data;
@@ -381,8 +492,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
-      // ignore: avoid_print
-      print('Failed to confirm the upload: Wallet mismatch');
+      logger.i('Failed to confirm the upload: Wallet mismatch');
       emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
       return;
     }
@@ -394,17 +504,28 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
       emit(SnapshotUploadSuccess());
     } catch (err) {
-      // ignore: avoid_print
-      print(
-          'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}');
+      logger.i(
+        'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}',
+      );
       emit(SnapshotUploadFailure(errorMessage: '$err'));
     }
   }
 
   void cancelSnapshotCreation() {
-    // ignore: avoid_print
-    print('User cancelled the snapshot creation');
+    logger.i('User cancelled the snapshot creation');
 
     _wasSnapshotDataComputingCanceled = true;
   }
+}
+
+List<List<D>> batchify<D>(List<D> revisions, int batchSize) {
+  final List<List<D>> batchedRevisions = [];
+
+  for (var i = 0; i < revisions.length; i += batchSize) {
+    final batch = revisions.sublist(i, i + batchSize);
+
+    batchedRevisions.add(batch);
+  }
+
+  return batchedRevisions;
 }

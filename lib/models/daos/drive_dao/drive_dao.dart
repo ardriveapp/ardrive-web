@@ -4,6 +4,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -471,6 +472,102 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       await delete(folderRevisions).go();
       await delete(driveRevisions).go();
       await delete(networkTransactions).go();
+    });
+  }
+
+  Future<List<DriveRevision>> revisionsForDrivesWithNoMetadata(
+    String driveId,
+  ) async {
+    final driveRevisionsWithNoMetadata =
+        await driveRevisionsWithMissingCustomJsonMetaData(
+      driveId: driveId,
+    ).get();
+    final driveTxIds = driveRevisionsWithNoMetadata.toList();
+    return driveTxIds;
+  }
+
+  Future<List<FolderRevision>> revisionsForFoldersWithNoMetadata(
+    String driveId,
+  ) async {
+    final folderRevisionsWithNoMetadata =
+        await folderRevisionsWithMissingCustomJsonMetaData(
+      driveId: driveId,
+    ).get();
+    final folderTxIds = folderRevisionsWithNoMetadata.toList();
+    return folderTxIds;
+  }
+
+  Future<List<FileRevision>> revisionsForFilesWithNoMetadata(
+    String driveId,
+  ) async {
+    final fileRevisionsWithNoMetadata =
+        await fileRevisionsWithMissingCustomJsonMetaData(
+      driveId: driveId,
+    ).get();
+    final fileTxIds = fileRevisionsWithNoMetadata.toList();
+    return fileTxIds;
+  }
+
+  Future<void> updateCustomJsonMetadataForDrive(
+    String driveId,
+    String metadataTxId,
+    String customJsonMetaData,
+  ) async {
+    await db.transaction(() async {
+      final select = driveRevisions.select()
+        ..where(
+          (r) => r.metadataTxId.equals(metadataTxId),
+        );
+      final revision = await select.getSingle();
+
+      await update(driveRevisions)
+          .replace(revision.copyWith(customJsonMetaData: customJsonMetaData));
+
+      logger.d(
+        'Writting CustomJsonMetadata of drive metadata TX: $metadataTxId (DriveID: $driveId)',
+      );
+    });
+  }
+
+  Future<void> updateCustomJsonMetadataForFolder(
+    String driveId,
+    String metadataTxId,
+    String customJsonMetaData,
+  ) async {
+    await db.transaction(() async {
+      final select = folderRevisions.select()
+        ..where(
+          (r) => r.metadataTxId.equals(metadataTxId),
+        );
+      final revision = await select.getSingle();
+
+      await update(folderRevisions)
+          .replace(revision.copyWith(customJsonMetaData: customJsonMetaData));
+
+      logger.d(
+        'Writting CustomJsonMetadata of folder metadata TX: $metadataTxId (DriveID: $driveId)',
+      );
+    });
+  }
+
+  Future<void> updateCustomJsonMetadataForFile(
+    String driveId,
+    String metadataTxId,
+    String customJsonMetaData,
+  ) async {
+    await db.transaction(() async {
+      final select = fileRevisions.select()
+        ..where(
+          (r) => r.metadataTxId.equals(metadataTxId),
+        );
+      final revision = await select.getSingle();
+
+      await update(fileRevisions)
+          .replace(revision.copyWith(customJsonMetaData: customJsonMetaData));
+
+      logger.d(
+        'Writting CustomJsonMetadata of file metadata TX: $metadataTxId (DriveID: $driveId)',
+      );
     });
   }
 }

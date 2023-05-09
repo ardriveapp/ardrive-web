@@ -25,13 +25,13 @@ class DriveEntity extends Entity {
   String? rootFolderId;
 
   @JsonKey(ignore: true)
-  String? customMetadata;
+  String? customJsonMetaData;
 
   DriveEntity({
     this.id,
     this.name,
     this.rootFolderId,
-    this.customMetadata,
+    this.customJsonMetaData,
     this.privacy,
     this.authMode,
   }) : super(ArDriveCrypto());
@@ -61,7 +61,7 @@ class DriveEntity extends Entity {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
-        ..customMetadata = extractCustomMetadataForEntityType(
+        ..customJsonMetaData = extractCustomMetadataForEntityType(
           entityJson,
           entityType: EntityType.drive,
         )

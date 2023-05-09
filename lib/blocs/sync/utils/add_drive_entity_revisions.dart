@@ -23,7 +23,6 @@ Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions({
     }
     final revision = entity.toRevisionCompanion(
       performedAction: revisionPerformedAction,
-      customJsonMetaData: Value<String?>(entity.customMetadata),
     );
 
     if (revision.action.value.isEmpty) {

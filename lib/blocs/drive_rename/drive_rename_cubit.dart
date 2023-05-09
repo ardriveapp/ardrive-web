@@ -2,7 +2,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -88,8 +87,6 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         await _driveDao.insertDriveRevision(
           driveEntity.toRevisionCompanion(
             performedAction: RevisionAction.rename,
-            customJsonMetaData:
-                Value<String?>(latestRevision?.customJsonMetaData),
           ),
         );
       });

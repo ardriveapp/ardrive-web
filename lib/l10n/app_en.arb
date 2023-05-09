@@ -1152,6 +1152,10 @@
   "@preparingManifestEmphasized": {
     "description": "The manifest is being prepared for the upload"
   },
+  "preparingSnapshot": "Preparing for Snapshot creation",
+  "@preparingSnapshot": {
+    "description": "The snapshot is being prepared for the upload"
+  },
   "preparingUpload": "Preparing upload...",
   "@preparingUpload": {
     "description": "The upload is being processed"

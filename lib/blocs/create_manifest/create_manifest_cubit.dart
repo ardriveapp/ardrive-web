@@ -213,7 +213,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
                   performedAction: existingManifestFileId == null
                       ? RevisionAction.create
                       : RevisionAction.uploadNewVersion,
-                  customMetaData: null,
                 ),
               );
             },

@@ -54,7 +54,6 @@ class FileV2UploadHandle implements UploadHandle {
       await driveDao.insertFileRevision(
         entity.toRevisionCompanion(
           performedAction: revisionAction,
-          customMetaData: null,
         ),
       );
     });

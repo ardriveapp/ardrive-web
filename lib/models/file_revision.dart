@@ -37,7 +37,6 @@ extension FileEntityExtensions on FileEntity {
   /// This requires a `performedAction` to be specified.
   FileRevisionsCompanion toRevisionCompanion({
     required String performedAction,
-    required String? customMetaData,
   }) =>
       FileRevisionsCompanion.insert(
         fileId: id!,
@@ -52,7 +51,7 @@ extension FileEntityExtensions on FileEntity {
         dataContentType: Value(dataContentType),
         action: performedAction,
         bundledIn: Value(bundledIn),
-        customJsonMetaData: Value<String?>(customMetaData),
+        customJsonMetaData: Value<String?>(customJsonMetaData),
       );
 
   FileRevision toRevision({

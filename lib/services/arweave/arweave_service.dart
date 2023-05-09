@@ -983,6 +983,10 @@ class ArweaveService {
   ) async {
     // TODO: PE-2917
 
+    if (driveKey != null) {
+      throw UnimplementedError('Drive key decryption not implemented yet.');
+    }
+
     final Response data =
         (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
     final metadata = data.bodyBytes;
