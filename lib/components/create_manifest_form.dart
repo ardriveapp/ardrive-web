@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -29,7 +30,7 @@ Future<void> promptToCreateManifest(
         drive: drive,
         profileCubit: context.read<ProfileCubit>(),
         arweave: context.read<ArweaveService>(),
-        turboService: context.read<TurboService>(),
+        turboUploadService: context.read<UploadService>(),
         driveDao: context.read<DriveDao>(),
         pst: context.read<PstService>(),
       ),
@@ -71,9 +72,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           context.read<FeedbackSurveyCubit>().openRemindMe();
         }
       }, builder: (context, state) {
+        final textStyle = ArDriveTypography.body.buttonNormalRegular(
+          color: ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
+        );
+
         final readCubitContext = context.read<CreateManifestCubit>();
 
         ArDriveTextField manifestNameForm() => ArDriveTextField(
+              hintText: appLocalizationsOf(context).manifestName,
               controller: _manifestNameController,
               validator: (value) {
                 final validation = validateEntityName(value, context);
@@ -224,22 +230,15 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                         RichText(
                           text: TextSpan(children: [
                             TextSpan(
-                                text: appLocalizationsOf(context)
-                                    .aManifestIsASpecialKindOfFile, // trimmed spaces
-                                style: Theme.of(context).textTheme.bodyText1),
+                              text: appLocalizationsOf(context)
+                                  .aManifestIsASpecialKindOfFile, // trimmed spaces
+                              style: textStyle,
+                            ),
                             TextSpan(
                               text: ' ${appLocalizationsOf(context).learnMore}',
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .bodyText1
-                                      ?.color,
-                                  fontSize: Theme.of(context)
-                                      .textTheme
-                                      .bodyText1
-                                      ?.fontSize,
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline),
+                              style: textStyle.copyWith(
+                                decoration: TextDecoration.underline,
+                              ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () => openUrl(
                                       url: Resources.manifestLearnMoreLink,
@@ -272,20 +271,11 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                             contentPadding: EdgeInsets.zero,
                             title: Text(
                               state.manifestName,
-                              style: ArDriveTypography.body.buttonNormalRegular(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgOnAccent,
-                              ),
+                              style: textStyle,
                             ),
                             subtitle: Text(
                               filesize(state.manifestSize),
-                              style: ArDriveTypography.body.buttonNormalRegular(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgOnDisabled),
+                              style: textStyle,
                             ),
                           ),
                         ],
@@ -296,13 +286,13 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                   const SizedBox(height: 16),
                   Text(
                     appLocalizationsOf(context).freeTurboTransaction,
-                    style: Theme.of(context).textTheme.bodyText1,
+                    style: textStyle,
                   ),
                   const SizedBox(height: 24),
                   Text(
                     appLocalizationsOf(context)
                         .filesWillBePermanentlyPublicWarning,
-                    style: Theme.of(context).textTheme.bodyText2,
+                    style: textStyle,
                   ),
                 ],
               ),
@@ -339,12 +329,11 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                             contentPadding: EdgeInsets.zero,
                             title: Text(
                               state.manifestName,
-                              style:
-                                  ArDriveTypography.body.buttonNormalRegular(),
+                              style: textStyle,
                             ),
                             subtitle: Text(
                               filesize(state.manifestSize),
-                              style: ArDriveTypography.body.buttonNormalRegular(
+                              style: textStyle.copyWith(
                                   color: ArDriveTheme.of(context)
                                       .themeData
                                       .colors
@@ -376,14 +365,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                                 ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
                           ),
                       ],
-                      style: Theme.of(context).textTheme.bodyText1,
+                      style: textStyle,
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     appLocalizationsOf(context)
                         .filesWillBePermanentlyPublicWarning,
-                    style: Theme.of(context).textTheme.bodyText2,
+                    style: textStyle,
                   ),
                 ],
               ),
@@ -430,34 +419,37 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             context.read<CreateManifestCubit>().rootFolderNode,
           );
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16),
-            child: GestureDetector(
-              onTap: enabled
-                  ? () {
-                      cubit.loadFolder(f.id);
-                    }
-                  : null,
-              child: Row(
-                children: [
-                  ArDriveIcons.folderOutlined(
-                    size: 16,
-                    color: enabled ? null : _colorDisabled(context),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      f.name,
-                      style: ArDriveTypography.body.inputNormalRegular(
-                        color: enabled ? null : _colorDisabled(context),
+          return ArDriveClickArea(
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16),
+              child: GestureDetector(
+                onTap: enabled
+                    ? () {
+                        cubit.loadFolder(f.id);
+                      }
+                    : null,
+                child: Row(
+                  children: [
+                    ArDriveIcons.folderOutline(
+                      size: 16,
+                      color: enabled ? null : _colorDisabled(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        f.name,
+                        style: ArDriveTypography.body.inputNormalRegular(
+                          color: enabled ? null : _colorDisabled(context),
+                        ),
                       ),
                     ),
-                  ),
-                  ArDriveIcons.chevronRight(
-                    size: 18,
-                    color: enabled ? null : _colorDisabled(context),
-                  ),
-                ],
+                    ArDriveIcons.carretRight(
+                      size: 18,
+                      color: enabled ? null : _colorDisabled(context),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -472,7 +464,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ),
               child: Row(
                 children: [
-                  ArDriveIcons.fileOutlined(
+                  ArDriveIcons.file(
                     size: 16,
                     color: _colorDisabled(context),
                   ),
@@ -511,22 +503,28 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
               child: Row(
                 children: [
-                  AnimatedContainer(
-                    width: !state.viewingRootFolder ? 20 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: GestureDetector(
-                      onTap: () {
-                        cubit.loadParentFolder();
-                      },
-                      child: ArDriveIcons.arrowBack(
-                        size: 20,
+                  ArDriveClickArea(
+                    child: AnimatedContainer(
+                      width: !state.viewingRootFolder ? 20 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: GestureDetector(
+                        onTap: () {
+                          cubit.loadParentFolder();
+                        },
+                        child: AnimatedScale(
+                          duration: const Duration(milliseconds: 200),
+                          scale: !state.viewingRootFolder ? 1 : 0,
+                          child: ArDriveIcons.arrowLeft(
+                            size: 32,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                   AnimatedPadding(
                     duration: const Duration(milliseconds: 200),
                     padding: !state.viewingRootFolder
-                        ? const EdgeInsets.only(left: 8)
+                        ? const EdgeInsets.only(left: 14)
                         : const EdgeInsets.only(left: 0),
                     child: Text(
                       appLocalizationsOf(context).targetFolderEmphasized,
@@ -534,11 +532,11 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                     ),
                   ),
                   const Spacer(),
-                  GestureDetector(
-                    onTap: () {
+                  ArDriveIconButton(
+                    onPressed: () {
                       Navigator.pop(context);
                     },
-                    child: ArDriveIcons.closeIcon(
+                    icon: ArDriveIcons.x(
                       size: 24,
                     ),
                   ),

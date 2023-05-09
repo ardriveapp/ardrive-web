@@ -26,7 +26,7 @@ Future<void> promptToMove(
             driveId: driveId,
             selectedItems: selectedItems,
             arweave: context.read<ArweaveService>(),
-            turboService: context.read<TurboService>(),
+            turboUploadService: context.read<UploadService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),
@@ -123,7 +123,7 @@ class FsEntryMoveForm extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          ArDriveIcons.folderOutlined(
+                          ArDriveIcons.folderOutline(
                             size: 16,
                             color: enabled ? null : _colorDisabled(context),
                           ),
@@ -136,7 +136,7 @@ class FsEntryMoveForm extends StatelessWidget {
                               ),
                             ),
                           ),
-                          ArDriveIcons.chevronRight(
+                          ArDriveIcons.carretRight(
                             size: 18,
                             color: enabled ? null : _colorDisabled(context),
                           ),
@@ -212,8 +212,8 @@ class FsEntryMoveForm extends StatelessWidget {
                                 child: AnimatedScale(
                                   duration: const Duration(milliseconds: 200),
                                   scale: !state.viewingRootFolder ? 1 : 0,
-                                  child: ArDriveIcons.arrowBack(
-                                    size: 20,
+                                  child: ArDriveIcons.arrowLeft(
+                                    size: 32,
                                   ),
                                 ),
                               ),
@@ -234,7 +234,7 @@ class FsEntryMoveForm extends StatelessWidget {
                               onTap: () {
                                 Navigator.pop(context);
                               },
-                              child: ArDriveIcons.closeIcon(
+                              child: ArDriveIcons.x(
                                 size: 24,
                               ),
                             ),
@@ -279,7 +279,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                       .colors
                                       .themeFgDefault,
                                 ),
-                                icon: ArDriveIcons.folderAdd(),
+                                icon: ArDriveIcons.iconNewFolder1(),
                                 text: appLocalizationsOf(context)
                                     .createFolderEmphasized,
                                 onPressed: () {
@@ -294,8 +294,8 @@ class FsEntryMoveForm extends StatelessWidget {
                                         profileCubit:
                                             context.read<ProfileCubit>(),
                                         arweave: context.read<ArweaveService>(),
-                                        turboService:
-                                            context.read<TurboService>(),
+                                        turboUploadService:
+                                            context.read<UploadService>(),
                                         driveDao: context.read<DriveDao>(),
                                       ),
                                       child: const FolderCreateForm(),

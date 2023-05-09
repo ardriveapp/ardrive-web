@@ -16,7 +16,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final String? fileId;
 
   final ArweaveService _arweave;
-  final TurboService _turboService;
+  final UploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
@@ -29,13 +29,13 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     this.folderId,
     this.fileId,
     required ArweaveService arweave,
-    required TurboService turboService,
+    required UploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
     required ArDriveCrypto crypto,
   })  : _arweave = arweave,
-        _turboService = turboService,
+        _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
@@ -81,14 +81,14 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
         await _driveDao.transaction(() async {
           final folderEntity = folder.asEntity();
-          if (_turboService.useTurbo) {
+          if (_turboUploadService.useTurbo) {
             final folderDataItem = await _arweave.prepareEntityDataItem(
               folderEntity,
               profile.wallet,
               key: driveKey,
             );
 
-            await _turboService.postDataItem(dataItem: folderDataItem);
+            await _turboUploadService.postDataItem(dataItem: folderDataItem);
             folderEntity.txId = folderDataItem.id;
           } else {
             final folderTx = await _arweave.prepareEntityTx(
@@ -126,14 +126,14 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
           final fileEntity = file.asEntity();
 
-          if (_turboService.useTurbo) {
+          if (_turboUploadService.useTurbo) {
             final fileDataItem = await _arweave.prepareEntityDataItem(
               fileEntity,
               profile.wallet,
               key: fileKey,
             );
 
-            await _turboService.postDataItem(dataItem: fileDataItem);
+            await _turboUploadService.postDataItem(dataItem: fileDataItem);
             fileEntity.txId = fileDataItem.id;
           } else {
             final fileTx = await _arweave.prepareEntityTx(

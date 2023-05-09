@@ -64,7 +64,7 @@ Future<void> promptToUpload(
           uploadPlanUtils: UploadPlanUtils(
             crypto: ArDriveCrypto(),
             arweave: context.read<ArweaveService>(),
-            turboService: context.read<TurboService>(),
+            turboUploadService: context.read<UploadService>(),
             driveDao: context.read<DriveDao>(),
           ),
           driveId: driveId,
@@ -72,12 +72,12 @@ Future<void> promptToUpload(
           files: selectedFiles,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
-          turbo: context.read<TurboService>(),
+          turbo: context.read<UploadService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
         )..startUploadPreparation(),
-        child: const UploadForm(),
+        child: UploadForm(),
       ),
       barrierDismissible: false,
     ),
@@ -85,7 +85,9 @@ Future<void> promptToUpload(
 }
 
 class UploadForm extends StatelessWidget {
-  const UploadForm({Key? key}) : super(key: key);
+  UploadForm({Key? key}) : super(key: key);
+
+  final _scrollController = ScrollController();
 
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
@@ -299,8 +301,11 @@ class UploadForm extends StatelessWidget {
                   children: [
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxHeight: 256),
-                      child: Scrollbar(
+                      child: ArDriveScrollBar(
+                        controller: _scrollController,
+                        alwaysVisible: true,
                         child: ListView(
+                          controller: _scrollController,
                           shrinkWrap: true,
                           children: [
                             for (final file in state
@@ -357,8 +362,34 @@ class UploadForm extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Divider(),
                     const SizedBox(height: 16),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Size: ',
+                            style: ArDriveTypography.body.buttonNormalRegular(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgOnDisabled,
+                            ),
+                          ),
+                          TextSpan(
+                            text: filesize(
+                              state.uploadSize,
+                            ),
+                            style: ArDriveTypography.body
+                                .buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgDefault)
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
                     Text.rich(
                       TextSpan(
                         children: [
@@ -371,11 +402,24 @@ class UploadForm extends StatelessWidget {
                             ),
                           ] else ...[
                             TextSpan(
-                              text: appLocalizationsOf(context).cost(
-                                state.costEstimate.arUploadCost,
+                              text: appLocalizationsOf(context).costUpload,
+                              style: ArDriveTypography.body.buttonNormalRegular(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgOnDisabled,
                               ),
-                              style:
-                                  ArDriveTypography.body.buttonNormalRegular(),
+                            ),
+                            TextSpan(
+                              text: ': ${state.costEstimate.arUploadCost} AR',
+                              style: ArDriveTypography.body
+                                  .buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgDefault,
+                                  )
+                                  .copyWith(fontWeight: FontWeight.bold),
                             ),
                             if (state.costEstimate.usdUploadCost != null)
                               TextSpan(
@@ -383,7 +427,8 @@ class UploadForm extends StatelessWidget {
                                   state.costEstimate.usdUploadCost!,
                                 ),
                                 style: ArDriveTypography.body
-                                    .buttonNormalRegular(),
+                                    .buttonNormalBold()
+                                    .copyWith(fontWeight: FontWeight.bold),
                               )
                             else
                               TextSpan(
@@ -394,11 +439,11 @@ class UploadForm extends StatelessWidget {
                               ),
                           ],
                         ],
-                        style: Theme.of(context).textTheme.bodyText1,
+                        style: ArDriveTypography.body.buttonNormalRegular(),
                       ),
                     ),
+                    const Divider(),
                     if (state.uploadIsPublic) ...{
-                      const SizedBox(height: 8),
                       Text(
                         appLocalizationsOf(context).filesWillBeUploadedPublicly(
                           numberOfFilesInBundles + numberOfV2Files,
@@ -411,9 +456,12 @@ class UploadForm extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         appLocalizationsOf(context).insufficientARForUpload,
-                        style: DefaultTextStyle.of(context)
-                            .style
-                            .copyWith(color: Theme.of(context).errorColor),
+                        style: ArDriveTypography.body.buttonNormalRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeErrorDefault,
+                        ),
                       ),
                     },
                   ],

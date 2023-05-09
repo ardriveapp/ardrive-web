@@ -5,37 +5,26 @@ class ArDriveDropdownItemTile extends StatelessWidget {
   final String name;
   final ArDriveIcon icon;
   final bool isDisabled;
+  final TextStyle? fontStyle;
 
   const ArDriveDropdownItemTile({
     Key? key,
     required this.name,
     required this.icon,
     this.isDisabled = false,
+    this.fontStyle,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 41.0),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: 375,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+      child: SizedBox(
+        height: 48,
         child: Row(
           mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Text(
-              name,
-              style: ArDriveTypography.body.buttonNormalBold(
-                color: isDisabled
-                    ? ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeAccentDisabled
-                    : null,
-              ),
-            ),
             icon.copyWith(
               color: isDisabled
                   ? ArDriveTheme.of(context)
@@ -43,6 +32,19 @@ class ArDriveDropdownItemTile extends StatelessWidget {
                       .colors
                       .themeAccentDisabled
                   : null,
+            ),
+            const SizedBox(width: 20),
+            Text(
+              name,
+              style: fontStyle ??
+                  ArDriveTypography.body.buttonNormalBold(
+                    color: isDisabled
+                        ? ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeAccentDisabled
+                        : null,
+                  ),
             ),
           ],
         ),

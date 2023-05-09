@@ -5,11 +5,11 @@ import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/app_bottom_bar.dart';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/components/components.dart';
-import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
@@ -26,6 +26,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
@@ -67,6 +68,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     return SizedBox.expand(
       child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
         builder: (context, state) {
+          logger.d('DriveDetailPage: $state');
           if (state is DriveDetailLoadInProgress) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is DriveDetailLoadSuccess) {
@@ -92,12 +94,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 canDownloadMultipleFiles: canDownloadMultipleFiles,
               ),
               mobile: Scaffold(
+                drawerScrimColor: Colors.transparent,
                 drawer: const AppSideBar(),
                 appBar: (state.showSelectedItemDetails &&
                         context.read<DriveDetailCubit>().selectedItem != null)
                     ? MobileAppBar(
                         leading: ArDriveIconButton(
-                          icon: ArDriveIcons.arrowBack(size: 16),
+                          icon: ArDriveIcons.arrowLeft(),
                           onPressed: () {
                             context
                                 .read<DriveDetailCubit>()
@@ -140,7 +143,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 children: [
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 0, 24, 0),
+                      padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -163,7 +166,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 if (state.multiselect && isDriveOwner)
                                   ArDriveIconButton(
                                     tooltip: appLocalizationsOf(context).move,
-                                    icon: ArDriveIcons.move(size: 18),
+                                    icon: ArDriveIcons.move(),
                                     onPressed: () {
                                       promptToMove(
                                         context,
@@ -181,7 +184,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         .enableMultipleFileDownload) ...[
                                   ArDriveIconButton(
                                     tooltip: 'Download selected files',
-                                    icon: ArDriveIcons.download(size: 18),
+                                    icon: ArDriveIcons.download(),
                                     onPressed: () {
                                       final files = context
                                           .read<DriveDetailCubit>()
@@ -205,7 +208,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 ArDriveClickArea(
                                   tooltip: appLocalizationsOf(context).showMenu,
                                   child: ArDriveDropdown(
-                                    width: 250,
+                                    width: 260,
                                     anchor: const Aligned(
                                       follower: Alignment.topRight,
                                       target: Alignment.bottomRight,
@@ -225,7 +228,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             name: appLocalizationsOf(context)
                                                 .renameDrive,
                                             icon: ArDriveIcons.edit(
-                                              size: dropdownIconSize,
+                                              size: defaultIconSize,
                                             ),
                                           ),
                                         ),
@@ -240,7 +243,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           name: appLocalizationsOf(context)
                                               .shareDrive,
                                           icon: ArDriveIcons.share(
-                                            size: dropdownIconSize,
+                                            size: defaultIconSize,
                                           ),
                                         ),
                                       ),
@@ -255,7 +258,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           name: appLocalizationsOf(context)
                                               .exportDriveContents,
                                           icon: ArDriveIcons.download(
-                                            size: dropdownIconSize,
+                                            size: defaultIconSize,
                                           ),
                                         ),
                                       ),
@@ -276,15 +279,31 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         content: _buildItem(
                                           appLocalizationsOf(context).moreInfo,
                                           ArDriveIcons.info(
-                                            size: dropdownIconSize,
+                                            size: defaultIconSize,
                                           ),
                                         ),
-                                      )
+                                      ),
+                                      if (!state.hasWritePermissions &&
+                                          !isDriveOwner &&
+                                          context.read<ProfileCubit>().state
+                                              is ProfileLoggedIn)
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            showDetachDriveDialog(
+                                              context: context,
+                                              driveID: state.currentDrive.id,
+                                              driveName:
+                                                  state.currentDrive.name,
+                                            );
+                                          },
+                                          content: _buildItem(
+                                              appLocalizationsOf(context)
+                                                  .detachDrive,
+                                              ArDriveIcons.triangle()),
+                                        ),
                                     ],
                                     child: HoverWidget(
-                                      child: ArDriveIcons.dotsVert(
-                                        size: 16,
-                                      ),
+                                      child: ArDriveIcons.kebabMenu(),
                                     ),
                                   ),
                                 ),
@@ -338,6 +357,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           .selectedItem !=
                                       null
                               ? DetailsPanel(
+                                  currentDrive: state.currentDrive,
                                   isSharePage: false,
                                   drivePrivacy: state.currentDrive.privacy,
                                   maybeSelectedItem: state.maybeSelectedItem(),
@@ -396,6 +416,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             return false;
           },
           child: DetailsPanel(
+            currentDrive: state.currentDrive,
             isSharePage: false,
             drivePrivacy: state.currentDrive.privacy,
             maybeSelectedItem: state.maybeSelectedItem(),
@@ -406,12 +427,17 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     }
 
     return Scaffold(
+      drawerScrimColor: ArDriveTheme.of(context)
+          .themeData
+          .colors
+          .themeBgSurface
+          .withOpacity(0.5),
       drawer: const AppSideBar(),
       appBar: MobileAppBar(
         leading: (state.showSelectedItemDetails &&
                 context.read<DriveDetailCubit>().selectedItem != null)
             ? ArDriveIconButton(
-                icon: ArDriveIcons.arrowBack(size: 16),
+                icon: ArDriveIcons.arrowLeft(),
                 onPressed: () {
                   context.read<DriveDetailCubit>().toggleSelectedItemDetails();
                 },
@@ -513,6 +539,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   }
 
   _buildItem(String name, ArDriveIcon icon) {
+    return ArDriveDropdownItemTile(name: name, icon: icon);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 41.0),
       child: ConstrainedBox(
@@ -547,14 +574,23 @@ class ArDriveItemListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        item.onPressed(item);
-      },
-      child: ArDriveCard(
-        backgroundColor:
-            ArDriveTheme.of(context).themeData.tableTheme.cellColor,
-        content: Row(
+    return ArDriveCard(
+      backgroundColor:
+          ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+      content: InkWell(
+        onTap: () {
+          final cubit = context.read<DriveDetailCubit>();
+          if (item is FolderDataTableItem) {
+            cubit.openFolder(path: item.path);
+          } else if (item is FileDataTableItem) {
+            if (item.id == cubit.selectedItem?.id) {
+              cubit.toggleSelectedItemDetails();
+              return;
+            }
+            cubit.selectDataItem(item);
+          }
+        },
+        child: Row(
           mainAxisSize: MainAxisSize.max,
           children: [
             DriveExplorerItemTileLeading(
@@ -563,25 +599,15 @@ class ArDriveItemListTile extends StatelessWidget {
             const SizedBox(
               width: 12,
             ),
-            Expanded(
+            Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.name,
-                          style: ArDriveTypography.body
-                              .captionRegular()
-                              .copyWith(fontWeight: FontWeight.w700),
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.fade,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    item.name,
+                    style: ArDriveTypography.body
+                        .captionRegular()
+                        .copyWith(fontWeight: FontWeight.w700),
                   ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -659,6 +685,7 @@ class MobileFolderNavigation extends StatelessWidget {
     return SizedBox(
       height: 45,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: InkWell(
@@ -668,14 +695,16 @@ class MobileFolderNavigation extends StatelessWidget {
                     .openFolder(path: getParentFolderPath(path));
               },
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (path.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 15,
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 8,
+                        top: 4,
                       ),
-                      child: ArDriveIcons.arrowBack(size: 16),
+                      child: ArDriveIcons.arrowLeft(),
                     ),
                   Expanded(
                     child: Padding(
@@ -699,7 +728,7 @@ class MobileFolderNavigation extends StatelessWidget {
                     state.currentDrive.ownerAddress);
 
                 return ArDriveDropdown(
-                  width: 250,
+                  width: 240,
                   anchor: const Aligned(
                     follower: Alignment.topRight,
                     target: Alignment.bottomRight,
@@ -717,7 +746,7 @@ class MobileFolderNavigation extends StatelessWidget {
                         content: _buildItem(
                           appLocalizationsOf(context).renameDrive,
                           ArDriveIcons.edit(
-                            size: dropdownIconSize,
+                            size: defaultIconSize,
                           ),
                         ),
                       ),
@@ -731,7 +760,7 @@ class MobileFolderNavigation extends StatelessWidget {
                       content: _buildItem(
                         appLocalizationsOf(context).shareDrive,
                         ArDriveIcons.share(
-                          size: dropdownIconSize,
+                          size: defaultIconSize,
                         ),
                       ),
                     ),
@@ -745,20 +774,61 @@ class MobileFolderNavigation extends StatelessWidget {
                       content: _buildItem(
                         appLocalizationsOf(context).exportDriveContents,
                         ArDriveIcons.download(
-                          size: dropdownIconSize,
+                          size: defaultIconSize,
                         ),
                       ),
                     ),
+                    ArDriveDropdownItem(
+                      onClick: () {
+                        final bloc = context.read<DriveDetailCubit>();
+
+                        bloc.selectDataItem(
+                          DriveDataTableItemMapper.fromDrive(
+                            state.currentDrive,
+                            (_) => null,
+                            0,
+                            isOwner,
+                          ),
+                        );
+                      },
+                      content: _buildItem(
+                        appLocalizationsOf(context).moreInfo,
+                        ArDriveIcons.info(
+                          size: defaultIconSize,
+                        ),
+                      ),
+                    ),
+                    if (!state.hasWritePermissions &&
+                        !isOwner &&
+                        context.read<ProfileCubit>().state is ProfileLoggedIn)
+                      ArDriveDropdownItem(
+                        onClick: () {
+                          final bloc = context.read<DriveDetailCubit>();
+
+                          bloc.selectDataItem(
+                            DriveDataTableItemMapper.fromDrive(
+                              state.currentDrive,
+                              (_) => null,
+                              0,
+                              isOwner,
+                            ),
+                          );
+                        },
+                        content: _buildItem(
+                          appLocalizationsOf(context).moreInfo,
+                          ArDriveIcons.info(
+                            size: defaultIconSize,
+                          ),
+                        ),
+                      ),
                   ],
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
+                      horizontal: 24.0,
                       vertical: 8,
                     ),
                     child: HoverWidget(
-                      child: ArDriveIcons.dotsVert(
-                        size: 16,
-                      ),
+                      child: ArDriveIcons.kebabMenu(),
                     ),
                   ),
                 );
@@ -772,24 +842,9 @@ class MobileFolderNavigation extends StatelessWidget {
   }
 
   _buildItem(String name, ArDriveIcon icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 41.0),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: 375,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              name,
-              style: ArDriveTypography.body.buttonNormalBold(),
-            ),
-            icon,
-          ],
-        ),
-      ),
+    return ArDriveDropdownItemTile(
+      name: name,
+      icon: icon,
     );
   }
 
@@ -814,165 +869,65 @@ class MobileFolderNavigation extends StatelessWidget {
 class CustomBottomNavigation extends StatelessWidget {
   const CustomBottomNavigation({
     super.key,
-    required this.drive,
-    required this.currentFolder,
+    this.drive,
+    this.currentFolder,
   });
 
-  final Drive drive;
+  final Drive? drive;
   final FolderWithContents? currentFolder;
 
   @override
   Widget build(BuildContext context) {
     final backgroundColor = ArDriveTheme.of(context).themeData.backgroundColor;
-    return SafeArea(
-      bottom: true,
-      child: Container(
-        height: 87,
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: ArDriveTheme.of(context)
-                  .themeData
-                  .colors
-                  .themeFgDefault
-                  .withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-            BoxShadow(color: backgroundColor, offset: const Offset(0, 2)),
-            BoxShadow(color: backgroundColor, offset: const Offset(-0, 8)),
-          ],
-          color: ArDriveTheme.of(context).themeData.backgroundColor,
-        ),
-        width: MediaQuery.of(context).size.width,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ArDriveDropdown(
-              width: MediaQuery.of(context).size.width * 0.6,
-              anchor: const Aligned(
-                follower: Alignment.bottomCenter,
-                target: Alignment.topCenter,
-              ),
-              items: [
-                ArDriveDropdownItem(
-                  onClick: () {
-                    promptToCreateDrive(context);
-                  },
-                  content: _buildItem(
-                    ArDriveIcons.drive(size: dropdownIconSize),
-                    appLocalizationsOf(context).newDrive,
-                  ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () => attachDrive(context: context),
-                  content: _buildItem(
-                    ArDriveIcons.drive(size: dropdownIconSize),
-                    appLocalizationsOf(context).attachDrive,
-                  ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () => promptToCreateFolder(
-                    context,
-                    driveId: drive.id,
-                    parentFolderId: currentFolder!.folder.id,
-                  ),
-                  content: _buildItem(
-                    ArDriveIcons.folderAdd(size: dropdownIconSize),
-                    appLocalizationsOf(context).newFolder,
-                  ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () => promptToUpload(
-                    context,
-                    driveId: drive.id,
-                    parentFolderId: currentFolder!.folder.id,
-                    isFolderUpload: true,
-                  ),
-                  content: _buildItem(
-                    ArDriveIcons.folderAdd(size: dropdownIconSize),
-                    appLocalizationsOf(context).uploadFolder,
-                  ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () {
-                    promptToUpload(
-                      context,
-                      driveId: drive.id,
-                      parentFolderId: currentFolder!.folder.id,
-                      isFolderUpload: false,
-                    );
-                  },
-                  content: _buildItem(
-                    ArDriveIcons.uploadCloud(size: dropdownIconSize),
-                    appLocalizationsOf(context).uploadFiles,
-                  ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () {
-                    promptToCreateManifest(
-                      context,
-                      drive: drive,
-                    );
-                  },
-                  content: _buildItem(
-                    ArDriveIcons.manifest(size: dropdownIconSize),
-                    appLocalizationsOf(context).createManifest,
-                  ),
-                ),
-                ArDriveDropdownItem(
-                  onClick: () {
-                    promptToCreateSnapshot(
-                      context,
-                      drive,
-                    );
-                  },
-                  content: _buildItem(
-                    ArDriveIcons.camera(size: dropdownIconSize),
-                    appLocalizationsOf(context).createSnapshot,
-                  ),
-                ),
-              ],
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: ArDriveFAB(
-                  backgroundColor: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentBrand,
-                  child: ArDriveIcons.plus(
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+    return Container(
+      height: 87,
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: ArDriveTheme.of(context)
+                .themeData
+                .colors
+                .themeFgDefault
+                .withOpacity(0.2),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+          BoxShadow(color: backgroundColor, offset: const Offset(0, 2)),
+          BoxShadow(color: backgroundColor, offset: const Offset(-0, 8)),
+        ],
+        color: ArDriveTheme.of(context).themeData.backgroundColor,
       ),
-    );
-  }
-
-  Widget _buildItem(Widget icon, String text) {
-    return ArDriveDropdownItem(
-      content: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 22.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(text, style: ArDriveTypography.body.buttonNormalBold()),
-            const SizedBox(width: 8),
-            icon,
-          ],
-        ),
+      width: MediaQuery.of(context).size.width,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          NewButton(
+            isBottomNavigationButton: true,
+            driveDetailState: context.read<DriveDetailCubit>().state,
+            currentFolder: currentFolder,
+            dropdownWidth: 208,
+            anchor: const Aligned(
+              follower: Alignment.bottomCenter,
+              target: Alignment.topCenter,
+            ),
+            drive: drive,
+            child: ArDriveFAB(
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+              child: ArDriveIcons.plus(
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// TODO: WIP!
+// TODO: WIP! It will be done in a further release.
 class ArDriveGridItem extends StatelessWidget {
   const ArDriveGridItem({
     super.key,
@@ -987,12 +942,12 @@ class ArDriveGridItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        item.onPressed(item);
+        // item.onPressed(item);
       },
       child: ArDriveCard(
         contentPadding: const EdgeInsets.all(0),
         backgroundColor:
-            ArDriveTheme.of(context).themeData.tableTheme.cellColor,
+            ArDriveTheme.of(context).themeData.colors.themeBorderDefault,
         content: Column(
           children: [
             Expanded(

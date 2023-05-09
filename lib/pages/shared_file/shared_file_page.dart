@@ -51,7 +51,7 @@ class SharedFilePage extends StatelessWidget {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
-                      maxWidth: kMediumDialogWidth,
+                      maxWidth: 400,
                       minWidth: kMediumDialogWidth,
                       minHeight: 256,
                     ),
@@ -88,6 +88,7 @@ class SharedFilePage extends StatelessWidget {
                                 width: 60,
                                 height: 60,
                                 fit: BoxFit.fill,
+                                filterQuality: FilterQuality.high,
                               ),
                               const SizedBox(width: 16),
                               Text(

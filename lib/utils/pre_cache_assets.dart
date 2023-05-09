@@ -17,7 +17,7 @@ void preCacheLoginAssets(BuildContext context) {
 
 void preCacheOnBoardingAssets(BuildContext context) {
   List<String> assetPaths = [
-    Resources.images.login.ardrivePlates3,
+    Resources.images.login.ardriveLogoOnboarding,
   ];
 
   for (String assetPath in assetPaths) {
