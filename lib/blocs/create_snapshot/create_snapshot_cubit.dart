@@ -51,6 +51,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   bool _wasSnapshotDataComputingCanceled = false;
 
+  StreamSubscription? _maybeFetchingCustomMetadataSubscription;
+
   SnapshotItemToBeCreated? _itemToBeCreated;
   SnapshotEntity? _snapshotEntity;
 
@@ -94,8 +96,27 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     if (!isPrivate) {
       // TODO: supported for public drives only
 
-      emit(PrepareSnapshotCreation());
-      await fetchMissingCustomMetadata();
+      emit(FetchingCustomMetadata());
+
+      // Streamify the future so we cancel it later
+      final fetchingCustomMetadataFuture = fetchMissingCustomMetadata();
+      final fetchingCustomMetadataStream =
+          fetchingCustomMetadataFuture.asStream();
+      final completer = Completer<void>();
+      // This is the class-scoped subscription to be later cancelled
+      _maybeFetchingCustomMetadataSubscription =
+          fetchingCustomMetadataStream.listen(
+        (_) {
+          logger.i('Finished fetching missing custom metadata');
+          completer.complete();
+        },
+        onError: (e) {
+          logger.e('Error fetching missing custom metadata: $e');
+          completer.completeError(e);
+        },
+      );
+      await completer.future;
+
       _cachedMetadata = await _driveDao.getCachedMetadataForDrive(driveId);
     } else {
       _cachedMetadata = {};
@@ -197,6 +218,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<void> computeSnapshotData() async {
+    logger.i('Computing snapshot data');
+
+    emit(ComputingSnapshotData(
+      driveId: _driveId,
+      range: _range,
+    ));
+
     late Uint8List data;
     try {
       data = await _getSnapshotData();
@@ -397,13 +425,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<Uint8List> _getSnapshotData() async {
-    logger.i('Computing snapshot data');
-
-    emit(ComputingSnapshotData(
-      driveId: _driveId,
-      range: _range,
-    ));
-
     // For testing purposes
     if (throwOnDataComputingForTesting) {
       throw Exception('Fake network error');
@@ -531,6 +552,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     logger.i('User cancelled the snapshot creation');
 
     _wasSnapshotDataComputingCanceled = true;
+    _maybeFetchingCustomMetadataSubscription?.cancel();
   }
 }
 
@@ -538,7 +560,9 @@ List<List<D>> batchify<D>(List<D> revisions, int batchSize) {
   final List<List<D>> batchedRevisions = [];
 
   for (var i = 0; i < revisions.length; i += batchSize) {
-    final batch = revisions.sublist(i, i + batchSize);
+    final endIndex =
+        i + batchSize > revisions.length ? revisions.length : i + batchSize;
+    final batch = revisions.sublist(i, endIndex);
 
     batchedRevisions.add(batch);
   }

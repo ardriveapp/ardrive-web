@@ -8,7 +8,7 @@ abstract class CreateSnapshotState extends Equatable {
 
 class CreateSnapshotInitial extends CreateSnapshotState {}
 
-class PrepareSnapshotCreation extends CreateSnapshotState {}
+class FetchingCustomMetadata extends CreateSnapshotState {}
 
 class ComputingSnapshotData extends CreateSnapshotState {
   final DriveID driveId;
