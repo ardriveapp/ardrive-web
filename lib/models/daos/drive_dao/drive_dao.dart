@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
+import 'package:ardrive/models/daos/drive_dao/metadata_from_entity_revision.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
@@ -569,5 +570,36 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         'Writting CustomJsonMetadata of file metadata TX: $metadataTxId (DriveID: $driveId)',
       );
     });
+  }
+
+  Future<Map<String, Uint8List>> getCachedMetadataForDrive(
+    String driveId,
+  ) async {
+    final driveRevisions =
+        await allDriveRevisionsByDriveId(driveId: driveId).get();
+    final folderRevisions =
+        await allFolderRevisionsByDriveId(driveId: driveId).get();
+    final fileRevisions =
+        await allFileRevisionsByDriveId(driveId: driveId).get();
+
+    final allRevisions = [
+      ...driveRevisions,
+      ...folderRevisions,
+      ...fileRevisions,
+    ];
+
+    final metadatas = <String, Uint8List>{};
+
+    for (final revision in allRevisions) {
+      final response = metadataOfEntityRevision(revision);
+
+      if (response != null) {
+        final metadataTxId = response.metadataTxId;
+        final metadata = response.metadata;
+        metadatas[metadataTxId] = metadata;
+      }
+    }
+
+    return metadatas;
   }
 }

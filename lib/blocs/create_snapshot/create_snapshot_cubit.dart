@@ -46,6 +46,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late Range _range;
   late int _currentHeight;
   late Transaction _preparedTx;
+  late Map<String, Uint8List> _cachedMetadata;
 
   bool _wasSnapshotDataComputingCanceled = false;
 
@@ -87,6 +88,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     emit(PrepareSnapshotCreation());
 
     await fetchMissingCustomMetadata();
+
+    _cachedMetadata = await _driveDao.getCachedMetadataForDrive(driveId);
+
     await computeSnapshotData();
   }
 
@@ -474,10 +478,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final isPrivate = drive != null && drive.privacy != DrivePrivacy.public;
 
     // gather from arweave if not cached
-    final Uint8List entityJsonData = await _arweave.dataFromTxId(
-      txId,
-      null, // key is null because we don't re-encrypt the snapshot data
-    );
+    final Uint8List entityJsonData = _cachedMetadata[txId] ??
+        await _arweave.dataFromTxId(
+          txId,
+          null, // key is null because we don't re-encrypt the snapshot data
+        );
 
     if (isPrivate) {
       final safeEntityDataFromArweave = Uint8List.fromList(
