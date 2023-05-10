@@ -1,10 +1,10 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/feedback_survey/feedback_survey_cubit.dart';
@@ -71,19 +71,37 @@ class FileShareDialogState extends State<FileShareDialog> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    ArDriveButton(
-                        style: ArDriveButtonStyle.tertiary,
-                        text: appLocalizationsOf(context).copyLink,
-                        onPressed: () {
-                          // Select the entire link to give the user some feedback on their action.
-                          shareLinkController.selection = TextSelection(
-                            baseOffset: 0,
-                            extentOffset: shareLinkController.text.length,
-                          );
+                    CopyButton(
+                      positionX: 4,
+                      positionY: 40,
+                      copyMessageColor: ArDriveTheme.of(context)
+                          .themeData
+                          .tableTheme
+                          .selectedItemColor,
+                      showCopyText: true,
+                      text: () {
+                        // Select the entire link to give the user some feedback on their action.
+                        shareLinkController.selection = TextSelection(
+                          baseOffset: 0,
+                          extentOffset: shareLinkController.text.length,
+                        );
 
-                          Clipboard.setData(
-                              ClipboardData(text: shareLinkController.text));
-                        }),
+                        return shareLinkController.text;
+                      }(),
+                      child: Text(
+                        appLocalizationsOf(context).copyLink,
+                        style: ArDriveTypography.body
+                            .buttonLargeRegular(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgDefault,
+                            )
+                            .copyWith(
+                              decoration: TextDecoration.underline,
+                            ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),

@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -9,7 +10,6 @@ import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lottie/lottie.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../components/details_panel.dart';
@@ -63,42 +63,31 @@ class SharedFilePage extends StatelessWidget {
                         ScreenTypeLayout(
                           desktop: Row(
                             children: [
-                              Lottie.asset(
-                                'assets/animations/lottie.json',
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.fill,
+                              ArDriveImage(
+                                image: AssetImage(
+                                  ArDriveTheme.of(context).themeData.name ==
+                                          'light'
+                                      ? Resources.images.brand.blackLogo2
+                                      : Resources.images.brand.whiteLogo2,
+                                ),
+                                height: 80,
+                                fit: BoxFit.contain,
                               ),
-                              const SizedBox(width: 16),
-                              Text(
-                                'ardrive',
-                                style: ArDriveTypography.headline
-                                    .heroBold()
-                                    .copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              )
                             ],
                           ),
                           mobile: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Lottie.asset(
-                                'assets/animations/lottie.json',
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.fill,
-                                filterQuality: FilterQuality.high,
+                              ArDriveImage(
+                                image: AssetImage(
+                                  ArDriveTheme.of(context).themeData.name ==
+                                          'light'
+                                      ? Resources.images.brand.blackLogo2
+                                      : Resources.images.brand.whiteLogo2,
+                                ),
+                                height: 55,
+                                fit: BoxFit.contain,
                               ),
-                              const SizedBox(width: 16),
-                              Text(
-                                'ardrive',
-                                style: ArDriveTypography.headline
-                                    .headline1Bold()
-                                    .copyWith(
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                              )
                             ],
                           ),
                         ),

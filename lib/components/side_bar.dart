@@ -597,9 +597,6 @@ class DriveListTile extends StatelessWidget {
                 hoverScale: 1,
                 child: Text(
                   drive.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.fade,
-                  softWrap: false,
                   style: isSelected
                       ? ArDriveTypography.body
                           .buttonNormalBold(
