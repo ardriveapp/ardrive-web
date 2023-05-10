@@ -5,7 +5,8 @@ part 'app_config.g.dart';
 @JsonSerializable()
 class AppConfig {
   final String? defaultArweaveGatewayUrl;
-  final bool useTurbo;
+  final bool useTurboUpload;
+  final bool useTurboPayment;
   final String? defaultTurboUrl;
   final int? allowedDataItemSizeForTurbo;
   final bool enableQuickSyncAuthoring;
@@ -14,7 +15,8 @@ class AppConfig {
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
-    this.useTurbo = false,
+    this.useTurboUpload = false,
+    this.useTurboPayment = false,
     this.defaultTurboUrl,
     this.allowedDataItemSizeForTurbo,
     this.enableQuickSyncAuthoring = false,
@@ -24,7 +26,8 @@ class AppConfig {
 
   AppConfig copyWith({
     String? defaultArweaveGatewayUrl,
-    bool? useTurbo,
+    bool? useTurboUpload,
+    bool? useTurboPayment,
     String? defaultTurboUrl,
     int? allowedDataItemSizeForTurbo,
     bool? enableQuickSyncAuthoring,
@@ -34,7 +37,8 @@ class AppConfig {
     return AppConfig(
       defaultArweaveGatewayUrl:
           defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
-      useTurbo: useTurbo ?? this.useTurbo,
+      useTurboUpload: useTurboUpload ?? this.useTurboUpload,
+      useTurboPayment: useTurboPayment ?? this.useTurboPayment,
       defaultTurboUrl: defaultTurboUrl ?? this.defaultTurboUrl,
       allowedDataItemSizeForTurbo:
           allowedDataItemSizeForTurbo ?? this.allowedDataItemSizeForTurbo,
@@ -48,7 +52,7 @@ class AppConfig {
 
   @override
   toString() {
-    return 'AppConfig(defaultArweaveGatewayUrl: $defaultArweaveGatewayUrl, useTurbo: $useTurbo, defaultTurboUrl: $defaultTurboUrl, allowedDataItemSizeForTurbo: $allowedDataItemSizeForTurbo, enableQuickSyncAuthoring: $enableQuickSyncAuthoring, enableMultipleFileDownload: $enableMultipleFileDownload, enableVideoPreview: $enableVideoPreview)';
+    return 'AppConfig(defaultArweaveGatewayUrl: $defaultArweaveGatewayUrl, useTurboUpload: $useTurboUpload, useTurboPayment: $useTurboPayment, defaultTurboUrl: $defaultTurboUrl, allowedDataItemSizeForTurbo: $allowedDataItemSizeForTurbo, enableQuickSyncAuthoring: $enableQuickSyncAuthoring, enableMultipleFileDownload: $enableMultipleFileDownload, enableVideoPreview: $enableVideoPreview)';
   }
 
   factory AppConfig.fromJson(Map<String, dynamic> json) =>

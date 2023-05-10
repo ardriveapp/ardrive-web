@@ -49,7 +49,7 @@ class PaymentService {
     );
 
     if (result.data == 'User not found') {
-      return BigInt.zero;
+      throw TurboUserNotFound();
     }
 
     return BigInt.parse(result.data);
@@ -97,10 +97,15 @@ class DontUsePaymentService implements PaymentService {
   }
 
   @override
-  Future topUp(
-      {required Wallet wallet,
-      required BigInt amount,
-      String currency = 'usd'}) {
+  Future topUp({
+    required Wallet wallet,
+    required BigInt amount,
+    String currency = 'usd',
+  }) {
     throw UnimplementedError();
   }
+}
+
+class TurboUserNotFound implements Exception {
+  TurboUserNotFound();
 }

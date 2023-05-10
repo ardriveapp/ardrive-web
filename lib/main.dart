@@ -98,7 +98,7 @@ Future<void> _initialize() async {
     ),
     ArDriveCrypto(),
   );
-  _turboUpload = _config.useTurbo
+  _turboUpload = _config.useTurboUpload
       ? UploadService(
           turboUri: Uri.parse(_config.defaultTurboUrl!),
           allowedDataItemSize: _config.allowedDataItemSizeForTurbo!,
@@ -106,7 +106,7 @@ Future<void> _initialize() async {
         )
       : DontUseUploadService();
 
-  _turboPayment = _config.useTurbo
+  _turboPayment = _config.useTurboPayment
       ? PaymentService(
           httpClient: ArDriveHTTP(),
         )
