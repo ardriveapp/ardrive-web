@@ -51,7 +51,7 @@ class CreateSnapshotDialog extends StatelessWidget {
       builder: (context, state) {
         if (state is CreateSnapshotInitial) {
           return _explanationDialog(context, drive);
-        } else if (state is PrepareSnapshotCreation ||
+        } else if (state is FetchingCustomMetadata ||
             state is ComputingSnapshotData ||
             state is UploadingSnapshot ||
             state is PreparingAndSigningTransaction) {
@@ -146,9 +146,14 @@ Widget _loadingDialog(
 
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
   final onDismiss = state is ComputingSnapshotData
+      // TODO: re-enable the button for this phase
+      // || state is FetchingCustomMetadata
       ? () {
-          Navigator.of(context).pop();
-          createSnapshotCubit.cancelSnapshotCreation();
+          createSnapshotCubit.cancelSnapshotCreation().then(
+            (_) {
+              Navigator.of(context).pop();
+            },
+          );
         }
       : null;
 
@@ -171,7 +176,7 @@ Widget _loadingDialog(
 }
 
 String _loadingDialogTitle(BuildContext context, CreateSnapshotState state) {
-  if (state is PrepareSnapshotCreation) {
+  if (state is FetchingCustomMetadata) {
     return appLocalizationsOf(context).preparingSnapshot;
   } else if (state is ComputingSnapshotData) {
     return appLocalizationsOf(context).determiningSizeAndCostOfSnapshot;
@@ -187,7 +192,7 @@ String _loadingDialogDescription(
   CreateSnapshotState state,
   bool isArConnectProfile,
 ) {
-  if (state is ComputingSnapshotData) {
+  if (state is ComputingSnapshotData || state is FetchingCustomMetadata) {
     return appLocalizationsOf(context).thisMayTakeAWhile;
   } else if (state is PreparingAndSigningTransaction) {
     if (isArConnectProfile) {

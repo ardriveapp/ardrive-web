@@ -9,6 +9,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/utils/ar_cost_to_usd.dart';
@@ -46,8 +47,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late Range _range;
   late int _currentHeight;
   late Transaction _preparedTx;
+  late Map<String, Uint8List> _cachedMetadata;
 
   bool _wasSnapshotDataComputingCanceled = false;
+
+  StreamSubscription? _maybeFetchingCustomMetadataSubscription;
 
   SnapshotItemToBeCreated? _itemToBeCreated;
   SnapshotEntity? _snapshotEntity;
@@ -72,8 +76,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     DriveID driveId, {
     Range? range,
   }) async {
+    late bool isPrivate;
+
     try {
-      await _reset(driveId);
+      final drive =
+          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+      isPrivate = drive!.privacy == DrivePrivacy.private;
+      await _reset(drive);
     } catch (e) {
       emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
       return;
@@ -84,13 +93,47 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _setTrustedRange(range);
 
-    emit(PrepareSnapshotCreation());
+    if (!isPrivate) {
+      // TODO: supported for public drives only
 
-    await fetchMissingCustomMetadata();
+      emit(FetchingCustomMetadata());
+
+      // Streamify the future so we cancel it later
+      final fetchingCustomMetadataFuture = fetchMissingCustomMetadata();
+      final fetchingCustomMetadataStream =
+          fetchingCustomMetadataFuture.asStream();
+      final completer = Completer<void>();
+      // This is the class-scoped subscription to be later cancelled
+      _maybeFetchingCustomMetadataSubscription =
+          fetchingCustomMetadataStream.listen(
+        (_) {
+          logger.i('Finished fetching missing custom metadata');
+          completer.complete();
+        },
+        onError: (e) {
+          logger.e('Error fetching missing custom metadata: $e');
+          completer.completeError(e);
+        },
+        cancelOnError: true,
+      );
+      await completer.future;
+
+      _cachedMetadata = await _driveDao.getCachedMetadataForDrive(driveId);
+    } else {
+      _cachedMetadata = {};
+      logger.i('Drive is private, cache won\'t be used for snapshot creation');
+    }
+
     await computeSnapshotData();
+
+    _cachedMetadata = {};
   }
 
   Future<void> fetchMissingCustomMetadata() async {
+    // TODO: make me a stream so we can:
+    /// - Cancel it on demand
+    /// - Show progress bar in the modal
+
     logger.i('Fetching missing custom metadata');
     await _fetchMissingCustomMetadataForDrive();
     await _fetchMissingCustomMetadataForFolder();
@@ -180,6 +223,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<void> computeSnapshotData() async {
+    logger.i('Computing snapshot data');
+
+    emit(ComputingSnapshotData(
+      driveId: _driveId,
+      range: _range,
+    ));
+
     late Uint8List data;
     try {
       data = await _getSnapshotData();
@@ -216,26 +266,24 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     return false;
   }
 
-  Future<void> _reset(DriveID driveId) async {
+  Future<void> _reset(Drive drive) async {
     _currentHeight = await _arweave.getCurrentBlockHeight();
-    _driveId = driveId;
+    _driveId = drive.id;
     _itemToBeCreated = null;
     _snapshotEntity = null;
     _wasSnapshotDataComputingCanceled = false;
 
     try {
-      final drive =
-          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
-      final isPrivate = drive!.privacy == DrivePrivacy.private;
+      final isPrivate = drive.privacy == DrivePrivacy.private;
 
       if (isPrivate) {
         // TODO: re-visit
         if (_profileCubit.state is ProfileLoggedIn) {
           final profileState = (_profileCubit.state as ProfileLoggedIn);
           final profileKey = profileState.cipherKey;
-          _maybeDriveKey = await _driveDao.getDriveKey(driveId, profileKey);
+          _maybeDriveKey = await _driveDao.getDriveKey(drive.id, profileKey);
         } else {
-          _maybeDriveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+          _maybeDriveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
         }
       }
     } catch (e) {
@@ -382,13 +430,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<Uint8List> _getSnapshotData() async {
-    logger.i('Computing snapshot data');
-
-    emit(ComputingSnapshotData(
-      driveId: _driveId,
-      range: _range,
-    ));
-
     // For testing purposes
     if (throwOnDataComputingForTesting) {
       throw Exception('Fake network error');
@@ -474,10 +515,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final isPrivate = drive != null && drive.privacy != DrivePrivacy.public;
 
     // gather from arweave if not cached
-    final Uint8List entityJsonData = await _arweave.dataFromTxId(
-      txId,
-      null, // key is null because we don't re-encrypt the snapshot data
-    );
+    final Uint8List entityJsonData = _cachedMetadata.remove(txId) ??
+        await _arweave.dataFromTxId(
+          txId,
+          null, // key is null because we don't re-encrypt the snapshot data
+        );
 
     if (isPrivate) {
       final safeEntityDataFromArweave = Uint8List.fromList(
@@ -511,10 +553,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
   }
 
-  void cancelSnapshotCreation() {
+  Future<void> cancelSnapshotCreation() async {
     logger.i('User cancelled the snapshot creation');
 
     _wasSnapshotDataComputingCanceled = true;
+    await _maybeFetchingCustomMetadataSubscription?.cancel();
   }
 }
 
@@ -522,7 +565,9 @@ List<List<D>> batchify<D>(List<D> revisions, int batchSize) {
   final List<List<D>> batchedRevisions = [];
 
   for (var i = 0; i < revisions.length; i += batchSize) {
-    final batch = revisions.sublist(i, i + batchSize);
+    final endIndex =
+        i + batchSize > revisions.length ? revisions.length : i + batchSize;
+    final batch = revisions.sublist(i, endIndex);
 
     batchedRevisions.add(batch);
   }

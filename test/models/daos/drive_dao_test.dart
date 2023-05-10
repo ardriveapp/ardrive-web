@@ -39,6 +39,7 @@ void main() {
     tearDown(() async {
       await db.close();
     });
+
     // Any empty string is a root path
     test("watchFolder() with root path ('') returns root folder", () async {
       final folderStream =

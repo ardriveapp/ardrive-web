@@ -178,7 +178,7 @@ void main() {
           range: Range(start: 0, end: 1),
         ),
         expect: () => [
-          PrepareSnapshotCreation(),
+          FetchingCustomMetadata(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
@@ -205,7 +205,7 @@ void main() {
             )
             .then((value) => cubit.confirmSnapshotCreation()),
         expect: () => [
-          PrepareSnapshotCreation(),
+          FetchingCustomMetadata(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
@@ -233,7 +233,7 @@ void main() {
           range: Range(start: 0, end: 1),
         ),
         expect: () => [
-          PrepareSnapshotCreation(),
+          FetchingCustomMetadata(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
@@ -256,7 +256,7 @@ void main() {
           range: Range(start: 0, end: 101),
         ),
         expect: () => [
-          PrepareSnapshotCreation(),
+          FetchingCustomMetadata(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 85),
@@ -281,7 +281,7 @@ void main() {
           range: Range(start: 0, end: 1),
         ),
         expect: () => [
-          PrepareSnapshotCreation(),
+          FetchingCustomMetadata(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
@@ -314,7 +314,7 @@ void main() {
           ]);
         },
         expect: () => [
-          PrepareSnapshotCreation(),
+          FetchingCustomMetadata(),
           ComputingSnapshotData(
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
@@ -378,7 +378,7 @@ void main() {
             );
           },
           expect: () => [
-            PrepareSnapshotCreation(),
+            FetchingCustomMetadata(),
             ComputingSnapshotData(
               driveId: 'driveId',
               range: Range(start: 0, end: 1),
