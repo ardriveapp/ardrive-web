@@ -145,13 +145,17 @@ Widget _loadingDialog(
       : false;
 
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
-  final onDismiss =
-      (state is ComputingSnapshotData || state is FetchingCustomMetadata)
-          ? () {
+  final onDismiss = state is ComputingSnapshotData
+      // TODO: re-enable the button for this phase
+      // || state is FetchingCustomMetadata
+      ? () {
+          createSnapshotCubit.cancelSnapshotCreation().then(
+            (_) {
               Navigator.of(context).pop();
-              createSnapshotCubit.cancelSnapshotCreation();
-            }
-          : null;
+            },
+          );
+        }
+      : null;
 
   return ProgressDialog(
     title: _loadingDialogTitle(context, state),

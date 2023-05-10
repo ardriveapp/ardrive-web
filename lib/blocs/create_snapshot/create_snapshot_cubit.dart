@@ -114,6 +114,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           logger.e('Error fetching missing custom metadata: $e');
           completer.completeError(e);
         },
+        cancelOnError: true,
       );
       await completer.future;
 
@@ -129,6 +130,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<void> fetchMissingCustomMetadata() async {
+    // TODO: make me a stream so we can:
+    /// - Cancel it on demand
+    /// - Show progress bar in the modal
+
     logger.i('Fetching missing custom metadata');
     await _fetchMissingCustomMetadataForDrive();
     await _fetchMissingCustomMetadataForFolder();
@@ -548,11 +553,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
   }
 
-  void cancelSnapshotCreation() {
+  Future<void> cancelSnapshotCreation() async {
     logger.i('User cancelled the snapshot creation');
 
     _wasSnapshotDataComputingCanceled = true;
-    _maybeFetchingCustomMetadataSubscription?.cancel();
+    await _maybeFetchingCustomMetadataSubscription?.cancel();
   }
 }
 
