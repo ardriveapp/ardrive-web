@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -13,43 +12,32 @@ part 'drive_create_state.dart';
 
 class DriveCreateCubit extends Cubit<DriveCreateState> {
   final form = FormGroup({
-    'name': FormControl(
-      validators: [
-        Validators.required,
-        Validators.pattern(kDriveNameRegex),
-        Validators.pattern(kTrimTrailingRegex),
-      ],
-    ),
     'privacy': FormControl<String>(
         value: DrivePrivacy.private, validators: [Validators.required]),
   });
 
   final ArweaveService _arweave;
-  final TurboService _turboService;
+  final UploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
 
   DriveCreateCubit({
     required ArweaveService arweave,
-    required TurboService turboService,
+    required UploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required DrivesCubit drivesCubit,
   })  : _arweave = arweave,
-        _turboService = turboService,
+        _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
         super(DriveCreateInitial());
 
-  Future<void> submit() async {
-    form.markAllAsTouched();
-
-    if (form.invalid) {
-      return;
-    }
-
+  Future<void> submit(
+    String driveName,
+  ) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(DriveCreateWalletMismatch());
@@ -58,14 +46,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
     final minimumWalletBalance = BigInt.from(10000000);
     if (profile.walletBalance <= minimumWalletBalance &&
-        !_turboService.useTurbo) {
+        !_turboUploadService.useTurbo) {
       emit(DriveCreateZeroBalance());
       return;
     }
+
     emit(DriveCreateInProgress());
 
     try {
-      final driveName = form.control('name').value.toString().trim();
       final String drivePrivacy = form.control('privacy').value;
       final walletAddress = await profile.wallet.getAddress();
       final createRes = await _driveDao.createDrive(
@@ -108,14 +96,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await rootFolderDataItem.sign(profile.wallet);
       await driveDataItem.sign(profile.wallet);
       late TransactionBase createTx;
-      if (_turboService.useTurbo) {
+      if (_turboUploadService.useTurbo) {
         createTx = await _arweave.prepareBundledDataItem(
           await DataBundle.fromDataItems(
             items: [driveDataItem, rootFolderDataItem],
           ),
           profile.wallet,
         );
-        await _turboService.postDataItem(dataItem: createTx as DataItem);
+        await _turboUploadService.postDataItem(dataItem: createTx as DataItem);
       } else {
         createTx = await _arweave.prepareDataBundleTx(
           await DataBundle.fromDataItems(

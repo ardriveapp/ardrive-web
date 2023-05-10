@@ -1,7 +1,7 @@
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
-import 'package:ardrive/core/decrypt.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -67,7 +67,7 @@ void main() {
   late DriveDao mockDriveDao;
   late ArweaveService mockArweaveService;
   late ArDriveDownloader mockArDriveDownloader;
-  late Decrypt mockDecrypt;
+  late ArDriveCrypto mockCrypto;
   late DownloadService mockDownloadService;
   late ARFSRepository mockARFSRepository;
 
@@ -160,7 +160,7 @@ void main() {
     mockDriveDao = MockDriveDao();
     mockArweaveService = MockArweaveService();
     mockArDriveDownloader = MockArDriveDownloader();
-    mockDecrypt = MockDecrypt();
+    mockCrypto = MockArDriveCrypto();
     mockDownloadService = MockDownloadService();
     mockARFSRepository = MockARFSRepository();
   });
@@ -172,7 +172,7 @@ void main() {
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
         downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
+        crypto: mockCrypto,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
       );
@@ -219,7 +219,7 @@ void main() {
           .thenAnswer((invocation) => Future.value(SecretKey([])));
       when(() => mockArweaveService.getTransactionDetails(any())).thenAnswer(
           (invocation) => Future.value(MockTransactionCommonMixin()));
-      when(() => mockDecrypt.decryptTransactionData(any(), any(), any()))
+      when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
           .thenAnswer((invocation) => Future.value(Uint8List(100)));
     });
     blocTest<ProfileFileDownloadCubit, FileDownloadState>(
@@ -229,7 +229,7 @@ void main() {
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
         downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
+        crypto: mockCrypto,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
       ),
@@ -257,7 +257,7 @@ void main() {
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
         downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
+        crypto: mockCrypto,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
       ),
@@ -273,7 +273,7 @@ void main() {
         verifyNever(() => mockDriveDao.getFileKey(any(), any()));
         verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
         verifyNever(
-            () => mockDecrypt.decryptTransactionData(any(), any(), any()));
+            () => mockCrypto.decryptTransactionData(any(), any(), any()));
       },
       expect: () => <FileDownloadState>[
         FileDownloadInProgress(
@@ -296,7 +296,7 @@ void main() {
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
         downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
+        crypto: mockCrypto,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
       ),
@@ -331,7 +331,7 @@ void main() {
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
         downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
+        crypto: mockCrypto,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
       ),
@@ -361,7 +361,7 @@ void main() {
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
         downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
+        crypto: mockCrypto,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
       ),
@@ -387,7 +387,7 @@ void main() {
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
         downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
+        crypto: mockCrypto,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
       ),
@@ -418,7 +418,7 @@ void main() {
         verifyNever(() => mockDriveDao.getFileKey(any(), any()));
         verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
         verifyNever(
-            () => mockDecrypt.decryptTransactionData(any(), any(), any()));
+            () => mockCrypto.decryptTransactionData(any(), any(), any()));
       },
     );
 
@@ -429,7 +429,7 @@ void main() {
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
         downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
+        crypto: mockCrypto,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
       ),
@@ -457,7 +457,7 @@ void main() {
         verifyNever(() => mockDriveDao.getFileKey(any(), any()));
         verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
         verifyNever(
-            () => mockDecrypt.decryptTransactionData(any(), any(), any()));
+            () => mockCrypto.decryptTransactionData(any(), any(), any()));
       },
     );
 
@@ -468,7 +468,7 @@ void main() {
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
         downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
+        crypto: mockCrypto,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
       ),
@@ -478,7 +478,7 @@ void main() {
         /// Using a private drive
         when(() => mockARFSRepository.getDriveById(any()))
             .thenAnswer((_) async => mockDrivePrivate);
-        when(() => mockDecrypt.decryptTransactionData(any(), any(), any()))
+        when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
             .thenThrow((invocation) => Exception());
       },
       act: (bloc) {
@@ -500,7 +500,7 @@ void main() {
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
         downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
+        crypto: mockCrypto,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
       ),
@@ -510,7 +510,7 @@ void main() {
         /// Using a private drive
         when(() => mockARFSRepository.getDriveById(any()))
             .thenAnswer((_) async => mockDrivePrivate);
-        when(() => mockDecrypt.decryptTransactionData(any(), any(), any()))
+        when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
             .thenThrow((invocation) => Exception());
       },
       act: (bloc) {
@@ -535,7 +535,7 @@ void main() {
                 driveDao: mockDriveDao,
                 arweave: mockArweaveService,
                 downloader: mockArDriveDownloader,
-                decrypt: mockDecrypt,
+                crypto: mockCrypto,
                 downloadService: mockDownloadService,
                 arfsRepository: mockARFSRepository,
               ),
@@ -567,7 +567,7 @@ void main() {
             verifyNever(() => mockDriveDao.getFileKey(any(), any()));
             verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
             verifyNever(
-                () => mockDecrypt.decryptTransactionData(any(), any(), any()));
+                () => mockCrypto.decryptTransactionData(any(), any(), any()));
           });
 
       blocTest<ProfileFileDownloadCubit, FileDownloadState>(
@@ -577,7 +577,7 @@ void main() {
                 driveDao: mockDriveDao,
                 arweave: mockArweaveService,
                 downloader: mockArDriveDownloader,
-                decrypt: mockDecrypt,
+                crypto: mockCrypto,
                 downloadService: mockDownloadService,
                 arfsRepository: mockARFSRepository,
               ),
@@ -609,7 +609,7 @@ void main() {
             verifyNever(() => mockDriveDao.getFileKey(any(), any()));
             verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
             verifyNever(
-                () => mockDecrypt.decryptTransactionData(any(), any(), any()));
+                () => mockCrypto.decryptTransactionData(any(), any(), any()));
           });
 
       blocTest<ProfileFileDownloadCubit, FileDownloadState>(
@@ -619,7 +619,7 @@ void main() {
                 driveDao: mockDriveDao,
                 arweave: mockArweaveService,
                 downloader: mockArDriveDownloader,
-                decrypt: mockDecrypt,
+                crypto: mockCrypto,
                 downloadService: mockDownloadService,
                 arfsRepository: mockARFSRepository,
               ),
@@ -643,7 +643,7 @@ void main() {
               driveDao: mockDriveDao,
               arweave: mockArweaveService,
               downloader: mockArDriveDownloader,
-              decrypt: mockDecrypt,
+              crypto: mockCrypto,
               downloadService: mockDownloadService,
               arfsRepository: mockARFSRepository,
             ),
@@ -690,7 +690,7 @@ void main() {
           verifyNever(() => mockDriveDao.getFileKey(any(), any()));
           verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
           verifyNever(
-              () => mockDecrypt.decryptTransactionData(any(), any(), any()));
+              () => mockCrypto.decryptTransactionData(any(), any(), any()));
         });
   });
 }

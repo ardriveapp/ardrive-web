@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
@@ -14,30 +16,31 @@ part 'fs_entry_move_state.dart';
 
 class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final String driveId;
-  final List<SelectedItem> selectedItems;
+  final List<ArDriveDataTableItem> selectedItems;
 
   final ArweaveService _arweave;
-  final TurboService _turboService;
+  final UploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
-  final Platform _platform;
+  final ArDriveCrypto _crypto;
 
   FsEntryMoveBloc({
     required this.driveId,
     required this.selectedItems,
     required ArweaveService arweave,
-    required TurboService turboService,
+    required UploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
+    required ArDriveCrypto crypto,
     Platform platform = const LocalPlatform(),
   })  : _arweave = arweave,
-        _turboService = turboService,
+        _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
-        _platform = platform,
+        _crypto = crypto,
         super(const FsEntryMoveLoadInProgress()) {
     if (selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
@@ -63,13 +66,19 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             parentFolder: folderInView,
             profile: profile,
           );
+
           if (conflictingItems.isEmpty) {
             emit(const FsEntryMoveLoadInProgress());
-            await moveEntities(
-              conflictingItems: conflictingItems,
-              profile: profile,
-              parentFolder: folderInView,
-            );
+
+            try {
+              await moveEntities(
+                conflictingItems: conflictingItems,
+                profile: profile,
+                parentFolder: folderInView,
+              );
+            } catch (err) {
+              print('Error moving items: $err');
+            }
             emit(const FsEntryMoveSuccess());
           } else {
             emit(
@@ -131,16 +140,16 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     );
   }
 
-  Future<List<SelectedItem>> checkForConflicts({
+  Future<List<ArDriveDataTableItem>> checkForConflicts({
     required final FolderEntry parentFolder,
     required ProfileLoggedIn profile,
   }) async {
-    final conflictingItems = <SelectedItem>[];
+    final conflictingItems = <ArDriveDataTableItem>[];
     try {
       for (var itemToMove in selectedItems) {
         final entityWithSameNameExists =
             await _driveDao.doesEntityWithNameExist(
-          name: itemToMove.item.name,
+          name: itemToMove.name,
           driveId: driveId,
           parentFolderId: parentFolder.id,
         );
@@ -157,21 +166,21 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
   Future<void> moveEntities({
     required FolderEntry parentFolder,
-    List<SelectedItem> conflictingItems = const [],
+    List<ArDriveDataTableItem> conflictingItems = const [],
     required ProfileLoggedIn profile,
   }) async {
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
     final moveTxDataItems = <DataItem>[];
 
     final filesToMove = selectedItems
-        .whereType<SelectedFile>()
+        .whereType<FileDataTableItem>()
         .where((file) => conflictingItems
             .where((conflictingFile) => conflictingFile.id == file.id)
             .isEmpty)
         .toList();
 
     final foldersToMove = selectedItems
-        .whereType<SelectedFolder>()
+        .whereType<FolderDataTableItem>()
         .where((folder) => conflictingItems
             .where((conflictingFolder) => conflictingFolder.id == folder.id)
             .isEmpty)
@@ -188,8 +197,9 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             parentFolderId: parentFolder.id,
             path: '${parentFolder.path}/${file.name}',
             lastUpdated: DateTime.now());
-        final fileKey =
-            driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
+        final fileKey = driveKey != null
+            ? await _crypto.deriveFileKey(driveKey, file.id)
+            : null;
 
         final fileEntity = file.asEntity();
 
@@ -208,6 +218,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
           performedAction: RevisionAction.move,
         ));
       }
+
       for (var folderToMove in foldersToMove) {
         var folder = await _driveDao
             .folderById(driveId: driveId, folderId: folderToMove.id)
@@ -229,17 +240,20 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         moveTxDataItems.add(folderDataItem);
 
         await _driveDao.writeToFolder(folder);
+
         folderEntity.txId = folderDataItem.id;
+
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
           performedAction: RevisionAction.move,
         ));
+
         folderMap.addAll({folder.id: folder.toCompanion(false)});
       }
     });
 
-    if (_turboService.useTurbo) {
+    if (_turboUploadService.useTurbo) {
       for (var dataItem in moveTxDataItems) {
-        await _turboService.postDataItem(dataItem: dataItem);
+        await _turboUploadService.postDataItem(dataItem: dataItem);
       }
     } else {
       final moveTx = await _arweave.prepareDataBundleTx(

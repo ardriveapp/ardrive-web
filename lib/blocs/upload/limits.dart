@@ -6,6 +6,7 @@ final privateFileSizeLimit = const MiB(100).size;
 final mobilePrivateFileSizeLimit = const GiB(1).size;
 
 final publicFileSafeSizeLimit = const GiB(5).size;
+final publicDownloadSizeLimit = const GiB(1).size;
 
 final bundleSizeLimit = kIsWeb ? webBundleSizeLimit : mobileBundleSizeLimit;
 
