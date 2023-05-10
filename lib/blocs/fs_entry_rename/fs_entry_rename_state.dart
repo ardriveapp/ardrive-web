@@ -31,6 +31,15 @@ class FolderEntryRenameFailure extends FsEntryRenameState {
   const FolderEntryRenameFailure() : super(isRenamingFolder: true);
 }
 
+class EntityAlreadyExists extends FsEntryRenameState {
+  const EntityAlreadyExists(
+    this.entityName, {
+    required bool isRenamingFolder,
+  }) : super(isRenamingFolder: isRenamingFolder);
+
+  final String entityName;
+}
+
 class FolderEntryRenameWalletMismatch extends FsEntryRenameState {
   const FolderEntryRenameWalletMismatch() : super(isRenamingFolder: true);
 }

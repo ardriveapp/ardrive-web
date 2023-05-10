@@ -6,6 +6,7 @@ import 'package:ardrive/services/authentication/biometric_permission_dialog.dart
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -265,24 +266,19 @@ class _BiometricToggleState extends State<BiometricToggle> {
             return const SizedBox();
           }
 
-          return SwitchListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-            key: ValueKey(_isEnabled),
-            title: Text(biometricText),
+          return ArDriveToggleSwitch(
+            text: biometricText,
             value: _isEnabled,
-            activeColor: Colors.white,
-            activeTrackColor: Colors.black,
-            controlAffinity: ListTileControlAffinity.leading,
             onChanged: (value) async {
-              setState(() {
-                _isEnabled = value;
-              });
+              _isEnabled = value;
 
               if (_isEnabled) {
                 final auth = context.read<BiometricAuthentication>();
 
                 try {
-                  if (await auth.authenticate(context)) {
+                  if (await auth.authenticate(
+                      localizedReason: appLocalizationsOf(context)
+                          .loginUsingBiometricCredential)) {
                     setState(() {
                       _isEnabled = true;
                     });

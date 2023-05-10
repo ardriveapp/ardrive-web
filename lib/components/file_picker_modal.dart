@@ -1,6 +1,8 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
 import 'app_dialog.dart';
@@ -34,7 +36,6 @@ Future<T> _showModal<T>(
   late T content;
 
   await showModalBottomSheet(
-      isDismissible: false,
       context: context,
       builder: (context) {
         return _FilePickerContent<T>(
@@ -70,7 +71,11 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
   bool _isLoading = false;
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final textStyle = ArDriveTypography.body.buttonLargeRegular(
+      color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+    );
+    return Container(
+      color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
       height: 240,
       child: _isLoading
           ? Center(
@@ -102,7 +107,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                       } catch (e) {
                         if (e is FileSystemPermissionDeniedException) {
                           await _showCameraPermissionModal(context);
-                          debugPrint(e.toString());
+                          logger.d(e.toString());
                         }
                       }
 
@@ -112,10 +117,13 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
 
                       Navigator.pop(context);
                     },
-                    title: Text(appLocalizationsOf(context).camera),
-                    leading: const Icon(Icons.camera),
+                    title: Text(
+                      appLocalizationsOf(context).camera,
+                      style: textStyle,
+                    ),
+                    leading: ArDriveIcons.camera1(),
                   ),
-                  const SizedBox(
+                  const Divider(
                     height: 8,
                   ),
                   ListTile(
@@ -134,54 +142,63 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
 
                           widget.onClose(content);
 
-                          debugPrint('adding file');
+                          logger.d('adding file');
                         }
                       } catch (e) {
-                        debugPrint(e.toString());
+                        logger.e(e.toString());
                       }
 
                       setState(() {
                         _isLoading = false;
                       });
 
+                      // ignore: use_build_context_synchronously
                       Navigator.pop(context);
                     },
-                    title: Text(appLocalizationsOf(context).gallery),
-                    leading: const Icon(Icons.image),
+                    title: Text(
+                      appLocalizationsOf(context).gallery,
+                      style: textStyle,
+                    ),
+                    leading: ArDriveIcons.image(),
                   ),
-                  const SizedBox(
+                  const Divider(
                     height: 8,
                   ),
                   ListTile(
-                      onTap: () async {
-                        setState(() {
-                          _isLoading = true;
-                        });
-                        try {
-                          final isEnabled =
-                              await verifyStoragePermissionAndShowModalWhenDenied(
-                            context,
-                          );
+                    onTap: () async {
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      try {
+                        final isEnabled =
+                            await verifyStoragePermissionAndShowModalWhenDenied(
+                          context,
+                        );
 
-                          if (isEnabled) {
-                            final content = await widget.pickFromFileSystem();
+                        if (isEnabled) {
+                          final content = await widget.pickFromFileSystem();
 
-                            widget.onClose(content);
+                          widget.onClose(content);
 
-                            debugPrint('adding file');
-                          }
-                        } catch (e) {
-                          debugPrint(e.toString());
+                          logger.d('adding file');
                         }
+                      } catch (e) {
+                        logger.e(e.toString());
+                      }
 
-                        setState(() {
-                          _isLoading = false;
-                        });
+                      setState(() {
+                        _isLoading = false;
+                      });
 
-                        Navigator.pop(context);
-                      },
-                      title: Text(appLocalizationsOf(context).fileSystem),
-                      leading: const Icon(Icons.file_open_sharp))
+                      // ignore: use_build_context_synchronously
+                      Navigator.pop(context);
+                    },
+                    title: Text(
+                      appLocalizationsOf(context).fileSystem,
+                      style: textStyle,
+                    ),
+                    leading: ArDriveIcons.fileOutlined(),
+                  )
                 ],
               ),
             ),
@@ -207,29 +224,23 @@ Future<void> showStoragePermissionModal(BuildContext context) async {
   return showDialog(
       context: context,
       builder: (context) {
-        return AppDialog(
+        return ArDriveStandardModal(
           title: appLocalizationsOf(context).enableStorageAccessTitle,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(appLocalizationsOf(context).enableStorageAccess),
-              const SizedBox(
-                height: 24,
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  AppSettings.openAppSettings();
-                },
-                child: Text(appLocalizationsOf(context).goToDeviceSettings),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text(appLocalizationsOf(context).cancel),
-              )
-            ],
-          ),
+          description: appLocalizationsOf(context).enableStorageAccess,
+          actions: [
+            ModalAction(
+              action: () {
+                Navigator.pop(context);
+              },
+              title: appLocalizationsOf(context).cancel,
+            ),
+            ModalAction(
+              action: () {
+                AppSettings.openAppSettings();
+              },
+              title: appLocalizationsOf(context).goToDeviceSettings,
+            ),
+          ],
         );
       });
 }

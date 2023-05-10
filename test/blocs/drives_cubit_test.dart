@@ -26,6 +26,7 @@ void main() {
       profileCubit = MockProfileCubit();
 
       drivesCubit = DrivesCubit(
+        auth: MockArDriveAuth(),
         profileCubit: profileCubit,
         driveDao: driveDao,
       );

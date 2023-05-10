@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -37,7 +38,7 @@ class SnapshotEntity extends Entity {
     this.dataStart,
     this.dataEnd,
     this.data,
-  });
+  }) : super(ArDriveCrypto());
 
   static Future<SnapshotEntity> fromTransaction(
     TransactionCommonMixin transaction,
