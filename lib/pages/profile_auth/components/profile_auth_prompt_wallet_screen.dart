@@ -59,7 +59,7 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             ],
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => openUrl(url: Resources.getStartedLink),
+              onPressed: () => openUrl(url: Resources.getWalletLink),
               child: Text(
                 appLocalizationsOf(context).getAWallet,
                 textAlign: TextAlign.center,

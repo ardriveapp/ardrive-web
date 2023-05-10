@@ -1,27 +1,21 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/l11n/l11n.dart';
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/services/turbo/turbo.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:reactive_forms/reactive_forms.dart';
 
 part 'folder_create_state.dart';
 
 class FolderCreateCubit extends Cubit<FolderCreateState> {
-  late FormGroup form;
-
   final String driveId;
   final String parentFolderId;
 
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
-  final TurboService _turboService;
+  final UploadService _turboUploadService;
   final DriveDao _driveDao;
 
   FolderCreateCubit({
@@ -29,41 +23,29 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     required this.parentFolderId,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
-    required TurboService turboService,
+    required UploadService turboUploadService,
     required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
-        _turboService = turboService,
+        _turboUploadService = turboUploadService,
         _driveDao = driveDao,
-        super(FolderCreateInitial()) {
-    form = FormGroup({
-      'name': FormControl(
-        validators: [
-          Validators.required,
-          Validators.pattern(kFileNameRegex),
-          Validators.pattern(kTrimTrailingRegex),
-        ],
-        asyncValidators: [
-          _uniqueFolderName,
-        ],
-      ),
-    });
-  }
+        super(FolderCreateInitial());
 
-  Future<void> submit() async {
-    form.markAllAsTouched();
-
-    if (form.invalid) {
-      return;
-    }
-
+  Future<void> submit({required String folderName}) async {
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
-      final String folderName = form.control('name').value;
+
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(FolderCreateWalletMismatch());
         return;
       }
+
+      if (await _nameAlreadyExists(folderName)) {
+        emit(FolderCreateNameAlreadyExists(folderName: folderName));
+
+        return;
+      }
+
       emit(FolderCreateInProgress());
 
       await _driveDao.transaction(() async {
@@ -91,14 +73,14 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           parentFolderId: targetFolder.id,
           name: folderName,
         );
-        if (_turboService.useTurbo) {
+        if (_turboUploadService.useTurbo) {
           final folderDataItem = await _arweave.prepareEntityDataItem(
             folderEntity,
             profile.wallet,
             key: driveKey,
           );
 
-          await _turboService.postDataItem(dataItem: folderDataItem);
+          await _turboUploadService.postDataItem(dataItem: folderDataItem);
           folderEntity.txId = folderDataItem.id;
         } else {
           final folderTx = await _arweave.prepareEntityTx(
@@ -117,27 +99,20 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
       });
     } catch (err) {
       addError(err);
+      return;
     }
 
     emit(FolderCreateSuccess());
   }
 
-  Future<Map<String, dynamic>?> _uniqueFolderName(
-      AbstractControl<dynamic> control) async {
-    final String folderName = control.value;
-
+  Future<bool> _nameAlreadyExists(String folderName) async {
     final nameAlreadyExists = await _driveDao.doesEntityWithNameExist(
       name: folderName,
       driveId: driveId,
       parentFolderId: parentFolderId,
     );
 
-    if (nameAlreadyExists) {
-      control.markAsTouched();
-      return {AppValidationMessage.fsEntryNameAlreadyPresent: true};
-    }
-
-    return null;
+    return nameAlreadyExists;
   }
 
   @override

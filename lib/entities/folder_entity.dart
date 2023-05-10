@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -26,10 +27,11 @@ class FolderEntity extends Entity {
     this.driveId,
     this.parentFolderId,
     this.name,
-  });
+  }) : super(ArDriveCrypto());
 
   static Future<FolderEntity> fromTransaction(
     TransactionCommonMixin transaction,
+    ArDriveCrypto crypto,
     Uint8List data, [
     SecretKey? driveKey,
   ]) async {
@@ -38,7 +40,11 @@ class FolderEntity extends Entity {
       if (driveKey == null) {
         entityJson = json.decode(utf8.decode(data));
       } else {
-        entityJson = await decryptEntityJson(transaction, data, driveKey);
+        entityJson = await crypto.decryptEntityJson(
+          transaction,
+          data,
+          driveKey,
+        );
       }
 
       return FolderEntity.fromJson(entityJson!)
