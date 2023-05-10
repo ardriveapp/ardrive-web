@@ -170,9 +170,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           Expanded(
                             child: Text(
                               widget.item.name,
-                              softWrap: false,
                               style: ArDriveTypography.body.buttonLargeBold(),
-                              overflow: TextOverflow.fade,
                             ),
                           ),
                           if (widget.currentDrive != null &&

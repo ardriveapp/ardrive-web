@@ -205,105 +205,111 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     height: 24,
                                     child: VerticalDivider(),
                                   ),
-                                ArDriveClickArea(
-                                  tooltip: appLocalizationsOf(context).showMenu,
-                                  child: ArDriveDropdown(
-                                    width: 260,
-                                    anchor: const Aligned(
-                                      follower: Alignment.topRight,
-                                      target: Alignment.bottomRight,
-                                    ),
-                                    items: [
-                                      if (isDriveOwner)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 16.0),
+                                  child: ArDriveClickArea(
+                                    tooltip:
+                                        appLocalizationsOf(context).showMenu,
+                                    child: ArDriveDropdown(
+                                      width: 260,
+                                      anchor: const Aligned(
+                                        follower: Alignment.topRight,
+                                        target: Alignment.bottomRight,
+                                      ),
+                                      items: [
+                                        if (isDriveOwner)
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              promptToRenameDrive(
+                                                context,
+                                                driveId: state.currentDrive.id,
+                                                driveName:
+                                                    state.currentDrive.name,
+                                              );
+                                            },
+                                            content: ArDriveDropdownItemTile(
+                                              name: appLocalizationsOf(context)
+                                                  .renameDrive,
+                                              icon: ArDriveIcons.edit(
+                                                size: defaultIconSize,
+                                              ),
+                                            ),
+                                          ),
                                         ArDriveDropdownItem(
                                           onClick: () {
-                                            promptToRenameDrive(
-                                              context,
-                                              driveId: state.currentDrive.id,
-                                              driveName:
-                                                  state.currentDrive.name,
+                                            promptToShareDrive(
+                                              context: context,
+                                              drive: state.currentDrive,
                                             );
                                           },
                                           content: ArDriveDropdownItemTile(
                                             name: appLocalizationsOf(context)
-                                                .renameDrive,
-                                            icon: ArDriveIcons.edit(
+                                                .shareDrive,
+                                            icon: ArDriveIcons.share(
                                               size: defaultIconSize,
                                             ),
                                           ),
                                         ),
-                                      ArDriveDropdownItem(
-                                        onClick: () {
-                                          promptToShareDrive(
-                                            context: context,
-                                            drive: state.currentDrive,
-                                          );
-                                        },
-                                        content: ArDriveDropdownItemTile(
-                                          name: appLocalizationsOf(context)
-                                              .shareDrive,
-                                          icon: ArDriveIcons.share(
-                                            size: defaultIconSize,
-                                          ),
-                                        ),
-                                      ),
-                                      ArDriveDropdownItem(
-                                        onClick: () {
-                                          promptToExportCSVData(
-                                            context: context,
-                                            driveId: state.currentDrive.id,
-                                          );
-                                        },
-                                        content: ArDriveDropdownItemTile(
-                                          name: appLocalizationsOf(context)
-                                              .exportDriveContents,
-                                          icon: ArDriveIcons.download(
-                                            size: defaultIconSize,
-                                          ),
-                                        ),
-                                      ),
-                                      ArDriveDropdownItem(
-                                        onClick: () {
-                                          final bloc =
-                                              context.read<DriveDetailCubit>();
-
-                                          bloc.selectDataItem(
-                                            DriveDataTableItemMapper.fromDrive(
-                                              state.currentDrive,
-                                              (_) => null,
-                                              0,
-                                              isDriveOwner,
-                                            ),
-                                          );
-                                        },
-                                        content: _buildItem(
-                                          appLocalizationsOf(context).moreInfo,
-                                          ArDriveIcons.info(
-                                            size: defaultIconSize,
-                                          ),
-                                        ),
-                                      ),
-                                      if (!state.hasWritePermissions &&
-                                          !isDriveOwner &&
-                                          context.read<ProfileCubit>().state
-                                              is ProfileLoggedIn)
                                         ArDriveDropdownItem(
                                           onClick: () {
-                                            showDetachDriveDialog(
+                                            promptToExportCSVData(
                                               context: context,
-                                              driveID: state.currentDrive.id,
-                                              driveName:
-                                                  state.currentDrive.name,
+                                              driveId: state.currentDrive.id,
+                                            );
+                                          },
+                                          content: ArDriveDropdownItemTile(
+                                            name: appLocalizationsOf(context)
+                                                .exportDriveContents,
+                                            icon: ArDriveIcons.download(
+                                              size: defaultIconSize,
+                                            ),
+                                          ),
+                                        ),
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            final bloc = context
+                                                .read<DriveDetailCubit>();
+
+                                            bloc.selectDataItem(
+                                              DriveDataTableItemMapper
+                                                  .fromDrive(
+                                                state.currentDrive,
+                                                (_) => null,
+                                                0,
+                                                isDriveOwner,
+                                              ),
                                             );
                                           },
                                           content: _buildItem(
-                                              appLocalizationsOf(context)
-                                                  .detachDrive,
-                                              ArDriveIcons.triangle()),
+                                            appLocalizationsOf(context)
+                                                .moreInfo,
+                                            ArDriveIcons.info(
+                                              size: defaultIconSize,
+                                            ),
+                                          ),
                                         ),
-                                    ],
-                                    child: HoverWidget(
-                                      child: ArDriveIcons.kebabMenu(),
+                                        if (!state.hasWritePermissions &&
+                                            !isDriveOwner &&
+                                            context.read<ProfileCubit>().state
+                                                is ProfileLoggedIn)
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              showDetachDriveDialog(
+                                                context: context,
+                                                driveID: state.currentDrive.id,
+                                                driveName:
+                                                    state.currentDrive.name,
+                                              );
+                                            },
+                                            content: _buildItem(
+                                                appLocalizationsOf(context)
+                                                    .detachDrive,
+                                                ArDriveIcons.triangle()),
+                                          ),
+                                      ],
+                                      child: HoverWidget(
+                                        child: ArDriveIcons.kebabMenu(),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -642,7 +648,6 @@ class ArDriveItemListTile extends StatelessWidget {
                       Flexible(
                         child: Text(
                           'Last updated: ${yMMdDateFormatter.format(item.lastUpdated)}',
-                          overflow: TextOverflow.fade,
                           style: ArDriveTypography.body.xSmallRegular(
                             color: ArDriveTheme.of(context)
                                 .themeData
@@ -975,7 +980,6 @@ class ArDriveGridItem extends StatelessWidget {
                           child: Text(
                             item.name,
                             style: ArDriveTypography.body.buttonNormalBold(),
-                            overflow: TextOverflow.fade,
                           ),
                         ),
                         Flexible(
@@ -1008,7 +1012,6 @@ class ArDriveGridItem extends StatelessWidget {
                                       .copyWith(
                                         fontSize: 8,
                                       ),
-                                  overflow: TextOverflow.fade,
                                 ),
                               ),
                             ],

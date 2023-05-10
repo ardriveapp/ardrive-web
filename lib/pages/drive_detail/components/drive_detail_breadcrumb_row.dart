@@ -188,8 +188,6 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           style: ArDriveTypography.body.captionBold(
             color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
           ),
-          overflow: TextOverflow.fade,
-          maxLines: 1,
         ),
       ),
     );
