@@ -110,7 +110,7 @@ const RESOURCES = {
 "assets/packages/flutter_dropzone_web/assets/flutter_dropzone.js": "ba1ea8616ef82d6917b823ecb236a4ea",
 "assets/packages/wakelock_web/assets/no_sleep.js": "7748a45cd593f33280669b29c2c8919a",
 "assets/shaders/ink_sparkle.frag": "83c076d55fdbf5e6f73f29c79926992c",
-"main.dart.js": "f742a9db51db2d56940f57122ebc2554",
+"main.dart.js": "aedb104bd51ba999667be9b648a5f5f1",
 "flutter.js": "f85e6fb278b0fd20c349186fb46ae36d",
 "js/arconnect.js": "fcf3565603d187e5050b091f013c4d45",
 "js/sql-wasm.js": "88a2d15fe24a12bed48ade5c89689065",
