@@ -47,8 +47,8 @@ jobs:
           persist-credentials: false
 
       # Install Flutter
-      - uses: actions/checkout@v2
       - uses: actions/cache@v2
+      - uses: actions/checkout@v2
         with:
           flutter-version: '3.3.9'
           channel: 'stable'
