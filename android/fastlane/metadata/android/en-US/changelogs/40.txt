@@ -1,0 +1,8 @@
+- Refreshed user interface
+- Dark mode
+- Share page now includes image previews
+- Drag n' drop multiple files
+- View transaction on ViewBlock from Details Panel
+- New sidebar
+- Easier file multiselect
+- Usernames no longer needed for login
