@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -8,7 +9,7 @@ part 'fs_entry_activity_state.dart';
 
 class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
   final String driveId;
-  final SelectedItem? maybeSelectedItem;
+  final ArDriveDataTableItem? maybeSelectedItem;
 
   final DriveDao _driveDao;
 
@@ -23,7 +24,7 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
       switch (selectedItem.runtimeType) {
-        case SelectedFolder:
+        case FolderDataTableItem:
           _entrySubscription = _driveDao
               .latestFolderRevisionsByFolderIdWithTransactions(
                 driveId: driveId,
@@ -34,7 +35,7 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
                   FsEntryActivitySuccess<FolderRevisionWithTransaction>(
                       revisions: r)));
           break;
-        case SelectedFile:
+        case FileDataTableItem:
           _entrySubscription = _driveDao
               .latestFileRevisionsByFileIdWithTransactions(
                 driveId: driveId,
@@ -47,15 +48,17 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
           break;
 
         default:
+          _entrySubscription = _driveDao
+              .latestDriveRevisionsByDriveIdWithTransactions(driveId: driveId)
+              .watch()
+              .listen(
+                (r) => emit(
+                  FsEntryActivitySuccess<DriveRevisionWithTransaction>(
+                    revisions: r,
+                  ),
+                ),
+              );
       }
-    } else {
-      _entrySubscription = _driveDao
-          .latestDriveRevisionsByDriveIdWithTransactions(driveId: driveId)
-          .watch()
-          .listen(
-            (r) => emit(FsEntryActivitySuccess<DriveRevisionWithTransaction>(
-                revisions: r)),
-          );
     }
   }
 
