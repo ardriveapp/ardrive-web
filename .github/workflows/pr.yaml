@@ -43,6 +43,9 @@ jobs:
     steps:
       # Checkout
       - uses: actions/cache@v2
+        with:
+          path: ${{ runner.tool_cache }}/flutter
+          key: flutter-3.3.9-stable
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
