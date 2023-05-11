@@ -1,4 +1,4 @@
-import 'package:ardrive/services/services.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -9,6 +9,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'entities.dart';
 
 abstract class Entity {
+  final ArDriveCrypto _crypto;
+
   /// The id of the transaction that represents this entity.
   @JsonKey(ignore: true)
   late String txId;
@@ -25,6 +27,8 @@ abstract class Entity {
   @JsonKey(ignore: true)
   DateTime createdAt = DateTime.now();
 
+  Entity(this._crypto);
+
   /// Returns a [Transaction] with the entity's data along with the appropriate tags.
   ///
   /// If a key is provided, the transaction data is encrypted.
@@ -33,7 +37,7 @@ abstract class Entity {
   }) async {
     final tx = key == null
         ? Transaction.withJsonData(data: this)
-        : await createEncryptedEntityTransaction(this, key);
+        : await _crypto.createEncryptedEntityTransaction(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
 
     addEntityTagsToTransaction(tx);
@@ -53,7 +57,7 @@ abstract class Entity {
   Future<DataItem> asDataItem(SecretKey? key) async {
     final item = key == null
         ? DataItem.withJsonData(data: this)
-        : await createEncryptedEntityDataItem(this, key);
+        : await _crypto.createEncryptedEntityDataItem(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
     addEntityTagsToTransaction(item);
     item.addApplicationTags(

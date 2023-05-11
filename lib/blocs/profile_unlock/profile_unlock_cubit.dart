@@ -6,7 +6,6 @@ import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
-import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -59,7 +58,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   Future<void> verifyPasswordArconnect(String password) async {
     final profile = await _profileDao.defaultProfile().getSingle();
     final privateDrive = await _arweave.getAnyPrivateDriveEntity(
-        profile.id, password, ArConnectWallet());
+        profile.id, password, ArConnectWallet(arconnect));
     if (privateDrive == null) {
       throw ProfilePasswordIncorrectException();
     }
@@ -85,42 +84,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
     if (isEnabled) {
       emit(ProfileUnlockWithBiometrics());
-    }
-  }
-
-  Future<void> unlockWithStoredPassword(
-    BuildContext context, {
-    bool needBiometrics = true,
-  }) async {
-    final KeyValueStore store =
-        SecureKeyValueStore(const FlutterSecureStorage());
-    try {
-      final storedPassword = await store.getString('password');
-
-      if (storedPassword == null) {
-        usePasswordLogin();
-        return;
-      }
-
-      bool authenticated = false;
-
-      if (needBiometrics) {
-        authenticated =
-            // ignore: use_build_context_synchronously
-            await _biometricAuthentication.authenticate(context);
-      }
-
-      if (authenticated || !needBiometrics) {
-        _login(storedPassword);
-      } else {
-        usePasswordLogin();
-      }
-    } catch (e) {
-      if (e is BiometricException) {
-        emit(ProfileUnlockBiometricFailure(e));
-        return;
-      }
-      emit(ProfileUnlockFailure());
     }
   }
 

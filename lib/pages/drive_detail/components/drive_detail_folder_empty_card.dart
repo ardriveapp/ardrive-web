@@ -2,37 +2,86 @@ part of '../drive_detail_page.dart';
 
 class DriveDetailFolderEmptyCard extends StatelessWidget {
   final bool promptToAddFiles;
+  final String driveId;
+  final String parentFolderId;
 
-  const DriveDetailFolderEmptyCard({Key? key, this.promptToAddFiles = false})
-      : super(key: key);
+  const DriveDetailFolderEmptyCard({
+    Key? key,
+    this.promptToAddFiles = false,
+    required this.driveId,
+    required this.parentFolderId,
+  }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => Center(
-        child: SizedBox(
-          width: double.infinity,
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-              child: Row(
-                children: [
-                  const Icon(Icons.folder_open),
-                  const SizedBox(width: 16),
-                  if (promptToAddFiles)
-                    Expanded(
-                      child: Text(
-                        appLocalizationsOf(context).addSomeFiles,
-                        style: Theme.of(context).textTheme.headline6,
-                      ),
-                    )
-                  else
-                    Text(
-                      appLocalizationsOf(context).noFiles,
-                      style: Theme.of(context).textTheme.headline6,
-                    ),
-                ],
+  Widget build(BuildContext context) => buildArDriveCard(context);
+
+  Widget buildArDriveCard(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: ArDriveCard(
+        backgroundColor:
+            ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+        width: double.infinity,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Flexible(
+              child: SizedBox(
+                height: 45,
               ),
             ),
-          ),
+            Text(
+              appLocalizationsOf(context).noFiles,
+              style: ArDriveTypography.headline.headline5Regular(),
+            ),
+            const Flexible(
+              child: SizedBox(
+                height: 45,
+              ),
+            ),
+            if (promptToAddFiles)
+              InkWell(
+                onTap: () {
+                  promptToUpload(
+                    context,
+                    driveId: driveId,
+                    parentFolderId: parentFolderId,
+                    isFolderUpload: false,
+                  );
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ArDriveIcons.upload(size: 45),
+                      const SizedBox(
+                        height: 10,
+                      ),
+                      Text(
+                        appLocalizationsOf(context).uploadYourFirstFile,
+                        style: ArDriveTypography.headline.headline5Regular(),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }

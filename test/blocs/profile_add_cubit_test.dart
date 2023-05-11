@@ -44,6 +44,7 @@ void main() {
         arweave: arweave,
         biometricAuthentication: biometricAuthentication,
         context: MockContext(),
+        crypto: MockArDriveCrypto(),
       );
 
       final walletAddress = await newUserWallet.getAddress();

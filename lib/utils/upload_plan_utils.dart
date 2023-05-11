@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -13,13 +14,15 @@ import 'package:uuid/uuid.dart';
 class UploadPlanUtils {
   UploadPlanUtils({
     required this.arweave,
-    required this.turboService,
+    required this.turboUploadService,
     required this.driveDao,
+    required this.crypto,
   });
 
   final ArweaveService arweave;
-  final TurboService turboService;
+  final UploadService turboUploadService;
   final DriveDao driveDao;
+  final ArDriveCrypto crypto;
   final _uuid = const Uuid();
 
   Future<UploadPlan> filesToUploadPlan({
@@ -58,8 +61,9 @@ class UploadPlanUtils {
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
       fileEntity.id = conflictingFiles[file.getIdentifier()] ?? _uuid.v4();
 
-      final fileKey =
-          private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
+      final fileKey = private
+          ? await crypto.deriveFileKey(driveKey!, fileEntity.id!)
+          : null;
 
       final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
           ? RevisionAction.uploadNewVersion
@@ -75,6 +79,7 @@ class UploadPlanUtils {
           arweave: arweave,
           wallet: wallet,
           revisionAction: revisionAction,
+          crypto: crypto,
         );
       } else {
         fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
@@ -84,6 +89,7 @@ class UploadPlanUtils {
           driveKey: driveKey,
           fileKey: fileKey,
           revisionAction: revisionAction,
+          crypto: crypto,
         );
       }
     }
@@ -104,7 +110,7 @@ class UploadPlanUtils {
       fileV2UploadHandles: fileV2UploadHandles,
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
-      turboService: turboService,
+      turboUploadService: turboUploadService,
     );
   }
 
