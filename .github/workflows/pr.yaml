@@ -38,7 +38,7 @@ jobs:
         run: scr test
 
   web:
-    needs: test
+    # needs: test
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -75,7 +75,7 @@ jobs:
           expires: 14d
 
   ios:
-    needs: test
+    # needs: test
     runs-on: macos-latest
     steps:
       # Checkout
