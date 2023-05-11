@@ -1817,12 +1817,10 @@
   "dontHaveAWallet2Part": "Here!",
   "@dontHaveAWallet2Part": {
     "description": "text to open the url to get a wallet"
-  }
+  },
   "turboAddCreditsBlurb": "Add credits using your card for faster uploads.",
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   }
-
-
 }
 
