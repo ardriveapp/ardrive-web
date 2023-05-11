@@ -15,3 +15,9 @@ class FolderCreateSuccess extends FolderCreateState {}
 class FolderCreateFailure extends FolderCreateState {}
 
 class FolderCreateWalletMismatch extends FolderCreateState {}
+
+class FolderCreateNameAlreadyExists extends FolderCreateState {
+  final String folderName;
+
+  FolderCreateNameAlreadyExists({required this.folderName});
+}

@@ -1,6 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -9,14 +8,11 @@ import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:reactive_forms/reactive_forms.dart';
 
 part 'shared_file_state.dart';
 
 /// [SharedFileCubit] includes logic for displaying a file shared with another user.
 class SharedFileCubit extends Cubit<SharedFileState> {
-  late FormGroup form;
-
   final String fileId;
 
   /// The [SecretKey] that can be used to decode the target file.
@@ -33,33 +29,6 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   })  : _arweave = arweave,
         super(SharedFileLoadInProgress()) {
     loadFileDetails(fileKey);
-    initializeForm();
-  }
-
-  Future<void> initializeForm() async {
-    form = FormGroup(
-      {
-        'fileKey': FormControl<String>(
-          validators: [
-            Validators.required,
-          ],
-          asyncValidatorsDebounceTime: 500,
-          asyncValidators: [_fileKeyValidator],
-        ),
-      },
-    );
-  }
-
-  Future<Map<String, dynamic>?> _fileKeyValidator(
-    AbstractControl<dynamic> fileKeyControl,
-  ) async {
-    try {
-      SecretKey(decodeBase64ToBytes(fileKeyControl.value));
-    } catch (_) {
-      fileKeyControl.markAsTouched();
-      return {AppValidationMessage.sharedFileIncorrectFileKey: true};
-    }
-    return null;
   }
 
   String getPerformedRevisionAction(FileEntity entity,
@@ -133,25 +102,23 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   Future<void> launchPreview(TxID dataTxId) =>
       openUrl(url: '${_arweave.client.api.gatewayUrl}/$dataTxId');
 
-  void submit() async {
-    form.markAllAsTouched();
+  void submit(String fileKeyBase64) async {
+    try {
+      emit(SharedFileLoadInProgress());
 
-    if (form.invalid) {
+      final fileKey = SecretKey(decodeBase64ToBytes(fileKeyBase64));
+      final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+
+      if (file != null) {
+        loadFileDetails(fileKey);
+      }
+
       return;
+    } catch (e) {
+      debugPrint(e.toString());
     }
 
-    emit(SharedFileLoadInProgress());
-    final String? fileKeyBase64 = form.control('fileKey').value;
-    final fileKey = SecretKey(decodeBase64ToBytes(fileKeyBase64!));
-    final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
-
-    if (file != null) {
-      loadFileDetails(fileKey);
-    } else {
-      emit(SharedFileIsPrivate());
-      form
-          .control('fileKey')
-          .setErrors({AppValidationMessage.sharedFileIncorrectFileKey: true});
-    }
+    emit(SharedFileKeyInvalid());
+    emit(SharedFileIsPrivate());
   }
 }
