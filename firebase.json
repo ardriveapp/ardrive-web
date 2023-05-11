@@ -23,15 +23,6 @@
         ]
       },
       {
-        "source": "**/flutter_service_worker.js",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          }
-        ]
-      },
-      {
         "source": "**/ardrive-http.js",
         "headers": [
           {
@@ -41,7 +32,7 @@
         ]
       },
       {
-        "source": "**/worker.js",
+        "source": "**/index.html",
         "headers": [
           {
             "key": "Cache-Control",

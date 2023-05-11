@@ -1,13 +1,13 @@
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
 
-class TurboService {
+class UploadService {
   final bool useTurbo = true;
   final Uri turboUri;
   final int allowedDataItemSize;
   ArDriveHTTP httpClient;
 
-  TurboService({
+  UploadService({
     required this.turboUri,
     required this.allowedDataItemSize,
     required this.httpClient,
@@ -27,7 +27,7 @@ class TurboService {
   }
 }
 
-class DontUseTurbo implements TurboService {
+class DontUseUploadService implements UploadService {
   @override
   int get allowedDataItemSize => throw UnimplementedError();
 

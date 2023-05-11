@@ -24,4 +24,6 @@ class SharedFileLoadSuccess extends SharedFileState {
   List<Object?> get props => [fileRevisions, fileKey];
 }
 
+class SharedFileKeyInvalid extends SharedFileState {}
+
 class SharedFileNotFound extends SharedFileState {}

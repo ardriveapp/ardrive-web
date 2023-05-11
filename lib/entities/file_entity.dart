@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -40,26 +41,30 @@ class FileEntity extends Entity {
     this.lastModifiedDate,
     this.dataTxId,
     this.dataContentType,
-  });
+  }) : super(ArDriveCrypto());
 
-  FileEntity.withUserProvidedDetails(
-      {required this.name, required this.size, required this.lastModifiedDate});
+  FileEntity.withUserProvidedDetails({
+    required this.name,
+    required this.size,
+    required this.lastModifiedDate,
+  }) : super(ArDriveCrypto());
 
   static Future<FileEntity> fromTransaction(
     TransactionCommonMixin transaction,
     Uint8List data, {
     SecretKey? driveKey,
     SecretKey? fileKey,
+    required ArDriveCrypto crypto,
   }) async {
     try {
       Map<String, dynamic>? entityJson;
       if (driveKey == null && fileKey == null) {
         entityJson = json.decode(utf8.decode(data));
       } else {
-        fileKey ??= await deriveFileKey(
+        fileKey ??= await crypto.deriveFileKey(
             driveKey!, transaction.getTag(EntityTag.fileId)!);
 
-        entityJson = await decryptEntityJson(
+        entityJson = await crypto.decryptEntityJson(
           transaction,
           data,
           fileKey,

@@ -36,7 +36,7 @@ class FsEntryMoveSubmit extends FsEntryMoveEvent {
 
 class FsEntryMoveSkipConflicts extends FsEntryMoveEvent {
   final FolderEntry folderInView;
-  final List<SelectedItem> conflictingItems;
+  final List<ArDriveDataTableItem> conflictingItems;
   const FsEntryMoveSkipConflicts({
     required this.folderInView,
     required this.conflictingItems,

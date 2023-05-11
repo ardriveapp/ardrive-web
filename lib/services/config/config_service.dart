@@ -32,6 +32,8 @@ class ConfigService {
       );
     }
 
+    debugPrint('Config: ${_config.toString()}');
+
     return _config!;
   }
 

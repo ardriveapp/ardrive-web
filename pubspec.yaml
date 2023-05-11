@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 1.47.2
+version: 2.0.0
 
 environment:
   sdk: '>=2.18.5 <3.0.0'
@@ -31,19 +31,22 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ar-io/ardrive_http.git
-      ref: v1.1.4
+      ref: v1.2.4
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
       ref: v1.2.0
+  ardrive_ui:
+    git:
+      url: https://github.com/ar-io/ardrive_ui.git
+      ref: v1.1.0
   artemis: ^7.0.0-beta.13
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.5.1
+      ref: v3.6.1
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
-  flutter_portal: ^0.4.0
   file_selector: ^0.9.0
   file_selector_web: ^0.9.0
   file_selector_macos: ^0.9.0
@@ -91,15 +94,25 @@ dependencies:
   local_auth: ^2.1.2
   flutter_secure_storage: ^6.0.0
   async: ^2.9.0
+  animations: ^2.0.7
+  connectivity_plus: ^3.0.3
+  archive: ^3.3.0
+  video_player: ^2.6.0
+  chewie: ^1.4.0
+  lottie: ^2.3.0
+  visibility_detector: ^0.4.0+2
+  logger: ^1.3.0
+  flutter_stripe: ^9.1.1
+  flutter_stripe_web: ^4.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_driver:
     sdk: flutter
-  test: 1.21.4
   bloc_test: ^9.1.0
   build_runner: ^2.0.4
+  test: ^1.21.4
   drift_dev: ^1.0.0
   mocktail: 0.3.0
   json_serializable: ^6.1.4
@@ -113,4 +126,5 @@ flutter:
     - assets/images/
     - assets/images/brand/
     - assets/images/profile/
-
+    - assets/images/login/
+    - assets/animations/

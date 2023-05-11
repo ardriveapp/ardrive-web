@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
     <meta name="description" content="Secure, permanent storage." />
@@ -23,20 +22,32 @@
     <!-- Plausible Web Analytics -->
     <script defer data-domain="app.ardrive.io" src="https://plausible.io/js/plausible.js"></script>
     <!-- End Plausible Web Analytics -->
-</head>
-
-<body>
     <script>
-        if ("serviceWorker" in navigator) {
-            window.addEventListener("load", function () {
-                navigator.serviceWorker.register("flutter_service_worker.js");
-            });
-        }
+      // The value below is injected by flutter build, do not touch.
+      var serviceWorkerVersion = null;
+    </script>
+      <!-- This script adds the flutter initialization JS code -->
+    <script src="flutter.js" defer></script>
+  </head>
+  <body>
+    <script>
+      window.addEventListener('load', function(ev) {
+        // Download main.dart.js
+        _flutter.loader
+          .loadEntrypoint({
+            serviceWorker: {
+              serviceWorkerVersion: serviceWorkerVersion,
+            },
+          })
+          .then(function(engineInitializer) {
+            return engineInitializer.initializeEngine();
+          })
+          .then(function(appRunner) {
+            return appRunner.runApp();
+          });
+      });
     </script>
     <script defer src="js/pst.min.js"></script>
     <script defer src="js/sql-wasm.js"></script>
-    <script src="main.dart.js" type="application/javascript"></script>
-
-</body>
-
+  </body>
 </html>
