@@ -24,8 +24,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   final ArweaveService _arweave;
   final ArDriveDownloader _downloader;
   final DownloadService _downloadService;
-  final Decrypt _decrypt;
   final ARFSRepository _arfsRepository;
+  final ArDriveCrypto _crypto;
 
   ProfileFileDownloadCubit({
     required ARFSFileEntity file,
@@ -33,15 +33,15 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     required ArweaveService arweave,
     required ArDriveDownloader downloader,
     required DownloadService downloadService,
-    required Decrypt decrypt,
     required ARFSRepository arfsRepository,
+    required ArDriveCrypto crypto,
   })  : _driveDao = driveDao,
         _arweave = arweave,
         _file = file,
         _downloader = downloader,
         _downloadService = downloadService,
         _arfsRepository = arfsRepository,
-        _decrypt = decrypt,
+        _crypto = crypto,
         super(FileDownloadStarting());
 
   Future<void> download(SecretKey? cipherKey) async {
@@ -134,7 +134,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       final dataTx = await (_arweave.getTransactionDetails(_file.txId));
 
       if (dataTx != null) {
-        final decryptedData = await _decrypt.decryptTransactionData(
+        final decryptedData = await _crypto.decryptTransactionData(
           dataTx,
           dataBytes,
           fileKey,

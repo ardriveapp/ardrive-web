@@ -9,6 +9,8 @@ class AppConfig {
   final String? defaultTurboUrl;
   final int? allowedDataItemSizeForTurbo;
   final bool enableQuickSyncAuthoring;
+  final bool enableMultipleFileDownload;
+  final bool enableVideoPreview;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -16,13 +18,18 @@ class AppConfig {
     this.defaultTurboUrl,
     this.allowedDataItemSizeForTurbo,
     this.enableQuickSyncAuthoring = false,
+    this.enableMultipleFileDownload = false,
+    this.enableVideoPreview = false,
   });
+
   AppConfig copyWith({
     String? defaultArweaveGatewayUrl,
     bool? useTurbo,
     String? defaultTurboUrl,
     int? allowedDataItemSizeForTurbo,
     bool? enableQuickSyncAuthoring,
+    bool? enableMultipleFileDownload,
+    bool? enableVideoPreview,
   }) {
     return AppConfig(
       defaultArweaveGatewayUrl:
@@ -31,9 +38,17 @@ class AppConfig {
       defaultTurboUrl: defaultTurboUrl ?? this.defaultTurboUrl,
       allowedDataItemSizeForTurbo:
           allowedDataItemSizeForTurbo ?? this.allowedDataItemSizeForTurbo,
+      enableMultipleFileDownload:
+          enableMultipleFileDownload ?? this.enableMultipleFileDownload,
       enableQuickSyncAuthoring:
           enableQuickSyncAuthoring ?? this.enableQuickSyncAuthoring,
+      enableVideoPreview: enableVideoPreview ?? this.enableVideoPreview,
     );
+  }
+
+  @override
+  toString() {
+    return 'AppConfig(defaultArweaveGatewayUrl: $defaultArweaveGatewayUrl, useTurbo: $useTurbo, defaultTurboUrl: $defaultTurboUrl, allowedDataItemSizeForTurbo: $allowedDataItemSizeForTurbo, enableQuickSyncAuthoring: $enableQuickSyncAuthoring, enableMultipleFileDownload: $enableMultipleFileDownload, enableVideoPreview: $enableVideoPreview)';
   }
 
   factory AppConfig.fromJson(Map<String, dynamic> json) =>

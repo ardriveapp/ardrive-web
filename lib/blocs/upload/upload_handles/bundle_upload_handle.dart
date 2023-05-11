@@ -52,7 +52,7 @@ class BundleUploadHandle implements UploadHandle {
 
   Future<void> prepareAndSignBundleTransaction({
     required ArweaveService arweaveService,
-    required TurboService turboService,
+    required UploadService turboUploadService,
     required PstService pstService,
     required Wallet wallet,
     bool isArConnect = false,
@@ -121,10 +121,10 @@ class BundleUploadHandle implements UploadHandle {
   /// Uploads the bundle, emitting an event whenever the progress is updated.
   Stream<double> upload(
     ArweaveService arweave,
-    TurboService turboService,
+    UploadService turboUploadService,
   ) async* {
     if (useTurbo) {
-      await turboService
+      await turboUploadService
           .postDataItem(dataItem: bundleDataItem)
           .onError((error, stackTrace) => hasError = true);
       yield 1;

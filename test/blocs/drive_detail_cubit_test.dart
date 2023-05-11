@@ -45,6 +45,7 @@ void main() {
         profileCubit: profileCubit,
         driveDao: driveDao,
         config: config,
+        auth: MockArDriveAuth(),
       );
     });
 
