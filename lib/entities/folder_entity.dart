@@ -26,6 +26,9 @@ class FolderEntity extends Entity {
   @JsonKey(ignore: true)
   String? customJsonMetaData;
 
+  @JsonKey(ignore: true)
+  Uint8List? metadata;
+
   FolderEntity({
     this.id,
     this.driveId,
@@ -62,6 +65,7 @@ class FolderEntity extends Entity {
           entityJson,
           entityType: EntityType.folder,
         )
+        ..metadata = data
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);

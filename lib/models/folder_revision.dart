@@ -44,6 +44,7 @@ extension FolderEntityExtensions on FolderEntity {
         dateCreated: Value(createdAt),
         action: performedAction,
         customJsonMetaData: Value<String?>(customJsonMetaData),
+        metadata: Value<Uint8List?>(metadata),
       );
 
   /// Returns the action performed on the folder that lead to the new revision.

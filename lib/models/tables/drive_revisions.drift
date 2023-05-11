@@ -17,6 +17,8 @@ CREATE TABLE drive_revisions (
 
     customJsonMetaData TEXT,
 
+    metadata BLOB,
+
     bundledIn TEXT,
 
     PRIMARY KEY (driveId, dateCreated),

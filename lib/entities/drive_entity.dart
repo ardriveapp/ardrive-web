@@ -27,6 +27,9 @@ class DriveEntity extends Entity {
   @JsonKey(ignore: true)
   String? customJsonMetaData;
 
+  @JsonKey(ignore: true)
+  Uint8List? metadata;
+
   DriveEntity({
     this.id,
     this.name,
@@ -65,6 +68,7 @@ class DriveEntity extends Entity {
           entityJson,
           entityType: EntityType.drive,
         )
+        ..metadata = data
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);

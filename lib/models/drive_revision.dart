@@ -46,6 +46,7 @@ extension DriveEntityExtensions on DriveEntity {
         action: performedAction,
         bundledIn: Value(bundledIn),
         customJsonMetaData: Value(customJsonMetaData),
+        metadata: Value(metadata),
       );
 
   /// Returns the action performed on the Drive that lead to the new revision.

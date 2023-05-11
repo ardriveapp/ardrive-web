@@ -36,6 +36,9 @@ class FileEntity extends Entity {
   @JsonKey(ignore: true)
   String? customJsonMetaData;
 
+  @JsonKey(ignore: true)
+  Uint8List? metadata;
+
   FileEntity({
     this.id,
     this.driveId,
@@ -90,6 +93,7 @@ class FileEntity extends Entity {
           entityJson,
           entityType: EntityType.file,
         )
+        ..metadata = data
         ..createdAt = commitTime;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);

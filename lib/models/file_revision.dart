@@ -52,6 +52,7 @@ extension FileEntityExtensions on FileEntity {
         action: performedAction,
         bundledIn: Value(bundledIn),
         customJsonMetaData: Value<String?>(customJsonMetaData),
+        metadata: Value<Uint8List?>(metadata),
       );
 
   FileRevision toRevision({
