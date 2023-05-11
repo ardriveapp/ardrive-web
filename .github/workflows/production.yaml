@@ -62,13 +62,7 @@ jobs:
           scr setup
           flutter config --enable-web
           flutter build web --release
-
-      # JS files cache invalidation
-      - name: main.dart.js and service worker cache invalidation
-        run: |
-          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
-          sed -i 's/flutter_service_worker.js/flutter_service_worker.js?version='"$GITHUB_SHA"'/' build/web/index.html
-
+          
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
