@@ -1,0 +1,8 @@
+- New User Interface
+- Dark mode
+- Login is simpler now
+- Share page now includes image previews
+- Drag n' drop multiple files
+- View transaction on ViewBlock from Details Panel
+- New sidebar
+- Easier file multiselect
