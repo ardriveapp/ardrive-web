@@ -28,7 +28,8 @@ class SnapshotItemToBeCreated {
   int get dataStart => _dataStart ?? -1;
   int get dataEnd => _dataEnd ?? -1;
 
-  final Future<Uint8List> Function(TxID txId) _jsonMetadataOfTxId;
+  final Future<Uint8List> Function(TxID txId, String entityType)
+      _jsonMetadataOfTxId;
 
   SnapshotItemToBeCreated({
     required this.blockStart,
@@ -36,7 +37,8 @@ class SnapshotItemToBeCreated {
     required this.driveId,
     required this.subRanges,
     required this.source,
-    required Future<Uint8List> Function(TxID txId) jsonMetadataOfTxId,
+    required Future<Uint8List> Function(TxID txId, String entityType)
+        jsonMetadataOfTxId,
   }) : _jsonMetadataOfTxId = jsonMetadataOfTxId;
 
   Stream<Uint8List> getSnapshotData() async* {
@@ -52,8 +54,10 @@ class SnapshotItemToBeCreated {
 
         return TxSnapshot(
           gqlNode: node,
-          jsonMetadata:
-              _isSnapshotTx(node) ? null : await _jsonMetadataOfTxId(node.id),
+          jsonMetadata: await _jsonMetadataOfTxId(
+            node.id,
+            _entityTypeFromGQLNode(node),
+          ),
         );
       },
     );
@@ -64,11 +68,10 @@ class SnapshotItemToBeCreated {
     yield* snapshotDataStream;
   }
 
-  bool _isSnapshotTx(DriveHistoryTransaction node) {
+  String _entityTypeFromGQLNode(DriveHistoryTransaction node) {
     final tags = node.tags;
     final entityTypeTags =
-        tags.where((tag) => tag.name == EntityTag.entityType);
-
-    return entityTypeTags.any((tag) => tag.value == EntityType.snapshot);
+        tags.firstWhere((tag) => tag.name == EntityTag.entityType);
+    return entityTypeTags.value;
   }
 }

@@ -47,11 +47,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late Range _range;
   late int _currentHeight;
   late Transaction _preparedTx;
-  late Map<String, Uint8List> _cachedMetadata;
+  // late Map<String, Uint8List> _cachedCustomJsonMetadata;
 
   bool _wasSnapshotDataComputingCanceled = false;
 
-  StreamSubscription? _maybeFetchingCustomMetadataSubscription;
+  // StreamSubscription? _maybeFetchingCustomMetadataSubscription;
 
   SnapshotItemToBeCreated? _itemToBeCreated;
   SnapshotEntity? _snapshotEntity;
@@ -98,35 +98,83 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
       emit(FetchingCustomMetadata());
 
-      // Streamify the future so we cancel it later
-      final fetchingCustomMetadataFuture = fetchMissingCustomMetadata();
-      final fetchingCustomMetadataStream =
-          fetchingCustomMetadataFuture.asStream();
-      final completer = Completer<void>();
-      // This is the class-scoped subscription to be later cancelled
-      _maybeFetchingCustomMetadataSubscription =
-          fetchingCustomMetadataStream.listen(
-        (_) {
-          logger.i('Finished fetching missing custom metadata');
-          completer.complete();
-        },
-        onError: (e) {
-          logger.e('Error fetching missing custom metadata: $e');
-          completer.completeError(e);
-        },
-        cancelOnError: true,
-      );
-      await completer.future;
+      // await fetchMissingCustomMetadata();
+      await fetchMissingMetadata();
 
-      _cachedMetadata = await _driveDao.getCachedMetadataForDrive(driveId);
+      // _cachedCustomJsonMetadata =
+      //     await _driveDao.getCachedMetadataForDrive(driveId);
     } else {
-      _cachedMetadata = {};
+      // _cachedCustomJsonMetadata = {};
       logger.i('Drive is private, cache won\'t be used for snapshot creation');
     }
 
     await computeSnapshotData();
 
-    _cachedMetadata = {};
+    // _cachedCustomJsonMetadata = {};
+  }
+
+  Future<void> fetchMissingMetadata() async {
+    logger.i('Fetching missing metadata');
+    await _fetchMissingMetadataForDrive();
+    await _fetchMissingMetadataForFolder();
+    await _fetchMissingMetadataForFile();
+    logger.i('Finished fetching missing metadata');
+  }
+
+  Future<void> _fetchMissingMetadataForDrive() async {
+    final driveRevisions =
+        await _driveDao.revisionsForDrivesWithNoMetadata(_driveId);
+    final revisionsInBatches = batchify(driveRevisions, 100);
+    logger.d('There are ${driveRevisions.length} drives with no metadata');
+
+    for (final batch in revisionsInBatches) {
+      final futuresBatch = batch.map((driveRevision) async {
+        final txId = driveRevision.metadataTxId;
+        final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+        await _driveDao.updateMetadataForDrive(_driveId, txId, metadata);
+      });
+      await Future.wait(futuresBatch);
+    }
+  }
+
+  Future<void> _fetchMissingMetadataForFolder() async {
+    final folderRevisions =
+        await _driveDao.revisionsForFoldersWithNoMetadata(_driveId);
+    final revisionsInBatches = batchify(folderRevisions, 100);
+    logger.d('There are ${folderRevisions.length} folders with no metadata');
+
+    for (final batch in revisionsInBatches) {
+      final futuresBatch = batch.map((folderRevision) async {
+        final txId = folderRevision.metadataTxId;
+        final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+        await _driveDao.updateMetadataForFolder(
+          _driveId,
+          txId,
+          metadata,
+        );
+      });
+      await Future.wait(futuresBatch);
+    }
+  }
+
+  Future<void> _fetchMissingMetadataForFile() async {
+    final fileRevisions =
+        await _driveDao.revisionsForFilesWithNoMetadata(_driveId);
+    final revisionsInBatches = batchify(fileRevisions, 100);
+    logger.d('There are ${fileRevisions.length} files with no metadata');
+
+    for (final batch in revisionsInBatches) {
+      final futuresBatch = batch.map((fileRevision) async {
+        final txId = fileRevision.metadataTxId;
+        final metadata = await _arweave.dataFromTxId(txId, _maybeDriveKey);
+        await _driveDao.updateMetadataForFile(
+          _driveId,
+          txId,
+          metadata,
+        );
+      });
+      await Future.wait(futuresBatch);
+    }
   }
 
   Future<void> fetchMissingCustomMetadata() async {
@@ -134,16 +182,16 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     /// - Cancel it on demand
     /// - Show progress bar in the modal
 
-    logger.i('Fetching missing custom metadata');
+    logger.i('Fetching missing custom json metadata');
     await _fetchMissingCustomMetadataForDrive();
     await _fetchMissingCustomMetadataForFolder();
     await _fetchMissingCustomMetadataForFile();
-    logger.i('Finished fetching missing custom metadata');
+    logger.i('Finished fetching missing custom json metadata');
   }
 
   Future<void> _fetchMissingCustomMetadataForDrive() async {
     final driveRevisions =
-        await _driveDao.revisionsForDrivesWithNoMetadata(_driveId);
+        await _driveDao.revisionsForDrivesWithNoCustomJsonMetadata(_driveId);
     final revisionsInBatches = batchify(driveRevisions, 100);
     logger.d('There are ${driveRevisions.length} drives with no metadata');
 
@@ -170,7 +218,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> _fetchMissingCustomMetadataForFolder() async {
     final folderRevisions =
-        await _driveDao.revisionsForFoldersWithNoMetadata(_driveId);
+        await _driveDao.revisionsForFoldersWithNoCustomJsonMetadata(_driveId);
     final revisionsInBatches = batchify(folderRevisions, 100);
     logger.d('There are ${folderRevisions.length} folders with no metadata');
 
@@ -197,7 +245,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> _fetchMissingCustomMetadataForFile() async {
     final fileRevisions =
-        await _driveDao.revisionsForFilesWithNoMetadata(_driveId);
+        await _driveDao.revisionsForFilesWithNoCustomJsonMetadata(_driveId);
     final revisionsInBatches = batchify(fileRevisions, 100);
     logger.d('There are ${fileRevisions.length} files with no metadata');
 
@@ -509,13 +557,52 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     ));
   }
 
-  Future<Uint8List> _jsonMetadataOfTxId(String txId) async {
+  Future<Uint8List> _jsonMetadataOfTxId(String txId, String entityType) async {
+    if (entityType == EntityType.snapshot) {
+      return Uint8List(0);
+    }
+
     final drive =
         await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
     final isPrivate = drive != null && drive.privacy != DrivePrivacy.public;
 
+    Uint8List? maybeCachedMetadata;
+
+    switch (entityType) {
+      case (EntityType.drive):
+        maybeCachedMetadata = await _driveDao
+            .metadataOfDriveRevision(
+              driveId: _driveId,
+              metadataTxId: txId,
+            )
+            .getSingleOrNull();
+        break;
+      case (EntityType.folder):
+        maybeCachedMetadata = await _driveDao
+            .metadataOfFolderRevision(
+              driveId: _driveId,
+              metadataTxId: txId,
+            )
+            .getSingleOrNull();
+        break;
+      case (EntityType.file):
+        maybeCachedMetadata = await _driveDao
+            .metadataOfFileRevision(
+              driveId: _driveId,
+              metadataTxId: txId,
+            )
+            .getSingleOrNull();
+        break;
+      default:
+        throw Exception('Unknown entity type: $entityType');
+    }
+
+    if (maybeCachedMetadata != null) {
+      logger.i('Using cached metadata for $txId');
+    }
+
     // gather from arweave if not cached
-    final Uint8List entityJsonData = _cachedMetadata.remove(txId) ??
+    final Uint8List entityJsonData = maybeCachedMetadata ??
         await _arweave.dataFromTxId(
           txId,
           null, // key is null because we don't re-encrypt the snapshot data
@@ -557,7 +644,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     logger.i('User cancelled the snapshot creation');
 
     _wasSnapshotDataComputingCanceled = true;
-    await _maybeFetchingCustomMetadataSubscription?.cancel();
+    // await _maybeFetchingCustomMetadataSubscription?.cancel();
   }
 }
 

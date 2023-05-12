@@ -19,7 +19,7 @@ void main() {
           blockEnd: 10,
           subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
           source: const Stream.empty(),
-          jsonMetadataOfTxId: (txId) async => Uint8List.fromList(
+          jsonMetadataOfTxId: (txId, _) async => Uint8List.fromList(
             utf8.encode('{"name":"$txId"}'),
           ),
         );
@@ -40,7 +40,7 @@ void main() {
           blockEnd: 10,
           subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
           source: fakeNodesStream(Range(start: 8, end: 8)),
-          jsonMetadataOfTxId: (txId) async => Uint8List.fromList(
+          jsonMetadataOfTxId: (txId, _) async => Uint8List.fromList(
             utf8.encode('{"name":"$txId"}'),
           ),
         );
@@ -84,7 +84,7 @@ void main() {
               ),
             ],
           ),
-          jsonMetadataOfTxId: (txId) async => Uint8List.fromList(
+          jsonMetadataOfTxId: (txId, _) async => Uint8List.fromList(
             utf8.encode('{"name":"tx-$txId"}'),
           ),
         );

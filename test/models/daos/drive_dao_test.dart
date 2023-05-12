@@ -262,7 +262,8 @@ void main() {
       test(
         'revisionsForDrivesWithNoMetadata returns correct revisions',
         () async {
-          final revisions = await driveDao.revisionsForDrivesWithNoMetadata(
+          final revisions =
+              await driveDao.revisionsForDrivesWithNoCustomJsonMetadata(
             driveId,
           );
 
@@ -273,7 +274,8 @@ void main() {
       test(
         'revisionsForDrivesWithNoMetadata returns correct revisions',
         () async {
-          final revisions = await driveDao.revisionsForFoldersWithNoMetadata(
+          final revisions =
+              await driveDao.revisionsForFoldersWithNoCustomJsonMetadata(
             driveId,
           );
 
@@ -284,7 +286,8 @@ void main() {
       test(
         'revisionsForDrivesWithNoMetadata returns correct revisions',
         () async {
-          final revisions = await driveDao.revisionsForFilesWithNoMetadata(
+          final revisions =
+              await driveDao.revisionsForFilesWithNoCustomJsonMetadata(
             driveId,
           );
 

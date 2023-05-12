@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/models/daos/drive_dao/metadata_of_entity_revision.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
@@ -476,7 +475,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
-  Future<List<DriveRevision>> revisionsForDrivesWithNoMetadata(
+  Future<List<DriveRevision>> revisionsForDrivesWithNoCustomJsonMetadata(
     String driveId,
   ) async {
     final driveRevisionsWithNoMetadata =
@@ -487,7 +486,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return driveTxIds;
   }
 
-  Future<List<FolderRevision>> revisionsForFoldersWithNoMetadata(
+  Future<List<FolderRevision>> revisionsForFoldersWithNoCustomJsonMetadata(
     String driveId,
   ) async {
     final folderRevisionsWithNoMetadata =
@@ -498,7 +497,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return folderTxIds;
   }
 
-  Future<List<FileRevision>> revisionsForFilesWithNoMetadata(
+  Future<List<FileRevision>> revisionsForFilesWithNoCustomJsonMetadata(
     String driveId,
   ) async {
     final fileRevisionsWithNoMetadata =
@@ -572,34 +571,130 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
-  Future<Map<String, Uint8List>> getCachedMetadataForDrive(
+  Future<List<DriveRevision>> revisionsForDrivesWithNoMetadata(
     String driveId,
   ) async {
-    final driveRevisions =
-        await allDriveRevisionsByDriveId(driveId: driveId).get();
-    final folderRevisions =
-        await allFolderRevisionsByDriveId(driveId: driveId).get();
-    final fileRevisions =
-        await allFileRevisionsByDriveId(driveId: driveId).get();
-
-    final allRevisions = [
-      ...driveRevisions,
-      ...folderRevisions,
-      ...fileRevisions,
-    ];
-
-    final metadatas = <String, Uint8List>{};
-
-    for (final revision in allRevisions) {
-      final response = metadataOfEntityRevision(revision);
-
-      if (response != null) {
-        final metadataTxId = response.metadataTxId;
-        final metadata = response.metadata;
-        metadatas[metadataTxId] = metadata;
-      }
-    }
-
-    return metadatas;
+    final driveRevisionsWithNoMetadata =
+        await driveRevisionsWithMissingCustomJsonMetaData(
+      driveId: driveId,
+    ).get();
+    final driveTxIds = driveRevisionsWithNoMetadata.toList();
+    return driveTxIds;
   }
+
+  Future<List<FolderRevision>> revisionsForFoldersWithNoMetadata(
+    String driveId,
+  ) async {
+    final folderRevisionsWithNoMetadata =
+        await folderRevisionsWithMissingCustomJsonMetaData(
+      driveId: driveId,
+    ).get();
+    final folderTxIds = folderRevisionsWithNoMetadata.toList();
+    return folderTxIds;
+  }
+
+  Future<List<FileRevision>> revisionsForFilesWithNoMetadata(
+    String driveId,
+  ) async {
+    final fileRevisionsWithNoMetadata =
+        await fileRevisionsWithMissingCustomJsonMetaData(
+      driveId: driveId,
+    ).get();
+    final fileTxIds = fileRevisionsWithNoMetadata.toList();
+    return fileTxIds;
+  }
+
+  Future<void> updateMetadataForDrive(
+    String driveId,
+    String metadataTxId,
+    Uint8List metadata,
+  ) async {
+    await db.transaction(() async {
+      final select = driveRevisions.select()
+        ..where(
+          (r) => r.metadataTxId.equals(metadataTxId),
+        );
+      final revision = await select.getSingle();
+
+      await update(driveRevisions)
+          .replace(revision.copyWith(metadata: metadata));
+
+      logger.d(
+        'Writting metadata of drive metadata TX: $metadataTxId (DriveID: $driveId)',
+      );
+    });
+  }
+
+  Future<void> updateMetadataForFolder(
+    String driveId,
+    String metadataTxId,
+    Uint8List metadata,
+  ) async {
+    await db.transaction(() async {
+      final select = folderRevisions.select()
+        ..where(
+          (r) => r.metadataTxId.equals(metadataTxId),
+        );
+      final revision = await select.getSingle();
+
+      await update(folderRevisions)
+          .replace(revision.copyWith(metadata: metadata));
+
+      logger.d(
+        'Writting metadata of folder metadata TX: $metadataTxId (DriveID: $driveId)',
+      );
+    });
+  }
+
+  Future<void> updateMetadataForFile(
+    String driveId,
+    String metadataTxId,
+    Uint8List metadata,
+  ) async {
+    await db.transaction(() async {
+      final select = fileRevisions.select()
+        ..where(
+          (r) => r.metadataTxId.equals(metadataTxId),
+        );
+      final revision = await select.getSingle();
+
+      await update(fileRevisions)
+          .replace(revision.copyWith(metadata: metadata));
+
+      logger.d(
+        'Writting metadata of file metadata TX: $metadataTxId (DriveID: $driveId)',
+      );
+    });
+  }
+
+  // Future<Map<String, Uint8List>> getCachedMetadataForDrive(
+  //   String driveId,
+  // ) async {
+  //   final driveRevisions =
+  //       await allDriveRevisionsByDriveId(driveId: driveId).get();
+  //   final folderRevisions =
+  //       await allFolderRevisionsByDriveId(driveId: driveId).get();
+  //   final fileRevisions =
+  //       await allFileRevisionsByDriveId(driveId: driveId).get();
+
+  //   final allRevisions = [
+  //     ...driveRevisions,
+  //     ...folderRevisions,
+  //     ...fileRevisions,
+  //   ];
+
+  //   final metadatas = <String, Uint8List>{};
+
+  //   for (final revision in allRevisions) {
+  //     final response = metadataOfEntityRevision(revision);
+
+  //     if (response != null) {
+  //       final metadataTxId = response.metadataTxId;
+  //       final metadata = response.metadata;
+  //       metadatas[metadataTxId] = metadata;
+  //     }
+  //   }
+
+  //   return metadatas;
+  // }
 }

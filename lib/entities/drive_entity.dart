@@ -20,18 +20,16 @@ class DriveEntity extends Entity {
   String? privacy;
   @JsonKey(ignore: true)
   String? authMode;
+  @JsonKey(ignore: true)
+  String? customJsonMetaData;
+  @JsonKey(ignore: true)
+  Uint8List? metadata;
 
   String? name;
   String? rootFolderId;
 
-  @JsonKey(ignore: true)
-  String? customJsonMetaData;
-
-  @JsonKey(ignore: true)
-  Uint8List? metadata;
-
   DriveEntity({
-    this.id,
+    String? id,
     this.name,
     this.rootFolderId,
     this.customJsonMetaData,
@@ -48,16 +46,12 @@ class DriveEntity extends Entity {
     try {
       final drivePrivacy =
           transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public;
+      Map<String, dynamic>? entityJson =
+          await parseJsonMetadata(data, transaction, driveKey, crypto);
+      // Uint8List entityJsonAsBlob =
+      //     Uint8List.fromList(utf8.encode(json.encode(entityJson)));
 
-      Map<String, dynamic>? entityJson;
-      if (drivePrivacy == DrivePrivacy.public) {
-        entityJson = json.decode(utf8.decode(data));
-      } else if (drivePrivacy == DrivePrivacy.private) {
-        entityJson =
-            await crypto.decryptEntityJson(transaction, data, driveKey!);
-      }
-
-      return DriveEntity.fromJson(entityJson!)
+      return DriveEntity.fromJson(entityJson)
         ..id = transaction.getTag(EntityTag.driveId)
         ..privacy = drivePrivacy
         ..authMode = transaction.getTag(EntityTag.driveAuthMode)
@@ -73,6 +67,25 @@ class DriveEntity extends Entity {
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
+  }
+
+  static Future<Map<String, dynamic>> parseJsonMetadata(
+    Uint8List data,
+    TransactionCommonMixin transaction,
+    SecretKey? driveKey,
+    ArDriveCrypto crypto,
+  ) async {
+    final drivePrivacy =
+        transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public;
+
+    Map<String, dynamic>? entityJson;
+    if (drivePrivacy == DrivePrivacy.public) {
+      entityJson = json.decode(utf8.decode(data));
+    } else if (drivePrivacy == DrivePrivacy.private) {
+      entityJson = await crypto.decryptEntityJson(transaction, data, driveKey!);
+    }
+
+    return entityJson!;
   }
 
   @override

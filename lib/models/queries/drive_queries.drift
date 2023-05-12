@@ -30,6 +30,12 @@ latestDriveRevisionsByDriveIdWithTransactions AS DriveRevisionWithTransaction:
 driveRevisionsWithMissingCustomJsonMetaData:
     SELECT rev.* FROM drive_revisions rev
     WHERE rev.driveId = :driveId AND rev.customJsonMetaData IS NULL;
+driveRevisionsWithMissingMetadata:
+    SELECT rev.* FROM drive_revisions rev
+    WHERE rev.driveId = :driveId AND rev.metadata IS NULL;
+metadataOfDriveRevision:
+    SELECT metadata FROM drive_revisions
+    WHERE driveId = :driveId AND metadataTxId = :metadataTxId;
 
 allDriveRevisionsByDriveId:
     SELECT * FROM drive_revisions
@@ -85,6 +91,13 @@ latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction
 folderRevisionsWithMissingCustomJsonMetaData:
     SELECT rev.* FROM folder_revisions rev
     WHERE rev.driveId = :driveId AND rev.customJsonMetaData IS NULL;
+
+folderRevisionsWithMissingMetadata:
+    SELECT rev.* FROM folder_revisions rev
+    WHERE rev.driveId = :driveId AND rev.metadata IS NULL;
+metadataOfFolderRevision:
+    SELECT metadata FROM folder_revisions
+    WHERE driveId = :driveId AND metadataTxId = :metadataTxId;
 
 allFolderRevisionsByDriveId:
     SELECT * FROM folder_revisions
@@ -183,6 +196,12 @@ latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
 fileRevisionsWithMissingCustomJsonMetaData:
     SELECT rev.* FROM file_revisions rev
     WHERE rev.driveId = :driveId AND rev.customJsonMetaData IS NULL;
+fileRevisionsWithMissingMetadata:
+    SELECT rev.* FROM file_revisions rev
+    WHERE rev.driveId = :driveId AND rev.metadata IS NULL;
+metadataOfFileRevision:
+    SELECT metadata FROM file_revisions
+    WHERE driveId = :driveId AND metadataTxId = :metadataTxId;
 
 allFileRevisionsByDriveId:
     SELECT * FROM file_revisions
