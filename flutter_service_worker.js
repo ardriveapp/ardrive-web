@@ -114,8 +114,8 @@ const RESOURCES = {
 "assets/packages/ardrive_ui/assets/icons/check_success.svg": "7c011c470ec1d88b47cc3262af487a13",
 "assets/FontManifest.json": "47c5a2ad41c55e4d13a1785a4cef8b19",
 "assets/AssetManifest.json": "c595bc176b6ba7ef9678289c5cf4bf79",
-"index.html": "05c92b88cd547be2b984d41d44e32827",
-"/": "05c92b88cd547be2b984d41d44e32827",
+"index.html": "28d88f4b42ea99c115c9df5ee32e0636",
+"/": "28d88f4b42ea99c115c9df5ee32e0636",
 "worker.js": "f916974921b8b3d98f9fdfc4b68e5432",
 "sqlite3.wasm": "fbf9815a14460df0b4ee8b746ae9b95b",
 "ardrive-http.js": "05d11927ecfedd703605ce2bb6bd79fb",
@@ -126,9 +126,9 @@ const RESOURCES = {
 "sql-wasm.wasm": "8b3b3fe7c9c611db53b9e43661bf38dd",
 "js/is_document_focused.js": "50c9b2315780823c9234b1115a50d564",
 "js/pst.min.js": "353b22b2121953178e78dfe6bce00b6d",
-"js/arconnect.js": "fcf3565603d187e5050b091f013c4d45",
+"js/arconnect.js": "319aaf4ece35e24861e488a1e292c5d7",
 "js/sql-wasm.js": "88a2d15fe24a12bed48ade5c89689065",
-"main.dart.js": "869d1e4a3693d1e847478a3605a5ebfe",
+"main.dart.js": "f6c69a9c84002023a848f460194cec71",
 "manifest.json": "a610c0950a2012e01119d0e8a57e3585"
 };
 
