@@ -17,10 +17,13 @@ class TabVisibilitySingleton {
 
   bool isTabVisible() => implementation.isTabVisible();
 
-  Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async =>
+  void onTabGetsVisible(Function onFocus) =>
+      implementation.onTabGetsVisible(onFocus);
+
+  Future<void> onTabGetsFocusedFuture(Future Function() onFocus) =>
       implementation.onTabGetsFocusedFuture(onFocus);
 
-  void onTabGetsFocused(Function onFocus) =>
+  StreamSubscription onTabGetsFocused(Function onFocus) =>
       implementation.onTabGetsFocused(onFocus);
 
   Future<void> closeVisibilityChangeStream() =>

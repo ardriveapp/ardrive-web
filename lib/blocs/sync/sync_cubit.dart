@@ -59,6 +59,8 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
 
+  StreamSubscription? _restartOnFocusStreamSubscription;
+  StreamSubscription? _restartArConnectOnFocusStreamSubscription;
   StreamSubscription? _syncSub;
   StreamSubscription? _arconnectSyncSub;
   final StreamController<SyncProgress> syncProgressController =
@@ -107,7 +109,8 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    _tabVisibility.onTabGetsFocused(_restartSync);
+    _restartOnFocusStreamSubscription =
+        _tabVisibility.onTabGetsFocused(_restartSync);
   }
 
   void _restartSync() {
@@ -162,9 +165,13 @@ class SyncCubit extends Cubit<SyncState> {
 
   void restartArConnectSyncOnFocus() async {
     if (await _profileCubit.isCurrentProfileArConnect()) {
-      _tabVisibility.onTabGetsFocused(() {
-        Future.delayed(const Duration(seconds: 2))
-            .then((value) => createArConnectSyncStream());
+      _restartArConnectOnFocusStreamSubscription =
+          _tabVisibility.onTabGetsFocused(() {
+        Future.delayed(
+          const Duration(seconds: 2),
+        ).then(
+          (value) => createArConnectSyncStream(),
+        );
       });
     }
   }
@@ -395,7 +402,14 @@ class SyncCubit extends Cubit<SyncState> {
     logSync('Closing SyncCubit...');
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
-    await _tabVisibility.closeVisibilityChangeStream();
+    await _restartOnFocusStreamSubscription?.cancel();
+    await _restartArConnectOnFocusStreamSubscription?.cancel();
+
+    _syncSub = null;
+    _arconnectSyncSub = null;
+    _restartOnFocusStreamSubscription = null;
+    _restartArConnectOnFocusStreamSubscription = null;
+
     await super.close();
   }
 }
