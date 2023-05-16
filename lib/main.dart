@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
 import 'package:ardrive/pst/community_oracle.dart';
 import 'package:ardrive/pst/contract_oracle.dart';
@@ -12,12 +15,19 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/theme/theme_switcher_bloc.dart';
+import 'package:ardrive/theme/theme_switcher_state.dart';
+import 'package:ardrive/user/repositories/user_preferences_repository.dart';
+import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -29,6 +39,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'blocs/blocs.dart';
@@ -41,8 +52,12 @@ import 'theme/theme.dart';
 late ConfigService _configService;
 late AppConfig _config;
 late ArweaveService _arweave;
-late TurboService _turbo;
+late UploadService _turboUpload;
+late PaymentService _turboPayment;
 void main() async {
+  Stripe.publishableKey =
+      'pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z';
+
   WidgetsFlutterBinding.ensureInitialized();
 
   _configService = ConfigService(appFlavors: AppFlavors());
@@ -81,15 +96,21 @@ Future<void> _initialize() async {
     Arweave(
       gatewayUrl: Uri.parse(_config.defaultArweaveGatewayUrl!),
     ),
+    ArDriveCrypto(),
   );
-
-  _turbo = _config.useTurbo
-      ? TurboService(
+  _turboUpload = _config.useTurbo
+      ? UploadService(
           turboUri: Uri.parse(_config.defaultTurboUrl!),
           allowedDataItemSize: _config.allowedDataItemSizeForTurbo!,
           httpClient: ArDriveHTTP(),
         )
-      : DontUseTurbo();
+      : DontUseUploadService();
+
+  _turboPayment = _config.useTurbo
+      ? PaymentService(
+          httpClient: ArDriveHTTP(),
+        )
+      : DontUsePaymentService();
 
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
@@ -137,97 +158,164 @@ class AppState extends State<App> {
   final _routeInformationParser = AppRouteInformationParser();
 
   @override
-  Widget build(BuildContext context) => MultiRepositoryProvider(
-        providers: [
-          RepositoryProvider<ArweaveService>(create: (_) => _arweave),
-          // repository provider for UploadFileChecker
-          RepositoryProvider<UploadFileChecker>(
-            create: (_) => UploadFileChecker(
-              privateFileSafeSizeLimit:
-                  kIsWeb ? privateFileSizeLimit : mobilePrivateFileSizeLimit,
-              publicFileSafeSizeLimit: publicFileSafeSizeLimit,
-            ),
+  void initState() {
+    super.initState();
+    preCacheLoginAssets(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        // repository provider for UploadFileChecker
+        RepositoryProvider<UploadFileChecker>(
+          create: (_) => UploadFileChecker(
+            privateFileSafeSizeLimit:
+                kIsWeb ? privateFileSizeLimit : mobilePrivateFileSizeLimit,
+            publicFileSafeSizeLimit: publicFileSafeSizeLimit,
           ),
-          RepositoryProvider<ArweaveService>(create: (_) => _arweave),
-          RepositoryProvider<TurboService>(
-            create: (_) => _turbo,
-          ),
-          RepositoryProvider<PstService>(
-            create: (_) => PstService(
-              communityOracle: CommunityOracle(
-                ArDriveContractOracle([
-                  ContractOracle(VertoContractReader()),
-                  ContractOracle(RedstoneContractReader()),
-                  ContractOracle(SmartweaveContractReader()),
-                ]),
-              ),
-            ),
-          ),
-          RepositoryProvider<BiometricAuthentication>(
-            create: (_) => BiometricAuthentication(
-              LocalAuthentication(),
-              SecureKeyValueStore(
-                const FlutterSecureStorage(),
-              ),
-            ),
-          ),
-          RepositoryProvider<AppConfig>(create: (_) => _config),
-          RepositoryProvider<Database>(create: (_) => Database()),
-          RepositoryProvider<ProfileDao>(
-              create: (context) => context.read<Database>().profileDao),
-          RepositoryProvider<DriveDao>(
-              create: (context) => context.read<Database>().driveDao),
-        ],
-        child: KeyboardHandler(
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (context) => ProfileCubit(
-                  arweave: context.read<ArweaveService>(),
-                  turboService: context.read<TurboService>(),
-                  profileDao: context.read<ProfileDao>(),
-                  db: context.read<Database>(),
-                ),
-              ),
-              BlocProvider(
-                create: (context) => ActivityCubit(),
-              ),
-              BlocProvider(
-                create: (context) =>
-                    FeedbackSurveyCubit(FeedbackSurveyInitialState()),
-              ),
-            ],
-            child: MaterialApp.router(
-              title: 'ArDrive',
-              theme: appTheme(),
-              debugShowCheckedModeBanner: false,
-              routeInformationParser: _routeInformationParser,
-              routerDelegate: _routerDelegate,
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-              ],
-              supportedLocales: const [
-                Locale('en', ''), // English, no country code
-                Locale('es', ''), // Spanish, no country code
-                Locale.fromSubtags(languageCode: 'zh'), // generic Chinese 'zh'
-                Locale.fromSubtags(
-                  languageCode: 'zh',
-                  countryCode: 'HK',
-                ), // Traditional Chinese, Cantonese
-                Locale('ja', ''), // Japanese, no country code
-                Locale('hi', ''), // Hindi, no country code
-              ],
-              builder: (context, child) => ListTileTheme(
-                textColor: kOnSurfaceBodyTextColor,
-                iconColor: kOnSurfaceBodyTextColor,
-                child: Portal(
-                  child: child!,
-                ),
-              ),
+        ),
+        RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        RepositoryProvider<UploadService>(
+          create: (_) => _turboUpload,
+        ),
+        RepositoryProvider<PaymentService>(
+          create: (_) => _turboPayment,
+        ),
+        RepositoryProvider<PstService>(
+          create: (_) => PstService(
+            communityOracle: CommunityOracle(
+              ArDriveContractOracle([
+                ContractOracle(VertoContractReader()),
+                ContractOracle(RedstoneContractReader()),
+                ContractOracle(SmartweaveContractReader()),
+              ]),
             ),
           ),
         ),
-      );
+        RepositoryProvider<BiometricAuthentication>(
+          create: (_) => BiometricAuthentication(
+            LocalAuthentication(),
+            SecureKeyValueStore(
+              const FlutterSecureStorage(),
+            ),
+          ),
+        ),
+        RepositoryProvider<AppConfig>(create: (_) => _config),
+        RepositoryProvider<Database>(create: (_) => Database()),
+        RepositoryProvider<ProfileDao>(
+            create: (context) => context.read<Database>().profileDao),
+        RepositoryProvider<DriveDao>(
+            create: (context) => context.read<Database>().driveDao),
+        RepositoryProvider<UserRepository>(
+          create: (context) => UserRepository(
+            context.read<ProfileDao>(),
+            context.read<ArweaveService>(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (context) => ArDriveAuth(
+            databaseHelpers: DatabaseHelpers(
+              context.read<Database>(),
+            ),
+            arConnectService: ArConnectService(),
+            biometricAuthentication: context.read<BiometricAuthentication>(),
+            secureKeyValueStore: SecureKeyValueStore(
+              const FlutterSecureStorage(),
+            ),
+            crypto: ArDriveCrypto(),
+            arweave: _arweave,
+            userRepository: context.read<UserRepository>(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (_) => UserPreferencesRepository(
+            themeDetector: ThemeDetector(),
+          ),
+        ),
+      ],
+      child: KeyboardHandler(
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => ThemeSwitcherBloc(
+                userPreferencesRepository:
+                    context.read<UserPreferencesRepository>(),
+              )..add(LoadTheme()),
+            ),
+            BlocProvider(
+              create: (context) => ProfileCubit(
+                arweave: context.read<ArweaveService>(),
+                turboUploadService: context.read<UploadService>(),
+                profileDao: context.read<ProfileDao>(),
+                db: context.read<Database>(),
+              ),
+            ),
+            BlocProvider(
+              create: (context) => ActivityCubit(),
+            ),
+            BlocProvider(
+              create: (context) =>
+                  FeedbackSurveyCubit(FeedbackSurveyInitialState()),
+            ),
+          ],
+          child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
+            listener: (context, state) {
+              if (state is ThemeSwitcherDarkTheme) {
+                ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
+              } else if (state is ThemeSwitcherLightTheme) {
+                ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
+              }
+            },
+            builder: (context, state) {
+              return ArDriveApp(
+                onThemeChanged: (theme) {
+                  context.read<ThemeSwitcherBloc>().add(ChangeTheme());
+                },
+                key: arDriveAppKey,
+                builder: (context) => MaterialApp.router(
+                  title: 'ArDrive',
+                  theme: ArDriveTheme.of(context)
+                      .themeData
+                      .materialThemeData
+                      .copyWith(
+                        scaffoldBackgroundColor:
+                            ArDriveTheme.of(context).themeData.backgroundColor,
+                      ),
+                  debugShowCheckedModeBanner: false,
+                  routeInformationParser: _routeInformationParser,
+                  routerDelegate: _routerDelegate,
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                  ],
+                  supportedLocales: const [
+                    Locale('en', ''), // English, no country code
+                    Locale('es', ''), // Spanish, no country code
+                    Locale.fromSubtags(
+                        languageCode: 'zh'), // generic Chinese 'zh'
+                    Locale.fromSubtags(
+                      languageCode: 'zh',
+                      countryCode: 'HK',
+                    ), // Traditional Chinese, Cantonese
+                    Locale('ja', ''), // Japanese, no country code
+                    Locale('hi', ''), // Hindi, no country code
+                  ],
+                  builder: (context, child) => ListTileTheme(
+                    textColor: kOnSurfaceBodyTextColor,
+                    iconColor: kOnSurfaceBodyTextColor,
+                    child: Portal(
+                      child: child!,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 }

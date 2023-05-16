@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
@@ -8,11 +9,13 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
+import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:http/http.dart';
@@ -30,15 +33,20 @@ const kMaxNumberOfTransactionsPerPage = 100;
 
 class ArweaveService {
   final Arweave client;
+  final ArDriveCrypto _crypto;
 
   final ArtemisClient _gql;
 
   ArweaveService(
-    this.client, {
+    this.client,
+    this._crypto, {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ??
             ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
-    _graphQLRetry = GraphQLRetry(_gql);
+    _graphQLRetry = GraphQLRetry(
+      _gql,
+      internetChecker: InternetChecker(connectivity: Connectivity()),
+    );
     httpRetry = HttpRetry(
         GatewayResponseHandler(),
         HttpRetryOptions(onRetry: (exception) {
@@ -271,15 +279,16 @@ class ArweaveService {
         Entity? entity;
         if (entityType == EntityType.drive) {
           entity = await DriveEntity.fromTransaction(
-              transaction, rawEntityData, driveKey);
+              transaction, _crypto, rawEntityData, driveKey);
         } else if (entityType == EntityType.folder) {
           entity = await FolderEntity.fromTransaction(
-              transaction, rawEntityData, driveKey);
+              transaction, _crypto, rawEntityData, driveKey);
         } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
             transaction,
             rawEntityData,
             driveKey: driveKey,
+            crypto: _crypto,
           );
         } else if (entityType == EntityType.snapshot) {
           // TODO: instantiate entity and add to blockHistory
@@ -323,6 +332,21 @@ class ArweaveService {
     );
   }
 
+  Future<bool> hasUserPrivateDrives(
+    Wallet wallet, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
+    final driveTxs = await getUniqueUserDriveEntityTxs(
+      await wallet.getAddress(),
+      maxRetries: maxRetries,
+    );
+
+    final privateDriveTxs = driveTxs.where(
+        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+
+    return privateDriveTxs.isNotEmpty;
+  }
+
   Future<Uint8List> _getEntityData({
     required String entityId,
     required String driveId,
@@ -340,7 +364,7 @@ class ArweaveService {
       return cachedData;
     }
 
-    return _getEntityDataFromNetwork(txId: txId);
+    return getEntityDataFromNetwork(txId: txId);
   }
 
   Future<Uint8List?> _getCachedEntityDataFromSnapshot({
@@ -366,7 +390,7 @@ class ArweaveService {
     return null;
   }
 
-  Future<Uint8List> _getEntityDataFromNetwork({required String txId}) async {
+  Future<Uint8List> getEntityDataFromNetwork({required String txId}) async {
     final Response data =
         (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
 
@@ -399,6 +423,23 @@ class ArweaveService {
         )
         .values
         .toList();
+  }
+
+  Future<String?> getFirstPrivateDriveTxId(
+    Wallet wallet, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
+    final driveTxs = await getUniqueUserDriveEntityTxs(
+      await wallet.getAddress(),
+      maxRetries: maxRetries,
+    );
+
+    final privateDriveTxs = driveTxs.where(
+        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+
+    return privateDriveTxs.isNotEmpty
+        ? privateDriveTxs.first.getTag(EntityTag.driveId)!
+        : null;
   }
 
   /// Gets the unique drive entities for a particular user.
@@ -436,7 +477,7 @@ class ArweaveService {
 
         final driveKey =
             driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
-                ? await deriveDriveKey(
+                ? await _crypto.deriveDriveKey(
                     wallet,
                     driveTx.getTag(EntityTag.driveId)!,
                     password,
@@ -446,6 +487,7 @@ class ArweaveService {
         try {
           final drive = await DriveEntity.fromTransaction(
             driveTx,
+            _crypto,
             driveResponses[i].bodyBytes,
             driveKey,
           );
@@ -513,7 +555,7 @@ class ArweaveService {
 
     try {
       return await DriveEntity.fromTransaction(
-          fileTx, fileDataRes.bodyBytes, driveKey);
+          fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
     } on EntityTransactionParseException catch (parseException) {
       print(
         'Failed to parse transaction '
@@ -624,7 +666,7 @@ class ArweaveService {
     }
 
     final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
-    final checkDriveKey = await deriveDriveKey(
+    final checkDriveKey = await _crypto.deriveDriveKey(
       wallet,
       checkDriveId,
       password,
@@ -674,6 +716,7 @@ class ArweaveService {
         fileTx,
         fileDataRes.bodyBytes,
         fileKey: fileKey,
+        crypto: _crypto,
       );
     } on EntityTransactionParseException catch (parseException) {
       print(
@@ -726,6 +769,7 @@ class ArweaveService {
               fileTx,
               fileDataRes.bodyBytes,
               fileKey: fileKey,
+              crypto: _crypto,
             ),
           );
         } on EntityTransactionParseException catch (parseException) {

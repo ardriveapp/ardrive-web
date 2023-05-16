@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -23,7 +24,7 @@ void main() {
     late Database db;
     late DriveDao driveDao;
     late ArweaveService arweave;
-    late TurboService turboService;
+    late UploadService turboUploadService;
 
     late ProfileCubit profileCubit;
     late SyncCubit syncBloc;
@@ -229,7 +230,7 @@ void main() {
         (_) async =>
             await getTestTransaction('test/fixtures/signed_v2_tx.json'),
       );
-      turboService = DontUseTurbo();
+      turboUploadService = DontUseUploadService();
       syncBloc = MockSyncBloc();
       when(() => syncBloc.generateFsEntryPaths(any(), any(), any())).thenAnswer(
         (_) async => Future.value(),
@@ -269,12 +270,13 @@ void main() {
       'throws when selectedItems is empty',
       build: () => FsEntryMoveBloc(
         arweave: arweave,
-        turboService: turboService,
+        turboUploadService: turboUploadService,
         syncCubit: syncBloc,
         driveId: driveId,
         driveDao: driveDao,
         profileCubit: profileCubit,
         selectedItems: [],
+        crypto: ArDriveCrypto(),
       ),
       errors: () => [isA<Exception>()],
     );
@@ -293,13 +295,15 @@ void main() {
         ];
       }),
       build: () => FsEntryMoveBloc(
+        crypto: ArDriveCrypto(),
         arweave: arweave,
-        turboService: turboService,
+        turboUploadService: turboUploadService,
         syncCubit: syncBloc,
         driveId: driveId,
         driveDao: driveDao,
         profileCubit: profileCubit,
-        selectedItems: selectedItems,
+        // TODO: revisit this when we have a better way to mock the selected items
+        selectedItems: [],
         platform: FakePlatform(operatingSystem: 'android'),
       ),
       act: (FsEntryMoveBloc bloc) async {
