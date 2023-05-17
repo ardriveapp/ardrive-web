@@ -148,7 +148,10 @@ class AppState extends State<App> {
   @override
   void initState() {
     super.initState();
-    preCacheLoginAssets(context);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      preCacheLoginAssets(context);
+    });
   }
 
   @override
