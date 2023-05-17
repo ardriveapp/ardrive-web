@@ -234,8 +234,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                                   .aManifestIsASpecialKindOfFile, // trimmed spaces
                               style: textStyle,
                             ),
+                            const TextSpan(text: ' '),
                             TextSpan(
-                              text: ' ${appLocalizationsOf(context).learnMore}',
+                              text: appLocalizationsOf(context).learnMore,
                               style: textStyle.copyWith(
                                 decoration: TextDecoration.underline,
                               ),
