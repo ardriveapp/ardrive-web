@@ -7,7 +7,8 @@ class AppConfig {
   final String? defaultArweaveGatewayUrl;
   final bool useTurboUpload;
   final bool useTurboPayment;
-  final String? defaultTurboUrl;
+  final String? defaultTurboUploadUrl;
+  final String? defaultTurboPaymentUrl;
   final int? allowedDataItemSizeForTurbo;
   final bool enableQuickSyncAuthoring;
   final bool enableMultipleFileDownload;
@@ -17,7 +18,8 @@ class AppConfig {
     this.defaultArweaveGatewayUrl,
     this.useTurboUpload = false,
     this.useTurboPayment = false,
-    this.defaultTurboUrl,
+    this.defaultTurboUploadUrl,
+    this.defaultTurboPaymentUrl,
     this.allowedDataItemSizeForTurbo,
     this.enableQuickSyncAuthoring = false,
     this.enableMultipleFileDownload = false,
@@ -28,7 +30,8 @@ class AppConfig {
     String? defaultArweaveGatewayUrl,
     bool? useTurboUpload,
     bool? useTurboPayment,
-    String? defaultTurboUrl,
+    String? defaultTurboUploadUrl,
+    String? defaultTurboPaymentUrl,
     int? allowedDataItemSizeForTurbo,
     bool? enableQuickSyncAuthoring,
     bool? enableMultipleFileDownload,
@@ -39,7 +42,10 @@ class AppConfig {
           defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
       useTurboUpload: useTurboUpload ?? this.useTurboUpload,
       useTurboPayment: useTurboPayment ?? this.useTurboPayment,
-      defaultTurboUrl: defaultTurboUrl ?? this.defaultTurboUrl,
+      defaultTurboUploadUrl:
+          defaultTurboUploadUrl ?? this.defaultTurboUploadUrl,
+      defaultTurboPaymentUrl:
+          defaultTurboPaymentUrl ?? this.defaultTurboPaymentUrl,
       allowedDataItemSizeForTurbo:
           allowedDataItemSizeForTurbo ?? this.allowedDataItemSizeForTurbo,
       enableMultipleFileDownload:
@@ -52,7 +58,7 @@ class AppConfig {
 
   @override
   toString() {
-    return 'AppConfig(defaultArweaveGatewayUrl: $defaultArweaveGatewayUrl, useTurboUpload: $useTurboUpload, useTurboPayment: $useTurboPayment, defaultTurboUrl: $defaultTurboUrl, allowedDataItemSizeForTurbo: $allowedDataItemSizeForTurbo, enableQuickSyncAuthoring: $enableQuickSyncAuthoring, enableMultipleFileDownload: $enableMultipleFileDownload, enableVideoPreview: $enableVideoPreview)';
+    return 'AppConfig(defaultArweaveGatewayUrl: $defaultArweaveGatewayUrl, useTurboUpload: $useTurboUpload, useTurboPayment: $useTurboPayment, defaultTurboUploadUrl: $defaultTurboUploadUrl, defaultTurboPaymentUrl: $defaultTurboPaymentUrl, allowedDataItemSizeForTurbo: $allowedDataItemSizeForTurbo, enableQuickSyncAuthoring: $enableQuickSyncAuthoring, enableMultipleFileDownload: $enableMultipleFileDownload, enableVideoPreview: $enableVideoPreview)';
   }
 
   factory AppConfig.fromJson(Map<String, dynamic> json) =>

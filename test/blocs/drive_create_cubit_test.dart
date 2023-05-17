@@ -66,7 +66,7 @@ void main() {
           walletAddress: walletAddress,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(keyBytes),
-          useTurbo: turboUploadService.useTurbo,
+          useTurbo: turboUploadService.useTurboUpload,
         ),
       );
 

@@ -5,12 +5,14 @@ import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
 import 'package:uuid/uuid.dart';
 
-const paymentUri = 'https://payment.ardrive.dev';
-
 class PaymentService {
+  final bool useTurboPayment = true;
+  final Uri turboPaymentUri;
+
   ArDriveHTTP httpClient;
 
   PaymentService({
+    required this.turboPaymentUri,
     required this.httpClient,
   });
 
@@ -19,7 +21,7 @@ class PaymentService {
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
     final priceResponse = await httpClient.get(
-      url: '$paymentUri/v1/price/bytes/$byteSize',
+      url: '$turboPaymentUri/v1/price/bytes/$byteSize',
     );
     if (!acceptedStatusCodes.contains(priceResponse.statusCode)) {
       throw Exception(
@@ -40,7 +42,7 @@ class PaymentService {
       wallet: wallet,
     );
     final result = await httpClient.get(
-      url: '$paymentUri/v1/balance',
+      url: '$turboPaymentUri/v1/balance',
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
@@ -70,7 +72,7 @@ class PaymentService {
 
     final result = await httpClient.get(
       url:
-          '$paymentUri/v1/top-up/payment-BigIntent/$walletAddress/$currency/$amount',
+          '$turboPaymentUri/v1/top-up/payment-BigIntent/$walletAddress/$currency/$amount',
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
@@ -104,6 +106,12 @@ class DontUsePaymentService implements PaymentService {
   }) {
     throw UnimplementedError();
   }
+
+  @override
+  Uri get turboPaymentUri => throw UnimplementedError();
+
+  @override
+  bool get useTurboPayment => false;
 }
 
 class TurboUserNotFound implements Exception {

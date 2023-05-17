@@ -217,7 +217,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
               );
             },
           );
-      final canUseTurbo = _turboUploadService.useTurbo &&
+      final canUseTurbo = _turboUploadService.useTurboUpload &&
           arweaveManifest.size < _turboUploadService.allowedDataItemSize;
       if (canUseTurbo) {
         emit(
