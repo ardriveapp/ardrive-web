@@ -1,4 +1,5 @@
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'turbo_payment_event.dart';
@@ -10,7 +11,15 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   PaymentBloc(this.paymentService) : super(PaymentInitial()) {
     on<PaymentEvent>((event, emit) {
       if (event is LoadInitialData) {
-        // Load initial data here
+        emit(
+          PaymentLoaded(
+            balance: 0,
+            estimatedStorage: 0,
+            selectedAmount: 0,
+            currencyUnit: '',
+            dataUnit: '',
+          ),
+        );
       } else if (event is PresetAmountSelected) {
         // Handle preset amount selection here
       } else if (event is CustomAmountEntered) {

@@ -1,10 +1,16 @@
 part of 'turbo_payment_bloc.dart';
 
-abstract class PaymentState {}
+abstract class PaymentState extends Equatable {}
 
-class PaymentInitial extends PaymentState {}
+class PaymentInitial extends PaymentState {
+  @override
+  List<Object?> get props => [];
+}
 
-class PaymentLoading extends PaymentState {}
+class PaymentLoading extends PaymentState {
+  @override
+  List<Object?> get props => [];
+}
 
 class PaymentLoaded extends PaymentState {
   final int balance;
@@ -20,10 +26,22 @@ class PaymentLoaded extends PaymentState {
     required this.currencyUnit,
     required this.dataUnit,
   });
+
+  @override
+  List<Object?> get props => [
+        balance,
+        estimatedStorage,
+        selectedAmount,
+        currencyUnit,
+        dataUnit,
+      ];
 }
 
 class PaymentError extends PaymentState {
   final String message;
 
   PaymentError(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }

@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,56 +20,58 @@ void main() {
       paymentBloc.close();
     });
 
+    blocTest(
+      'emits PaymentLoaded state with initial balance data and supported currencies when LoadInitialData event is added',
+      build: () => paymentBloc,
+      act: (PaymentBloc bloc) {
+        bloc.add(LoadInitialData());
+      },
+      expect: () {
+        return [
+          PaymentLoaded(
+            balance: 0,
+            estimatedStorage: 0,
+            selectedAmount: 0,
+            currencyUnit: '',
+            dataUnit: '',
+          ),
+        ];
+      },
+    );
+
     test(
-        'emits PaymentLoaded state with initial balance data and supported currencies when LoadInitialData event is added',
-        () {
-      final expectedInitialData = PaymentLoaded(
-        balance: 0,
-        estimatedStorage: 0,
-        selectedAmount: 0,
-        currencyUnit: '',
-        dataUnit: '',
-      );
+      'emits PriceUpdated state with updated price when UpdatePrice event is added',
+      () {},
+    );
 
-      expectLater(paymentBloc,
-          emitsInOrder([isA<PaymentInitial>(), expectedInitialData]));
+    test(
+      'emits PriceUpdated state with updated price when UnitChange event is added',
+      () {},
+    );
 
-      paymentBloc.add(LoadInitialData());
-    });
+    test(
+      'emits PriceQuoteLoaded state when ReadyForPayment event is added',
+      () {},
+    );
+
+    test(
+      'emits PriceQuoteLoaded state every 30s if last event was ReadyForPayment',
+      () {},
+    );
+
+    test(
+      'emits FormErrorState state when ConfirmPayment event is added and form is invalid',
+      () {},
+    );
+
+    test(
+      'emits PaymentSuccess state when ConfirmPayment event is added and payment is successful',
+      () {},
+    );
+
+    test(
+      'emits PaymentFailed state when ConfirmPayment event is added and payment is unsuccessful',
+      () {},
+    );
   });
-
-  test(
-    'emits PriceUpdated state with updated price when UpdatePrice event is added',
-    () {},
-  );
-
-  test(
-    'emits PriceUpdated state with updated price when UnitChange event is added',
-    () {},
-  );
-
-  test(
-    'emits PriceQuoteLoaded state when ReadyForPayment event is added',
-    () {},
-  );
-
-  test(
-    'emits PriceQuoteLoaded state every 30s if last event was ReadyForPayment',
-    () {},
-  );
-
-  test(
-    'emits FormErrorState state when ConfirmPayment event is added and form is invalid',
-    () {},
-  );
-
-  test(
-    'emits PaymentSuccess state when ConfirmPayment event is added and payment is successful',
-    () {},
-  );
-
-  test(
-    'emits PaymentFailed state when ConfirmPayment event is added and payment is unsuccessful',
-    () {},
-  );
 }
