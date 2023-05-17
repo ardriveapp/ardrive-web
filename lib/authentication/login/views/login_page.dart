@@ -362,9 +362,36 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       TextSpan(
                         children: [
                           TextSpan(
-                              text: appLocalizationsOf(context)
-                                  .securityWalletOverlay,
-                              style: ArDriveTypography.body.smallBold()),
+                            text: appLocalizationsOf(context)
+                                .securityWalletOverlay,
+                            style: ArDriveTypography.body.smallBold(),
+                          ),
+                          TextSpan(
+                            text: ' ',
+                            style: ArDriveTypography.body.buttonNormalRegular(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgOnAccent,
+                            ),
+                          ),
+                          TextSpan(
+                            text: appLocalizationsOf(context).learnMore,
+                            style: ArDriveTypography.body
+                                .buttonNormalRegular(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgOnAccent,
+                                )
+                                .copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () => openUrl(
+                                    url: Resources.howDoesKeyFileLoginWork,
+                                  ),
+                          ),
                         ],
                       ),
                     ),
