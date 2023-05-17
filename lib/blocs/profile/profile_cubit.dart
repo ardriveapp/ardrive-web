@@ -17,17 +17,17 @@ part 'profile_state.dart';
 /// and wallet balance.
 class ProfileCubit extends Cubit<ProfileState> {
   final ArweaveService _arweave;
-  final TurboService _turboService;
+  final UploadService _turboUploadService;
   final ProfileDao _profileDao;
   final Database _db;
 
   ProfileCubit({
     required ArweaveService arweave,
-    required TurboService turboService,
+    required UploadService turboUploadService,
     required ProfileDao profileDao,
     required Database db,
   })  : _arweave = arweave,
-        _turboService = turboService,
+        _turboUploadService = turboUploadService,
         _profileDao = profileDao,
         _db = db,
         super(ProfileCheckingAvailability()) {
@@ -141,7 +141,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         walletAddress: walletAddress,
         walletBalance: walletBalance,
         cipherKey: profile.key,
-        useTurbo: _turboService.useTurbo,
+        useTurbo: _turboUploadService.useTurbo,
       ),
     );
   }

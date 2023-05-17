@@ -103,10 +103,8 @@ class AppShellState extends State<AppShell> {
                                                         : appLocalizationsOf(
                                                                 context)
                                                             .syncingOnlyOneDrive,
-                                                style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                                style: ArDriveTypography.body
+                                                    .buttonNormalBold(),
                                               ),
                                             ),
                                             title: snapshot.data ?? false
@@ -163,9 +161,14 @@ class AppShellState extends State<AppShell> {
 }
 
 class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const MobileAppBar({super.key, this.leading});
+  const MobileAppBar({
+    super.key,
+    this.leading,
+    this.showDrawerButton = true,
+  });
 
   final Widget? leading;
+  final bool showDrawerButton;
 
   @override
   Size get preferredSize =>
@@ -183,16 +186,18 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
             Padding(
               padding: const EdgeInsets.only(left: 7.0),
               child: leading ??
-                  ArDriveIconButton(
-                    icon: ArDriveIcons.menu(
-                      size: defaultIconSize,
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
-                    ),
-                    onPressed: () => Scaffold.of(context).openDrawer(),
-                  ),
+                  (showDrawerButton
+                      ? ArDriveIconButton(
+                          icon: ArDriveIcons.menu(
+                            size: defaultIconSize,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          ),
+                          onPressed: () => Scaffold.of(context).openDrawer(),
+                        )
+                      : Container()),
             ),
             const Spacer(),
             const SyncButton(),

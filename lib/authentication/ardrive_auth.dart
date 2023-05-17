@@ -267,8 +267,6 @@ class _ArDriveAuth implements ArDriveAuth {
         // load from local storage
         final storedPassword = await _secureKeyValueStore.getString('password');
 
-        logger.d('Password from secure storage: $storedPassword');
-
         if (storedPassword == null) {
           throw AuthenticationUnknownException(
             'Biometric authentication failed. Password not found',

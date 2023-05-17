@@ -230,8 +230,6 @@ class FileDownloadDialog extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             state.fileName,
-            maxLines: 1,
-            overflow: TextOverflow.fade,
             style: ArDriveTypography.body.bodyRegular(
               color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             ),
@@ -290,8 +288,6 @@ class FileDownloadDialog extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 title: Text(
                   state.fileName,
-                  maxLines: 1,
-                  overflow: TextOverflow.fade,
                 ),
                 subtitle: Text(
                     '${filesize((state.fileSize * (state.progress / 100)).round())} / ${filesize(state.fileSize)}'),

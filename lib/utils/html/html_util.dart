@@ -15,16 +15,11 @@ class TabVisibilitySingleton {
 
   bool isTabFocused() => implementation.isTabFocused();
 
-  bool isTabVisible() => implementation.isTabVisible();
-
-  Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async =>
+  Future<void> onTabGetsFocusedFuture(Future Function() onFocus) =>
       implementation.onTabGetsFocusedFuture(onFocus);
 
-  void onTabGetsFocused(Function onFocus) =>
+  StreamSubscription onTabGetsFocused(Function onFocus) =>
       implementation.onTabGetsFocused(onFocus);
-
-  Future<void> closeVisibilityChangeStream() =>
-      implementation.closeVisibilityChangeStream();
 }
 
 void onArConnectWalletSwitch(Function onWalletSwitch) =>

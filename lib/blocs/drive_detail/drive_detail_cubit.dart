@@ -119,7 +119,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             if (index >= 0) {
               _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
                 folderContents.files[index],
-                _selectedItem!.onPressed,
                 _selectedItem!.index,
                 _selectedItem!.isOwner,
               );
@@ -131,7 +130,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             if (index >= 0) {
               _selectedItem = DriveDataTableItemMapper.fromFolderEntry(
                 folderContents.subfolders[index],
-                _selectedItem!.onPressed,
                 _selectedItem!.index,
                 _selectedItem!.isOwner,
               );
@@ -199,13 +197,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     final folders = folder.subfolders.map(
       (folder) => DriveDataTableItemMapper.fromFolderEntry(
         folder,
-        (selected) {
-          if (folder.id == _selectedItem?.id) {
-            openFolder(path: folder.path);
-          } else {
-            selectDataItem(selected);
-          }
-        },
         index++,
         isOwner,
       ),
@@ -214,13 +205,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     final files = folder.files.map(
       (file) => DriveDataTableItemMapper.toFileDataTableItem(
         file,
-        (selected) async {
-          if (file.id == _selectedItem?.id) {
-            toggleSelectedItemDetails();
-          } else {
-            selectDataItem(selected);
-          }
-        },
         index++,
         isOwner,
       ),
@@ -268,6 +252,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           selectedFilePreviewUrl:
               '${_config.defaultArweaveGatewayUrl}/$dataTxId');
     }
+
     _selectedItem = item;
 
     emit(state.copyWith(selectedItem: item, showSelectedItemDetails: true));
