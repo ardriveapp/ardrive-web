@@ -17,7 +17,7 @@ class TurboBalance extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -29,7 +29,7 @@ class TurboBalance extends StatelessWidget {
               children: [
                 Text(
                   'turbo',
-                  style: ArDriveTypography.body.buttonNormalBold(),
+                  style: ArDriveTypography.body.buttonLargeBold(),
                 ),
                 FutureBuilder<BigInt>(
                     future: paymentService.getBalance(wallet: wallet),
@@ -38,12 +38,12 @@ class TurboBalance extends StatelessWidget {
                         if (snapshot.error is TurboUserNotFound) {
                           return Text(
                             'Add credits using your card for faster uploads',
-                            style: ArDriveTypography.body.tinyRegular(),
+                            style: ArDriveTypography.body.buttonNormalBold(),
                           );
                         } else {
                           return Text(
                             'Error fetching balance',
-                            style: ArDriveTypography.body.tinyRegular(),
+                            style: ArDriveTypography.body.buttonNormalBold(),
                           );
                         }
                       }
@@ -51,14 +51,14 @@ class TurboBalance extends StatelessWidget {
                         final balance = snapshot.data;
                         if (balance != null) {
                           return Text(
-                            '${winstonToAr(balance)} credits',
-                            style: ArDriveTypography.body.tinyRegular(),
+                            '${double.tryParse(winstonToAr(balance))?.toStringAsFixed(5) ?? 0} credits',
+                            style: ArDriveTypography.body.buttonNormalBold(),
                           );
                         }
                       }
-                      return Text(
-                        'Fetching balance...',
-                        style: ArDriveTypography.body.tinyRegular(),
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: LinearProgressIndicator(),
                       );
                     }),
               ],
@@ -68,14 +68,37 @@ class TurboBalance extends StatelessWidget {
             flex: 2,
             child: SizedBox(
               height: 23,
-              width: 44,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: ArDriveButton(
-                  text: 'Add',
-                  onPressed: () {},
-                  style: ArDriveButtonStyle.secondary,
+              child: OutlinedButton(
+                style: ButtonStyle(
+                  shape: MaterialStateProperty.resolveWith<OutlinedBorder>(
+                    (Set<MaterialState> states) {
+                      return RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      );
+                    },
+                  ),
+                  side: MaterialStateProperty.resolveWith<BorderSide?>(
+                    (Set<MaterialState> states) {
+                      return BorderSide(
+                        width: 1,
+                        style: BorderStyle.solid,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      );
+                    },
+                  ),
+                  foregroundColor: MaterialStateProperty.resolveWith<Color?>(
+                      (Set<MaterialState> states) {
+                    return ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault;
+                  }),
                 ),
+                onPressed: () {},
+                child: const Text('Add'),
               ),
             ),
           ),

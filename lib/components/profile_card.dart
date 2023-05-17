@@ -107,11 +107,12 @@ class ProfileCard extends StatelessWidget {
             },
             content: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'AR Balance',
+                    'Balance',
                     style: ArDriveTypography.body.buttonNormalBold(),
                   ),
                   Text(
@@ -130,37 +131,20 @@ class ProfileCard extends StatelessWidget {
               ),
             ),
           ArDriveDropdownItem(
-            content: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    context.read<ArDriveAuth>().logout().then((value) =>
-                        context.read<ProfileCubit>().logoutProfile());
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text(
-                      'Get Help',
-                      style: ArDriveTypography.body.buttonNormalBold(),
-                    ),
+            onClick: () {
+              context.read<ArDriveAuth>().logout().then(
+                  (value) => context.read<ProfileCubit>().logoutProfile());
+            },
+            content: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Text(
+                    appLocalizationsOf(context).logout,
+                    style: ArDriveTypography.body.buttonNormalBold(),
                   ),
-                ),
-                GestureDetector(
-                  onTap: () async {
-                    context.read<ArDriveAuth>().logout().then((value) =>
-                        context.read<ProfileCubit>().logoutProfile());
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text(
-                      appLocalizationsOf(context).logout,
-                      style: ArDriveTypography.body.buttonNormalBold(),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
