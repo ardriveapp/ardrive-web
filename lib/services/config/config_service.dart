@@ -11,9 +11,12 @@ class ConfigService {
   ConfigService({required AppFlavors appFlavors}) : _appFlavors = appFlavors;
 
   AppConfig? _config;
+
+  AppConfig? get config => _config;
+
   final AppFlavors _appFlavors;
 
-  Future<AppConfig> getConfig({required LocalKeyValueStore localStore}) async {
+  Future<AppConfig> loadConfig({required LocalKeyValueStore localStore}) async {
     if (_config == null) {
       const environment = kReleaseMode ? 'prod' : 'dev';
       final configContent = await rootBundle.loadString(
@@ -45,6 +48,8 @@ class ConfigService {
       return Flavor.production;
     }
   }
+
+  void updateAppConfig(AppConfig config) => _config = config;
 }
 
 enum Flavor { production, development }

@@ -49,8 +49,10 @@ import 'pages/pages.dart';
 import 'services/services.dart';
 import 'theme/theme.dart';
 
-late ConfigService _configService;
-late AppConfig _config;
+final overlayKey = GlobalKey<OverlayState>();
+
+late ConfigService configService;
+late AppConfig config;
 late ArweaveService _arweave;
 late UploadService _turboUpload;
 late PaymentService _turboPayment;
@@ -60,14 +62,14 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  _configService = ConfigService(appFlavors: AppFlavors());
+  configService = ConfigService(appFlavors: AppFlavors());
 
-  _config = await _configService.getConfig(
+  config = await configService.loadConfig(
     localStore: await LocalKeyValueStore.getInstance(),
   );
 
   if (!kIsWeb) {
-    final flavor = await _configService.getAppFlavor();
+    final flavor = await configService.getAppFlavor();
 
     if (flavor == Flavor.development) {
       _runWithCrashlytics(flavor.name);
@@ -94,19 +96,19 @@ Future<void> _initialize() async {
 
   _arweave = ArweaveService(
     Arweave(
-      gatewayUrl: Uri.parse(_config.defaultArweaveGatewayUrl!),
+      gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!),
     ),
     ArDriveCrypto(),
   );
-  _turboUpload = _config.useTurbo
+  _turboUpload = config.useTurbo
       ? UploadService(
-          turboUri: Uri.parse(_config.defaultTurboUrl!),
-          allowedDataItemSize: _config.allowedDataItemSizeForTurbo!,
+          turboUri: Uri.parse(config.defaultTurboUrl!),
+          allowedDataItemSize: config.allowedDataItemSizeForTurbo!,
           httpClient: ArDriveHTTP(),
         )
       : DontUseUploadService();
 
-  _turboPayment = _config.useTurbo
+  _turboPayment = config.useTurbo
       ? PaymentService(
           httpClient: ArDriveHTTP(),
         )
@@ -177,6 +179,9 @@ class AppState extends State<App> {
           ),
         ),
         RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        RepositoryProvider<ConfigService>(
+          create: (_) => configService,
+        ),
         RepositoryProvider<UploadService>(
           create: (_) => _turboUpload,
         ),
@@ -202,7 +207,7 @@ class AppState extends State<App> {
             ),
           ),
         ),
-        RepositoryProvider<AppConfig>(create: (_) => _config),
+        RepositoryProvider<AppConfig>(create: (_) => config),
         RepositoryProvider<Database>(create: (_) => Database()),
         RepositoryProvider<ProfileDao>(
             create: (context) => context.read<Database>().profileDao),

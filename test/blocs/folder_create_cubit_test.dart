@@ -32,7 +32,7 @@ void main() {
       driveDao = db.driveDao;
 
       final configService = ConfigService(appFlavors: AppFlavors());
-      final config = await configService.getConfig(
+      final config = await configService.loadConfig(
         localStore: await LocalKeyValueStore.getInstance(),
       );
 
