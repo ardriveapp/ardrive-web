@@ -13,7 +13,7 @@ class PaymentLoading extends PaymentState {
 }
 
 class PaymentLoaded extends PaymentState {
-  final int balance;
+  final BigInt balance;
   final int estimatedStorage;
   final int selectedAmount;
   final String currencyUnit;

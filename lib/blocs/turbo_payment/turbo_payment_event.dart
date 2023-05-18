@@ -29,3 +29,23 @@ class DataUnitChanged extends PaymentEvent {
 }
 
 class AddCreditsClicked extends PaymentEvent {}
+
+class ConfirmPayment extends PaymentEvent {
+  final String nameOnCard;
+  final String cardNumber;
+  final String expiryDate;
+  final int cvc;
+  final String postalCode;
+  final String country;
+  final String email;
+
+  ConfirmPayment({
+    required this.nameOnCard,
+    required this.cardNumber,
+    required this.expiryDate,
+    required this.cvc,
+    required this.postalCode,
+    required this.country,
+    required this.email,
+  });
+}

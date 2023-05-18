@@ -1,4 +1,5 @@
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -37,14 +38,11 @@ class TurboBalance extends StatelessWidget {
                       if (snapshot.hasError) {
                         if (snapshot.error is TurboUserNotFound) {
                           return Text(
-                            'Add credits using your card for faster uploads',
+                            appLocalizationsOf(context).turboAddCreditsBlurb,
                             style: ArDriveTypography.body.buttonNormalBold(),
                           );
                         } else {
-                          return Text(
-                            'Error fetching balance',
-                            style: ArDriveTypography.body.buttonNormalBold(),
-                          );
+                          return const Icon(Icons.error, size: 12);
                         }
                       }
                       if (snapshot.hasData) {
