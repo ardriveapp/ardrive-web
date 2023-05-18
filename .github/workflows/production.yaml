@@ -67,7 +67,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --release
+          flutter build web --dart-define=environment=dev --release
           
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
