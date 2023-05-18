@@ -1,55 +1,70 @@
-import 'dart:convert';
-
+import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/utils/app_flavors.dart';
-import 'package:ardrive/utils/local_key_value_store.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 
 import 'config.dart';
 
 class ConfigService {
-  ConfigService({required AppFlavors appFlavors}) : _appFlavors = appFlavors;
+  ConfigService({
+    required ConfigFetcher configFetcher,
+    required AppFlavors appFlavors,
+  })  : _configFetcher = configFetcher,
+        _appFlavors = appFlavors;
 
-  AppConfig? _config;
-
-  AppConfig? get config => _config;
-
+  final ConfigFetcher _configFetcher;
   final AppFlavors _appFlavors;
 
-  Future<AppConfig> loadConfig({required LocalKeyValueStore localStore}) async {
+  AppConfig? _config;
+  Flavor? _flavor;
+
+  AppConfig get config {
     if (_config == null) {
-      const environment = kReleaseMode ? 'prod' : 'dev';
-      final configContent = await rootBundle.loadString(
-        'assets/config/$environment.json',
-      );
-
-      AppConfig configFromEnv = AppConfig.fromJson(json.decode(configContent));
-
-      final gatewayUrl = localStore.getString('arweaveGatewayUrl');
-      final enableQuickSyncAuthoring =
-          localStore.getBool('enableQuickSyncAuthoring');
-
-      _config = configFromEnv.copyWith(
-        defaultArweaveGatewayUrl: gatewayUrl,
-        enableQuickSyncAuthoring: enableQuickSyncAuthoring,
-      );
+      throw Exception('Config not loaded');
     }
-
-    debugPrint('Config: ${_config.toString()}');
 
     return _config!;
   }
 
-  Future<Flavor> getAppFlavor() async {
+  Flavor get flavor {
+    if (_flavor == null) {
+      throw Exception('Flavor not loaded');
+    }
+
+    return _flavor!;
+  }
+
+  Future<AppConfig> loadConfig() async {
+    _config ??= await _configFetcher.fetchConfig(await loadAppFlavor());
+
+    logger.i('App config: $_config');
+
+    return _config!;
+  }
+
+  Future<Flavor> loadAppFlavor() async {
     try {
-      return _appFlavors.getAppFlavor();
-    } catch (e) {
-      debugPrint('An issue occured when loading flavors: $e');
+      _flavor = await _appFlavors.getAppFlavor();
+
+      logger.i('App flavor: $flavor');
+
+      return flavor;
+    } catch (e, stacktrace) {
+      logger.e('An issue occured when loading flavors.', e, stacktrace);
+
       return Flavor.production;
     }
   }
 
-  void updateAppConfig(AppConfig config) => _config = config;
+  void updateAppConfig(AppConfig config) {
+    _configFetcher.saveConfigOnDevToolsPrefs(config);
+    _config = config;
+  }
+
+  Future<void> resetDevToolsPrefs() async {
+    _configFetcher.resetDevToolsPrefs();
+
+    await loadConfig();
+  }
 }
 
 enum Flavor { production, development }

@@ -11,7 +11,7 @@ class AppConfig {
   final bool enableQuickSyncAuthoring;
   final bool enableMultipleFileDownload;
   final bool enableVideoPreview;
-  final int syncTimerDurationInSeconds;
+  final int autoSyncIntervalInSeconds;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -21,7 +21,7 @@ class AppConfig {
     this.enableQuickSyncAuthoring = false,
     this.enableMultipleFileDownload = false,
     this.enableVideoPreview = false,
-    this.syncTimerDurationInSeconds = 5 * 60,
+    this.autoSyncIntervalInSeconds = 5 * 60,
   });
 
   AppConfig copyWith({
@@ -32,7 +32,7 @@ class AppConfig {
     bool? enableQuickSyncAuthoring,
     bool? enableMultipleFileDownload,
     bool? enableVideoPreview,
-    int? syncTimerDurationInSeconds,
+    int? autoSyncIntervalInSeconds,
   }) {
     return AppConfig(
       defaultArweaveGatewayUrl:
@@ -46,15 +46,13 @@ class AppConfig {
       enableQuickSyncAuthoring:
           enableQuickSyncAuthoring ?? this.enableQuickSyncAuthoring,
       enableVideoPreview: enableVideoPreview ?? this.enableVideoPreview,
-      syncTimerDurationInSeconds:
-          syncTimerDurationInSeconds ?? this.syncTimerDurationInSeconds,
+      autoSyncIntervalInSeconds:
+          autoSyncIntervalInSeconds ?? this.autoSyncIntervalInSeconds,
     );
   }
 
   @override
-  toString() {
-    return 'AppConfig(defaultArweaveGatewayUrl: $defaultArweaveGatewayUrl, useTurbo: $useTurbo, defaultTurboUrl: $defaultTurboUrl, allowedDataItemSizeForTurbo: $allowedDataItemSizeForTurbo, enableQuickSyncAuthoring: $enableQuickSyncAuthoring, enableMultipleFileDownload: $enableMultipleFileDownload, enableVideoPreview: $enableVideoPreview)';
-  }
+  String toString() => 'AppConfig(${toJson()})';
 
   factory AppConfig.fromJson(Map<String, dynamic> json) =>
       _$AppConfigFromJson(json);
