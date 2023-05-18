@@ -21,7 +21,7 @@ import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart'
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
@@ -178,7 +178,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 const SizedBox(width: 8),
                                 if (canDownloadMultipleFiles &&
                                     context
-                                        .read<AppConfig>()
+                                        .read<ConfigService>()
+                                        .config
                                         .enableMultipleFileDownload) ...[
                                   ArDriveIconButton(
                                     tooltip: 'Download selected files',

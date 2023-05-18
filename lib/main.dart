@@ -15,6 +15,7 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
@@ -23,6 +24,7 @@ import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -52,7 +54,6 @@ import 'theme/theme.dart';
 final overlayKey = GlobalKey<OverlayState>();
 
 late ConfigService configService;
-late AppConfig config;
 late ArweaveService _arweave;
 late UploadService _turboUpload;
 late PaymentService _turboPayment;
@@ -62,14 +63,17 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  configService = ConfigService(appFlavors: AppFlavors());
+  final localStore = await LocalKeyValueStore.getInstance();
 
-  config = await configService.loadConfig(
-    localStore: await LocalKeyValueStore.getInstance(),
+  configService = ConfigService(
+    appFlavors: AppFlavors(),
+    configFetcher: ConfigFetcher(localStore: localStore),
   );
 
+  await configService.loadConfig();
+
   if (!kIsWeb) {
-    final flavor = await configService.getAppFlavor();
+    final flavor = await configService.loadAppFlavor();
 
     if (flavor == Flavor.development) {
       _runWithCrashlytics(flavor.name);
@@ -91,6 +95,10 @@ Future<void> _initialize() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
   );
+
+  final config = configService.config;
+
+  logger.d('Initializing with config: $config');
 
   ArDriveDownloader.initialize();
 
@@ -210,7 +218,6 @@ class AppState extends State<App> {
             ),
           ),
         ),
-        RepositoryProvider<AppConfig>(create: (_) => config),
         RepositoryProvider<Database>(create: (_) => Database()),
         RepositoryProvider<ProfileDao>(
             create: (context) => context.read<Database>().profileDao),
