@@ -48,7 +48,7 @@
   "@anyoneCanAccessThisFile": {
     "description": "Warning for the user that is about to share a file"
   },
-  "appVersion": "Versión {version}.",
+  "appVersion": "Versión {version}",
   "@appVersion": {
     "description": "App version number",
     "placeholders": {
@@ -459,7 +459,7 @@
       }
     }
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{Se encontró un archivo duplicado} =other{Se encontraron archivos duplicados}}",
+  "duplicateFiles": "{numberOfDuplicateFiles, plural, zero{} one{Se encontró un archivo duplicado} other{Se encontraron archivos duplicados}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -470,7 +470,7 @@
       }
     }
   },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{Se encontró una carpeta duplicada} =other{Se encontraron carpetas duplicadas}}",
+  "duplicateFolders": "{numberOfDuplicateFolders, plural, zero{} one{Se encontró una carpeta duplicada} other{Se encontraron carpetas duplicadas}}",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title",
     "placeholders": {
@@ -608,7 +608,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{El archivo es demasiado grande} =other{{numberOfFiles} archivos son demasiado grande}}",
+  "filesTooLarge": "{numberOfFiles, plural, zero{} one{El archivo es demasiado grande} other{{numberOfFiles} archivos son demasiado grande}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -635,7 +635,7 @@
   "@filesWillBePermanentlyPublicWarning": {
     "description": "Make the user aware that it is uploading permanent data publicly"
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{Este archivo será cargado públicamente.} =other{Estos archivos serán cargados públicamente.}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles, plural, zero{} one{Este archivo será cargado públicamente.} other{Estos archivos serán cargados públicamente.}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -646,7 +646,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{Ya existe un archivo con el mismo nombre en este lugar. ¿Quieres continuar y cargarlo como una nueva revisión?} =other{Hay {numberOfFiles} archivos con el mismo nombre en ese lugar. ¿Quieres continuar y cargarlo como una nueva revisión?}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles, plural, zero{} one{Ya existe un archivo con el mismo nombre en este lugar. ¿Quieres continuar y cargarlo como una nueva revisión?} other{Hay {numberOfFiles} archivos con el mismo nombre en ese lugar. ¿Quieres continuar y cargarlo como una nueva revisión?}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -730,7 +730,7 @@
   "@folderName": {
     "description": "The name of certain folder"
   },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{Ya existe una carpeta con el mismo nombre en este lugar. Por favor, renómbrala e inténtalo nuevamente.}  =other{Ya existen {numberOfFolders} carpetas con el mismo nombre en este lugar. Por favor, renómbralas e inténtalo nuevamente.}}",
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders, plural, zero{} one{Ya existe una carpeta con el mismo nombre en este lugar. Por favor, renómbrala e inténtalo nuevamente.} other{Ya existen {numberOfFolders} carpetas con el mismo nombre en este lugar. Por favor, renómbralas e inténtalo nuevamente.}}",
   "@foldersWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with folder name conflicts",
     "placeholders": {
@@ -1444,7 +1444,7 @@
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{Cargando 1 archivo...} =other{Cargando {numberOfFiles} archivos...}}",
+  "uploadingNFiles": "{numberOfFiles, plural, zero{} one{Cargando 1 archivo...} other{Cargando {numberOfFiles} archivos...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -1459,7 +1459,7 @@
   "@uploadingSnapshot": {
     "description": "Uploading Snapshot"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{Cargar 1 archivo} =other{Cargar {numberOfFiles} archivos}}",
+  "uploadNFiles": "{numberOfFiles, plural, zero{} one{Cargar 1 archivo} other{Cargar {numberOfFiles} archivos}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {

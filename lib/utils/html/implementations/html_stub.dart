@@ -8,12 +8,21 @@ bool isTabFocused() {
   return true;
 }
 
+Future<void> onTabGetsVisibleFuture(FutureOr<Function> onFocus) async {
+  return;
+}
+
+void onTabGetsVisible(Function onFocus) {
+  return;
+}
+
 Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
   return;
 }
 
-void onTabGetsFocused(Function onFocus) {
-  return;
+StreamSubscription onTabGetsFocused(Function onFocus) {
+  const emptyStream = Stream.empty();
+  return emptyStream.listen((event) {});
 }
 
 void onWalletSwitch(Function onSwitch) {

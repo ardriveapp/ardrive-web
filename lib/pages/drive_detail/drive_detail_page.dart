@@ -26,7 +26,6 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
@@ -68,7 +67,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     return SizedBox.expand(
       child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
         builder: (context, state) {
-          logger.d('DriveDetailPage: $state');
           if (state is DriveDetailLoadInProgress) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is DriveDetailLoadSuccess) {
