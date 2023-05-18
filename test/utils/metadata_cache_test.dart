@@ -2,10 +2,14 @@ import 'dart:typed_data';
 
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';
+import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('MetadataCache class', () {
     test('can be constructed out of a Cache', () async {
       final memoryCache = await newMockCache();
@@ -24,6 +28,9 @@ void main() {
         await metadataCache.put(i.toString(), mockData[i]);
         expect(await metadataCache.get(i.toString()), mockData[i]);
       }
+
+      final keys = await metadataCache.keys;
+      expect(keys, ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
     });
 
     test('eviction policy LFU', () async {
@@ -40,7 +47,6 @@ void main() {
           /// and zero becomes the least frequently used
           await metadataCache.get(i.toString());
           await metadataCache.get(i.toString());
-          await metadataCache.get(i.toString());
         }
       }
 
@@ -52,6 +58,47 @@ void main() {
         await metadataCache.get('0'),
         null,
       );
+
+      final keys = await metadataCache.keys;
+      expect(
+        keys,
+        ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'eleventh-item'],
+      );
+    });
+
+    group('with a stash_shared_preferences cache', () {
+      late MetadataCache metadataCache;
+
+      setUpAll(() {
+        SharedPreferences.setMockInitialValues({});
+      });
+
+      test('can be constructed', () async {
+        final store = await newSharedPreferencesCacheStore();
+        final cache = await MetadataCache.newCacheFromStore(
+          store,
+          maxEntries: 1,
+        );
+        metadataCache = MetadataCache(cache);
+
+        expect(cache, isInstanceOf<Cache<Uint8List>>());
+        expect(metadataCache, isInstanceOf<MetadataCache>());
+      });
+
+      test('can write and read data', () async {
+        final fibonacciSequence = [0, 1, 1, 2, 3, 5, 8, 13, 21];
+
+        await metadataCache.put(
+          'fibonacci',
+          Uint8List.fromList(fibonacciSequence),
+        );
+
+        final storedData = await metadataCache.get('fibonacci');
+        expect(storedData, Uint8List.fromList(fibonacciSequence));
+
+        final keys = await metadataCache.keys;
+        expect(keys, ['fibonacci']);
+      });
     });
   });
 }
