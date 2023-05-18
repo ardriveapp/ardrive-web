@@ -103,4 +103,20 @@ void main() {
       expect(configService.config, isInstanceOf<AppConfig>());
     });
   });
+  group('flavor', () {
+    test('throws an Exception when _flavor is null', () {
+      expect(() => configService.flavor, throwsA(isA<Exception>()));
+    });
+
+    test('returns the expected Flavor when _flavor is not null', () async {
+      when(() => mockAppFlavors.getAppFlavor())
+          .thenAnswer((_) async => Flavor.production);
+      when(() => mockConfigFetcher.fetchConfig(any()))
+          .thenAnswer((_) async => AppConfig());
+
+      await configService.loadConfig(); // Assuming this sets _flavor
+
+      expect(configService.flavor, equals(Flavor.production));
+    });
+  });
 }
