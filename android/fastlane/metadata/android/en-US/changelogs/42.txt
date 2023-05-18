@@ -1,0 +1,1 @@
+- Adds a "Learn More" button informing how a Keyfile login works

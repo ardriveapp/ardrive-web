@@ -1,19 +1,24 @@
 import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockPaymentService extends Mock implements PaymentService {}
 
-void main() {
+void main() async {
+  final testWallet = await Wallet.generate();
   group('PaymentBloc', () {
     late PaymentBloc paymentBloc;
     late MockPaymentService mockPaymentService;
 
     setUp(() {
       mockPaymentService = MockPaymentService();
-      paymentBloc = PaymentBloc(mockPaymentService);
+      paymentBloc = PaymentBloc(
+        paymentService: mockPaymentService,
+        wallet: testWallet,
+      );
     });
 
     tearDown(() {
@@ -23,17 +28,22 @@ void main() {
     blocTest(
       'emits PaymentLoaded state with initial balance data and supported currencies when LoadInitialData event is added',
       build: () => paymentBloc,
+      setUp: () {
+        when(() => mockPaymentService.getBalance(wallet: testWallet))
+            .thenAnswer((_) async => BigInt.zero);
+      },
       act: (PaymentBloc bloc) {
         bloc.add(LoadInitialData());
       },
       expect: () {
         return [
+          PaymentLoading(),
           PaymentLoaded(
-            balance: 0,
+            balance: BigInt.zero,
             estimatedStorage: 0,
             selectedAmount: 0,
-            currencyUnit: '',
-            dataUnit: '',
+            currencyUnit: 'usd',
+            dataUnit: 'gb',
           ),
         ];
       },
