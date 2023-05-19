@@ -12,25 +12,27 @@ class MetadataCache {
   const MetadataCache(this._cache);
 
   Future<void> put(String key, Uint8List data) async {
-    logger.d('Putting $key in cache');
+    logger.d('Putting $key in metadata cache');
     return _cache.put(key, data);
   }
 
   Future<Uint8List?> get(String key) async {
     final value = await _cache.get(key);
     if (value != null) {
-      logger.d('Cache hit for $key');
+      logger.d('Cache hit for $key in metadata cache');
     } else {
-      logger.d('Cache miss for $key');
+      logger.d('Cache miss for $key in metadata cache');
     }
     return value;
   }
 
   Future<void> remove(String key) async {
+    logger.d('Removing $key from metadata cache');
     return _cache.remove(key);
   }
 
   Future<void> clear() async {
+    logger.d('Clearing metadata cache');
     return _cache.clear();
   }
 
