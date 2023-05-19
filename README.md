@@ -62,9 +62,7 @@ Finally, to start a development instance for web, run:
 flutter run -d chrome --dart-define=environment=dev
 ```
 
-To run using a production config run
-
-just remove the --dart-define argument
+To run using a production config, just remove the --dart-define argument
 
 ```shell
 flutter run -d chrome
