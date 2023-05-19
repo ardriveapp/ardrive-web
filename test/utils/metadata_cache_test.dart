@@ -23,6 +23,7 @@ void main() {
     test('will accept up to 10 entries', () async {
       final metadataCache = await MetadataCache.fromCacheStore(
         await newMemoryCacheStore(),
+        maxEntries: 10,
       );
 
       final mockData = generateMockData(10);
@@ -39,6 +40,7 @@ void main() {
     test('eviction policy LFU', () async {
       final metadataCache = await MetadataCache.fromCacheStore(
         await newMemoryCacheStore(),
+        maxEntries: 10,
       );
 
       final mockData = generateMockData(10);
@@ -73,6 +75,7 @@ void main() {
     test('can remove added items', () async {
       final metadataCache = await MetadataCache.fromCacheStore(
         await newMemoryCacheStore(),
+        maxEntries: 10,
       );
 
       final mockData = generateMockData(10);
@@ -88,6 +91,7 @@ void main() {
     test('can be cleared', () async {
       final metadataCache = await MetadataCache.fromCacheStore(
         await newMemoryCacheStore(),
+        maxEntries: 10,
       );
 
       final mockData = generateMockData(10);
