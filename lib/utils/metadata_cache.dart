@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:stash/stash_api.dart';
 
 const defaultMaxEntries = 20000;
@@ -8,14 +9,21 @@ const defaultCacheName = 'metadata-cache';
 class MetadataCache {
   final Cache<Uint8List> _cache;
 
-  MetadataCache(this._cache);
+  const MetadataCache(this._cache);
 
   Future<void> put(String key, Uint8List data) async {
+    logger.d('Putting $key in cache');
     return _cache.put(key, data);
   }
 
   Future<Uint8List?> get(String key) async {
-    return _cache.get(key);
+    final value = await _cache.get(key);
+    if (value != null) {
+      logger.d('Cache hit for $key');
+    } else {
+      logger.d('Cache miss for $key');
+    }
+    return value;
   }
 
   Future<void> remove(String key) async {
