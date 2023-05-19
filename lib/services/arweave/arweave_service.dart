@@ -329,9 +329,6 @@ class ArweaveService {
       }
     }
 
-    final cacheMetadataKeys = await metadataCache.keys;
-    logger.d('Added ${cacheMetadataKeys.length} items to metadata cache');
-
     // Sort the entities in each block by ascending commit time.
     for (final block in blockHistory) {
       block.entities.removeWhere((e) => e == null);
