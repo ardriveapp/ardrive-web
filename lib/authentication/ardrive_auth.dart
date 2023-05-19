@@ -36,6 +36,7 @@ abstract class ArDriveAuth {
     required SecureKeyValueStore secureKeyValueStore,
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
+    MetadataCache? metadataCache,
   }) =>
       _ArDriveAuth(
         arweave: arweave,
@@ -45,6 +46,7 @@ abstract class ArDriveAuth {
         biometricAuthentication: biometricAuthentication,
         secureKeyValueStore: secureKeyValueStore,
         arConnectService: arConnectService,
+        metadataCache: metadataCache,
       );
 }
 
@@ -57,13 +59,15 @@ class _ArDriveAuth implements ArDriveAuth {
     required SecureKeyValueStore secureKeyValueStore,
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
+    MetadataCache? metadataCache,
   })  : _arweave = arweave,
         _crypto = crypto,
         _databaseHelpers = databaseHelpers,
         _arConnectService = arConnectService,
         _secureKeyValueStore = secureKeyValueStore,
         _biometricAuthentication = biometricAuthentication,
-        _userRepository = userRepository;
+        _userRepository = userRepository,
+        _maybeMetadataCache = metadataCache;
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
@@ -72,6 +76,7 @@ class _ArDriveAuth implements ArDriveAuth {
   final SecureKeyValueStore _secureKeyValueStore;
   final ArConnectService _arConnectService;
   final DatabaseHelpers _databaseHelpers;
+  MetadataCache? _maybeMetadataCache;
 
   User? _currentUser;
 
@@ -87,6 +92,13 @@ class _ArDriveAuth implements ArDriveAuth {
 
   set currentUser(User? user) {
     _currentUser = user;
+  }
+
+  Future<MetadataCache> get metadataCache async {
+    _maybeMetadataCache ??= await MetadataCache.fromCacheStore(
+      await newSharedPreferencesCacheStore(),
+    );
+    return _maybeMetadataCache!;
   }
 
   final StreamController<User?> _userStreamController =
@@ -188,11 +200,7 @@ class _ArDriveAuth implements ArDriveAuth {
 
       await _databaseHelpers.deleteAllTables();
 
-      final metadataCache = await MetadataCache.fromCacheStore(
-        await newSharedPreferencesCacheStore(),
-      );
-
-      metadataCache.clear();
+      (await metadataCache).clear();
     } catch (e) {
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');
