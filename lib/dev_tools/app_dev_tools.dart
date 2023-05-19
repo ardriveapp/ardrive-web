@@ -174,6 +174,19 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.buttonTertiary,
     );
 
+    ArDriveDevToolOption enableSyncFromSnapshotOption = ArDriveDevToolOption(
+      name: 'enableSyncFromSnapshot',
+      value: settings.enableSyncFromSnapshot,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(enableSyncFromSnapshot: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
     List options = [
       defaultArweaveGatewayUrlOption,
       useTurboOption,
@@ -183,6 +196,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       enableMultipleFileDownloadOption,
       enableVideoPreviewOption,
       autoSyncIntervalInSecondsOption,
+      enableSyncFromSnapshotOption,
       reloadOption,
       resetOptions,
     ];

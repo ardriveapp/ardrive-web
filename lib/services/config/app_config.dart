@@ -12,6 +12,7 @@ class AppConfig {
   final bool enableMultipleFileDownload;
   final bool enableVideoPreview;
   final int autoSyncIntervalInSeconds;
+  final bool enableSyncFromSnapshot;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -22,6 +23,7 @@ class AppConfig {
     this.enableMultipleFileDownload = false,
     this.enableVideoPreview = false,
     this.autoSyncIntervalInSeconds = 5 * 60,
+    this.enableSyncFromSnapshot = true,
   });
 
   AppConfig copyWith({
@@ -33,6 +35,7 @@ class AppConfig {
     bool? enableMultipleFileDownload,
     bool? enableVideoPreview,
     int? autoSyncIntervalInSeconds,
+    bool? enableSyncFromSnapshot,
   }) {
     return AppConfig(
       defaultArweaveGatewayUrl:
@@ -48,6 +51,8 @@ class AppConfig {
       enableVideoPreview: enableVideoPreview ?? this.enableVideoPreview,
       autoSyncIntervalInSeconds:
           autoSyncIntervalInSeconds ?? this.autoSyncIntervalInSeconds,
+      enableSyncFromSnapshot:
+          enableSyncFromSnapshot ?? this.enableSyncFromSnapshot,
     );
   }
 

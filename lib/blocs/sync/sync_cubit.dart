@@ -281,6 +281,7 @@ class SyncCubit extends Cubit<SyncState> {
               transactionParseBatchSize: 200 ~/
                   (_syncProgress.drivesCount - _syncProgress.drivesSynced),
               ownerAddress: drive.ownerAddress,
+              configService: _configService,
             );
           } catch (error, stackTrace) {
             logSync('''
