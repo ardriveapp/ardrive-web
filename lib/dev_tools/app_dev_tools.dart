@@ -1,11 +1,55 @@
 import 'package:ardrive/main.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:universal_html/html.dart' as html;
+
+/// The `ArDriveDevTools` class is responsible for managing the development tools in ArDrive.
+/// This is a singleton class, meaning it ensures only a single instance can exist.
+///
+/// The dev tools are displayed through an `OverlayEntry`, and their state is tracked
+/// by the `_isDevToolsOpen` boolean.
+///
+/// The `showDevTools` method is used to display the dev tools and the `closeDevTools`
+/// method is used to close them. Both methods first check the state of the dev tools
+/// before performing any action, and they log their actions for debugging purposes.
+class ArDriveDevTools {
+  // implement singleton
+  static final ArDriveDevTools _instance = ArDriveDevTools._internal();
+
+  factory ArDriveDevTools() => _instance;
+
+  ArDriveDevTools._internal();
+
+  final _devToolsWindow =
+      OverlayEntry(builder: (context) => const AppConfigWindowManager());
+
+  bool _isDevToolsOpen = false;
+
+  void showDevTools() {
+    if (_isDevToolsOpen) return;
+
+    _isDevToolsOpen = true;
+
+    logger.i('Opening dev tools');
+
+    overlayKey.currentState?.insert(_devToolsWindow);
+  }
+
+  void closeDevTools() {
+    if (!_isDevToolsOpen) return;
+
+    logger.i('Closing dev tools');
+
+    _devToolsWindow.remove();
+
+    _isDevToolsOpen = false;
+  }
+}
 
 class ArDriveAppWithDevTools extends StatelessWidget {
   const ArDriveAppWithDevTools({
@@ -350,6 +394,7 @@ class DraggableWindow extends HookWidget {
                           ),
                           onPressed: () {
                             isWindowVisible.value = false;
+                            ArDriveDevTools().closeDevTools();
                           },
                         ),
                       ),
