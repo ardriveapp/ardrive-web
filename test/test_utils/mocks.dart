@@ -79,3 +79,5 @@ class MockDatabaseHelpers extends Mock implements DatabaseHelpers {}
 class MockConfigFetcher extends Mock implements ConfigFetcher {}
 
 class MockConfigService extends Mock implements ConfigService {}
+
+class MockEnvFetcher extends Mock implements EnvFetcher {}

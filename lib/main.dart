@@ -66,7 +66,7 @@ void main() async {
   final localStore = await LocalKeyValueStore.getInstance();
 
   configService = ConfigService(
-    appFlavors: AppFlavors(),
+    appFlavors: AppFlavors(EnvFetcher()),
     configFetcher: ConfigFetcher(localStore: localStore),
   );
 

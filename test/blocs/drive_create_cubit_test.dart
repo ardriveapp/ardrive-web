@@ -38,7 +38,8 @@ void main() {
       db = getTestDb();
       driveDao = db.driveDao;
       final configService = ConfigService(
-          appFlavors: AppFlavors(), configFetcher: MockConfigFetcher());
+          appFlavors: AppFlavors(MockEnvFetcher()),
+          configFetcher: MockConfigFetcher());
       final config = await configService.loadConfig();
 
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);

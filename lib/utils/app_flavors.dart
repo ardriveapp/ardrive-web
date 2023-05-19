@@ -4,27 +4,43 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class AppFlavors {
+  AppFlavors(this._envFetcher);
+
+  final EnvFetcher _envFetcher;
+
   Future<Flavor> getAppFlavor() async {
-    if (kIsWeb) {
-      if (const String.fromEnvironment('environment') == 'dev') {
-        return Flavor.production;
-      }
+    final env = await _envFetcher.getEnv();
 
-      return Flavor.development;
-    }
+    logger.i('Current env: $env');
 
-    String? flavor =
-        await const MethodChannel('flavor').invokeMethod<String>('getFlavor');
-
-    logger.i('Current flavor: $flavor');
-
-    switch (flavor) {
+    switch (env) {
       case 'production':
         return Flavor.production;
       case 'development':
         return Flavor.development;
       default:
-        throw UnsupportedError('$flavor flavor is not supported.');
+        return Flavor.production;
     }
+  }
+}
+
+class EnvFetcher {
+  Future<String> getEnv(
+      [bool mockKIsWeb = kIsWeb, String? mockEnvFromEnvironment]) async {
+    if (mockKIsWeb) {
+      final env =
+          mockEnvFromEnvironment ?? const String.fromEnvironment('environment');
+
+      if (env.isEmpty) {
+        return 'production';
+      }
+
+      return env;
+    }
+
+    String? env =
+        await const MethodChannel('flavor').invokeMethod<String>('getFlavor');
+
+    return env ?? 'production';
   }
 }
