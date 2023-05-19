@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 class AppFlavors {
   Future<Flavor> getAppFlavor() async {
     if (kIsWeb) {
-      if (const String.fromEnvironment('environment') == 'prod') {
+      if (const String.fromEnvironment('environment') == 'dev') {
         return Flavor.production;
       }
 
