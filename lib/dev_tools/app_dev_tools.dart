@@ -232,15 +232,15 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
     );
 
     List options = [
-      defaultArweaveGatewayUrlOption,
       useTurboOption,
-      defaultTurboUrlOption,
-      allowedDataItemSizeForTurboOption,
+      enableSyncFromSnapshotOption,
       enableQuickSyncAuthoringOption,
       enableMultipleFileDownloadOption,
       enableVideoPreviewOption,
+      allowedDataItemSizeForTurboOption,
+      defaultArweaveGatewayUrlOption,
+      defaultTurboUrlOption,
       autoSyncIntervalInSecondsOption,
-      enableSyncFromSnapshotOption,
       reloadOption,
       resetOptions,
     ];
