@@ -59,7 +59,15 @@ flutter packages pub run build_runner watch
 Finally, to start a development instance for web, run:
 
 ```shell
-flutter run -d Chrome
+flutter run -d chrome --dart-define=environment=dev
+```
+
+To run using a production config run
+
+just remove the --dart-define argument
+
+```shell
+flutter run -d chrome
 ```
 
 All changes made to `dev` will be continuously deployed to [staging.ardrive.io](https://staging.ardrive.io). All PRs from this repo merging into `dev` will trigger a preview build that can be shared freely.
