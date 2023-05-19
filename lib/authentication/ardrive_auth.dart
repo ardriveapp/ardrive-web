@@ -9,9 +9,11 @@ import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 
 import '../core/crypto/crypto.dart';
 
@@ -185,6 +187,12 @@ class _ArDriveAuth implements ArDriveAuth {
       }
 
       await _databaseHelpers.deleteAllTables();
+
+      final metadataCache = await MetadataCache.fromCacheStore(
+        await newSharedPreferencesCacheStore(),
+      );
+
+      metadataCache.clear();
     } catch (e) {
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');
