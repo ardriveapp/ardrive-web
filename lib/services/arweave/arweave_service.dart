@@ -10,6 +10,8 @@ import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
+import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -21,6 +23,7 @@ import 'package:drift/drift.dart';
 import 'package:http/http.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
+import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 
 import 'error/gateway_response_handler.dart';
 
@@ -255,6 +258,12 @@ class ArweaveService {
       ),
     );
 
+    final sharedPreferencesCacheStore = await newSharedPreferencesCacheStore();
+    final sharedPreferencesCache = await MetadataCache.newCacheFromStore(
+      sharedPreferencesCacheStore,
+    );
+    final metadataCache = MetadataCache(sharedPreferencesCache);
+
     final blockHistory = <BlockEntities>[];
 
     for (var i = 0; i < entityTxs.length; i++) {
@@ -275,6 +284,8 @@ class ArweaveService {
         final entityType = transaction.getTag(EntityTag.entityType);
         final entityResponse = responses[i];
         final rawEntityData = entityResponse;
+
+        await metadataCache.put(transaction.id, rawEntityData);
 
         Entity? entity;
         if (entityType == EntityType.drive) {
@@ -317,6 +328,9 @@ class ArweaveService {
         );
       }
     }
+
+    final cacheMetadataKeys = await metadataCache.keys;
+    logger.d('Added ${cacheMetadataKeys.length} items to metadata cache');
 
     // Sort the entities in each block by ascending commit time.
     for (final block in blockHistory) {
