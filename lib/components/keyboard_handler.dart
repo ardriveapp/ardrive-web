@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -35,11 +34,13 @@ class _KeyboardHandlerState extends State<KeyboardHandler> {
               if (context.read<ConfigService>().flavor == Flavor.development) {
                 if (event.isKeyPressed(LogicalKeyboardKey.shiftLeft) &&
                     event.isKeyPressed(LogicalKeyboardKey.keyQ)) {
-                  logger.i('Opening dev tools');
-                  overlayKey.currentState?.insert(
-                    OverlayEntry(
-                        builder: (context) => const AppConfigWindowManager()),
-                  );
+                  ArDriveDevTools().showDevTools();
+                }
+
+                if (event.isKeyPressed(LogicalKeyboardKey.shiftLeft) &&
+                    event.isKeyPressed(LogicalKeyboardKey.keyW)) {
+                  logger.i('Closing dev tools');
+                  ArDriveDevTools().closeDevTools();
                 }
               }
 
