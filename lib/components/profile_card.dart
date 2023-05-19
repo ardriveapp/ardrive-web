@@ -68,31 +68,39 @@ class ProfileCard extends StatelessWidget {
           target: Alignment.bottomRight,
           offset: Offset(0, 4),
         ),
-        height: 64,
+        height: 72,
         items: [
           ArDriveDropdownItem(
-            onClick: () {
-              openUrl(
-                url:
-                    'https://viewblock.io/arweave/address/${state.walletAddress}',
-              );
-            },
             content: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       if (walletAddress.isNotEmpty)
-                        Text(
-                          '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
-                          style: ArDriveTypography.body
-                              .buttonNormalBold()
-                              .copyWith(
-                                decoration: TextDecoration.underline,
-                              ),
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () {
+                              openUrl(
+                                url:
+                                    'https://viewblock.io/arweave/address/${state.walletAddress}',
+                              );
+                            },
+                            child: Text(
+                              '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
+                              style: ArDriveTypography.body
+                                  .captionRegular()
+                                  .copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 18,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                            ),
+                          ),
                         ),
                       CopyButton(
                         size: 24,
@@ -131,6 +139,7 @@ class ProfileCard extends StatelessWidget {
                     '${double.tryParse(utils.winstonToAr(state.walletBalance))?.toStringAsFixed(5) ?? 0} AR',
                     style: ArDriveTypography.body.captionRegular().copyWith(
                           fontWeight: FontWeight.w600,
+                          fontSize: 18,
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
@@ -161,7 +170,9 @@ class ProfileCard extends StatelessWidget {
                   children: [
                     Text(
                       appLocalizationsOf(context).logout,
-                      style: ArDriveTypography.body.buttonNormalBold(),
+                      style: ArDriveTypography.body
+                          .captionBold()
+                          .copyWith(fontSize: 15),
                     ),
                   ],
                 ),

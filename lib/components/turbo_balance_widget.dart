@@ -68,6 +68,7 @@ class TurboBalance extends StatelessWidget {
                                 .captionRegular()
                                 .copyWith(
                                   fontWeight: FontWeight.w600,
+                                  fontSize: 18,
                                   color: ArDriveTheme.of(context)
                                       .themeData
                                       .colors
@@ -92,10 +93,10 @@ class TurboBalance extends StatelessWidget {
                 style: ArDriveButtonStyle.secondary,
                 text: appLocalizationsOf(context).addButtonTurbo,
                 fontStyle: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                 ),
                 borderRadius: 20,
                 onPressed: () {},
