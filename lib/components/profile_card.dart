@@ -68,7 +68,7 @@ class ProfileCard extends StatelessWidget {
           target: Alignment.bottomRight,
           offset: Offset(0, 4),
         ),
-        height: 72,
+        height: 84,
         items: [
           ArDriveDropdownItem(
             content: Padding(
