@@ -11,16 +11,19 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('MetadataCache class', () {
-    test('can be constructed out of a Cache', () async {
-      final memoryCache = await newMockCache();
+    test('can be constructed out of a Cache Store', () async {
+      final CacheStore cacheStore = await newMemoryCacheStore();
 
-      expect(memoryCache, isInstanceOf<Cache<Uint8List>>());
-      expect(MetadataCache(memoryCache), isInstanceOf<MetadataCache>());
+      expect(
+        await MetadataCache.fromCacheStore(cacheStore),
+        isInstanceOf<MetadataCache>(),
+      );
     });
 
     test('will accept up to 10 entries', () async {
-      final memoryCache = await newMockCache();
-      final metadataCache = MetadataCache(memoryCache);
+      final metadataCache = await MetadataCache.fromCacheStore(
+        await newMemoryCacheStore(),
+      );
 
       final mockData = generateMockData(10);
 
@@ -34,8 +37,9 @@ void main() {
     });
 
     test('eviction policy LFU', () async {
-      final memoryCache = await newMockCache();
-      final metadataCache = MetadataCache(memoryCache);
+      final metadataCache = await MetadataCache.fromCacheStore(
+        await newMemoryCacheStore(),
+      );
 
       final mockData = generateMockData(10);
 
@@ -67,8 +71,9 @@ void main() {
     });
 
     test('can remove added items', () async {
-      final memoryCache = await newMockCache();
-      final metadataCache = MetadataCache(memoryCache);
+      final metadataCache = await MetadataCache.fromCacheStore(
+        await newMemoryCacheStore(),
+      );
 
       final mockData = generateMockData(10);
 
@@ -81,8 +86,9 @@ void main() {
     });
 
     test('can be cleared', () async {
-      final memoryCache = await newMockCache();
-      final metadataCache = MetadataCache(memoryCache);
+      final metadataCache = await MetadataCache.fromCacheStore(
+        await newMemoryCacheStore(),
+      );
 
       final mockData = generateMockData(10);
 
@@ -108,13 +114,11 @@ void main() {
 
       test('can be constructed', () async {
         final store = await newSharedPreferencesCacheStore();
-        final cache = await MetadataCache.newCacheFromStore(
+        metadataCache = await MetadataCache.fromCacheStore(
           store,
           maxEntries: 1,
         );
-        metadataCache = MetadataCache(cache);
 
-        expect(cache, isInstanceOf<Cache<Uint8List>>());
         expect(metadataCache, isInstanceOf<MetadataCache>());
       });
 
@@ -146,9 +150,4 @@ List<Uint8List> generateMockData(int count) {
   assert(mockData.length == count);
 
   return mockData;
-}
-
-Future<Cache<Uint8List>> newMockCache() async {
-  final cacheStore = await newMemoryCacheStore();
-  return MetadataCache.newCacheFromStore(cacheStore, maxEntries: 10);
 }

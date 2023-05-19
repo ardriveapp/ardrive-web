@@ -368,11 +368,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
     final isPrivate = drive != null && drive.privacy != DrivePrivacy.public;
 
-    final sharedPreferencesCacheStore = await newSharedPreferencesCacheStore();
-    final sharedPreferencesCache = await MetadataCache.newCacheFromStore(
-      sharedPreferencesCacheStore,
+    final metadataCache = await MetadataCache.fromCacheStore(
+      await newSharedPreferencesCacheStore(),
     );
-    final metadataCache = MetadataCache(sharedPreferencesCache);
 
     final Uint8List? cachedMetadata = await metadataCache.get(txId);
 

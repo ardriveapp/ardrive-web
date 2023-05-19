@@ -11,6 +11,14 @@ class MetadataCache {
 
   const MetadataCache(this._cache);
 
+  static Future<MetadataCache> fromCacheStore(
+    CacheStore store, {
+    int maxEntries = defaultMaxEntries,
+  }) async {
+    final cache = await _newCacheFromStore(store, maxEntries: maxEntries);
+    return MetadataCache(cache);
+  }
+
   Future<void> put(String key, Uint8List data) async {
     logger.d('Putting $key in metadata cache');
     return _cache.put(key, data);
@@ -40,7 +48,7 @@ class MetadataCache {
     return _cache.keys;
   }
 
-  static Future<Cache<Uint8List>> newCacheFromStore(
+  static Future<Cache<Uint8List>> _newCacheFromStore(
     CacheStore store, {
     int maxEntries = defaultMaxEntries,
   }) {

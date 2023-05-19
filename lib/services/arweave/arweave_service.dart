@@ -258,11 +258,9 @@ class ArweaveService {
       ),
     );
 
-    final sharedPreferencesCacheStore = await newSharedPreferencesCacheStore();
-    final sharedPreferencesCache = await MetadataCache.newCacheFromStore(
-      sharedPreferencesCacheStore,
+    final metadataCache = await MetadataCache.fromCacheStore(
+      await newSharedPreferencesCacheStore(),
     );
-    final metadataCache = MetadataCache(sharedPreferencesCache);
 
     final blockHistory = <BlockEntities>[];
 
