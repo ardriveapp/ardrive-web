@@ -54,7 +54,7 @@ class ArweaveService {
         GatewayResponseHandler(),
         HttpRetryOptions(onRetry: (exception) {
           if (exception is GatewayError) {
-            print(
+            logger.i(
               'Retrying for ${exception.runtimeType} exception\n'
               'for route ${exception.requestUrl}\n'
               'and status code ${exception.statusCode}',
@@ -62,7 +62,7 @@ class ArweaveService {
             return;
           }
 
-          print('Retrying for unknown exception: ${exception.toString()}');
+          logger.w('Retrying for unknown exception: ${exception.toString()}');
         }, retryIf: (exception) {
           return exception is! RateLimitError;
         }));
@@ -245,7 +245,7 @@ class ArweaveService {
 
           // don't fetch data for snapshots
           if (isSnapshot) {
-            print('skipping unnecessary request for snapshot data');
+            logger.d('skipping unnecessary request for snapshot data');
             return Uint8List(0);
           }
 
@@ -315,12 +315,12 @@ class ArweaveService {
 
         // If there are errors in parsing the entity, ignore it.
       } on EntityTransactionParseException catch (parseException) {
-        print(
+        logger.w(
           'Failed to parse transaction '
           'with id ${parseException.transactionId}',
         );
       } on GatewayError catch (fetchException) {
-        print(
+        logger.w(
           'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
           'for transaction ${transaction.id}, '
           'with status ${fetchException.statusCode} '
@@ -472,8 +472,9 @@ class ArweaveService {
           () async => await Future.wait(
                 driveTxs.map((e) => client.api.getSandboxedTx(e.id)),
               ), onRetry: (Exception err) {
-        print(
-            'Retrying for get unique user drive entities on Exception: ${err.toString()}');
+        logger.i(
+          'Retrying for get unique user drive entities on Exception: ${err.toString()}',
+        );
       });
 
       final drivesById = <String?, DriveEntity>{};
@@ -508,7 +509,7 @@ class ArweaveService {
 
           // If there's an error parsing the drive entity, just ignore it.
         } on EntityTransactionParseException catch (parseException) {
-          print(
+          logger.w(
             'Failed to parse transaction '
             'with id ${parseException.transactionId}',
           );
@@ -516,8 +517,10 @@ class ArweaveService {
       }
       return drivesWithKey;
     } catch (e, stacktrace) {
-      print(
-          'An error occurs getting the unique user drive entities. Exception: ${e.toString()} stacktrace: ${stacktrace.toString()}');
+      logger.w(
+        'An error occurred when getting the unique user drive entities.'
+        ' Exception: ${e.toString()} stacktrace: ${stacktrace.toString()}',
+      );
       rethrow;
     }
   }
@@ -568,7 +571,7 @@ class ArweaveService {
       return await DriveEntity.fromTransaction(
           fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
     } on EntityTransactionParseException catch (parseException) {
-      print(
+      logger.w(
         'Failed to parse transaction '
         'with id ${parseException.transactionId}',
       );
@@ -730,7 +733,7 @@ class ArweaveService {
         crypto: _crypto,
       );
     } on EntityTransactionParseException catch (parseException) {
-      print(
+      logger.w(
         'Failed to parse transaction '
         'with id ${parseException.transactionId}',
       );
@@ -847,7 +850,7 @@ class ArweaveService {
     try {
       await Future.wait(confirmationFutures);
     } catch (e) {
-      print('Error getting transactions confirmations on exception: $e');
+      logger.w('Error getting transactions confirmations on exception: $e');
       rethrow;
     }
 
