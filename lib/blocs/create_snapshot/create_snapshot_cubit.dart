@@ -374,11 +374,18 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     );
     final metadataCache = MetadataCache(sharedPreferencesCache);
 
-    final Uint8List entityJsonData = await metadataCache.get(txId) ??
+    final Uint8List? cachedMetadata = await metadataCache.get(txId);
+
+    final Uint8List entityJsonData = cachedMetadata ??
         await _arweave.dataFromTxId(
           txId,
           null, // key is null because we don't re-encrypt the snapshot data
         );
+
+    if (cachedMetadata == null) {
+      // Write to the cache the data we just fetched
+      await metadataCache.put(txId, entityJsonData);
+    }
 
     if (isPrivate) {
       final safeEntityDataFromArweave = Uint8List.fromList(
