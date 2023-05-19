@@ -62,6 +62,7 @@ class ProfileCard extends StatelessWidget {
       tooltip: appLocalizationsOf(context).profile,
       child: ArDriveDropdown(
         width: 324,
+        dividerThickness: 0,
         anchor: const Aligned(
           follower: Alignment.topRight,
           target: Alignment.bottomRight,
@@ -78,21 +79,29 @@ class ProfileCard extends StatelessWidget {
             },
             content: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  if (walletAddress.isNotEmpty)
-                    Text(
-                      '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
-                      style: ArDriveTypography.body.buttonNormalBold().copyWith(
-                            decoration: TextDecoration.underline,
-                          ),
-                    ),
-                  CopyButton(
-                    size: 24,
-                    text: walletAddress,
-                    showCopyText: false,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (walletAddress.isNotEmpty)
+                        Text(
+                          '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
+                          style: ArDriveTypography.body
+                              .buttonNormalBold()
+                              .copyWith(
+                                decoration: TextDecoration.underline,
+                              ),
+                        ),
+                      CopyButton(
+                        size: 24,
+                        text: walletAddress,
+                        showCopyText: false,
+                      ),
+                    ],
                   ),
+                  const Divider()
                 ],
               ),
             ),
@@ -112,12 +121,21 @@ class ProfileCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Balance',
-                    style: ArDriveTypography.body.buttonNormalBold(),
+                    appLocalizationsOf(context).balanceAR,
+                    style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                        ),
                   ),
                   Text(
                     '${double.tryParse(utils.winstonToAr(state.walletBalance))?.toStringAsFixed(5) ?? 0} AR',
-                    style: ArDriveTypography.body.buttonNormalBold(),
+                    style: ArDriveTypography.body.captionRegular().copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgMuted,
+                        ),
                   ),
                 ],
               ),
@@ -135,15 +153,18 @@ class ProfileCard extends StatelessWidget {
               context.read<ArDriveAuth>().logout().then(
                   (value) => context.read<ProfileCubit>().logoutProfile());
             },
-            content: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  Text(
-                    appLocalizationsOf(context).logout,
-                    style: ArDriveTypography.body.buttonNormalBold(),
-                  ),
-                ],
+            content: Container(
+              color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    Text(
+                      appLocalizationsOf(context).logout,
+                      style: ArDriveTypography.body.buttonNormalBold(),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

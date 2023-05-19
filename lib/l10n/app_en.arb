@@ -1955,6 +1955,18 @@
   "turboAddCreditsBlurb": "Add credits using your card for faster uploads.",
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
+  },
+  "addButtonTurbo": "Add",
+  "@addButtonTurbo": {
+    "description": "text for add button"
+  },
+  "creditsTurbo": "credits",
+  "@creditsTurbo": {
+    "description": "suffix for turbo balance"
+  },
+  "balanceAR": "balance",
+  "@balanceAR": {
+    "description": "title for ar balance"
   }
 }
 
