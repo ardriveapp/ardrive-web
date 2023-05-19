@@ -66,6 +66,39 @@ void main() {
       );
     });
 
+    test('can remove added items', () async {
+      final memoryCache = await newMockCache();
+      final metadataCache = MetadataCache(memoryCache);
+
+      final mockData = generateMockData(10);
+
+      for (int i = 0; i < mockData.length; i++) {
+        await metadataCache.put(i.toString(), mockData[i]);
+        expect(await metadataCache.get(i.toString()), mockData[i]);
+        await metadataCache.remove(i.toString());
+        expect(await metadataCache.get(i.toString()), null);
+      }
+    });
+
+    test('can be cleared', () async {
+      final memoryCache = await newMockCache();
+      final metadataCache = MetadataCache(memoryCache);
+
+      final mockData = generateMockData(10);
+
+      for (int i = 0; i < mockData.length; i++) {
+        await metadataCache.put(i.toString(), mockData[i]);
+      }
+
+      final keys = await metadataCache.keys;
+      expect(keys, ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+
+      await metadataCache.clear();
+
+      final keysAfterClear = await metadataCache.keys;
+      expect(keysAfterClear, []);
+    });
+
     group('with a stash_shared_preferences cache', () {
       late MetadataCache metadataCache;
 
