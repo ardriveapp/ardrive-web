@@ -20,7 +20,7 @@ void main() {
       );
     });
 
-    test('will accept up to 10 entries', () async {
+    test('can take as many entries as the maxEntries limit', () async {
       final metadataCache = await MetadataCache.fromCacheStore(
         await newMemoryCacheStore(),
         maxEntries: 10,
