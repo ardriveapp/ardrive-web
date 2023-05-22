@@ -158,7 +158,5 @@ List<Uint8List> generateMockData(int count) {
     mockData.add(Uint8List.fromList([i]));
   }
 
-  assert(mockData.length == count);
-
   return mockData;
 }
