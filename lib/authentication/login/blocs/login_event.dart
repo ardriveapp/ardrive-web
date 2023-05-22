@@ -77,3 +77,37 @@ class FinishOnboarding extends LoginEvent {
 class UnLockWithBiometrics extends LoginEvent {
   const UnLockWithBiometrics();
 }
+
+class EnterSeedPhrase extends LoginEvent {
+  const EnterSeedPhrase();
+}
+
+class AddWalletFromMnemonic extends LoginEvent {
+  const AddWalletFromMnemonic(this.mnemonic);
+
+  final String mnemonic;
+
+  @override
+  List<Object> get props => [mnemonic];
+}
+
+class CreateWallet extends LoginEvent {
+  const CreateWallet();
+}
+
+class ConfirmWalletMnemonic extends LoginEvent {
+  const ConfirmWalletMnemonic();
+}
+
+class VerifyWalletMnemonic extends LoginEvent {
+  const VerifyWalletMnemonic();
+}
+
+class SaveWalletToDisk extends LoginEvent {
+  const SaveWalletToDisk(this.wallet);
+
+  final Wallet wallet;
+
+  @override
+  List<Object> get props => [wallet];
+}
