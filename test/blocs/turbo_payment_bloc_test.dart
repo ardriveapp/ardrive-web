@@ -30,7 +30,11 @@ void main() async {
       build: () => paymentBloc,
       setUp: () {
         when(() => mockPaymentService.getBalance(wallet: testWallet))
-            .thenAnswer((_) async => BigInt.zero);
+            .thenAnswer((_) async => BigInt.one);
+        when(() => mockPaymentService.getPriceForFiat(
+              currency: 'usd',
+              amount: paymentBloc.currentAmount,
+            )).thenAnswer((_) async => BigInt.one);
       },
       act: (PaymentBloc bloc) {
         bloc.add(LoadInitialData());
@@ -39,9 +43,11 @@ void main() async {
         return [
           PaymentLoading(),
           PaymentLoaded(
-            balance: BigInt.zero,
-            estimatedStorage: 0,
+            balance: BigInt.one,
+            estimatedStorageForBalance: 0,
             selectedAmount: 0,
+            creditsForSelectedAmount: BigInt.one,
+            estimatedStorageForSelectedAmount: 0,
             currencyUnit: 'usd',
             dataUnit: 'gb',
           ),
@@ -49,39 +55,34 @@ void main() async {
       },
     );
 
-    test(
-      'emits PriceUpdated state with updated price when UpdatePrice event is added',
-      () {},
-    );
-
-    test(
-      'emits PriceUpdated state with updated price when UnitChange event is added',
-      () {},
-    );
-
-    test(
-      'emits PriceQuoteLoaded state when ReadyForPayment event is added',
-      () {},
-    );
-
-    test(
-      'emits PriceQuoteLoaded state every 30s if last event was ReadyForPayment',
-      () {},
-    );
-
-    test(
-      'emits FormErrorState state when ConfirmPayment event is added and form is invalid',
-      () {},
-    );
-
-    test(
-      'emits PaymentSuccess state when ConfirmPayment event is added and payment is successful',
-      () {},
-    );
-
-    test(
-      'emits PaymentFailed state when ConfirmPayment event is added and payment is unsuccessful',
-      () {},
+    blocTest(
+      'emits PaymentLoaded state with initial balance data and supported currencies when selected amount is updated',
+      build: () => paymentBloc,
+      setUp: () {
+        when(() => mockPaymentService.getBalance(wallet: testWallet))
+            .thenAnswer((_) async => BigInt.one);
+        when(() => mockPaymentService.getPriceForFiat(
+              currency: 'usd',
+              amount: 100,
+            )).thenAnswer((_) async => BigInt.two);
+      },
+      act: (PaymentBloc bloc) {
+        bloc.add(FiatAmountSelected(100));
+      },
+      expect: () {
+        return [
+          PaymentLoading(),
+          PaymentLoaded(
+            balance: BigInt.one,
+            estimatedStorageForBalance: 0,
+            selectedAmount: 0,
+            creditsForSelectedAmount: BigInt.two,
+            estimatedStorageForSelectedAmount: 0,
+            currencyUnit: 'usd',
+            dataUnit: 'gb',
+          ),
+        ];
+      },
     );
   });
 }

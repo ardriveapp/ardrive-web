@@ -26,36 +26,50 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   final PaymentService paymentService;
   final Wallet wallet;
 
+  String _currentDataUnit = dataUnits.last;
+  double _currentAmount = presetAmounts.first.toDouble();
+
+  String get currentCurrency => 'usd';
+  double get currentAmount => _currentAmount;
+  String get currentDataUnit => _currentDataUnit;
+
   PaymentBloc({
     required this.paymentService,
     required this.wallet,
   }) : super(PaymentInitial()) {
     on<PaymentEvent>((event, emit) async {
       if (event is LoadInitialData) {
-        emit(PaymentLoading());
-        final balance = await paymentService.getBalance(wallet: wallet);
-
-        // TODO: Calculate estiamted storage
-
-        emit(
-          PaymentLoaded(
-            balance: balance,
-            estimatedStorage: 0,
-            selectedAmount: 0,
-            currencyUnit: supportedCurrencies.first,
-            dataUnit: dataUnits.last,
-          ),
-        );
-      } else if (event is PresetAmountSelected) {
-      } else if (event is CustomAmountEntered) {
-        // Handle custom amount entry here
+        await _recomputePriceEstimate(emit);
+      } else if (event is FiatAmountSelected) {
+        _currentAmount = event.amount;
+        await _recomputePriceEstimate(emit);
       } else if (event is CurrencyUnitChanged) {
-        // Handle currency unit change here
+        // TODO Handle currency unit change here
       } else if (event is DataUnitChanged) {
-        // Handle data unit change here
+        _currentDataUnit = event.dataUnit;
       } else if (event is AddCreditsClicked) {
         // Handle add credits click here
       }
     });
+  }
+
+  _recomputePriceEstimate(Emitter emit) async {
+    emit(PaymentLoading());
+    final balance = await paymentService.getBalance(wallet: wallet);
+    final priceEstimate = await paymentService.getPriceForFiat(
+      currency: 'usd',
+      amount: currentAmount,
+    );
+    emit(
+      PaymentLoaded(
+        balance: balance,
+        estimatedStorageForBalance: 0, // TODO: Calculate estiamted storage
+        selectedAmount: 0,
+        creditsForSelectedAmount: priceEstimate,
+        estimatedStorageForSelectedAmount: 0,
+        currencyUnit: currentCurrency,
+        dataUnit: currentDataUnit,
+      ),
+    );
   }
 }

@@ -4,16 +4,10 @@ abstract class PaymentEvent {}
 
 class LoadInitialData extends PaymentEvent {}
 
-class PresetAmountSelected extends PaymentEvent {
-  final int amount;
+class FiatAmountSelected extends PaymentEvent {
+  final double amount;
 
-  PresetAmountSelected(this.amount);
-}
-
-class CustomAmountEntered extends PaymentEvent {
-  final int amount;
-
-  CustomAmountEntered(this.amount);
+  FiatAmountSelected(this.amount);
 }
 
 class CurrencyUnitChanged extends PaymentEvent {

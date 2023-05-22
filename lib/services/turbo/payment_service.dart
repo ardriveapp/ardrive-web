@@ -16,12 +16,29 @@ class PaymentService {
     required this.httpClient,
   });
 
-  Future<BigInt> getPrice({
+  Future<BigInt> getPriceForBytes({
     required int byteSize,
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
     final priceResponse = await httpClient.get(
       url: '$turboPaymentUri/v1/price/bytes/$byteSize',
+    );
+    if (!acceptedStatusCodes.contains(priceResponse.statusCode)) {
+      throw Exception(
+        'Turbo price fetch failed with status code ${priceResponse.statusCode}',
+      );
+    }
+    final price = BigInt.parse(priceResponse.data);
+    return price;
+  }
+
+  Future<BigInt> getPriceForFiat({
+    required double amount,
+    required String currency,
+  }) async {
+    final acceptedStatusCodes = [200, 202, 204];
+    final priceResponse = await httpClient.get(
+      url: '$turboPaymentUri/v1/price/$currency/$amount',
     );
     if (!acceptedStatusCodes.contains(priceResponse.statusCode)) {
       throw Exception(
@@ -89,7 +106,7 @@ class DontUsePaymentService implements PaymentService {
   late ArDriveHTTP httpClient;
 
   @override
-  Future<BigInt> getPrice({required int byteSize}) {
+  Future<BigInt> getPriceForBytes({required int byteSize}) {
     throw UnimplementedError();
   }
 
@@ -112,6 +129,14 @@ class DontUsePaymentService implements PaymentService {
 
   @override
   bool get useTurboPayment => false;
+
+  @override
+  Future<BigInt> getPriceForFiat({
+    required double amount,
+    required String currency,
+  }) {
+    throw UnimplementedError();
+  }
 }
 
 class TurboUserNotFound implements Exception {

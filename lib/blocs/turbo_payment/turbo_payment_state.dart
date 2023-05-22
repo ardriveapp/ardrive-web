@@ -14,15 +14,19 @@ class PaymentLoading extends PaymentState {
 
 class PaymentLoaded extends PaymentState {
   final BigInt balance;
-  final int estimatedStorage;
-  final int selectedAmount;
+  final double estimatedStorageForBalance;
+  final double selectedAmount;
+  final BigInt creditsForSelectedAmount;
+  final double estimatedStorageForSelectedAmount;
   final String currencyUnit;
   final String dataUnit;
 
   PaymentLoaded({
     required this.balance,
-    required this.estimatedStorage,
+    required this.estimatedStorageForBalance,
     required this.selectedAmount,
+    required this.creditsForSelectedAmount,
+    required this.estimatedStorageForSelectedAmount,
     required this.currencyUnit,
     required this.dataUnit,
   });
@@ -30,8 +34,10 @@ class PaymentLoaded extends PaymentState {
   @override
   List<Object?> get props => [
         balance,
-        estimatedStorage,
+        estimatedStorageForBalance,
         selectedAmount,
+        creditsForSelectedAmount,
+        estimatedStorageForSelectedAmount,
         currencyUnit,
         dataUnit,
       ];
