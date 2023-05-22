@@ -94,7 +94,7 @@ class _ArDriveAuth implements ArDriveAuth {
     _currentUser = user;
   }
 
-  Future<MetadataCache> get metadataCache async {
+  Future<MetadataCache> get _metadataCache async {
     _maybeMetadataCache ??= await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),
     );
@@ -200,7 +200,7 @@ class _ArDriveAuth implements ArDriveAuth {
 
       await _databaseHelpers.deleteAllTables();
 
-      (await metadataCache).clear();
+      (await _metadataCache).clear();
     } catch (e) {
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');
