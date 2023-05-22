@@ -143,7 +143,7 @@ class ProfileCard extends StatelessWidget {
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
-                              .themeFgMuted,
+                              .themeFgSubtle,
                         ),
                   ),
                 ],
