@@ -37,7 +37,14 @@ void main() {
       expect(keys, ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
     });
 
-    test('eviction policy LFU', () async {
+    test('follows the eviction policy: Least Frequently Used (LFU)', () async {
+      // Refer to https://pub.dev/packages/stash#eviction-policies for more info
+      /// LfuEvictionPolicy	LFU (least-frequently used) policy counts how often
+      /// an entry is used. Those that are least often used are discarded first.
+      /// In that sense it works very similarly to LRU except that instead of
+      /// storing the value of how recently a block was accessed, it stores the
+      /// value of how many times it was accessed
+
       final metadataCache = await MetadataCache.fromCacheStore(
         await newMemoryCacheStore(),
         maxEntries: 10,

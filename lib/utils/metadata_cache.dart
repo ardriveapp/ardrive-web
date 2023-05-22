@@ -55,6 +55,8 @@ class MetadataCache {
     return store.cache<Uint8List>(
       name: defaultCacheName,
       maxEntries: maxEntries,
+
+      // See: https://pub.dev/packages/stash#eviction-policies
       evictionPolicy: const LfuEvictionPolicy(),
     );
   }
