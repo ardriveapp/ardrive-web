@@ -58,6 +58,10 @@
       }
     }
   },
+  "arBalance": "AR Balance",
+  "@arBalance": {
+    "description": "Balance in AR"
+  },
   "arConnectRemainOnThisTab": "CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.",
   "@arConnectRemainOnThisTab": {
     "description": "Warning for the user to do not leave the tab"
