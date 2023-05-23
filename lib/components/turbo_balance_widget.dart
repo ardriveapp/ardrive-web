@@ -44,21 +44,19 @@ class TurboBalance extends StatelessWidget {
                     future: paymentService.getBalance(wallet: wallet),
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
-                        if (snapshot.hasError) {
-                          return Text(
-                            appLocalizationsOf(context).turboAddCreditsBlurb,
-                            style: ArDriveTypography.body
-                                .captionRegular()
-                                .copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgMuted,
-                                ),
-                          );
-                        }
+                        return Text(
+                          appLocalizationsOf(context).turboAddCreditsBlurb,
+                          style:
+                              ArDriveTypography.body.captionRegular().copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgMuted,
+                                  ),
+                        );
                       }
+
                       if (snapshot.hasData) {
                         final balance = snapshot.data;
                         if (balance != null) {
