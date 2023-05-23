@@ -8,6 +8,7 @@ fragment TransactionCommon on Transaction {
   }
   block {
     height
+    timestamp
   }
   tags {
     name

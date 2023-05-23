@@ -1,37 +1,48 @@
-import 'package:ardrive/theme/theme.dart';
+import 'dart:async';
+
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-import 'components.dart';
-
-Future<void> showProgressDialog(BuildContext context, String title) =>
-    showDialog(
-      context: context,
+Future<void> showProgressDialog(
+  BuildContext context, {
+  required String title,
+  List<ModalAction>? actions,
+}) =>
+    showAnimatedDialog(
+      context,
       barrierDismissible: false,
-      builder: (BuildContext context) => ProgressDialog(title: title),
+      content: ProgressDialog(
+        title: title,
+        actions: actions ?? const [],
+      ),
     );
 
 class ProgressDialog extends StatelessWidget {
+  const ProgressDialog({
+    super.key,
+    required this.title,
+    this.actions = const [],
+    this.progressDescription,
+    this.progressBar,
+    this.percentageDetails,
+  });
+
   final String title;
-  final Widget? percentageDetails;
+  final List<ModalAction> actions;
   final Widget? progressDescription;
   final Widget? progressBar;
-
-  const ProgressDialog({
-    Key? key,
-    required this.title,
-    this.progressBar,
-    this.progressDescription,
-    this.percentageDetails,
-  }) : super(key: key);
+  final Widget? percentageDetails;
 
   @override
-  Widget build(BuildContext context) => AppDialog(
-        dismissable: false,
-        title: title,
-        content: SizedBox(
-          width: kSmallDialogWidth + 164,
+  Widget build(BuildContext context) {
+    return ArDriveStandardModal(
+      title: title,
+      content: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               const Padding(
@@ -56,5 +67,8 @@ class ProgressDialog extends StatelessWidget {
             ],
           ),
         ),
-      );
+      ),
+      actions: actions,
+    );
+  }
 }

@@ -4,10 +4,10 @@ import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/services/pst/pst.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/types/winston.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -17,6 +17,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart' show TestWidgetsFlutterBinding;
 import 'package:mocktail/mocktail.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/utils.dart';
@@ -30,7 +31,7 @@ void main() {
   final pstService = MockPstService();
   final wallet = getTestWallet();
   final cipherKey = SecretKeyData.random(length: 32);
-  const double winstonToArFactor = 1000000000000;
+
   const double stubByteCountToWinstonFactor = 2;
   const double stubArToUsdFactor = 3;
   const double stubPstFeeFactor = .15;
@@ -55,6 +56,15 @@ void main() {
     setUp(() async {
       arweave = MockArweaveService();
 
+      // mocks PackageInfo
+      PackageInfo.setMockInitialValues(
+        appName: 'appName',
+        packageName: 'packageName',
+        version: '1.2.3',
+        buildNumber: 'buildNumber',
+        buildSignature: 'buildSignature',
+      );
+
       stubDrive = Drive(
         id: stubEntityId,
         rootFolderId: stubEntityId,
@@ -72,6 +82,9 @@ void main() {
                 invocation.namedArguments[const Symbol('byteSize')],
           ),
         ),
+      );
+      when(() => arweave.getArUsdConversionRateOrNull()).thenAnswer(
+        (_) => Future.value(stubArToUsdFactor),
       );
 
       registerFallbackValue(BigInt.zero);
@@ -131,8 +144,10 @@ void main() {
           AppPlatform.setMockPlatform(platform: stubPlatform);
 
           uploadPlanUtis = UploadPlanUtils(
+            crypto: ArDriveCrypto(),
             arweave: arweave,
             driveDao: driveDao,
+            turboUploadService: DontUseUploadService(),
           );
 
           final uploadFiles = multipleFilesToUpload
@@ -151,7 +166,7 @@ void main() {
             targetFolder: stubRootFolderEntry,
           );
 
-          final estimate = await CostEstimate.create(
+          final CostEstimate estimate = await CostEstimate.create(
             uploadPlan: uploadPlan,
             arweaveService: arweave,
             pstService: pstService,
@@ -187,8 +202,10 @@ void main() {
           AppPlatform.setMockPlatform(platform: stubPlatform);
 
           uploadPlanUtis = UploadPlanUtils(
+            crypto: ArDriveCrypto(),
             arweave: arweave,
             driveDao: driveDao,
+            turboUploadService: DontUseUploadService(),
           );
 
           final uploadFiles = singleFileToUpload

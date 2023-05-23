@@ -1,0 +1,1 @@
+- Avoids the HTTP redirect when syncing from snapshots.

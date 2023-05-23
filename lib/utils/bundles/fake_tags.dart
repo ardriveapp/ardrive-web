@@ -27,7 +27,7 @@ List<Tag> fakeApplicationTags({
 }
 
 List<Tag> createFakeEntityTags(FileEntity entity) => <Tag>[
-      Tag(EntityTag.arFs, '0.11'),
+      Tag(EntityTag.arFs, '0.12'),
       Tag(EntityTag.entityType, EntityType.file),
       Tag(EntityTag.driveId, entity.driveId!),
       Tag(EntityTag.parentFolderId, entity.parentFolderId!),

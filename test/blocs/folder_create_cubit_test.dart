@@ -5,7 +5,6 @@ import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:arweave/arweave.dart';
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,6 +21,7 @@ void main() {
     late Database db;
 
     late ArweaveService arweave;
+    late UploadService turboUploadService;
     late ProfileCubit profileCubit;
     late FolderCreateCubit folderCreateCubit;
 
@@ -39,11 +39,14 @@ void main() {
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
+        MockArDriveCrypto(),
       );
+      turboUploadService = DontUseUploadService();
       profileCubit = MockProfileCubit();
 
       folderCreateCubit = FolderCreateCubit(
         arweave: arweave,
+        turboUploadService: turboUploadService,
         driveDao: driveDao,
         profileCubit: profileCubit,
         //TODO Mock or supply a driveId or parentFolderId
@@ -55,12 +58,5 @@ void main() {
     tearDown(() async {
       await db.close();
     });
-
-    blocTest<FolderCreateCubit, FolderCreateState>(
-      'does nothing when submitted without valid form',
-      build: () => folderCreateCubit,
-      act: (bloc) => bloc.submit(),
-      expect: () => [],
-    );
   });
 }

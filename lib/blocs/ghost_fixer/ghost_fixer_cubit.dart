@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
@@ -13,12 +13,11 @@ import 'package:reactive_forms/reactive_forms.dart';
 part 'ghost_fixer_state.dart';
 
 class GhostFixerCubit extends Cubit<GhostFixerState> {
-  late FormGroup form;
-
-  final FolderEntry ghostFolder;
+  final FolderDataTableItem ghostFolder;
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
+  final UploadService _turboUploadService;
   final DriveDao _driveDao;
   final SyncCubit _syncCubit;
 
@@ -28,25 +27,15 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     required this.ghostFolder,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
+    required UploadService turboUploadService,
     required DriveDao driveDao,
     required SyncCubit syncCubit,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
+        _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _syncCubit = syncCubit,
         super(GhostFixerInitial()) {
-    form = FormGroup({
-      'name': FormControl(
-        validators: [
-          Validators.required,
-          Validators.pattern(kFileNameRegex),
-          Validators.pattern(kTrimTrailingRegex),
-        ],
-        asyncValidators: [
-          _uniqueFolderName,
-        ],
-      ),
-    });
     _driveDao
         .driveById(driveId: ghostFolder.driveId)
         .getSingle()
@@ -94,23 +83,26 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     return foldersWithName.isNotEmpty || filesWithName.isNotEmpty;
   }
 
-  Future<void> submit() async {
-    form.markAllAsTouched();
-
-    if (form.invalid) {
-      return;
-    }
+  Future<void> submit(String folderName) async {
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
       final state = this.state as GhostFixerFolderLoadSuccess;
 
-      final String folderName = form.control('name').value;
       final parentFolder = state.viewingFolder.folder;
 
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(GhostFixerWalletMismatch());
         return;
       }
+
+      if (await entityNameExists(
+          name: folderName, parentFolderId: parentFolder.id)) {
+        final state = this.state as GhostFixerFolderLoadSuccess;
+        emit(GhostFixerNameConflict(name: folderName));
+        emit(state);
+        return;
+      }
+
       emit(GhostFixerRepairInProgress());
 
       await _driveDao.transaction(() async {
@@ -128,26 +120,40 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
                 targetFolder.driveId, profile.cipherKey)
             : null;
 
-        final folder = ghostFolder.copyWith(
+        final folder = FolderEntry(
           id: ghostFolder.id,
+          driveId: ghostFolder.driveId,
           name: folderName,
           parentFolderId: parentFolder.id,
           path: '${parentFolder.path}/$folderName',
           isGhost: false,
+          lastUpdated: ghostFolder.lastUpdated,
+          dateCreated: ghostFolder.dateCreated,
         );
 
         final folderEntity = folder.asEntity();
+        if (_turboUploadService.useTurbo) {
+          final folderDataItem = await _arweave.prepareEntityDataItem(
+            folderEntity,
+            profile.wallet,
+            key: driveKey,
+          );
 
-        final folderTx = await _arweave.prepareEntityTx(
-          folderEntity,
-          profile.wallet,
-          driveKey,
-        );
+          await _turboUploadService.postDataItem(dataItem: folderDataItem);
+          folderEntity.txId = folderDataItem.id;
+        } else {
+          final folderTx = await _arweave.prepareEntityTx(
+            folderEntity,
+            profile.wallet,
+            driveKey,
+          );
 
-        await _arweave.postTx(folderTx);
+          await _arweave.postTx(folderTx);
+          folderEntity.txId = folderTx.id;
+        }
+
         await _driveDao.writeToFolder(folder);
 
-        folderEntity.txId = folderTx.id;
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
             performedAction: RevisionAction.create));
         final folderMap = {folder.id: folder.toCompanion(false)};

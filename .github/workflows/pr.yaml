@@ -25,13 +25,8 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.5'
+          flutter-version: '3.3.9'
           channel: 'stable'
-
-      # Install Chrome
-      - uses: browser-actions/setup-chrome@latest
-        with:
-          chrome-version: stable
 
       - name: Install script_runner
         run: flutter pub global activate script_runner
@@ -40,14 +35,6 @@ jobs:
         run: scr setup
 
       - name: Test app
-        run: scr test
-
-      - name: Test ardrive_io
-        working-directory: ./ardrive_io
-        run: flutter test
-
-      - name: Test ardrive_network
-        working-directory: ./ardrive_network
         run: scr test
 
   web:
@@ -62,7 +49,7 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.5'
+          flutter-version: '3.3.9'
           channel: 'stable'
 
       - name: Install script_runner
@@ -72,11 +59,13 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --release
+          flutter build web --release --pwa-strategy none
 
       # JS files cache invalidation
-      - name: main.dart.js cache invalidation
-        run: sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
+      - name: main.dart.js and service worker cache invalidation
+        run: |
+          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
+          sed -i 's/flutter_service_worker.js/flutter_service_worker.js?version='"$GITHUB_SHA"'/' build/web/index.html
 
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
@@ -100,7 +89,7 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.5'
+          flutter-version: '3.3.9'
           channel: 'stable'
 
       - name: Set FIREBASE_JSON env var
@@ -152,7 +141,7 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.5'
+          flutter-version: '3.3.9'
           channel: 'stable'
 
       - name: Set FIREBASE_JSON env var

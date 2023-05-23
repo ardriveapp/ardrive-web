@@ -75,11 +75,18 @@ class UploadReady extends UploadState {
   final bool uploadIsPublic;
 
   final UploadPlan uploadPlan;
+
+  final bool isFreeThanksToTurbo;
+
+  final int uploadSize;
+
   UploadReady({
     required this.costEstimate,
     required this.sufficientArBalance,
     required this.uploadIsPublic,
     required this.uploadPlan,
+    required this.isFreeThanksToTurbo,
+    required this.uploadSize,
   });
 
   @override
@@ -87,6 +94,7 @@ class UploadReady extends UploadState {
         costEstimate,
         sufficientArBalance,
         uploadPlan,
+        isFreeThanksToTurbo,
       ];
 }
 
@@ -107,3 +115,17 @@ class UploadFailure extends UploadState {}
 class UploadComplete extends UploadState {}
 
 class UploadWalletMismatch extends UploadState {}
+
+class UploadShowingWarning extends UploadState {
+  final UploadWarningReason reason;
+
+  UploadShowingWarning({required this.reason});
+
+  @override
+  List<Object> get props => [reason];
+}
+
+enum UploadWarningReason {
+  /// The user is attempting to upload a file that is too large.
+  fileTooLarge,
+}

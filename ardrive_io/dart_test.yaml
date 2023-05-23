@@ -1,6 +1,0 @@
-#Include master test file
-include: ../dart_test_base.yaml
-
-# Save io results on JSON in a specific folder
-file_reporters:
-  json: ../reports/io/tests.json

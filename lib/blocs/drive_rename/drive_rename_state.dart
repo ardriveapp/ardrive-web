@@ -16,3 +16,12 @@ class DriveRenameSuccess extends DriveRenameState {}
 class DriveRenameFailure extends DriveRenameState {}
 
 class DriveRenameWalletMismatch extends DriveRenameState {}
+
+class DriveNameAlreadyExists extends DriveRenameState {
+  final String driveName;
+
+  const DriveNameAlreadyExists(this.driveName);
+
+  @override
+  List<Object> get props => [driveName];
+}

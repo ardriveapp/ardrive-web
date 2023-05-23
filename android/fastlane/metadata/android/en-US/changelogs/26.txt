@@ -1,0 +1,1 @@
+- Raises the limit in size of uploads for public drives up without limitations. Improves overall performance.

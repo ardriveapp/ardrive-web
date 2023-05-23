@@ -7,12 +7,14 @@ Stream<double> _syncDrive(
   String driveId, {
   required DriveDao driveDao,
   required ProfileState profileState,
-  required ArweaveService arweaveService,
+  required ArweaveService arweave,
   required Database database,
   required Function addError,
   required int currentBlockHeight,
   required int lastBlockHeight,
   required int transactionParseBatchSize,
+  required Map<FolderID, GhostFolder> ghostFolders,
+  required String ownerAddress,
 }) async* {
   /// Variables to count the current drive's progress information
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
@@ -37,16 +39,58 @@ Stream<double> _syncDrive(
 
   logSync('Fetching all transactions for drive ${drive.name}\n');
 
-  final transactions =
-      <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
+  final transactions = <DriveHistoryTransaction>[];
 
-  final transactionsStream = arweaveService
-      .getAllTransactionsFromDrive(driveId, lastBlockHeight: lastBlockHeight)
-      .handleError((err) {
-    addError(err);
-  }).asBroadcastStream();
+  final snapshotsStream = arweave.getAllSnapshotsOfDrive(
+    driveId,
+    lastBlockHeight,
+    ownerAddress: ownerAddress,
+  );
+  final List<SnapshotItem> snapshotItems = await SnapshotItem.instantiateAll(
+    snapshotsStream,
+    arweave: arweave,
+  ).toList();
+  final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
+    items: snapshotItems,
+  );
 
-  /// The first block height from this drive.
+  final totalRangeToQueryFor = HeightRange(
+    rangeSegments: [
+      Range(
+        start: lastBlockHeight,
+        end: currentBlockHeight,
+      ),
+    ],
+  );
+
+  final HeightRange gqlDriveHistorySubRanges = HeightRange.difference(
+    totalRangeToQueryFor,
+    snapshotDriveHistory.subRanges,
+  );
+  final GQLDriveHistory gqlDriveHistory = GQLDriveHistory(
+    subRanges: gqlDriveHistorySubRanges,
+    arweave: arweave,
+    driveId: driveId,
+    ownerAddress: ownerAddress,
+  );
+
+  print('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');
+  print(
+    'Sub ranges in snapshots (DRIVE ID: $driveId): ${snapshotDriveHistory.subRanges.rangeSegments}',
+  );
+  print(
+    'Sub ranges in GQL (DRIVE ID: $driveId): ${gqlDriveHistorySubRanges.rangeSegments}',
+  );
+
+  final DriveHistoryComposite driveHistory = DriveHistoryComposite(
+    subRanges: totalRangeToQueryFor,
+    gqlDriveHistory: gqlDriveHistory,
+    snapshotDriveHistory: snapshotDriveHistory,
+  );
+
+  final transactionsStream = driveHistory.getNextStream();
+
+  /// The first block height of this drive.
   int? firstBlockHeight;
 
   /// In order to measure the sync progress by the block height, we use the difference
@@ -58,19 +102,19 @@ Stream<double> _syncDrive(
 
   /// First phase of the sync
   /// Here we get all transactions from its drive.
-  await for (var t in transactionsStream) {
-    if (t.isEmpty) continue;
-
+  await for (DriveHistoryTransaction t in transactionsStream) {
     double calculatePercentageBasedOnBlockHeights() {
-      final block = t.last.node.block;
+      final block = t.block;
 
       if (block != null) {
         return (1 -
             ((currentBlockHeight - block.height) / totalBlockHeightDifference));
       }
       logSync(
-        'The transaction block is null. \nTransaction node id: ${t.first.node.id}',
+        'The transaction block is null. \nTransaction node id: ${t.id}',
       );
+
+      print('New fetch-phase percentage: $fetchPhasePercentage');
 
       /// if the block is null, we don't calculate and keep the same percentage
       return fetchPhasePercentage;
@@ -78,19 +122,25 @@ Stream<double> _syncDrive(
 
     /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
     if (firstBlockHeight == null) {
-      final block = t.first.node.block;
+      final block = t.block;
 
       if (block != null) {
         firstBlockHeight = block.height;
         totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
+        print(
+          'First height: $firstBlockHeight, totalHeightDiff: $totalBlockHeightDifference',
+        );
       } else {
         logSync(
-          'The transaction block is null. \nTransaction node id: ${t.first.node.id}',
+          'The transaction block is null. \nTransaction node id: ${t.id}',
         );
       }
+    } else {
+      print('Block attribute is already present - $firstBlockHeight');
     }
 
-    transactions.addAll(t);
+    print('Adding transaction ${t.id}');
+    transactions.add(t);
 
     /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
     if (firstBlockHeight != null) {
@@ -98,11 +148,15 @@ Stream<double> _syncDrive(
         fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
       } else {
         // If the difference is zero means that the first phase was concluded.
+        print('The first phase just finished!');
         fetchPhasePercentage = 1;
       }
-      yield calculatePercentageBasedOnBlockHeights() * fetchPhaseWeight;
+      final percentage =
+          calculatePercentageBasedOnBlockHeights() * fetchPhaseWeight;
+      yield percentage;
     }
   }
+  print('Done fetching data - ${gqlDriveHistory.driveId}');
 
   final fetchPhaseTotalTime =
       DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
@@ -115,19 +169,29 @@ Stream<double> _syncDrive(
     ''',
   );
 
-  yield* _parseDriveTransactionsIntoDatabaseEntities(
-    driveDao: driveDao,
-    arweaveService: arweaveService,
-    database: database,
-    transactions: transactions,
-    drive: drive,
-    driveKey: driveKey,
-    currentBlockHeight: currentBlockHeight,
-    lastBlockHeight: lastBlockHeight,
-    batchSize: transactionParseBatchSize,
-  ).map(
-    (parseProgress) => parseProgress * 0.9,
-  );
+  try {
+    yield* _parseDriveTransactionsIntoDatabaseEntities(
+      ghostFolders: ghostFolders,
+      driveDao: driveDao,
+      arweave: arweave,
+      database: database,
+      transactions: transactions,
+      drive: drive,
+      driveKey: driveKey,
+      currentBlockHeight: currentBlockHeight,
+      lastBlockHeight: lastBlockHeight,
+      batchSize: transactionParseBatchSize,
+      snapshotDriveHistory: snapshotDriveHistory,
+      ownerAddress: ownerAddress,
+    ).map(
+      (parseProgress) => parseProgress * 0.9,
+    );
+  } catch (e) {
+    print('[Sync Drive] Error while parsing transactions: $e');
+    rethrow;
+  }
+
+  await SnapshotItemOnChain.dispose(drive.id);
 
   final syncDriveTotalTime =
       DateTime.now().difference(startSyncDT).inMilliseconds;

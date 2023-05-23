@@ -4,46 +4,47 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/progress_bar.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
-import 'package:ardrive/core/decrypt.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'components.dart';
-
 Future<void> promptToDownloadProfileFile({
   required BuildContext context,
-  required FileWithLatestRevisionTransactions file,
+  required FileDataTableItem file,
 }) {
   final ARFSFileEntity arfsFile =
-      ARFSFactory().getARFSFileFromFileWithLatestRevisionTransactions(file);
+      ARFSFactory().getARFSFileFromFileDataItemTable(file);
 
   final profileState = context.read<ProfileCubit>().state;
+  final arweave = context.read<ArweaveService>();
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
+    crypto: ArDriveCrypto(),
     arfsRepository: ARFSRepository(
       context.read<DriveDao>(),
       ARFSFactory(),
     ),
-    decrypt: Decrypt(),
     downloadService: DownloadService(arweave),
     downloader: ArDriveDownloader(),
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
-    arweave: context.read<ArweaveService>(),
+    arweave: arweave,
   )..download(cipherKey);
-  return showDialog(
-    context: context,
-    builder: (_) => BlocProvider<FileDownloadCubit>.value(
+  return showAnimatedDialog(
+    context,
+    barrierDismissible: false,
+    content: BlocProvider<FileDownloadCubit>.value(
       value: cubit,
       child: const FileDownloadDialog(),
     ),
@@ -52,29 +53,33 @@ Future<void> promptToDownloadProfileFile({
 
 Future<void> promptToDownloadFileRevision({
   required BuildContext context,
-  required FileRevisionWithTransactions revision,
+  required ARFSFileEntity revision,
 }) {
-  final ARFSFileEntity arfsFile =
-      ARFSFactory().getARFSFileFromFileRevisionWithTransactions(revision);
+  final ARFSFileEntity arfsFile = revision;
+
   final profileState = context.read<ProfileCubit>().state;
+
+  final arweave = context.read<ArweaveService>();
+
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
+    crypto: ArDriveCrypto(),
     arfsRepository: ARFSRepository(
       context.read<DriveDao>(),
       ARFSFactory(),
     ),
-    decrypt: Decrypt(),
     downloadService: DownloadService(arweave),
     downloader: ArDriveDownloader(),
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
-    arweave: context.read<ArweaveService>(),
+    arweave: arweave,
   )..download(cipherKey);
 
-  return showDialog(
-    context: context,
-    builder: (_) => BlocProvider<FileDownloadCubit>.value(
+  return showAnimatedDialog(
+    context,
+    barrierDismissible: false,
+    content: BlocProvider<FileDownloadCubit>.value(
       value: cubit,
       child: const FileDownloadDialog(),
     ),
@@ -84,16 +89,18 @@ Future<void> promptToDownloadFileRevision({
 Future<void> promptToDownloadSharedFile({
   required BuildContext context,
   SecretKey? fileKey,
-  required FileRevision revision,
+  required ARFSFileEntity revision,
 }) {
   final cubit = SharedFileDownloadCubit(
+    crypto: ArDriveCrypto(),
     revision: revision,
     fileKey: fileKey,
     arweave: context.read<ArweaveService>(),
   );
-  return showDialog(
-    context: context,
-    builder: (_) => BlocProvider<FileDownloadCubit>.value(
+  return showAnimatedDialog(
+    context,
+    barrierDismissible: false,
+    content: BlocProvider<FileDownloadCubit>.value(
       value: cubit,
       child: const FileDownloadDialog(),
     ),
@@ -143,186 +150,177 @@ class FileDownloadDialog extends StatelessWidget {
         },
       );
 
-  Widget _fileDownloadFailedDialog(BuildContext context) {
-    return AppDialog(
-      dismissable: false,
+  ArDriveStandardModal _fileDownloadFailedDialog(BuildContext context) {
+    return _modalWrapper(
       title: appLocalizationsOf(context).fileFailedToDownload,
-      content: SizedBox(
-        width: kMediumDialogWidth,
-        child: Text(appLocalizationsOf(context).tryAgainDownloadingFile),
-      ),
+      description: appLocalizationsOf(context).tryAgainDownloadingFile,
       actions: [
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(appLocalizationsOf(context).ok),
+        ModalAction(
+          action: () => Navigator.pop(context),
+          title: appLocalizationsOf(context).ok,
         ),
       ],
     );
   }
 
-  Widget _fileDownloadFailedDueToFileAbovePrivateLimit(BuildContext context) {
-    return AppDialog(
-      dismissable: false,
+  ArDriveStandardModal _fileDownloadFailedDueToFileAbovePrivateLimit(
+      BuildContext context) {
+    return _modalWrapper(
       title: appLocalizationsOf(context).warningEmphasized,
-      content: SizedBox(
-        width: kMediumDialogWidth,
-        child: Text(
-            appLocalizationsOf(context).fileFailedToDownloadFileAboveLimit),
-      ),
+      description:
+          appLocalizationsOf(context).fileFailedToDownloadFileAboveLimit,
       actions: [
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(appLocalizationsOf(context).ok),
+        ModalAction(
+          action: () => Navigator.pop(context),
+          title: appLocalizationsOf(context).ok,
         ),
       ],
     );
   }
 
-  Widget _warningToWaitDownloadFinishes(BuildContext context) {
-    return AppDialog(
-      dismissable: false,
-      title: appLocalizationsOf(context).warningEmphasized,
-      content: SizedBox(
-        width: kMediumDialogWidth,
-        child: Text(appLocalizationsOf(context).waitForDownload),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(appLocalizationsOf(context).cancel),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final profileState = context.read<ProfileCubit>().state;
+  ArDriveStandardModal _warningToWaitDownloadFinishes(BuildContext context) {
+    return _modalWrapper(
+        title: appLocalizationsOf(context).warningEmphasized,
+        description: appLocalizationsOf(context).waitForDownload,
+        actions: [
+          ModalAction(
+            action: () {
+              final profileState = context.read<ProfileCubit>().state;
 
-            final cipherKey =
-                profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+              final cipherKey = profileState is ProfileLoggedIn
+                  ? profileState.cipherKey
+                  : null;
 
-            (context.read<FileDownloadCubit>() as ProfileFileDownloadCubit)
-                .download(cipherKey);
-          },
-          child: Text(appLocalizationsOf(context).ok),
-        ),
-      ],
-    );
+              (context.read<FileDownloadCubit>() as ProfileFileDownloadCubit)
+                  .download(cipherKey);
+            },
+            title: appLocalizationsOf(context).ok,
+          ),
+          ModalAction(
+            action: () => Navigator.pop(context),
+            title: appLocalizationsOf(context).cancel,
+          ),
+        ]);
   }
 
-  Widget _downloadStartingDialog(BuildContext context) {
-    return AppDialog(
-      dismissable: false,
-      title: appLocalizationsOf(context).downloadingFile,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: const [
-          Center(child: CircularProgressIndicator()),
-        ],
-      ),
-      actions: [
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(appLocalizationsOf(context).cancel),
+  ArDriveStandardModal _downloadStartingDialog(BuildContext context) {
+    return _modalWrapper(
+        title: appLocalizationsOf(context).downloadingFile,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Center(child: CircularProgressIndicator()),
+          ],
         ),
-      ],
-    );
+        actions: [
+          ModalAction(
+            action: () => Navigator.pop(context),
+            title: appLocalizationsOf(context).cancel,
+          ),
+        ]);
   }
 
-  Widget _fileDownloadInProgressDialog(
+  ArDriveStandardModal _fileDownloadInProgressDialog(
       BuildContext context, FileDownloadInProgress state) {
-    return AppDialog(
-      dismissable: false,
+    return _modalWrapper(
       title: appLocalizationsOf(context).downloadingFile,
-      content: SizedBox(
+      child: SizedBox(
         width: kMediumDialogWidth,
         child: ListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(
             state.fileName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            style: ArDriveTypography.body.bodyRegular(
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            ),
           ),
-          subtitle: Text(filesize(state.totalByteCount)),
+          subtitle: Text(
+            filesize(
+              state.totalByteCount,
+            ),
+            style: ArDriveTypography.body.smallRegular(
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            ),
+          ),
           trailing: const CircularProgressIndicator(),
         ),
       ),
       actions: [
-        ElevatedButton(
-          onPressed: () async {
+        ModalAction(
+          action: () async {
             await context.read<FileDownloadCubit>().abortDownload();
             // ignore: use_build_context_synchronously
             Navigator.pop(context);
           },
-          child: Text(appLocalizationsOf(context).cancel),
+          title: appLocalizationsOf(context).cancel,
         ),
       ],
     );
   }
 
-  Widget downloadFinishedWithSuccessDialog(
+  ArDriveStandardModal downloadFinishedWithSuccessDialog(
       BuildContext context, FileDownloadFinishedWithSuccess state) {
-    return AppDialog(
-      dismissable: false,
+    return _modalWrapper(
       title: appLocalizationsOf(context).downloadFinished,
-      content: SizedBox(
-        width: kMediumDialogWidth,
-        child: ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            state.fileName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+      description: appLocalizationsOf(context).downloadFinished,
+      actions: [
+        ModalAction(
+          action: () {
+            context.read<FileDownloadCubit>().abortDownload();
+            Navigator.pop(context);
+          },
+          title: appLocalizationsOf(context).doneEmphasized,
+        ),
+      ],
+    );
+  }
+
+  ArDriveStandardModal _downloadingFileWithProgressDialog(
+      BuildContext context, FileDownloadWithProgress state) {
+    return _modalWrapper(
+        title: appLocalizationsOf(context).downloadingFile,
+        child: SizedBox(
+          width: kMediumDialogWidth,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  state.fileName,
+                ),
+                subtitle: Text(
+                    '${filesize((state.fileSize * (state.progress / 100)).round())} / ${filesize(state.fileSize)}'),
+              ),
+              ProgressBar(
+                  percentage: (context.read<FileDownloadCubit>()
+                          as ProfileFileDownloadCubit)
+                      .downloadProgress)
+            ],
           ),
         ),
-      ),
-      actions: [
-        ElevatedButton(
-          onPressed: () {
-            context.read<FileDownloadCubit>().abortDownload();
-            Navigator.pop(context);
-          },
-          child: Text(appLocalizationsOf(context).doneEmphasized),
-        ),
-      ],
-    );
+        actions: [
+          ModalAction(
+            action: () {
+              context.read<FileDownloadCubit>().abortDownload();
+              Navigator.pop(context);
+            },
+            title: appLocalizationsOf(context).cancel,
+          ),
+        ]);
   }
 
-  Widget _downloadingFileWithProgressDialog(
-      BuildContext context, FileDownloadWithProgress state) {
-    return AppDialog(
-      dismissable: false,
-      title: appLocalizationsOf(context).downloadingFile,
-      content: SizedBox(
-        width: kMediumDialogWidth,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                state.fileName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                  filesize((state.fileSize * (state.progress / 100)).round()) +
-                      ' / ' +
-                      filesize(state.fileSize)),
-            ),
-            ProgressBar(
-                percentage: (context.read<FileDownloadCubit>()
-                        as ProfileFileDownloadCubit)
-                    .downloadProgress)
-          ],
-        ),
-      ),
-      actions: [
-        ElevatedButton(
-          onPressed: () {
-            context.read<FileDownloadCubit>().abortDownload();
-            Navigator.pop(context);
-          },
-          child: Text(appLocalizationsOf(context).cancel),
-        ),
-      ],
+  ArDriveStandardModal _modalWrapper({
+    Widget? child,
+    String? description,
+    required String title,
+    required List<ModalAction> actions,
+  }) {
+    return ArDriveStandardModal(
+      title: title,
+      content: child,
+      actions: actions,
+      description: description,
     );
   }
 }

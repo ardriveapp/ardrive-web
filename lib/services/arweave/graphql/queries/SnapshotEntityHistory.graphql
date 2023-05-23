@@ -1,0 +1,28 @@
+query SnapshotEntityHistory(
+  $driveId: String!
+  $after: String
+  $lastBlockHeight: Int
+  $ownerAddress: String!
+) {
+  transactions(
+    owners: [$ownerAddress]
+    first: 100
+    sort: HEIGHT_DESC
+    tags: [
+      { name: "Drive-Id", values: [$driveId] }
+      { name: "Entity-Type", values: "snapshot" }
+    ]
+    after: $after
+    block: { min: $lastBlockHeight }
+  ) {
+    pageInfo {
+      hasNextPage
+    }
+    edges {
+      cursor
+      node {
+        ...TransactionCommon
+      }
+    }
+  }
+}

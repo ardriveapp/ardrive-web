@@ -3,12 +3,19 @@ import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
+import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
+import 'package:ardrive/utils/snapshots/height_range.dart';
+import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
+import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
@@ -30,7 +37,10 @@ part 'utils/parse_drive_transactions.dart';
 part 'utils/sync_drive.dart';
 part 'utils/update_transaction_statuses.dart';
 
-const kRequiredTxConfirmationCount = 15;
+// TODO: PE-2782: Abstract auto-generated GQL types
+typedef DriveHistoryTransaction
+    = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+
 const kRequiredTxConfirmationPendingThreshold = 60 * 8;
 
 const kSyncTimerDuration = 5;
@@ -47,7 +57,10 @@ class SyncCubit extends Cubit<SyncState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final Database _db;
+  final TabVisibilitySingleton _tabVisibility;
 
+  StreamSubscription? _restartOnFocusStreamSubscription;
+  StreamSubscription? _restartArConnectOnFocusStreamSubscription;
   StreamSubscription? _syncSub;
   StreamSubscription? _arconnectSyncSub;
   final StreamController<SyncProgress> syncProgressController =
@@ -62,11 +75,13 @@ class SyncCubit extends Cubit<SyncState> {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required Database db,
+    required TabVisibilitySingleton tabVisibility,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
+        _tabVisibility = tabVisibility,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     logSync('Building Sync Cubit...');
@@ -94,23 +109,28 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    whenBrowserTabIsUnhidden(_restartSync);
+    _restartOnFocusStreamSubscription =
+        _tabVisibility.onTabGetsFocused(_restartSync);
   }
 
   void _restartSync() {
     logSync(
         'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
-    final isTimerDurationReadyToSync = _lastSync != null &&
-        DateTime.now().difference(_lastSync!).inMinutes >= kSyncTimerDuration;
+    if (_lastSync != null) {
+      final minutesSinceLastSync =
+          DateTime.now().difference(_lastSync!).inMinutes;
+      final isTimerDurationReadyToSync =
+          minutesSinceLastSync >= kSyncTimerDuration;
 
-    if (!isTimerDurationReadyToSync) {
-      logSync('''
+      if (!isTimerDurationReadyToSync) {
+        logSync('''
               Can't restart sync when window is focused \n
               Is current active? ${!isClosed} \n
-              last sync was ${DateTime.now().difference(_lastSync!).inMinutes} minutes ago. \n
+              last sync was $minutesSinceLastSync minutes ago. \n
               It should be $kSyncTimerDuration
               ''');
-      return;
+        return;
+      }
     }
 
     /// This delay is for don't abruptly open the modal when the user is back
@@ -135,7 +155,9 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> arconnectSync() async {
-    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+    final isTabFocused = _tabVisibility.isTabFocused();
+    print('[ArConnect SYNC] isTabFocused: $isTabFocused');
+    if (isTabFocused && await _profileCubit.logoutIfWalletMismatch()) {
       emit(SyncWalletMismatch());
       return;
     }
@@ -143,9 +165,13 @@ class SyncCubit extends Cubit<SyncState> {
 
   void restartArConnectSyncOnFocus() async {
     if (await _profileCubit.isCurrentProfileArConnect()) {
-      whenBrowserTabIsUnhidden(() {
-        Future.delayed(const Duration(seconds: 2))
-            .then((value) => createArConnectSyncStream());
+      _restartArConnectOnFocusStreamSubscription =
+          _tabVisibility.onTabGetsFocused(() {
+        Future.delayed(
+          const Duration(seconds: 2),
+        ).then(
+          (value) => createArConnectSyncStream(),
+        );
       });
     }
   }
@@ -187,7 +213,7 @@ class SyncCubit extends Cubit<SyncState> {
 
         logSync('User is ar connect? $isArConnect');
 
-        if (isArConnect && isBrowserTabHidden()) {
+        if (isArConnect && !_tabVisibility.isTabFocused()) {
           logSync('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
@@ -225,30 +251,35 @@ class SyncCubit extends Cubit<SyncState> {
         return;
       }
 
-      final currentBlockHeight =
-          await retry(() async => await _arweave.getCurrentBlockHeight(),
-              onRetry: (exception) {
-        logSync(
+      final currentBlockHeight = await retry(
+        () async => await _arweave.getCurrentBlockHeight(),
+        onRetry: (exception) => logSync(
           'Retrying for get the current block height on exception ${exception.toString()}',
-        );
-      });
+        ),
+      );
 
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
       logSync('Current block height number $currentBlockHeight');
-      final driveSyncProcesses = drives.map((drive) => _syncDrive(
-            drive.id,
-            driveDao: _driveDao,
-            arweaveService: _arweave,
-            database: _db,
-            profileState: profile,
-            addError: addError,
-            lastBlockHeight: syncDeep
-                ? 0
-                : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
-            currentBlockHeight: currentBlockHeight,
-            transactionParseBatchSize:
-                200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced),
-          ).handleError((error, stackTrace) {
+      final driveSyncProcesses = drives.map(
+        (drive) async* {
+          try {
+            yield* _syncDrive(
+              drive.id,
+              driveDao: _driveDao,
+              arweave: _arweave,
+              ghostFolders: ghostFolders,
+              database: _db,
+              profileState: profile,
+              addError: addError,
+              lastBlockHeight: syncDeep
+                  ? 0
+                  : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
+              currentBlockHeight: currentBlockHeight,
+              transactionParseBatchSize: 200 ~/
+                  (_syncProgress.drivesCount - _syncProgress.drivesSynced),
+              ownerAddress: drive.ownerAddress,
+            );
+          } catch (error, stackTrace) {
             logSync('''
                     Error syncing drive with id ${drive.id}. \n
                     Skipping sync on this drive.\n
@@ -257,8 +288,10 @@ class SyncCubit extends Cubit<SyncState> {
                     StackTrace: \n
                     ${stackTrace.toString()}
                     ''');
-            addError(error!);
-          }));
+            addError(error);
+          }
+        },
+      );
 
       double totalProgress = 0;
       await Future.wait(
@@ -340,7 +373,9 @@ class SyncCubit extends Cubit<SyncState> {
     Map<String, FolderEntriesCompanion> foldersByIdMap,
     Map<String, FileEntriesCompanion> filesByIdMap,
   ) async {
+    logger.i('Generating fs entry paths...');
     ghostFolders = await _generateFsEntryPaths(
+      ghostFolders: ghostFolders,
       driveDao: _driveDao,
       driveId: driveId,
       foldersByIdMap: foldersByIdMap,
@@ -367,7 +402,14 @@ class SyncCubit extends Cubit<SyncState> {
     logSync('Closing SyncCubit...');
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
-    await closeVisibilityChangeStream();
+    await _restartOnFocusStreamSubscription?.cancel();
+    await _restartArConnectOnFocusStreamSubscription?.cancel();
+
+    _syncSub = null;
+    _arconnectSyncSub = null;
+    _restartOnFocusStreamSubscription = null;
+    _restartArConnectOnFocusStreamSubscription = null;
+
     await super.close();
   }
 }

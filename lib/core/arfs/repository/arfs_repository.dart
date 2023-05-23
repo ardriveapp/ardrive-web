@@ -3,6 +3,7 @@ import 'package:ardrive/models/models.dart';
 
 abstract class ARFSRepository {
   Future<ARFSDriveEntity> getDriveById(String id);
+  Future<void> cleanDrives();
 
   factory ARFSRepository(DriveDao driveDao, ARFSFactory arfsFactory) =>
       _ARFSRepository(driveDao, arfsFactory);
@@ -19,5 +20,10 @@ class _ARFSRepository implements ARFSRepository {
     final drive = await _driveDao.driveById(driveId: id).getSingle();
 
     return arfsFactory.getARFSDriveFromDriveDAOEntity(drive);
+  }
+
+  @override
+  Future<void> cleanDrives() async {
+    await _driveDao.deleteDrivesAndItsChildren();
   }
 }
