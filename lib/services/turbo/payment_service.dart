@@ -106,37 +106,33 @@ class DontUsePaymentService implements PaymentService {
   late ArDriveHTTP httpClient;
 
   @override
-  Future<BigInt> getPriceForBytes({required int byteSize}) {
-    throw UnimplementedError();
-  }
+  Future<BigInt> getPriceForBytes({required int byteSize}) =>
+      throw UnimplementedError();
 
   @override
-  Future<BigInt> getBalance({required Wallet wallet}) {
-    throw UnimplementedError();
-  }
+  Future<BigInt> getBalance({required Wallet wallet}) =>
+      throw UnimplementedError();
 
   @override
   Future topUp({
     required Wallet wallet,
     required BigInt amount,
     String currency = 'usd',
-  }) {
-    throw UnimplementedError();
-  }
+  }) =>
+      throw UnimplementedError();
 
   @override
   Uri get turboPaymentUri => throw UnimplementedError();
 
   @override
-  bool get useTurboPayment => false;
+  bool get useTurboPayment => throw UnimplementedError();
 
   @override
   Future<BigInt> getPriceForFiat({
     required double amount,
     required String currency,
-  }) {
-    throw UnimplementedError();
-  }
+  }) =>
+      throw UnimplementedError();
 }
 
 class TurboUserNotFound implements Exception {
