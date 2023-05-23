@@ -407,7 +407,7 @@
       }
     }
   },
-  "diveInButtonOnboarding": "Sumergirse",
+  "diveInButtonOnboarding": "Sumérgete",
   "@diveInButtonOnboarding": {
     "description": "Text of the last button of the onboarding"
   },
