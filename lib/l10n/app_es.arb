@@ -435,7 +435,7 @@
   "@dragAndDropButtonTitle": {
     "description": "text of title drag and drop"
   },
-  "dragAndDropDescription": "Arrastra y suelta tu Fichero de clave",
+  "dragAndDropDescription": "Arrastra y suelta tu fichero de clave",
   "@dragAndDropDescription": {
     "description": "text of description drag and drop"
   },
