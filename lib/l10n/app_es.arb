@@ -176,7 +176,7 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "collapseSideBar": "Hacer desaparecer la barra lateral",
+  "collapseSideBar": "Colapsar la barra lateral",
   "@collapseSideBar": {
     "description": "Collapse side bar tooltip"
   },
