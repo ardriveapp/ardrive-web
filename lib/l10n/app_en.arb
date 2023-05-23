@@ -48,7 +48,7 @@
   "@anyoneCanAccessThisFile": {
     "description": "Warning for the user that is about to share a file"
   },
-  "appVersion": "Version {version}.",
+  "appVersion": "Version {version}",
   "@appVersion": {
     "description": "App version number",
     "placeholders": {
@@ -61,6 +61,10 @@
   "arConnectRemainOnThisTab": "CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.",
   "@arConnectRemainOnThisTab": {
     "description": "Warning for the user to do not leave the tab"
+  },
+  "arConnectWalletDoestNotMatchArDriveWallet": "Your ArConnect wallet does not match your ArDrive wallet. Please try again.",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
   },
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
@@ -89,6 +93,10 @@
   "back": "Back",
   "@back": {
     "description": "Go back"
+  },
+  "backButtonOnboarding": "Back",
+  "@backButtonOnboarding": {
+    "description": "Text of the back button onboarding"
   },
   "backEmphasized": "BACK",
   "@backEmphasized": {
@@ -152,13 +160,25 @@
   "@cancelEmphasized": {
     "description": "Cancel button. Emphasized with upper case"
   },
+  "changeTheme": "Change Theme",
+  "@changeTheme": {
+    "description": "Theme switcher tooltip"
+  },
   "changeWallet": "Change wallet",
   "@changeWallet": {
     "description": "To use a different wallet"
   },
+  "close": "Close",
+  "@close": {
+    "description": "close"
+  },
   "closeEmphasized": "CLOSE",
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
+  },
+  "collapseSideBar": "Collapse sidebar",
+  "@collapseSideBar": {
+    "description": "Collapse side bar tooltip"
   },
   "computingSnapshotData": "Computing Snapshot Data",
   "@computingSnapshotData": {
@@ -240,6 +260,10 @@
   "@copyRootFolderTxID": {
     "description": "Copy transaction ID of Root Folder tooltip"
   },
+  "copyTooltip": "Copy",
+  "@copyTooltip": {
+    "description": "Tooltip for copy button"
+  },
   "copyWalletAddress": "Copy Wallet Address",
   "@copyWalletAddress": {
     "description": "Tooltip on copy wallet address button"
@@ -257,6 +281,10 @@
   "create": "Create",
   "@create": {
     "description": "Create an drive"
+  },
+  "createAndConfirmPassword": "Please create and confirm your password. You will use this password to log in.",
+  "@createAndConfirmPassword": {
+    "description": "Asks the user to create a password"
   },
   "createDriveEmphasized": "CREATE DRIVE",
   "@createDriveEmphasized": {
@@ -307,6 +335,10 @@
   "creatingFolderEmphasized": "CREATING FOLDER...",
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
+  },
+  "darkModeEmphasized": "DARK MODE",
+  "@darkModeEmphasized": {
+    "description": "Refers to the dark theme of the app. Emphasized with upper case"
   },
   "dataTxID": "Data Tx ID",
   "@dataTxID": {
@@ -375,6 +407,10 @@
       }
     }
   },
+  "diveInButtonOnboarding": "Dive in",
+  "@diveInButtonOnboarding": {
+    "description": "Text of the last button of the onboarding"
+  },
   "doneEmphasized": "DONE",
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
@@ -394,6 +430,14 @@
   "downloadingFile": "Downloading file...",
   "@downloadingFile": {
     "description": "File is being downloaded"
+  },
+  "dragAndDropButtonTitle": "Browse Json",
+  "@dragAndDropButtonTitle": {
+    "description": "text of title drag and drop"
+  },
+  "dragAndDropDescription": "Drag & Drop your Keyfile",
+  "@dragAndDropDescription": {
+    "description": "text of description drag and drop"
   },
   "driveID": "Drive ID",
   "@driveID": {
@@ -459,7 +503,7 @@
       }
     }
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{A duplicate file found} =other{Duplicate files found}}",
+  "duplicateFiles": "{numberOfDuplicateFiles, plural, zero{} one{A duplicate file found} other{Duplicate files found}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -470,7 +514,7 @@
       }
     }
   },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{A duplicate folder found} =other{Duplicate folders found}}",
+  "duplicateFolders": "{numberOfDuplicateFolders, plural, zero{} one{A duplicate folder found} other{Duplicate folders found}}",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title",
     "placeholders": {
@@ -509,6 +553,10 @@
   "@enterFileKey": {
     "description": "File Key form field label"
   },
+  "enterPassword": "Enter password",
+  "@enterPassword": {
+    "description": "Please enter password"
+  },
   "entityAlreadyExists": "Entity with name {entityName} already exists at move destination! Please rename the file or folder you are moving and try again.",
   "@entityAlreadyExists": {
     "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
@@ -526,6 +574,10 @@
   "errorDragAndDropFolder": "We do not currently support drag and drop with folders",
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
+  },
+  "expandSideBar": "Expand sidebar",
+  "@expandSideBar": {
+    "description": "Expand side bar tooltip"
   },
   "exportDriveContents": "Export Drive Contents",
   "@exportDriveContents": {
@@ -592,6 +644,10 @@
   "@fileFailedToDownloadFileAboveLimit": {
     "description": "Download failure message when a file is too big"
   },
+  "fileFailedToDownloadFileAbovePublicLimit": "The file(s) you have selected is too large to download",
+  "@fileFailedToDownloadFileAbovePublicLimit": {
+    "description": "Download failure message when a file is too big"
+  },
   "fileHadANewRevision": "A new version of this file was uploaded.",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
@@ -608,7 +664,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{1 file too large} =other{{numberOfFiles} files too large}}",
+  "filesTooLarge": "{numberOfFiles, plural, zero{} one{1 file too large} other{{numberOfFiles} files too large}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -635,7 +691,7 @@
   "@filesWillBePermanentlyPublicWarning": {
     "description": "Make the user aware that it is uploading permanent data publicly"
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{This file will be uploaded publicly.} =other{These files will be uploaded publicly.}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles, plural, zero{} one{This file will be uploaded publicly.} other{These files will be uploaded publicly.}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -646,7 +702,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?} =other{{numberOfFiles} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles, plural, zero{} one{A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?} other{{numberOfFiles} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -734,7 +790,7 @@
   "@folderName": {
     "description": "The name of certain folder"
   },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{A folder with the same name already exists at this location. Please rename it and try uploading again.}  =other{{numberOfFolders} folders with the same name already exist at this location. Please rename them and try uploading again.}}",
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders, plural, zero{} one{A folder with the same name already exists at this location. Please rename it and try uploading again.} other{{numberOfFolders} folders with the same name already exist at this location. Please rename them and try uploading again.}}",
   "@foldersWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with folder name conflicts",
     "placeholders": {
@@ -889,6 +945,10 @@
   "@insufficientFundsForUploadFolders": {
     "description": "Show that needs funds to upload folders"
   },
+  "invalidKeyFile": "Invalid Keyfile",
+  "@invalidKeyFile": {
+    "description": "Invalid Keyfile"
+  },
   "invalidWalletFile": "Invalid Wallet File",
   "@invalidWalletFile": {
     "description": "Wallet file is not a json or a text"
@@ -956,6 +1016,10 @@
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
   },
+  "lightModeEmphasized": "LIGHT MODE",
+  "@lightModeEmphasized": {
+    "description": "Refers to the light theme of the app. Emphasized with upper case"
+  },
   "login": "Login",
   "@login": {
     "description": "The login process"
@@ -1003,6 +1067,10 @@
   "monthlyCharges": "Instead of another monthly charge for empty space you don’t use, pay a few cents once and store your files forever on ArDrive.",
   "@monthlyCharges": {
     "description": "Payment philosophy"
+  },
+  "moreInfo": "More info",
+  "@moreInfo": {
+    "description": "More info"
   },
   "move": "Move",
   "@move": {
@@ -1108,9 +1176,37 @@
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
+  "onboarding1Description": "ArDrive isn’t just another cloud sync app. It’s your personal permanent hard drive. Files stored on ArDrive can't be deleted or altered by any single entity and anything you upload will outlast you!",
+  "@onboarding1Description": {
+    "description": "Description of 1st page of onboarding"
+  },
+  "onboarding1Title": "Welcome to the Permaweb",
+  "@onboarding1Title": {
+    "description": "Title of 1st page of onboarding"
+  },
+  "onboarding2Description": "Say goodbye to cloud storage subscriptions. Instead of paying for space you don’t use, just pay once to store your data forever.",
+  "@onboarding2Description": {
+    "description": "Description of 2nd page of onboarding"
+  },
+  "onboarding2Title": "Pay Per File, Not Per Month",
+  "@onboarding2Title": {
+    "description": "Title of 2nd page of onboarding"
+  },
+  "onboarding3Description": "Your choice: make the files you upload public for anybody to access or leverage state of the art encryption that puts you in control of who can see your files.",
+  "@onboarding3Description": {
+    "description": "Description of 4th page of onboarding"
+  },
+  "onboarding3Title": "Total Privacy Control",
+  "@onboarding3Title": {
+    "description": "Title of 4th page of onboarding"
+  },
   "onceUploadedCantBeRemoved": "Once uploaded, your data can’t be removed.",
   "@onceUploadedCantBeRemoved": {
     "description": "Uploaded items cannot be deleted"
+  },
+  "orContinueWith": "Or continue with",
+  "@orContinueWith": {
+    "description": "text to continue with ar connect"
   },
   "password": "Password",
   "@password": {
@@ -1119,6 +1215,14 @@
   "passwordCanNeverBeChanged": "Your password can never be changed or recovered. Please keep it safe!",
   "@passwordCanNeverBeChanged": {
     "description": "Explains that the password cannot be changed as it is the one of the wallet"
+  },
+  "passwordCannotBeEmpty": "Password cannot be empty",
+  "@passwordCannotBeEmpty": {
+    "description": "Button title to create a password"
+  },
+  "passwordDoNotMatch": "Passwords do not match",
+  "@passwordDoNotMatch": {
+    "description": "Modal description when passwords dont match"
   },
   "passwordMismatch": "The confirmation password does not match.",
   "@passwordMismatch": {
@@ -1136,6 +1240,10 @@
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
+  "pleaseAcceptTheTermsToContinue": "Please accept the terms and conditions to continue.",
+  "@pleaseAcceptTheTermsToContinue": {
+    "description": "terms and conditions cta"
+  },
   "pleaseProvideSamePassword": "Please provide the same password as the one you used before.",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
@@ -1147,6 +1255,10 @@
   "pleaseRemainOnThisTabSnapshots": "Your Web3 wallet is signing your transactions. Please stay on this page while we finish things up!",
   "@pleaseRemainOnThisTabSnapshots": {
     "description": "Please stay on this page while we finish things up!"
+  },
+  "pleaseTryAgain": "Please try again",
+  "@pleaseTryAgain": {
+    "description": "Please try again."
   },
   "preparingManifestEmphasized": "PREPARING MANIFEST...",
   "@preparingManifestEmphasized": {
@@ -1172,6 +1284,10 @@
   "@private": {
     "description": "A private entity"
   },
+  "privateDrives": "Private Drives",
+  "@privateDrives": {
+    "description": "Private drives accordion title"
+  },
   "proceed": "Proceed",
   "@proceed": {
     "description": "Proceed"
@@ -1180,6 +1296,10 @@
   "@proceedCongestionEmphasized": {
     "description": "Proceed being aware of the network congestion. Emphasized with upper case"
   },
+  "proceedEmphasized": "PROCEED",
+  "@proceedEmphasized": {
+    "description": "Proceed but capitalized"
+  },
   "profile": "Profile",
   "@profile": {
     "description": "The user profile: user name, wallet address and wallet balance"
@@ -1187,6 +1307,10 @@
   "public": "Public",
   "@public": {
     "description": "A public entity"
+  },
+  "publicDrives": "Public Drives",
+  "@publicDrives": {
+    "description": "Public drives accordion title"
   },
   "recreateFolderEmphasized": "RECREATE FOLDER",
   "@recreateFolderEmphasized": {
@@ -1260,6 +1384,10 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "sharedDrives": "Shared Drives",
+  "@sharedDrives": {
+    "description": "Sub-header for the shared drives list"
+  },
   "sharedDrivesEmphasized": "SHARED DRIVES",
   "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
@@ -1292,6 +1420,10 @@
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
   },
+  "showMenu": "Show menu",
+  "@showMenu": {
+    "description": "show menu text"
+  },
   "signingUpload": "Signing upload",
   "@signingUpload": {
     "description": "The app is signing the transactions"
@@ -1299,6 +1431,10 @@
   "size": "Size",
   "@size": {
     "description": "The size of a file, folder or drive"
+  },
+  "skip": "Skip",
+  "@skip": {
+    "description": "Skip"
   },
   "skipEmphasized": "SKIP",
   "@skipEmphasized": {
@@ -1388,6 +1524,10 @@
   "@targetFolderEmphasized": {
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
   },
+  "termsAndConditions": "Terms and Conditions",
+  "@termsAndConditions": {
+    "description": "terms and conditions"
+  },
   "thinkTwiceBeforeUploading": "Think twice before uploading all your teenage love poetry...",
   "@thinkTwiceBeforeUploading": {
     "description": "Uploaded items cannot be deleted"
@@ -1456,7 +1596,7 @@
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{Uploading 1 file...} =other{Uploading {numberOfFiles} files...}}",
+  "uploadingNFiles": "{numberOfFiles, plural, zero{} one{Uploading 1 file...} other{Uploading {numberOfFiles} files...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -1471,7 +1611,7 @@
   "@uploadingSnapshot": {
     "description": "Uploading Snapshot"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{Upload 1 file} =other{Upload {numberOfFiles} files}}",
+  "uploadNFiles": "{numberOfFiles, plural, zero{} one{Upload 1 file} other{Upload {numberOfFiles} files}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
@@ -1482,6 +1622,14 @@
       }
     }
   },
+  "uploadYourFirstFile": "Upload your first file",
+  "@uploadYourFirstFile": {
+    "description": "Empty folder"
+  },
+  "usdPriceNotAvailable": "(USD price not available at the moment)",
+  "@usdPriceNotAvailable": {
+    "description": "Fallback message for when the USD price is not available"
+  },
   "useArconnectEmphasized": "USE ARCONNECT",
   "@useArconnectEmphasized": {
     "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
@@ -1489,10 +1637,6 @@
   "username": "Username",
   "@username": {
     "description": "Label for the username"
-  },
-  "usdPriceNotAvailable": "(USD price not available at the moment)",
-  "@usdPriceNotAvailable": {
-    "description": "Fallback message for when the USD price is not available"
   },
   "validationAttachDriveCouldNotBeFound": "The specified drive could not be found.",
   "@validationAttachDriveCouldNotBeFound": {
@@ -1542,6 +1686,10 @@
   "@viewOnly": {
     "description": "The user has no permission to edit, only to view"
   },
+  "viewOnViewBlock": "View on viewblock.io",
+  "@viewOnViewBlock": {
+    "description": "Tooltip for external link for viewBlock"
+  },
   "waitForDownload": "Due to the size of your file, this download could take a while. Please keep the app open while the download is in progress.",
   "@waitForDownload": {
     "description": "User must to wait this download"
@@ -1575,6 +1723,14 @@
         "example": "5 GiB"
       }
     }
+  },
+  "welcome": "Welcome",
+  "@welcome": {
+    "description": "welcome"
+  },
+  "welcomeBack": "Welcome back",
+  "@welcomeBack": {
+    "description": "welcome back"
   },
   "welcomeBackEmphasized": "WELCOME BACK",
   "@welcomeBackEmphasized": {
@@ -1626,196 +1782,16 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
-  "yourUploadFailed": "Your upload failed.",
-  "@yourUploadFailed": {
-    "description": "Upload fail dialog description."
-  },
-  "moreInfo": "More info",
-  "@moreInfo": {
-    "description": "More info"
-  },
-  "darkMode": "DARK MODE",
-  "@darkMode": {
-    "description": "DARK MODE"
-  },
-  "lightMode": "LIGHT MODE",
-  "@lightMode": {
-    "description": "LIGHT MODE"
-  },
-  "showMenu": "Show menu",
-  "@showMenu": {
-    "description": "show menu text"
-  },
-  "publicDrives": "Public Drives",
-  "@publicDrives": {
-    "description": "Public drives accordion title"
-  },
-  "privateDrives": "Private Drives",
-  "@privateDrives": {
-    "description": "Private drives accordion title"
-  },
-  "passwordCannotBeEmpty": "Password cannot be empty",
-  "@passwordCannotBeEmpty": {
-    "description": "Button title to create a password"
-  },
-  "passwordDoNotMatch": "Passwords do not match",
-  "@passwordDoNotMatch": {
-    "description": "Modal description when passwords dont match"
-  },
-  "skip": "Skip",
-  "@skip": {
-    "description": "Skip"
-  },
-  "onboarding1Title": "Welcome to the Permaweb",
-  "@onboarding1Title": {
-    "description": "Title of 1st page of onboarding"
-  },
-  "onboarding1Description": "ArDrive isn’t just another cloud sync app. It’s your personal permanent hard drive. Files stored on ArDrive can't be deleted or altered by any single entity and anything you upload will outlast you!",
-  "@onboarding1Description": {
-    "description": "Description of 1st page of onboarding"
-  },
-  "onboarding2Title": "Pay Per File, Not Per Month",
-  "@onboarding2Title": {
-    "description": "Title of 2nd page of onboarding"
-  },
-  "onboarding2Description": "Say goodbye to cloud storage subscriptions. Instead of paying for space you don’t use, just pay once to store your data forever.",
-  "@onboarding2Description": {
-    "description": "Description of 2nd page of onboarding"
-  },
-  "onboarding3Title": "Total Privacy Control",
-  "@onboarding3Title": {
-    "description": "Title of 4th page of onboarding"
-  },
-  "onboarding3Description": "Your choice: make the files you upload public for anybody to access or leverage state of the art encryption that puts you in control of who can see your files.",
-  "@onboarding3Description": {
-    "description": "Description of 4th page of onboarding"
-  },
-  "diveInButtonOnboarding": "Dive in",
-  "@diveInButtonOnboarding": {
-    "description": "Text of the last button of the onboarding"
-  },
-  "backButtonOnboarding": "Back",
-  "@backButtonOnboarding": {
-    "description": "Text of the back button onboarding"
-  },
-  "welcomeBack": "Welcome back",
-  "@welcomeBack": {
-    "description": "welcome back"
-  },
-  "welcome": "Welcome",
-  "@welcome": {
-    "description": "welcome message on prompt wallet page"
-  },
-  "dragAndDropButtonTitle": "Browse Json",
-  "@dragAndDropButtonTitle": {
-    "description": "text of title drag and drop"
-  },
-  "dragAndDropDescription": "Drag & Drop your Keyfile",
-  "@dragAndDropDescription": {
-    "description": "text of description drag and drop"
-  },
-  "termsAndConditions": "Terms and Conditions",
-  "@termsAndConditions": {
-    "description": "terms and conditions"
-  },
-  "pleaseAcceptTheTermsToContinue": "Please accept the terms and conditions to continue.",
-  "@pleaseAcceptTheTermsToContinue": {
-    "description": "terms and conditions cta"
-  },
-  "invalidKeyFile": "Invalid Keyfile",
-  "@invalidKeyFile": {
-    "description": "Invalid Keyfile"
-  },
-  "orContinueWith": "Or continue with",
-  "@orContinueWith": {
-    "description": "text to continue with ar connect"
-  },
-  "orContinueWith": "Or continue with",
-  "@orContinueWith": {
-    "description": "text to continue with ar connect"
-  },
-  "proceedEmphasized": "PROCEED",
-  "@proceedEmphasized": {
-    "description": "Proceed but capitalized"
-  },
   "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
   },
-  "arConnectWalletDoestNotMatchArDriveWallet": "Your ArConnect wallet does not match your ArDrive wallet. Please try again.",
-  "@arConnectWalletDoestNotMatchArDriveWallet": {
-    "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
-  },
-  "pleaseTryAgain": "Please try again",
-  "@pleaseTryAgain": {
-    "description": "Please try again."
-  },
-  "enterPassword": "Enter password",
-  "@enterPassword": {
-    "description": "Please enter password"
-  },
-  "createAndConfirmPassword": "Please create and confirm your password. You will use this password to log in.",
-  "@createAndConfirmPassword": {
-    "description": "Form title to create a password"
-  },
-  "sharedDrives": "Shared Drives",
-  "@sharedDrives": {
-    "description": "Sub-header for the shared drives list"
-  },
-  "uploadYourFirstFile": "Upload your first file",
-  "@uploadYourFirstFile": {
-    "description": "Empty folder"
+  "yourUploadFailed": "Your upload failed.",
+  "@yourUploadFailed": {
+    "description": "Upload fail dialog description."
   },
   "zippingYourFiles": "Zipping your file(s)...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
-  },
-  "fileFailedToDownloadFileAbovePublicLimit": "The file(s) you have selected is too large to download",
-  "@fileFailedToDownloadFileAbovePublicLimit": {
-    "description": "Download failure message when a file is too big"
-  },
-  "changeTheme": "Change Theme",
-  "@changeTheme": {
-    "description": "Theme switcher tooltip"
-  },
-  "collapseSideBar": "Collapse sidebar",
-  "@changeTheme": {
-    "description": "Collapse side bar tooltip"
-  },
-  "expandSideBar": "Expand sidebar",
-  "@expandSideBar": {
-    "description": "Expand side bar tooltip"
-  },
-  "viewOnViewBlock": "View on viewblock.io",
-  "@viewOnViewBlock": {
-    "description": "Tooltip for external link for viewBlock"
-  },
-  "copyTooltip": "Copy",
-  "@copyTooltip": {
-    "description": "Tooltip for copy button"
-  },
-  "close": "Close",
-  "@close": {
-    "description": "close"
-  },
-  "costUpload": "Cost",
-  "@costUpload": {
-    "description": "Cost"
-  },
-  "securityWalletOverlay": "Your keyfile is encrypted, it never leaves your device, and it can be removed from your device at any time.",
-  "@securityWalletOverlay": {
-    "description": "The text on the security overlay text on login"
-  },
-  "howDoesKeyfileLoginWork": "How does keyfile log in work?",
-  "@securityWalletOverlay": {
-    "description": "The cta text to check keyfile security"
-  },
-  "dontHaveAWallet1Part": "Don't have a wallet? Get one ",
-  "@dontHaveAWallet1Part": {
-    "description": "text to open the url to get a wallet"
-  },
-  "dontHaveAWallet2Part": "Here!",
-  "@dontHaveAWallet2Part": {
-    "description": "text to open the url to get a wallet"
   }
 }
