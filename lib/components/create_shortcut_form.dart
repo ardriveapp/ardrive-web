@@ -2,9 +2,10 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_shortcut/create_shortcut_cubit.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:arweave/arweave.dart';
@@ -62,9 +63,10 @@ class CreateShortcutForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<CreateShortcutCubit>(
       create: (context) => CreateShortcutCubit(
-        arweave:
-            Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
-        arweaveService: arweave,
+        arweave: Arweave(
+            gatewayUrl:
+                Uri.parse(context.read<AppConfig>().defaultArweaveGatewayUrl!)),
+        arweaveService: context.read<ArweaveService>(),
         driveDao: context.read<DriveDao>(),
       ),
       child: BlocListener<CreateShortcutCubit, CreateShortcutState>(

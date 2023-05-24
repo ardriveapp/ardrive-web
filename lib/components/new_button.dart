@@ -9,9 +9,8 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'create_snapshot_dialog.dart';
-
 import 'create_shortcut_form.dart';
+import 'create_snapshot_dialog.dart';
 
 Widget buildNewButton(
   BuildContext context, {
@@ -236,7 +235,7 @@ List<PopupMenuEntry<Function>> _buildItems(
       if (driveDetailState is DriveDetailLoadSuccess) ...{
         _buildNewFolderItem(context, driveDetailState, canUpload),
         const PopupMenuDivider(key: Key('divider-1')),
-        _buildCreateShortcut(context, driveDetailState, hasMinBalance),
+        _buildCreateShortcut(context, driveDetailState, canUpload),
         const PopupMenuDivider(key: Key('divider-2')),
         _buildUploadFileItem(
           context,

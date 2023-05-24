@@ -1,13 +1,16 @@
 import 'package:ardrive/blocs/create_shortcut/create_shortcut_state.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
+import 'package:ardrive/utils/internet_checker.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,6 +30,7 @@ class CreateShortcutCubit extends Cubit<CreateShortcutState> {
   final ArweaveService _arweave;
   final Arweave _client;
   final DriveDao _driveDao;
+  final ArDriveCrypto _crypto = ArDriveCrypto();
   late GetDataTransaction$Query$Transaction _graphQLResult;
 
   final form = FormGroup(
@@ -51,7 +55,8 @@ class CreateShortcutCubit extends Cubit<CreateShortcutState> {
       emit(CreateShortcutLoading());
       final txId = form.control('shortcut').value;
       final graphQlClient = GraphQLRetry(
-          ArtemisClient('${arweave.client.api.gatewayUrl.origin}/graphql'));
+          ArtemisClient('${arweave.client.api.gatewayUrl.origin}/graphql'),
+          internetChecker: InternetChecker(connectivity: Connectivity()));
 
       final result = await graphQlClient.execute(GetDataTransactionQuery(
           variables: GetDataTransactionArguments(txId: txId.toString())));
@@ -114,8 +119,9 @@ class CreateShortcutCubit extends Cubit<CreateShortcutState> {
         final driveKey = await _driveDao.getDriveKey(driveId,
             (context.read<ProfileCubit>().state as ProfileLoggedIn).cipherKey);
 
-        final fileKey =
-            driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
+        final fileKey = driveKey != null
+            ? await _crypto.deriveFileKey(driveKey, file.id)
+            : null;
 
         final fileEntity = file.asEntity();
 

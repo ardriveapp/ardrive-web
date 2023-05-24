@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/create_manifest_form.dart';
+import 'package:ardrive/components/create_shortcut_form.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/drive_attach_form.dart';
 import 'package:ardrive/components/drive_create_form.dart';
@@ -179,6 +180,11 @@ class NewButton extends StatelessWidget {
             icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
           ),
           ArDriveNewButtonItem(
+            onClick: () => attachDrive(context: context),
+            name: appLocalizations.attachDrive,
+            icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
+          ),
+          ArDriveNewButtonItem(
             onClick: () => promptToUpload(
               context,
               driveId: drive!.id,
@@ -205,7 +211,7 @@ class NewButton extends StatelessWidget {
         ],
         if (driveDetailState is DriveDetailLoadSuccess &&
             driveDetailState.currentDrive.privacy == 'public' &&
-            drive != null)
+            drive != null) ...[
           ArDriveNewButtonItem(
             onClick: () {
               promptToCreateManifest(
@@ -217,6 +223,20 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.createManifest,
             icon: ArDriveIcons.tournament(size: defaultIconSize),
           ),
+          ArDriveNewButtonItem(
+            onClick: () {
+              createShortcut(
+                context: context,
+                driveId: driveDetailState.currentDrive.id,
+                folderInViewId: driveDetailState.folderInView.folder.id,
+                folderInViewPath: driveDetailState.folderInView.folder.path,
+              );
+            },
+            // isDisabled: !drivesState.canCreateNewDrive || !canUpload,
+            name: 'Create Shortcut',
+            icon: ArDriveIcons.addDrive(size: defaultIconSize),
+          ),
+        ],
         if (context.read<AppConfig>().enableQuickSyncAuthoring &&
             driveDetailState is DriveDetailLoadSuccess &&
             drive != null)
@@ -276,6 +296,16 @@ class NewButton extends StatelessWidget {
           ),
         ],
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
+          _buildDriveDropdownItem(
+            onClick: () => createShortcut(
+              context: context,
+              driveId: driveDetailState.currentDrive.id,
+              folderInViewId: driveDetailState.folderInView.folder.id,
+              folderInViewPath: driveDetailState.folderInView.folder.path,
+            ),
+            name: 'Create Shortcut',
+            icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
+          ),
           _buildDriveDropdownItem(
             onClick: () => promptToCreateFolder(
               context,

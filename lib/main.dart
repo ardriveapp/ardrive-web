@@ -51,7 +51,7 @@ import 'theme/theme.dart';
 
 late ConfigService _configService;
 late AppConfig _config;
-late ArweaveService _arweave;
+late ArweaveService arweave;
 late UploadService _turboUpload;
 late PaymentService _turboPayment;
 void main() async {
@@ -92,7 +92,7 @@ Future<void> _initialize() async {
 
   ArDriveDownloader.initialize();
 
-  _arweave = ArweaveService(
+  arweave = ArweaveService(
     Arweave(
       gatewayUrl: Uri.parse(_config.defaultArweaveGatewayUrl!),
     ),
@@ -167,7 +167,7 @@ class AppState extends State<App> {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        RepositoryProvider<ArweaveService>(create: (_) => arweave),
         // repository provider for UploadFileChecker
         RepositoryProvider<UploadFileChecker>(
           create: (_) => UploadFileChecker(
@@ -176,7 +176,7 @@ class AppState extends State<App> {
             publicFileSafeSizeLimit: publicFileSafeSizeLimit,
           ),
         ),
-        RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        RepositoryProvider<ArweaveService>(create: (_) => arweave),
         RepositoryProvider<UploadService>(
           create: (_) => _turboUpload,
         ),
@@ -225,7 +225,7 @@ class AppState extends State<App> {
               const FlutterSecureStorage(),
             ),
             crypto: ArDriveCrypto(),
-            arweave: _arweave,
+            arweave: arweave,
             userRepository: context.read<UserRepository>(),
           ),
         ),
