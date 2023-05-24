@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/turbo_balance/turbo_balance_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -5,6 +6,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class TurboBalance extends StatelessWidget {
@@ -40,10 +42,11 @@ class TurboBalance extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 4),
-                FutureBuilder<BigInt>(
-                    future: paymentService.getBalance(wallet: wallet),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
+                BlocBuilder<TurboBalanceCubit, TurboBalanceState>(
+                    bloc: TurboBalanceCubit(
+                        paymentService: paymentService, wallet: wallet),
+                    builder: (context, state) {
+                      if (state is NewTurboUserState) {
                         return Text(
                           appLocalizationsOf(context).turboAddCreditsBlurb,
                           style:
@@ -55,30 +58,40 @@ class TurboBalance extends StatelessWidget {
                                         .themeFgMuted,
                                   ),
                         );
-                      }
+                      } else if (state is TurboBalanceSuccessState) {
+                        final balance = state.balance;
 
-                      if (snapshot.hasData) {
-                        final balance = snapshot.data;
-                        if (balance != null) {
-                          return Text(
-                            '${double.tryParse(winstonToAr(balance))?.toStringAsFixed(5) ?? 0} ${appLocalizationsOf(context).creditsTurbo}',
-                            style: ArDriveTypography.body
-                                .captionRegular()
-                                .copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 18,
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgSubtle,
-                                ),
-                          );
-                        }
+                        return Text(
+                          '${double.tryParse(winstonToAr(balance))?.toStringAsFixed(5) ?? 0} ${appLocalizationsOf(context).creditsTurbo}',
+                          style:
+                              ArDriveTypography.body.captionRegular().copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 18,
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgSubtle,
+                                  ),
+                        );
+                      } else if (state is TurboBalanceLoading) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: LinearProgressIndicator(),
+                        );
+                      } else if (state is TurboBalanceErrorState) {
+                        return Text(
+                          appLocalizationsOf(context).error,
+                          style:
+                              ArDriveTypography.body.captionRegular().copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeErrorDefault,
+                                  ),
+                        );
                       }
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: LinearProgressIndicator(),
-                      );
+                      return const SizedBox();
                     }),
               ],
             ),
