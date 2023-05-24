@@ -7,6 +7,8 @@ import 'package:arweave/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'top_up_dialog.dart';
+
 class TurboBalance extends StatelessWidget {
   const TurboBalance({
     Key? key,
@@ -99,7 +101,9 @@ class TurboBalance extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
                 borderRadius: 20,
-                onPressed: () {},
+                onPressed: () {
+                  showAnimatedDialog(context, content: TopUpDialog());
+                },
               ),
             ),
           ),
