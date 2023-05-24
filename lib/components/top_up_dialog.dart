@@ -1,5 +1,7 @@
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class TopUpDialog extends StatefulWidget {
   const TopUpDialog({super.key});
@@ -13,7 +15,21 @@ class _TopUpDialogState extends State<TopUpDialog> {
   Widget build(BuildContext context) {
     return ArDriveStandardModal(
       title: 'turbo',
-      content: Container(),
+      content: Column(
+        children: [
+          Row(
+            children: [
+              SvgPicture.asset(
+                Resources.images.brand.turbo,
+                height: 15,
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                colorBlendMode: BlendMode.srcIn,
+                fit: BoxFit.contain,
+              ),
+            ],
+          )
+        ],
+      ),
     );
   }
 }
