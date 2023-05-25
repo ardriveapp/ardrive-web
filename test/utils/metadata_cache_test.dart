@@ -37,7 +37,36 @@ void main() {
       expect(keys, ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
     });
 
-    test('follows the eviction policy: Least Frequently Used (LFU)', () async {
+    test('size indicates the number of entries in the cache', () async {
+      final metadataCache = await MetadataCache.fromCacheStore(
+        await newMemoryCacheStore(),
+        maxEntries: 10,
+      );
+
+      final mockData = generateMockData(1)[0];
+
+      await metadataCache.put('0', mockData);
+
+      expect(await metadataCache.size, 1);
+    });
+
+    test('isFull indicates whether the cache is at max capacity', () async {
+      final metadataCache = await MetadataCache.fromCacheStore(
+        await newMemoryCacheStore(),
+        maxEntries: 10,
+      );
+
+      final mockData = generateMockData(10);
+
+      for (int i = 0; i < mockData.length; i++) {
+        final wasPut = await metadataCache.put(i.toString(), mockData[i]);
+        expect(wasPut, true);
+      }
+
+      expect(await metadataCache.isFull, true);
+    });
+
+    test('follows the eviction policy: no eviction', () async {
       // Refer to https://pub.dev/packages/stash#eviction-policies for more info
       /// LfuEvictionPolicy	LFU (least-frequently used) policy counts how often
       /// an entry is used. Those that are least often used are discarded first.
@@ -53,29 +82,29 @@ void main() {
       final mockData = generateMockData(10);
 
       for (int i = 0; i < mockData.length; i++) {
-        await metadataCache.put(i.toString(), mockData[i]);
-
-        if (i != 0) {
-          // These becomes the most frequently used items
-          /// and zero becomes the least frequently used
-          await metadataCache.get(i.toString());
-          await metadataCache.get(i.toString());
-        }
+        final wasPut = await metadataCache.put(i.toString(), mockData[i]);
+        expect(wasPut, true);
       }
 
-      expect(await metadataCache.get('0'), isNotNull);
+      expect(
+        await metadataCache.keys,
+        ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      );
 
-      await metadataCache.put('eleventh-item', Uint8List.fromList([1]));
+      final wasEleventhItemPut = await metadataCache.put(
+        'eleventh-item',
+        Uint8List.fromList([1]),
+      );
+      expect(wasEleventhItemPut, false);
 
       expect(
-        await metadataCache.get('0'),
+        await metadataCache.get('eleventh-item'),
         null,
       );
 
-      final keys = await metadataCache.keys;
       expect(
-        keys,
-        ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'eleventh-item'],
+        await metadataCache.keys,
+        ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
       );
     });
 
