@@ -1,8 +1,10 @@
+import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
-import 'package:ardrive/utils/filesize.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'file_size_units.dart';
 
 part 'turbo_payment_event.dart';
 part 'turbo_payment_state.dart';
@@ -79,15 +81,17 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
   String computeStorageEstimateForCredits({
     required BigInt credits,
-    required FileSizeUnit dataUnit,
+    required FileSizeUnit outputDataUnit,
     required BigInt costOfOneGb,
   }) {
     final estimatedStorageInBytes =
-        (credits / (costOfOneGb * BigInt.from(oneGigbyteInBytes)));
-    return filesizeInUnit(
-      estimatedStorageInBytes,
-      dataUnit,
+        FileStorageEstimator.computeStorageEstimateForCredits(
+      credits: credits,
+      costOfOneGb: costOfOneGb,
+      outputDataUnit: outputDataUnit,
     );
+
+    return estimatedStorageInBytes.toStringAsFixed(2);
   }
 
   _recomputePriceEstimate(
@@ -106,13 +110,13 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
     final estimatedStorageForBalance = computeStorageEstimateForCredits(
       credits: balance,
-      dataUnit: currentDataUnit,
+      outputDataUnit: currentDataUnit,
       costOfOneGb: costOfOneGb,
     );
 
     final estimatedStorageForSelectedAmount = computeStorageEstimateForCredits(
       credits: priceEstimate,
-      dataUnit: currentDataUnit,
+      outputDataUnit: currentDataUnit,
       costOfOneGb: costOfOneGb,
     );
 

@@ -1,7 +1,7 @@
 // Importing necessary packages and files
+import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
 import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
-import 'package:ardrive/utils/filesize.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -56,10 +56,10 @@ void main() {
       PaymentLoading(),
       PaymentLoaded(
         balance: BigInt.from(oneAR * 2),
-        estimatedStorageForBalance: '2.0',
+        estimatedStorageForBalance: '2.00',
         selectedAmount: 25.0,
         creditsForSelectedAmount: BigInt.from(oneAR),
-        estimatedStorageForSelectedAmount: '1.0',
+        estimatedStorageForSelectedAmount: '1.00',
         currencyUnit: 'usd',
         dataUnit: FileSizeUnit.gigabytes,
       ),
@@ -87,10 +87,10 @@ void main() {
       PaymentLoading(),
       PaymentLoaded(
         balance: BigInt.from(oneAR * 2),
-        estimatedStorageForBalance: '2.0',
+        estimatedStorageForBalance: '2.00',
         selectedAmount: 150.0,
         creditsForSelectedAmount: BigInt.from(oneAR * 3),
-        estimatedStorageForSelectedAmount: '3.0',
+        estimatedStorageForSelectedAmount: '3.00',
         currencyUnit: 'usd',
         dataUnit: FileSizeUnit.gigabytes,
       ),
@@ -119,7 +119,7 @@ void main() {
       PaymentLoading(),
       PaymentLoaded(
         balance: BigInt.from(oneAR),
-        estimatedStorageForBalance: '1.0',
+        estimatedStorageForBalance: '1.00',
         selectedAmount: presetAmounts.first.toDouble(),
         creditsForSelectedAmount: BigInt.from(oneAR * 0.5),
         estimatedStorageForSelectedAmount: '0.50',
@@ -152,10 +152,10 @@ void main() {
         PaymentLoading(),
         PaymentLoaded(
           balance: BigInt.from(oneAR),
-          estimatedStorageForBalance: '1.0',
+          estimatedStorageForBalance: '1024.00',
           selectedAmount: 25.0,
           creditsForSelectedAmount: BigInt.from(oneAR),
-          estimatedStorageForSelectedAmount: '1000.0',
+          estimatedStorageForSelectedAmount: '1024.00',
           currencyUnit: 'usd',
           dataUnit: FileSizeUnit.megabytes,
         ),
