@@ -18,16 +18,14 @@ class TurboBalanceCubit extends Cubit<TurboBalanceState> {
   Future<void> getBalance() async {
     emit(TurboBalanceLoading());
     try {
-      final balance = await paymentService.getBalance(
-        wallet: wallet,
-      );
+      final balance = await paymentService.getBalance(wallet: wallet);
       emit(TurboBalanceSuccessState(balance: balance));
     } catch (e) {
       if (e is TurboUserNotFound) {
         emit(NewTurboUserState());
-        return;
+      } else {
+        emit(TurboBalanceErrorState());
       }
-      emit(TurboBalanceErrorState());
     }
   }
 }
