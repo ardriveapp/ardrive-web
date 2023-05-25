@@ -9,8 +9,9 @@ const defaultCacheName = 'metadata-cache';
 class MetadataCache {
   final Cache<Uint8List> _cache;
   final int _maxEntries;
+  bool _isFull = false;
 
-  const MetadataCache(this._cache, {int maxEntries = defaultMaxEntries})
+  MetadataCache(this._cache, {int maxEntries = defaultMaxEntries})
       : _maxEntries = maxEntries;
 
   static Future<MetadataCache> fromCacheStore(
@@ -24,7 +25,6 @@ class MetadataCache {
   Future<bool> put(String key, Uint8List data) async {
     final isFull = await this.isFull;
     if (isFull) {
-      logger.d('Cache is full, not putting $key in metadata cache');
       return false;
     }
 
@@ -58,9 +58,18 @@ class MetadataCache {
   }
 
   Future<bool> get isFull async {
+    if (_isFull) {
+      return true;
+    }
+
     final size = await this.size;
     final isFull = size >= _maxEntries;
-    logger.d('Cache is full: $isFull - size: $size, max: $defaultMaxEntries');
+    _isFull = isFull;
+
+    if (isFull) {
+      logger.d('Metadata cache is full and will not accept new entries');
+    }
+
     return isFull;
   }
 
