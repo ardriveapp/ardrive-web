@@ -313,12 +313,12 @@ class ArweaveService {
 
         // If there are errors in parsing the entity, ignore it.
       } on EntityTransactionParseException catch (parseException) {
-        logger.w(
+        logger.e(
           'Failed to parse transaction '
           'with id ${parseException.transactionId}',
         );
       } on GatewayError catch (fetchException) {
-        logger.w(
+        logger.e(
           'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
           'for transaction ${transaction.id}, '
           'with status ${fetchException.statusCode} '
@@ -507,7 +507,7 @@ class ArweaveService {
 
           // If there's an error parsing the drive entity, just ignore it.
         } on EntityTransactionParseException catch (parseException) {
-          logger.w(
+          logger.e(
             'Failed to parse transaction '
             'with id ${parseException.transactionId}',
           );
@@ -515,7 +515,7 @@ class ArweaveService {
       }
       return drivesWithKey;
     } catch (e, stacktrace) {
-      logger.w(
+      logger.e(
         'An error occurred when getting the unique user drive entities.'
         ' Exception: ${e.toString()} stacktrace: ${stacktrace.toString()}',
       );
@@ -569,7 +569,7 @@ class ArweaveService {
       return await DriveEntity.fromTransaction(
           fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
     } on EntityTransactionParseException catch (parseException) {
-      logger.w(
+      logger.e(
         'Failed to parse transaction '
         'with id ${parseException.transactionId}',
       );
@@ -731,7 +731,7 @@ class ArweaveService {
         crypto: _crypto,
       );
     } on EntityTransactionParseException catch (parseException) {
-      logger.w(
+      logger.e(
         'Failed to parse transaction '
         'with id ${parseException.transactionId}',
       );
@@ -848,7 +848,7 @@ class ArweaveService {
     try {
       await Future.wait(confirmationFutures);
     } catch (e) {
-      logger.w('Error getting transactions confirmations on exception: $e');
+      logger.e('Error getting transactions confirmations on exception: $e');
       rethrow;
     }
 
