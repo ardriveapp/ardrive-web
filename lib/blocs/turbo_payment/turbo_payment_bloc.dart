@@ -100,37 +100,42 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     required String currentCurrency,
   }) async {
     emit(PaymentLoading());
-    final balance = await paymentService.getBalance(wallet: wallet);
-    final priceEstimate = await paymentService.getPriceForFiat(
-      currency: currentCurrency,
-      amount: currentAmount,
-    );
+    try {
+      final balance = await paymentService.getBalance(wallet: wallet);
+      final priceEstimate = await paymentService.getPriceForFiat(
+        currency: currentCurrency,
+        amount: currentAmount,
+      );
 
-    //Use COST OF ONE GB to calculate the estimated storage. Scale linearly
+      //Use COST OF ONE GB to calculate the estimated storage. Scale linearly
 
-    final estimatedStorageForBalance = computeStorageEstimateForCredits(
-      credits: balance,
-      outputDataUnit: currentDataUnit,
-      costOfOneGb: costOfOneGb,
-    );
+      final estimatedStorageForBalance = computeStorageEstimateForCredits(
+        credits: balance,
+        outputDataUnit: currentDataUnit,
+        costOfOneGb: costOfOneGb,
+      );
 
-    final estimatedStorageForSelectedAmount = computeStorageEstimateForCredits(
-      credits: priceEstimate,
-      outputDataUnit: currentDataUnit,
-      costOfOneGb: costOfOneGb,
-    );
+      final estimatedStorageForSelectedAmount =
+          computeStorageEstimateForCredits(
+        credits: priceEstimate,
+        outputDataUnit: currentDataUnit,
+        costOfOneGb: costOfOneGb,
+      );
 
-    emit(
-      PaymentLoaded(
-        balance: balance,
-        estimatedStorageForBalance: estimatedStorageForBalance,
-        selectedAmount: currentAmount,
-        creditsForSelectedAmount: priceEstimate,
-        estimatedStorageForSelectedAmount: estimatedStorageForSelectedAmount,
-        currencyUnit: currentCurrency,
-        dataUnit: currentDataUnit,
-      ),
-    );
+      emit(
+        PaymentLoaded(
+          balance: balance,
+          estimatedStorageForBalance: estimatedStorageForBalance,
+          selectedAmount: currentAmount,
+          creditsForSelectedAmount: priceEstimate,
+          estimatedStorageForSelectedAmount: estimatedStorageForSelectedAmount,
+          currencyUnit: currentCurrency,
+          dataUnit: currentDataUnit,
+        ),
+      );
+    } catch (e) {
+      emit(PaymentError());
+    }
   }
 
   Future<BigInt> _getCostOfOneGB() async {

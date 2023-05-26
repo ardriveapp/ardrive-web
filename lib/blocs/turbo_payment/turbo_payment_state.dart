@@ -44,10 +44,8 @@ class PaymentLoaded extends PaymentState {
 }
 
 class PaymentError extends PaymentState {
-  final String message;
-
-  PaymentError(this.message);
+  PaymentError();
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [];
 }

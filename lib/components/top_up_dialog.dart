@@ -1,6 +1,12 @@
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class TopUpDialog extends StatefulWidget {
@@ -11,84 +17,115 @@ class TopUpDialog extends StatefulWidget {
 }
 
 class _TopUpDialogState extends State<TopUpDialog> {
+  late PaymentBloc paymentBloc;
+  late Wallet wallet;
+
+  @override
+  initState() {
+    wallet = (context.read<ProfileCubit>().state as ProfileLoggedIn).wallet;
+    paymentBloc = PaymentBloc(
+      paymentService: context.read<PaymentService>(),
+      wallet: wallet,
+    )..add(LoadInitialData());
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ArDriveStandardModal(
       width: 575,
-      content: Column(
-        mainAxisSize: MainAxisSize.max,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SvgPicture.asset(
-                Resources.images.brand.turbo,
-                height: 30,
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                colorBlendMode: BlendMode.srcIn,
-                fit: BoxFit.contain,
-              ),
-              IconButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                icon: const Icon(Icons.close),
-              )
-            ],
-          ),
-          const SizedBox(height: 16),
-          BalanceView(
-            balance: BigInt.from(1000000000000000000),
-            estimatedStorage: 1000000000,
-          ),
-          const SizedBox(height: 16),
-          const PresetAmountSelector(
-            amounts: [25, 50, 75, 100],
-            currencyUnit: '\$',
-            preSelectedAmount: 25,
-          ),
-          const SizedBox(height: 16),
-          PriceEstimateView(
-            fiatAmount: 25,
-            fiatCurrency: '\$',
-            estimatedCredits: BigInt.from(100),
-            estimatedStorage: 1024,
-          ),
-          const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Expanded(
-                child: Row(
+      content: BlocBuilder<PaymentBloc, PaymentState>(
+        bloc: paymentBloc,
+        builder: (context, state) {
+          if (state is PaymentLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is PaymentLoaded) {
+            return Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    DropdownMenu(
-                      label: Text('Currency'),
-                      hintText: 'Currency',
-                      dropdownMenuEntries: [
-                        DropdownMenuEntry(label: 'USD', value: 'USD'),
-                      ],
+                    SvgPicture.asset(
+                      Resources.images.brand.turbo,
+                      height: 30,
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                      colorBlendMode: BlendMode.srcIn,
+                      fit: BoxFit.contain,
                     ),
-                    SizedBox(width: 8),
-                    DropdownMenu(
-                      label: Text('Units'),
-                      hintText: 'Units',
-                      dropdownMenuEntries: [
-                        DropdownMenuEntry(label: 'KB', value: 'KB'),
-                        DropdownMenuEntry(label: 'MB', value: 'MB'),
-                        DropdownMenuEntry(label: 'GB', value: 'GB'),
-                      ],
-                    ),
+                    IconButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      icon: const Icon(Icons.close),
+                    )
                   ],
                 ),
-              ),
-              ArDriveButton(
-                text: 'Next',
-                onPressed: () {},
-              ),
-            ],
-          )
-        ],
+                const SizedBox(height: 16),
+                BalanceView(
+                  balance: state.balance,
+                  estimatedStorage: state.estimatedStorageForBalance,
+                ),
+                const SizedBox(height: 16),
+                const PresetAmountSelector(
+                  amounts: [25, 50, 75, 100],
+                  currencyUnit: '\$',
+                  preSelectedAmount: 25,
+                ),
+                const SizedBox(height: 16),
+                PriceEstimateView(
+                  fiatAmount: state.selectedAmount.toInt(),
+                  fiatCurrency: '\$',
+                  estimatedCredits: state.creditsForSelectedAmount,
+                  estimatedStorage: state.estimatedStorageForSelectedAmount,
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          DropdownMenu(
+                            label: const Text('Currency'),
+                            hintText: 'Currency',
+                            dropdownMenuEntries: [
+                              DropdownMenuEntry(
+                                label: paymentBloc.currentCurrency,
+                                value: paymentBloc.currentCurrency,
+                              ),
+                            ],
+                          ),
+                          SizedBox(width: 8),
+                          const DropdownMenu(
+                            label: Text('Units'),
+                            hintText: 'Units',
+                            dropdownMenuEntries: [
+                              DropdownMenuEntry(label: 'KB', value: 'KB'),
+                              DropdownMenuEntry(label: 'MB', value: 'MB'),
+                              DropdownMenuEntry(label: 'GB', value: 'GB'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    ArDriveButton(
+                      text: 'Next',
+                      onPressed: () {},
+                    ),
+                  ],
+                )
+              ],
+            );
+          } else if (state is PaymentError) {
+            return Center(child: Text(appLocalizationsOf(context).error));
+          }
+          return const SizedBox();
+        },
       ),
     );
   }
@@ -195,7 +232,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
 
 class BalanceView extends StatefulWidget {
   final BigInt balance;
-  final int estimatedStorage;
+  final String estimatedStorage;
   const BalanceView({
     super.key,
     required this.balance,
@@ -228,7 +265,7 @@ class _BalanceViewState extends State<BalanceView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Estimated Storage'),
-            Text(widget.estimatedStorage.toString()),
+            Text(widget.estimatedStorage),
           ],
         ),
       ],
@@ -240,7 +277,7 @@ class PriceEstimateView extends StatelessWidget {
   final int fiatAmount;
   final String fiatCurrency;
   final BigInt estimatedCredits; // in WC
-  final int estimatedStorage; // in bytes
+  final String estimatedStorage; // in bytes
   const PriceEstimateView({
     super.key,
     required this.fiatAmount,

@@ -28,7 +28,8 @@ class PaymentService {
         'Turbo price fetch failed with status code ${priceResponse.statusCode}',
       );
     }
-    final price = BigInt.parse(priceResponse.data);
+    final price = BigInt.parse((priceResponse.data as String).replaceAll('"', ''));
+
     return price;
   }
 
@@ -45,7 +46,7 @@ class PaymentService {
         'Turbo price fetch failed with status code ${priceResponse.statusCode}',
       );
     }
-    final price = BigInt.parse(priceResponse.data);
+    final price = BigInt.parse((priceResponse.data as String).replaceAll('"', ''));
     return price;
   }
 
