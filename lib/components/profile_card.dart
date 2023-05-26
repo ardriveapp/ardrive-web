@@ -62,7 +62,7 @@ class ProfileCard extends StatelessWidget {
       tooltip: appLocalizationsOf(context).profile,
       child: ArDriveDropdown(
         width: 324,
-        dividerThickness: 0,
+        // dividerThickness: 0,
         anchor: const Aligned(
           follower: Alignment.topRight,
           target: Alignment.bottomRight,

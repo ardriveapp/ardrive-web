@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/turbo_balance/turbo_balance_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/topup/views/turbo_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
@@ -110,7 +111,9 @@ class TurboBalance extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
                 borderRadius: 20,
-                onPressed: () {},
+                onPressed: () {
+                  showTurboModal(context);
+                },
               ),
             ),
           ),
