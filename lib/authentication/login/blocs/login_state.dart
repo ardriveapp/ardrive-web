@@ -47,17 +47,18 @@ class LoginSuccess extends LoginState {
 class LoginEnterSeedPhrase extends LoginState {}
 
 class LoginCreateWallet extends LoginState {
-  LoginCreateWallet(this.mnemonic);
+  const LoginCreateWallet(this.mnemonic);
   final String mnemonic;
 }
 
 class LoginCreateWalletGenerated extends LoginState {
-  LoginCreateWalletGenerated(this.mnemonic, this.walletFile);
+  const LoginCreateWalletGenerated(this.mnemonic, this.walletFile);
   final String mnemonic;
-  Wallet walletFile;
+  final Wallet walletFile;
 }
 
 class LoginConfirmMnemonic extends LoginState {
-  const LoginConfirmMnemonic(this.mnemonic);
+  const LoginConfirmMnemonic(this.mnemonic, this.walletFile);
   final String mnemonic;
+  final Wallet walletFile;
 }

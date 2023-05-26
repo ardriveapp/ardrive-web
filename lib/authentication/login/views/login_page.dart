@@ -27,6 +27,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
+import '../blocs/memory_check_item.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -257,6 +259,9 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           content = CreateWalletView(mnemonic: state.mnemonic);
         } else if (state is LoginCreateWalletGenerated) {
           content = CreateWalletView(
+              mnemonic: state.mnemonic, wallet: state.walletFile);
+        } else if (state is LoginConfirmMnemonic) {
+          content = MemoryCheckView(
               mnemonic: state.mnemonic, wallet: state.walletFile);
         } else {
           content = PromptWalletView(
@@ -1477,23 +1482,27 @@ class _CreateWalletViewState extends State<CreateWalletView> {
               TextFormField(
                   enabled: false,
                   controller: TextEditingController(text: widget.mnemonic),
-                  maxLines: 2),
+                  maxLines: 3),
               const SizedBox(height: 16),
               ArDriveButton(
+                style: ArDriveButtonStyle.secondary,
                 isDisabled: widget.wallet == null,
                 onPressed: () {
                   _onDownload();
                 },
                 // FIXME - localize
                 text: widget.wallet == null
-                    ? 'Generating Wallet File...'
+                    ? 'Generating Wallet...'
                     : 'Download Wallet File',
+                icon:
+                    widget.wallet == null ? CircularProgressIndicator() : null,
               ),
               const SizedBox(height: 16),
               ArDriveButton(
                 isDisabled: widget.wallet == null,
                 onPressed: () {
-                  // _onSubmit();
+                  context.read<LoginBloc>().add(
+                      VerifyWalletMnemonic(widget.mnemonic, widget.wallet!));
                 },
                 text: appLocalizationsOf(context).proceed,
               ),
@@ -1520,6 +1529,210 @@ class _CreateWalletViewState extends State<CreateWalletView> {
         final f = io.File('$directory/ardrive-wallet.json');
         f.writeAsStringSync(jsonTxt);
       }
+    }
+  }
+}
+
+class MemoryCheckView extends StatefulWidget {
+  MemoryCheckView({super.key, required this.mnemonic, required this.wallet});
+
+  final String mnemonic;
+  final Wallet wallet;
+  final List<MemoryCheckItem> memoryCheckItems = [];
+  final List<int> selectedWords = [-1, -1, -1, -1];
+  bool allWordsCorrect = false;
+
+  @override
+  State<MemoryCheckView> createState() => _MemoryCheckViewState();
+}
+
+class _MemoryCheckViewState extends State<MemoryCheckView> {
+  @override
+  void initState() {
+    super.initState();
+    _resetMemoryCheckItems();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxHeight: 798,
+      maxHeightPercent: 1,
+      child: _LoginCard(
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ScreenTypeLayout(
+                desktop: const SizedBox.shrink(),
+                mobile: ArDriveImage(
+                  image: AssetImage(Resources.images.brand.logo1),
+                  height: 50,
+                ),
+              ),
+              Text(
+                // appLocalizationsOf(context).createAndConfirmPassword,
+                'Select the correct words to verify your mnemonic seed phrase.',
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.headline.headline5Regular(),
+              ),
+              const SizedBox(height: 16),
+              ...widget.memoryCheckItems.asMap().entries.map((entry) {
+                final index = entry.key;
+                final selectedIndex = widget.selectedWords[index];
+                final memoryCheckItem = entry.value;
+                return Column(
+                  children: [
+                    Text(
+                      'Select Word ${memoryCheckItem.mnemonicWordIndex + 1}',
+                      textAlign: TextAlign.center,
+                      style: ArDriveTypography.headline.headline5Regular(),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: memoryCheckItem.wordOptions
+                          .asMap()
+                          .entries
+                          .map((entry) {
+                        final wordIndex = entry.key;
+                        final word = entry.value;
+                        return ArDriveButton(
+                          style: selectedIndex == wordIndex
+                              ? ArDriveButtonStyle.primary
+                              : ArDriveButtonStyle.secondary,
+                          onPressed: () {
+                            setState(() {
+                              widget.selectedWords[index] = wordIndex;
+                              _validate();
+                            });
+                          },
+                          text: word,
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                );
+              }),
+              const SizedBox(height: 16),
+              ArDriveButton(
+                isDisabled: !widget.allWordsCorrect,
+                onPressed: () {
+                  showAnimatedDialog(context,
+                      content: ArDriveIconModal(
+                        icon: ArDriveIcons.triangle(
+                          size: 88,
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeErrorMuted,
+                        ),
+                        title:
+                            "You've successfully verified your mnemonic seed phrase!",
+                        content:
+                            "If you lose my seed phrase it cannot be retrieved but you can always use your JSON file to login. If you have not downloaded your Wallet file, please do so below, or select OK to continue.",
+                        actions: [
+                          ModalAction(
+                            action: () {
+                              _onDownload();
+                            },
+                            title: "Download Wallet",
+                          ),
+                          ModalAction(
+                            action: () {
+                              Navigator.pop(context);
+                              context
+                                  .read<LoginBloc>()
+                                  .add(CompleteWalletGeneration(widget.wallet));
+                            },
+                            title: appLocalizationsOf(context).ok,
+                          )
+                        ],
+                      ));
+
+                  // context.read<LoginBloc>().add(
+                  //     VerifyWalletMnemonic(widget.mnemonic, widget.wallet));
+                },
+                text: appLocalizationsOf(context).proceed,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _resetMemoryCheckItems() {
+    final words = widget.mnemonic.split(' ');
+    final indices = List<int>.generate(words.length, (i) => i);
+    indices.shuffle();
+
+    widget.memoryCheckItems.clear();
+
+    for (var i = 0; i < 4; i++) {
+      final index = indices[i];
+      final word = words[index];
+
+      final options = [word];
+      var optionsIndex = 1;
+      while (optionsIndex < 3) {
+        for (var randWord in bip39.generateMnemonic().split(' ')) {
+          if (randWord != word) {
+            options.add(randWord);
+            optionsIndex++;
+            if (optionsIndex >= 3) {
+              break;
+            }
+          }
+        }
+      }
+      options.shuffle();
+      final correctIndex = options.indexOf(word);
+
+      widget.memoryCheckItems.add(MemoryCheckItem(
+          mnemonicWordIndex: index,
+          wordOptions: options,
+          correctWordIndex: correctIndex));
+    }
+
+    widget.selectedWords.setRange(0, 4, List<int>.generate(4, (i) => -1));
+  }
+
+  void _validate() {
+    if (widget.selectedWords.every((element) => element >= 0)) {
+      for (var i = 0; i < widget.selectedWords.length; i++) {
+        if (widget.selectedWords[i] !=
+            widget.memoryCheckItems[i].correctWordIndex) {
+          setState(() {
+            widget.allWordsCorrect = false;
+            _resetMemoryCheckItems();
+          });
+          return;
+        }
+      }
+      setState(() {
+        widget.allWordsCorrect = true;
+      });
+    }
+  }
+
+  void _onDownload() async {
+    final jsonTxt = jsonEncode(widget.wallet!.toJwk());
+    if (kIsWeb) {
+      final anchor = AnchorElement(
+          href: 'data:application/text/plain;charset=utf-8,$jsonTxt');
+      anchor.download = 'ardrive-wallet.json';
+      // trigger download
+      document.body!.append(anchor);
+      anchor.click();
+      anchor.remove();
+    } else {
+      final directory = await getApplicationDocumentsDirectory();
+      final f = io.File('$directory/ardrive-wallet.json');
+      f.writeAsStringSync(jsonTxt);
     }
   }
 }

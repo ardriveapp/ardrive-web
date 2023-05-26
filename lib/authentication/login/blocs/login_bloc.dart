@@ -9,6 +9,7 @@ import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
+import 'package:bip39/bip39.dart' as bip39;
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -64,10 +65,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleAddWalletFromMnemonicEvent(event, emit);
     } else if (event is CreateWallet) {
       await _handleCreateWalletEvent(event, emit);
-    } else if (event is ConfirmWalletMnemonic) {
-      await _handleConfirmWalletEvent(event, emit);
     } else if (event is VerifyWalletMnemonic) {
-      await _handleVerifyWalletMnemonic(event, emit);
+      await _handleVerifyWalletMnemonicEvent(event, emit);
+    } else if (event is CompleteWalletGeneration) {
+      await _handleCompleteWalletGenerationEvent(event, emit);
     }
   }
 
@@ -333,12 +334,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       profileType = ProfileType.json;
 
-// //FIXME
-//       const testArweaveAppWalletMnemonic =
-//           'child collect expose tunnel youth response idle suspect accuse drink clip athlete';
-
-//       print("TESTING GENERATION OF WALLET FROM ARWEAVE APP MNEMONIC");
-
       Wallet wallet;
 
       if (kIsWeb) {
@@ -361,7 +356,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   Future<void> _handleCreateWalletEvent(
       CreateWallet event, Emitter<LoginState> emit) async {
-    final mnemonic = await Wallet.generateMnemonic();
+    final mnemonic = bip39.generateMnemonic();
     emit(LoginCreateWallet(mnemonic));
 
     if (kIsWeb) {
@@ -374,15 +369,27 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
   }
 
-  Future<void> _handleConfirmWalletEvent(
-      ConfirmWalletMnemonic event, Emitter<LoginState> emit) async {
-    final mnemonic = await Wallet.generateMnemonic();
-    emit(LoginConfirmMnemonic(mnemonic));
+  Future<void> _handleVerifyWalletMnemonicEvent(
+      VerifyWalletMnemonic event, Emitter<LoginState> emit) async {
+    emit(LoginConfirmMnemonic(event.mnemonic, event.wallet));
   }
 
-  Future<void> _handleVerifyWalletMnemonic(
-      VerifyWalletMnemonic event, Emitter<LoginState> emit) async {
-    final mnemonic = await Wallet.generateMnemonic();
-    // emit(LoginCreateWallet(mnemonic));
+  Future<void> _handleCompleteWalletGenerationEvent(
+      CompleteWalletGeneration event, Emitter<LoginState> emit) async {
+    final previousState = state;
+    final wallet = event.wallet;
+
+    profileType = ProfileType.json;
+
+    try {
+      if (await _arDriveAuth.isExistingUser(wallet)) {
+        emit(PromptPassword(walletFile: wallet));
+      } else {
+        emit(LoginOnBoarding(wallet));
+      }
+    } catch (e) {
+      emit(LoginFailure(e));
+      emit(previousState);
+    }
   }
 }
