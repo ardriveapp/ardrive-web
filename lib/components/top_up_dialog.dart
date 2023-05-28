@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
 import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
@@ -82,6 +83,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                   fiatCurrency: '\$',
                   estimatedCredits: state.creditsForSelectedAmount,
                   estimatedStorage: state.estimatedStorageForSelectedAmount,
+                  storageUnit: paymentBloc.currentDataUnit.name,
                 ),
                 const SizedBox(height: 32),
                 Row(
@@ -93,6 +95,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                           DropdownMenu(
                             label: const Text('Currency'),
                             hintText: 'Currency',
+                            initialSelection: paymentBloc.currentCurrency,
                             dropdownMenuEntries: [
                               DropdownMenuEntry(
                                 label: paymentBloc.currentCurrency,
@@ -100,14 +103,32 @@ class _TopUpDialogState extends State<TopUpDialog> {
                               ),
                             ],
                           ),
-                          SizedBox(width: 8),
-                          const DropdownMenu(
+                          const SizedBox(width: 8),
+                          DropdownMenu(
                             label: Text('Units'),
                             hintText: 'Units',
+                            initialSelection: paymentBloc.currentDataUnit,
+                            onSelected: (value) {
+                              paymentBloc.add(
+                                DataUnitChanged(value as FileSizeUnit),
+                              );
+                            },
                             dropdownMenuEntries: [
-                              DropdownMenuEntry(label: 'KB', value: 'KB'),
-                              DropdownMenuEntry(label: 'MB', value: 'MB'),
-                              DropdownMenuEntry(label: 'GB', value: 'GB'),
+                              ...FileSizeUnit.values.map(
+                                (unit) => DropdownMenuEntry(
+                                  label: unit.name,
+                                  value: unit,
+                                  style: ButtonStyle(
+                                    foregroundColor:
+                                        MaterialStateColor.resolveWith(
+                                      (states) => ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault,
+                                    ),
+                                  ),
+                                ),
+                              )
                             ],
                           ),
                         ],
@@ -277,13 +298,15 @@ class PriceEstimateView extends StatelessWidget {
   final int fiatAmount;
   final String fiatCurrency;
   final BigInt estimatedCredits; // in WC
-  final String estimatedStorage; // in bytes
+  final String estimatedStorage;
+  final String storageUnit;
   const PriceEstimateView({
     super.key,
     required this.fiatAmount,
     required this.fiatCurrency,
     required this.estimatedCredits,
     required this.estimatedStorage,
+    required this.storageUnit,
   });
 
   @override
@@ -293,7 +316,7 @@ class PriceEstimateView extends StatelessWidget {
       children: [
         const Divider(),
         Text(
-          '$fiatCurrency $fiatAmount = $estimatedCredits credits = $estimatedStorage bytes',
+          '$fiatCurrency $fiatAmount = $estimatedCredits credits = $estimatedStorage $storageUnit',
         ),
         const SizedBox(height: 16),
         const Text('How are conversions determined?'),
