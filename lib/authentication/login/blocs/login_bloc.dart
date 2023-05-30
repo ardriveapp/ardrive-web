@@ -15,7 +15,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'web_wallet.dart';
+import 'stub_web_wallet.dart' // stub implementation
+    if (dart.library.html) 'web_wallet.dart';
 
 part 'login_event.dart';
 part 'login_state.dart';
@@ -334,14 +335,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       profileType = ProfileType.json;
 
-      Wallet wallet;
-
-      if (kIsWeb) {
-        var res = await generateJWKStringFromMnemonic(event.mnemonic);
-        wallet = Wallet.fromJwk(json.decode(res));
-      } else {
-        wallet = await Wallet.createWalletFromMnemonic(event.mnemonic);
-      }
+      final wallet = await generateWalletFromMnemonic(event.mnemonic);
 
       if (await _arDriveAuth.isExistingUser(wallet)) {
         emit(PromptPassword(walletFile: wallet));
@@ -359,14 +353,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final mnemonic = bip39.generateMnemonic();
     emit(LoginCreateWallet(mnemonic));
 
-    if (kIsWeb) {
-      var res = await generateJWKStringFromMnemonic(mnemonic);
-      final wallet = Wallet.fromJwk(json.decode(res));
-      emit(LoginCreateWalletGenerated(mnemonic, wallet));
-    } else {
-      final wallet = await Wallet.createWalletFromMnemonic(mnemonic);
-      emit(LoginCreateWalletGenerated(mnemonic, wallet));
-    }
+    final wallet = await generateWalletFromMnemonic(mnemonic);
+    emit(LoginCreateWalletGenerated(mnemonic, wallet));
   }
 
   Future<void> _handleVerifyWalletMnemonicEvent(

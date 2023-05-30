@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:html';
-import 'dart:io' as io;
 
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -17,6 +15,7 @@ import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/split_localizations.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
@@ -24,7 +23,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../blocs/memory_check_item.dart';
@@ -1516,19 +1514,12 @@ class _CreateWalletViewState extends State<CreateWalletView> {
   void _onDownload() async {
     if (widget.wallet != null) {
       final jsonTxt = jsonEncode(widget.wallet!.toJwk());
-      if (kIsWeb) {
-        final anchor = AnchorElement(
-            href: 'data:application/text/plain;charset=utf-8,$jsonTxt');
-        anchor.download = 'ardrive-wallet.json';
-        // trigger download
-        document.body!.append(anchor);
-        anchor.click();
-        anchor.remove();
-      } else {
-        final directory = await getApplicationDocumentsDirectory();
-        final f = io.File('$directory/ardrive-wallet.json');
-        f.writeAsStringSync(jsonTxt);
-      }
+
+      final ArDriveIO io = ArDriveIO();
+      final bytes = Uint8List.fromList(utf8.encode(jsonTxt));
+
+      await io.saveFile(await IOFile.fromData(bytes,
+          name: "ardrive-wallet.json", lastModifiedDate: DateTime.now()));
     }
   }
 }
@@ -1721,18 +1712,11 @@ class _MemoryCheckViewState extends State<MemoryCheckView> {
 
   void _onDownload() async {
     final jsonTxt = jsonEncode(widget.wallet!.toJwk());
-    if (kIsWeb) {
-      final anchor = AnchorElement(
-          href: 'data:application/text/plain;charset=utf-8,$jsonTxt');
-      anchor.download = 'ardrive-wallet.json';
-      // trigger download
-      document.body!.append(anchor);
-      anchor.click();
-      anchor.remove();
-    } else {
-      final directory = await getApplicationDocumentsDirectory();
-      final f = io.File('$directory/ardrive-wallet.json');
-      f.writeAsStringSync(jsonTxt);
-    }
+
+    final ArDriveIO io = ArDriveIO();
+    final bytes = Uint8List.fromList(utf8.encode(jsonTxt));
+
+    await io.saveFile(await IOFile.fromData(bytes,
+        name: "ardrive-wallet.json", lastModifiedDate: DateTime.now()));
   }
 }
