@@ -1967,6 +1967,10 @@
   "balanceAR": "balance",
   "@balanceAR": {
     "description": "title for ar balance"
+  },
+  "errorFetchingBalance": "Error fetching balance",
+  "@errorFetchingBalance": {
+    "description": "Error fetching balance"
   }
 }
 

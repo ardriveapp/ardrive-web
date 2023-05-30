@@ -20,32 +20,33 @@ class PaymentService {
     required int byteSize,
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
-    final priceResponse = await httpClient.get(
+    final result = await httpClient.get(
       url: '$turboPaymentUri/v1/price/bytes/$byteSize',
     );
-    if (!acceptedStatusCodes.contains(priceResponse.statusCode)) {
+    if (!acceptedStatusCodes.contains(result.statusCode)) {
       throw Exception(
-        'Turbo price fetch failed with status code ${priceResponse.statusCode}',
+        'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
-    final price = BigInt.parse(priceResponse.data);
+    final price = BigInt.parse((json.decode(result.data)['credits']));
+
     return price;
   }
 
   Future<BigInt> getPriceForFiat({
-    required double amount,
+    required int amount,
     required String currency,
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
-    final priceResponse = await httpClient.get(
+    final result = await httpClient.get(
       url: '$turboPaymentUri/v1/price/$currency/$amount',
     );
-    if (!acceptedStatusCodes.contains(priceResponse.statusCode)) {
+    if (!acceptedStatusCodes.contains(result.statusCode)) {
       throw Exception(
-        'Turbo price fetch failed with status code ${priceResponse.statusCode}',
+        'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
-    final price = BigInt.parse(priceResponse.data);
+    final price = BigInt.parse((json.decode(result.data)['credits']));
     return price;
   }
 
@@ -70,8 +71,9 @@ class PaymentService {
     if (result.data == 'User not found') {
       throw TurboUserNotFound();
     }
+    final price = BigInt.parse((json.decode(result.data)['credits']));
 
-    return BigInt.parse(result.data);
+    return price;
   }
 
   Future topUp({
@@ -129,7 +131,7 @@ class DontUsePaymentService implements PaymentService {
 
   @override
   Future<BigInt> getPriceForFiat({
-    required double amount,
+    required int amount,
     required String currency,
   }) =>
       throw UnimplementedError();
