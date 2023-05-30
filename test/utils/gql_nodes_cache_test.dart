@@ -11,8 +11,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('MetadataCache class', () {
-    final mockDriveId = 'mockDriveId';
-    final mockDriveId2 = 'mockDriveId2';
+    const mockDriveId = 'mockDriveId';
+    const mockDriveId2 = 'mockDriveId2';
 
     test('can be constructed out of a Cache Store', () async {
       final CacheStore cacheStore = await newMemoryCacheStore();
@@ -118,7 +118,7 @@ void main() {
 
       final wasEleventhItemPut = await metadataCache.put(
         mockDriveId,
-        Uint8List.fromList([1]),
+        newMockItem(0),
       );
       expect(wasEleventhItemPut, false);
 
@@ -237,15 +237,15 @@ void main() {
       });
 
       test('can write and read data', () async {
-        final fibonacciSequence = [0, 1, 1, 2, 3, 5, 8, 13, 21];
+        final mockItem = newMockItem(0);
 
         await metadataCache.put(
           'fibonacci',
-          Uint8List.fromList(fibonacciSequence),
+          mockItem,
         );
 
         final storedData = await metadataCache.get('fibonacci', 0);
-        expect(storedData, Uint8List.fromList(fibonacciSequence));
+        expect(storedData, mockItem);
 
         final keys = await metadataCache.keys;
         expect(keys, ['fibonacci_0']);
@@ -271,12 +271,22 @@ void main() {
   });
 }
 
-List<Uint8List> generateMockData(int count) {
-  final List<Uint8List> mockData = [];
+List<DriveHistoryTransaction> generateMockData(int count) {
+  final List<DriveHistoryTransaction> mockData = [];
 
   for (int i = 0; i < count; i++) {
-    mockData.add(Uint8List.fromList([i]));
+    mockData.add(newMockItem(i));
   }
 
   return mockData;
+}
+
+DriveHistoryTransaction newMockItem(int index) {
+  return DriveHistoryTransaction.fromJson({
+    'id': 'mockDriveId_$index',
+    'owner': {'address': 'mockOwner_$index'},
+    'bundledIn': {'id': 'mockBundledIn_$index'},
+    'block': {'height': index, 'timestamp': 100 * index},
+    'tags': [],
+  });
 }
