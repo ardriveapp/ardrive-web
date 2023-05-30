@@ -41,6 +41,26 @@ class GQLNodesCache {
     );
   }
 
+  Stream<DriveHistoryTransaction> asStreamOfNodes(String driveId) async* {
+    final keys = await _cache.keys;
+    final keysForDriveId = keys.where((key) => key.startsWith(driveId));
+    final sortedKeysForDriveId = keysForDriveId.toList()
+      ..sort(
+        (a, b) {
+          final indexRegexp = RegExp(r'.+_(\d+)$');
+          final aIndex = int.parse(indexRegexp.firstMatch(a)!.group(1)!);
+          final bIndex = int.parse(indexRegexp.firstMatch(b)!.group(1)!);
+          return aIndex.compareTo(bIndex);
+        },
+      );
+
+    yield* Stream.fromFutures(
+      sortedKeysForDriveId.map(
+        (key) => _forceGet(key),
+      ),
+    );
+  }
+
   Future<bool> put(String driveId, DriveHistoryTransaction data) async {
     if (await isFull) {
       return false;
@@ -59,6 +79,14 @@ class GQLNodesCache {
     }
 
     return true;
+  }
+
+  Future<DriveHistoryTransaction> _forceGet(String key) async {
+    final maybeValue = await _cache.get(key);
+    if (maybeValue == null) {
+      throw Exception('Could not find $key in GQL Nodes cache');
+    }
+    return maybeValue;
   }
 
   Future<DriveHistoryTransaction?> get(String driveId, int index) async {
