@@ -66,11 +66,13 @@ class PaymentService {
         'x-signature': signature,
         'x-public-key': publicKeyToHeader(publicKey),
       },
-    );
+    ).onError((ArDriveHTTPException error, stackTrace) {
+      if (error.statusCode == 404) {
+        throw TurboUserNotFound();
+      }
+      throw error;
+    });
 
-    if (result.data == 'User not found') {
-      throw TurboUserNotFound();
-    }
     final price = BigInt.parse((json.decode(result.data)['credits']));
 
     return price;
