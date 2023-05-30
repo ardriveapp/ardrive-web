@@ -42,7 +42,10 @@ class _TopUpDialogState extends State<TopUpDialog> {
         bloc: paymentBloc,
         builder: (context, state) {
           if (state is PaymentLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const SizedBox(
+              height: 575,
+              child: Center(child: CircularProgressIndicator()),
+            );
           } else if (state is PaymentLoaded) {
             return Column(
               mainAxisSize: MainAxisSize.max,
