@@ -8,7 +8,9 @@ import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -76,6 +78,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                 BalanceView(
                   balance: state.balance,
                   estimatedStorage: state.estimatedStorageForBalance,
+                  fileSizeUnit: paymentBloc.currentDataUnit.name,
                 ),
                 const SizedBox(height: 16),
                 PresetAmountSelector(
@@ -114,7 +117,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                           ),
                           const SizedBox(width: 8),
                           DropdownMenu(
-                            label: Text('Units'),
+                            label: const Text('Units'),
                             hintText: 'Units',
                             initialSelection: paymentBloc.currentDataUnit,
                             onSelected: (value) {
@@ -194,6 +197,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     if (!widget.amounts.contains(selectedAmount)) {
       _customAmountController.text = selectedAmount.toString();
     }
+
     super.initState();
   }
 
@@ -254,10 +258,14 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         .toList();
 
     return ScreenTypeLayout.builder(
-      mobile: (context) =>
-          Row(mainAxisSize: MainAxisSize.max, children: buildButtons(32, 64)),
-      desktop: (context) =>
-          Row(mainAxisSize: MainAxisSize.max, children: buildButtons(40, 112)),
+      mobile: (context) => Row(
+        mainAxisSize: MainAxisSize.max,
+        children: buildButtons(32, 64),
+      ),
+      desktop: (context) => Row(
+        mainAxisSize: MainAxisSize.max,
+        children: buildButtons(40, 112),
+      ),
     );
   }
 
@@ -291,6 +299,11 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              //TODO limit to 10,000 temporarily
+              LengthLimitingTextInputFormatter(4),
+            ],
             onChanged: (value) {
               setState(() {
                 selectedAmount = int.tryParse(value) ?? 0;
@@ -307,10 +320,12 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
 class BalanceView extends StatefulWidget {
   final BigInt balance;
   final String estimatedStorage;
+  final String fileSizeUnit;
   const BalanceView({
     super.key,
     required this.balance,
     required this.estimatedStorage,
+    required this.fileSizeUnit,
   });
 
   @override
@@ -324,7 +339,13 @@ class _BalanceViewState extends State<BalanceView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Balance'),
-            Text(widget.balance.toString()),
+            Text(
+              '${winstonToAr(widget.balance)} Credits',
+              style: ArDriveTypography.headline.displayBold().copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 21,
+                  ),
+            ),
           ],
         ),
         const SizedBox(
@@ -335,7 +356,13 @@ class _BalanceViewState extends State<BalanceView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Estimated Storage'),
-            Text(widget.estimatedStorage),
+            Text(
+              '${widget.estimatedStorage} ${widget.fileSizeUnit}',
+              style: ArDriveTypography.headline.displayBold().copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 21,
+                  ),
+            ),
           ],
         ),
       ];
@@ -378,7 +405,7 @@ class PriceEstimateView extends StatelessWidget {
       children: [
         const Divider(),
         Text(
-          '$fiatCurrency $fiatAmount = $estimatedCredits credits = $estimatedStorage $storageUnit',
+          '$fiatCurrency $fiatAmount = ${winstonToAr(estimatedCredits)} credits = $estimatedStorage $storageUnit',
         ),
         const SizedBox(height: 16),
         const Text('How are conversions determined?'),

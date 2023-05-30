@@ -99,15 +99,15 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     required int currentAmount,
     required String currentCurrency,
   }) async {
-    emit(PaymentLoading());
+    // emit(PaymentLoading());
 
-    var balance;
+    BigInt balance;
     try {
       balance = await paymentService.getBalance(wallet: wallet);
     } catch (e) {
       balance = BigInt.from(0);
     }
-    
+
     try {
       final priceEstimate = await paymentService.getPriceForFiat(
         currency: currentCurrency,
