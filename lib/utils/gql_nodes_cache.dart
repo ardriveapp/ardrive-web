@@ -9,39 +9,10 @@ const defaultCacheName = 'gql-nodes-cache';
 class GQLNodesCache {
   final Cache<Uint8List> _cache;
   final int _maxEntries;
-  Map<String, int>? _nextIndexForDriveId = {};
+  Map<String, int>? _nextIndexForDriveId;
 
   GQLNodesCache(this._cache, {int maxEntries = defaultMaxEntries})
       : _maxEntries = maxEntries;
-
-  Future<int> nextIndexForDriveId(String driveId) async {
-    _nextIndexForDriveId ??= await currentIndexesPerDriveId;
-
-    if (_nextIndexForDriveId![driveId] == null) {
-      // There are no entries for this driveId yet
-      _nextIndexForDriveId![driveId] = -1;
-    }
-
-    final nextIndex = _nextIndexForDriveId![driveId]! + 1;
-    return nextIndex;
-  }
-
-  Future<Map<String, int>> get currentIndexesPerDriveId async {
-    final Map<String, int> currentIndexesPerDriveId = {};
-
-    final keys = await this.keys;
-    for (final key in keys) {
-      final driveId = key.split('_')[0];
-      final index = int.parse(key.split('_')[1]);
-
-      if (currentIndexesPerDriveId[driveId] == null ||
-          currentIndexesPerDriveId[driveId]! < index) {
-        currentIndexesPerDriveId[driveId] = index;
-      }
-    }
-
-    return currentIndexesPerDriveId;
-  }
 
   static Future<GQLNodesCache> fromCacheStore(
     CacheStore store, {
@@ -49,6 +20,21 @@ class GQLNodesCache {
   }) async {
     final cache = await _newCacheFromStore(store, maxEntries: maxEntries);
     return GQLNodesCache(cache, maxEntries: maxEntries);
+  }
+
+  static Future<Cache<Uint8List>> _newCacheFromStore(
+    CacheStore store, {
+    required int maxEntries,
+  }) async {
+    logger.d('Creating GQL Nodes cache with max entries: $maxEntries');
+
+    return store.cache<Uint8List>(
+      name: defaultCacheName,
+      maxEntries: maxEntries,
+
+      // See: https://pub.dev/packages/stash#eviction-policies
+      evictionPolicy: null,
+    );
   }
 
   Future<bool> put(String driveId, Uint8List data) async {
@@ -108,18 +94,35 @@ class GQLNodesCache {
     return _cache.size;
   }
 
-  static Future<Cache<Uint8List>> _newCacheFromStore(
-    CacheStore store, {
-    required int maxEntries,
-  }) async {
-    logger.d('Creating GQL Nodes cache with max entries: $maxEntries');
+  Future<int> nextIndexForDriveId(String driveId) async {
+    _nextIndexForDriveId ??= await currentIndexesPerDriveId;
 
-    return store.cache<Uint8List>(
-      name: defaultCacheName,
-      maxEntries: maxEntries,
+    if (_nextIndexForDriveId![driveId] == null) {
+      // There are no entries for this driveId yet
+      _nextIndexForDriveId![driveId] = -1;
+    }
 
-      // See: https://pub.dev/packages/stash#eviction-policies
-      evictionPolicy: null,
-    );
+    final nextIndex = _nextIndexForDriveId![driveId]! + 1;
+    return nextIndex;
+  }
+
+  Future<Map<String, int>> get currentIndexesPerDriveId async {
+    final Map<String, int> currentIndexesPerDriveId = {};
+
+    final regexp = RegExp(r'^(.+)_(\d+)$');
+
+    final keys = await this.keys;
+    for (final key in keys) {
+      final match = regexp.firstMatch(key)!;
+      final driveId = match.group(1)!;
+      final index = int.parse(match.group(2)!);
+
+      if (currentIndexesPerDriveId[driveId] == null ||
+          currentIndexesPerDriveId[driveId]! < index) {
+        currentIndexesPerDriveId[driveId] = index;
+      }
+    }
+
+    return currentIndexesPerDriveId;
   }
 }
