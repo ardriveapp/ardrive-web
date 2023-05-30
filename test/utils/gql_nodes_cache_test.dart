@@ -192,6 +192,33 @@ void main() {
       expect(keysAfterClear, []);
     });
 
+    test('can add items for many drives', () async {
+      final metadataCache = await GQLNodesCache.fromCacheStore(
+        await newMemoryCacheStore(),
+        maxEntries: 10,
+      );
+
+      final mockData = generateMockData(5);
+
+      for (int i = 0; i < mockData.length; i++) {
+        await metadataCache.put(mockDriveId, mockData[i]);
+        expect(await metadataCache.get(mockDriveId, i), mockData[i]);
+
+        await metadataCache.put(mockDriveId2, mockData[i]);
+        expect(await metadataCache.get(mockDriveId2, i), mockData[i]);
+      }
+
+      final nextIndexForDriveId1 = await metadataCache.nextIndexForDriveId(
+        mockDriveId,
+      );
+      expect(nextIndexForDriveId1, 5);
+
+      final nextIndexForDriveId2 = await metadataCache.nextIndexForDriveId(
+        mockDriveId2,
+      );
+      expect(nextIndexForDriveId2, 5);
+    });
+
     group('with a stash_shared_preferences cache', () {
       late GQLNodesCache metadataCache;
 
@@ -222,6 +249,23 @@ void main() {
 
         final keys = await metadataCache.keys;
         expect(keys, ['fibonacci_0']);
+      });
+
+      test('can recover the previously written index per drive', () async {
+        SharedPreferences.setMockInitialValues({
+          'gql-nodes-cache_${mockDriveId}_0': Uint8List.fromList([0]),
+          'gql-nodes-cache_${mockDriveId}_1': Uint8List.fromList([0]),
+          'gql-nodes-cache_${mockDriveId}_2': Uint8List.fromList([0]),
+        });
+
+        final store = await newSharedPreferencesCacheStore();
+        metadataCache = await GQLNodesCache.fromCacheStore(
+          store,
+          maxEntries: 3,
+        );
+
+        final storedData = await metadataCache.nextIndexForDriveId(mockDriveId);
+        expect(storedData, 3);
       });
     });
   });
