@@ -1,13 +1,16 @@
-import 'dart:typed_data';
-
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:stash/stash_api.dart';
 
 const defaultMaxEntries = 20000;
 const defaultCacheName = 'gql-nodes-cache';
 
+// TODO: PE-2782: Abstract auto-generated GQL types
+typedef DriveHistoryTransaction
+    = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+
 class GQLNodesCache {
-  final Cache<Uint8List> _cache;
+  final Cache<DriveHistoryTransaction> _cache;
   final int _maxEntries;
   Map<String, int>? _nextIndexForDriveId;
 
@@ -22,22 +25,23 @@ class GQLNodesCache {
     return GQLNodesCache(cache, maxEntries: maxEntries);
   }
 
-  static Future<Cache<Uint8List>> _newCacheFromStore(
+  static Future<Cache<DriveHistoryTransaction>> _newCacheFromStore(
     CacheStore store, {
     required int maxEntries,
   }) async {
     logger.d('Creating GQL Nodes cache with max entries: $maxEntries');
 
-    return store.cache<Uint8List>(
+    return store.cache<DriveHistoryTransaction>(
       name: defaultCacheName,
       maxEntries: maxEntries,
+      fromEncodable: DriveHistoryTransaction.fromJson,
 
       // See: https://pub.dev/packages/stash#eviction-policies
       evictionPolicy: null,
     );
   }
 
-  Future<bool> put(String driveId, Uint8List data) async {
+  Future<bool> put(String driveId, DriveHistoryTransaction data) async {
     if (await isFull) {
       return false;
     }
@@ -57,7 +61,7 @@ class GQLNodesCache {
     return true;
   }
 
-  Future<Uint8List?> get(String driveId, int index) async {
+  Future<DriveHistoryTransaction?> get(String driveId, int index) async {
     final key = '${driveId}_$index';
     final value = await _cache.get(key);
     if (value != null) {
