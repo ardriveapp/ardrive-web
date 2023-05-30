@@ -32,10 +32,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
   FileSizeUnit _currentDataUnit = FileSizeUnit.gigabytes;
   String _currentCurrency = 'usd';
-  double _currentAmount = presetAmounts.first.toDouble();
+  int _currentAmount = presetAmounts.first;
 
   String get currentCurrency => _currentCurrency;
-  double get currentAmount => _currentAmount;
+  int get currentAmount => _currentAmount;
   FileSizeUnit get currentDataUnit => _currentDataUnit;
 
   late BigInt costOfOneGb;
@@ -96,7 +96,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
   _recomputePriceEstimate(
     Emitter emit, {
-    required double currentAmount,
+    required int currentAmount,
     required String currentCurrency,
   }) async {
     emit(PaymentLoading());

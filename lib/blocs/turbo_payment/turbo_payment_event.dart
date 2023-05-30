@@ -5,7 +5,7 @@ abstract class PaymentEvent {}
 class LoadInitialData extends PaymentEvent {}
 
 class FiatAmountSelected extends PaymentEvent {
-  final double amount;
+  final int amount;
 
   FiatAmountSelected(this.amount);
 }

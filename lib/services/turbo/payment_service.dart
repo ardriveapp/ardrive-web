@@ -34,7 +34,7 @@ class PaymentService {
   }
 
   Future<BigInt> getPriceForFiat({
-    required double amount,
+    required int amount,
     required String currency,
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
@@ -131,7 +131,7 @@ class DontUsePaymentService implements PaymentService {
 
   @override
   Future<BigInt> getPriceForFiat({
-    required double amount,
+    required int amount,
     required String currency,
   }) =>
       throw UnimplementedError();

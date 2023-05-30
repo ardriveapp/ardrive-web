@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
 import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
@@ -9,6 +11,7 @@ import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 class TopUpDialog extends StatefulWidget {
   const TopUpDialog({super.key});
@@ -72,10 +75,13 @@ class _TopUpDialogState extends State<TopUpDialog> {
                   estimatedStorage: state.estimatedStorageForBalance,
                 ),
                 const SizedBox(height: 16),
-                const PresetAmountSelector(
-                  amounts: [25, 50, 75, 100],
+                PresetAmountSelector(
+                  amounts: presetAmounts,
                   currencyUnit: '\$',
-                  preSelectedAmount: 25,
+                  preSelectedAmount: state.selectedAmount.toInt(),
+                  onAmountSelected: (amount) {
+                    paymentBloc.add(FiatAmountSelected(amount));
+                  },
                 ),
                 const SizedBox(height: 16),
                 PriceEstimateView(
@@ -143,7 +149,12 @@ class _TopUpDialogState extends State<TopUpDialog> {
               ],
             );
           } else if (state is PaymentError) {
-            return Center(child: Text(appLocalizationsOf(context).error));
+            return SizedBox(
+              height: 575,
+              child: Center(
+                child: Text(appLocalizationsOf(context).error),
+              ),
+            );
           }
           return const SizedBox();
         },
@@ -156,11 +167,13 @@ class PresetAmountSelector extends StatefulWidget {
   final List<int> amounts;
   final String currencyUnit;
   final int preSelectedAmount;
+  final Function(int) onAmountSelected;
   const PresetAmountSelector({
     super.key,
     required this.amounts,
     required this.currencyUnit,
     required this.preSelectedAmount,
+    required this.onAmountSelected,
   });
 
   @override
@@ -175,7 +188,74 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   @override
   void initState() {
     selectedAmount = widget.preSelectedAmount;
+    if (!widget.amounts.contains(selectedAmount)) {
+      _customAmountController.text = selectedAmount.toString();
+    }
     super.initState();
+  }
+
+  DateTime lastChanged = DateTime.now();
+
+  Timer? _timer;
+
+  void _onAmountChanged(String amount) {
+    if (amount.isEmpty) {
+      return;
+    }
+
+    if (_timer != null && _timer!.isActive) {
+      _timer?.cancel();
+    }
+    _timer = Timer(const Duration(milliseconds: 500), () {
+      widget.onAmountSelected(int.parse(amount));
+    });
+  }
+
+  buildButtonBar(BuildContext context) {
+    final foregroundColor =
+        ArDriveTheme.of(context).themeData.colors.themeFgDefault;
+
+    final backgroundColor =
+        ArDriveTheme.of(context).themeData.colors.themeBgSurface;
+
+    buildButtons(double height, double width) => widget.amounts
+        .map(
+          (amount) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: ArDriveButton(
+              backgroundColor:
+                  selectedAmount == amount ? foregroundColor : backgroundColor,
+              style: selectedAmount == amount
+                  ? ArDriveButtonStyle.primary
+                  : ArDriveButtonStyle.secondary,
+              maxHeight: height,
+              maxWidth: width,
+              fontStyle: ArDriveTypography.body.captionRegular().copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: selectedAmount == amount
+                        ? backgroundColor
+                        : foregroundColor,
+                  ),
+              text: '$amount ${widget.currencyUnit}',
+              onPressed: () {
+                setState(() {
+                  selectedAmount = amount;
+                  _customAmountController.text = '';
+                  widget.onAmountSelected(amount);
+                });
+              },
+            ),
+          ),
+        )
+        .toList();
+
+    return ScreenTypeLayout.builder(
+      mobile: (context) =>
+          Row(mainAxisSize: MainAxisSize.max, children: buildButtons(32, 64)),
+      desktop: (context) =>
+          Row(mainAxisSize: MainAxisSize.max, children: buildButtons(40, 112)),
+    );
   }
 
   @override
@@ -188,38 +268,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         const SizedBox(height: 8),
         const Text('Choose an amount'),
         const SizedBox(height: 8),
-        Row(
-          mainAxisSize: MainAxisSize.max,
-          children: widget.amounts
-              .map(
-                (amount) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: ArDriveButton(
-                    backgroundColor:
-                        selectedAmount == amount ? Colors.white : null,
-                    style: ArDriveButtonStyle.secondary,
-                    maxHeight: 40,
-                    maxWidth: 112,
-                    fontStyle: ArDriveTypography.body.captionRegular().copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgDefault,
-                        ),
-                    text: '$amount ${widget.currencyUnit}',
-                    onPressed: () {
-                      setState(() {
-                        selectedAmount = amount;
-                        _customAmountController.text = '';
-                      });
-                    },
-                  ),
-                ),
-              )
-              .toList(),
-        ),
+        buildButtonBar(context),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
           child: Text('Or chose a custom amount'),
@@ -243,6 +292,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
               setState(() {
                 selectedAmount = int.tryParse(value) ?? 0;
               });
+              _onAmountChanged(value);
             },
           ),
         )
@@ -265,11 +315,7 @@ class BalanceView extends StatefulWidget {
 }
 
 class _BalanceViewState extends State<BalanceView> {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
+  balanceContents() => [
         Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,7 +335,20 @@ class _BalanceViewState extends State<BalanceView> {
             Text(widget.estimatedStorage),
           ],
         ),
-      ],
+      ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ScreenTypeLayout.builder(
+      desktop: (context) => Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: balanceContents(),
+      ),
+      mobile: (context) => Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: balanceContents(),
+      ),
     );
   }
 }
