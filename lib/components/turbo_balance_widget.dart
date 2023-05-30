@@ -63,17 +63,24 @@ class TurboBalance extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        appLocalizationsOf(context).turboAddCreditsBlurb,
-                        style: ArDriveTypography.body.captionRegular().copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgMuted,
-                            ),
+                      Flexible(
+                        flex: 3,
+                        child: Text(
+                          appLocalizationsOf(context).turboAddCreditsBlurb,
+                          style:
+                              ArDriveTypography.body.captionRegular().copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgMuted,
+                                  ),
+                        ),
                       ),
-                      addButton(context),
+                      Flexible(
+                        flex: 2,
+                        child: addButton(context),
+                      )
                     ],
                   );
                 } else if (state is TurboBalanceSuccessState) {

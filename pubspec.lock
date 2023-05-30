@@ -69,8 +69,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.2.5"
-      resolved-ref: "504b2900b3bf1a9b2bf18ee42765d6f43ef03dc9"
+      ref: "5f873cca568844bf2a9c21c56e14f10d3f8ee76a"
+      resolved-ref: "5f873cca568844bf2a9c21c56e14f10d3f8ee76a"
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.2.5"
