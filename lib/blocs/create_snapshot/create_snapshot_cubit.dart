@@ -61,7 +61,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     required DriveDao driveDao,
     required PstService pst,
     required TabVisibilitySingleton tabVisibility,
-    // required GQLNodesCache gqlNodesCache,
     this.throwOnDataComputingForTesting = false,
     this.throwOnSignTxForTesting = false,
     this.returnWithoutSigningForTesting = false,
@@ -70,7 +69,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         _driveDao = driveDao,
         _pst = pst,
         _tabVisibility = tabVisibility,
-        // _gqlNodesCache = gqlNodesCache,
         super(CreateSnapshotInitial());
 
   Future<void> confirmDriveAndHeighRange(
@@ -152,12 +150,15 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       _range = Range(start: 0, end: maximumHeightToSnapshot);
     }
 
-    // final rangeInCache = await _gqlNodesCache.range(_driveId);
-    // _rangeInCache = Range(
-    //   start: rangeInCache.start,
-    //   end: rangeInCache.end == -1 ? -1 : max(rangeInCache.end - 1, 0),
-    // );
-    _rangeInCache = await _gqlNodesCache.range(_driveId);
+    final rangeInCache = await _gqlNodesCache.range(_driveId);
+    _rangeInCache = rangeInCache == Range.nullRange
+        ? Range.nullRange
+        : Range(
+            start: rangeInCache.start,
+
+            // We ignore the latest block for now, as it may be inclomplete.
+            end: rangeInCache.end - 1,
+          );
 
     // ignore: avoid_print
     print(

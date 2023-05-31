@@ -15,7 +15,6 @@ typedef DriveHistoryTransaction
 
 class GQLNodesCache {
   final Cache<DriveHistoryTransaction> _persistingCache;
-  // final List<_partialBlockBuffer> _partialBlocks = [];
   final int _maxEntries;
   Map<String, int>? _nextIndexForDriveId;
 
@@ -75,9 +74,7 @@ class GQLNodesCache {
         },
       );
 
-    // final firstKey = sortedKeysForDriveId.first;
     final lastKey = sortedKeysForDriveId.last;
-    // final firstValue = (await _persistingCache.get(firstKey))!;
     final lastValue = (await _persistingCache.get(lastKey))!;
 
     const firstBlock = 0; // Always from genesis
