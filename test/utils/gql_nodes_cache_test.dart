@@ -198,6 +198,9 @@ void main() {
         maxEntries: 10,
       );
 
+      final streamWhenEmpty = metadataCache.asStreamOfNodes(mockDriveId);
+      expect(streamWhenEmpty, emitsDone);
+
       final mockData = generateMockData(10);
 
       for (int i = 0; i < mockData.length; i++) {
@@ -258,6 +261,29 @@ void main() {
           ],
         ),
       );
+    });
+
+    test(
+        'range method will return the range of blocks where there is data for a specific drive id',
+        () async {
+      final metadataCache = await GQLNodesCache.fromCacheStore(
+        await newMemoryCacheStore(),
+        maxEntries: 10,
+      );
+
+      final rangeBefore = await metadataCache.range(mockDriveId);
+      expect(rangeBefore.start, -1);
+      expect(rangeBefore.end, -1);
+
+      final mockData = generateMockData(10);
+
+      for (int i = 0; i < mockData.length; i++) {
+        await metadataCache.put(mockDriveId, mockData[i]);
+      }
+
+      final rangeAfter = await metadataCache.range(mockDriveId);
+      expect(rangeAfter.start, 0);
+      expect(rangeAfter.end, 9);
     });
 
     test('can add items for many drives', () async {
