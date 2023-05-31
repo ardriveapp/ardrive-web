@@ -601,7 +601,10 @@ class _InputDropdownState<T extends InputDropdownItem>
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+            color: ArDriveTheme.of(context)
+                .themeData
+                .textFieldTheme
+                .defaultBorderColor,
             width: 2,
           ),
           borderRadius: BorderRadius.circular(4),
@@ -624,7 +627,10 @@ class _InputDropdownState<T extends InputDropdownItem>
                 ),
               ),
             ),
-            ArDriveIcons.carretDown(),
+            ArDriveIcons.carretDown(
+              color:
+                  ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+            ),
           ],
         ),
       ),
