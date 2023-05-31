@@ -1,5 +1,9 @@
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/snapshots/gql_cache_drive_history.dart';
+import 'package:ardrive/utils/snapshots/height_range.dart';
+import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:stash/stash_api.dart';
 
 const defaultMaxEntries = 20000;
@@ -10,12 +14,15 @@ typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 
 class GQLNodesCache {
-  final Cache<DriveHistoryTransaction> _cache;
+  final Cache<DriveHistoryTransaction> _persistingCache;
+  // final List<_partialBlockBuffer> _partialBlocks = [];
   final int _maxEntries;
   Map<String, int>? _nextIndexForDriveId;
 
-  GQLNodesCache(this._cache, {int maxEntries = defaultMaxEntries})
-      : _maxEntries = maxEntries;
+  GQLNodesCache(
+    this._persistingCache, {
+    int maxEntries = defaultMaxEntries,
+  }) : _maxEntries = maxEntries;
 
   static Future<GQLNodesCache> fromCacheStore(
     CacheStore store, {
@@ -41,8 +48,49 @@ class GQLNodesCache {
     );
   }
 
-  Stream<DriveHistoryTransaction> asStreamOfNodes(String driveId) async* {
-    final keys = await _cache.keys;
+  Future<GQLCacheDriveHistory> asSegmentedGQLData(DriveID driveId) async {
+    final r = await this.range(driveId);
+    final range = Range(start: r.start, end: r.end - 1);
+    return GQLCacheDriveHistory(
+      driveId: driveId,
+      subRanges: HeightRange(rangeSegments: [range]),
+      cache: this,
+    );
+  }
+
+  Future<Range> range(DriveID driveId) async {
+    final keys = await _persistingCache.keys;
+    final keysForDriveId = keys.where((key) => key.startsWith(driveId));
+    if (keysForDriveId.isEmpty) {
+      return Range.nullRange;
+    }
+
+    final sortedKeysForDriveId = keysForDriveId.toList()
+      ..sort(
+        (a, b) {
+          final indexRegexp = RegExp(r'.+_(\d+)$');
+          final aIndex = int.parse(indexRegexp.firstMatch(a)!.group(1)!);
+          final bIndex = int.parse(indexRegexp.firstMatch(b)!.group(1)!);
+          return aIndex.compareTo(bIndex);
+        },
+      );
+
+    // final firstKey = sortedKeysForDriveId.first;
+    final lastKey = sortedKeysForDriveId.last;
+    // final firstValue = (await _persistingCache.get(firstKey))!;
+    final lastValue = (await _persistingCache.get(lastKey))!;
+
+    const firstBlock = 0; // Always from genesis
+    final lastBlock = lastValue.block!.height;
+
+    return Range(start: firstBlock, end: lastBlock);
+  }
+
+  Stream<DriveHistoryTransaction> asStreamOfNodes(
+    String driveId, {
+    bool ignoreLatestBlock = false,
+  }) async* {
+    final keys = await _persistingCache.keys;
     final keysForDriveId = keys.where((key) => key.startsWith(driveId));
     final sortedKeysForDriveId = keysForDriveId.toList()
       ..sort(
@@ -53,6 +101,23 @@ class GQLNodesCache {
           return aIndex.compareTo(bIndex);
         },
       );
+
+    if (ignoreLatestBlock) {
+      final latestItem = sortedKeysForDriveId.last;
+      final latestBlockHeight = (await _forceGet(latestItem)).block!.height;
+      // final cacheKeysOfItemsInLatestBlock = [];
+      bool hasReadAllItemsonLatestBlock = false;
+      do {
+        final item = sortedKeysForDriveId.removeLast();
+        final blockHeight = (await _forceGet(item)).block!.height;
+        if (blockHeight == latestBlockHeight) {
+          // cacheKeysOfItemsInLatestBlock.add(item);
+        } else {
+          sortedKeysForDriveId.add(item);
+          hasReadAllItemsonLatestBlock = true;
+        }
+      } while (!hasReadAllItemsonLatestBlock);
+    }
 
     yield* Stream.fromFutures(
       sortedKeysForDriveId.map(
@@ -70,7 +135,7 @@ class GQLNodesCache {
     final key = '${driveId}_$nextIndex';
 
     logger.d('Putting $key in GQL Nodes cache');
-    await _cache.put(key, data).then(
+    await _persistingCache.put(key, data).then(
           (value) => _nextIndexForDriveId![driveId] = nextIndex,
         );
 
@@ -82,7 +147,7 @@ class GQLNodesCache {
   }
 
   Future<DriveHistoryTransaction> _forceGet(String key) async {
-    final maybeValue = await _cache.get(key);
+    final maybeValue = await _persistingCache.get(key);
     if (maybeValue == null) {
       throw Exception('Could not find $key in GQL Nodes cache');
     }
@@ -91,7 +156,7 @@ class GQLNodesCache {
 
   Future<DriveHistoryTransaction?> get(String driveId, int index) async {
     final key = '${driveId}_$index';
-    final value = await _cache.get(key);
+    final value = await _persistingCache.get(key);
     if (value != null) {
       logger.d('Cache hit for $key in GQL Nodes cache');
     } else {
@@ -103,16 +168,16 @@ class GQLNodesCache {
   Future<void> remove(String driveId, int index) async {
     final key = '${driveId}_$index';
     logger.d('Removing $key from GQL Nodes cache');
-    return _cache.remove(key);
+    return _persistingCache.remove(key);
   }
 
   Future<void> clear() async {
     logger.d('Clearing GQL Nodes cache');
-    return _cache.clear();
+    return _persistingCache.clear();
   }
 
   Future<Iterable<String>> get keys async {
-    return _cache.keys;
+    return _persistingCache.keys;
   }
 
   Future<bool> get isFull async {
