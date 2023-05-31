@@ -145,7 +145,7 @@ class GQLNodesCache {
       await _persistingCache.put(key, data);
       _nextIndexForDriveId![driveId] = nextIndex;
     } catch (e, s) {
-      logger.e('Could not put $key in GQL Nodes cache', e, s);
+      logger.e('Failed to put $key in GQL Nodes cache', e, s);
       return false;
     }
 
@@ -177,7 +177,7 @@ class GQLNodesCache {
       }
       return value;
     } catch (e, s) {
-      logger.e('Could not get $key from GQL Nodes cache', e, s);
+      logger.e('Failed to get $key from GQL Nodes cache', e, s);
       return null;
     }
   }

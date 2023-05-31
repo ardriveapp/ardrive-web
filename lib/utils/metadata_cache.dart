@@ -31,7 +31,7 @@ class MetadataCache {
       logger.d('Putting $key in metadata cache');
       await _cache.put(key, data);
     } catch (e, s) {
-      logger.e('Could not put $key in metadata cache', e, s);
+      logger.e('Failed to put $key in metadata cache', e, s);
       return false;
     }
 
@@ -43,13 +43,18 @@ class MetadataCache {
   }
 
   Future<Uint8List?> get(String key) async {
-    final value = await _cache.get(key);
-    if (value != null) {
-      logger.d('Cache hit for $key in metadata cache');
-    } else {
-      logger.d('Cache miss for $key in metadata cache');
+    try {
+      final value = await _cache.get(key);
+      if (value != null) {
+        logger.d('Cache hit for $key in metadata cache');
+      } else {
+        logger.d('Cache miss for $key in metadata cache');
+      }
+      return value;
+    } catch (e, s) {
+      logger.e('Failed to get $key from metadata cache', e, s);
+      return null;
     }
-    return value;
   }
 
   Future<void> remove(String key) async {
