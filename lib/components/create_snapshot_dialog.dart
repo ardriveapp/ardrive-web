@@ -19,7 +19,7 @@ import '../utils/usd_upload_cost_to_string.dart';
 Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
-) async {
+) {
   return showAnimatedDialog(
     context,
     barrierDismissible: false,

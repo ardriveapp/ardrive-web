@@ -11,13 +11,16 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/utils/ar_cost_to_usd.dart';
+import 'package:ardrive/utils/gql_nodes_cache.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
+import 'package:async/async.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -42,8 +45,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late DriveID _driveId;
   late String _ownerAddress;
   late Range _range;
+  late Range _rangeInCache;
   late int _currentHeight;
   late Transaction _preparedTx;
+  late GQLNodesCache _gqlNodesCache;
 
   bool _wasSnapshotDataComputingCanceled = false;
 
@@ -56,6 +61,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     required DriveDao driveDao,
     required PstService pst,
     required TabVisibilitySingleton tabVisibility,
+    // required GQLNodesCache gqlNodesCache,
     this.throwOnDataComputingForTesting = false,
     this.throwOnSignTxForTesting = false,
     this.returnWithoutSigningForTesting = false,
@@ -64,6 +70,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         _driveDao = driveDao,
         _pst = pst,
         _tabVisibility = tabVisibility,
+        // _gqlNodesCache = gqlNodesCache,
         super(CreateSnapshotInitial());
 
   Future<void> confirmDriveAndHeighRange(
@@ -80,7 +87,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final profileState = _profileCubit.state as ProfileLoggedIn;
     _ownerAddress = profileState.walletAddress;
 
-    _setTrustedRange(range);
+    await _setTrustedRange(range);
 
     late Uint8List data;
     try {
@@ -124,9 +131,16 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _itemToBeCreated = null;
     _snapshotEntity = null;
     _wasSnapshotDataComputingCanceled = false;
+    try {
+      _gqlNodesCache = await GQLNodesCache.fromCacheStore(
+        await newSharedPreferencesCacheStore(),
+      );
+    } catch (e, s) {
+      logger.e('Error while creating GQLNodesCache', e, s);
+    }
   }
 
-  void _setTrustedRange(Range? range) {
+  Future<void> _setTrustedRange(Range? range) async {
     final maximumHeightToSnapshot =
         _currentHeight - kRequiredTxConfirmationCount;
 
@@ -137,6 +151,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     } else {
       _range = Range(start: 0, end: maximumHeightToSnapshot);
     }
+
+    // final rangeInCache = await _gqlNodesCache.range(_driveId);
+    // _rangeInCache = Range(
+    //   start: rangeInCache.start,
+    //   end: rangeInCache.end == -1 ? -1 : max(rangeInCache.end - 1, 0),
+    // );
+    _rangeInCache = await _gqlNodesCache.range(_driveId);
 
     // ignore: avoid_print
     print(
@@ -149,11 +170,24 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       return _itemToBeCreated!;
     }
 
+    // Both ranges starts at genesis, so it's safe to asume there's a single
+    /// range as a result of the difference
+    Range rangeNotInCache;
+    if (_rangeInCache == Range.nullRange) {
+      rangeNotInCache = _range;
+    } else {
+      rangeNotInCache = Range.difference(_range, _rangeInCache)[0];
+    }
+
+    logger.i(
+      'Range not in cache: $rangeNotInCache, range in cache: $_rangeInCache',
+    );
+
     // declare the GQL read stream out of arweave
     final gqlEdgesStream = _arweave.getSegmentedTransactionsFromDrive(
       _driveId,
-      minBlockHeight: _range.start,
-      maxBlockHeight: _range.end,
+      minBlockHeight: rangeNotInCache.start,
+      maxBlockHeight: rangeNotInCache.end,
       ownerAddress: _ownerAddress,
     );
 
@@ -161,7 +195,17 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final flatGQLEdgesStream = gqlEdgesStream.expand((element) => element);
 
     // maps the items to GQL Nodes
-    final gqlNodesStream = flatGQLEdgesStream.map((edge) => edge.node);
+    final arweaveGqlNodesStream = flatGQLEdgesStream.map((edge) => edge.node);
+
+    final cachedGqlNodesStream = _gqlNodesCache.asStreamOfNodes(
+      _driveId,
+      ignoreLatestBlock: true,
+    );
+
+    final gqlNodesStream = StreamGroup.merge([
+      cachedGqlNodesStream,
+      arweaveGqlNodesStream,
+    ]);
 
     // declares the reading stream from the SnapshotItemToBeCreated
     final snapshotItemToBeCreated = SnapshotItemToBeCreated(

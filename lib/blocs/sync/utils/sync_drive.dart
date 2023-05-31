@@ -162,6 +162,7 @@ Stream<double> _syncDrive(
     final isDeepSync = lastBlockHeight == 0;
     if (isDeepSync) {
       // TODO: re-visit this - any way of avoiding the conditional?
+      // FIXME: add only items 15+ blocks before current block height
       await gqlNodesCache.put(driveId, t);
     }
   }

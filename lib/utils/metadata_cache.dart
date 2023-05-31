@@ -26,8 +26,14 @@ class MetadataCache {
       return false;
     }
 
-    logger.d('Putting $key in metadata cache');
-    await _cache.put(key, data);
+    // FIXME: check for quota before attempting to write to cache
+    try {
+      logger.d('Putting $key in metadata cache');
+      await _cache.put(key, data);
+    } catch (e, s) {
+      logger.e('Could not put $key in metadata cache', e, s);
+      return false;
+    }
 
     if (await isFull) {
       logger.i('Metadata cache is now full and will not accept new entries');

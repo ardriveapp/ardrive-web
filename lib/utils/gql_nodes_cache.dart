@@ -102,22 +102,27 @@ class GQLNodesCache {
         },
       );
 
-    if (ignoreLatestBlock) {
+    if (ignoreLatestBlock && sortedKeysForDriveId.isNotEmpty) {
+      logger.d('Asked to ignore latest block');
       final latestItem = sortedKeysForDriveId.last;
       final latestBlockHeight = (await _forceGet(latestItem)).block!.height;
-      // final cacheKeysOfItemsInLatestBlock = [];
-      bool hasReadAllItemsonLatestBlock = false;
-      do {
-        final item = sortedKeysForDriveId.removeLast();
-        final blockHeight = (await _forceGet(item)).block!.height;
-        if (blockHeight == latestBlockHeight) {
-          // cacheKeysOfItemsInLatestBlock.add(item);
-        } else {
-          sortedKeysForDriveId.add(item);
-          hasReadAllItemsonLatestBlock = true;
+      bool hasReadAllItemsOnLatestBlock = false;
+      while (!hasReadAllItemsOnLatestBlock && sortedKeysForDriveId.isNotEmpty) {
+        final cacheKey = sortedKeysForDriveId.removeLast();
+        final blockHeight = (await _forceGet(cacheKey)).block!.height;
+        logger.d(
+            'Checking if $cacheKey is on latest block. Latest block: $latestBlockHeight, block of $cacheKey: $blockHeight');
+        if (blockHeight != latestBlockHeight) {
+          sortedKeysForDriveId.add(cacheKey); // add it back
+          hasReadAllItemsOnLatestBlock = true;
         }
-      } while (!hasReadAllItemsonLatestBlock);
+      }
+      logger.d('Done ignoring latest block');
     }
+
+    logger.d(
+      'There are ${sortedKeysForDriveId.length} items in cache to be streamed',
+    );
 
     yield* Stream.fromFutures(
       sortedKeysForDriveId.map(
@@ -134,10 +139,15 @@ class GQLNodesCache {
     final nextIndex = await nextIndexForDriveId(driveId);
     final key = '${driveId}_$nextIndex';
 
-    logger.d('Putting $key in GQL Nodes cache');
-    await _persistingCache.put(key, data).then(
-          (value) => _nextIndexForDriveId![driveId] = nextIndex,
-        );
+    // FIXME: check for quota before attempting to write to cache
+    try {
+      logger.d('Putting $key in GQL Nodes cache');
+      await _persistingCache.put(key, data);
+      _nextIndexForDriveId![driveId] = nextIndex;
+    } catch (e, s) {
+      logger.e('Could not put $key in GQL Nodes cache', e, s);
+      return false;
+    }
 
     if (await isFull) {
       logger.i('GQL Nodes cache is now full and will not accept new entries');
@@ -147,8 +157,10 @@ class GQLNodesCache {
   }
 
   Future<DriveHistoryTransaction> _forceGet(String key) async {
+    logger.d('Asked to force get $key from GQL Nodes cache');
     final maybeValue = await _persistingCache.get(key);
     if (maybeValue == null) {
+      logger.e('Could not find $key in GQL Nodes cache');
       throw Exception('Could not find $key in GQL Nodes cache');
     }
     return maybeValue;
@@ -156,13 +168,18 @@ class GQLNodesCache {
 
   Future<DriveHistoryTransaction?> get(String driveId, int index) async {
     final key = '${driveId}_$index';
-    final value = await _persistingCache.get(key);
-    if (value != null) {
-      logger.d('Cache hit for $key in GQL Nodes cache');
-    } else {
-      logger.d('Cache miss for $key in GQL Nodes cache');
+    try {
+      final value = await _persistingCache.get(key);
+      if (value != null) {
+        logger.d('Cache hit for $key in GQL Nodes cache');
+      } else {
+        logger.d('Cache miss for $key in GQL Nodes cache');
+      }
+      return value;
+    } catch (e, s) {
+      logger.e('Could not get $key from GQL Nodes cache', e, s);
+      return null;
     }
-    return value;
   }
 
   Future<void> remove(String driveId, int index) async {
