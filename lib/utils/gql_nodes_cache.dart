@@ -1,8 +1,6 @@
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
-import 'package:ardrive/utils/snapshots/gql_cache_drive_history.dart';
-import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:stash/stash_api.dart';
 
@@ -44,16 +42,6 @@ class GQLNodesCache {
 
       // See: https://pub.dev/packages/stash#eviction-policies
       evictionPolicy: null,
-    );
-  }
-
-  Future<GQLCacheDriveHistory> asSegmentedGQLData(DriveID driveId) async {
-    final r = await this.range(driveId);
-    final range = Range(start: r.start, end: r.end - 1);
-    return GQLCacheDriveHistory(
-      driveId: driveId,
-      subRanges: HeightRange(rangeSegments: [range]),
-      cache: this,
     );
   }
 
