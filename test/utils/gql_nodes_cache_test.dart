@@ -225,6 +225,41 @@ void main() {
       );
     });
 
+    test('asStreamOfNodes with ignoreLatestBlock', () async {
+      final metadataCache = await GQLNodesCache.fromCacheStore(
+        await newMemoryCacheStore(),
+        maxEntries: 10,
+      );
+
+      final mockData = generateMockData(10);
+
+      for (int i = 0; i < mockData.length; i++) {
+        await metadataCache.put(mockDriveId, mockData[i]);
+      }
+
+      final stream = metadataCache.asStreamOfNodes(
+        mockDriveId,
+        ignoreLatestBlock: true,
+      );
+
+      expect(
+        stream,
+        emitsInOrder(
+          [
+            mockData[0],
+            mockData[1],
+            mockData[2],
+            mockData[3],
+            mockData[4],
+            mockData[5],
+            mockData[6],
+            mockData[7],
+            mockData[8],
+          ],
+        ),
+      );
+    });
+
     test('can add items for many drives', () async {
       final metadataCache = await GQLNodesCache.fromCacheStore(
         await newMemoryCacheStore(),

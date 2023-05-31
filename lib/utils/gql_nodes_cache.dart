@@ -188,7 +188,7 @@ class GQLNodesCache {
   }
 
   Future<int> get size async {
-    return _cache.size;
+    return _persistingCache.size;
   }
 
   Future<int> nextIndexForDriveId(String driveId) async {
