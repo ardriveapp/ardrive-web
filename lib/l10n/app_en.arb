@@ -1960,17 +1960,45 @@
   "@addButtonTurbo": {
     "description": "text for add button"
   },
-  "creditsTurbo": "credits",
+  "creditsTurbo": "Credits",
   "@creditsTurbo": {
     "description": "suffix for turbo balance"
   },
-  "balanceAR": "balance",
+  "balanceAR": "Balance",
   "@balanceAR": {
     "description": "title for ar balance"
   },
   "errorFetchingBalance": "Error fetching balance",
   "@errorFetchingBalance": {
     "description": "Error fetching balance"
+  },
+  "currency": "Currency",
+  "@currency": {
+    "description": "currency for turbo payment"
+  },
+  "unit": "Unit",
+  "@unit": {
+    "description": "file size unit for turbo payment"
+  },
+   "buycredits": "Buy Credits",
+  "@buycredits": {
+    "description": "blurb for turbo payment"
+  },
+    "chooseAnAmount": "Choose an amount",
+  "@chooseAnAmount": {
+    "description": "blurb for turbo payment"
+  },
+   "orChooseACustomAmount": "Or choose a custom amount",
+  "@orChooseACustomAmount": {
+    "description": "blurb for turbo payment"
+  },
+    "estimatedStorage": "Estimated Storage",
+  "@estimatedStorage": {
+    "description": "blurb for turbo payment"
+  },
+    "howAreConversionsDetermined": "How are conversions determined?",
+  "@howAreConversionsDetermined": {
+    "description": "blurb for turbo payment"
   }
 }
 

@@ -105,8 +105,8 @@ class _TopUpDialogState extends State<TopUpDialog> {
                       child: Row(
                         children: [
                           DropdownMenu(
-                            label: const Text('Currency'),
-                            hintText: 'Currency',
+                            label: Text(appLocalizationsOf(context).currency),
+                            hintText: appLocalizationsOf(context).currency,
                             initialSelection: paymentBloc.currentCurrency,
                             dropdownMenuEntries: [
                               DropdownMenuEntry(
@@ -117,8 +117,8 @@ class _TopUpDialogState extends State<TopUpDialog> {
                           ),
                           const SizedBox(width: 8),
                           DropdownMenu(
-                            label: const Text('Units'),
-                            hintText: 'Units',
+                            label: Text(appLocalizationsOf(context).unit),
+                            hintText: appLocalizationsOf(context).unit,
                             initialSelection: paymentBloc.currentDataUnit,
                             onSelected: (value) {
                               paymentBloc.add(
@@ -147,7 +147,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                       ),
                     ),
                     ArDriveButton(
-                      text: 'Next',
+                      text: appLocalizationsOf(context).next,
                       onPressed: () {},
                     ),
                   ],
@@ -206,7 +206,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   Timer? _timer;
 
   void _onAmountChanged(String amount) {
-    if (amount.isEmpty) {
+    if (amount.isEmpty || int.parse(amount) <= 10) {
       return;
     }
 
@@ -275,14 +275,14 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
       mainAxisSize: MainAxisSize.max,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Buy Credits'),
+        Text(appLocalizationsOf(context).buycredits),
         const SizedBox(height: 8),
-        const Text('Choose an amount'),
+        Text(appLocalizationsOf(context).chooseAnAmount),
         const SizedBox(height: 8),
         buildButtonBar(context),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
-          child: Text('Or chose a custom amount'),
+          child: Text(appLocalizationsOf(context).orChooseACustomAmount),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -301,8 +301,15 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
             ),
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
-              //TODO limit to 10,000 temporarily
-              LengthLimitingTextInputFormatter(4),
+              //TODO limit to between 10 and 10,000 temporarily
+              TextInputFormatter.withFunction(
+                (oldValue, newValue) {
+                  if (int.parse(newValue.text) > 10000) {
+                    return oldValue;
+                  }
+                  return newValue;
+                },
+              ),
             ],
             onChanged: (value) {
               setState(() {
@@ -338,9 +345,9 @@ class _BalanceViewState extends State<BalanceView> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Balance'),
+            Text(appLocalizationsOf(context).balanceAR),
             Text(
-              '${winstonToAr(widget.balance)} Credits',
+              '${winstonToAr(widget.balance)} ${appLocalizationsOf(context).creditsTurbo}',
               style: ArDriveTypography.headline.displayBold().copyWith(
                     fontWeight: FontWeight.w600,
                     fontSize: 21,
@@ -355,7 +362,7 @@ class _BalanceViewState extends State<BalanceView> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Estimated Storage'),
+            Text(appLocalizationsOf(context).estimatedStorage),
             Text(
               '${widget.estimatedStorage} ${widget.fileSizeUnit}',
               style: ArDriveTypography.headline.displayBold().copyWith(
@@ -405,10 +412,10 @@ class PriceEstimateView extends StatelessWidget {
       children: [
         const Divider(),
         Text(
-          '$fiatCurrency $fiatAmount = ${winstonToAr(estimatedCredits)} credits = $estimatedStorage $storageUnit',
+          '$fiatCurrency $fiatAmount = ${winstonToAr(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
         ),
         const SizedBox(height: 16),
-        const Text('How are conversions determined?'),
+        Text(appLocalizationsOf(context).howAreConversionsDetermined),
         const Divider(),
       ],
     );
