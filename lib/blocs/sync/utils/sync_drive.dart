@@ -87,8 +87,11 @@ Stream<double> _syncDrive(
     gqlDriveHistory: gqlDriveHistory,
     snapshotDriveHistory: snapshotDriveHistory,
   );
-
   final transactionsStream = driveHistory.getNextStream();
+
+  final gqlNodesCache = await GQLNodesCache.fromCacheStore(
+    await newSharedPreferencesCacheStore(),
+  );
 
   /// The first block height of this drive.
   int? firstBlockHeight;
@@ -154,6 +157,12 @@ Stream<double> _syncDrive(
       final percentage =
           calculatePercentageBasedOnBlockHeights() * fetchPhaseWeight;
       yield percentage;
+    }
+
+    final isDeepSync = lastBlockHeight == 0;
+    if (isDeepSync) {
+      // TODO: re-visit this - any way of avoiding the conditional?
+      await gqlNodesCache.put(driveId, t);
     }
   }
   print('Done fetching data - ${gqlDriveHistory.driveId}');
