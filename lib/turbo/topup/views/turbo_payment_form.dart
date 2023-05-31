@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:ardrive/utils/credit_card_validations.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_multi_formatter/flutter_multi_formatter.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class TurboPaymentFormView extends StatefulWidget {
@@ -15,9 +17,40 @@ class TurboPaymentFormView extends StatefulWidget {
 class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   @override
   Widget build(BuildContext context) {
-    return ScreenTypeLayout.builder(
-      mobile: (context) => _mobileView(context),
-      desktop: (context) => _desktopView(context),
+    final theme = ArDriveTheme.of(context).themeData;
+
+    // custom theme for the text fields on the top-up form
+    final textTheme = theme.copyWith(
+      textFieldTheme: theme.textFieldTheme.copyWith(
+        inputBackgroundColor: theme.colors.themeBgCanvas,
+        labelColor: theme.colors.themeAccentDisabled,
+        requiredLabelColor: theme.colors.themeAccentDisabled,
+        inputTextStyle: theme.textFieldTheme.inputTextStyle.copyWith(
+          color: theme.colors.themeFgMuted,
+          fontWeight: FontWeight.w600,
+          height: 1.5,
+          fontSize: 16,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 13,
+          vertical: 8,
+        ),
+        labelStyle: TextStyle(
+          color: theme.colors.themeAccentDisabled,
+          fontWeight: FontWeight.w600,
+          height: 1.5,
+          fontSize: 16,
+        ),
+      ),
+    );
+
+    return ArDriveTheme(
+      key: const ValueKey('turbo_payment_form'),
+      themeData: textTheme,
+      child: ScreenTypeLayout.builder(
+        mobile: (context) => _mobileView(context),
+        desktop: (context) => _desktopView(context),
+      ),
     );
   }
 
@@ -35,78 +68,254 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget _desktopView(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Align(
-            alignment: Alignment.topRight,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 26, right: 26),
-              child: ArDriveClickArea(
-                child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: ArDriveIcons.x()),
+    return Container(
+      color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 26, right: 26),
+                child: ArDriveClickArea(
+                  child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: ArDriveIcons.x()),
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(
-              top: 14.0,
-              left: 40,
-              right: 40,
+            Padding(
+              padding: const EdgeInsets.only(
+                top: 14.0,
+                left: 40,
+                right: 40,
+              ),
+              child: Column(
+                children: [
+                  _header(context),
+                  const Divider(height: 24),
+                  _credits(context),
+                  const SizedBox(height: 16),
+                  _formDesktop(
+                    context,
+                  ),
+                ],
+              ),
             ),
-            child: Column(
-              children: [
-                _header(context),
-                const Divider(height: 24),
-                _credits(context),
-                const SizedBox(height: 16),
-                _formDesktop(
-                  context,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 40),
-          _emailSection(context),
-          _footer(context),
+            const Divider(height: 16),
+            const SizedBox(height: 24),
+            _footer(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // text fields
+  Widget nameOnCardTextField() {
+    return Expanded(
+      child: ArDriveTextField(
+        label: 'Name on Card',
+        isFieldRequired: true,
+        useErrorMessageOffset: true,
+        validator: (s) {
+          if (s == null || s.isEmpty) {
+            return 'Can\'t be empty';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget cardNumberTextField() {
+    return Expanded(
+      child: ArDriveTextField(
+        label: 'Card Number',
+        isFieldRequired: true,
+        useErrorMessageOffset: true,
+        validator: (s) {
+          if (s == null || !validateCreditCardNumber(s)) {
+            return 'Invalid credit card number';
+          }
+          return null;
+        },
+        inputFormatters: [
+          CreditCardNumberInputFormatter(
+            useSeparators: true,
+            onCardSystemSelected: (cardSystem) {
+              logger.d('card system selected: $cardSystem');
+            },
+          )
         ],
       ),
     );
   }
 
+  Widget expiryDateTextField() {
+    return Expanded(
+      child: ArDriveTextField(
+        label: 'Expiry Date',
+        isFieldRequired: true,
+        useErrorMessageOffset: true,
+        validator: (s) {
+          if (s == null || !validateCreditCardExpiryDate(s)) {
+            return 'Invalid expiry date';
+          }
+          return null;
+        },
+        inputFormatters: [CreditCardExpirationDateFormatter()],
+      ),
+    );
+  }
+
+  Widget cvcTextField() {
+    return Expanded(
+      child: ArDriveTextField(
+        label: 'CVC',
+        useErrorMessageOffset: true,
+        validator: (s) {
+          if (s == null || !validateCreditCardCVC(s, '4242 4242 4242 4242')) {
+            return 'Please enter a valid CVC';
+          }
+          return null;
+        },
+        isFieldRequired: true,
+        inputFormatters: [CreditCardCvcInputFormatter()],
+      ),
+    );
+  }
+
+  Widget countryTextField() {
+    return Expanded(
+      child: ArDriveTextField(
+        label: 'Country',
+        hintText: 'United States',
+        isFieldRequired: true,
+        useErrorMessageOffset: true,
+        validator: (s) {
+          if (s == null || s.isEmpty) {
+            return 'Can\'t be empty';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget stateTextField() {
+    return Expanded(
+      child: ArDriveTextField(
+        label: 'State',
+        useErrorMessageOffset: true,
+        validator: (s) {
+          if (s == null || s.isEmpty) {
+            return 'Can\'t be empty';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget addressLine1TextField() {
+    return Expanded(
+      child: ArDriveTextField(
+        label: 'Address Line 1',
+        isFieldRequired: true,
+        useErrorMessageOffset: true,
+        validator: (s) {
+          if (s == null || s.isEmpty) {
+            return 'Can\'t be empty';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget addressLine2TextField() {
+    return Expanded(
+      child: ArDriveTextField(
+        label: 'Address Line 2',
+        isFieldRequired: true,
+        useErrorMessageOffset: true,
+        validator: (s) {
+          if (s == null || s.isEmpty) {
+            return 'Can\'t be empty';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget postalCodeTextField() {
+    return Flexible(
+      flex: 1,
+      child: ArDriveTextField(
+        label: 'Postal Code',
+        isFieldRequired: true,
+        useErrorMessageOffset: true,
+        validator: (s) {
+          if (s == null || s.isEmpty) {
+            return 'Can\'t be empty';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
   Widget _quoteRefresh(BuildContext context) {
-    return SizedBox(
-      width: double.maxFinite,
-      child: Row(
+    return ArDriveCard(
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: 13,
+      ),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // TODO: localize
-          Text(
-            'Quote updates in ',
-            style: ArDriveTypography.body.captionBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // TODO: localize
+              Text(
+                'Quote updates in ',
+                style: ArDriveTypography.body.captionBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                ),
+              ),
+              TimerWidget(
+                durationInSeconds: 60 * 10,
+                fetchQuoteCallback: () {
+                  logger.d('fetching quote');
+                },
+              ),
+            ],
           ),
-          TimerWidget(
-            durationInSeconds: 30,
-            fetchQuoteCallback: () {
-              logger.d('fetching quote');
-            },
-          ),
-          SizedBox(width: 18),
-          // quote refresh widget
-          ArDriveIcons.refresh(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-            size: 16,
-          ),
-          SizedBox(width: 4),
-          // TODO: localize
-          Text(
-            'Refresh',
-            style: ArDriveTypography.body.captionBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-            ),
-          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ArDriveIcons.refresh(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              // TODO: localize
+              Text(
+                'Refresh',
+                style: ArDriveTypography.body.captionBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                ),
+              ),
+            ],
+          )
         ],
       ),
     );
@@ -115,17 +324,56 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   Widget _credits(BuildContext context) {
     return SizedBox(
       width: double.maxFinite,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            // TODO: localize
-            '14.0944 Credits',
-            style: ArDriveTypography.body.leadBold(),
+          Flexible(
+            flex: 1,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  // TODO: localize
+                  '14.0944 Credits',
+                  style: ArDriveTypography.body.leadBold(),
+                ),
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '\$25',
+                        style: ArDriveTypography.body.captionBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgMuted,
+                        ),
+                      ),
+                      TextSpan(
+                        text: ' + taxes and fees',
+                        style: ArDriveTypography.body.captionBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeAccentDisabled,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          // quote refresh widget
-          _quoteRefresh(context),
+          Flexible(
+            flex: 1,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: _quoteRefresh(
+                context,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -140,7 +388,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         children: [
           Text(
             // TODO: localize
-            'Payment',
+            'Payment Details',
             style: ArDriveTypography.body
                 .leadBold()
                 .copyWith(fontWeight: FontWeight.w700),
@@ -163,7 +411,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   Widget _footer(BuildContext context) {
     return Container(
       width: double.maxFinite,
-      padding: const EdgeInsets.fromLTRB(40, 40, 40, 36),
+      padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -172,38 +420,25 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               onTap: () {
                 Navigator.of(context).pop();
               },
-              child: Row(
-                children: [
-                  Transform.translate(
-                    offset: Offset(0, 2),
-                    child: ArDriveIcons.carretLeft(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDisabled,
-                    ),
-                  ),
-                  Text(
-                    'Back',
-                    style: ArDriveTypography.body.buttonLargeRegular(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDisabled,
-                    ),
-                  ),
-                ],
+              child: Text(
+                // TODO: localize
+                'Back',
+                style: ArDriveTypography.body.buttonLargeBold(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentDisabled,
+                ),
               ),
             ),
           ),
-          Text(
-            'Fee',
-            style: ArDriveTypography.body.buttonLargeRegular(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-            ),
-          ),
           ArDriveButton(
-            text: 'Pay \$27.50',
+            maxHeight: 44,
+            // TODO: localize
+            text: 'Review',
+            fontStyle: ArDriveTypography.body.buttonLargeBold(
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            ),
             onPressed: () {},
           ),
         ],
@@ -212,7 +447,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget _formDesktop(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       width: double.maxFinite,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -220,86 +455,39 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: ArDriveTextField(
-                  label: 'Name on Card',
-                  hintText: 'John Doe',
-                ),
-              ),
-              SizedBox(width: 24),
-              Expanded(
-                child: ArDriveTextField(
-                  label: 'Card Number',
-                  hintText: '4242 4242 4242 4242',
-                ),
-              ),
+              nameOnCardTextField(),
+              const SizedBox(width: 24),
+              cardNumberTextField(),
             ],
           ),
           Row(
             children: [
-              Expanded(
-                child: ArDriveTextField(
-                  label: 'Expiry Date',
-                  hintText: 'MM/YY',
-                ),
-              ),
-              SizedBox(width: 24),
-              Expanded(
-                child: ArDriveTextField(
-                  label: 'CVC',
-                  hintText: '123',
-                ),
-              ),
+              expiryDateTextField(),
+              const SizedBox(width: 24),
+              cvcTextField(),
             ],
           ),
           Row(
             children: [
-              Expanded(
-                child: ArDriveTextField(
-                  label: 'Country',
-                  hintText: 'United States',
-                ),
-              ),
-              SizedBox(width: 24),
-              Expanded(
-                child: ArDriveTextField(
-                  label: 'ZIP',
-                  hintText: '12345',
-                ),
-              ),
+              countryTextField(),
+              const SizedBox(width: 24),
+              stateTextField(),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  _emailSection(BuildContext context) {
-    return Container(
-      color: ArDriveTheme.of(context).themeData.colors.shadow,
-      width: double.maxFinite,
-      padding: const EdgeInsets.fromLTRB(40, 20, 40, 36),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Email', style: ArDriveTypography.body.captionBold()),
-          Text(
-            'Please leave email if you want a receipt',
-            style: ArDriveTypography.body.captionRegular(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-            ),
+          Row(
+            children: [
+              addressLine1TextField(),
+              const SizedBox(width: 24),
+              addressLine2TextField(),
+            ],
           ),
-          SizedBox(height: 4),
-          ArDriveTextField(),
-          SizedBox(height: 16),
-          ArDriveCheckBox(
-            title: 'Keep me up to date on news and promotions.',
-            titleStyle: ArDriveTypography.body.captionRegular(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              postalCodeTextField(),
+              Flexible(flex: 1, child: Container()),
+            ],
           ),
-          SizedBox(height: 16),
         ],
       ),
     );
@@ -338,7 +526,7 @@ class _TimerWidgetState extends State<TimerWidget> {
 
   void startTimer() {
     _secondsLeft = widget.durationInSeconds;
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_secondsLeft > 0) {
           _secondsLeft--;
@@ -351,7 +539,7 @@ class _TimerWidgetState extends State<TimerWidget> {
     });
   }
 
-  String formatDuration(int seconds) {
+  String _formatDuration(int seconds) {
     int minutes = seconds ~/ 60;
     int remainingSeconds = seconds % 60;
     String minutesStr = minutes.toString().padLeft(2, '0');
@@ -362,7 +550,7 @@ class _TimerWidgetState extends State<TimerWidget> {
   @override
   Widget build(BuildContext context) {
     return Text(
-      formatDuration(_secondsLeft),
+      _formatDuration(_secondsLeft),
       style: ArDriveTypography.body.captionBold(
         color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
       ),
