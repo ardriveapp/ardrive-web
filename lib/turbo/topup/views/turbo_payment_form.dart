@@ -187,18 +187,11 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget countryTextField() {
-    return Expanded(
-      child: ArDriveTextField(
-        label: 'Country',
-        hintText: 'United States',
-        isFieldRequired: true,
-        useErrorMessageOffset: true,
-        validator: (s) {
-          if (s == null || s.isEmpty) {
-            return 'Can\'t be empty';
-          }
-          return null;
-        },
+    return const Expanded(
+      child: CountryInputDropdown(
+        items: [
+          CountryItem('United States'),
+        ],
       ),
     );
   }
@@ -557,4 +550,103 @@ class _TimerWidgetState extends State<TimerWidget> {
       ),
     );
   }
+}
+
+abstract class InputDropdownItem {
+  const InputDropdownItem(this.label);
+
+  final String label;
+}
+
+class InputDropdown<T extends InputDropdownItem> extends StatefulWidget {
+  const InputDropdown({
+    super.key,
+    required this.items,
+    this.selectedItem,
+  });
+
+  final List<T> items;
+  final T? selectedItem;
+
+  @override
+  State<InputDropdown> createState() => _InputDropdownState<T>();
+}
+
+class _InputDropdownState<T extends InputDropdownItem>
+    extends State<InputDropdown<T>> {
+  T? _selectedItem;
+
+  @override
+  initState() {
+    super.initState();
+    _selectedItem = widget.selectedItem;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveDropdown(
+      width: 200,
+      items: widget.items
+          .map(
+            (e) => ArDriveDropdownItem(
+              content: Center(child: Text(e.label)),
+              onClick: () {
+                setState(() {
+                  _selectedItem = e;
+                });
+              },
+            ),
+          )
+          .toList(),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 13,
+          vertical: 11,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                _selectedItem?.label ?? '',
+                style: ArDriveTypography.body.captionBold(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentDisabled,
+                ),
+              ),
+            ),
+            ArDriveIcons.carretDown(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CountryItem implements InputDropdownItem {
+  @override
+  final String label;
+
+  const CountryItem(this.label);
+}
+
+class CountryInputDropdown extends InputDropdown<CountryItem> {
+  const CountryInputDropdown({
+    Key? key,
+    required List<CountryItem> items,
+    CountryItem? selectedItem,
+  }) : super(
+          key: key,
+          items: items,
+          selectedItem: selectedItem,
+        );
 }
