@@ -434,10 +434,11 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           ),
           ArDriveButton(
             maxHeight: 44,
+            maxWidth: 143,
             // TODO: localize
             text: 'Review',
             fontStyle: ArDriveTypography.body.buttonLargeBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              color: Colors.white,
             ),
             onPressed: () {},
           ),
