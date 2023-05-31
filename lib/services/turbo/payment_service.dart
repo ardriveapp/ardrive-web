@@ -93,7 +93,7 @@ class PaymentService {
 
     final result = await httpClient.get(
       url:
-          '$turboPaymentUri/v1/top-up/payment-BigIntent/$walletAddress/$currency/$amount',
+          '$turboPaymentUri/v1/top-up/payment-intent/$walletAddress/$currency/$amount',
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
