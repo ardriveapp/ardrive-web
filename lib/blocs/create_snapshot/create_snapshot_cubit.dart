@@ -171,12 +171,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       return _itemToBeCreated!;
     }
 
-    // Both ranges starts at genesis, so it's safe to asume there's a single
-    /// range as a result of the difference
     Range rangeNotInCache;
     if (_rangeInCache == Range.nullRange) {
       rangeNotInCache = _range;
     } else {
+      // Both ranges starts at genesis, so it's safe to asume there's a single
+      /// range as a result of the difference
       rangeNotInCache = Range.difference(_range, _rangeInCache)[0];
     }
 
