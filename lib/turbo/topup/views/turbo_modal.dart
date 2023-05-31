@@ -3,7 +3,13 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
 void showTurboModal(BuildContext context) {
-  showAnimatedDialog(context, content: const TurboModal());
+  showAnimatedDialog(
+    context,
+    content: const TurboModal(),
+    barrierDismissible: false,
+    barrierColor:
+        ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
+  );
 }
 
 class TurboModal extends StatefulWidget {
