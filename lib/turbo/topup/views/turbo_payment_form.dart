@@ -191,6 +191,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
       child: CountryInputDropdown(
         items: [
           CountryItem('United States'),
+          CountryItem('Canada'),
         ],
       ),
     );
@@ -462,6 +463,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             ],
           ),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               countryTextField(),
               const SizedBox(width: 24),
@@ -584,52 +586,87 @@ class _InputDropdownState<T extends InputDropdownItem>
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveDropdown(
-      width: 200,
-      items: widget.items
-          .map(
-            (e) => ArDriveDropdownItem(
-              content: Center(child: Text(e.label)),
-              onClick: () {
-                setState(() {
-                  _selectedItem = e;
-                });
-              },
-            ),
-          )
-          .toList(),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: ArDriveTheme.of(context)
-                .themeData
-                .textFieldTheme
-                .defaultBorderColor,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 13,
-          vertical: 11,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ArDriveClickArea(
+      child: ArDriveDropdown(
+        width: 200,
+        items: widget.items
+            .map(
+              (e) => ArDriveDropdownItem(
+                content: Center(
+                  child: Text(
+                    e.label,
+                    style: ArDriveTypography.body.captionBold(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeAccentDisabled,
+                    ),
+                  ),
+                ),
+                onClick: () {
+                  setState(() {
+                    _selectedItem = e;
+                  });
+                },
+              ),
+            )
+            .toList(),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Text(
-                _selectedItem?.label ?? '',
-                style: ArDriveTypography.body.captionBold(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentDisabled,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextFieldLabel(
+                  text: 'Country *',
+                  style: ArDriveTypography.body.buttonNormalBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .textFieldTheme
+                        .requiredLabelColor,
+                  ),
                 ),
               ),
             ),
-            ArDriveIcons.carretDown(
-              color:
-                  ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .textFieldTheme
+                      .defaultBorderColor,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 13,
+                vertical: 10.5,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _selectedItem?.label ?? '',
+                      style: ArDriveTypography.body.captionBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeAccentDisabled,
+                      ),
+                    ),
+                  ),
+                  ArDriveIcons.carretDown(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
