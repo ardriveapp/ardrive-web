@@ -9,6 +9,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_utils/utils.dart';
 
@@ -48,6 +49,10 @@ void main() {
           await getTestTransaction('test/fixtures/signed_v2_tx.json'),
         );
         registerFallbackValue(Future.value());
+      });
+
+      setUpAll(() {
+        SharedPreferences.setMockInitialValues({});
       });
 
       setUp(() async {
