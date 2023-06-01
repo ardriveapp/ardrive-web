@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:stash/stash_api.dart';
 
-const defaultMaxEntries = 20000;
+const defaultMaxEntries = 550;
 const defaultCacheName = 'metadata-cache';
 
 class MetadataCache {
@@ -29,7 +29,7 @@ class MetadataCache {
     // FIXME: check for quota before attempting to write to cache
     try {
       logger.d('Putting $key in metadata cache');
-      await _cache.put(key, data);
+      await _cache.putIfAbsent(key, data);
     } catch (e, s) {
       logger.e('Failed to put $key in metadata cache', e, s);
       return false;
