@@ -1,5 +1,8 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/dev_tools/app_dev_tools.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/extensions.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,6 +30,20 @@ class _KeyboardHandlerState extends State<KeyboardHandler> {
             focusNode: _focusTable,
             autofocus: true,
             onKey: (event) async {
+              // detect if shift + q is pressed
+              if (context.read<ConfigService>().flavor == Flavor.development) {
+                if (event.isKeyPressed(LogicalKeyboardKey.shiftLeft) &&
+                    event.isKeyPressed(LogicalKeyboardKey.keyQ)) {
+                  ArDriveDevTools().showDevTools();
+                }
+
+                if (event.isKeyPressed(LogicalKeyboardKey.shiftLeft) &&
+                    event.isKeyPressed(LogicalKeyboardKey.keyW)) {
+                  logger.i('Closing dev tools');
+                  ArDriveDevTools().closeDevTools();
+                }
+              }
+
               // detect if ctrl + v or cmd + v is pressed
               if (await isCtrlOrMetaKeyPressed(event)) {
                 if (event is RawKeyDownEvent) {

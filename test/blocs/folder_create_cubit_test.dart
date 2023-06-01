@@ -3,7 +3,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/app_platform.dart';
-import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -31,10 +30,10 @@ void main() {
       db = getTestDb();
       driveDao = db.driveDao;
 
-      final configService = ConfigService(appFlavors: AppFlavors());
-      final config = await configService.getConfig(
-        localStore: await LocalKeyValueStore.getInstance(),
-      );
+      final configService = ConfigService(
+          appFlavors: AppFlavors(MockEnvFetcher()),
+          configFetcher: MockConfigFetcher());
+      final config = await configService.loadConfig();
 
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
       arweave = ArweaveService(
