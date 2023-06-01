@@ -58,7 +58,7 @@ class TurboBalance extends StatelessWidget {
             colorBlendMode: BlendMode.srcIn,
             fit: BoxFit.contain,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           BlocBuilder<TurboBalanceCubit, TurboBalanceState>(
               bloc: _turboBalanceCubit,
               builder: (context, state) {
