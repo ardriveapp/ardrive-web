@@ -58,6 +58,10 @@
       }
     }
   },
+  "arBalance": "AR Balance",
+  "@arBalance": {
+    "description": "Balance in AR"
+  },
   "arConnectRemainOnThisTab": "CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.",
   "@arConnectRemainOnThisTab": {
     "description": "Warning for the user to do not leave the tab"
@@ -162,7 +166,7 @@
   },
   "changeTheme": "Change Theme",
   "@changeTheme": {
-    "description": "Collapse side bar tooltip"
+    "description": "Theme switcher tooltip"
   },
   "changeWallet": "Change wallet",
   "@changeWallet": {
@@ -177,7 +181,9 @@
     "description": "Close modal. Emphasized with upper case"
   },
   "collapseSideBar": "Collapse sidebar",
-  "@collapseSideBar": {},
+  "@collapseSideBar": {
+    "description": "Collapse side bar tooltip"
+  },
   "computingSnapshotData": "Computing Snapshot Data",
   "@computingSnapshotData": {
     "description": "Computing Snapshot Data"
@@ -275,6 +281,10 @@
         "example": "0"
       }
     }
+  },
+  "costUpload": "Cost",
+  "@costUpload": {
+    "description": "Cost"
   },
   "create": "Create",
   "@create": {
@@ -412,6 +422,14 @@
   "doneEmphasized": "DONE",
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
+  },
+  "dontHaveAWallet1Part": "Don't have a wallet? Get one ",
+  "@dontHaveAWallet1Part": {
+    "description": "text to open the url to get a wallet"
+  },
+  "dontHaveAWallet2Part": "Here!",
+  "@dontHaveAWallet2Part": {
+    "description": "used like so: Get one Here!"
   },
   "download": "Download",
   "@download": {
@@ -874,6 +892,10 @@
   "help": "Help",
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
+  },
+  "howDoesKeyfileLoginWork": "How does keyfile log in work?",
+  "@howDoesKeyfileLoginWork": {
+    "description": "Title for explaining keyfile login"
   },
   "howDoIGetAR": "How do I get AR?",
   "@howDoIGetAR": {
@@ -1378,6 +1400,10 @@
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"
   },
+  "securityWalletOverlay": "Your keyfile is encrypted, it never leaves your device, and it can be removed from your device at any time.",
+  "@securityWalletOverlay": {
+    "description": "The text on the security overlay text on login"
+  },
   "selectWalletEmphasized": "SELECT WALLET",
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
@@ -1780,118 +1806,6 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
-  "yourUploadFailed": "Your upload failed.",
-  "@yourUploadFailed": {
-    "description": "Upload fail dialog description."
-  },
-  "moreInfo": "More info",
-  "@moreInfo": {
-    "description": "More info"
-  },
-  "darkMode": "DARK MODE",
-  "@darkMode": {
-    "description": "DARK MODE"
-  },
-  "lightMode": "LIGHT MODE",
-  "@lightMode": {
-    "description": "LIGHT MODE"
-  },
-  "showMenu": "Show menu",
-  "@showMenu": {
-    "description": "show menu text"
-  },
-  "publicDrives": "Public Drives",
-  "@publicDrives": {
-    "description": "Public drives accordion title"
-  },
-  "privateDrives": "Private Drives",
-  "@privateDrives": {
-    "description": "Private drives accordion title"
-  },
-  "passwordCannotBeEmpty": "Password cannot be empty",
-  "@passwordCannotBeEmpty": {
-    "description": "Button title to create a password"
-  },
-  "passwordDoNotMatch": "Passwords do not match",
-  "@passwordDoNotMatch": {
-    "description": "Modal description when passwords dont match"
-  },
-  "skip": "Skip",
-  "@skip": {
-    "description": "Skip"
-  },
-  "onboarding1Title": "Welcome to the Permaweb",
-  "@onboarding1Title": {
-    "description": "Title of 1st page of onboarding"
-  },
-  "onboarding1Description": "ArDrive isn’t just another cloud sync app. It’s your personal permanent hard drive. Files stored on ArDrive can't be deleted or altered by any single entity and anything you upload will outlast you!",
-  "@onboarding1Description": {
-    "description": "Description of 1st page of onboarding"
-  },
-  "onboarding2Title": "Pay Per File, Not Per Month",
-  "@onboarding2Title": {
-    "description": "Title of 2nd page of onboarding"
-  },
-  "onboarding2Description": "Say goodbye to cloud storage subscriptions. Instead of paying for space you don’t use, just pay once to store your data forever.",
-  "@onboarding2Description": {
-    "description": "Description of 2nd page of onboarding"
-  },
-  "onboarding3Title": "Total Privacy Control",
-  "@onboarding3Title": {
-    "description": "Title of 4th page of onboarding"
-  },
-  "onboarding3Description": "Your choice: make the files you upload public for anybody to access or leverage state of the art encryption that puts you in control of who can see your files.",
-  "@onboarding3Description": {
-    "description": "Description of 4th page of onboarding"
-  },
-  "diveInButtonOnboarding": "Dive in",
-  "@diveInButtonOnboarding": {
-    "description": "Text of the last button of the onboarding"
-  },
-  "backButtonOnboarding": "Back",
-  "@backButtonOnboarding": {
-    "description": "Text of the back button onboarding"
-  },
-  "welcomeBack": "Welcome back",
-  "@welcomeBack": {
-    "description": "welcome back"
-  },
-  "welcome": "Welcome",
-  "@welcome": {
-    "description": "welcome message on prompt wallet page"
-  },
-  "dragAndDropButtonTitle": "Browse Json",
-  "@dragAndDropButtonTitle": {
-    "description": "text of title drag and drop"
-  },
-  "dragAndDropDescription": "Drag & Drop your Keyfile",
-  "@dragAndDropDescription": {
-    "description": "text of description drag and drop"
-  },
-  "termsAndConditions": "Terms and Conditions",
-  "@termsAndConditions": {
-    "description": "terms and conditions"
-  },
-  "pleaseAcceptTheTermsToContinue": "Please accept the terms and conditions to continue.",
-  "@pleaseAcceptTheTermsToContinue": {
-    "description": "terms and conditions cta"
-  },
-  "invalidKeyFile": "Invalid Keyfile",
-  "@invalidKeyFile": {
-    "description": "Invalid Keyfile"
-  },
-  "orContinueWith": "Or continue with",
-  "@orContinueWith": {
-    "description": "text to continue with ar connect"
-  },
-  "orContinueWith": "Or continue with",
-  "@orContinueWith": {
-    "description": "text to continue with ar connect"
-  },
-  "proceedEmphasized": "PROCEED",
-  "@proceedEmphasized": {
-    "description": "Proceed but capitalized"
-  },
   "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
@@ -1903,53 +1817,5 @@
   "zippingYourFiles": "Zipping your file(s)...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
-  },
-  "fileFailedToDownloadFileAbovePublicLimit": "The file(s) you have selected is too large to download",
-  "@fileFailedToDownloadFileAbovePublicLimit": {
-    "description": "Download failure message when a file is too big"
-  },
-  "changeTheme": "Change Theme",
-  "@changeTheme": {
-    "description": "Theme switcher tooltip"
-  },
-  "collapseSideBar": "Collapse sidebar",
-  "@changeTheme": {
-    "description": "Collapse side bar tooltip"
-  },
-  "expandSideBar": "Expand sidebar",
-  "@expandSideBar": {
-    "description": "Expand side bar tooltip"
-  },
-  "viewOnViewBlock": "View on viewblock.io",
-  "@viewOnViewBlock": {
-    "description": "Tooltip for external link for viewBlock"
-  },
-  "copyTooltip": "Copy",
-  "@copyTooltip": {
-    "description": "Tooltip for copy button"
-  },
-  "close": "Close",
-  "@close": {
-    "description": "close"
-  },
-  "costUpload": "Cost",
-  "@costUpload": {
-    "description": "Cost"
-  },
-  "securityWalletOverlay": "Your keyfile is encrypted, it never leaves your device, and it can be removed from your device at any time.",
-  "@securityWalletOverlay": {
-    "description": "The text on the security overlay text on login"
-  },
-  "howDoesKeyfileLoginWork": "How does keyfile log in work?",
-  "@securityWalletOverlay": {
-    "description": "The cta text to check keyfile security"
-  },
-  "dontHaveAWallet1Part": "Don't have a wallet? Get one ",
-  "@dontHaveAWallet1Part": {
-    "description": "text to open the url to get a wallet"
-  },
-  "dontHaveAWallet2Part": "Here!",
-  "@dontHaveAWallet2Part": {
-    "description": "text to open the url to get a wallet"
   }
 }
