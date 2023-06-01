@@ -8,13 +8,19 @@ import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ProfileCard extends StatelessWidget {
+class ProfileCard extends StatefulWidget {
   const ProfileCard({
     super.key,
   });
+
+  @override
+  State<ProfileCard> createState() => _ProfileCardState();
+}
+
+class _ProfileCardState extends State<ProfileCard> {
+  bool _showProfileCard = false;
 
   @override
   Widget build(BuildContext context) {
@@ -59,150 +65,172 @@ class ProfileCard extends StatelessWidget {
     final walletAddress = state.walletAddress;
 
     return ArDriveClickArea(
-      tooltip: appLocalizationsOf(context).profile,
-      child: ArDriveDropdown(
-        width: 324,
-        dividerThickness: 0,
+      child: ArDriveOverlay(
+        onVisibleChange: (visible) {
+          if (!visible) {
+            setState(() {
+              _showProfileCard = false;
+            });
+          }
+        },
+        visible: _showProfileCard,
         anchor: const Aligned(
           follower: Alignment.topRight,
           target: Alignment.bottomRight,
           offset: Offset(0, 4),
         ),
-        height: 84,
-        items: [
-          ArDriveDropdownItem(
-            content: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (walletAddress.isNotEmpty)
-                        MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: GestureDetector(
-                            onTap: () {
-                              openUrl(
-                                url:
-                                    'https://viewblock.io/arweave/address/${state.walletAddress}',
-                              );
-                            },
-                            child: Text(
-                              '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
-                              style: ArDriveTypography.body
-                                  .captionRegular()
-                                  .copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 18,
-                                    decoration: TextDecoration.underline,
-                                  ),
+        content: ArDriveCard(
+          contentPadding: const EdgeInsets.all(0),
+          width: 281,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (walletAddress.isNotEmpty)
+                          MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: () {
+                                openUrl(
+                                  url:
+                                      'https://viewblock.io/arweave/address/${state.walletAddress}',
+                                );
+                              },
+                              child: Text(
+                                '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
+                                style: ArDriveTypography.body
+                                    .captionRegular()
+                                    .copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 18,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                              ),
                             ),
                           ),
+                        CopyButton(
+                          size: 24,
+                          text: walletAddress,
+                          showCopyText: false,
                         ),
-                      CopyButton(
-                        size: 24,
-                        text: walletAddress,
-                        showCopyText: false,
-                      ),
-                    ],
-                  ),
-                  const Divider()
-                ],
-              ),
-            ),
-          ),
-          ArDriveDropdownItem(
-            onClick: () {
-              Clipboard.setData(
-                ClipboardData(
-                  text: utils.winstonToAr(state.walletBalance).toString(),
+                      ],
+                    ),
+                    const Divider(
+                      height: 21,
+                    )
+                  ],
                 ),
-              );
-            },
-            content: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    appLocalizationsOf(context).balanceAR,
-                    style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                        ),
-                  ),
-                  Text(
-                    '${double.tryParse(utils.winstonToAr(state.walletBalance))?.toStringAsFixed(5) ?? 0} AR',
-                    style: ArDriveTypography.body.captionRegular().copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgSubtle,
-                        ),
-                  ),
-                ],
               ),
-            ),
-          ),
-          if (context.read<PaymentService>().useTurboPayment)
-            ArDriveDropdownItem(
-              content: TurboBalance(
-                paymentService: context.read<PaymentService>(),
-                wallet: state.wallet,
-              ),
-            ),
-          ArDriveDropdownItem(
-            onClick: () {
-              context.read<ArDriveAuth>().logout().then(
-                  (value) => context.read<ProfileCubit>().logoutProfile());
-            },
-            content: Container(
-              color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
-              child: Padding(
+              Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      appLocalizationsOf(context).logout,
-                      style: ArDriveTypography.body
-                          .captionBold()
-                          .copyWith(fontSize: 15),
+                      appLocalizationsOf(context).balanceAR,
+                      style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                          ),
+                    ),
+                    Text(
+                      '${double.tryParse(utils.winstonToAr(state.walletBalance))?.toStringAsFixed(5) ?? 0} AR',
+                      style: ArDriveTypography.body.captionRegular().copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 18,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgSubtle,
+                          ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-        ],
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-              width: 2,
-            ),
-          ),
-          width: 101,
-          height: 40,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ArDriveIcons.user(size: 14),
-              if (walletAddress.isNotEmpty)
-                Text(
-                  '${walletAddress.substring(0, 2)}...${walletAddress.substring(walletAddress.length - 2)}',
-                  style: ArDriveTypography.body
-                      .buttonNormalBold()
-                      .copyWith(fontWeight: FontWeight.w800),
+              const SizedBox(
+                height: 20,
+              ),
+              if (context.read<PaymentService>().useTurboPayment)
+                TurboBalance(
+                  paymentService: context.read<PaymentService>(),
+                  wallet: state.wallet,
+                  onTapAddButton: () {
+                    setState(() {
+                      _showProfileCard = false;
+                    });
+                  },
                 ),
+              const SizedBox(
+                height: 20,
+              ),
+              InkWell(
+                onTap: () {
+                  context.read<ArDriveAuth>().logout().then(
+                      (value) => context.read<ProfileCubit>().logoutProfile());
+                },
+                child: Container(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 24),
+                    child: Row(
+                      children: [
+                        Text(
+                          appLocalizationsOf(context).logout,
+                          style: ArDriveTypography.body
+                              .captionBold()
+                              .copyWith(fontSize: 15),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
+          ),
+        ),
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _showProfileCard = !_showProfileCard;
+            });
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                width: 2,
+              ),
+            ),
+            width: 101,
+            height: 40,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ArDriveIcons.user(size: 14),
+                if (walletAddress.isNotEmpty)
+                  Text(
+                    '${walletAddress.substring(0, 2)}...${walletAddress.substring(walletAddress.length - 2)}',
+                    style: ArDriveTypography.body
+                        .buttonNormalBold()
+                        .copyWith(fontWeight: FontWeight.w800),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
