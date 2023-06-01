@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:stash/stash_api.dart';
 
-const defaultMaxEntries = 20000;
+const defaultMaxEntries = 550;
 const defaultCacheName = 'metadata-cache';
 
 class MetadataCache {
@@ -26,8 +26,14 @@ class MetadataCache {
       return false;
     }
 
-    logger.d('Putting $key in metadata cache');
-    await _cache.put(key, data);
+    // FIXME: check for quota before attempting to write to cache
+    try {
+      logger.d('Putting $key in metadata cache');
+      await _cache.putIfAbsent(key, data);
+    } catch (e, s) {
+      logger.e('Failed to put $key in metadata cache', e, s);
+      return false;
+    }
 
     if (await isFull) {
       logger.i('Metadata cache is now full and will not accept new entries');
@@ -37,13 +43,18 @@ class MetadataCache {
   }
 
   Future<Uint8List?> get(String key) async {
-    final value = await _cache.get(key);
-    if (value != null) {
-      logger.d('Cache hit for $key in metadata cache');
-    } else {
-      logger.d('Cache miss for $key in metadata cache');
+    try {
+      final value = await _cache.get(key);
+      if (value != null) {
+        logger.d('Cache hit for $key in metadata cache');
+      } else {
+        logger.d('Cache miss for $key in metadata cache');
+      }
+      return value;
+    } catch (e, s) {
+      logger.e('Failed to get $key from metadata cache', e, s);
+      return null;
     }
-    return value;
   }
 
   Future<void> remove(String key) async {
