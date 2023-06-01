@@ -14,17 +14,19 @@ class TurboBalance extends StatelessWidget {
     Key? key,
     required this.paymentService,
     required this.wallet,
+    this.onTapAddButton,
   }) : super(key: key);
 
   final Wallet wallet;
   final PaymentService paymentService;
+  final Function? onTapAddButton;
 
   TurboBalanceCubit get _turboBalanceCubit => TurboBalanceCubit(
         paymentService: paymentService,
         wallet: wallet,
       )..getBalance();
 
-  addButton(BuildContext context) => SizedBox(
+  Widget addButton(BuildContext context) => SizedBox(
         height: 23,
         child: ArDriveButton(
           style: ArDriveButtonStyle.secondary,
@@ -35,7 +37,9 @@ class TurboBalance extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
           borderRadius: 20,
-          onPressed: () {},
+          onPressed: () {
+            onTapAddButton?.call();
+          },
         ),
       );
 
@@ -64,7 +68,7 @@ class TurboBalance extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Flexible(
-                        flex: 3,
+                        flex: 2,
                         child: Text(
                           appLocalizationsOf(context).turboAddCreditsBlurb,
                           style:
@@ -78,7 +82,7 @@ class TurboBalance extends StatelessWidget {
                         ),
                       ),
                       Flexible(
-                        flex: 2,
+                        flex: 1,
                         child: addButton(context),
                       )
                     ],
