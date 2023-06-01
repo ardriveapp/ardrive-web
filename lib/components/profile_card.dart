@@ -99,21 +99,30 @@ class _ProfileCardState extends State<ProfileCard> {
         children: [
           const SizedBox(height: 8),
           _buildWalletAddressRow(context, state),
-          const Divider(height: 21),
+          const Divider(
+            height: 21,
+            indent: 16,
+            endIndent: 16,
+          ),
           _buildBalanceRow(context, state),
-          const SizedBox(height: 20),
-          if (context.read<PaymentService>().useTurboPayment)
-            TurboBalance(
-              paymentService: context.read<PaymentService>(),
-              wallet: state.wallet,
-              onTapAddButton: () {
-                setState(() {
-                  _showProfileCard = false;
-                });
-              },
+          if (context.read<PaymentService>().useTurboPayment) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 20.0),
+              child: TurboBalance(
+                paymentService: context.read<PaymentService>(),
+                wallet: state.wallet,
+                onTapAddButton: () {
+                  setState(() {
+                    _showProfileCard = false;
+                  });
+                },
+              ),
             ),
-          const SizedBox(height: 20),
-          _buildLogoutButton(context),
+          ],
+          Padding(
+            padding: const EdgeInsets.only(top: 20.0),
+            child: _buildLogoutButton(context),
+          ),
         ],
       ),
     );
