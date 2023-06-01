@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.1.0"
-      resolved-ref: "09ea7c18d4bbc68569c5b1f517f088a6b5746fd6"
+      ref: PE-3924-unintended-reset-of-sort-order-upon-item-selection-in-file-browser
+      resolved-ref: "77cb27f5ef5a75faee93f3c95fec44506bc41194"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.1.0"
