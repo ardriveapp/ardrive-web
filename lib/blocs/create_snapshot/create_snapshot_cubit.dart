@@ -205,7 +205,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     final gqlNodesStream = StreamGroup.merge([
       cachedGqlNodesStream,
-      arweaveGqlNodesStream,
+      arweaveGqlNodesStream.map((node) {
+        _gqlNodesCache.put(_driveId, node);
+        return node;
+      }),
     ]);
 
     // declares the reading stream from the SnapshotItemToBeCreated
