@@ -79,159 +79,178 @@ class _ProfileCardState extends State<ProfileCard> {
           target: Alignment.bottomRight,
           offset: Offset(0, 4),
         ),
-        content: ArDriveCard(
-          contentPadding: const EdgeInsets.all(0),
-          width: 281,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+        content: _buildProfileCardContent(context, state, walletAddress),
+        child: _buildProfileCardHeader(context, walletAddress),
+      ),
+    );
+  }
+
+  Widget _buildProfileCardContent(
+    BuildContext context,
+    ProfileLoggedIn state,
+    String walletAddress,
+  ) {
+    return ArDriveCard(
+      contentPadding: const EdgeInsets.all(0),
+      width: 281,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          _buildWalletAddressRow(context, state),
+          const Divider(height: 21),
+          _buildBalanceRow(context, state),
+          const SizedBox(height: 20),
+          if (context.read<PaymentService>().useTurboPayment)
+            TurboBalance(
+              paymentService: context.read<PaymentService>(),
+              wallet: state.wallet,
+              onTapAddButton: () {
+                setState(() {
+                  _showProfileCard = false;
+                });
+              },
+            ),
+          const SizedBox(height: 20),
+          _buildLogoutButton(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
+    final walletAddress = state.walletAddress;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (walletAddress.isNotEmpty)
-                          MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: GestureDetector(
-                              onTap: () {
-                                openUrl(
-                                  url:
-                                      'https://viewblock.io/arweave/address/${state.walletAddress}',
-                                );
-                              },
-                              child: Text(
-                                '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
-                                style: ArDriveTypography.body
-                                    .captionRegular()
-                                    .copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 18,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                              ),
-                            ),
-                          ),
-                        CopyButton(
-                          size: 24,
-                          text: walletAddress,
-                          showCopyText: false,
-                        ),
-                      ],
-                    ),
-                    const Divider(
-                      height: 21,
-                    )
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      appLocalizationsOf(context).balanceAR,
-                      style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 18,
-                          ),
-                    ),
-                    Text(
-                      '${double.tryParse(utils.winstonToAr(state.walletBalance))?.toStringAsFixed(5) ?? 0} AR',
+              if (walletAddress.isNotEmpty)
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {
+                      openUrl(
+                        url:
+                            'https://viewblock.io/arweave/address/$walletAddress',
+                      );
+                    },
+                    child: Text(
+                      '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
                       style: ArDriveTypography.body.captionRegular().copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: 18,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgSubtle,
+                            decoration: TextDecoration.underline,
                           ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(
-                height: 20,
-              ),
-              if (context.read<PaymentService>().useTurboPayment)
-                TurboBalance(
-                  paymentService: context.read<PaymentService>(),
-                  wallet: state.wallet,
-                  onTapAddButton: () {
-                    setState(() {
-                      _showProfileCard = false;
-                    });
-                  },
-                ),
-              const SizedBox(
-                height: 20,
-              ),
-              InkWell(
-                onTap: () {
-                  context.read<ArDriveAuth>().logout().then(
-                      (value) => context.read<ProfileCubit>().logoutProfile());
-                },
-                child: Container(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 24),
-                    child: Row(
-                      children: [
-                        Text(
-                          appLocalizationsOf(context).logout,
-                          style: ArDriveTypography.body
-                              .captionBold()
-                              .copyWith(fontSize: 15),
-                        ),
-                      ],
                     ),
                   ),
                 ),
+              CopyButton(
+                size: 24,
+                text: walletAddress,
+                showCopyText: false,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceRow(BuildContext context, ProfileLoggedIn state) {
+    final walletBalance =
+        double.tryParse(utils.winstonToAr(state.walletBalance))
+                ?.toStringAsFixed(5) ??
+            '0';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appLocalizationsOf(context).balanceAR,
+            style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                ),
+          ),
+          Text(
+            '$walletBalance AR',
+            style: ArDriveTypography.body.captionRegular().copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        context.read<ArDriveAuth>().logout().then(
+              (value) => context.read<ProfileCubit>().logoutProfile(),
+            );
+      },
+      child: Container(
+        color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
+          child: Row(
+            children: [
+              Text(
+                appLocalizationsOf(context).logout,
+                style:
+                    ArDriveTypography.body.captionBold().copyWith(fontSize: 15),
               ),
             ],
           ),
         ),
-        child: GestureDetector(
-          onTap: () {
-            setState(() {
-              _showProfileCard = !_showProfileCard;
-            });
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                width: 2,
-              ),
-            ),
-            width: 101,
-            height: 40,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ArDriveIcons.user(size: 14),
-                if (walletAddress.isNotEmpty)
-                  Text(
-                    '${walletAddress.substring(0, 2)}...${walletAddress.substring(walletAddress.length - 2)}',
-                    style: ArDriveTypography.body
-                        .buttonNormalBold()
-                        .copyWith(fontWeight: FontWeight.w800),
-                  ),
-              ],
-            ),
+      ),
+    );
+  }
+
+  Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _showProfileCard = !_showProfileCard;
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            width: 2,
           ),
+        ),
+        width: 101,
+        height: 40,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ArDriveIcons.user(size: 14),
+            if (walletAddress.isNotEmpty)
+              Text(
+                '${walletAddress.substring(0, 2)}...${walletAddress.substring(walletAddress.length - 2)}',
+                style: ArDriveTypography.body.buttonNormalBold().copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+          ],
         ),
       ),
     );
