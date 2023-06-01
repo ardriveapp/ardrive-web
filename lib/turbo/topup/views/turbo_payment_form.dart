@@ -598,8 +598,9 @@ class _InputDropdownState<T extends InputDropdownItem>
                     style: ArDriveTypography.body.captionBold(
                       color: ArDriveTheme.of(context)
                           .themeData
-                          .colors
-                          .themeAccentDisabled,
+                          .textFieldTheme
+                          .inputTextStyle
+                          .color,
                     ),
                   ),
                 ),
@@ -654,8 +655,9 @@ class _InputDropdownState<T extends InputDropdownItem>
                       style: ArDriveTypography.body.captionBold(
                         color: ArDriveTheme.of(context)
                             .themeData
-                            .colors
-                            .themeAccentDisabled,
+                            .textFieldTheme
+                            .inputTextStyle
+                            .color,
                       ),
                     ),
                   ),
