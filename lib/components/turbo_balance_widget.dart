@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/turbo_balance/turbo_balance_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/winston_to_ar.dart';
@@ -60,85 +61,85 @@ class TurboBalance extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           BlocBuilder<TurboBalanceCubit, TurboBalanceState>(
-              bloc: _turboBalanceCubit,
-              builder: (context, state) {
-                if (state is NewTurboUserState) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        flex: 2,
-                        child: Text(
-                          appLocalizationsOf(context).turboAddCreditsBlurb,
-                          style:
-                              ArDriveTypography.body.captionRegular().copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeFgMuted,
-                                  ),
-                        ),
+            bloc: _turboBalanceCubit,
+            builder: (context, state) {
+              if (state is NewTurboUserState) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      flex: 2,
+                      child: Text(
+                        appLocalizationsOf(context).turboAddCreditsBlurb,
+                        style: ArDriveTypography.body.captionRegular().copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted,
+                            ),
                       ),
-                      Flexible(
-                        flex: 1,
-                        child: addButton(context),
-                      )
-                    ],
-                  );
-                } else if (state is TurboBalanceSuccessState) {
-                  final balance = state.balance;
+                    ),
+                    Flexible(
+                      flex: 1,
+                      child: addButton(context),
+                    )
+                  ],
+                );
+              } else if (state is TurboBalanceSuccessState) {
+                final balance = state.balance;
 
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        '${winstonToAr(balance).toStringAsFixed(5)} ${appLocalizationsOf(context).creditsTurbo}',
-                        style: ArDriveTypography.body.captionRegular().copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 18,
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgSubtle,
-                            ),
-                      ),
-                      addButton(context),
-                    ],
-                  );
-                } else if (state is TurboBalanceLoading) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: LinearProgressIndicator(),
-                  );
-                } else if (state is TurboBalanceErrorState) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        appLocalizationsOf(context).error,
-                        style: ArDriveTypography.body.captionRegular().copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeErrorDefault,
-                            ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          _turboBalanceCubit.getBalance();
-                        },
-                        icon: const Icon(Icons.refresh),
-                      )
-                    ],
-                  );
-                }
-                return const SizedBox();
-              }),
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${winstonToAr(balance).toStringAsFixed(5)} ${appLocalizationsOf(context).creditsTurbo}',
+                      style: ArDriveTypography.body.captionRegular().copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 18,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgSubtle,
+                          ),
+                    ),
+                    addButton(context),
+                  ],
+                );
+              } else if (state is TurboBalanceLoading) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: LinearProgressIndicator(),
+                );
+              } else if (state is TurboBalanceErrorState) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context).error,
+                      style: ArDriveTypography.body.captionRegular().copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeErrorDefault,
+                          ),
+                    ),
+                    ArDriveIconButton(
+                      icon: ArDriveIcons.refresh(),
+                      onPressed: () {
+                        _turboBalanceCubit.getBalance();
+                      },
+                    )
+                  ],
+                );
+              }
+              return const SizedBox();
+            },
+          ),
         ],
       ),
     );

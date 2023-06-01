@@ -97,7 +97,7 @@ class _ProfileCardState extends State<ProfileCard> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           _buildWalletAddressRow(context, state),
           const Divider(height: 21),
           _buildBalanceRow(context, state),
