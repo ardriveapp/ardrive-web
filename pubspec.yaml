@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: 6b4a8f5e3639aa37844558c06dbb82008abf1d2a
+      ref: PE-3695-implementing-the-payment-form-for-turbo-top-up-only-usa-and-usd
   artemis: ^7.0.0-beta.13
   arweave:
     git:

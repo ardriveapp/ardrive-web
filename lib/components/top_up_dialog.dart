@@ -75,12 +75,12 @@ class _TopUpDialogState extends State<TopUpDialog> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                BalanceView(
+                _BalanceView(
                   balance: state.balance,
                   estimatedStorage: state.estimatedStorageForBalance,
                   fileSizeUnit: paymentBloc.currentDataUnit.name,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 40),
                 PresetAmountSelector(
                   amounts: presetAmounts,
                   currencyUnit: '\$',
@@ -89,7 +89,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                     paymentBloc.add(FiatAmountSelected(amount));
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 PriceEstimateView(
                   fiatAmount: state.selectedAmount.toInt(),
                   fiatCurrency: '\$',
@@ -219,31 +219,24 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   }
 
   buildButtonBar(BuildContext context) {
-    final foregroundColor =
-        ArDriveTheme.of(context).themeData.colors.themeFgDefault;
-
-    final backgroundColor =
-        ArDriveTheme.of(context).themeData.colors.themeBgSurface;
-
     buildButtons(double height, double width) => widget.amounts
         .map(
           (amount) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: ArDriveButton(
-              backgroundColor:
-                  selectedAmount == amount ? foregroundColor : backgroundColor,
-              style: selectedAmount == amount
-                  ? ArDriveButtonStyle.primary
-                  : ArDriveButtonStyle.secondary,
+              backgroundColor: selectedAmount == amount
+                  ? ArDriveTheme.of(context).themeData.colors.themeFgMuted
+                  : ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeBorderDefault,
+              style: ArDriveButtonStyle.primary,
               maxHeight: height,
               maxWidth: width,
-              fontStyle: ArDriveTypography.body.captionRegular().copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: selectedAmount == amount
-                        ? backgroundColor
-                        : foregroundColor,
-                  ),
+              fontStyle: ArDriveTypography.body.smallBold().copyWith(
+                  color: selectedAmount == amount
+                      ? ArDriveTheme.of(context).themeData.colors.themeBgSurface
+                      : ArDriveTheme.of(context).themeData.colors.themeFgMuted),
               text: '$amount ${widget.currencyUnit}',
               onPressed: () {
                 setState(() {
@@ -264,6 +257,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
       ),
       desktop: (context) => Row(
         mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: buildButtons(40, 112),
       ),
     );
@@ -275,14 +269,38 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
       mainAxisSize: MainAxisSize.max,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(appLocalizationsOf(context).buycredits),
+        Text(
+          appLocalizationsOf(context).buycredits,
+          style: ArDriveTypography.body.smallBold(),
+        ),
         const SizedBox(height: 8),
-        Text(appLocalizationsOf(context).chooseAnAmount),
-        const SizedBox(height: 8),
+        Text(
+          // TODO: Localize
+          'ArDrive Credits will be automatically applied to your wallet, and you can start using them right away.',
+          style: ArDriveTypography.body.buttonNormalBold(
+            color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+          ),
+        ),
+        // Text(appLocalizationsOf(context).chooseAnAmount),
+        // TODO localize
+        const SizedBox(height: 32),
+        Text(
+          'Amount',
+          style: ArDriveTypography.body.buttonNormalBold(
+            color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+          ),
+        ),
+        const SizedBox(height: 12),
         buildButtonBar(context),
         Padding(
-          padding: EdgeInsets.symmetric(vertical: 16),
-          child: Text(appLocalizationsOf(context).orChooseACustomAmount),
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          // child: Text(appLocalizationsOf(context).orChooseACustomAmount),
+          child: Text(
+            'Custom Amount (min \$10 - max \$10,000)',
+            style: ArDriveTypography.body.buttonNormalBold(
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+            ),
+          ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -324,34 +342,38 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   }
 }
 
-class BalanceView extends StatefulWidget {
+class _BalanceView extends StatefulWidget {
   final BigInt balance;
   final String estimatedStorage;
   final String fileSizeUnit;
-  const BalanceView({
-    super.key,
+
+  const _BalanceView({
     required this.balance,
     required this.estimatedStorage,
     required this.fileSizeUnit,
   });
 
   @override
-  State<BalanceView> createState() => _BalanceViewState();
+  State<_BalanceView> createState() => _BalanceViewState();
 }
 
-class _BalanceViewState extends State<BalanceView> {
+class _BalanceViewState extends State<_BalanceView> {
   balanceContents() => [
         Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(appLocalizationsOf(context).balanceAR),
+            Text(
+              appLocalizationsOf(context).balanceAR,
+              style: ArDriveTypography.body.smallBold(),
+            ),
+            const SizedBox(height: 4),
             Text(
               '${winstonToAr(widget.balance)} ${appLocalizationsOf(context).creditsTurbo}',
-              style: ArDriveTypography.headline.displayBold().copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 21,
-                  ),
+              style: ArDriveTypography.body.buttonXLargeBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+              ),
             ),
           ],
         ),
@@ -362,13 +384,17 @@ class _BalanceViewState extends State<BalanceView> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(appLocalizationsOf(context).estimatedStorage),
+            Text(
+              appLocalizationsOf(context).estimatedStorage,
+              style: ArDriveTypography.body.smallBold(),
+            ),
+            const SizedBox(height: 4),
             Text(
               '${widget.estimatedStorage} ${widget.fileSizeUnit}',
-              style: ArDriveTypography.headline.displayBold().copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 21,
-                  ),
+              style: ArDriveTypography.body.buttonXLargeBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+              ),
             ),
           ],
         ),
@@ -393,9 +419,10 @@ class _BalanceViewState extends State<BalanceView> {
 class PriceEstimateView extends StatelessWidget {
   final int fiatAmount;
   final String fiatCurrency;
-  final BigInt estimatedCredits; // in WC
+  final BigInt estimatedCredits;
   final String estimatedStorage;
   final String storageUnit;
+
   const PriceEstimateView({
     super.key,
     required this.fiatAmount,
@@ -410,13 +437,36 @@ class PriceEstimateView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(),
+        const Divider(height: 32),
         Text(
           '$fiatCurrency $fiatAmount = ${winstonToAr(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
+          style: ArDriveTypography.body.buttonNormalBold(),
         ),
         const SizedBox(height: 16),
-        Text(appLocalizationsOf(context).howAreConversionsDetermined),
-        const Divider(),
+        ArDriveClickArea(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                appLocalizationsOf(context).howAreConversionsDetermined,
+                style: ArDriveTypography.body.buttonNormalBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Padding(
+                padding: const EdgeInsets.only(top: 2.0),
+                child: ArDriveIcons.newWindow(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                  size: 12,
+                ),
+              )
+            ],
+          ),
+        ),
+        const Divider(height: 32),
       ],
     );
   }

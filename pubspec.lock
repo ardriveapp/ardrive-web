@@ -87,8 +87,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "6b4a8f5e3639aa37844558c06dbb82008abf1d2a"
-      resolved-ref: "6b4a8f5e3639aa37844558c06dbb82008abf1d2a"
+      ref: PE-3695-implementing-the-payment-form-for-turbo-top-up-only-usa-and-usd
+      resolved-ref: "666dc90acd4222d8923494a534b414e6769a8c77"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.1.0"
