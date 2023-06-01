@@ -129,7 +129,7 @@ class DontUsePaymentService implements PaymentService {
   Uri get turboPaymentUri => throw UnimplementedError();
 
   @override
-  bool get useTurboPayment => throw UnimplementedError();
+  bool get useTurboPayment => false;
 
   @override
   Future<BigInt> getPriceForFiat({
