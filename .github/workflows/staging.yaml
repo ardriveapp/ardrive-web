@@ -69,7 +69,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --release
+          flutter build web --dart-define=environment=development --release
 
       # Deploy to github pages
       - uses: JamesIves/github-pages-deploy-action@4.1.1

@@ -15,6 +15,7 @@ Stream<double> _syncDrive(
   required int transactionParseBatchSize,
   required Map<FolderID, GhostFolder> ghostFolders,
   required String ownerAddress,
+  required ConfigService configService,
 }) async* {
   /// Variables to count the current drive's progress information
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
@@ -41,15 +42,23 @@ Stream<double> _syncDrive(
 
   final transactions = <DriveHistoryTransaction>[];
 
-  final snapshotsStream = arweave.getAllSnapshotsOfDrive(
-    driveId,
-    lastBlockHeight,
-    ownerAddress: ownerAddress,
-  );
-  final List<SnapshotItem> snapshotItems = await SnapshotItem.instantiateAll(
-    snapshotsStream,
-    arweave: arweave,
-  ).toList();
+  List<SnapshotItem> snapshotItems = [];
+
+  if (configService.config.enableSyncFromSnapshot) {
+    logger.i('Syncing from snapshot');
+
+    final snapshotsStream = arweave.getAllSnapshotsOfDrive(
+      driveId,
+      lastBlockHeight,
+      ownerAddress: ownerAddress,
+    );
+
+    snapshotItems = await SnapshotItem.instantiateAll(
+      snapshotsStream,
+      arweave: arweave,
+    ).toList();
+  }
+
   final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
     items: snapshotItems,
   );
@@ -67,6 +76,7 @@ Stream<double> _syncDrive(
     totalRangeToQueryFor,
     snapshotDriveHistory.subRanges,
   );
+
   final GQLDriveHistory gqlDriveHistory = GQLDriveHistory(
     subRanges: gqlDriveHistorySubRanges,
     arweave: arweave,

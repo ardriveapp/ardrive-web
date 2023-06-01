@@ -45,7 +45,6 @@ typedef DriveHistoryTransaction
 
 const kRequiredTxConfirmationPendingThreshold = 60 * 8;
 
-const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
 const kBlockHeightLookBack = 240;
 
@@ -60,6 +59,7 @@ class SyncCubit extends Cubit<SyncState> {
   final DriveDao _driveDao;
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
+  final ConfigService _configService;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -78,11 +78,13 @@ class SyncCubit extends Cubit<SyncState> {
     required DriveDao driveDao,
     required Database db,
     required TabVisibilitySingleton tabVisibility,
+    required ConfigService configService,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
+        _configService = configService,
         _tabVisibility = tabVisibility,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
@@ -100,7 +102,8 @@ class SyncCubit extends Cubit<SyncState> {
 
     await _syncSub?.cancel();
 
-    _syncSub = Stream.periodic(const Duration(minutes: kSyncTimerDuration))
+    _syncSub = Stream.periodic(
+            Duration(seconds: _configService.config.autoSyncIntervalInSeconds))
         // Do not start another sync until the previous sync has completed.
         .map((value) => Stream.fromFuture(startSync()))
         .listen((_) {
@@ -119,17 +122,17 @@ class SyncCubit extends Cubit<SyncState> {
     logSync(
         'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
     if (_lastSync != null) {
+      final syncInterval = _configService.config.autoSyncIntervalInSeconds;
       final minutesSinceLastSync =
-          DateTime.now().difference(_lastSync!).inMinutes;
-      final isTimerDurationReadyToSync =
-          minutesSinceLastSync >= kSyncTimerDuration;
+          DateTime.now().difference(_lastSync!).inSeconds;
+      final isTimerDurationReadyToSync = minutesSinceLastSync >= syncInterval;
 
       if (!isTimerDurationReadyToSync) {
         logSync('''
               Can't restart sync when window is focused \n
               Is current active? ${!isClosed} \n
-              last sync was $minutesSinceLastSync minutes ago. \n
-              It should be $kSyncTimerDuration
+              last sync was $minutesSinceLastSync seconds ago. \n
+              It should be $syncInterval
               ''');
         return;
       }
@@ -280,6 +283,7 @@ class SyncCubit extends Cubit<SyncState> {
               transactionParseBatchSize: 200 ~/
                   (_syncProgress.drivesCount - _syncProgress.drivesSynced),
               ownerAddress: drive.ownerAddress,
+              configService: _configService,
             );
           } catch (error, stackTrace) {
             logSync('''
