@@ -62,6 +62,10 @@
   "@arConnectRemainOnThisTab": {
     "description": "Warning for the user to do not leave the tab"
   },
+  "arConnectWalletDoestNotMatchArDriveWallet": "您的 ArConnect 钱包与 ArDrive 钱包不匹配。请重试。",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
+  },
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive不止是一个普通云盘, 而是一个永久网盘.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
@@ -89,6 +93,10 @@
   "back": "返回",
   "@back": {
     "description": "Go back"
+  },
+  "backButtonOnboarding": "返回",
+  "@backButtonOnboarding": {
+    "description": "Text of the back button onboarding"
   },
   "backEmphasized": "返回",
   "@backEmphasized": {
@@ -152,13 +160,25 @@
   "@cancelEmphasized": {
     "description": "Cancel button. Emphasized with upper case"
   },
+  "changeTheme": "更改主题",
+  "@changeTheme": {
+    "description": "Theme switcher tooltip"
+  },
   "changeWallet": "切换钱包",
   "@changeWallet": {
     "description": "To use a different wallet"
   },
+  "close": "关闭",
+  "@close": {
+    "description": "close"
+  },
   "closeEmphasized": "关闭",
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
+  },
+  "collapseSideBar": "折叠边栏",
+  "@collapseSideBar": {
+    "description": "Collapse side bar tooltip"
   },
   "computingSnapshotData": "正在计算快照数据",
   "@computingSnapshotData": {
@@ -240,6 +260,10 @@
   "@copyRootFolderTxID": {
     "description": "Copy transaction ID of Root Folder tooltip"
   },
+  "copyTooltip": "复制",
+  "@copyTooltip": {
+    "description": "Tooltip for copy button"
+  },
   "copyWalletAddress": "复制钱包地址",
   "@copyWalletAddress": {
     "description": "Tooltip on copy wallet address button"
@@ -257,6 +281,10 @@
   "create": "创建",
   "@create": {
     "description": "Create an drive"
+  },
+  "createAndConfirmPassword": "请创建并确认您的密码。您将使用此密码登录。",
+  "@createAndConfirmPassword": {
+    "description": "Asks the user to create a password"
   },
   "createDriveEmphasized": "创建网盘",
   "@createDriveEmphasized": {
@@ -307,6 +335,10 @@
   "creatingFolderEmphasized": "创建文件夹中...",
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
+  },
+  "darkModeEmphasized": "深色模式",
+  "@darkModeEmphasized": {
+    "description": "Refers to the dark theme of the app. Emphasized with upper case"
   },
   "dataTxID": "数据交易ID",
   "@dataTxID": {
@@ -375,6 +407,10 @@
       }
     }
   },
+  "diveInButtonOnboarding": "深入了解",
+  "@diveInButtonOnboarding": {
+    "description": "Text of the last button of the onboarding"
+  },
   "doneEmphasized": "完成",
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
@@ -394,6 +430,14 @@
   "downloadingFile": "下载文件中...",
   "@downloadingFile": {
     "description": "File is being downloaded"
+  },
+  "dragAndDropButtonTitle": "浏览 Json",
+  "@dragAndDropButtonTitle": {
+    "description": "text of title drag and drop"
+  },
+  "dragAndDropDescription": "拖放密钥文件",
+  "@dragAndDropDescription": {
+    "description": "text of description drag and drop"
   },
   "driveID": "网盘ID",
   "@driveID": {
@@ -509,6 +553,10 @@
   "@enterFileKey": {
     "description": "File Key form field label"
   },
+  "enterPassword": "输入密码",
+  "@enterPassword": {
+    "description": "Please enter password"
+  },
   "entityAlreadyExists": "在目的地已经存在名为{entityName}的文件! 请重命名文件或者文件夹再重试.",
   "@entityAlreadyExists": {
     "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
@@ -526,6 +574,10 @@
   "errorDragAndDropFolder": "暂时不支持文件夹的拖拽上传",
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
+  },
+  "expandSideBar": "展开侧边栏",
+  "@expandSideBar": {
+    "description": "Expand side bar tooltip"
   },
   "exportDriveContents": "导出网盘内容",
   "@exportDriveContents": {
@@ -590,6 +642,10 @@
   },
   "fileFailedToDownloadFileAboveLimit": "您选择的文件太大，无法从移动应用下载",
   "@fileFailedToDownloadFileAboveLimit": {
+    "description": "Download failure message when a file is too big"
+  },
+  "fileFailedToDownloadFileAbovePublicLimit": "您选择的文件太大，无法下载",
+  "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
   },
   "fileHadANewRevision": "本文件的新版被上传.",
@@ -688,6 +744,10 @@
         "example": "file name"
       }
     }
+  },
+  "finishingThingsUp": "即将完成！",
+  "@finishingThingsUp": {
+    "description": "Finishing things up!"
   },
   "fix": "修复",
   "@fix": {
@@ -885,6 +945,10 @@
   "@insufficientFundsForUploadFolders": {
     "description": "Show that needs funds to upload folders"
   },
+  "invalidKeyFile": "密钥文件无效",
+  "@invalidKeyFile": {
+    "description": "Invalid Keyfile"
+  },
   "invalidWalletFile": "无效钱包文件",
   "@invalidWalletFile": {
     "description": "Wallet file is not a json or a text"
@@ -952,6 +1016,10 @@
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
   },
+  "lightModeEmphasized": "浅色模式",
+  "@lightModeEmphasized": {
+    "description": "Refers to the light theme of the app. Emphasized with upper case"
+  },
   "login": "登录",
   "@login": {
     "description": "The login process"
@@ -999,6 +1067,10 @@
   "monthlyCharges": "你无需为了未使用的网盘空间而每月付款. 一次性付几美分, 就可以将文件永久存储在ArDrive上.",
   "@monthlyCharges": {
     "description": "Payment philosophy"
+  },
+  "moreInfo": "详细信息",
+  "@moreInfo": {
+    "description": "More info"
   },
   "move": "移动",
   "@move": {
@@ -1104,9 +1176,37 @@
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
+  "onboarding1Description": "ArDrive 不只是另一款云同步应用程序。它是您的个人永久硬盘。任何单个实体都不能被删除或更改存储在 ArDrive上的文件，上传的任何文件都将被永久保存。",
+  "@onboarding1Description": {
+    "description": "Description of 1st page of onboarding"
+  },
+  "onboarding1Title": "欢迎来到 Permaweb",
+  "@onboarding1Title": {
+    "description": "Title of 1st page of onboarding"
+  },
+  "onboarding2Description": "告别云存储订阅。不用为未使用的空间付费，只需支付一次就可以永远存储数据。",
+  "@onboarding2Description": {
+    "description": "Description of 2nd page of onboarding"
+  },
+  "onboarding2Title": "按文件付费，而不是按月付费",
+  "@onboarding2Title": {
+    "description": "Title of 2nd page of onboarding"
+  },
+  "onboarding3Description": "您的选择：让您上传的文件公开，任何人都可以访问，或者利用最先进的加密技术，您可以控制谁可以查看文件。",
+  "@onboarding3Description": {
+    "description": "Description of 4th page of onboarding"
+  },
+  "onboarding3Title": "全面隐私控制",
+  "@onboarding3Title": {
+    "description": "Title of 4th page of onboarding"
+  },
   "onceUploadedCantBeRemoved": "上传后, 你的数据就无法被下架.",
   "@onceUploadedCantBeRemoved": {
     "description": "Uploaded items cannot be deleted"
+  },
+  "orContinueWith": "或者继续使用 ",
+  "@orContinueWith": {
+    "description": "text to continue with ar connect"
   },
   "password": "密码",
   "@password": {
@@ -1115,6 +1215,14 @@
   "passwordCanNeverBeChanged": "你的密码无法被更改或还原. 请妥善保管!",
   "@passwordCanNeverBeChanged": {
     "description": "Explains that the password cannot be changed as it is the one of the wallet"
+  },
+  "passwordCannotBeEmpty": "密码不能为空",
+  "@passwordCannotBeEmpty": {
+    "description": "Button title to create a password"
+  },
+  "passwordDoNotMatch": "密码不匹配",
+  "@passwordDoNotMatch": {
+    "description": "Modal description when passwords dont match"
   },
   "passwordMismatch": "重复输入的密码有误.",
   "@passwordMismatch": {
@@ -1132,6 +1240,10 @@
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
+  "pleaseAcceptTheTermsToContinue": "请接受条款和条件以继续。",
+  "@pleaseAcceptTheTermsToContinue": {
+    "description": "terms and conditions cta"
+  },
   "pleaseProvideSamePassword": "请输入你之前所使用的密码.",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
@@ -1139,6 +1251,14 @@
   "pleaseRemainOnThisTab": "加载中... 请保持在标签页.",
   "@pleaseRemainOnThisTab": {
     "description": "Circular progress indicator"
+  },
+  "pleaseRemainOnThisTabSnapshots": "Web3 钱包正在进行交易签名。请在我们完成任务之前停留在此页面！ ",
+  "@pleaseRemainOnThisTabSnapshots": {
+    "description": "Please stay on this page while we finish things up!"
+  },
+  "pleaseTryAgain": "请重试",
+  "@pleaseTryAgain": {
+    "description": "Please try again."
   },
   "preparingManifestEmphasized": "准备MANIFEST中...",
   "@preparingManifestEmphasized": {
@@ -1164,9 +1284,21 @@
   "@private": {
     "description": "A private entity"
   },
+  "privateDrives": "私人驱动器",
+  "@privateDrives": {
+    "description": "Private drives accordion title"
+  },
+  "proceed": "继续",
+  "@proceed": {
+    "description": "Proceed"
+  },
   "proceedCongestionEmphasized": "仍然继续",
   "@proceedCongestionEmphasized": {
     "description": "Proceed being aware of the network congestion. Emphasized with upper case"
+  },
+  "proceedEmphasized": "继续",
+  "@proceedEmphasized": {
+    "description": "Proceed but capitalized"
   },
   "profile": "账户",
   "@profile": {
@@ -1175,6 +1307,10 @@
   "public": "公开",
   "@public": {
     "description": "A public entity"
+  },
+  "publicDrives": "公共驱动器",
+  "@publicDrives": {
+    "description": "Public drives accordion title"
   },
   "recreateFolderEmphasized": "重新创建文件夹",
   "@recreateFolderEmphasized": {
@@ -1248,6 +1384,10 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "sharedDrives": "共享驱动器",
+  "@sharedDrives": {
+    "description": "Sub-header for the shared drives list"
+  },
   "sharedDrivesEmphasized": "分享网盘",
   "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
@@ -1280,6 +1420,10 @@
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
   },
+  "showMenu": "显示菜单",
+  "@showMenu": {
+    "description": "show menu text"
+  },
   "signingUpload": "签署上传交易中",
   "@signingUpload": {
     "description": "The app is signing the transactions"
@@ -1287,6 +1431,10 @@
   "size": "大小",
   "@size": {
     "description": "The size of a file, folder or drive"
+  },
+  "skip": "跳过",
+  "@skip": {
+    "description": "Skip"
   },
   "skipEmphasized": "跳过",
   "@skipEmphasized": {
@@ -1375,6 +1523,10 @@
   "targetFolderEmphasized": "目标文件夹",
   "@targetFolderEmphasized": {
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
+  },
+  "termsAndConditions": "条款和条件",
+  "@termsAndConditions": {
+    "description": "terms and conditions"
   },
   "thinkTwiceBeforeUploading": "上传你的黑历史之前要三思...",
   "@thinkTwiceBeforeUploading": {
@@ -1470,6 +1622,14 @@
       }
     }
   },
+  "uploadYourFirstFile": "上传第一个文件",
+  "@uploadYourFirstFile": {
+    "description": "Empty folder"
+  },
+  "usdPriceNotAvailable": "（目前无法提供美元价格）",
+  "@usdPriceNotAvailable": {
+    "description": "Fallback message for when the USD price is not available"
+  },
   "useArconnectEmphasized": "使用ARCONNECT登入",
   "@useArconnectEmphasized": {
     "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
@@ -1526,6 +1686,10 @@
   "@viewOnly": {
     "description": "The user has no permission to edit, only to view"
   },
+  "viewOnViewBlock": "在 viewblock.io 上查看",
+  "@viewOnViewBlock": {
+    "description": "Tooltip for external link for viewBlock"
+  },
   "waitForDownload": "由于文件的大小，此下载可能需要一段时间。下载过程中请保持应用打开。",
   "@waitForDownload": {
     "description": "User must to wait this download"
@@ -1549,6 +1713,24 @@
   "weDoAFewThingsDifferently": "这也意味着我们有一些不同的事.",
   "@weDoAFewThingsDifferently": {
     "description": "What ArDrive does differently"
+  },
+  "weDontRecommendUploadsAboveASafeLimit": "我们不建议上传尺寸超过{size}的文件。",
+  "@weDontRecommendUploadsAboveASafeLimit": {
+    "description": "Shows a message like We do not recommend uploading items over 5GB in size.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "5 GiB"
+      }
+    }
+  },
+  "welcome": "欢迎",
+  "@welcome": {
+    "description": "welcome"
+  },
+  "welcomeBack": "欢迎回来",
+  "@welcomeBack": {
+    "description": "welcome back"
   },
   "welcomeBackEmphasized": "欢迎回来",
   "@welcomeBackEmphasized": {
@@ -1600,8 +1782,16 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
+  "yourPrivateSecureAndPermanentDrive": "安全、永久的私人硬盘。",
+  "@yourPrivateSecureAndPermanentDrive": {
+    "description": "Your private, secure, and permanent hard drive."
+  },
   "yourUploadFailed": "文件上传失败， 本次上传不会被扣费。",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
+  },
+  "zippingYourFiles": "正在压缩文件……",
+  "@zippingYourFiles": {
+    "description": "Download failure message when a file is too big"
   }
 }
