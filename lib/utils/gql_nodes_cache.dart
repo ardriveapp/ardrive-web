@@ -4,7 +4,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:stash/stash_api.dart';
 
-const defaultMaxEntries = 20000;
+const defaultMaxEntries = 2000;
 const defaultCacheName = 'gql-nodes-cache';
 
 // TODO: PE-2782: Abstract auto-generated GQL types
@@ -127,7 +127,7 @@ class GQLNodesCache {
     // FIXME: check for quota before attempting to write to cache
     try {
       logger.d('Putting $key in GQL Nodes cache');
-      await _persistingCache.put(key, data);
+      await _persistingCache.putIfAbsent(key, data);
       _nextIndexForDriveId![driveId] = nextIndex;
     } catch (e, s) {
       logger.e('Failed to put $key in GQL Nodes cache', e, s);
