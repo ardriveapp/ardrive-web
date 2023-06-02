@@ -28,7 +28,7 @@ class PaymentService {
         'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
-    final price = BigInt.parse((json.decode(result.data)['credits']));
+    final price = BigInt.parse((json.decode(result.data)['winc']));
 
     return price;
   }
@@ -46,7 +46,7 @@ class PaymentService {
         'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
-    final price = BigInt.parse((json.decode(result.data)['credits']));
+    final price = BigInt.parse((json.decode(result.data)['winc']));
     return price;
   }
 
@@ -73,7 +73,7 @@ class PaymentService {
       throw error;
     });
 
-    final price = BigInt.parse((json.decode(result.data)['credits']));
+    final price = BigInt.parse((json.decode(result.data)['winc']));
 
     return price;
   }
