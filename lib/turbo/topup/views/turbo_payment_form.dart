@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/utils/credit_card_validations.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_multi_formatter/flutter_multi_formatter.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -187,12 +189,53 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget countryTextField() {
-    return const Expanded(
+    return Expanded(
       child: CountryInputDropdown(
-        items: [
+        items: const [
           CountryItem('United States'),
           CountryItem('Canada'),
         ],
+        buildSelectedItem: (item) {
+          return Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .textFieldTheme
+                    .defaultBorderColor,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 13,
+              vertical: 10.5,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    item?.label ?? '',
+                    style: ArDriveTypography.body.captionBold(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .textFieldTheme
+                          .inputTextStyle
+                          .color,
+                    ),
+                  ),
+                ),
+                ArDriveIcons.carretDown(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentDisabled,
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -412,7 +455,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           ArDriveClickArea(
             child: GestureDetector(
               onTap: () {
-                Navigator.of(context).pop();
+                context
+                    .read<TurboTopupFlowBloc>()
+                    .add(const TurboTopUpShowEstimationView());
               },
               child: Text(
                 // TODO: localize
@@ -560,22 +605,36 @@ abstract class InputDropdownItem {
   final String label;
 }
 
-class InputDropdown<T extends InputDropdownItem> extends StatefulWidget {
-  const InputDropdown({
+class InputDropdownMenu<T extends InputDropdownItem> extends StatefulWidget {
+  const InputDropdownMenu({
     super.key,
     required this.items,
     this.selectedItem,
+    required this.buildSelectedItem,
+    this.label,
+    this.onChanged,
+    this.anchor = const Aligned(
+      follower: Alignment.topLeft,
+      target: Alignment.bottomLeft,
+      offset: Offset(0, 4),
+    ),
+    this.itemsTextStyle,
   });
 
   final List<T> items;
   final T? selectedItem;
+  final Widget Function(T?) buildSelectedItem;
+  final String? label;
+  final Function(T)? onChanged;
+  final Anchor anchor;
+  final TextStyle? itemsTextStyle;
 
   @override
-  State<InputDropdown> createState() => _InputDropdownState<T>();
+  State<InputDropdownMenu> createState() => _InputDropdownMenuState<T>();
 }
 
-class _InputDropdownState<T extends InputDropdownItem>
-    extends State<InputDropdown<T>> {
+class _InputDropdownMenuState<T extends InputDropdownItem>
+    extends State<InputDropdownMenu<T>> {
   T? _selectedItem;
 
   @override
@@ -588,6 +647,7 @@ class _InputDropdownState<T extends InputDropdownItem>
   Widget build(BuildContext context) {
     return ArDriveClickArea(
       child: ArDriveDropdown(
+        anchor: widget.anchor,
         width: 200,
         items: widget.items
             .map(
@@ -595,81 +655,50 @@ class _InputDropdownState<T extends InputDropdownItem>
                 content: Center(
                   child: Text(
                     e.label,
-                    style: ArDriveTypography.body.captionBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .textFieldTheme
-                          .inputTextStyle
-                          .color,
-                    ),
+                    style: widget.itemsTextStyle ??
+                        ArDriveTypography.body.captionBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .textFieldTheme
+                              .inputTextStyle
+                              .color,
+                        ),
                   ),
                 ),
                 onClick: () {
                   setState(() {
                     _selectedItem = e;
                   });
+
+                  if (widget.onChanged != null) {
+                    widget.onChanged!(e);
+                  }
                 },
               ),
             )
             .toList(),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextFieldLabel(
-                  text: 'Country *',
-                  style: ArDriveTypography.body.buttonNormalBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .textFieldTheme
-                        .requiredLabelColor,
-                  ),
-                ),
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .textFieldTheme
-                      .defaultBorderColor,
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 13,
-                vertical: 10.5,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      _selectedItem?.label ?? '',
-                      style: ArDriveTypography.body.captionBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .textFieldTheme
-                            .inputTextStyle
-                            .color,
-                      ),
+            if (widget.label != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4, right: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextFieldLabel(
+                    text: widget.label!,
+                    style: ArDriveTypography.body.buttonNormalBold(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .textFieldTheme
+                          .requiredLabelColor,
                     ),
                   ),
-                  ArDriveIcons.carretDown(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeAccentDisabled,
-                  ),
-                ],
+                ),
               ),
-            ),
+            widget.buildSelectedItem(_selectedItem),
           ],
         ),
       ),
@@ -684,14 +713,17 @@ class CountryItem implements InputDropdownItem {
   const CountryItem(this.label);
 }
 
-class CountryInputDropdown extends InputDropdown<CountryItem> {
+class CountryInputDropdown extends InputDropdownMenu<CountryItem> {
   const CountryInputDropdown({
     Key? key,
     required List<CountryItem> items,
+    required Widget Function(CountryItem?) buildSelectedItem,
     CountryItem? selectedItem,
   }) : super(
           key: key,
           items: items,
           selectedItem: selectedItem,
+          buildSelectedItem: buildSelectedItem,
+          label: 'Country *',
         );
 }

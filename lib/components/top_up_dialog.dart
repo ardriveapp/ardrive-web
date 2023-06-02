@@ -5,6 +5,8 @@ import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
 import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/views/turbo_payment_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
@@ -15,14 +17,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class TopUpDialog extends StatefulWidget {
-  const TopUpDialog({super.key});
+class TopUpEstimationView extends StatefulWidget {
+  const TopUpEstimationView({super.key});
 
   @override
-  State<TopUpDialog> createState() => _TopUpDialogState();
+  State<TopUpEstimationView> createState() => _TopUpEstimationViewState();
 }
 
-class _TopUpDialogState extends State<TopUpDialog> {
+class _TopUpEstimationViewState extends State<TopUpEstimationView> {
   late PaymentBloc paymentBloc;
   late Wallet wallet;
 
@@ -38,19 +40,17 @@ class _TopUpDialogState extends State<TopUpDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveStandardModal(
-      width: 575,
-      content: BlocBuilder<PaymentBloc, PaymentState>(
-        bloc: paymentBloc,
-        builder: (context, state) {
-          if (state is PaymentLoading) {
-            return const SizedBox(
-              height: 575,
-              child: Center(child: CircularProgressIndicator()),
-            );
-          } else if (state is PaymentLoaded) {
-            return Column(
-              mainAxisSize: MainAxisSize.max,
+    return BlocBuilder<PaymentBloc, PaymentState>(
+      bloc: paymentBloc,
+      builder: (context, state) {
+        if (state is PaymentLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is PaymentLoaded) {
+          return Container(
+            padding: const EdgeInsets.all(40.0),
+            color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
@@ -66,12 +66,6 @@ class _TopUpDialogState extends State<TopUpDialog> {
                       colorBlendMode: BlendMode.srcIn,
                       fit: BoxFit.contain,
                     ),
-                    IconButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      icon: const Icon(Icons.close),
-                    )
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -104,67 +98,89 @@ class _TopUpDialogState extends State<TopUpDialog> {
                     Expanded(
                       child: Row(
                         children: [
-                          DropdownMenu(
-                            label: Text(appLocalizationsOf(context).currency),
-                            hintText: appLocalizationsOf(context).currency,
-                            initialSelection: paymentBloc.currentCurrency,
-                            dropdownMenuEntries: [
-                              DropdownMenuEntry(
-                                label: paymentBloc.currentCurrency,
-                                value: paymentBloc.currentCurrency,
-                              ),
+                          CurrencyDropdownMenu(
+                            itemsTextStyle:
+                                ArDriveTypography.body.captionBold(),
+                            items: [
+                              CurrencyItem('USD'),
+                              CurrencyItem('EUR'),
                             ],
+                            buildSelectedItem: (item) => Row(
+                              children: [
+                                Text(
+                                  item?.label ?? 'USD',
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(),
+                                ),
+                                const SizedBox(width: 8),
+                                ArDriveIcons.carretDown(size: 16),
+                              ],
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          DropdownMenu(
-                            label: Text(appLocalizationsOf(context).unit),
-                            hintText: appLocalizationsOf(context).unit,
-                            initialSelection: paymentBloc.currentDataUnit,
-                            onSelected: (value) {
+                          const SizedBox(
+                            width: 40,
+                          ),
+                          UnitDropdownMenu(
+                            itemsTextStyle:
+                                ArDriveTypography.body.captionBold(),
+                            items: FileSizeUnit.values
+                                .map(
+                                  (unit) => UnitItem(unit),
+                                )
+                                .toList(),
+                            buildSelectedItem: (item) => Row(
+                              children: [
+                                Text(
+                                  item?.label ?? 'GB',
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(),
+                                ),
+                                const SizedBox(width: 8),
+                                ArDriveIcons.carretDown(size: 16),
+                              ],
+                            ),
+                            onChanged: (value) {
                               paymentBloc.add(
-                                DataUnitChanged(value as FileSizeUnit),
+                                DataUnitChanged(value.unit),
                               );
                             },
-                            dropdownMenuEntries: [
-                              ...FileSizeUnit.values.map(
-                                (unit) => DropdownMenuEntry(
-                                  label: unit.name,
-                                  value: unit,
-                                  style: ButtonStyle(
-                                    foregroundColor:
-                                        MaterialStateColor.resolveWith(
-                                      (states) => ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgDefault,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            ],
                           ),
                         ],
                       ),
                     ),
                     ArDriveButton(
+                      maxWidth: 143,
+                      maxHeight: 40,
+                      fontStyle: ArDriveTypography.body
+                          .buttonLargeBold()
+                          .copyWith(fontWeight: FontWeight.w700),
                       text: appLocalizationsOf(context).next,
-                      onPressed: () {},
+                      onPressed: () {
+                        context
+                            .read<TurboTopupFlowBloc>()
+                            .add(TurboTopUpShowPaymentFormView());
+                      },
                     ),
                   ],
                 )
               ],
-            );
-          } else if (state is PaymentError) {
-            return SizedBox(
-              height: 575,
-              child: Center(
-                child: Text(appLocalizationsOf(context).error),
-              ),
-            );
-          }
-          return const SizedBox();
-        },
-      ),
+            ),
+          );
+        } else if (state is PaymentError) {
+          return SizedBox(
+            height: 575,
+            child: Center(
+              child: Text(appLocalizationsOf(context).error),
+            ),
+          );
+        }
+        return Container(
+          color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
     );
   }
 }
@@ -234,9 +250,17 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
               maxHeight: height,
               maxWidth: width,
               fontStyle: ArDriveTypography.body.smallBold().copyWith(
-                  color: selectedAmount == amount
-                      ? ArDriveTheme.of(context).themeData.colors.themeBgSurface
-                      : ArDriveTheme.of(context).themeData.colors.themeFgMuted),
+                    fontWeight: FontWeight.w700,
+                    color: selectedAmount == amount
+                        ? ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeBgSurface
+                        : ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgMuted,
+                  ),
               text: '$amount ${widget.currencyUnit}',
               onPressed: () {
                 setState(() {
@@ -265,6 +289,32 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ArDriveTheme.of(context).themeData;
+
+    // custom theme for the text fields on the top-up form
+    final textTheme = theme.copyWith(
+      textFieldTheme: theme.textFieldTheme.copyWith(
+        inputBackgroundColor: theme.colors.themeBgCanvas,
+        labelColor: theme.colors.themeAccentDisabled,
+        requiredLabelColor: theme.colors.themeAccentDisabled,
+        inputTextStyle: theme.textFieldTheme.inputTextStyle.copyWith(
+          color: theme.colors.themeFgMuted,
+          fontWeight: FontWeight.w600,
+          height: 1.5,
+          fontSize: 16,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 13,
+          vertical: 8,
+        ),
+        labelStyle: TextStyle(
+          color: theme.colors.themeAccentDisabled,
+          fontWeight: FontWeight.w600,
+          height: 1.5,
+          fontSize: 16,
+        ),
+      ),
+    );
     return Column(
       mainAxisSize: MainAxisSize.max,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,39 +352,39 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
             ),
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          width: 112,
-          height: 40,
-          child: TextFormField(
-            expands: false,
-            controller: _customAmountController,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
+        SizedBox(
+          width: 114,
+          child: ArDriveTheme(
+            key: const ValueKey('turbo_payment_form'),
+            themeData: textTheme,
+            child: ArDriveTextField(
+              preffix: Text(
+                '\$ ',
+                style: ArDriveTypography.body.buttonLargeBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                //TODO limit to between 10 and 10,000 temporarily
+                TextInputFormatter.withFunction(
+                  (oldValue, newValue) {
+                    if (int.parse(newValue.text) > 10000) {
+                      return oldValue;
+                    }
+                    return newValue;
+                  },
+                ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  selectedAmount = int.tryParse(value) ?? 0;
+                });
+
+                _onAmountChanged(value);
+              },
             ),
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              //TODO limit to between 10 and 10,000 temporarily
-              TextInputFormatter.withFunction(
-                (oldValue, newValue) {
-                  if (int.parse(newValue.text) > 10000) {
-                    return oldValue;
-                  }
-                  return newValue;
-                },
-              ),
-            ],
-            onChanged: (value) {
-              setState(() {
-                selectedAmount = int.tryParse(value) ?? 0;
-              });
-              _onAmountChanged(value);
-            },
           ),
         )
       ],
@@ -460,7 +510,7 @@ class PriceEstimateView extends StatelessWidget {
                 child: ArDriveIcons.newWindow(
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-                  size: 12,
+                  size: 16,
                 ),
               )
             ],
@@ -470,4 +520,52 @@ class PriceEstimateView extends StatelessWidget {
       ],
     );
   }
+}
+
+class CurrencyDropdownMenu extends InputDropdownMenu<CurrencyItem> {
+  const CurrencyDropdownMenu({
+    super.key,
+    required super.items,
+    required super.buildSelectedItem,
+    super.label = 'Currency',
+    super.onChanged,
+    super.anchor = const Aligned(
+      follower: Alignment.bottomLeft,
+      target: Alignment.topLeft,
+      offset: Offset(
+        0,
+        4,
+      ),
+    ),
+    super.itemsTextStyle,
+  });
+}
+
+class CurrencyItem extends InputDropdownItem {
+  CurrencyItem(super.label);
+}
+
+class UnitDropdownMenu extends InputDropdownMenu<UnitItem> {
+  const UnitDropdownMenu({
+    super.key,
+    required super.items,
+    required super.buildSelectedItem,
+    super.label = 'Unit',
+    super.onChanged,
+    super.anchor = const Aligned(
+      follower: Alignment.bottomLeft,
+      target: Alignment.topLeft,
+      offset: Offset(
+        0,
+        4,
+      ),
+    ),
+    super.itemsTextStyle,
+  });
+}
+
+class UnitItem extends InputDropdownItem {
+  final FileSizeUnit unit;
+
+  UnitItem(this.unit) : super(unit.name);
 }
