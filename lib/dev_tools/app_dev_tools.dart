@@ -421,7 +421,6 @@ class DraggableWindow extends HookWidget {
                                 .themeBgCanvas,
                           ),
                           onPressed: () {
-                            isWindowVisible.value = false;
                             ArDriveDevTools().closeDevTools();
                           },
                         ),
