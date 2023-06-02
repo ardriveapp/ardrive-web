@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
@@ -67,9 +68,12 @@ class PaymentService {
         'x-public-key': publicKeyToHeader(publicKey),
       },
     ).onError((ArDriveHTTPException error, stackTrace) {
+      logger.e('Error getting balance', error, stackTrace);
+
       if (error.statusCode == 404) {
         throw TurboUserNotFound();
       }
+
       throw error;
     });
 
