@@ -24,3 +24,13 @@ class TurboTopupFlowShowingPaymentFormView extends TurboTopupFlowState {
   const TurboTopupFlowShowingPaymentFormView({bool isMovingForward = true})
       : super(isMovingForward);
 }
+
+class TurboTopupFlowShowingPaymentReviewView extends TurboTopupFlowState {
+  const TurboTopupFlowShowingPaymentReviewView({bool isMovingForward = true})
+      : super(isMovingForward);
+}
+
+class TurboTopupFlowShowingSuccessView extends TurboTopupFlowState {
+  const TurboTopupFlowShowingSuccessView({bool isMovingForward = true})
+      : super(isMovingForward);
+}

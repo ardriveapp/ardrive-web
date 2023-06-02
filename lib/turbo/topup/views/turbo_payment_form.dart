@@ -88,7 +88,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             ),
             Padding(
               padding: const EdgeInsets.only(
-                top: 14.0,
                 left: 40,
                 right: 40,
               ),
@@ -193,7 +192,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
       child: CountryInputDropdown(
         items: const [
           CountryItem('United States'),
-          CountryItem('Canada'),
         ],
         buildSelectedItem: (item) {
           return Container(
@@ -327,7 +325,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               ),
               TimerWidget(
                 durationInSeconds: 60 * 10,
-                fetchQuoteCallback: () {
+                onFinished: () {
                   logger.d('fetching quote');
                 },
               ),
@@ -479,7 +477,11 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             fontStyle: ArDriveTypography.body.buttonLargeBold(
               color: Colors.white,
             ),
-            onPressed: () {},
+            onPressed: () {
+              context
+                  .read<TurboTopupFlowBloc>()
+                  .add(const TurboTopUpShowPaymentReviewView());
+            },
           ),
         ],
       ),
@@ -537,12 +539,17 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
 
 class TimerWidget extends StatefulWidget {
   final int durationInSeconds;
-  final VoidCallback fetchQuoteCallback;
+  final VoidCallback onFinished;
+  final TextStyle? textStyle;
+  final Widget Function(BuildContext context, int secondsLeft)? builder;
 
-  const TimerWidget(
-      {super.key,
-      required this.durationInSeconds,
-      required this.fetchQuoteCallback});
+  const TimerWidget({
+    super.key,
+    required this.durationInSeconds,
+    required this.onFinished,
+    this.textStyle,
+    this.builder,
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -574,7 +581,7 @@ class _TimerWidgetState extends State<TimerWidget> {
         } else {
           // Timer completed, fetch the quote again or perform any desired action
           _timer.cancel();
-          widget.fetchQuoteCallback(); // Call the provided callback function
+          widget.onFinished(); // Call the provided callback function
         }
       });
     });
@@ -590,12 +597,12 @@ class _TimerWidgetState extends State<TimerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      _formatDuration(_secondsLeft),
-      style: ArDriveTypography.body.captionBold(
-        color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-      ),
-    );
+    return widget.builder != null
+        ? widget.builder!(context, _secondsLeft)
+        : Text(
+            _formatDuration(_secondsLeft),
+            style: widget.textStyle,
+          );
   }
 }
 

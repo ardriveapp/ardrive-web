@@ -107,6 +107,8 @@ dependencies:
   flutter_portal: ^1.1.3
   alchemist: ^0.6.0
   flutter_hooks: ^0.18.6
+  flutter_multi_formatter: ^2.11.1
+  credit_card_validator: ^2.1.0
 
 dev_dependencies:
   flutter_test:

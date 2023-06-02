@@ -44,126 +44,137 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
       bloc: paymentBloc,
       builder: (context, state) {
         if (state is PaymentLoading) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (state is PaymentLoaded) {
           return Container(
-            padding: const EdgeInsets.all(40.0),
-            color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    SvgPicture.asset(
-                      Resources.images.brand.turbo,
-                      height: 30,
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
-                      colorBlendMode: BlendMode.srcIn,
-                      fit: BoxFit.contain,
+              height: 575,
+              child: const Center(child: CircularProgressIndicator()));
+        } else if (state is PaymentLoaded) {
+          return SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(40.0),
+              color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: ArDriveClickArea(
+                      child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: ArDriveIcons.x()),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _BalanceView(
-                  balance: state.balance,
-                  estimatedStorage: state.estimatedStorageForBalance,
-                  fileSizeUnit: paymentBloc.currentDataUnit.name,
-                ),
-                const SizedBox(height: 40),
-                PresetAmountSelector(
-                  amounts: presetAmounts,
-                  currencyUnit: '\$',
-                  preSelectedAmount: state.selectedAmount.toInt(),
-                  onAmountSelected: (amount) {
-                    paymentBloc.add(FiatAmountSelected(amount));
-                  },
-                ),
-                const SizedBox(height: 24),
-                PriceEstimateView(
-                  fiatAmount: state.selectedAmount.toInt(),
-                  fiatCurrency: '\$',
-                  estimatedCredits: state.creditsForSelectedAmount,
-                  estimatedStorage: state.estimatedStorageForSelectedAmount,
-                  storageUnit: paymentBloc.currentDataUnit.name,
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          CurrencyDropdownMenu(
-                            itemsTextStyle:
-                                ArDriveTypography.body.captionBold(),
-                            items: [
-                              CurrencyItem('USD'),
-                              CurrencyItem('EUR'),
-                            ],
-                            buildSelectedItem: (item) => Row(
-                              children: [
-                                Text(
-                                  item?.label ?? 'USD',
-                                  style:
-                                      ArDriveTypography.body.buttonNormalBold(),
-                                ),
-                                const SizedBox(width: 8),
-                                ArDriveIcons.carretDown(size: 16),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 40,
-                          ),
-                          UnitDropdownMenu(
-                            itemsTextStyle:
-                                ArDriveTypography.body.captionBold(),
-                            items: FileSizeUnit.values
-                                .map(
-                                  (unit) => UnitItem(unit),
-                                )
-                                .toList(),
-                            buildSelectedItem: (item) => Row(
-                              children: [
-                                Text(
-                                  item?.label ?? 'GB',
-                                  style:
-                                      ArDriveTypography.body.buttonNormalBold(),
-                                ),
-                                const SizedBox(width: 8),
-                                ArDriveIcons.carretDown(size: 16),
-                              ],
-                            ),
-                            onChanged: (value) {
-                              paymentBloc.add(
-                                DataUnitChanged(value.unit),
-                              );
-                            },
-                          ),
-                        ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      SvgPicture.asset(
+                        Resources.images.brand.turbo,
+                        height: 30,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                        colorBlendMode: BlendMode.srcIn,
+                        fit: BoxFit.contain,
                       ),
-                    ),
-                    ArDriveButton(
-                      maxWidth: 143,
-                      maxHeight: 40,
-                      fontStyle: ArDriveTypography.body
-                          .buttonLargeBold()
-                          .copyWith(fontWeight: FontWeight.w700),
-                      text: appLocalizationsOf(context).next,
-                      onPressed: () {
-                        context
-                            .read<TurboTopupFlowBloc>()
-                            .add(TurboTopUpShowPaymentFormView());
-                      },
-                    ),
-                  ],
-                )
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                  _BalanceView(
+                    balance: state.balance,
+                    estimatedStorage: state.estimatedStorageForBalance,
+                    fileSizeUnit: paymentBloc.currentDataUnit.name,
+                  ),
+                  const SizedBox(height: 40),
+                  PresetAmountSelector(
+                    amounts: presetAmounts,
+                    currencyUnit: '\$',
+                    preSelectedAmount: state.selectedAmount.toInt(),
+                    onAmountSelected: (amount) {
+                      paymentBloc.add(FiatAmountSelected(amount));
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  PriceEstimateView(
+                    fiatAmount: state.selectedAmount.toInt(),
+                    fiatCurrency: '\$',
+                    estimatedCredits: state.creditsForSelectedAmount,
+                    estimatedStorage: state.estimatedStorageForSelectedAmount,
+                    storageUnit: paymentBloc.currentDataUnit.name,
+                  ),
+                  const SizedBox(height: 32),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            CurrencyDropdownMenu(
+                              itemsTextStyle:
+                                  ArDriveTypography.body.captionBold(),
+                              items: [
+                                CurrencyItem('USD'),
+                              ],
+                              buildSelectedItem: (item) => Row(
+                                children: [
+                                  Text(
+                                    item?.label ?? 'USD',
+                                    style: ArDriveTypography.body
+                                        .buttonNormalBold(),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ArDriveIcons.carretDown(size: 16),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 40,
+                            ),
+                            UnitDropdownMenu(
+                              itemsTextStyle:
+                                  ArDriveTypography.body.captionBold(),
+                              items: FileSizeUnit.values
+                                  .map(
+                                    (unit) => UnitItem(unit),
+                                  )
+                                  .toList(),
+                              buildSelectedItem: (item) => Row(
+                                children: [
+                                  Text(
+                                    item?.label ?? 'GB',
+                                    style: ArDriveTypography.body
+                                        .buttonNormalBold(),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ArDriveIcons.carretDown(size: 16),
+                                ],
+                              ),
+                              onChanged: (value) {
+                                paymentBloc.add(
+                                  DataUnitChanged(value.unit),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      ArDriveButton(
+                        maxWidth: 143,
+                        maxHeight: 40,
+                        fontStyle: ArDriveTypography.body
+                            .buttonLargeBold()
+                            .copyWith(fontWeight: FontWeight.w700),
+                        text: appLocalizationsOf(context).next,
+                        onPressed: () {
+                          context
+                              .read<TurboTopupFlowBloc>()
+                              .add(TurboTopUpShowPaymentFormView());
+                        },
+                      ),
+                    ],
+                  )
+                ],
+              ),
             ),
           );
         } else if (state is PaymentError) {
@@ -175,6 +186,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
           );
         }
         return Container(
+          height: 768,
           color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
           child: const Center(
             child: CircularProgressIndicator(),
@@ -261,7 +273,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                             .colors
                             .themeFgMuted,
                   ),
-              text: '$amount ${widget.currencyUnit}',
+              text: '${widget.currencyUnit}$amount',
               onPressed: () {
                 setState(() {
                   selectedAmount = amount;

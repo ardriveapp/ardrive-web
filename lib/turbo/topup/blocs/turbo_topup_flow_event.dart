@@ -20,3 +20,13 @@ class TurboTopUpShowEstimationView extends TurboTopupFlowEvent {
 class TurboTopUpShowPaymentFormView extends TurboTopupFlowEvent {
   const TurboTopUpShowPaymentFormView() : super(2);
 }
+
+// show payment review
+class TurboTopUpShowPaymentReviewView extends TurboTopupFlowEvent {
+  const TurboTopUpShowPaymentReviewView() : super(3);
+}
+
+// show success
+class TurboTopUpShowSuccessView extends TurboTopupFlowEvent {
+  const TurboTopUpShowSuccessView() : super(4);
+}
