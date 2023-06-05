@@ -1,0 +1,4 @@
+- Upgrades Flutter version
+- Fixes duplicated files created when we choose to replace on folder uploads
+- Fixes an unintended reset of sort order upon item selection in the file browser
+- Adds missing translations
