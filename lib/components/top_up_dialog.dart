@@ -356,7 +356,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            appLocalizationsOf(context).buycredits,
+            // TODO: Localize
+            'Buy Credits',
             style: ArDriveTypography.body.smallBold(),
           ),
           const SizedBox(height: 8),
@@ -487,7 +488,7 @@ class _BalanceViewState extends State<_BalanceView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              appLocalizationsOf(context).balanceAR,
+              appLocalizationsOf(context).arBalance,
               style: ArDriveTypography.body.smallBold(),
             ),
             const SizedBox(height: 4),
@@ -508,7 +509,7 @@ class _BalanceViewState extends State<_BalanceView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              appLocalizationsOf(context).estimatedStorage,
+              'Estimated Storage',
               style: ArDriveTypography.body.smallBold(),
             ),
             const SizedBox(height: 4),
@@ -571,7 +572,8 @@ class PriceEstimateView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                appLocalizationsOf(context).howAreConversionsDetermined,
+                // TODO: Localize
+                'How are conversions determined?',
                 style: ArDriveTypography.body.buttonNormalBold(
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
