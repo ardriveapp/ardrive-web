@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -13,12 +15,17 @@ import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/split_localizations.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
+import 'package:bip39/bip39.dart' as bip39;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+
+import '../blocs/memory_check_item.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -244,6 +251,16 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               ),
             ),
           );
+        } else if (state is LoginEnterSeedPhrase) {
+          content = const EnterSeedPhraseView();
+        } else if (state is LoginCreateWallet) {
+          content = CreateWalletView(mnemonic: state.mnemonic);
+        } else if (state is LoginCreateWalletGenerated) {
+          content = CreateWalletView(
+              mnemonic: state.mnemonic, wallet: state.walletFile);
+        } else if (state is LoginConfirmMnemonic) {
+          content = MemoryCheckView(
+              mnemonic: state.mnemonic, wallet: state.walletFile);
         } else {
           content = PromptWalletView(
             key: const Key('promptWalletView'),
@@ -420,6 +437,32 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     ),
                   ),
                 ),
+                heightSpacing(),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                          text: 'Login with your ',
+                          style: ArDriveTypography.body.smallBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgMuted,
+                          )),
+                      TextSpan(
+                        text: 'Seed Phrase',
+                        style: ArDriveTypography.body.smallBold().copyWith(
+                              decoration: TextDecoration.underline,
+                            ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () {
+                            context.read<LoginBloc>().add(EnterSeedPhrase());
+                            // openUrl(url: Resources.getWalletLink);
+                          },
+                      ),
+                    ],
+                  ),
+                ),
                 if (widget.isArConnectAvailable) ...[
                   heightSpacing(),
                   Align(
@@ -484,7 +527,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () {
-                        openUrl(url: Resources.getWalletLink);
+                        context.read<LoginBloc>().add(CreateWallet());
+                        // openUrl(url: Resources.getWalletLink);
                       },
                   ),
                 ],
@@ -1250,3 +1294,429 @@ class MaxDeviceSizesConstrainedBox extends StatelessWidget {
 
 const double _defaultLoginCardMaxWidth = 512;
 const double _defaultLoginCardMaxHeight = 489;
+
+class EnterSeedPhraseView extends StatefulWidget {
+  const EnterSeedPhraseView();
+
+  // final Wallet wallet;
+
+  @override
+  State<EnterSeedPhraseView> createState() => _EnterSeedPhraseViewState();
+}
+
+class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
+  final _seedPhraseController = TextEditingController();
+  final _formKey = GlobalKey<ArDriveFormState>();
+
+  bool _seedPhraseFormatIsValid = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxHeight: 798,
+      maxHeightPercent: 1,
+      child: _LoginCard(
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ScreenTypeLayout(
+                desktop: const SizedBox.shrink(),
+                mobile: ArDriveImage(
+                  image: AssetImage(Resources.images.brand.logo1),
+                  height: 50,
+                ),
+              ),
+              Text(
+                // appLocalizationsOf(context).createAndConfirmPassword,
+                'Enter your 12-word mnemonic seed phrase to login.',
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.headline.headline5Regular(),
+              ),
+              const SizedBox(height: 16),
+              _createSeedPhraseForm(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _createSeedPhraseForm() {
+    return ArDriveForm(
+      key: _formKey,
+      child: Column(
+        children: [
+          ArDriveTextField(
+            autofocus: true,
+            controller: _seedPhraseController,
+            showObfuscationToggle: true,
+            obscureText: true,
+            // autofillHints: const [AutofillHints.password],
+            // hintText: appLocalizationsOf(context).enterPassword,
+            hintText: 'Enter Seed Phrase',
+            onChanged: (s) {
+              _formKey.currentState?.validate();
+            },
+            textInputAction: TextInputAction.next,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                setState(() {
+                  _seedPhraseFormatIsValid = false;
+                });
+                return appLocalizationsOf(context).validationRequired;
+              } else if (!bip39.validateMnemonic(value)) {
+                setState(() {
+                  _seedPhraseFormatIsValid = false;
+                });
+                // FIXME - localize
+                return 'Please enter a valid 12-word mnemonic.';
+                // return appLocalizationsOf(context).validationRequired;
+              }
+
+              setState(() {
+                _seedPhraseFormatIsValid = true;
+              });
+
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ArDriveButton(
+              isDisabled: !_seedPhraseFormatIsValid,
+              onPressed: _onSubmit,
+              text: appLocalizationsOf(context).proceed,
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: ArDriveButton(
+              onPressed: () {
+                _forgetWallet(context);
+              },
+              style: ArDriveButtonStyle.tertiary,
+              text: appLocalizationsOf(context).forgetWallet,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onSubmit() {
+    final isValid = _formKey.currentState!.validate();
+
+    if (!isValid) {
+      showAnimatedDialog(context,
+          content: ArDriveIconModal(
+            icon: ArDriveIcons.triangle(
+              size: 88,
+              color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+            ),
+            title: appLocalizationsOf(context).passwordCannotBeEmpty,
+            content: appLocalizationsOf(context).pleaseTryAgain,
+            actions: [
+              ModalAction(
+                action: () {
+                  Navigator.pop(context);
+                },
+                title: appLocalizationsOf(context).ok,
+              )
+            ],
+          ));
+      return;
+    }
+
+    context
+        .read<LoginBloc>()
+        .add(AddWalletFromMnemonic(_seedPhraseController.text));
+  }
+}
+
+class CreateWalletView extends StatefulWidget {
+  const CreateWalletView({super.key, required this.mnemonic, this.wallet});
+
+  final String mnemonic;
+  final Wallet? wallet;
+
+  @override
+  State<CreateWalletView> createState() => _CreateWalletViewState();
+}
+
+class _CreateWalletViewState extends State<CreateWalletView> {
+  @override
+  Widget build(BuildContext context) {
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxHeight: 798,
+      maxHeightPercent: 1,
+      child: _LoginCard(
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ScreenTypeLayout(
+                desktop: const SizedBox.shrink(),
+                mobile: ArDriveImage(
+                  image: AssetImage(Resources.images.brand.logo1),
+                  height: 50,
+                ),
+              ),
+              Text(
+                // appLocalizationsOf(context).createAndConfirmPassword,
+                'Record your 12-word mnemonic wallet seed phrase.',
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.headline.headline5Regular(),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                  enabled: false,
+                  controller: TextEditingController(text: widget.mnemonic),
+                  maxLines: 3),
+              const SizedBox(height: 16),
+              ArDriveButton(
+                style: ArDriveButtonStyle.secondary,
+                isDisabled: widget.wallet == null,
+                onPressed: () {
+                  _onDownload();
+                },
+                // FIXME - localize
+                text: widget.wallet == null
+                    ? 'Generating Wallet...'
+                    : 'Download Wallet File',
+                icon:
+                    widget.wallet == null ? CircularProgressIndicator() : null,
+              ),
+              const SizedBox(height: 16),
+              ArDriveButton(
+                isDisabled: widget.wallet == null,
+                onPressed: () {
+                  context.read<LoginBloc>().add(
+                      VerifyWalletMnemonic(widget.mnemonic, widget.wallet!));
+                },
+                text: appLocalizationsOf(context).proceed,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onDownload() async {
+    if (widget.wallet != null) {
+      final jsonTxt = jsonEncode(widget.wallet!.toJwk());
+
+      final ArDriveIO io = ArDriveIO();
+      final bytes = Uint8List.fromList(utf8.encode(jsonTxt));
+
+      await io.saveFile(await IOFile.fromData(bytes,
+          name: "ardrive-wallet.json", lastModifiedDate: DateTime.now()));
+    }
+  }
+}
+
+class MemoryCheckView extends StatefulWidget {
+  MemoryCheckView({super.key, required this.mnemonic, required this.wallet});
+
+  final String mnemonic;
+  final Wallet wallet;
+  final List<MemoryCheckItem> memoryCheckItems = [];
+  final List<int> selectedWords = [-1, -1, -1, -1];
+  bool allWordsCorrect = false;
+
+  @override
+  State<MemoryCheckView> createState() => _MemoryCheckViewState();
+}
+
+class _MemoryCheckViewState extends State<MemoryCheckView> {
+  @override
+  void initState() {
+    super.initState();
+    _resetMemoryCheckItems();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxHeight: 798,
+      maxHeightPercent: 1,
+      child: _LoginCard(
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ScreenTypeLayout(
+                desktop: const SizedBox.shrink(),
+                mobile: ArDriveImage(
+                  image: AssetImage(Resources.images.brand.logo1),
+                  height: 50,
+                ),
+              ),
+              Text(
+                // appLocalizationsOf(context).createAndConfirmPassword,
+                'Select the correct words to verify your mnemonic seed phrase.',
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.headline.headline5Regular(),
+              ),
+              const SizedBox(height: 16),
+              ...widget.memoryCheckItems.asMap().entries.map((entry) {
+                final index = entry.key;
+                final selectedIndex = widget.selectedWords[index];
+                final memoryCheckItem = entry.value;
+                return Column(
+                  children: [
+                    Text(
+                      'Select Word ${memoryCheckItem.mnemonicWordIndex + 1}',
+                      textAlign: TextAlign.center,
+                      style: ArDriveTypography.headline.headline5Regular(),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: memoryCheckItem.wordOptions
+                          .asMap()
+                          .entries
+                          .map((entry) {
+                        final wordIndex = entry.key;
+                        final word = entry.value;
+                        return ArDriveButton(
+                          style: selectedIndex == wordIndex
+                              ? ArDriveButtonStyle.primary
+                              : ArDriveButtonStyle.secondary,
+                          onPressed: () {
+                            setState(() {
+                              widget.selectedWords[index] = wordIndex;
+                              _validate();
+                            });
+                          },
+                          text: word,
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                );
+              }),
+              const SizedBox(height: 16),
+              ArDriveButton(
+                isDisabled: !widget.allWordsCorrect,
+                onPressed: () {
+                  showAnimatedDialog(context,
+                      content: ArDriveIconModal(
+                        icon: ArDriveIcons.triangle(
+                          size: 88,
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeErrorMuted,
+                        ),
+                        title:
+                            "You've successfully verified your mnemonic seed phrase!",
+                        content:
+                            "If you lose my seed phrase it cannot be retrieved but you can always use your JSON file to login. If you have not downloaded your Wallet file, please do so below, or select OK to continue.",
+                        actions: [
+                          ModalAction(
+                            action: () {
+                              _onDownload();
+                            },
+                            title: "Download Wallet",
+                          ),
+                          ModalAction(
+                            action: () {
+                              Navigator.pop(context);
+                              context
+                                  .read<LoginBloc>()
+                                  .add(CompleteWalletGeneration(widget.wallet));
+                            },
+                            title: appLocalizationsOf(context).ok,
+                          )
+                        ],
+                      ));
+
+                  // context.read<LoginBloc>().add(
+                  //     VerifyWalletMnemonic(widget.mnemonic, widget.wallet));
+                },
+                text: appLocalizationsOf(context).proceed,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _resetMemoryCheckItems() {
+    final words = widget.mnemonic.split(' ');
+    final indices = List<int>.generate(words.length, (i) => i);
+    indices.shuffle();
+
+    widget.memoryCheckItems.clear();
+
+    for (var i = 0; i < 4; i++) {
+      final index = indices[i];
+      final word = words[index];
+
+      final options = [word];
+      var optionsIndex = 1;
+      while (optionsIndex < 3) {
+        for (var randWord in bip39.generateMnemonic().split(' ')) {
+          if (randWord != word) {
+            options.add(randWord);
+            optionsIndex++;
+            if (optionsIndex >= 3) {
+              break;
+            }
+          }
+        }
+      }
+      options.shuffle();
+      final correctIndex = options.indexOf(word);
+
+      widget.memoryCheckItems.add(MemoryCheckItem(
+          mnemonicWordIndex: index,
+          wordOptions: options,
+          correctWordIndex: correctIndex));
+    }
+
+    widget.selectedWords.setRange(0, 4, List<int>.generate(4, (i) => -1));
+  }
+
+  void _validate() {
+    if (widget.selectedWords.every((element) => element >= 0)) {
+      for (var i = 0; i < widget.selectedWords.length; i++) {
+        if (widget.selectedWords[i] !=
+            widget.memoryCheckItems[i].correctWordIndex) {
+          setState(() {
+            widget.allWordsCorrect = false;
+            _resetMemoryCheckItems();
+          });
+          return;
+        }
+      }
+      setState(() {
+        widget.allWordsCorrect = true;
+      });
+    }
+  }
+
+  void _onDownload() async {
+    final jsonTxt = jsonEncode(widget.wallet!.toJwk());
+
+    final ArDriveIO io = ArDriveIO();
+    final bytes = Uint8List.fromList(utf8.encode(jsonTxt));
+
+    await io.saveFile(await IOFile.fromData(bytes,
+        name: "ardrive-wallet.json", lastModifiedDate: DateTime.now()));
+  }
+}

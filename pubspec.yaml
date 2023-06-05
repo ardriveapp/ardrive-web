@@ -43,8 +43,8 @@ dependencies:
   artemis: ^7.0.0-beta.13
   arweave:
     git:
-      url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.6.1
+      url: https://github.com/kunstmusik/arweave-dart.git
+      ref: mnemonic_wallets
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   file_selector: ^0.9.0
@@ -104,7 +104,9 @@ dependencies:
   logger: ^1.3.0
   flutter_stripe: ^9.1.1
   flutter_stripe_web: ^4.0.1
-
+  bip39: ^1.0.6
+dependency_overrides:
+  flutter_downloader: 1.10.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
