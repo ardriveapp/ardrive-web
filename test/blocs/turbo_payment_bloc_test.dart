@@ -39,7 +39,7 @@ void main() {
       when(
         () => mockPaymentService.getPriceForFiat(
           currency: 'usd',
-          amount: 25,
+          amount: 0,
         ),
       ).thenAnswer((_) async => BigInt.from(oneAR));
       when(
@@ -53,11 +53,10 @@ void main() {
     },
     act: (bloc) => bloc.add(LoadInitialData()),
     expect: () => [
-      PaymentLoading(),
       PaymentLoaded(
         balance: BigInt.from(oneAR * 2),
         estimatedStorageForBalance: '2.00',
-        selectedAmount: 25,
+        selectedAmount: 0,
         creditsForSelectedAmount: BigInt.from(oneAR),
         estimatedStorageForSelectedAmount: '1.00',
         currencyUnit: 'usd',
@@ -83,7 +82,6 @@ void main() {
     },
     act: (bloc) => bloc.add(FiatAmountSelected(150)),
     expect: () => [
-      PaymentLoading(),
       PaymentLoaded(
         balance: BigInt.from(oneAR * 2),
         estimatedStorageForBalance: '2.00',
@@ -104,7 +102,7 @@ void main() {
           .thenAnswer((_) async => BigInt.from(oneAR));
       when(() => mockPaymentService.getPriceForFiat(
             currency: 'cad',
-            amount: presetAmounts.first,
+            amount: 0,
           )).thenAnswer((_) async => BigInt.from(oneAR * 0.5));
       when(() =>
               mockPaymentService.getPriceForBytes(byteSize: oneGigbyteInBytes))
@@ -115,11 +113,10 @@ void main() {
     },
     act: (bloc) => bloc.add(CurrencyUnitChanged('cad')),
     expect: () => [
-      PaymentLoading(),
       PaymentLoaded(
         balance: BigInt.from(oneAR),
         estimatedStorageForBalance: '1.00',
-        selectedAmount: presetAmounts.first,
+        selectedAmount: 0,
         creditsForSelectedAmount: BigInt.from(oneAR * 0.5),
         estimatedStorageForSelectedAmount: '0.50',
         currencyUnit: 'cad',
@@ -135,8 +132,7 @@ void main() {
 
       when(() => mockPaymentService.getBalance(wallet: wallet))
           .thenAnswer((_) async => BigInt.from(oneAR));
-      when(() =>
-              mockPaymentService.getPriceForFiat(currency: 'usd', amount: 25))
+      when(() => mockPaymentService.getPriceForFiat(currency: 'usd', amount: 0))
           .thenAnswer((_) async => BigInt.from(oneAR));
       when(() =>
               mockPaymentService.getPriceForBytes(byteSize: oneGigbyteInBytes))
@@ -148,11 +144,10 @@ void main() {
     act: (bloc) => bloc.add(DataUnitChanged(FileSizeUnit.megabytes)),
     expect: () {
       return [
-        PaymentLoading(),
         PaymentLoaded(
           balance: BigInt.from(oneAR),
           estimatedStorageForBalance: '1024.00',
-          selectedAmount: 25,
+          selectedAmount: 0,
           creditsForSelectedAmount: BigInt.from(oneAR),
           estimatedStorageForSelectedAmount: '1024.00',
           currencyUnit: 'usd',

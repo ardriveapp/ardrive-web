@@ -50,7 +50,9 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<PaymentEvent>((event, emit) async {
       if (event is LoadInitialData) {
         try {
+          logger.d('Loading initial data');
           costOfOneGb = await _getCostOfOneGB();
+          logger.d('Cost of one GB: $costOfOneGb');
 
           await _recomputePriceEstimate(
             emit,
