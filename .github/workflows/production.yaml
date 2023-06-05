@@ -66,8 +66,8 @@ jobs:
       - name: Build app
         run: |
           scr setup
-          flutter run -d chrome --dart-define=environment=production
-          flutter build web --release
+          flutter config --enable-web
+          flutter build web --release --dart-define=environment=production
           
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
