@@ -35,11 +35,11 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-3773-upgrade-flutter-to-v-3-10-0
+      ref: PE-3934-modal-does-not-close-after-successful-or-failed-file-download-on-mobile
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3773-upgrade-flutter-to-v-3-10-0
+      ref: PE-3934-modal-does-not-close-after-successful-or-failed-file-download-on-mobile
   artemis: ^7.0.0-beta.13
   arweave:
     git:

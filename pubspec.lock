@@ -70,8 +70,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3773-upgrade-flutter-to-v-3-10-0
-      resolved-ref: db661f1c1439a747247c161bd5e42b1d68ba2ddb
+      ref: PE-3934-modal-does-not-close-after-successful-or-failed-file-download-on-mobile
+      resolved-ref: "03aa615d0259e133728254057b0aa197a6579477"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.2.0"
@@ -79,8 +79,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3773-upgrade-flutter-to-v-3-10-0
-      resolved-ref: "584de047b61e183e25be5a37741bb2ff78c73aef"
+      ref: PE-3934-modal-does-not-close-after-successful-or-failed-file-download-on-mobile
+      resolved-ref: "2f2a75cdfb06fe6ea7df54510edab0a3170c7704"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.1.0"
