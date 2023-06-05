@@ -472,12 +472,6 @@ class _AppSideBarState extends State<AppSideBar> {
               alignment: Alignment.center,
               child: _newButton(_isExpanded, isMobile),
             ),
-            if (notEnoughARInWallet && _isExpanded)
-              ArDriveButton(
-                style: ArDriveButtonStyle.tertiary,
-                onPressed: () => openUrl(url: Resources.arHelpLink),
-                text: appLocalizationsOf(context).howDoIGetAR,
-              ),
           ],
         ),
       );
