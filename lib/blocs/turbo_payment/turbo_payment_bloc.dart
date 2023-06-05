@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -32,7 +33,9 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
   FileSizeUnit _currentDataUnit = FileSizeUnit.gigabytes;
   String _currentCurrency = 'usd';
-  int _currentAmount = presetAmounts.first;
+
+  // initialize with 0
+  int _currentAmount = 0;
 
   String get currentCurrency => _currentCurrency;
   int get currentAmount => _currentAmount;
@@ -46,31 +49,40 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   }) : super(PaymentInitial()) {
     on<PaymentEvent>((event, emit) async {
       if (event is LoadInitialData) {
-        costOfOneGb = await _getCostOfOneGB();
-        await _recomputePriceEstimate(
-          emit,
-          currentAmount: currentAmount,
-          currentCurrency: currentCurrency,
-        );
+        try {
+          costOfOneGb = await _getCostOfOneGB();
+
+          await _recomputePriceEstimate(
+            emit,
+            currentAmount: currentAmount,
+            currentCurrency: currentCurrency,
+          );
+        } catch (e) {
+          logger.e(e);
+          emit(PaymentError());
+        }
       } else if (event is FiatAmountSelected) {
         _currentAmount = event.amount;
+
         await _recomputePriceEstimate(
           emit,
-          currentAmount: currentAmount,
+          currentAmount: _currentAmount,
           currentCurrency: currentCurrency,
         );
       } else if (event is CurrencyUnitChanged) {
         _currentCurrency = event.currencyUnit;
+
         await _recomputePriceEstimate(
           emit,
-          currentAmount: currentAmount,
+          currentAmount: _currentAmount,
           currentCurrency: currentCurrency,
         );
       } else if (event is DataUnitChanged) {
         _currentDataUnit = event.dataUnit;
+
         await _recomputePriceEstimate(
           emit,
-          currentAmount: currentAmount,
+          currentAmount: _currentAmount,
           currentCurrency: currentCurrency,
         );
       } else if (event is AddCreditsClicked) {
