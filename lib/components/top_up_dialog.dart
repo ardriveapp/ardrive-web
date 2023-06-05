@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/views/turbo_payment_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -44,26 +45,18 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
       bloc: paymentBloc,
       builder: (context, state) {
         if (state is PaymentLoading) {
-          return Container(
-              height: 575,
-              child: const Center(child: CircularProgressIndicator()));
+          return const SizedBox(
+            height: 575,
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
         } else if (state is PaymentLoaded) {
           return SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.all(40.0),
-              color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+            child: TurboTopupScaffold(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: ArDriveClickArea(
-                      child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: ArDriveIcons.x()),
-                    ),
-                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -159,6 +152,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                         ),
                       ),
                       ArDriveButton(
+                        isDisabled: paymentBloc.currentAmount == 0,
                         maxWidth: 143,
                         maxHeight: 40,
                         fontStyle: ArDriveTypography.body
@@ -168,7 +162,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                         onPressed: () {
                           context
                               .read<TurboTopupFlowBloc>()
-                              .add(TurboTopUpShowPaymentFormView());
+                              .add(const TurboTopUpShowPaymentFormView());
                         },
                       ),
                     ],
@@ -178,18 +172,22 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
             ),
           );
         } else if (state is PaymentError) {
-          return SizedBox(
-            height: 575,
-            child: Center(
-              child: Text(appLocalizationsOf(context).error),
+          return TurboTopupScaffold(
+            child: SizedBox(
+              height: 575,
+              child: Center(
+                child: Text(appLocalizationsOf(context).error),
+              ),
             ),
           );
         }
-        return Container(
-          height: 768,
-          color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-          child: const Center(
-            child: CircularProgressIndicator(),
+        return TurboTopupScaffold(
+          child: Container(
+            height: 650,
+            color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
           ),
         );
       },
@@ -216,15 +214,16 @@ class PresetAmountSelector extends StatefulWidget {
 
 class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   final TextEditingController _customAmountController = TextEditingController();
-
+  late FocusNode _customAmountFocus;
+  late GlobalKey<ArDriveFormState> _formKey;
   int selectedAmount = 0;
+  String? _customAmountValidationMessage;
 
   @override
   void initState() {
     selectedAmount = widget.preSelectedAmount;
-    if (!widget.amounts.contains(selectedAmount)) {
-      _customAmountController.text = selectedAmount.toString();
-    }
+    _formKey = GlobalKey<ArDriveFormState>();
+    _customAmountFocus = FocusNode();
 
     super.initState();
   }
@@ -234,10 +233,6 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   Timer? _timer;
 
   void _onAmountChanged(String amount) {
-    if (amount.isEmpty || int.parse(amount) <= 10) {
-      return;
-    }
-
     if (_timer != null && _timer!.isActive) {
       _timer?.cancel();
     }
@@ -246,7 +241,36 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     });
   }
 
-  buildButtonBar(BuildContext context) {
+  void _onPresetAmountSelected(int amount) {
+    setState(() {
+      selectedAmount = amount;
+    });
+
+    _onAmountChanged(amount.toString());
+  }
+
+  void _onCustomAmountSelected(String amount) {
+    int amountInt = int.parse(amount);
+
+    // Selects zero to disable the button
+    if (amount.isEmpty || amountInt <= 10) {
+      amountInt = 0;
+    }
+
+    setState(() {
+      selectedAmount = amountInt;
+    });
+
+    _onAmountChanged(amountInt.toString());
+  }
+
+  void _resetCustomAmount() {
+    _customAmountController.text = '';
+    _formKey.currentState?.validate();
+    _customAmountFocus.unfocus();
+  }
+
+  Widget buildButtonBar(BuildContext context) {
     buildButtons(double height, double width) => widget.amounts
         .map(
           (amount) => Padding(
@@ -275,11 +299,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                   ),
               text: '${widget.currencyUnit}$amount',
               onPressed: () {
-                setState(() {
-                  selectedAmount = amount;
-                  _customAmountController.text = '';
-                  widget.onAmountSelected(amount);
-                });
+                _onPresetAmountSelected(amount);
+                _resetCustomAmount();
               },
             ),
           ),
@@ -327,79 +348,118 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         ),
       ),
     );
-    return Column(
-      mainAxisSize: MainAxisSize.max,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          appLocalizationsOf(context).buycredits,
-          style: ArDriveTypography.body.smallBold(),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          // TODO: Localize
-          'ArDrive Credits will be automatically applied to your wallet, and you can start using them right away.',
-          style: ArDriveTypography.body.buttonNormalBold(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+    return ArDriveForm(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appLocalizationsOf(context).buycredits,
+            style: ArDriveTypography.body.smallBold(),
           ),
-        ),
-        // Text(appLocalizationsOf(context).chooseAnAmount),
-        // TODO localize
-        const SizedBox(height: 32),
-        Text(
-          'Amount',
-          style: ArDriveTypography.body.buttonNormalBold(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-          ),
-        ),
-        const SizedBox(height: 12),
-        buildButtonBar(context),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          // child: Text(appLocalizationsOf(context).orChooseACustomAmount),
-          child: Text(
-            'Custom Amount (min \$10 - max \$10,000)',
+          const SizedBox(height: 8),
+          Text(
+            // TODO: Localize
+            'ArDrive Credits will be automatically applied to your wallet, and you can start using them right away.',
             style: ArDriveTypography.body.buttonNormalBold(
               color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
             ),
           ),
-        ),
-        SizedBox(
-          width: 114,
-          child: ArDriveTheme(
-            key: const ValueKey('turbo_payment_form'),
-            themeData: textTheme,
-            child: ArDriveTextField(
-              preffix: Text(
-                '\$ ',
-                style: ArDriveTypography.body.buttonLargeBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                ),
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                //TODO limit to between 10 and 10,000 temporarily
-                TextInputFormatter.withFunction(
-                  (oldValue, newValue) {
-                    if (int.parse(newValue.text) > 10000) {
-                      return oldValue;
-                    }
-                    return newValue;
-                  },
-                ),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  selectedAmount = int.tryParse(value) ?? 0;
-                });
-
-                _onAmountChanged(value);
-              },
+          // TODO localize
+          const SizedBox(height: 32),
+          Text(
+            'Amount',
+            style: ArDriveTypography.body.buttonNormalBold(
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
             ),
           ),
-        )
-      ],
+          const SizedBox(height: 12),
+          buildButtonBar(context),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            // TODO: Localize
+            child: Text(
+              'Custom Amount (min \$10 - max \$10,000)',
+              style: ArDriveTypography.body.buttonNormalBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              SizedBox(
+                width: 114,
+                child: ArDriveTheme(
+                  key: const ValueKey('turbo_payment_form'),
+                  themeData: textTheme,
+                  child: ArDriveTextField(
+                    focusNode: _customAmountFocus,
+                    controller: _customAmountController,
+                    showErrorMessage: false,
+                    preffix: Text(
+                      '\$ ',
+                      style: ArDriveTypography.body.buttonLargeBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
+                    ),
+                    autovalidateMode: AutovalidateMode.disabled,
+                    validator: (s) {
+                      setState(() {
+                        if (s == null || s.isEmpty) {
+                          _customAmountValidationMessage = null;
+
+                          return;
+                        }
+
+                        String? errorMessage;
+
+                        final numValue = int.tryParse(s);
+
+                        if (numValue == null ||
+                            numValue < 10 ||
+                            numValue > 10000) {
+                          // TODO: Localize
+                          errorMessage =
+                              'Please enter an amount between \$10 - \$10,000';
+                        }
+
+                        _customAmountValidationMessage = errorMessage;
+
+                        _onCustomAmountSelected(s);
+                      });
+
+                      return _customAmountValidationMessage;
+                    },
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      TextInputFormatter.withFunction(
+                        (oldValue, newValue) {
+                          if (int.parse(newValue.text) > 10000) {
+                            return oldValue;
+                          }
+                          return newValue;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (_customAmountValidationMessage != null &&
+                  _customAmountValidationMessage!.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                AnimatedFeedbackMessage(
+                  text: _customAmountValidationMessage!,
+                ),
+              ]
+            ],
+          )
+        ],
+      ),
     );
   }
 }
@@ -539,6 +599,7 @@ class CurrencyDropdownMenu extends InputDropdownMenu<CurrencyItem> {
     super.key,
     required super.items,
     required super.buildSelectedItem,
+    // TODO: Localize
     super.label = 'Currency',
     super.onChanged,
     super.anchor = const Aligned(
@@ -562,6 +623,7 @@ class UnitDropdownMenu extends InputDropdownMenu<UnitItem> {
     super.key,
     required super.items,
     required super.buildSelectedItem,
+    // TODO: Localize
     super.label = 'Unit',
     super.onChanged,
     super.anchor = const Aligned(
@@ -580,4 +642,81 @@ class UnitItem extends InputDropdownItem {
   final FileSizeUnit unit;
 
   UnitItem(this.unit) : super(unit.name);
+}
+
+class AnimatedFeedbackMessage extends StatefulWidget {
+  final String text;
+
+  const AnimatedFeedbackMessage({Key? key, required this.text})
+      : super(key: key);
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _AnimatedFeedbackMessageState createState() =>
+      _AnimatedFeedbackMessageState();
+}
+
+class _AnimatedFeedbackMessageState extends State<AnimatedFeedbackMessage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animationController;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    _animation = Tween(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.fastLinearToSlowEaseIn,
+      ),
+    );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return ClipRect(
+          clipper: _CustomClipper(_animation.value),
+          child: child,
+        );
+      },
+      child: FeedbackMessage(
+        text: widget.text,
+        arrowSide: ArrowSide.right,
+        height: 48,
+      ),
+    );
+  }
+}
+
+class _CustomClipper extends CustomClipper<Rect> {
+  final double progress;
+
+  _CustomClipper(this.progress);
+
+  @override
+  Rect getClip(Size size) {
+    return Rect.fromLTWH(0, 0, size.width * progress, size.height);
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Rect> oldClipper) {
+    return true;
+  }
 }
