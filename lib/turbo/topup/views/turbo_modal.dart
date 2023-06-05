@@ -1,9 +1,6 @@
 import 'package:animations/animations.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
-import 'package:ardrive/turbo/topup/views/turbo_payment_form.dart';
-import 'package:ardrive/turbo/topup/views/turbo_review_view.dart';
-import 'package:ardrive/turbo/topup/views/turbo_success_view.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -52,10 +49,8 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return BlocListener<TurboTopupFlowBloc, TurboTopupFlowState>(
       listener: (context, state) {
-        if (state is TurboTopupFlowShowingSuccessView) {
-          Navigator.of(context).pop();
-          _showSuccessDialog();
-        }
+        // listen to states
+        // TODO: will be handled in the next PR
       },
       child: ArDriveModal(
         hasCloseButton: true,
@@ -80,10 +75,6 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         Widget view;
         if (state is TurboTopupFlowShowingEstimationView) {
           view = const TopUpEstimationView();
-        } else if (state is TurboTopupFlowShowingPaymentFormView) {
-          view = const TurboPaymentFormView();
-        } else if (state is TurboTopupFlowShowingPaymentReviewView) {
-          view = const TurboReviewView();
         } else {
           view = Container(
             height: 575,
@@ -119,19 +110,6 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
           ),
         );
       },
-    );
-  }
-
-  void _showSuccessDialog() {
-    showAnimatedDialog(
-      context,
-      content: const ArDriveStandardModal(
-        width: 575,
-        content: TurboSuccessView(),
-      ),
-      barrierDismissible: false,
-      barrierColor:
-          ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
     );
   }
 }

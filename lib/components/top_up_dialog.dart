@@ -6,8 +6,8 @@ import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
-import 'package:ardrive/turbo/topup/views/turbo_payment_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
@@ -253,7 +253,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     int amountInt = int.parse(amount);
 
     // Selects zero to disable the button
-    if (amount.isEmpty || amountInt <= 10) {
+    if (amount.isEmpty || amountInt < 10) {
       amountInt = 0;
     }
 
@@ -700,6 +700,9 @@ class _AnimatedFeedbackMessageState extends State<AnimatedFeedbackMessage>
         text: widget.text,
         arrowSide: ArrowSide.right,
         height: 48,
+        borderColor: ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
+        backgroundColor:
+            ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
       ),
     );
   }
