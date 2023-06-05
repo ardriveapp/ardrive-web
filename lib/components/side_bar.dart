@@ -472,25 +472,12 @@ class _AppSideBarState extends State<AppSideBar> {
               alignment: Alignment.center,
               child: _newButton(_isExpanded, isMobile),
             ),
-            if (notEnoughARInWallet && _isExpanded) ...{
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  appLocalizationsOf(context).insufficientARWarning,
-                  style: ArDriveTypography.body.captionRegular(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeAccentDisabled,
-                  ),
-                ),
-              ),
+            if (notEnoughARInWallet && _isExpanded)
               ArDriveButton(
                 style: ArDriveButtonStyle.tertiary,
                 onPressed: () => openUrl(url: Resources.arHelpLink),
                 text: appLocalizationsOf(context).howDoIGetAR,
               ),
-            }
           ],
         ),
       );
