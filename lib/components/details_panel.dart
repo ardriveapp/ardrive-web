@@ -12,7 +12,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/pages.dart';
-import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -28,7 +28,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../blocs/blocs.dart';
-import '../services/arweave/arweave_service.dart';
 
 class DetailsPanel extends StatefulWidget {
   const DetailsPanel({
@@ -80,7 +79,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             arweave: context.read<ArweaveService>(),
-            config: context.read<AppConfig>(),
+            configService: context.read<ConfigService>(),
           ),
         )
       ],
@@ -690,7 +689,7 @@ class _CopyButtonState extends State<CopyButton> {
         _showCheck = true;
         if (widget.showCopyText) {
           _overlayEntry = _createOverlayEntry(context);
-          Overlay.of(context)?.insert(_overlayEntry!);
+          Overlay.of(context).insert(_overlayEntry!);
         }
 
         Future.delayed(const Duration(seconds: 2), () {

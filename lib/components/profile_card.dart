@@ -109,7 +109,7 @@ class ProfileCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'AR Ballance',
+                    appLocalizationsOf(context).arBalance,
                     style: ArDriveTypography.body.buttonNormalBold(),
                   ),
                   Text(
