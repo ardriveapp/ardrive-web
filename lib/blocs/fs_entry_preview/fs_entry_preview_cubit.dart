@@ -21,7 +21,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final ArDriveDataTableItem? maybeSelectedItem;
 
   final DriveDao _driveDao;
-  final AppConfig _config;
+  final ConfigService _configService;
   final ArweaveService _arweave;
   final ProfileCubit _profileCubit;
   final ArDriveCrypto _crypto;
@@ -37,14 +37,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     required this.driveId,
     this.maybeSelectedItem,
     required DriveDao driveDao,
-    required AppConfig config,
+    required ConfigService configService,
     required ArweaveService arweave,
     required ProfileCubit profileCubit,
     required ArDriveCrypto crypto,
     SecretKey? fileKey,
     bool isSharedFile = false,
   })  : _driveDao = driveDao,
-        _config = config,
+        _configService = configService,
         _arweave = arweave,
         _profileCubit = profileCubit,
         _crypto = crypto,
@@ -66,7 +66,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       final contentType = file.contentType;
       final fileExtension = contentType.split('/').last;
       final previewType = contentType.split('/').first;
-      final previewUrl = '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
+      final previewUrl =
+          '${_configService.config.defaultArweaveGatewayUrl}/${file.dataTxId}';
 
       if (!_supportedExtension(previewType, fileExtension)) {
         emit(FsEntryPreviewUnavailable());
@@ -159,7 +160,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             final fileExtension = contentType?.split('/').last;
             final previewType = contentType?.split('/').first;
             final previewUrl =
-                '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
+                '${_configService.config.defaultArweaveGatewayUrl}/${file.dataTxId}';
 
             if (!_supportedExtension(previewType, fileExtension)) {
               emit(FsEntryPreviewUnavailable());
@@ -190,7 +191,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   void _previewVideo(
       bool isPrivate, FileDataTableItem selectedItem, previewUrl) {
-    if (_config.enableVideoPreview) {
+    if (_configService.config.enableVideoPreview) {
       if (isPrivate) {
         emit(FsEntryPreviewUnavailable());
         return;

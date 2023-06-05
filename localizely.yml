@@ -7,17 +7,6 @@ upload:
   files: # List of files for upload to Localizely. Usually it is just one file used for the main locale
     - file: lib/l10n/app_en.arb
       locale_code: en
-    - file: lib/l10n/app_es.arb
-      locale_code: es
-    - file: lib/l10n/app_ja.arb
-      locale_code: ja
-    - file: lib/l10n/app_zh-HK.arb
-      locale_code: zh_HK
-    - file: lib/l10n/app_zh.arb
-      locale_code: zh
-    - file: lib/l10n/app_hi.arb
-      locale_code: hi
-
   params:
     overwrite: true # Optional, default: false. If the translation in a given language should be overwritten with modified translation from uploading file.
     reviewed: false # Optional, default: false. If uploading translations, that are added, should be marked as Reviewed.

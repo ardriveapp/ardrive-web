@@ -8,7 +8,7 @@ import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
-import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -217,7 +217,7 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.createManifest,
             icon: ArDriveIcons.tournament(size: defaultIconSize),
           ),
-        if (context.read<AppConfig>().enableQuickSyncAuthoring &&
+        if (context.read<ConfigService>().config.enableQuickSyncAuthoring &&
             driveDetailState is DriveDetailLoadSuccess &&
             drive != null)
           ArDriveNewButtonItem(
@@ -325,7 +325,7 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.createManifest,
             icon: ArDriveIcons.tournament(size: defaultIconSize),
           ),
-        if (context.read<AppConfig>().enableQuickSyncAuthoring &&
+        if (context.read<ConfigService>().config.enableQuickSyncAuthoring &&
             driveDetailState is DriveDetailLoadSuccess &&
             drive != null)
           _buildDriveDropdownItem(
