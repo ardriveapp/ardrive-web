@@ -5,7 +5,6 @@ import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
 import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
-import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -160,9 +159,11 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                             .copyWith(fontWeight: FontWeight.w700),
                         text: appLocalizationsOf(context).next,
                         onPressed: () {
-                          context
-                              .read<TurboTopupFlowBloc>()
-                              .add(const TurboTopUpShowPaymentFormView());
+                          // Go to the paumentFormView.
+                          // Will be implemented in the next PR.
+                          // context
+                          //     .read<TurboTopupFlowBloc>()
+                          //     .add(const TurboTopUpShowPaymentFormView());
                         },
                       ),
                     ],

@@ -62,6 +62,10 @@
   "@arConnectRemainOnThisTab": {
     "description": "Warning for the user to do not leave the tab"
   },
+  "arConnectWalletDoestNotMatchArDriveWallet": "Tu cartera ArConnect no coincide con tu cartera ArDrive. Inténtalo de nuevo.",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
+  },
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive no es sólo otra aplicación de almacenamiento en la nube. Es el comienzo de un disco duro permanente.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
@@ -89,6 +93,10 @@
   "back": "Volver",
   "@back": {
     "description": "Go back"
+  },
+  "backButtonOnboarding": "Atrás",
+  "@backButtonOnboarding": {
+    "description": "Text of the back button onboarding"
   },
   "backEmphasized": "ANTERIOR",
   "@backEmphasized": {
@@ -152,13 +160,25 @@
   "@cancelEmphasized": {
     "description": "Cancel button. Emphasized with upper case"
   },
+  "changeTheme": "Cambiar tema",
+  "@changeTheme": {
+    "description": "Theme switcher tooltip"
+  },
   "changeWallet": "Cambiar monedero",
   "@changeWallet": {
     "description": "To use a different wallet"
   },
+  "close": "Cerrar",
+  "@close": {
+    "description": "close"
+  },
   "closeEmphasized": "CERRAR",
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
+  },
+  "collapseSideBar": "Colapsar la barra lateral",
+  "@collapseSideBar": {
+    "description": "Collapse side bar tooltip"
   },
   "computingSnapshotData": "Calculando los datos de la instantánea",
   "@computingSnapshotData": {
@@ -240,6 +260,10 @@
   "@copyRootFolderTxID": {
     "description": "Copy transaction ID of Root Folder tooltip"
   },
+  "copyTooltip": "Copiar",
+  "@copyTooltip": {
+    "description": "Tooltip for copy button"
+  },
   "copyWalletAddress": "Copiar la dirección de la cartera",
   "@copyWalletAddress": {
     "description": "Tooltip on copy wallet address button"
@@ -257,6 +281,10 @@
   "create": "Crear",
   "@create": {
     "description": "Create an drive"
+  },
+  "createAndConfirmPassword": "Crea y confirma tu contraseña. Usarás esta contraseña para iniciar sesión.",
+  "@createAndConfirmPassword": {
+    "description": "Asks the user to create a password"
   },
   "createDriveEmphasized": "CREAR UNIDAD",
   "@createDriveEmphasized": {
@@ -307,6 +335,10 @@
   "creatingFolderEmphasized": "CREANDO CARPETA...",
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
+  },
+  "darkModeEmphasized": "MODO OSCURO",
+  "@darkModeEmphasized": {
+    "description": "Refers to the dark theme of the app. Emphasized with upper case"
   },
   "dataTxID": "Tx ID de los datos",
   "@dataTxID": {
@@ -375,6 +407,10 @@
       }
     }
   },
+  "diveInButtonOnboarding": "Sumérgete",
+  "@diveInButtonOnboarding": {
+    "description": "Text of the last button of the onboarding"
+  },
   "doneEmphasized": "HECHO",
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
@@ -394,6 +430,14 @@
   "downloadingFile": "Descargando archivo...",
   "@downloadingFile": {
     "description": "File is being downloaded"
+  },
+  "dragAndDropButtonTitle": "Explorar Json",
+  "@dragAndDropButtonTitle": {
+    "description": "text of title drag and drop"
+  },
+  "dragAndDropDescription": "Arrastra y suelta tu fichero de clave",
+  "@dragAndDropDescription": {
+    "description": "text of description drag and drop"
   },
   "driveID": "ID de la unidad",
   "@driveID": {
@@ -509,6 +553,10 @@
   "@enterFileKey": {
     "description": "File Key form field label"
   },
+  "enterPassword": "Introduce la contraseña",
+  "@enterPassword": {
+    "description": "Please enter password"
+  },
   "entityAlreadyExists": "¡La entidad con el nombre: \"{entityName}\" ya existe en el destino! Por favor, renombra el archivo o carpeta que estás moviendo e inténtalo nuevamente.",
   "@entityAlreadyExists": {
     "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
@@ -526,6 +574,10 @@
   "errorDragAndDropFolder": "Actualmente no es posible arrastrar y soltar carpetas",
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
+  },
+  "expandSideBar": "Expandir la barra lateral",
+  "@expandSideBar": {
+    "description": "Expand side bar tooltip"
   },
   "exportDriveContents": "Exportar el contenido de la unidad",
   "@exportDriveContents": {
@@ -590,6 +642,10 @@
   },
   "fileFailedToDownloadFileAboveLimit": "El archivo que has seleccionado es demasiado grande para descargarlo desde la aplicación móvil",
   "@fileFailedToDownloadFileAboveLimit": {
+    "description": "Download failure message when a file is too big"
+  },
+  "fileFailedToDownloadFileAbovePublicLimit": "El archivo(s) que has seleccionado es demasiado grande para descargarse",
+  "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
   },
   "fileHadANewRevision": "Una nueva revisión del archivo fue cargada.",
@@ -688,6 +744,10 @@
         "example": "file name"
       }
     }
+  },
+  "finishingThingsUp": "¡Finiquitando las cosas!",
+  "@finishingThingsUp": {
+    "description": "Finishing things up!"
   },
   "fix": "Reparar",
   "@fix": {
@@ -885,6 +945,10 @@
   "@insufficientFundsForUploadFolders": {
     "description": "Show that needs funds to upload folders"
   },
+  "invalidKeyFile": "Fichero de clave no válido",
+  "@invalidKeyFile": {
+    "description": "Invalid Keyfile"
+  },
   "invalidWalletFile": "Archivo de cartera no válido",
   "@invalidWalletFile": {
     "description": "Wallet file is not a json or a text"
@@ -952,6 +1016,10 @@
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
   },
+  "lightModeEmphasized": "MODO CLARO",
+  "@lightModeEmphasized": {
+    "description": "Refers to the light theme of the app. Emphasized with upper case"
+  },
   "login": "Iniciar sesión",
   "@login": {
     "description": "The login process"
@@ -999,6 +1067,10 @@
   "monthlyCharges": "En vez de pagar mensualmente por almacenamiento que no usas, paga una única vez y almacena tus archivos por siempre en ArDrive.",
   "@monthlyCharges": {
     "description": "Payment philosophy"
+  },
+  "moreInfo": "Más información",
+  "@moreInfo": {
+    "description": "More info"
   },
   "move": "Mover",
   "@move": {
@@ -1104,9 +1176,37 @@
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
+  "onboarding1Description": "ArDrive no es simplemente una aplicación de sincronización en la nube más. Es tu disco duro permanente personal. Los ficheros que se almacenan en ArDrive no pueden ser eliminados ni modificados por ninguna entidad y todo lo que subas durará más que tú.",
+  "@onboarding1Description": {
+    "description": "Description of 1st page of onboarding"
+  },
+  "onboarding1Title": "Bienvenido a la Permaweb",
+  "@onboarding1Title": {
+    "description": "Title of 1st page of onboarding"
+  },
+  "onboarding2Description": "Di adiós a las suscripciones de almacenamiento en la nube. En lugar de pagar por espacio que no usas, paga simplemente una vez para almacenar tus datos para siempre.",
+  "@onboarding2Description": {
+    "description": "Description of 2nd page of onboarding"
+  },
+  "onboarding2Title": "Paga por archivo, no por mes",
+  "@onboarding2Title": {
+    "description": "Title of 2nd page of onboarding"
+  },
+  "onboarding3Description": "Tú eliges: haz que los archivos que subes sean públicos para que todo el mundo pueda acceder o impulsa el cifrado vanguardista que te da el control con respecto a quién puede ver tus archivos.",
+  "@onboarding3Description": {
+    "description": "Description of 4th page of onboarding"
+  },
+  "onboarding3Title": "Control total de la privacidad",
+  "@onboarding3Title": {
+    "description": "Title of 4th page of onboarding"
+  },
   "onceUploadedCantBeRemoved": "Una vez cargada, tu información no se podrá borrar.",
   "@onceUploadedCantBeRemoved": {
     "description": "Uploaded items cannot be deleted"
+  },
+  "orContinueWith": "O continúa con",
+  "@orContinueWith": {
+    "description": "text to continue with ar connect"
   },
   "password": "Contraseña",
   "@password": {
@@ -1115,6 +1215,14 @@
   "passwordCanNeverBeChanged": "No puedes modificiar ni recuperar tu contraseña. ¡Asegurate de mantenerla segura!",
   "@passwordCanNeverBeChanged": {
     "description": "Explains that the password cannot be changed as it is the one of the wallet"
+  },
+  "passwordCannotBeEmpty": "La contraseña no puede estar vacía",
+  "@passwordCannotBeEmpty": {
+    "description": "Button title to create a password"
+  },
+  "passwordDoNotMatch": "Las contraseñas no coinciden",
+  "@passwordDoNotMatch": {
+    "description": "Modal description when passwords dont match"
   },
   "passwordMismatch": "Las contraseñas no coinciden.",
   "@passwordMismatch": {
@@ -1132,6 +1240,10 @@
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
+  "pleaseAcceptTheTermsToContinue": "Acepta los términos y condiciones para continuar.",
+  "@pleaseAcceptTheTermsToContinue": {
+    "description": "terms and conditions cta"
+  },
   "pleaseProvideSamePassword": "Por favor, ingresa la misma contraseña que utilizaste anteriormente.",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
@@ -1139,6 +1251,14 @@
   "pleaseRemainOnThisTab": "Cargando... Por favor, permanece en esta pestaña.",
   "@pleaseRemainOnThisTab": {
     "description": "Circular progress indicator"
+  },
+  "pleaseRemainOnThisTabSnapshots": "Tu cartera Web3 está firmando tus transacciones. ¡Permanece en esta página mientras finiquitamos las cosas!",
+  "@pleaseRemainOnThisTabSnapshots": {
+    "description": "Please stay on this page while we finish things up!"
+  },
+  "pleaseTryAgain": "Inténtalo de nuevo",
+  "@pleaseTryAgain": {
+    "description": "Please try again."
   },
   "preparingManifestEmphasized": "PREPARANDO MANIFIESTO...",
   "@preparingManifestEmphasized": {
@@ -1164,9 +1284,21 @@
   "@private": {
     "description": "A private entity"
   },
+  "privateDrives": "Discos privados",
+  "@privateDrives": {
+    "description": "Private drives accordion title"
+  },
+  "proceed": "Proceder",
+  "@proceed": {
+    "description": "Proceed"
+  },
   "proceedCongestionEmphasized": "PROCEDER",
   "@proceedCongestionEmphasized": {
     "description": "Proceed being aware of the network congestion. Emphasized with upper case"
+  },
+  "proceedEmphasized": "PROCEDER",
+  "@proceedEmphasized": {
+    "description": "Proceed but capitalized"
   },
   "profile": "Perfil",
   "@profile": {
@@ -1175,6 +1307,10 @@
   "public": "Público",
   "@public": {
     "description": "A public entity"
+  },
+  "publicDrives": "Discos públicos",
+  "@publicDrives": {
+    "description": "Public drives accordion title"
   },
   "recreateFolderEmphasized": "RECREAR CARPETA",
   "@recreateFolderEmphasized": {
@@ -1248,6 +1384,10 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "sharedDrives": "Discos compartidos",
+  "@sharedDrives": {
+    "description": "Sub-header for the shared drives list"
+  },
   "sharedDrivesEmphasized": "UNIDADES COMPARTIDAS",
   "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
@@ -1280,6 +1420,10 @@
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
   },
+  "showMenu": "Mostrar menú",
+  "@showMenu": {
+    "description": "show menu text"
+  },
   "signingUpload": "Firmando las transacciones",
   "@signingUpload": {
     "description": "The app is signing the transactions"
@@ -1287,6 +1431,10 @@
   "size": "Tamaño",
   "@size": {
     "description": "The size of a file, folder or drive"
+  },
+  "skip": "Omitir",
+  "@skip": {
+    "description": "Skip"
   },
   "skipEmphasized": "OMITIR",
   "@skipEmphasized": {
@@ -1375,6 +1523,10 @@
   "targetFolderEmphasized": "CARPETA DE DESTINO",
   "@targetFolderEmphasized": {
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
+  },
+  "termsAndConditions": "Términos y condiciones",
+  "@termsAndConditions": {
+    "description": "terms and conditions"
   },
   "thinkTwiceBeforeUploading": "Piénsalo dos veces antes de cargar toda tu poesía de adolescente...",
   "@thinkTwiceBeforeUploading": {
@@ -1470,6 +1622,14 @@
       }
     }
   },
+  "uploadYourFirstFile": "Sube tu primer archivo",
+  "@uploadYourFirstFile": {
+    "description": "Empty folder"
+  },
+  "usdPriceNotAvailable": "(El precio en USD no está disponible por el momento)",
+  "@usdPriceNotAvailable": {
+    "description": "Fallback message for when the USD price is not available"
+  },
   "useArconnectEmphasized": "USAR ARCONNECT",
   "@useArconnectEmphasized": {
     "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
@@ -1526,6 +1686,10 @@
   "@viewOnly": {
     "description": "The user has no permission to edit, only to view"
   },
+  "viewOnViewBlock": "Ver en viewblock.io",
+  "@viewOnViewBlock": {
+    "description": "Tooltip for external link for viewBlock"
+  },
   "waitForDownload": "Debido al tamaño del archivo, la descarga podría tardar un poco. Mantén la aplicación abierta mientras se realiza la descarga.",
   "@waitForDownload": {
     "description": "User must to wait this download"
@@ -1549,6 +1713,24 @@
   "weDoAFewThingsDifferently": "Eso también significa que hacemos algunas cosas diferente.",
   "@weDoAFewThingsDifferently": {
     "description": "What ArDrive does differently"
+  },
+  "weDontRecommendUploadsAboveASafeLimit": "No recomendamos subir elementos cuyo tamaño sea mayor de {size}.",
+  "@weDontRecommendUploadsAboveASafeLimit": {
+    "description": "Shows a message like We do not recommend uploading items over 5GB in size.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "5 GiB"
+      }
+    }
+  },
+  "welcome": "Bienvenido",
+  "@welcome": {
+    "description": "welcome"
+  },
+  "welcomeBack": "Bienvenido de nuevo",
+  "@welcomeBack": {
+    "description": "welcome back"
   },
   "welcomeBackEmphasized": "BIENVENIDO/A DE NUEVO",
   "@welcomeBackEmphasized": {
@@ -1600,8 +1782,16 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
+  "yourPrivateSecureAndPermanentDrive": "Tu disco duro privado, seguro y permanente.",
+  "@yourPrivateSecureAndPermanentDrive": {
+    "description": "Your private, secure, and permanent hard drive."
+  },
   "yourUploadFailed": "Falló la carga. No se le ha cobrado por el intento fallido.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
+  },
+  "zippingYourFiles": "Comprimiendo tu archivo(s)...",
+  "@zippingYourFiles": {
+    "description": "Download failure message when a file is too big"
   }
 }

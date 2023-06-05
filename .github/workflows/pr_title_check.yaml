@@ -1,0 +1,31 @@
+name: PR Title Check
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+
+jobs:
+  pr-title-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check PR title
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const pattern = /^PE-\d+: .*/;
+            const pr = context.payload.pull_request;
+            if (!pattern.test(pr.title)) {
+              github.rest.issues.createComment({
+                issue_number: pr.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: ':warning: Your PR title does not match the required pattern. Please update the title in the format `PE-{number}: {description}`.'
+              });
+            }
