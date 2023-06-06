@@ -38,6 +38,7 @@ abstract class ArDriveAuth {
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
     MetadataCache? metadataCache,
+    GQLNodesCache? gqlNodesCache,
   }) =>
       _ArDriveAuth(
         arweave: arweave,
@@ -48,6 +49,7 @@ abstract class ArDriveAuth {
         secureKeyValueStore: secureKeyValueStore,
         arConnectService: arConnectService,
         metadataCache: metadataCache,
+        gqlNodesCache: gqlNodesCache,
       );
 }
 

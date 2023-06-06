@@ -4,6 +4,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/gql_nodes_cache.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,6 +40,9 @@ void main() {
     final metadataCache = await MetadataCache.fromCacheStore(
       await newMemoryCacheStore(),
     );
+    final gqlNodesCache = await GQLNodesCache.fromCacheStore(
+      await newMemoryCacheStore(),
+    );
 
     arDriveAuth = ArDriveAuth(
       arweave: mockArweaveService,
@@ -49,6 +53,7 @@ void main() {
       biometricAuthentication: mockBiometricAuthentication,
       secureKeyValueStore: mockSecureKeyValueStore,
       metadataCache: metadataCache,
+      gqlNodesCache: gqlNodesCache,
     );
     // register call back for test drive entity
     registerFallbackValue(DriveEntity(
