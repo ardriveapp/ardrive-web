@@ -106,7 +106,7 @@ class GQLNodesCache {
     }
 
     final nextIndex = await nextIndexForDriveId(driveId);
-    final key = '${driveId}_$nextIndex';
+    final key = GQLNodesCacheKeyParts(driveId, nextIndex).toString();
 
     // FIXME: check for quota before attempting to write to cache
     try {
@@ -136,7 +136,7 @@ class GQLNodesCache {
   }
 
   Future<DriveHistoryTransaction?> get(String driveId, int index) async {
-    final key = '${driveId}_$index';
+    final key = GQLNodesCacheKeyParts(driveId, index).toString();
     try {
       final value = await _persistingCache.get(key);
       if (value != null) {
@@ -152,7 +152,7 @@ class GQLNodesCache {
   }
 
   Future<void> remove(String driveId, int index) async {
-    final key = '${driveId}_$index';
+    final key = GQLNodesCacheKeyParts(driveId, index).toString();
     logger.d('Removing $key from GQL Nodes cache');
     return _persistingCache.remove(key);
   }
@@ -192,13 +192,11 @@ class GQLNodesCache {
   Future<Map<String, int>> get currentIndexesPerDriveId async {
     final Map<String, int> currentIndexesPerDriveId = {};
 
-    final regexp = RegExp(r'^(.+)_(\d+)$');
-
     final keys = await this.keys;
     for (final key in keys) {
-      final match = regexp.firstMatch(key)!;
-      final driveId = match.group(1)!;
-      final index = int.parse(match.group(2)!);
+      final keyParts = parseKey(key);
+      final driveId = keyParts.driveId;
+      final index = keyParts.index;
 
       if (currentIndexesPerDriveId[driveId] == null ||
           currentIndexesPerDriveId[driveId]! < index) {
@@ -214,12 +212,33 @@ List<String> sortCacheKeys(Iterable<String> keys) {
   final sortedKeys = keys.toList()
     ..sort(
       (a, b) {
-        final indexRegexp = RegExp(r'.+_(\d+)$');
-        final aIndex = int.parse(indexRegexp.firstMatch(a)!.group(1)!);
-        final bIndex = int.parse(indexRegexp.firstMatch(b)!.group(1)!);
+        final aKeyParts = parseKey(a);
+        final bKeyParts = parseKey(b);
+        final aIndex = aKeyParts.index;
+        final bIndex = bKeyParts.index;
         return aIndex.compareTo(bIndex);
       },
     );
 
   return sortedKeys;
+}
+
+GQLNodesCacheKeyParts parseKey(String key) {
+  final keyParts = key.split('_');
+  final driveId = keyParts.first;
+  final index = int.parse(keyParts.last);
+
+  return GQLNodesCacheKeyParts(driveId, index);
+}
+
+class GQLNodesCacheKeyParts {
+  final String driveId;
+  final int index;
+
+  GQLNodesCacheKeyParts(this.driveId, this.index);
+
+  @override
+  String toString() {
+    return '${driveId}_$index';
+  }
 }
