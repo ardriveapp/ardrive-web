@@ -8,6 +8,7 @@ import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/gql_nodes_cache.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
@@ -60,6 +61,7 @@ class _ArDriveAuth implements ArDriveAuth {
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
     MetadataCache? metadataCache,
+    GQLNodesCache? gqlNodesCache,
   })  : _arweave = arweave,
         _crypto = crypto,
         _databaseHelpers = databaseHelpers,
@@ -67,7 +69,8 @@ class _ArDriveAuth implements ArDriveAuth {
         _secureKeyValueStore = secureKeyValueStore,
         _biometricAuthentication = biometricAuthentication,
         _userRepository = userRepository,
-        _maybeMetadataCache = metadataCache;
+        _maybeMetadataCache = metadataCache,
+        _maybeGQLNodesCache = gqlNodesCache;
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
@@ -77,6 +80,7 @@ class _ArDriveAuth implements ArDriveAuth {
   final ArConnectService _arConnectService;
   final DatabaseHelpers _databaseHelpers;
   MetadataCache? _maybeMetadataCache;
+  GQLNodesCache? _maybeGQLNodesCache;
 
   User? _currentUser;
 
@@ -99,6 +103,13 @@ class _ArDriveAuth implements ArDriveAuth {
       await newSharedPreferencesCacheStore(),
     );
     return _maybeMetadataCache!;
+  }
+
+  Future<GQLNodesCache> get _gqlNodesCache async {
+    _maybeGQLNodesCache ??= await GQLNodesCache.fromCacheStore(
+      await newSharedPreferencesCacheStore(),
+    );
+    return _maybeGQLNodesCache!;
   }
 
   final StreamController<User?> _userStreamController =
@@ -201,6 +212,7 @@ class _ArDriveAuth implements ArDriveAuth {
       await _databaseHelpers.deleteAllTables();
 
       (await _metadataCache).clear();
+      (await _gqlNodesCache).clear();
     } catch (e) {
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');
