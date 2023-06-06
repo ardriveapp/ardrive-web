@@ -194,7 +194,7 @@ class GQLNodesCache {
 
     final keys = await this.keys;
     for (final key in keys) {
-      final keyParts = parseKey(key);
+      final keyParts = _parseKey(key);
       final driveId = keyParts.driveId;
       final index = keyParts.index;
 
@@ -212,8 +212,8 @@ List<String> sortCacheKeys(Iterable<String> keys) {
   final sortedKeys = keys.toList()
     ..sort(
       (a, b) {
-        final aKeyParts = parseKey(a);
-        final bKeyParts = parseKey(b);
+        final aKeyParts = _parseKey(a);
+        final bKeyParts = _parseKey(b);
         final aIndex = aKeyParts.index;
         final bIndex = bKeyParts.index;
         return aIndex.compareTo(bIndex);
@@ -223,7 +223,7 @@ List<String> sortCacheKeys(Iterable<String> keys) {
   return sortedKeys;
 }
 
-GQLNodesCacheKeyParts parseKey(String key) {
+GQLNodesCacheKeyParts _parseKey(String key) {
   final keyParts = key.split('_');
   final driveId = keyParts.first;
   final index = int.parse(keyParts.last);
