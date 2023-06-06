@@ -13,6 +13,7 @@ class AppConfig {
   final bool enableVideoPreview;
   final int autoSyncIntervalInSeconds;
   final bool enableSyncFromSnapshot;
+  final bool enableSeedPhraseLogin;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -24,6 +25,7 @@ class AppConfig {
     this.enableVideoPreview = false,
     this.autoSyncIntervalInSeconds = 5 * 60,
     this.enableSyncFromSnapshot = true,
+    this.enableSeedPhraseLogin = true,
   });
 
   AppConfig copyWith({
@@ -36,6 +38,7 @@ class AppConfig {
     bool? enableVideoPreview,
     int? autoSyncIntervalInSeconds,
     bool? enableSyncFromSnapshot,
+    bool? enableSeedPhraseLogin,
   }) {
     return AppConfig(
       defaultArweaveGatewayUrl:
@@ -53,6 +56,8 @@ class AppConfig {
           autoSyncIntervalInSeconds ?? this.autoSyncIntervalInSeconds,
       enableSyncFromSnapshot:
           enableSyncFromSnapshot ?? this.enableSyncFromSnapshot,
+      enableSeedPhraseLogin:
+          enableSeedPhraseLogin ?? this.enableSeedPhraseLogin,
     );
   }
 

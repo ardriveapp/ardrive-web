@@ -661,13 +661,13 @@ packages:
     source: hosted
     version: "3.3.0"
   flutter_downloader:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: flutter_downloader
-      sha256: "6f2836668f33d0cd3ed275c3198d30967c42af53fa9b18c6b0edbf5fc12b599a"
+      sha256: ff5cb37482329018ba313f44cfa60aa68a779a70ecaa731a40d931d73b49acf2
       url: "https://pub.dev"
     source: hosted
-    version: "1.10.2"
+    version: "1.10.3"
   flutter_driver:
     dependency: "direct dev"
     description: flutter

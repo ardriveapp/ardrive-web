@@ -10,6 +10,7 @@ import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.da
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -184,6 +185,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
   }
 
   Widget _buildContent(BuildContext context) {
+    final enableSeedPhraseLogin =
+        context.read<ConfigService>().config.enableSeedPhraseLogin;
     return BlocConsumer<LoginBloc, LoginState>(
       key: globalKey,
       buildWhen: (previous, current) =>
@@ -251,14 +254,15 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               ),
             ),
           );
-        } else if (state is LoginEnterSeedPhrase) {
+        } else if (enableSeedPhraseLogin && state is LoginEnterSeedPhrase) {
           content = const EnterSeedPhraseView();
-        } else if (state is LoginCreateWallet) {
+        } else if (enableSeedPhraseLogin && state is LoginCreateWallet) {
           content = CreateWalletView(mnemonic: state.mnemonic);
-        } else if (state is LoginCreateWalletGenerated) {
+        } else if (enableSeedPhraseLogin &&
+            state is LoginCreateWalletGenerated) {
           content = CreateWalletView(
               mnemonic: state.mnemonic, wallet: state.walletFile);
-        } else if (state is LoginConfirmMnemonic) {
+        } else if (enableSeedPhraseLogin && state is LoginConfirmMnemonic) {
           content = MemoryCheckView(
               mnemonic: state.mnemonic, wallet: state.walletFile);
         } else {
@@ -437,32 +441,37 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     ),
                   ),
                 ),
-                heightSpacing(),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                          text: 'Login with your ',
-                          style: ArDriveTypography.body.smallBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgMuted,
-                          )),
-                      TextSpan(
-                        text: 'Seed Phrase',
-                        style: ArDriveTypography.body.smallBold().copyWith(
-                              decoration: TextDecoration.underline,
-                            ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            context.read<LoginBloc>().add(EnterSeedPhrase());
-                            // openUrl(url: Resources.getWalletLink);
-                          },
-                      ),
-                    ],
+                if (context
+                    .read<ConfigService>()
+                    .config
+                    .enableSeedPhraseLogin) ...[
+                  heightSpacing(),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                            text: 'Login with your ',
+                            style: ArDriveTypography.body.smallBold(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted,
+                            )),
+                        TextSpan(
+                          text: 'Seed Phrase',
+                          style: ArDriveTypography.body.smallBold().copyWith(
+                                decoration: TextDecoration.underline,
+                              ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              context.read<LoginBloc>().add(EnterSeedPhrase());
+                              // openUrl(url: Resources.getWalletLink);
+                            },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
                 if (widget.isArConnectAvailable) ...[
                   heightSpacing(),
                   Align(
