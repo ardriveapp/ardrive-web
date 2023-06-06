@@ -52,15 +52,7 @@ class GQLNodesCache {
       return Range.nullRange;
     }
 
-    final sortedKeysForDriveId = keysForDriveId.toList()
-      ..sort(
-        (a, b) {
-          final indexRegexp = RegExp(r'.+_(\d+)$');
-          final aIndex = int.parse(indexRegexp.firstMatch(a)!.group(1)!);
-          final bIndex = int.parse(indexRegexp.firstMatch(b)!.group(1)!);
-          return aIndex.compareTo(bIndex);
-        },
-      );
+    final sortedKeysForDriveId = sortCacheKeys(keysForDriveId);
 
     final lastKey = sortedKeysForDriveId.last;
     final lastValue = (await _persistingCache.get(lastKey))!;
@@ -77,15 +69,7 @@ class GQLNodesCache {
   }) async* {
     final keys = await _persistingCache.keys;
     final keysForDriveId = keys.where((key) => key.startsWith(driveId));
-    final sortedKeysForDriveId = keysForDriveId.toList()
-      ..sort(
-        (a, b) {
-          final indexRegexp = RegExp(r'.+_(\d+)$');
-          final aIndex = int.parse(indexRegexp.firstMatch(a)!.group(1)!);
-          final bIndex = int.parse(indexRegexp.firstMatch(b)!.group(1)!);
-          return aIndex.compareTo(bIndex);
-        },
-      );
+    final sortedKeysForDriveId = sortCacheKeys(keysForDriveId);
 
     if (ignoreLatestBlock && sortedKeysForDriveId.isNotEmpty) {
       logger.d('Asked to ignore latest block');
@@ -224,4 +208,18 @@ class GQLNodesCache {
 
     return currentIndexesPerDriveId;
   }
+}
+
+List<String> sortCacheKeys(Iterable<String> keys) {
+  final sortedKeys = keys.toList()
+    ..sort(
+      (a, b) {
+        final indexRegexp = RegExp(r'.+_(\d+)$');
+        final aIndex = int.parse(indexRegexp.firstMatch(a)!.group(1)!);
+        final bIndex = int.parse(indexRegexp.firstMatch(b)!.group(1)!);
+        return aIndex.compareTo(bIndex);
+      },
+    );
+
+  return sortedKeys;
 }
