@@ -171,7 +171,6 @@ Stream<double> _syncDrive(
     final isTrustedBlock =
         t.block != null && t.block!.height <= currentBlockHeight - 15;
     if (isDeepSync && isTrustedBlock) {
-      // TODO: re-visit this - any way of avoiding the conditional?
       await gqlNodesCache.put(driveId, t);
     }
   }
