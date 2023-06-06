@@ -77,6 +77,9 @@ void main() {
       for (int i = 0; i < mockData.length; i++) {
         final wasPut = await metadataCache.put(mockDriveId, mockData[i]);
         expect(wasPut, true);
+        if (i < mockData.length - 1) {
+          expect(await metadataCache.isFull, false);
+        }
       }
 
       expect(await metadataCache.isFull, true);
