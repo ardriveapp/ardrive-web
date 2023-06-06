@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/feedback_survey.dart';
+import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
@@ -60,240 +61,247 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRouterDelegate() : navigatorKey = GlobalKey<NavigatorState>();
 
   @override
-  Widget build(BuildContext context) =>
-      BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
+  Widget build(BuildContext context) {
+    if (context.read<ConfigService>().flavor == Flavor.development) {
+      return ArDriveAppWithDevTools(widget: _app());
+    }
+
+    return _app();
+  }
+
+  Widget _app() {
+    return BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
+      listener: (context, state) {
+        if (state is ThemeSwitcherDarkTheme) {
+          ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
+        } else if (state is ThemeSwitcherLightTheme) {
+          ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
+        }
+      },
+      builder: (context, _) => BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
-          if (state is ThemeSwitcherDarkTheme) {
-            ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
-          } else if (state is ThemeSwitcherLightTheme) {
-            ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
+          // Clear state to prevent the last drive from being attached on new login
+          if (state is ProfileLoggingOut) {
+            logger.d('Cleaning state');
+
+            clearState();
+          }
+
+          final anonymouslyShowDriveDetail =
+              state is! ProfileLoggedIn && canAnonymouslyShowDriveDetail(state);
+
+          // If the user is not already signing in, not viewing a shared file and not anonymously viewing a drive,
+          // redirect them to sign in.
+          //
+          // Additionally, redirect the user to sign in if they are logging out.
+          final showingAnonymousRoute =
+              anonymouslyShowDriveDetail || isViewingSharedFile;
+
+          if (!signingIn &&
+              (!showingAnonymousRoute || state is ProfileLoggingOut)) {
+            signingIn = true;
+            notifyListeners();
+          }
+
+          // Redirect the user away from sign in if they are already signed in.
+          if (signingIn && state is ProfileLoggedIn) {
+            signingIn = false;
+            notifyListeners();
+          }
+          // Cleans up any shared drives from previous sessions
+          // TODO: Find a better place to do this
+          final lastLoggedInUser =
+              state is ProfileLoggedIn ? state.walletAddress : null;
+          if (lastLoggedInUser != null) {
+            context
+                .read<DriveDao>()
+                .deleteSharedPrivateDrives(lastLoggedInUser);
           }
         },
-        builder: (context, _) => BlocConsumer<ProfileCubit, ProfileState>(
-          listener: (context, state) {
-            // Clear state to prevent the last drive from being attached on new login
-            if (state is ProfileLoggingOut) {
-              logger.d('Cleaning state');
+        builder: (context, state) {
+          Widget? shell;
 
-              clearState();
-            }
-
-            final anonymouslyShowDriveDetail = state is! ProfileLoggedIn &&
-                canAnonymouslyShowDriveDetail(state);
-
-            // If the user is not already signing in, not viewing a shared file and not anonymously viewing a drive,
-            // redirect them to sign in.
-            //
-            // Additionally, redirect the user to sign in if they are logging out.
-            final showingAnonymousRoute =
-                anonymouslyShowDriveDetail || isViewingSharedFile;
-
-            if (!signingIn &&
-                (!showingAnonymousRoute || state is ProfileLoggingOut)) {
-              signingIn = true;
-              notifyListeners();
-            }
-
-            // Redirect the user away from sign in if they are already signed in.
-            if (signingIn && state is ProfileLoggedIn) {
-              signingIn = false;
-              notifyListeners();
-            }
-            // Cleans up any shared drives from previous sessions
-            // TODO: Find a better place to do this
-            final lastLoggedInUser =
-                state is ProfileLoggedIn ? state.walletAddress : null;
-            if (lastLoggedInUser != null) {
-              context
-                  .read<DriveDao>()
-                  .deleteSharedPrivateDrives(lastLoggedInUser);
-            }
-          },
-          builder: (context, state) {
-            Widget? shell;
-
-            final anonymouslyShowDriveDetail =
-                canAnonymouslyShowDriveDetail(state);
-            if (isViewingSharedFile) {
-              shell = BlocProvider<SharedFileCubit>(
-                key: ValueKey(sharedFileId),
-                create: (_) => SharedFileCubit(
-                  fileId: sharedFileId!,
-                  fileKey: sharedFileKey,
-                  arweave: context.read<ArweaveService>(),
-                ),
-                child: SharedFilePage(),
-              );
-            } else if (signingIn) {
-              shell = const LoginPage();
-            } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
-              shell = BlocConsumer<DrivesCubit, DrivesState>(
-                listener: (context, state) {
-                  if (state is DrivesLoadSuccess) {
-                    final selectedDriveChanged =
-                        driveId != state.selectedDriveId;
-                    if (selectedDriveChanged) {
-                      driveFolderId = null;
-                    }
-
-                    driveId = state.selectedDriveId;
-                    notifyListeners();
-                  }
-                },
-                builder: (context, state) {
-                  Widget? shellPage;
-                  if (state is DrivesLoadSuccess) {
-                    shellPage = !state.hasNoDrives
-                        ? const DriveDetailPage()
-                        : const NoDrivesPage();
-                    driveId = state.selectedDriveId;
+          final anonymouslyShowDriveDetail =
+              canAnonymouslyShowDriveDetail(state);
+          if (isViewingSharedFile) {
+            shell = BlocProvider<SharedFileCubit>(
+              key: ValueKey(sharedFileId),
+              create: (_) => SharedFileCubit(
+                fileId: sharedFileId!,
+                fileKey: sharedFileKey,
+                arweave: context.read<ArweaveService>(),
+              ),
+              child: SharedFilePage(),
+            );
+          } else if (signingIn) {
+            shell = const LoginPage();
+          } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
+            shell = BlocConsumer<DrivesCubit, DrivesState>(
+              listener: (context, state) {
+                if (state is DrivesLoadSuccess) {
+                  final selectedDriveChanged = driveId != state.selectedDriveId;
+                  if (selectedDriveChanged) {
+                    driveFolderId = null;
                   }
 
-                  shellPage ??= const SizedBox();
-                  driveId = driveId ?? rootPath;
-
-                  return BlocProvider(
-                    key: ValueKey(driveId),
-                    create: (context) => DriveDetailCubit(
-                      driveId: driveId!,
-                      initialFolderId: driveFolderId,
-                      profileCubit: context.read<ProfileCubit>(),
-                      driveDao: context.read<DriveDao>(),
-                      config: context.read<AppConfig>(),
-                      auth: context.read<ArDriveAuth>(),
-                    ),
-                    child: MultiBlocListener(
-                      listeners: [
-                        BlocListener<DriveDetailCubit, DriveDetailState>(
-                          listener: (context, state) {
-                            if (state is DriveDetailLoadSuccess) {
-                              driveId = state.currentDrive.id;
-                              driveFolderId = state.folderInView.folder.id;
-
-                              //Can be null at the root folder of the drive
-                              notifyListeners();
-                            } else if (state is DriveDetailLoadNotFound) {
-                              // Do not prompt the user to attach an unfound drive if they are logging out.
-                              final profileCubit = context.read<ProfileCubit>();
-
-                              if (profileCubit.state is ProfileLoggingOut) {
-                                logger.d(
-                                    'Drive not found, but user is logging out. Not prompting to attach drive.');
-
-                                clearState();
-
-                                return;
-                              }
-
-                              attachDrive(
-                                context: context,
-                                driveId: driveId,
-                                driveName: driveName,
-                                driveKey: sharedDriveKey,
-                              );
-                            }
-                          },
-                        ),
-                        BlocListener<FeedbackSurveyCubit, FeedbackSurveyState>(
-                          listener: (context, state) {
-                            if (state is FeedbackSurveyRemindMe &&
-                                state.isOpen) {
-                              openFeedbackSurveyModal(context);
-                            } else if (state is FeedbackSurveyRemindMe &&
-                                !state.isOpen) {
-                              Navigator.pop(context);
-                            } else if (state is FeedbackSurveyDontRemindMe &&
-                                !state.isOpen) {
-                              Navigator.pop(context);
-                            }
-                          },
-                        ),
-                        BlocListener<ProfileCubit, ProfileState>(
-                          listener: ((context, state) {
-                            if (state is ProfileLoggingOut) {
-                              context.read<FeedbackSurveyCubit>().reset();
-                            }
-                          }),
-                        ),
-                      ],
-                      child: AppShell(
-                        page: shellPage,
-                      ),
-                    ),
-                  );
-                },
-              );
-            }
-
-            shell ??= const SizedBox();
-
-            final navigator = Navigator(
-              key: navigatorKey,
-              pages: [
-                MaterialPage(
-                  key: const ValueKey('AppShell'),
-                  child: shell,
-                ),
-              ],
-              onPopPage: (route, result) {
-                if (!route.didPop(result)) {
-                  return false;
+                  driveId = state.selectedDriveId;
+                  notifyListeners();
+                }
+              },
+              builder: (context, state) {
+                Widget? shellPage;
+                if (state is DrivesLoadSuccess) {
+                  shellPage = !state.hasNoDrives
+                      ? const DriveDetailPage()
+                      : const NoDrivesPage();
+                  driveId = state.selectedDriveId;
                 }
 
-                notifyListeners();
-                return true;
+                shellPage ??= const SizedBox();
+                driveId = driveId ?? rootPath;
+
+                return BlocProvider(
+                  key: ValueKey(driveId),
+                  create: (context) => DriveDetailCubit(
+                    driveId: driveId!,
+                    initialFolderId: driveFolderId,
+                    profileCubit: context.read<ProfileCubit>(),
+                    driveDao: context.read<DriveDao>(),
+                    configService: context.read<ConfigService>(),
+                    auth: context.read<ArDriveAuth>(),
+                  ),
+                  child: MultiBlocListener(
+                    listeners: [
+                      BlocListener<DriveDetailCubit, DriveDetailState>(
+                        listener: (context, state) {
+                          if (state is DriveDetailLoadSuccess) {
+                            driveId = state.currentDrive.id;
+                            driveFolderId = state.folderInView.folder.id;
+
+                            //Can be null at the root folder of the drive
+                            notifyListeners();
+                          } else if (state is DriveDetailLoadNotFound) {
+                            // Do not prompt the user to attach an unfound drive if they are logging out.
+                            final profileCubit = context.read<ProfileCubit>();
+
+                            if (profileCubit.state is ProfileLoggingOut) {
+                              logger.d(
+                                  'Drive not found, but user is logging out. Not prompting to attach drive.');
+
+                              clearState();
+
+                              return;
+                            }
+
+                            attachDrive(
+                              context: context,
+                              driveId: driveId,
+                              driveName: driveName,
+                              driveKey: sharedDriveKey,
+                            );
+                          }
+                        },
+                      ),
+                      BlocListener<FeedbackSurveyCubit, FeedbackSurveyState>(
+                        listener: (context, state) {
+                          if (state is FeedbackSurveyRemindMe && state.isOpen) {
+                            openFeedbackSurveyModal(context);
+                          } else if (state is FeedbackSurveyRemindMe &&
+                              !state.isOpen) {
+                            Navigator.pop(context);
+                          } else if (state is FeedbackSurveyDontRemindMe &&
+                              !state.isOpen) {
+                            Navigator.pop(context);
+                          }
+                        },
+                      ),
+                      BlocListener<ProfileCubit, ProfileState>(
+                        listener: ((context, state) {
+                          if (state is ProfileLoggingOut) {
+                            context.read<FeedbackSurveyCubit>().reset();
+                          }
+                        }),
+                      ),
+                    ],
+                    child: AppShell(
+                      page: shellPage,
+                    ),
+                  ),
+                );
               },
             );
+          }
 
-            if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
-              return MultiBlocProvider(
-                providers: [
-                  BlocProvider(
-                    create: (context) => SyncCubit(
-                      profileCubit: context.read<ProfileCubit>(),
-                      activityCubit: context.read<ActivityCubit>(),
-                      arweave: context.read<ArweaveService>(),
-                      driveDao: context.read<DriveDao>(),
-                      db: context.read<Database>(),
-                      tabVisibility: TabVisibilitySingleton(),
-                    ),
+          shell ??= const SizedBox();
+
+          final navigator = Navigator(
+            key: navigatorKey,
+            pages: [
+              MaterialPage(
+                key: const ValueKey('AppShell'),
+                child: shell,
+              ),
+            ],
+            onPopPage: (route, result) {
+              if (!route.didPop(result)) {
+                return false;
+              }
+
+              notifyListeners();
+              return true;
+            },
+          );
+
+          if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
+            return MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (context) => SyncCubit(
+                    configService: context.read<ConfigService>(),
+                    profileCubit: context.read<ProfileCubit>(),
+                    activityCubit: context.read<ActivityCubit>(),
+                    arweave: context.read<ArweaveService>(),
+                    driveDao: context.read<DriveDao>(),
+                    db: context.read<Database>(),
+                    tabVisibility: TabVisibilitySingleton(),
                   ),
-                  BlocProvider(
-                    create: (context) => DrivesCubit(
-                      auth: context.read<ArDriveAuth>(),
-                      initialSelectedDriveId: driveId,
-                      profileCubit: context.read<ProfileCubit>(),
-                      driveDao: context.read<DriveDao>(),
-                    ),
-                  ),
-                ],
-                child: BlocListener<SyncCubit, SyncState>(
-                  listener: (context, state) {
-                    if (state is SyncFailure) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            appLocalizationsOf(context).failedToSyncDrive,
-                          ),
-                          action: SnackBarAction(
-                            label:
-                                appLocalizationsOf(context).tryAgainEmphasized,
-                            onPressed: () =>
-                                context.read<SyncCubit>().startSync(),
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  child: navigator,
                 ),
-              );
-            } else {
-              return navigator;
-            }
-          },
-        ),
-      );
+                BlocProvider(
+                  create: (context) => DrivesCubit(
+                    auth: context.read<ArDriveAuth>(),
+                    initialSelectedDriveId: driveId,
+                    profileCubit: context.read<ProfileCubit>(),
+                    driveDao: context.read<DriveDao>(),
+                  ),
+                ),
+              ],
+              child: BlocListener<SyncCubit, SyncState>(
+                listener: (context, state) {
+                  if (state is SyncFailure) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          appLocalizationsOf(context).failedToSyncDrive,
+                        ),
+                        action: SnackBarAction(
+                          label: appLocalizationsOf(context).tryAgainEmphasized,
+                          onPressed: () =>
+                              context.read<SyncCubit>().startSync(),
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: navigator,
+              ),
+            );
+          } else {
+            return navigator;
+          }
+        },
+      ),
+    );
+  }
 
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {

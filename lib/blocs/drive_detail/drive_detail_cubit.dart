@@ -21,7 +21,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final String driveId;
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
-  final AppConfig _config;
+  final ConfigService _configService;
   final ArDriveAuth _auth;
 
   StreamSubscription? _folderSubscription;
@@ -39,12 +39,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     String? initialFolderId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
-    required AppConfig config,
+    required ConfigService configService,
     required ArDriveAuth auth,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _auth = auth,
-        _config = config,
+        _configService = configService,
         super(DriveDetailLoadInProgress()) {
     if (driveId.isEmpty) {
       return;
@@ -250,7 +250,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:
-              '${_config.defaultArweaveGatewayUrl}/$dataTxId');
+              '${_configService.config.defaultArweaveGatewayUrl}/$dataTxId');
     }
 
     _selectedItem = item;
@@ -333,8 +333,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _forceDisableMultiselect = value;
   }
 
-  Future<void> launchPreview(TxID dataTxId) =>
-      openUrl(url: '${_config.defaultArweaveGatewayUrl}/$dataTxId');
+  Future<void> launchPreview(TxID dataTxId) => openUrl(
+      url: '${_configService.config.defaultArweaveGatewayUrl}/$dataTxId');
 
   void sortFolder({
     DriveOrder contentOrderBy = DriveOrder.name,

@@ -1,6 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/services/config/config.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/helpers.dart';
 import 'package:drift/drift.dart';
@@ -16,13 +16,13 @@ void main() {
 
     late ProfileCubit profileCubit;
     late DriveDetailCubit driveDetailCubit;
-    late AppConfig config;
+    late ConfigService config;
     const mockDriveId = 'mock-drive-id';
 
     setUp(() async {
       db = getTestDb();
       driveDao = db.driveDao;
-      config = MockConfig();
+      config = MockConfigService();
       profileCubit = MockProfileCubit();
 
       final keyBytes = Uint8List(32);
@@ -44,7 +44,7 @@ void main() {
         driveId: mockDriveId,
         profileCubit: profileCubit,
         driveDao: driveDao,
-        config: config,
+        configService: config,
         auth: MockArDriveAuth(),
       );
     });
