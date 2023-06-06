@@ -877,10 +877,6 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
-  "howDoIGetAR": "मुझे AR कैसे मिलेगा?",
-  "@howDoIGetAR": {
-    "description": "Link to a help page explaining how to get Arweave tokens"
-  },
   "infernoIsInFullSwing": "इन्फर्नो रिवॉर्ड्स प्रोग्राम पूरे जोरों पर है! भाग लेने के नियमों को देखने के लिए यहां क्लिक करें!",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
@@ -892,10 +888,6 @@
   "insufficientARToCreateDrive": "ड्राइव बनाने के लिए आपके पास AR काफ़ी नहीं है।",
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
-  },
-  "insufficientARWarning": "अपर्याप्त फ़ंड",
-  "@insufficientARWarning": {
-    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
   },
   "insufficientBalanceForManifest": "मुहैया किए गए {walletBalance} AR का वॉलेट बैलेंस {totalCost} AR की लागत वाले इस मैनिफ़ेस्ट ट्रांज़ैक्शन के लिए काफ़ी नहीं है...",
   "@insufficientBalanceForManifest": {
