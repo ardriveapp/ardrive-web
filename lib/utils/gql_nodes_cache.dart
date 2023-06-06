@@ -73,12 +73,16 @@ class GQLNodesCache {
 
     if (ignoreLatestBlock && sortedKeysForDriveId.isNotEmpty) {
       logger.d('Asked to ignore latest block');
-      final latestItem = sortedKeysForDriveId.last;
-      final latestBlockHeight = (await _forceGet(latestItem)).block!.height;
+      final latestItemKey = sortedKeysForDriveId.last;
+      final lastItemParsedKey = GQLNodesCacheKeyParts.fromString(latestItemKey);
+      final maybeLatestItem = await get(driveId, lastItemParsedKey.index);
+      final latestBlockHeight = maybeLatestItem!.block!.height;
       bool hasReadAllItemsOnLatestBlock = false;
       while (!hasReadAllItemsOnLatestBlock && sortedKeysForDriveId.isNotEmpty) {
         final cacheKey = sortedKeysForDriveId.removeLast();
-        final blockHeight = (await _forceGet(cacheKey)).block!.height;
+        final parsedKey = GQLNodesCacheKeyParts.fromString(cacheKey);
+        final maybeItem = await get(driveId, parsedKey.index);
+        final blockHeight = maybeItem!.block!.height;
         logger.d(
             'Checking if $cacheKey is on latest block. Latest block: $latestBlockHeight, block of $cacheKey: $blockHeight');
         if (blockHeight != latestBlockHeight) {
@@ -95,7 +99,14 @@ class GQLNodesCache {
 
     yield* Stream.fromFutures(
       sortedKeysForDriveId.map(
-        (key) => _forceGet(key),
+        (key) async {
+          final parsedKey = GQLNodesCacheKeyParts.fromString(key);
+          final value = await get(driveId, parsedKey.index);
+          if (value == null) {
+            throw Exception('Could not find $key in GQL Nodes cache');
+          }
+          return value;
+        },
       ),
     );
   }
@@ -123,16 +134,6 @@ class GQLNodesCache {
     }
 
     return true;
-  }
-
-  Future<DriveHistoryTransaction> _forceGet(String key) async {
-    logger.d('Asked to force get $key from GQL Nodes cache');
-    final maybeValue = await _persistingCache.get(key);
-    if (maybeValue == null) {
-      logger.e('Could not find $key in GQL Nodes cache');
-      throw Exception('Could not find $key in GQL Nodes cache');
-    }
-    return maybeValue;
   }
 
   Future<DriveHistoryTransaction?> get(String driveId, int index) async {
@@ -194,7 +195,7 @@ class GQLNodesCache {
 
     final keys = await this.keys;
     for (final key in keys) {
-      final keyParts = _parseKey(key);
+      final keyParts = GQLNodesCacheKeyParts.fromString(key);
       final driveId = keyParts.driveId;
       final index = keyParts.index;
 
@@ -212,8 +213,8 @@ List<String> sortCacheKeys(Iterable<String> keys) {
   final sortedKeys = keys.toList()
     ..sort(
       (a, b) {
-        final aKeyParts = _parseKey(a);
-        final bKeyParts = _parseKey(b);
+        final aKeyParts = GQLNodesCacheKeyParts.fromString(a);
+        final bKeyParts = GQLNodesCacheKeyParts.fromString(b);
         final aIndex = aKeyParts.index;
         final bIndex = bKeyParts.index;
         return aIndex.compareTo(bIndex);
@@ -223,19 +224,15 @@ List<String> sortCacheKeys(Iterable<String> keys) {
   return sortedKeys;
 }
 
-GQLNodesCacheKeyParts _parseKey(String key) {
-  final keyParts = key.split('_');
-  final driveId = keyParts.first;
-  final index = int.parse(keyParts.last);
-
-  return GQLNodesCacheKeyParts(driveId, index);
-}
-
 class GQLNodesCacheKeyParts {
   final String driveId;
   final int index;
 
   GQLNodesCacheKeyParts(this.driveId, this.index);
+
+  GQLNodesCacheKeyParts.fromString(String key)
+      : driveId = key.split('_').first,
+        index = int.parse(key.split('_').last);
 
   @override
   String toString() {
