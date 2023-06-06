@@ -34,7 +34,6 @@ part 'utils/add_file_entity_revisions.dart';
 part 'utils/add_folder_entity_revisions.dart';
 part 'utils/create_ghosts.dart';
 part 'utils/generate_paths.dart';
-part 'utils/log_sync.dart';
 part 'utils/parse_drive_transactions.dart';
 part 'utils/sync_drive.dart';
 part 'utils/update_transaction_statuses.dart';
@@ -88,7 +87,7 @@ class SyncCubit extends Cubit<SyncState> {
         _tabVisibility = tabVisibility,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
-    logSync('Building Sync Cubit...');
+    logger.d('Building Sync Cubit...');
 
     createSyncStream();
     restartSyncOnFocus();
@@ -98,7 +97,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void createSyncStream() async {
-    logSync('Creating sync stream to periodically call sync automatically');
+    logger.d('Creating sync stream to periodically call sync automatically');
 
     await _syncSub?.cancel();
 
@@ -107,7 +106,7 @@ class SyncCubit extends Cubit<SyncState> {
         // Do not start another sync until the previous sync has completed.
         .map((value) => Stream.fromFuture(startSync()))
         .listen((_) {
-      logSync('Listening to startSync periodic stream');
+      logger.d('Listening to startSync periodic stream');
     });
 
     startSync();
@@ -119,7 +118,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void _restartSync() {
-    logSync(
+    logger.d(
         'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
     if (_lastSync != null) {
       final syncInterval = _configService.config.autoSyncIntervalInSeconds;
@@ -128,7 +127,7 @@ class SyncCubit extends Cubit<SyncState> {
       final isTimerDurationReadyToSync = minutesSinceLastSync >= syncInterval;
 
       if (!isTimerDurationReadyToSync) {
-        logSync('''
+        logger.d('''
               Can't restart sync when window is focused \n
               Is current active? ${!isClosed} \n
               last sync was $minutesSinceLastSync seconds ago. \n
@@ -184,11 +183,11 @@ class SyncCubit extends Cubit<SyncState> {
   var ghostFolders = <FolderID, GhostFolder>{};
 
   Future<void> startSync({bool syncDeep = false}) async {
-    logSync('Starting Sync');
-    logSync('SyncCubit is currently active? ${!isClosed}');
+    logger.d('Starting Sync');
+    logger.d('SyncCubit is currently active? ${!isClosed}');
 
     if (state is SyncInProgress) {
-      logSync('Sync state is SyncInProgress, aborting sync...');
+      logger.d('Sync state is SyncInProgress, aborting sync...');
       return;
     }
 
@@ -200,32 +199,32 @@ class SyncCubit extends Cubit<SyncState> {
 
       _initSync = DateTime.now();
 
-      logSync('Emitting SyncInProgress state');
+      logger.d('Emitting SyncInProgress state');
 
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
-      logSync('Checking if user is logged in...');
+      logger.d('Checking if user is logged in...');
 
       if (profile is ProfileLoggedIn) {
-        logSync('User is logged in');
+        logger.d('User is logged in');
 
         //Check if profile is ArConnect to skip sync while tab is hidden
         ownerAddress = profile.walletAddress;
 
-        logSync('Checking if user is from ar connect...');
+        logger.d('Checking if user is from ar connect...');
 
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
-        logSync('User is ar connect? $isArConnect');
+        logger.d('User is ar connect? $isArConnect');
 
         if (isArConnect && !_tabVisibility.isTabFocused()) {
-          logSync('Tab hidden, skipping sync...');
+          logger.d('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
         }
 
         if (_activityCubit.state is ActivityInProgress) {
-          logSync('Uninterruptible activity in progress, skipping sync...');
+          logger.d('Uninterruptible activity in progress, skipping sync...');
           emit(SyncIdle());
           return;
         }
@@ -258,13 +257,13 @@ class SyncCubit extends Cubit<SyncState> {
 
       final currentBlockHeight = await retry(
         () async => await _arweave.getCurrentBlockHeight(),
-        onRetry: (exception) => logSync(
+        onRetry: (exception) => logger.d(
           'Retrying for get the current block height on exception ${exception.toString()}',
         ),
       );
 
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
-      logSync('Current block height number $currentBlockHeight');
+      logger.d('Current block height number $currentBlockHeight');
       final driveSyncProcesses = drives.map(
         (drive) async* {
           try {
@@ -286,7 +285,7 @@ class SyncCubit extends Cubit<SyncState> {
               configService: _configService,
             );
           } catch (error, stackTrace) {
-            logSync('''
+            logger.d('''
                     Error syncing drive with id ${drive.id}. \n
                     Skipping sync on this drive.\n
                     Exception: \n
@@ -324,7 +323,7 @@ class SyncCubit extends Cubit<SyncState> {
         ),
       );
 
-      logSync('Creating ghosts...');
+      logger.d('Creating ghosts...');
 
       await createGhosts(
         driveDao: _driveDao,
@@ -334,9 +333,9 @@ class SyncCubit extends Cubit<SyncState> {
 
       ghostFolders.clear();
 
-      logSync('Ghosts created...');
+      logger.d('Ghosts created...');
 
-      logSync('Updating transaction statuses...');
+      logger.d('Updating transaction statuses...');
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
@@ -346,25 +345,25 @@ class SyncCubit extends Cubit<SyncState> {
         ),
       ]);
 
-      logSync('Transaction statuses updated');
+      logger.d('Transaction statuses updated');
 
-      logSync(
+      logger.i(
           'Syncing drives finished.\nDrives quantity: ${_syncProgress.drivesCount}\n'
           'The total progress was ${(_syncProgress.progress * 100).roundToDouble()}');
     } catch (err, stackTrace) {
-      logSyncError(err, stackTrace);
+      logger.e(err, stackTrace);
       addError(err);
     }
     _lastSync = DateTime.now();
 
-    logSync('The sync process took: '
+    logger.d('The sync process took: '
         '${_lastSync!.difference(_initSync).inMilliseconds} milliseconds to finish.\n');
 
     emit(SyncIdle());
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {
-    logSync('Last Block Height: $lastBlockHeight');
+    logger.d('Last Block Height: $lastBlockHeight');
     if (_lastSync != null) {
       return lastBlockHeight;
     } else {
@@ -391,21 +390,21 @@ class SyncCubit extends Cubit<SyncState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    logSyncError(error, stackTrace);
-    logSync('Emitting SyncFailure state');
+    logger.e(error, stackTrace);
+    logger.d('Emitting SyncFailure state');
     if (isClosed) {
       return;
     }
     emit(SyncFailure(error: error, stackTrace: stackTrace));
 
-    logSync('Emitting SyncIdle state');
+    logger.d('Emitting SyncIdle state');
     emit(SyncIdle());
     super.onError(error, stackTrace);
   }
 
   @override
   Future<void> close() async {
-    logSync('Closing SyncCubit...');
+    logger.d('Closing SyncCubit...');
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
     await _restartOnFocusStreamSubscription?.cancel();
