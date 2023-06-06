@@ -70,6 +70,8 @@ void main() {
         maxEntries: 10,
       );
 
+      expect(await metadataCache.isFull, false);
+
       final mockData = generateMockData(10);
 
       for (int i = 0; i < mockData.length; i++) {
