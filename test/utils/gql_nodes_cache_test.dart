@@ -375,6 +375,14 @@ void main() {
         expect(keyParts.index, 0);
       });
 
+      test('can be constructed out of a string', () {
+        final keyParts = GQLNodesCacheKeyParts.fromString(
+          '${mockDriveId}_0',
+        );
+        expect(keyParts.driveId, mockDriveId);
+        expect(keyParts.index, 0);
+      });
+
       test('can be encoded to string', () {
         final keyParts = GQLNodesCacheKeyParts(mockDriveId, 0);
         expect(keyParts.toString(), '${mockDriveId}_0');
