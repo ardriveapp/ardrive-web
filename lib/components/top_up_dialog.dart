@@ -4,7 +4,6 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
 import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
@@ -26,22 +25,18 @@ class TopUpEstimationView extends StatefulWidget {
 }
 
 class _TopUpEstimationViewState extends State<TopUpEstimationView> {
-  late PaymentBloc paymentBloc;
+  late TurboTopUpEstimationBloc paymentBloc;
   late Wallet wallet;
 
   @override
   initState() {
     wallet = (context.read<ProfileCubit>().state as ProfileLoggedIn).wallet;
-    paymentBloc = PaymentBloc(
-      paymentService: context.read<PaymentService>(),
-      wallet: wallet,
-    )..add(LoadInitialData());
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PaymentBloc, PaymentState>(
+    return BlocBuilder<TurboTopUpEstimationBloc, PaymentState>(
       bloc: paymentBloc,
       builder: (context, state) {
         if (state is PaymentLoading) {

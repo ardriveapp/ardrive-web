@@ -552,20 +552,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 _selectedCountry == null ||
                 !(card?.complete ?? false),
             onPressed: () {
-              context.read<TurboTopupFlowBloc>().add(
-                    TurboTopUpShowPaymentReviewView(
-                      paymentUserInformation: PaymentUserInformationFromUSA(
-                        addressLine1: _addressLine1Controller.text,
-                        addressLine2: _addressLine2Controller.text,
-                        cardNumber: _cardNumberController.text,
-                        cvv: _cvvController.text,
-                        expirationDate: _expiryDateController.text,
-                        name: _nameController.text,
-                        postalCode: _postalCodeController.text,
-                        state: _stateController.text,
-                      ),
-                    ),
-                  );
+              // TODO: check payment-form-and-checkout branch
             },
           ),
         ],
