@@ -1,5 +1,9 @@
 {
   "@@locale": "en",
+  "addButtonTurbo": "Add",
+  "@addButtonTurbo": {
+    "description": "text for add button"
+  },
   "addnewManifestEmphasized": "ADD NEW MANIFEST",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
@@ -58,7 +62,7 @@
       }
     }
   },
-  "arBalance": "AR Balance",
+  "arBalance": "Balance",
   "@arBalance": {
     "description": "Balance in AR"
   },
@@ -344,6 +348,10 @@
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
   },
+  "creditsTurbo": "credits",
+  "@creditsTurbo": {
+    "description": "suffix for turbo balance"
+  },
   "darkModeEmphasized": "DARK MODE",
   "@darkModeEmphasized": {
     "description": "Refers to the dark theme of the app. Emphasized with upper case"
@@ -590,6 +598,10 @@
   "errorDragAndDropFolder": "We do not currently support drag and drop with folders",
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
+  },
+  "errorFetchingBalance": "Error fetching balance",
+  "@errorFetchingBalance": {
+    "description": "Error fetching balance"
   },
   "expandSideBar": "Expand sidebar",
   "@expandSideBar": {
@@ -1340,6 +1352,10 @@
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
   },
+  "refreshTurboBalanceTooltip": "Refresh balance",
+  "@refreshTurboBalanceTooltip": {
+    "description": "Tooltip on the icon to refresh the balance"
+  },
   "rename": "Rename",
   "@rename": {
     "description": "The action of renaming; imperative form"
@@ -1583,6 +1599,10 @@
   "tryOnAnotherDevice": "Please try on another device or stay updated for our upcoming mobile app by subscribing to our newsletter below.",
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
+  },
+  "turboAddCreditsBlurb": "Add credits using your card for faster uploads.",
+  "@turboAddCreditsBlurb": {
+    "description": "text placeholder for turbo balance when no user"
   },
   "unlock": "Unlock",
   "@unlock": {

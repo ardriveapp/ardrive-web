@@ -8,6 +8,9 @@
         "dart.additionalAnalyzerFileExtensions": [
             "drift"
         ],
-        "yaml.format.singleQuote": true
+        "yaml.format.singleQuote": true,
+        "githubPullRequests.ignoredPullRequestBranches": [
+            "dev"
+        ]
     }
 }

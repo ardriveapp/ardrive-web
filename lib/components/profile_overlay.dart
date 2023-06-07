@@ -114,11 +114,12 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                   width: 16,
                 ),
                 IconButton(
-                    icon: const Icon(Icons.logout),
-                    tooltip: appLocalizationsOf(context).logout,
-                    onPressed: () {
-                      context.read<ProfileCubit>().logoutProfile();
-                    }),
+                  icon: const Icon(Icons.logout),
+                  tooltip: appLocalizationsOf(context).logout,
+                  onPressed: () {
+                    context.read<ProfileCubit>().logoutProfile();
+                  },
+                ),
               ],
             ),
           ),

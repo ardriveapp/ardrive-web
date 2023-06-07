@@ -46,7 +46,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
     final minimumWalletBalance = BigInt.from(10000000);
     if (profile.walletBalance <= minimumWalletBalance &&
-        !_turboUploadService.useTurbo) {
+        !_turboUploadService.useTurboUpload) {
       emit(DriveCreateZeroBalance());
       return;
     }
@@ -96,7 +96,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await rootFolderDataItem.sign(profile.wallet);
       await driveDataItem.sign(profile.wallet);
       late TransactionBase createTx;
-      if (_turboUploadService.useTurbo) {
+      if (_turboUploadService.useTurboUpload) {
         createTx = await _arweave.prepareBundledDataItem(
           await DataBundle.fromDataItems(
             items: [driveDataItem, rootFolderDataItem],
