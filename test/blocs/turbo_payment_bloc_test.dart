@@ -17,18 +17,18 @@ void main() {
   final Wallet wallet = getTestWallet();
 
   late MockPaymentService mockPaymentService;
-  late PaymentBloc paymentBloc;
+  late TurboTopUpEstimationBloc paymentBloc;
 
   setUp(() {
     mockPaymentService = MockPaymentService();
 
-    paymentBloc = PaymentBloc(
+    paymentBloc = TurboTopUpEstimationBloc(
       paymentService: mockPaymentService,
       wallet: wallet,
     );
   });
 
-  blocTest<PaymentBloc, PaymentState>(
+  blocTest<TurboTopUpEstimationBloc, PaymentState>(
     'emits [PaymentLoading, PaymentLoaded] when LoadInitialData is called',
     setUp: () {
       when(
@@ -66,7 +66,7 @@ void main() {
     ],
   );
 
-  blocTest<PaymentBloc, PaymentState>(
+  blocTest<TurboTopUpEstimationBloc, PaymentState>(
     'emits [PaymentLoading, PaymentLoaded] when FiatAmountSelected is called',
     setUp: () {
       paymentBloc.costOfOneGb = BigInt.from(oneAR);
@@ -95,7 +95,7 @@ void main() {
       ),
     ],
   );
-  blocTest<PaymentBloc, PaymentState>(
+  blocTest<TurboTopUpEstimationBloc, PaymentState>(
     'emits [PaymentLoading, PaymentLoaded] when CurrencyUnitChanged is called',
     setUp: () {
       paymentBloc.costOfOneGb = BigInt.from(oneAR);
@@ -128,7 +128,7 @@ void main() {
     ],
   );
 
-  blocTest<PaymentBloc, PaymentState>(
+  blocTest<TurboTopUpEstimationBloc, PaymentState>(
     'emits [PaymentLoading, PaymentLoaded] when DataUnitChanged is called',
     setUp: () {
       paymentBloc.costOfOneGb = BigInt.from(oneAR);
@@ -162,7 +162,7 @@ void main() {
     },
   );
 
-  blocTest<PaymentBloc, PaymentState>(
+  blocTest<TurboTopUpEstimationBloc, PaymentState>(
     'emits [] when AddCreditsClicked is called',
     build: () => paymentBloc,
     act: (bloc) => bloc.add(AddCreditsClicked()),

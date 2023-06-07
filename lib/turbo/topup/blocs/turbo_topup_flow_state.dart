@@ -21,16 +21,45 @@ class TurboTopupFlowShowingEstimationView extends TurboTopupFlowState {
 }
 
 class TurboTopupFlowShowingPaymentFormView extends TurboTopupFlowState {
-  const TurboTopupFlowShowingPaymentFormView({bool isMovingForward = true})
+  final PriceEstimate priceEstimate;
+
+  const TurboTopupFlowShowingPaymentFormView(
+      {bool isMovingForward = true, required this.priceEstimate})
       : super(isMovingForward);
 }
 
 class TurboTopupFlowShowingPaymentReviewView extends TurboTopupFlowState {
-  const TurboTopupFlowShowingPaymentReviewView({bool isMovingForward = true})
-      : super(isMovingForward);
+  final PriceEstimate priceEstimate;
+  final PaymentUserInformation paymentUserInformation;
+
+  const TurboTopupFlowShowingPaymentReviewView({
+    bool isMovingForward = true,
+    required this.paymentUserInformation,
+    required this.priceEstimate,
+  }) : super(isMovingForward);
 }
 
 class TurboTopupFlowShowingSuccessView extends TurboTopupFlowState {
   const TurboTopupFlowShowingSuccessView({bool isMovingForward = true})
       : super(isMovingForward);
+}
+
+class TurboTopupFlowShowingErrorView extends TurboTopupFlowState {
+  final TurboErrorType errorType;
+  const TurboTopupFlowShowingErrorView({
+    bool isMovingForward = true,
+    required this.errorType,
+  }) : super(isMovingForward);
+}
+
+class TurboTopUpShowingSessionExpiredView extends TurboTopupFlowState {
+  const TurboTopUpShowingSessionExpiredView({bool isMovingForward = true})
+      : super(isMovingForward);
+}
+
+enum TurboErrorType {
+  network,
+  server,
+  unknown,
+  sessionExpired,
 }

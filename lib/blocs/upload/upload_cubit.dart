@@ -8,6 +8,7 @@ import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:equatable/equatable.dart';
@@ -353,6 +354,7 @@ class UploadCubit extends Cubit<UploadState> {
           .upload(_arweave, _turbo)
           .debounceTime(const Duration(milliseconds: 500))
           .handleError((_) {
+        logger.e('Error uploading bundle');
         bundleHandle.hasError = true;
         if (!hasEmittedError) {
           addError(_);
@@ -361,6 +363,7 @@ class UploadCubit extends Cubit<UploadState> {
       })) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
+
       await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
 
       debugPrint('Disposing bundle');

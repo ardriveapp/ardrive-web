@@ -4,11 +4,11 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
 import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -26,22 +26,20 @@ class TopUpEstimationView extends StatefulWidget {
 }
 
 class _TopUpEstimationViewState extends State<TopUpEstimationView> {
-  late PaymentBloc paymentBloc;
+  late TurboTopUpEstimationBloc paymentBloc;
   late Wallet wallet;
 
   @override
   initState() {
     wallet = (context.read<ProfileCubit>().state as ProfileLoggedIn).wallet;
-    paymentBloc = PaymentBloc(
-      paymentService: context.read<PaymentService>(),
-      wallet: wallet,
-    )..add(LoadInitialData());
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PaymentBloc, PaymentState>(
+    paymentBloc = context.read<TurboTopUpEstimationBloc>();
+
+    return BlocBuilder<TurboTopUpEstimationBloc, PaymentState>(
       bloc: paymentBloc,
       builder: (context, state) {
         if (state is PaymentLoading) {
@@ -89,7 +87,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                   ),
                   const SizedBox(height: 24),
                   PriceEstimateView(
-                    fiatAmount: state.selectedAmount.toInt(),
+                    fiatAmount: state.selectedAmount,
                     fiatCurrency: '\$',
                     estimatedCredits: state.creditsForSelectedAmount,
                     estimatedStorage: state.estimatedStorageForSelectedAmount,
@@ -160,9 +158,9 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                             .copyWith(fontWeight: FontWeight.w700),
                         text: appLocalizationsOf(context).next,
                         onPressed: () {
-                          context
-                              .read<TurboTopupFlowBloc>()
-                              .add(const TurboTopUpShowPaymentFormView());
+                          context.read<TurboTopupFlowBloc>().add(
+                                TurboTopUpShowPaymentFormView(4),
+                              );
                         },
                       ),
                     ],
@@ -224,8 +222,25 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     selectedAmount = widget.preSelectedAmount;
     _formKey = GlobalKey<ArDriveFormState>();
     _customAmountFocus = FocusNode();
+    // add post frame callback to set the focus on the custom amount field
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = context.read<TurboTopUpEstimationBloc>().state;
+
+      if (state is PaymentLoaded) {
+        setState(() {
+          if (!presetAmounts.contains(state.selectedAmount)) {
+            _customAmountController.text = state.selectedAmount.toString();
+          }
+        });
+      }
+    });
 
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 
   DateTime lastChanged = DateTime.now();
@@ -265,9 +280,12 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   }
 
   void _resetCustomAmount() {
-    _customAmountController.text = '';
-    _formKey.currentState?.validate();
-    _customAmountFocus.unfocus();
+    setState(() {
+      _customAmountController.text = '';
+      _customAmountValidationMessage = null;
+      _formKey.currentState?.validate();
+      _customAmountFocus.unfocus();
+    });
   }
 
   Widget buildButtonBar(BuildContext context) {
@@ -412,7 +430,6 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                       setState(() {
                         if (s == null || s.isEmpty) {
                           _customAmountValidationMessage = null;
-
                           return;
                         }
 
@@ -430,21 +447,39 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
 
                         _customAmountValidationMessage = errorMessage;
 
+                        logger.d('validator: $s, error: $errorMessage');
+
                         _onCustomAmountSelected(s);
                       });
 
                       return _customAmountValidationMessage;
                     },
+                    keyboardType: TextInputType.number,
                     inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      TextInputFormatter.withFunction(
-                        (oldValue, newValue) {
-                          if (int.parse(newValue.text) > 10000) {
-                            return oldValue;
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        // Remove any non-digit character
+                        String newValueText =
+                            newValue.text.replaceAll(RegExp(r'\D'), '');
+
+                        if (newValueText.isNotEmpty) {
+                          int valueAsInt = int.parse(newValueText);
+                          if (valueAsInt > 10000) {
+                            // If the value is greater than 10000, truncate the last digit and place the cursor at the end
+                            String newString = newValueText.substring(
+                                0, newValueText.length - 1);
+                            return TextEditingValue(
+                              text: newString,
+                              selection: TextSelection.collapsed(
+                                  offset: newString.length),
+                            );
                           }
-                          return newValue;
-                        },
-                      ),
+                        }
+                        return TextEditingValue(
+                          text: newValueText,
+                          selection: TextSelection.collapsed(
+                              offset: newValueText.length),
+                        );
+                      }),
                     ],
                   ),
                 ),
