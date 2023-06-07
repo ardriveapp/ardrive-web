@@ -78,9 +78,9 @@ class PaymentService {
     return price;
   }
 
-  Future topUp({
+  Future<Map<String, dynamic>> topUp({
     required Wallet wallet,
-    required BigInt amount,
+    required int amount,
     String currency = 'usd',
   }) async {
     final nonce = const Uuid().v4();
@@ -118,12 +118,13 @@ class DontUsePaymentService implements PaymentService {
       throw UnimplementedError();
 
   @override
-  Future topUp({
+  Future<Map<String, dynamic>> topUp({
     required Wallet wallet,
-    required BigInt amount,
+    required int amount,
     String currency = 'usd',
-  }) =>
-      throw UnimplementedError();
+  }) async {
+    throw UnimplementedError();
+  }
 
   @override
   Uri get turboPaymentUri => throw UnimplementedError();

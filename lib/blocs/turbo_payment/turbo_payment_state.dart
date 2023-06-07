@@ -21,6 +21,8 @@ class PaymentLoaded extends PaymentState {
   final String currencyUnit;
   final FileSizeUnit dataUnit;
 
+  int literalSelectedAmount() => selectedAmount ~/ 100;
+
   PaymentLoaded({
     required this.balance,
     required this.estimatedStorageForBalance,

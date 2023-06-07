@@ -15,11 +15,11 @@ class FileStorageEstimator {
     required BigInt costOfOneGb,
   }) {
     final estimatedStorageInBytes =
-        (credits.toDouble() * oneGigabyteInBytes) / costOfOneGb.toDouble();
+        (credits.toDouble() * oneGigabyteInBytes) ~/ costOfOneGb.toDouble();
 
     switch (outputDataUnit) {
       case FileSizeUnit.bytes:
-        return estimatedStorageInBytes;
+        return estimatedStorageInBytes.toDouble();
       case FileSizeUnit.kilobytes:
         return estimatedStorageInBytes / oneKilobyteInBytes;
       case FileSizeUnit.megabytes:
