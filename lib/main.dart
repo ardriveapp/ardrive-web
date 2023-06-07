@@ -251,84 +251,87 @@ class AppState extends State<App> {
           ),
         ),
       ],
-      child: KeyboardHandler(
-        child: MultiBlocProvider(
-          providers: [
-            BlocProvider(
-              create: (context) => ThemeSwitcherBloc(
-                userPreferencesRepository:
-                    context.read<UserPreferencesRepository>(),
-              )..add(LoadTheme()),
-            ),
-            BlocProvider(
-              create: (context) => ProfileCubit(
-                arweave: context.read<ArweaveService>(),
-                turboUploadService: context.read<UploadService>(),
-                profileDao: context.read<ProfileDao>(),
-                db: context.read<Database>(),
+      child: ArDriveDevToolsShortcuts(
+        child: KeyboardHandler(
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create: (context) => ThemeSwitcherBloc(
+                  userPreferencesRepository:
+                      context.read<UserPreferencesRepository>(),
+                )..add(LoadTheme()),
               ),
-            ),
-            BlocProvider(
-              create: (context) => ActivityCubit(),
-            ),
-            BlocProvider(
-              create: (context) =>
-                  FeedbackSurveyCubit(FeedbackSurveyInitialState()),
-            ),
-          ],
-          child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
-            listener: (context, state) {
-              if (state is ThemeSwitcherDarkTheme) {
-                ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
-              } else if (state is ThemeSwitcherLightTheme) {
-                ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
-              }
-            },
-            builder: (context, state) {
-              return ArDriveApp(
-                onThemeChanged: (theme) {
-                  context.read<ThemeSwitcherBloc>().add(ChangeTheme());
-                },
-                key: arDriveAppKey,
-                builder: (context) => MaterialApp.router(
-                  title: 'ArDrive',
-                  theme: ArDriveTheme.of(context)
-                      .themeData
-                      .materialThemeData
-                      .copyWith(
-                        scaffoldBackgroundColor:
-                            ArDriveTheme.of(context).themeData.backgroundColor,
+              BlocProvider(
+                create: (context) => ProfileCubit(
+                  arweave: context.read<ArweaveService>(),
+                  turboUploadService: context.read<UploadService>(),
+                  profileDao: context.read<ProfileDao>(),
+                  db: context.read<Database>(),
+                ),
+              ),
+              BlocProvider(
+                create: (context) => ActivityCubit(),
+              ),
+              BlocProvider(
+                create: (context) =>
+                    FeedbackSurveyCubit(FeedbackSurveyInitialState()),
+              ),
+            ],
+            child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
+              listener: (context, state) {
+                if (state is ThemeSwitcherDarkTheme) {
+                  ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
+                } else if (state is ThemeSwitcherLightTheme) {
+                  ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
+                }
+              },
+              builder: (context, state) {
+                return ArDriveApp(
+                  onThemeChanged: (theme) {
+                    context.read<ThemeSwitcherBloc>().add(ChangeTheme());
+                  },
+                  key: arDriveAppKey,
+                  builder: (context) => MaterialApp.router(
+                    title: 'ArDrive',
+                    theme: ArDriveTheme.of(context)
+                        .themeData
+                        .materialThemeData
+                        .copyWith(
+                          scaffoldBackgroundColor: ArDriveTheme.of(context)
+                              .themeData
+                              .backgroundColor,
+                        ),
+                    debugShowCheckedModeBanner: false,
+                    routeInformationParser: _routeInformationParser,
+                    routerDelegate: _routerDelegate,
+                    localizationsDelegates: const [
+                      AppLocalizations.delegate,
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                    ],
+                    supportedLocales: const [
+                      Locale('en', ''), // English, no country code
+                      Locale('es', ''), // Spanish, no country code
+                      Locale.fromSubtags(
+                          languageCode: 'zh'), // generic Chinese 'zh'
+                      Locale.fromSubtags(
+                        languageCode: 'zh',
+                        countryCode: 'HK',
+                      ), // Traditional Chinese, Cantonese
+                      Locale('ja', ''), // Japanese, no country code
+                      Locale('hi', ''), // Hindi, no country code
+                    ],
+                    builder: (context, child) => ListTileTheme(
+                      textColor: kOnSurfaceBodyTextColor,
+                      iconColor: kOnSurfaceBodyTextColor,
+                      child: Portal(
+                        child: child!,
                       ),
-                  debugShowCheckedModeBanner: false,
-                  routeInformationParser: _routeInformationParser,
-                  routerDelegate: _routerDelegate,
-                  localizationsDelegates: const [
-                    AppLocalizations.delegate,
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                  ],
-                  supportedLocales: const [
-                    Locale('en', ''), // English, no country code
-                    Locale('es', ''), // Spanish, no country code
-                    Locale.fromSubtags(
-                        languageCode: 'zh'), // generic Chinese 'zh'
-                    Locale.fromSubtags(
-                      languageCode: 'zh',
-                      countryCode: 'HK',
-                    ), // Traditional Chinese, Cantonese
-                    Locale('ja', ''), // Japanese, no country code
-                    Locale('hi', ''), // Hindi, no country code
-                  ],
-                  builder: (context, child) => ListTileTheme(
-                    textColor: kOnSurfaceBodyTextColor,
-                    iconColor: kOnSurfaceBodyTextColor,
-                    child: Portal(
-                      child: child!,
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
