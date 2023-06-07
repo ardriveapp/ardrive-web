@@ -36,6 +36,8 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
 
   @override
   Widget build(BuildContext context) {
+    paymentBloc = context.read<TurboTopUpEstimationBloc>();
+
     return BlocBuilder<TurboTopUpEstimationBloc, PaymentState>(
       bloc: paymentBloc,
       builder: (context, state) {
