@@ -7,6 +7,7 @@ import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
@@ -38,8 +39,8 @@ class MockDrivesCubit extends MockCubit<DrivesState> implements DrivesCubit {}
 class MockDriveDetailCubit extends MockCubit<DriveDetailState>
     implements DriveDetailCubit {}
 
-class MockProfileCubit extends MockCubit<ProfileState> implements ProfileCubit {
-}
+class MockProfileCubit extends MockCubit<ProfileState>
+    implements ProfileCubit {}
 
 class MockUploadBloc extends MockCubit<UploadState> implements UploadCubit {}
 
@@ -74,3 +75,9 @@ class MockUploadFileChecker extends Mock implements UploadFileChecker {}
 class MockSecureKeyValueStore extends Mock implements SecureKeyValueStore {}
 
 class MockDatabaseHelpers extends Mock implements DatabaseHelpers {}
+
+class MockConfigFetcher extends Mock implements ConfigFetcher {}
+
+class MockConfigService extends Mock implements ConfigService {}
+
+class MockEnvFetcher extends Mock implements EnvFetcher {}

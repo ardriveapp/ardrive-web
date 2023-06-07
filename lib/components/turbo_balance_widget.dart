@@ -3,6 +3,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/winston_to_ar.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
@@ -10,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class TurboBalance extends StatelessWidget {
+class TurboBalance extends StatefulWidget {
   const TurboBalance({
     Key? key,
     required this.paymentService,
@@ -22,10 +23,21 @@ class TurboBalance extends StatelessWidget {
   final PaymentService paymentService;
   final Function? onTapAddButton;
 
-  TurboBalanceCubit get _turboBalanceCubit => TurboBalanceCubit(
-        paymentService: paymentService,
-        wallet: wallet,
-      )..getBalance();
+  @override
+  State<TurboBalance> createState() => _TurboBalanceState();
+}
+
+class _TurboBalanceState extends State<TurboBalance> {
+  late TurboBalanceCubit _turboBalanceCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _turboBalanceCubit = TurboBalanceCubit(
+      paymentService: widget.paymentService,
+      wallet: widget.wallet,
+    )..getBalance();
+  }
 
   Widget addButton(BuildContext context) => SizedBox(
         height: 23,
@@ -39,13 +51,15 @@ class TurboBalance extends StatelessWidget {
           ),
           borderRadius: 20,
           onPressed: () {
-            onTapAddButton?.call();
+            widget.onTapAddButton?.call();
           },
         ),
       );
 
   @override
   Widget build(BuildContext context) {
+    logger.d('Building turbo balance widget');
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
       child: Column(
@@ -131,6 +145,7 @@ class TurboBalance extends StatelessWidget {
                     ArDriveIconButton(
                       icon: ArDriveIcons.refresh(),
                       onPressed: () {
+                        logger.d('Refreshing baclance');
                         _turboBalanceCubit.getBalance();
                       },
                     )

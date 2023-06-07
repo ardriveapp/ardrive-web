@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
@@ -28,7 +29,7 @@ class PaymentService {
         'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
-    final price = BigInt.parse((json.decode(result.data)['credits']));
+    final price = BigInt.parse((json.decode(result.data)['winc']));
 
     return price;
   }
@@ -46,7 +47,7 @@ class PaymentService {
         'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
-    final price = BigInt.parse((json.decode(result.data)['credits']));
+    final price = BigInt.parse((json.decode(result.data)['winc']));
     return price;
   }
 
@@ -67,13 +68,16 @@ class PaymentService {
         'x-public-key': publicKeyToHeader(publicKey),
       },
     ).onError((ArDriveHTTPException error, stackTrace) {
+      logger.e('Error getting balance', error, stackTrace);
+
       if (error.statusCode == 404) {
         throw TurboUserNotFound();
       }
+
       throw error;
     });
 
-    final price = BigInt.parse((json.decode(result.data)['credits']));
+    final price = BigInt.parse((json.decode(result.data)['winc']));
 
     return price;
   }
