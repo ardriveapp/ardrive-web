@@ -5,6 +5,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart'
     show getDirname, lookupMimeTypeWithDefaultType;
 import 'package:arweave/arweave.dart';
@@ -59,7 +60,15 @@ class UploadPlanUtils {
       );
 
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
-      fileEntity.id = conflictingFiles[file.getIdentifier()] ?? _uuid.v4();
+      if (conflictingFiles[file.getIdentifier()] != null) {
+        logger.i(
+            'File ${file.getIdentifier()} already exists in target folder. Reusing id.');
+        fileEntity.id = conflictingFiles[file.getIdentifier()];
+      } else {
+        logger.i(
+            'File ${file.getIdentifier()} does not exist in target folder. Creating new id.');
+        fileEntity.id = _uuid.v4();
+      }
 
       final fileKey = private
           ? await crypto.deriveFileKey(driveKey!, fileEntity.id!)
