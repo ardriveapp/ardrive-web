@@ -22,7 +22,7 @@ bool validateCreditCardExpiryDate(String expiryDate) {
   return ccExpResults.isValid;
 }
 
-bool validateCreditCardCVC(String cvc, String ccNum) {
+bool validateCreditCardCVV(String cvc, String ccNum) {
   CreditCardValidator ccValidator = CreditCardValidator();
 
   final creditType = ccValidator.validateCCNum(ccNum).ccType;
