@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
@@ -12,8 +13,6 @@ part 'turbo_payment_state.dart';
 
 final presetAmounts = [25, 50, 75, 100];
 final supportedCurrencies = ['usd'];
-
-const oneGigbyteInBytes = 1024 * 1024 * 1024;
 
 class PriceEstimate {
   final BigInt credits;
@@ -160,6 +159,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   }
 
   Future<BigInt> _getCostOfOneGB() async {
-    return await paymentService.getPriceForBytes(byteSize: oneGigbyteInBytes);
+    return await paymentService.getPriceForBytes(byteSize: const GiB(1).size);
   }
 }
