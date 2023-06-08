@@ -31,15 +31,15 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ar-io/ardrive_http.git
-      ref: 5f873cca568844bf2a9c21c56e14f10d3f8ee76a
+      ref: v1.2.6
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-3773-upgrade-flutter-to-v-3-10-0
+      ref: v1.3.0
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: 6b4a8f5e3639aa37844558c06dbb82008abf1d2a
+      ref: v1.2.0
   artemis: ^7.0.0-beta.13
   arweave:
     git:
