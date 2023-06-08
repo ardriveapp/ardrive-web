@@ -88,10 +88,10 @@ packages:
     description:
       path: "."
       ref: PE-3693-implementing-balance-and-price-estimate-view-for-turbo-top-up-only-usd
-      resolved-ref: "8332f716eec72cda01944df4308e4b0cc89abf14"
+      resolved-ref: bc704b49c498553d09354bd857a6127419b8ad2f
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.2.0"
+    version: "1.1.0"
   args:
     dependency: transitive
     description:
