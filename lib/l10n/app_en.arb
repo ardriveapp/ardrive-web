@@ -909,10 +909,6 @@
   "@howDoesKeyfileLoginWork": {
     "description": "Title for explaining keyfile login"
   },
-  "howDoIGetAR": "How do I get AR?",
-  "@howDoIGetAR": {
-    "description": "Link to a help page explaining how to get Arweave tokens"
-  },
   "infernoIsInFullSwing": "The Inferno Rewards Program is in full swing! Click here to check out the rules for participation!",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
@@ -924,10 +920,6 @@
   "insufficientARToCreateDrive": "You do not have sufficient AR to create a drive.",
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
-  },
-  "insufficientARWarning": "Insufficient Funds",
-  "@insufficientARWarning": {
-    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
   },
   "insufficientBalanceForManifest": "Provided wallet balance of {walletBalance} AR is not enough for this manifest transaction costing {totalCost} AR...",
   "@insufficientBalanceForManifest": {

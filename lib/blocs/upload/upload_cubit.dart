@@ -8,6 +8,7 @@ import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:equatable/equatable.dart';
@@ -163,7 +164,10 @@ class UploadCubit extends Cubit<UploadState> {
           .getSingleOrNull();
 
       if (existingFileId != null) {
-        conflictingFiles[file.ioFile.name] = existingFileId;
+        logger.d(
+            'Found conflicting file: $fileName with identifier: ${file.getIdentifier()}');
+        logger.d('Existing file id: $existingFileId');
+        conflictingFiles[file.getIdentifier()] = existingFileId;
       }
     }
     if (conflictingFiles.isNotEmpty) {

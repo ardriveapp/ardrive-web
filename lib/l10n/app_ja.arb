@@ -877,10 +877,6 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
-  "howDoIGetAR": "ARを取得するにはどうすればいいですか",
-  "@howDoIGetAR": {
-    "description": "Link to a help page explaining how to get Arweave tokens"
-  },
   "infernoIsInFullSwing": "インフェルノ・リワード・プログラムが本格化！参加ルールを確認するにはここをクリック！",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
@@ -892,10 +888,6 @@
   "insufficientARToCreateDrive": "ARが不足しているため、ドライブを作成することができません。",
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
-  },
-  "insufficientARWarning": "残高不足",
-  "@insufficientARWarning": {
-    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
   },
   "insufficientBalanceForManifest": "指定されたウォレットの残高が{walletBalance} ARでは、{totalCost} ARかかるこのマニフェストの取引に十分ではありません…",
   "@insufficientBalanceForManifest": {

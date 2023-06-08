@@ -1,0 +1,2 @@
+- Adds back the CANCEL button for snapshot creation
+
