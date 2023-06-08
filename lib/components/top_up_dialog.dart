@@ -652,12 +652,10 @@ class AnimatedFeedbackMessage extends StatefulWidget {
       : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
-  _AnimatedFeedbackMessageState createState() =>
-      _AnimatedFeedbackMessageState();
+  AnimatedFeedbackMessageState createState() => AnimatedFeedbackMessageState();
 }
 
-class _AnimatedFeedbackMessageState extends State<AnimatedFeedbackMessage>
+class AnimatedFeedbackMessageState extends State<AnimatedFeedbackMessage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animationController;
   late final Animation<double> _animation;
