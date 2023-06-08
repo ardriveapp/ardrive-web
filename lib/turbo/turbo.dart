@@ -1,9 +1,10 @@
 import 'dart:async';
 
-import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
-import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/topup/models/price_estimate.dart';
+import 'package:ardrive/utils/data_size.dart';
+import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 
@@ -68,7 +69,7 @@ class Turbo {
     }
 
     _costOfOneGb =
-        await paymentService.getPriceForBytes(byteSize: oneGigbyteInBytes);
+        await paymentService.getPriceForBytes(byteSize: const GiB(1).size);
     _lastFetchTime = currentTime;
 
     return _costOfOneGb!;

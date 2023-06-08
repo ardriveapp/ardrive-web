@@ -3,7 +3,7 @@
 
 import 'package:ardrive/utils/data_size.dart';
 
-import '../file_size_units.dart';
+import '../../../utils/file_size_units.dart';
 
 class FileStorageEstimator {
   static double computeStorageEstimateForCredits({

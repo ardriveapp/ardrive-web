@@ -1,22 +1,47 @@
 import 'package:animations/animations.dart';
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
+import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 void showTurboModal(BuildContext context) {
+  final turbo = Turbo(
+    paymentService: context.read<PaymentService>(),
+    wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+  );
+
   showAnimatedDialog(
     context,
-    content: BlocProvider(
-      create: (context) =>
-          TurboTopupFlowBloc()..add(const TurboTopUpShowEstimationView()),
+    content: MultiBlocProvider(
+      providers: [
+        RepositoryProvider<Turbo>(
+          create: (context) => turbo,
+        ),
+        BlocProvider(
+          create: (context) =>
+              TurboTopupFlowBloc()..add(const TurboTopUpShowEstimationView()),
+        ),
+        BlocProvider(
+          create: (context) => TurboTopUpEstimationBloc(
+            turbo: context.read<Turbo>(),
+          )..add(LoadInitialData()),
+        ),
+      ],
       child: const TurboModal(),
     ),
     barrierDismissible: false,
     barrierColor:
         ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
-  );
+  ).then((value) {
+    logger.d('Turbo modal closed');
+    turbo.dispose();
+  });
 }
 
 class TurboModal extends StatefulWidget {

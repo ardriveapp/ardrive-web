@@ -1,13 +1,12 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
-import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -25,32 +24,31 @@ class TopUpEstimationView extends StatefulWidget {
 }
 
 class _TopUpEstimationViewState extends State<TopUpEstimationView> {
-  late PaymentBloc paymentBloc;
+  late TurboTopUpEstimationBloc paymentBloc;
   late Wallet wallet;
 
   @override
   initState() {
     wallet = (context.read<ProfileCubit>().state as ProfileLoggedIn).wallet;
-    paymentBloc = PaymentBloc(
-      paymentService: context.read<PaymentService>(),
-      wallet: wallet,
-    )..add(LoadInitialData());
+
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PaymentBloc, PaymentState>(
+    final paymentBloc = context.read<TurboTopUpEstimationBloc>();
+
+    return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
       bloc: paymentBloc,
       builder: (context, state) {
-        if (state is PaymentLoading) {
+        if (state is EstimationLoading) {
           return const SizedBox(
             height: 575,
             child: Center(
               child: CircularProgressIndicator(),
             ),
           );
-        } else if (state is PaymentLoaded) {
+        } else if (state is EstimationLoaded) {
           return SingleChildScrollView(
             child: TurboTopupScaffold(
               child: Column(
@@ -172,7 +170,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
               ),
             ),
           );
-        } else if (state is PaymentError) {
+        } else if (state is EstimationError) {
           return TurboTopupScaffold(
             child: SizedBox(
               height: 575,

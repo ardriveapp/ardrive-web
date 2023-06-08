@@ -1,18 +1,25 @@
-part of 'turbo_payment_bloc.dart';
+part of 'topup_estimation_bloc.dart';
 
-abstract class PaymentState extends Equatable {}
+abstract class TopupEstimationState extends Equatable {
+  const TopupEstimationState();
+}
 
-class PaymentInitial extends PaymentState {
+class TopupEstimationInitial extends TopupEstimationState {
   @override
   List<Object?> get props => [];
 }
 
-class PaymentLoading extends PaymentState {
+class EstimationInitial extends TopupEstimationState {
   @override
   List<Object?> get props => [];
 }
 
-class PaymentLoaded extends PaymentState {
+class EstimationLoading extends TopupEstimationState {
+  @override
+  List<Object?> get props => [];
+}
+
+class EstimationLoaded extends TopupEstimationState {
   final BigInt balance;
   final String estimatedStorageForBalance;
   final int selectedAmount;
@@ -21,7 +28,7 @@ class PaymentLoaded extends PaymentState {
   final String currencyUnit;
   final FileSizeUnit dataUnit;
 
-  PaymentLoaded({
+  const EstimationLoaded({
     required this.balance,
     required this.estimatedStorageForBalance,
     required this.selectedAmount,
@@ -43,9 +50,7 @@ class PaymentLoaded extends PaymentState {
       ];
 }
 
-class PaymentError extends PaymentState {
-  PaymentError();
-
+class EstimationError extends TopupEstimationState {
   @override
   List<Object?> get props => [];
 }
