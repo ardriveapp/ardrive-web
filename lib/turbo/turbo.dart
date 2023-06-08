@@ -96,30 +96,23 @@ class Turbo {
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
   }) async {
-    try {
-      final int correctAmount = currentAmount * 100;
+    final int correctAmount = currentAmount * 100;
 
-      final priceEstimate = await paymentService.getPriceForFiat(
-        currency: currentCurrency,
-        amount: correctAmount,
-      );
+    final priceEstimate = await paymentService.getPriceForFiat(
+      currency: currentCurrency,
+      amount: correctAmount,
+    );
 
-      final estimatedStorageForSelectedAmount =
-          computeStorageEstimateForCredits(
-        credits: priceEstimate,
-        outputDataUnit: currentDataUnit,
-      );
+    final estimatedStorageForSelectedAmount = computeStorageEstimateForCredits(
+      credits: priceEstimate,
+      outputDataUnit: currentDataUnit,
+    );
 
-      return PriceEstimate(
-        credits: priceEstimate,
-        priceInCurrency: currentAmount,
-        estimatedStorage: estimatedStorageForSelectedAmount,
-      );
-    } catch (e) {
-      logger.e(e);
-      // You might want to do some error handling here
-      rethrow;
-    }
+    return PriceEstimate(
+      credits: priceEstimate,
+      priceInCurrency: currentAmount,
+      estimatedStorage: estimatedStorageForSelectedAmount,
+    );
   }
 
   Future<PriceEstimate> computePriceEstimateAndUpdate({
@@ -127,23 +120,17 @@ class Turbo {
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
   }) async {
-    try {
-      _currentAmount = currentAmount;
-      _currentCurrency = currentCurrency;
-      _currentDataUnit = currentDataUnit;
+    _currentAmount = currentAmount;
+    _currentCurrency = currentCurrency;
+    _currentDataUnit = currentDataUnit;
 
-      _priceEstimate = await computePriceEstimate(
-        currentAmount: currentAmount,
-        currentCurrency: currentCurrency,
-        currentDataUnit: currentDataUnit,
-      );
+    _priceEstimate = await computePriceEstimate(
+      currentAmount: currentAmount,
+      currentCurrency: currentCurrency,
+      currentDataUnit: currentDataUnit,
+    );
 
-      return _priceEstimate;
-    } catch (e) {
-      logger.e(e);
-      // You might want to do some error handling here
-      rethrow;
-    }
+    return _priceEstimate;
   }
 
   Future<PriceEstimate> refreshPriceEstimate() async {
