@@ -101,12 +101,25 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
     );
 
     ArDriveDevToolOption useTurboOption = ArDriveDevToolOption(
-      name: 'useTurbo',
-      value: settings.useTurbo,
+      name: 'useTurboUpload',
+      value: settings.useTurboUpload,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(useTurbo: value),
+            settings.copyWith(useTurboUpload: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
+    ArDriveDevToolOption useTurboPaymentOption = ArDriveDevToolOption(
+      name: 'useTurboPayment',
+      value: settings.useTurboPayment,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(useTurboPayment: value),
           );
         });
       },
@@ -115,11 +128,24 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
     ArDriveDevToolOption defaultTurboUrlOption = ArDriveDevToolOption(
       name: 'defaultTurboUrl',
-      value: settings.defaultTurboUrl,
+      value: settings.defaultTurboUploadUrl,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(defaultTurboUrl: value),
+            settings.copyWith(defaultTurboUploadUrl: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.text,
+    );
+
+    ArDriveDevToolOption defaultTurboPaymentUrlOption = ArDriveDevToolOption(
+      name: 'defaultTurboUrl',
+      value: settings.defaultTurboPaymentUrl,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(defaultTurboPaymentUrl: value),
           );
         });
       },
@@ -233,6 +259,8 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
     List options = [
       useTurboOption,
+      useTurboPaymentOption,
+      defaultTurboPaymentUrlOption,
       enableSyncFromSnapshotOption,
       enableQuickSyncAuthoringOption,
       enableMultipleFileDownloadOption,
@@ -323,7 +351,7 @@ class DraggableWindow extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final windowSize = useState<Size>(const Size(400, 800));
+    final windowSize = useState<Size>(const Size(600, 1000));
     final windowPos = useState<Offset>(Offset.zero);
     final isWindowVisible = useState<bool>(true);
 
@@ -393,7 +421,6 @@ class DraggableWindow extends HookWidget {
                                 .themeBgCanvas,
                           ),
                           onPressed: () {
-                            isWindowVisible.value = false;
                             ArDriveDevTools().closeDevTools();
                           },
                         ),

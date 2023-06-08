@@ -1,0 +1,1 @@
+- Removes the “Insufficient Funds“ warning underneath the New button

@@ -81,7 +81,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
         await _driveDao.transaction(() async {
           final folderEntity = folder.asEntity();
-          if (_turboUploadService.useTurbo) {
+          if (_turboUploadService.useTurboUpload) {
             final folderDataItem = await _arweave.prepareEntityDataItem(
               folderEntity,
               profile.wallet,
@@ -123,7 +123,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
           final fileEntity = file.asEntity();
 
-          if (_turboUploadService.useTurbo) {
+          if (_turboUploadService.useTurboUpload) {
             final fileDataItem = await _arweave.prepareEntityDataItem(
               fileEntity,
               profile.wallet,

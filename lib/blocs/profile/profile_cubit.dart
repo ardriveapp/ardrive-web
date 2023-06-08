@@ -141,7 +141,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         walletAddress: walletAddress,
         walletBalance: walletBalance,
         cipherKey: profile.key,
-        useTurbo: _turboUploadService.useTurbo,
+        useTurbo: _turboUploadService.useTurboUpload,
       ),
     );
   }
