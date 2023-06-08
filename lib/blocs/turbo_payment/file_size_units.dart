@@ -16,8 +16,6 @@ extension FileSizeUnitExtension on FileSizeUnit {
         return 'MB';
       case FileSizeUnit.gigabytes:
         return 'GB';
-      default:
-        throw Exception('Unknown file size unit: $this');
     }
   }
 }
