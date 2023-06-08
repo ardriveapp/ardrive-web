@@ -61,6 +61,7 @@ class Turbo {
   // Cost related methods
   Future<BigInt> getCostOfOneGB({bool forceGet = false}) async {
     final currentTime = DateTime.now();
+
     if (!forceGet && _costOfOneGb != null && _lastFetchTime != null) {
       final difference = currentTime.difference(_lastFetchTime!);
       if (difference.inMinutes < 10) {
@@ -103,7 +104,8 @@ class Turbo {
       amount: correctAmount,
     );
 
-    final estimatedStorageForSelectedAmount = computeStorageEstimateForCredits(
+    final estimatedStorageForSelectedAmount =
+        await computeStorageEstimateForCredits(
       credits: priceEstimate,
       outputDataUnit: currentDataUnit,
     );
@@ -146,10 +148,12 @@ class Turbo {
   }
 
   // Storage estimate method
-  double computeStorageEstimateForCredits({
+  Future<double> computeStorageEstimateForCredits({
     required BigInt credits,
     required FileSizeUnit outputDataUnit,
-  }) {
+  }) async {
+    _costOfOneGb ??= await getCostOfOneGB();
+
     final estimatedStorageInBytes =
         FileStorageEstimator.computeStorageEstimateForCredits(
       credits: credits,

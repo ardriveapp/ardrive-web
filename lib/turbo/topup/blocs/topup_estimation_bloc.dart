@@ -31,15 +31,20 @@ class TurboTopUpEstimationBloc
     on<TopupEstimationEvent>((event, emit) async {
       if (event is LoadInitialData) {
         try {
+          logger.i('initializing the estimation view');
+          logger.d('getting the balance');
           await _getBalance();
+
+          logger.d('getting the price estimate');
           await _computeAndUpdatePriceEstimate(
             emit,
             currentAmount: 0,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
           );
-        } catch (e) {
-          logger.e(e);
+        } catch (e, s) {
+          logger.e('error initializing the estimation view', e, s);
+
           emit(EstimationError());
         }
       } else if (event is FiatAmountSelected) {
@@ -87,7 +92,8 @@ class TurboTopUpEstimationBloc
       currentDataUnit: currentDataUnit,
     );
 
-    final estimatedStorageForBalance = turbo.computeStorageEstimateForCredits(
+    final estimatedStorageForBalance =
+        await turbo.computeStorageEstimateForCredits(
       credits: _balance,
       outputDataUnit: currentDataUnit,
     );
