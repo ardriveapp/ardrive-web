@@ -5,11 +5,11 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
-import 'package:arweave/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -478,42 +478,50 @@ class _BalanceView extends StatefulWidget {
 
 class _BalanceViewState extends State<_BalanceView> {
   balanceContents() => [
-        Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              appLocalizationsOf(context).arBalance,
-              style: ArDriveTypography.body.smallBold(),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${winstonToAr(widget.balance)} ${appLocalizationsOf(context).creditsTurbo}',
-              style: ArDriveTypography.body.buttonXLargeBold(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+        Flexible(
+          flex: 1,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appLocalizationsOf(context).arBalance,
+                style: ArDriveTypography.body.smallBold(),
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                '${convertCreditsToLiteralString(widget.balance)} ${appLocalizationsOf(context).creditsTurbo}',
+                style: ArDriveTypography.body.buttonXLargeBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(
           width: 32,
         ),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Estimated Storage',
-              style: ArDriveTypography.body.smallBold(),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${widget.estimatedStorage} ${widget.fileSizeUnit}',
-              style: ArDriveTypography.body.buttonXLargeBold(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+        Flexible(
+          flex: 1,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Estimated Storage',
+                style: ArDriveTypography.body.smallBold(),
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                '${widget.estimatedStorage} ${widget.fileSizeUnit}',
+                style: ArDriveTypography.body.buttonXLargeBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                ),
+              ),
+            ],
+          ),
         ),
       ];
 
@@ -556,7 +564,7 @@ class PriceEstimateView extends StatelessWidget {
       children: [
         const Divider(height: 32),
         Text(
-          '$fiatCurrency $fiatAmount = ${winstonToAr(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
+          '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
           style: ArDriveTypography.body.buttonNormalBold(),
         ),
         const SizedBox(height: 4),
