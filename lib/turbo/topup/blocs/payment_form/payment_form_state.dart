@@ -3,31 +3,34 @@ part of 'payment_form_bloc.dart';
 abstract class PaymentFormState extends Equatable {
   const PaymentFormState(
     this.priceEstimate,
+    this.quoteExpirationTimeInSeconds,
   );
 
   final PriceEstimate priceEstimate;
+  final int quoteExpirationTimeInSeconds;
 
   @override
   List<Object> get props => [];
 }
 
 class PaymentFormInitial extends PaymentFormState {
-  const PaymentFormInitial(super.priceEstimate);
+  const PaymentFormInitial(super.priceEstimate, super.quoteExpirationTime);
 }
 
 class PaymentFormPopulatingFieldsForTesting extends PaymentFormState {
-  const PaymentFormPopulatingFieldsForTesting(super.priceEstimate);
+  const PaymentFormPopulatingFieldsForTesting(
+      super.priceEstimate, super.quoteExpirationTime);
 
   @override
   List<Object> get props => [];
 }
 
 class PaymentFormLoadingQuote extends PaymentFormState {
-  PaymentFormLoadingQuote(super.priceEstimate);
+  const PaymentFormLoadingQuote(super.priceEstimate, super.quoteExpirationTime);
 }
 
 class PaymentFormQuoteLoaded extends PaymentFormState {
-  PaymentFormQuoteLoaded(super.priceEstimate);
+  const PaymentFormQuoteLoaded(super.priceEstimate, super.quoteExpirationTime);
 
   @override
   List<Object> get props => [];

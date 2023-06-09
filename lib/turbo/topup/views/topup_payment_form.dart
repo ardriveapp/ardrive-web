@@ -936,7 +936,7 @@ class _QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                     key: state is PaymentFormQuoteLoaded
                         ? const ValueKey('reset_timer')
                         : null,
-                    durationInSeconds: 60 * 10,
+                    durationInSeconds: state.quoteExpirationTimeInSeconds,
                     onFinished: () {
                       logger.d('fetching quote');
                       context
