@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
@@ -79,62 +80,47 @@ class TurboTopupFlowBloc
 
 abstract class PaymentUserInformation extends Equatable {
   final String name;
-  final String cardNumber;
-  final String expirationDate;
-  final String cvv;
-  final String country;
-  final String postalCode;
+  // final String cardNumber;
+  // final String expirationDate;
+  // final String cvv;
+  // final String country;
+  // final String postalCode;
   final String? email;
 
   const PaymentUserInformation({
     required this.name,
-    required this.cardNumber,
-    required this.expirationDate,
-    required this.cvv,
-    required this.country,
-    required this.postalCode,
+    // required this.cardNumber,
+    // required this.expirationDate,
+    // required this.cvv,
+    // required this.country,
+    // required this.postalCode,
+    // this.email,
     this.email,
   });
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
         name,
-        cardNumber,
-        expirationDate,
-        cvv,
-        country,
-        postalCode,
+        email,
+        // cardNumber,
+        // expirationDate,
+        // cvv,
+        // country,
+        // postalCode,
       ];
 }
 
 class PaymentUserInformationFromUSA extends PaymentUserInformation {
-  final String state;
-  final String addressLine1;
-  final String addressLine2;
-
   const PaymentUserInformationFromUSA({
-    required this.addressLine1,
-    required this.addressLine2,
-    required this.state,
     required String name,
-    required String cardNumber,
-    required String expirationDate,
-    required String cvv,
-    required String postalCode,
+    String? email,
   }) : super(
           name: name,
-          cardNumber: cardNumber,
-          expirationDate: expirationDate,
-          cvv: cvv,
-          postalCode: postalCode,
-          country: 'US',
+          email: email,
+          // cardNumber: cardNumber,
+          // expirationDate: expirationDate,
+          // cvv: cvv,
+          // postalCode: postalCode,
+          // country: 'US',
         );
-
-  @override
-  List<Object> get props => [
-        ...super.props,
-        state,
-        addressLine1,
-        addressLine2,
-      ];
 }

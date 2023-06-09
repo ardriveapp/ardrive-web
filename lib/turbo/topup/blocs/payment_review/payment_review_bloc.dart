@@ -1,6 +1,7 @@
-import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -22,6 +23,8 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
               state.paymentUserInformation,
             ),
           );
+
+          logger.i('Top up with ${state.paymentUserInformation.toString()}');
 
           await turbo.topUp(state.paymentUserInformation);
 
