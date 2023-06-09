@@ -21,7 +21,7 @@ class TurboTopupFlowBloc
         emit(
           TurboTopupFlowShowingPaymentFormView(
             isMovingForward: _currentStep <= event.stepNumber,
-            priceEstimate: turbo.getCurrentPriceEstimate(),
+            priceEstimate: turbo.currentPriceEstimate,
           ),
         );
       }

@@ -20,7 +20,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
           try {
             emit(PaymentFormLoadingQuote(state.priceEstimate));
 
-            final priceEstimate = await turbo.refreshPriceEstimate();
+            final priceEstimate = turbo.currentPriceEstimate;
 
             emit(PaymentFormQuoteLoaded(priceEstimate));
           } catch (e) {
