@@ -361,7 +361,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           const SizedBox(height: 8),
           Text(
             // TODO: Localize
-            'ArDrive Credits will be automatically applied to your wallet, and you can start using them right away.',
+            'ArDrive Credits will be automatically added to your Turbo balance, and you can start using them right away.',
             style: ArDriveTypography.body.buttonNormalBold(
               color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
             ),
