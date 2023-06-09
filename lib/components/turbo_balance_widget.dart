@@ -3,9 +3,9 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/views/turbo_modal.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
-import 'package:ardrive/utils/winston_to_ar.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -112,7 +112,7 @@ class _TurboBalanceState extends State<TurboBalance> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      '${winstonToAr(balance).toStringAsFixed(5)} ${appLocalizationsOf(context).creditsTurbo}',
+                      '${convertCreditsToLiteralString(balance)} ${appLocalizationsOf(context).creditsTurbo}',
                       style: ArDriveTypography.body.captionRegular().copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: 18,
