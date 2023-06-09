@@ -63,8 +63,7 @@ class Turbo {
       StreamController.broadcast();
 
   void _startOnPriceEstimateChange() {
-    _priceEstimateTimer =
-        Timer.periodic(const Duration(minutes: 5), (timer) async {
+    _priceEstimateTimer = _quoteEstimateTimer((timer) async {
       final priceEstimate = await computePriceEstimate(
         currentAmount: 0,
         currentCurrency: 'usd',
@@ -90,7 +89,6 @@ class TurboSessionManager {
   late final DateTime _initialSessionTime;
   late Timer _sessionExpirationTimer;
 
-  // Constructor
   TurboSessionManager() {
     _initialSessionTime = DateTime.now();
     _startSessionExpirationListener();
@@ -103,8 +101,7 @@ class TurboSessionManager {
   Stream<bool> get onSessionExpired => _sessionExpiredController.stream;
 
   void _startSessionExpirationListener() {
-    _sessionExpirationTimer =
-        Timer.periodic(const Duration(seconds: 5), (timer) {
+    _sessionExpirationTimer = _quoteEstimateTimer((timer) {
       final currentTime = DateTime.now();
       if (currentTime.isAfter(maxSessionTime)) {
         logger.d('Session expired');
@@ -130,14 +127,22 @@ class TurboCostCalculator {
 
   TurboCostCalculator({required this.paymentService});
 
-  Future<BigInt> getCostOfOneGB({bool forceGet = false}) async {
+  /// Returns the cost for the given byte size
+  Future<BigInt> getCostForBytes({required int byteSize}) {
+    return paymentService.getPriceForBytes(byteSize: byteSize);
+  }
+
+  /// Caches the cost for 1GiB for 5 minutes
+  Future<BigInt> getCostOfOneGB({
+    bool forceGet = false,
+  }) async {
     final currentTime = DateTime.now();
 
     if (!forceGet &&
         _costOfOneGb != null &&
         _lastCostOfOneGbFetchTime != null) {
       final difference = currentTime.difference(_lastCostOfOneGbFetchTime!);
-      if (difference.inMinutes < 10) {
+      if (difference.inMinutes < 5) {
         return _costOfOneGb!;
       }
     }
@@ -222,4 +227,12 @@ class TurboPriceEstimator {
 
     return estimatedStorageInBytes;
   }
+}
+
+const _quoteExpirationTime = Duration(minutes: 5);
+
+Timer _quoteEstimateTimer<T>(Function(Timer) callback) {
+  return Timer.periodic(_quoteExpirationTime, (timer) async {
+    callback(timer);
+  });
 }
