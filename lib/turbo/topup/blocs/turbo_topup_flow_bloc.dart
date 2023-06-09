@@ -28,7 +28,7 @@ class TurboTopupFlowBloc
         emit(
           TurboTopupFlowShowingPaymentFormView(
             isMovingForward: _currentStep <= event.stepNumber,
-            priceEstimate: turbo.getCurrentPriceEstimate(),
+            priceEstimate: turbo.currentPriceEstimate,
           ),
         );
       } else if (event is TurboTopUpShowSuccessView) {
@@ -45,7 +45,7 @@ class TurboTopupFlowBloc
         emit(
           TurboTopupFlowShowingPaymentReviewView(
             isMovingForward: _currentStep <= event.stepNumber,
-            priceEstimate: turbo.getCurrentPriceEstimate(),
+            priceEstimate: turbo.currentPriceEstimate,
             paymentUserInformation: _paymentUserInformation!,
           ),
         );

@@ -26,7 +26,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
 
           logger.i('Top up with ${state.paymentUserInformation.toString()}');
 
-          await turbo.topUp(state.paymentUserInformation);
+          // await turbo.topUp(state.paymentUserInformation);
 
           emit(
             PaymentReviewPaymentSuccess(

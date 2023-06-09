@@ -17,8 +17,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 void showTurboModal(BuildContext context) {
-  final turbo = Turbo(
+  final sessionManager = TurboSessionManager();
+
+  final costCalculator = TurboCostCalculator(
     paymentService: context.read<PaymentService>(),
+  );
+
+  final balanceRetriever = TurboBalanceRetriever(
+    paymentService: context.read<PaymentService>(),
+  );
+
+  final priceEstimator = TurboPriceEstimator(
+    paymentService: context.read<PaymentService>(),
+    costCalculator: costCalculator,
+  );
+
+  final turbo = Turbo(
+    sessionManager: sessionManager,
+    costCalculator: costCalculator,
+    balanceRetriever: balanceRetriever,
+    priceEstimator: priceEstimator,
     wallet: context.read<ArDriveAuth>().currentUser!.wallet,
   );
   showAnimatedDialogWithBuilder(

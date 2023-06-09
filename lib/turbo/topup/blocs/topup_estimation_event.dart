@@ -41,33 +41,11 @@ class AddCreditsClicked extends TopupEstimationEvent {
   List<Object?> get props => [];
 }
 
-class ConfirmPayment extends TopupEstimationEvent {
-  final String nameOnCard;
-  final String cardNumber;
-  final String expiryDate;
-  final int cvc;
-  final String postalCode;
-  final String country;
-  final String email;
+class FetchPriceEstimate extends TopupEstimationEvent {
+  final PriceEstimate priceEstimate;
 
-  const ConfirmPayment({
-    required this.nameOnCard,
-    required this.cardNumber,
-    required this.expiryDate,
-    required this.cvc,
-    required this.postalCode,
-    required this.country,
-    required this.email,
-  });
+  const FetchPriceEstimate(this.priceEstimate);
 
   @override
-  List<Object?> get props => [
-        nameOnCard,
-        cardNumber,
-        expiryDate,
-        cvc,
-        postalCode,
-        country,
-        email,
-      ];
+  List<Object?> get props => [];
 }
