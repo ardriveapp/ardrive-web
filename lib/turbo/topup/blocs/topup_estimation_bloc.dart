@@ -1,31 +1,17 @@
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'file_size_units.dart';
-
-part 'turbo_payment_event.dart';
-part 'turbo_payment_state.dart';
+part 'topup_estimation_event.dart';
+part 'topup_estimation_state.dart';
 
 final presetAmounts = [25, 50, 75, 100];
 final supportedCurrencies = ['usd'];
 
-const oneGigbyteInBytes = 1024 * 1024 * 1024;
-
-class PriceEstimate {
-  final BigInt credits;
-  final int priceInCurrency;
-  final double estimatedStorage;
-
-  PriceEstimate({
-    required this.credits,
-    required this.priceInCurrency,
-    required this.estimatedStorage,
-  });
-}
-
-class TurboTopUpEstimationBloc extends Bloc<PaymentEvent, PaymentState> {
+class TurboTopUpEstimationBloc
+    extends Bloc<TopupEstimationEvent, TopupEstimationState> {
   final Turbo turbo;
 
   FileSizeUnit _currentDataUnit = FileSizeUnit.gigabytes;
@@ -37,29 +23,34 @@ class TurboTopUpEstimationBloc extends Bloc<PaymentEvent, PaymentState> {
   String get currentCurrency => _currentCurrency;
   int get currentAmount => _currentAmount;
   FileSizeUnit get currentDataUnit => _currentDataUnit;
-
-  late BigInt costOfOneGb;
+  late BigInt _balance;
 
   TurboTopUpEstimationBloc({
     required this.turbo,
-  }) : super(PaymentInitial()) {
-    on<PaymentEvent>((event, emit) async {
+  }) : super(EstimationInitial()) {
+    on<TopupEstimationEvent>((event, emit) async {
       if (event is LoadInitialData) {
         try {
-          await _computePriceEstimate(
+          logger.i('initializing the estimation view');
+          logger.d('getting the balance');
+          await _getBalance();
+
+          logger.d('getting the price estimate');
+          await _computeAndUpdatePriceEstimate(
             emit,
             currentAmount: 0,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
           );
-        } catch (e) {
-          logger.e(e);
-          emit(PaymentError());
+        } catch (e, s) {
+          logger.e('error initializing the estimation view', e, s);
+
+          emit(EstimationError());
         }
       } else if (event is FiatAmountSelected) {
         _currentAmount = event.amount;
 
-        await _computePriceEstimate(
+        await _computeAndUpdatePriceEstimate(
           emit,
           currentAmount: _currentAmount,
           currentCurrency: currentCurrency,
@@ -68,7 +59,7 @@ class TurboTopUpEstimationBloc extends Bloc<PaymentEvent, PaymentState> {
       } else if (event is CurrencyUnitChanged) {
         _currentCurrency = event.currencyUnit;
 
-        await _computePriceEstimate(
+        await _computeAndUpdatePriceEstimate(
           emit,
           currentAmount: _currentAmount,
           currentCurrency: currentCurrency,
@@ -77,7 +68,7 @@ class TurboTopUpEstimationBloc extends Bloc<PaymentEvent, PaymentState> {
       } else if (event is DataUnitChanged) {
         _currentDataUnit = event.dataUnit;
 
-        await _computePriceEstimate(
+        await _computeAndUpdatePriceEstimate(
           emit,
           currentAmount: _currentAmount,
           currentCurrency: currentCurrency,
@@ -89,37 +80,27 @@ class TurboTopUpEstimationBloc extends Bloc<PaymentEvent, PaymentState> {
     });
   }
 
-  Future<void> _computePriceEstimate(
+  Future<void> _computeAndUpdatePriceEstimate(
     Emitter emit, {
     required int currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
   }) async {
-    costOfOneGb = await turbo.getCostOfOneGB();
-
-    BigInt balance;
-
-    try {
-      balance = await turbo.getBalance();
-    } catch (e) {
-      logger.e(e);
-      balance = BigInt.zero;
-    }
-
     final priceEstimate = await turbo.computePriceEstimateAndUpdate(
       currentAmount: currentAmount,
       currentCurrency: currentCurrency,
       currentDataUnit: currentDataUnit,
     );
 
-    final estimatedStorageForBalance = turbo.computeStorageEstimateForCredits(
-      credits: balance,
+    final estimatedStorageForBalance =
+        await turbo.computeStorageEstimateForCredits(
+      credits: _balance,
       outputDataUnit: currentDataUnit,
     );
 
     emit(
-      PaymentLoaded(
-        balance: balance,
+      EstimationLoaded(
+        balance: _balance,
         estimatedStorageForBalance:
             estimatedStorageForBalance.toStringAsFixed(2),
         selectedAmount: priceEstimate.priceInCurrency,
@@ -130,5 +111,14 @@ class TurboTopUpEstimationBloc extends Bloc<PaymentEvent, PaymentState> {
         dataUnit: currentDataUnit,
       ),
     );
+  }
+
+  Future<void> _getBalance() async {
+    try {
+      _balance = await turbo.getBalance();
+    } catch (e) {
+      logger.e(e);
+      _balance = BigInt.zero;
+    }
   }
 }

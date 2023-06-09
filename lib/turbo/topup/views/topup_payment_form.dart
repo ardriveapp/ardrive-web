@@ -548,24 +548,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             fontStyle: ArDriveTypography.body.buttonLargeBold(
               color: Colors.white,
             ),
-            isDisabled: !_isFormValid ||
-                _selectedCountry == null ||
-                !(card?.complete ?? false),
+            isDisabled: !(card?.complete ?? false),
             onPressed: () {
-              context.read<TurboTopupFlowBloc>().add(
-                    TurboTopUpShowPaymentReviewView(
-                      paymentUserInformation: PaymentUserInformationFromUSA(
-                        addressLine1: _addressLine1Controller.text,
-                        addressLine2: _addressLine2Controller.text,
-                        cardNumber: _cardNumberController.text,
-                        cvv: _cvvController.text,
-                        expirationDate: _expiryDateController.text,
-                        name: _nameController.text,
-                        postalCode: _postalCodeController.text,
-                        state: _stateController.text,
-                      ),
-                    ),
-                  );
+              // TODO: check payment-form-and-checkout branch
             },
           ),
         ],
@@ -574,17 +559,20 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget _formDesktop(BuildContext context, ArDriveTextFieldTheme theme) {
+    final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
+
     return SizedBox(
       width: double.maxFinite,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              nameOnCardTextField(),
-            ],
-          ),
+          // TODO: Verify if is needed
+          // Row(
+          //   children: [
+          //     nameOnCardTextField(),
+          //   ],
+          // ),
           Padding(
             padding: const EdgeInsets.only(bottom: 4, right: 16),
             child: Align(
@@ -600,7 +588,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              color: isDarkMode
+                  ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
+                  : null,
             ),
             child: CardField(
               style: ArDriveTheme.of(context)
@@ -638,31 +628,35 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               },
             ),
           ),
+          // TODO: Verify if is needed
+          // const SizedBox(
+          //   height: 16,
+          // ),
+          // Row(
+          //   crossAxisAlignment: CrossAxisAlignment.start,
+          //   children: [
+          //     countryTextField(theme),
+          //     const SizedBox(width: 24),
+          //     // stateTextField(),
+          //   ],
+          // ),
+          // Row(
+          //   crossAxisAlignment: CrossAxisAlignment.start,
+          //   children: [
+          //     addressLine1TextField(),
+          //     const SizedBox(width: 24),
+          //     addressLine2TextField(),
+          //   ],
+          // ),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.start,
+          //   children: [
+          //     postalCodeTextField(),
+          //     Flexible(flex: 1, child: Container()),
+          //   ],
+          // ),
           const SizedBox(
             height: 16,
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              countryTextField(theme),
-              const SizedBox(width: 24),
-              stateTextField(),
-            ],
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              addressLine1TextField(),
-              const SizedBox(width: 24),
-              addressLine2TextField(),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              postalCodeTextField(),
-              Flexible(flex: 1, child: Container()),
-            ],
           ),
         ],
       ),
@@ -687,12 +681,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   InputBorder _getFocusedBoder(ArDriveTextFieldTheme theme) {
-    // if (textFieldState == TextFieldState.success) {
-    //   return _getSuccessBorder(theme);
-    // } else if (textFieldState == TextFieldState.error) {
-    //   return _getErrorBorder(theme);
-    // }
-
     return _getBorder(
       ArDriveTheme.of(context).themeData.colors.themeFgDefault,
     );

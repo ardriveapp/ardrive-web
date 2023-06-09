@@ -164,7 +164,10 @@ class UploadCubit extends Cubit<UploadState> {
           .getSingleOrNull();
 
       if (existingFileId != null) {
-        conflictingFiles[file.ioFile.name] = existingFileId;
+        logger.d(
+            'Found conflicting file: $fileName with identifier: ${file.getIdentifier()}');
+        logger.d('Existing file id: $existingFileId');
+        conflictingFiles[file.getIdentifier()] = existingFileId;
       }
     }
     if (conflictingFiles.isNotEmpty) {

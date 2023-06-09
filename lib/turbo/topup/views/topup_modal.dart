@@ -1,10 +1,10 @@
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
+import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/views/topup_payment_form.dart';
 import 'package:ardrive/turbo/topup/views/topup_review_view.dart';
@@ -17,16 +17,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 void showTurboModal(BuildContext context) {
+  final turbo = Turbo(
+    paymentService: context.read<PaymentService>(),
+    wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+  );
   showAnimatedDialogWithBuilder(
     context,
     builder: (modalContext) => MultiBlocProvider(
       providers: [
-        RepositoryProvider<Turbo>(
-          create: (context) => Turbo(
-            paymentService: context.read<PaymentService>(),
-            wallet: context.read<ArDriveAuth>().currentUser!.wallet,
-          ),
-        ),
+        RepositoryProvider<Turbo>(create: (context) => turbo),
         BlocProvider(
           create: (context) => TurboTopupFlowBloc(
             context.read<Turbo>(),
@@ -43,7 +42,10 @@ void showTurboModal(BuildContext context) {
     barrierDismissible: false,
     barrierColor:
         ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
-  );
+  ).then((value) {
+    logger.d('Turbo modal closed');
+    turbo.dispose();
+  });
 }
 
 class TurboModal extends StatefulWidget {

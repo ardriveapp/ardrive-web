@@ -186,7 +186,7 @@ class _ProfileCardState extends State<ProfileCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            appLocalizationsOf(context).balanceAR,
+            appLocalizationsOf(context).arBalance,
             style: ArDriveTypography.body.buttonLargeBold().copyWith(
                   fontWeight: FontWeight.w800,
                   fontSize: 18,

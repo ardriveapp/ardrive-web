@@ -383,7 +383,7 @@ class DraggableWindow extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final windowSize = useState<Size>(const Size(400, 800));
+    final windowSize = useState<Size>(const Size(600, 1000));
     final windowPos = useState<Offset>(Offset.zero);
     final isWindowVisible = useState<bool>(true);
 
@@ -453,7 +453,6 @@ class DraggableWindow extends HookWidget {
                                 .themeBgCanvas,
                           ),
                           onPressed: () {
-                            isWindowVisible.value = false;
                             ArDriveDevTools().closeDevTools();
                           },
                         ),

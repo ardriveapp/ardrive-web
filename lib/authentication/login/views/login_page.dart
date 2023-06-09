@@ -42,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
           }
         },
         builder: (context, state) {
-          return FadeThroughTransitionSwitcher(
+          return _FadeThroughTransitionSwitcher(
             fillColor: Colors.transparent,
             child: state is LoginOnBoarding
                 ? OnBoardingView(wallet: state.walletFile)
@@ -1007,7 +1007,7 @@ class OnBoardingViewState extends State<OnBoardingView> {
                 color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
                 child: Align(
                   child: MaxDeviceSizesConstrainedBox(
-                    child: FadeThroughTransitionSwitcher(
+                    child: _FadeThroughTransitionSwitcher(
                       fillColor: ArDriveTheme.of(context)
                           .themeData
                           .colors
@@ -1167,8 +1167,8 @@ class _OnBoarding {
   });
 }
 
-class FadeThroughTransitionSwitcher extends StatelessWidget {
-  const FadeThroughTransitionSwitcher({
+class _FadeThroughTransitionSwitcher extends StatelessWidget {
+  const _FadeThroughTransitionSwitcher({
     required this.fillColor,
     required this.child,
     Key? key,

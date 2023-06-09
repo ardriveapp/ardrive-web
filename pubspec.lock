@@ -69,8 +69,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "5f873cca568844bf2a9c21c56e14f10d3f8ee76a"
-      resolved-ref: "5f873cca568844bf2a9c21c56e14f10d3f8ee76a"
+      ref: "v1.2.6"
+      resolved-ref: "088e33f88cc3d263392ad38985a8d8d7b57143fe"
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.2.5"
@@ -201,10 +201,10 @@ packages:
     dependency: transitive
     description:
       name: build
-      sha256: "43865b79fbb78532e4bff7c33087aa43b1d488c4fdef014eaef568af6d8016dc"
+      sha256: "3fbda25365741f8251b39f3917fb3c8e286a96fd068a5a242e11c2012d495777"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.0"
+    version: "2.3.1"
   build_config:
     dependency: transitive
     description:
@@ -217,10 +217,10 @@ packages:
     dependency: transitive
     description:
       name: build_daemon
-      sha256: "5f02d73eb2ba16483e693f80bee4f088563a820e47d1027d4cdfe62b5bb43e65"
+      sha256: "757153e5d9cd88253cb13f28c2fb55a537dc31fefd98137549895b5beb7c6169"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0"
+    version: "3.1.1"
   build_resolvers:
     dependency: transitive
     description:
@@ -233,18 +233,18 @@ packages:
     dependency: "direct dev"
     description:
       name: build_runner
-      sha256: "220ae4553e50d7c21a17c051afc7b183d28a24a420502e842f303f8e4e6edced"
+      sha256: b0a8a7b8a76c493e85f1b84bffa0588859a06197863dba8c9036b15581fd9727
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.4"
+    version: "2.3.3"
   build_runner_core:
     dependency: transitive
     description:
       name: build_runner_core
-      sha256: "30859c90e9ddaccc484f56303931f477b1f1ba2bab74aa32ed5d6ce15870f8cf"
+      sha256: "14febe0f5bac5ae474117a36099b4de6f1dbc52df6c5e55534b3da9591bf4292"
       url: "https://pub.dev"
     source: hosted
-    version: "7.2.8"
+    version: "7.2.7"
   built_collection:
     dependency: transitive
     description:
@@ -837,18 +837,18 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_stripe
-      sha256: "51c3ab5f7a705d864d719eb13882abbb3964c4f61983a13af6dc56607537b1e4"
+      sha256: "95f3c4b907493ff5cdd6b3cdeda03bb59c2bc409d0c0bfb44db948374f9c3595"
       url: "https://pub.dev"
     source: hosted
-    version: "9.2.0"
+    version: "9.1.1"
   flutter_stripe_web:
     dependency: "direct main"
     description:
       name: flutter_stripe_web
-      sha256: "46483e0928ee49fd50904d950d27ce270755c9c6f8cda91df37d252973f29972"
+      sha256: b83d98301d88dadc10a327fe7983244f1d38aedb235f44745d5117207ef31f68
       url: "https://pub.dev"
     source: hosted
-    version: "4.1.0"
+    version: "4.0.1"
   flutter_svg:
     dependency: "direct main"
     description:
