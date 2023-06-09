@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
+import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -158,9 +159,9 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                         onPressed: () {
                           // Go to the paumentFormView.
                           // Will be implemented in the next PR.
-                          // context
-                          //     .read<TurboTopupFlowBloc>()
-                          //     .add(const TurboTopUpShowPaymentFormView());
+                          context
+                              .read<TurboTopupFlowBloc>()
+                              .add(const TurboTopUpShowPaymentFormView());
                         },
                       ),
                     ],
