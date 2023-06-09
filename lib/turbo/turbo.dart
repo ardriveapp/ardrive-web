@@ -1,13 +1,12 @@
 import 'dart:async';
 
-import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
-import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
-import 'package:ardrive/turbo/models/payment_user_information.dart';
+import 'package:ardrive/turbo/topup/models/price_estimate.dart';
+import 'package:ardrive/utils/data_size.dart';
+import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 
 class Turbo {
   Turbo({required this.paymentService, required this.wallet})
@@ -17,11 +16,13 @@ class Turbo {
 
   final PaymentService paymentService;
   final Wallet wallet;
+
   late final DateTime _initialSessionTime;
+  late Timer _sessionExpirationTimer;
   final _sessionExpiredController = StreamController<bool>();
-  BigInt? _costOfOneGb;
   DateTime? _lastFetchTime;
 
+  BigInt? _costOfOneGb;
   int _currentAmount = 0;
   String _currentCurrency = 'usd';
   BigInt _currentBalance = BigInt.from(0);
@@ -36,7 +37,7 @@ class Turbo {
   // Getters
   DateTime get initialSessionTime => _initialSessionTime;
   DateTime get maxSessionTime =>
-      _initialSessionTime.add(const Duration(minutes: 2));
+      _initialSessionTime.add(const Duration(minutes: 25));
   int get currentAmount => _currentAmount;
   String get currentCurrency => _currentCurrency;
   BigInt get currentBalance => _currentBalance;
@@ -45,7 +46,8 @@ class Turbo {
   Stream<bool> get onSessionExpired => _sessionExpiredController.stream;
 
   void _startSessionExpirationListener() {
-    Timer.periodic(const Duration(seconds: 5), (timer) {
+    _sessionExpirationTimer =
+        Timer.periodic(const Duration(seconds: 5), (timer) {
       logger.d('Checking if session is expired');
 
       final currentTime = DateTime.now();
@@ -67,7 +69,7 @@ class Turbo {
     }
 
     _costOfOneGb =
-        await paymentService.getPriceForBytes(byteSize: oneGigbyteInBytes);
+        await paymentService.getPriceForBytes(byteSize: const GiB(1).size);
     _lastFetchTime = currentTime;
 
     return _costOfOneGb!;
@@ -94,30 +96,24 @@ class Turbo {
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
   }) async {
-    try {
-      final int correctAmount = currentAmount * 100;
+    final int correctAmount = currentAmount * 100;
 
-      final priceEstimate = await paymentService.getPriceForFiat(
-        currency: currentCurrency,
-        amount: correctAmount,
-      );
+    final priceEstimate = await paymentService.getPriceForFiat(
+      currency: currentCurrency,
+      amount: correctAmount,
+    );
 
-      final estimatedStorageForSelectedAmount =
-          computeStorageEstimateForCredits(
-        credits: priceEstimate,
-        outputDataUnit: currentDataUnit,
-      );
+    final estimatedStorageForSelectedAmount =
+        await computeStorageEstimateForCredits(
+      credits: priceEstimate,
+      outputDataUnit: currentDataUnit,
+    );
 
-      return PriceEstimate(
-        credits: priceEstimate,
-        priceInCurrency: currentAmount,
-        estimatedStorage: estimatedStorageForSelectedAmount,
-      );
-    } catch (e) {
-      logger.e(e);
-      // You might want to do some error handling here
-      rethrow;
-    }
+    return PriceEstimate(
+      credits: priceEstimate,
+      priceInCurrency: currentAmount,
+      estimatedStorage: estimatedStorageForSelectedAmount,
+    );
   }
 
   Future<PriceEstimate> computePriceEstimateAndUpdate({
@@ -125,23 +121,17 @@ class Turbo {
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
   }) async {
-    try {
-      _currentAmount = currentAmount;
-      _currentCurrency = currentCurrency;
-      _currentDataUnit = currentDataUnit;
+    _currentAmount = currentAmount;
+    _currentCurrency = currentCurrency;
+    _currentDataUnit = currentDataUnit;
 
-      _priceEstimate = await computePriceEstimate(
-        currentAmount: currentAmount,
-        currentCurrency: currentCurrency,
-        currentDataUnit: currentDataUnit,
-      );
+    _priceEstimate = await computePriceEstimate(
+      currentAmount: currentAmount,
+      currentCurrency: currentCurrency,
+      currentDataUnit: currentDataUnit,
+    );
 
-      return _priceEstimate;
-    } catch (e) {
-      logger.e(e);
-      // You might want to do some error handling here
-      rethrow;
-    }
+    return _priceEstimate;
   }
 
   Future<PriceEstimate> refreshPriceEstimate() async {
@@ -157,10 +147,12 @@ class Turbo {
   }
 
   // Storage estimate method
-  double computeStorageEstimateForCredits({
+  Future<double> computeStorageEstimateForCredits({
     required BigInt credits,
     required FileSizeUnit outputDataUnit,
-  }) {
+  }) async {
+    _costOfOneGb ??= await getCostOfOneGB();
+
     final estimatedStorageInBytes =
         FileStorageEstimator.computeStorageEstimateForCredits(
       credits: credits,
@@ -171,92 +163,8 @@ class Turbo {
     return estimatedStorageInBytes;
   }
 
-  // Payment related method
-  Future topUp(
-    PaymentUserInformation paymentUserInformation,
-  ) async {
-    try {
-      final correctAmount = _currentAmount * 100;
-      // final _card = CardDetails(
-      //   cvc: '123',
-      //   expirationMonth: 6,
-      //   expirationYear: 26,
-      //   number: '4242424242424242',
-      // );
-
-      // TODO: implement o turbo class
-      final paymentIntentResult =
-          await paymentService.topUp(wallet: wallet, amount: correctAmount);
-
-      logger.d(paymentIntentResult.toString());
-      logger.d(paymentIntentResult['client_secret']);
-
-      if (paymentUserInformation is PaymentUserInformationFromUSA) {
-        final billingDetails = const BillingDetails(
-          email: 'email@stripe.com',
-          phone: '+48888000888',
-          address: Address(
-            city: 'Houston',
-            country: 'US',
-            line1: '1459  Circle Drive',
-            line2: '',
-            state: 'Texas',
-            postalCode: '77063',
-          ),
-        ); // mocked data for tests
-
-        //   // 2. Create payment method
-        //   final paymentMethod = await Stripe.instance.createPaymentMethod(
-        //       params: PaymentMethodParams.card(
-        //     paymentMethodData: PaymentMethodData(
-        //       billingDetails: billingDetails,
-        //     ),
-        //   ));
-
-        //   if (paymentIntentResult['clientSecret'] != null &&
-        //       paymentIntentResult['requiresAction'] == true) {
-        //     // 4. if payment requires action calling handleNextAction
-        //     final paymentIntent = await Stripe.instance
-        //         .handleNextAction(paymentIntentResult['clientSecret']);
-
-        //     if (paymentIntent.status ==
-        //         PaymentIntentsStatus.RequiresConfirmation) {
-        //       // 5. Call API to confirm intent
-        //       final paymentIntent = await Stripe.instance
-        //           .handleNextAction(paymentIntentResult['clientSecret']);
-
-        //       logger.d(paymentIntent.toJson().toString());
-        //     }
-        //   }
-
-        // 3. call API to create PaymentIntent
-        final paymentInfo = paymentUserInformation;
-
-        final paymentIntent = await Stripe.instance.confirmPayment(
-          paymentIntentClientSecret: paymentIntentResult['client_secret'],
-          data: PaymentMethodParams.card(
-            paymentMethodData: PaymentMethodData(
-              billingDetails: BillingDetails(
-                name: paymentInfo.name,
-                email: paymentInfo.email,
-                address: Address(
-                  country: paymentUserInformation.country,
-                  line2: paymentInfo.addressLine2,
-                  line1: paymentInfo.addressLine1,
-                  city: paymentInfo.addressLine1,
-                  postalCode: paymentUserInformation.postalCode,
-                  state: paymentInfo.state,
-                ),
-              ),
-            ),
-          ),
-        );
-
-        logger.d(paymentIntent.toJson().toString());
-      }
-    } catch (e) {
-      logger.e(e);
-      rethrow;
-    }
+  void dispose() {
+    _sessionExpiredController.close();
+    _sessionExpirationTimer.cancel();
   }
 }

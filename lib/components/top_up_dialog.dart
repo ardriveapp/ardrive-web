@@ -1,13 +1,12 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
-import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -36,19 +35,19 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
 
   @override
   Widget build(BuildContext context) {
-    paymentBloc = context.read<TurboTopUpEstimationBloc>();
+    final paymentBloc = context.read<TurboTopUpEstimationBloc>();
 
-    return BlocBuilder<TurboTopUpEstimationBloc, PaymentState>(
+    return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
       bloc: paymentBloc,
       builder: (context, state) {
-        if (state is PaymentLoading) {
+        if (state is EstimationLoading) {
           return const SizedBox(
             height: 575,
             child: Center(
               child: CircularProgressIndicator(),
             ),
           );
-        } else if (state is PaymentLoaded) {
+        } else if (state is EstimationLoaded) {
           return SingleChildScrollView(
             child: TurboTopupScaffold(
               child: Column(
@@ -157,9 +156,11 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                             .copyWith(fontWeight: FontWeight.w700),
                         text: appLocalizationsOf(context).next,
                         onPressed: () {
-                          context
-                              .read<TurboTopupFlowBloc>()
-                              .add(const TurboTopUpShowPaymentFormView());
+                          // Go to the paumentFormView.
+                          // Will be implemented in the next PR.
+                          // context
+                          //     .read<TurboTopupFlowBloc>()
+                          //     .add(const TurboTopUpShowPaymentFormView());
                         },
                       ),
                     ],
@@ -168,7 +169,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
               ),
             ),
           );
-        } else if (state is PaymentError) {
+        } else if (state is EstimationError) {
           return TurboTopupScaffold(
             child: SizedBox(
               height: 575,
@@ -352,7 +353,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            appLocalizationsOf(context).buycredits,
+            // TODO: Localize
+            'Buy Credits',
             style: ArDriveTypography.body.smallBold(),
           ),
           const SizedBox(height: 8),
@@ -483,7 +485,7 @@ class _BalanceViewState extends State<_BalanceView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              appLocalizationsOf(context).balanceAR,
+              appLocalizationsOf(context).arBalance,
               style: ArDriveTypography.body.smallBold(),
             ),
             const SizedBox(height: 4),
@@ -504,7 +506,7 @@ class _BalanceViewState extends State<_BalanceView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              appLocalizationsOf(context).estimatedStorage,
+              'Estimated Storage',
               style: ArDriveTypography.body.smallBold(),
             ),
             const SizedBox(height: 4),
@@ -567,7 +569,8 @@ class PriceEstimateView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                appLocalizationsOf(context).howAreConversionsDetermined,
+                // TODO: Localize
+                'How are conversions determined?',
                 style: ArDriveTypography.body.buttonNormalBold(
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
@@ -648,12 +651,10 @@ class AnimatedFeedbackMessage extends StatefulWidget {
       : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
-  _AnimatedFeedbackMessageState createState() =>
-      _AnimatedFeedbackMessageState();
+  AnimatedFeedbackMessageState createState() => AnimatedFeedbackMessageState();
 }
 
-class _AnimatedFeedbackMessageState extends State<AnimatedFeedbackMessage>
+class AnimatedFeedbackMessageState extends State<AnimatedFeedbackMessage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animationController;
   late final Animation<double> _animation;

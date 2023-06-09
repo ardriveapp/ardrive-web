@@ -1,4 +1,4 @@
-import 'package:ardrive/blocs/turbo_payment/file_size_units.dart';
+import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
 import 'package:test/test.dart';
 

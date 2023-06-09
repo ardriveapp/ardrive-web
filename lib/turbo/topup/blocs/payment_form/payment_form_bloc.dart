@@ -1,4 +1,4 @@
-import 'package:ardrive/blocs/turbo_payment/turbo_payment_bloc.dart';
+import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
