@@ -6,8 +6,8 @@ import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:test/test.dart';
 
 import '../test_utils/utils.dart';
 
@@ -228,9 +228,6 @@ void main() {
           'priceEstimate updates when price quote expires even if the user doenst select any amount',
           () async {
         fakeAsync((async) async {
-          final mockStorageEstimate = 0;
-          final mockCredits = BigInt.from(0);
-
           final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(0),
             estimatedStorage: 0,
@@ -299,6 +296,190 @@ void main() {
           expect(canceledTimer, isTrue);
           verify(() => mockSessionManager.dispose()).called(1);
         });
+      });
+    });
+
+    group('refreshPriceEstimate', () {
+      late MockTurboSessionManager mockSessionManager;
+      late MockTurboBalanceRetriever mockBalanceRetriever;
+      late MockTurboPriceEstimator mockPriceEstimator;
+      late Turbo turbo;
+
+      setUp(() {
+        mockSessionManager = MockTurboSessionManager();
+        mockBalanceRetriever = MockTurboBalanceRetriever();
+        mockPriceEstimator = MockTurboPriceEstimator();
+        turbo = Turbo(
+          sessionManager: mockSessionManager,
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: mockBalanceRetriever,
+          priceEstimator: mockPriceEstimator,
+          wallet: MockWallet(),
+        );
+      });
+
+      test('calls sessionManager.refresh once', () async {
+        final mockPriceEstimate = PriceEstimate(
+          credits: BigInt.from(100),
+          estimatedStorage: 1,
+          priceInCurrency: 1,
+        );
+
+        when(() => mockPriceEstimator.computePriceEstimate(
+              currentAmount: 100,
+              currentDataUnit: FileSizeUnit.gigabytes,
+              currentCurrency: 'usd',
+            )).thenAnswer((_) async => mockPriceEstimate);
+
+        /// calculates the price estimate first
+        await turbo.computePriceEstimate(
+          currentAmount: 100,
+          currentDataUnit: FileSizeUnit.gigabytes,
+          currentCurrency: 'usd',
+        );
+
+        await turbo.refreshPriceEstimate();
+
+        // must call computePriceEstimate twice with the same parameters
+        verify(() => mockPriceEstimator.computePriceEstimate(
+              currentAmount: 100,
+              currentDataUnit: FileSizeUnit.gigabytes,
+              currentCurrency: 'usd',
+            )).called(2);
+      });
+
+      test(
+          'throws AssertionError when the client tries to refresh without first computating the price estimate',
+          () async {
+        expect(turbo.refreshPriceEstimate(), throwsAssertionError);
+      });
+    });
+
+    group('testing currentPriceEstimate', () {
+      test('returns PriceEstimate.zero when priceEstimate is not yet computed',
+          () async {
+        final mockSessionManager = MockTurboSessionManager();
+        final mockBalanceRetriever = MockTurboBalanceRetriever();
+        final mockPriceEstimator = MockTurboPriceEstimator();
+        final turbo = Turbo(
+          sessionManager: mockSessionManager,
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: mockBalanceRetriever,
+          priceEstimator: mockPriceEstimator,
+          wallet: MockWallet(),
+        );
+
+        expect(turbo.currentPriceEstimate, PriceEstimate.zero());
+      });
+
+      test('returns the last fetched priceEstimate', () async {
+        final mockSessionManager = MockTurboSessionManager();
+        final mockBalanceRetriever = MockTurboBalanceRetriever();
+        final mockPriceEstimator = MockTurboPriceEstimator();
+
+        final turbo = Turbo(
+          sessionManager: mockSessionManager,
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: mockBalanceRetriever,
+          priceEstimator: mockPriceEstimator,
+          wallet: MockWallet(),
+        );
+
+        final mockPriceEstimate100 = PriceEstimate(
+          credits: BigInt.from(100),
+          estimatedStorage: 1,
+          priceInCurrency: 1,
+        );
+        final mockPriceEstimate200 = PriceEstimate(
+          credits: BigInt.from(200),
+          estimatedStorage: 2,
+          priceInCurrency: 2,
+        );
+
+        when(() => mockPriceEstimator.computePriceEstimate(
+              currentAmount: 100,
+              currentDataUnit: FileSizeUnit.gigabytes,
+              currentCurrency: 'usd',
+            )).thenAnswer((_) async => mockPriceEstimate100);
+
+        final computedPriceEstimate = await turbo.computePriceEstimate(
+          currentAmount: 100,
+          currentDataUnit: FileSizeUnit.gigabytes,
+          currentCurrency: 'usd',
+        );
+
+        expect(turbo.currentPriceEstimate, computedPriceEstimate);
+
+        /// returns a different one for test purpuses
+        when(() => mockPriceEstimator.computePriceEstimate(
+              currentAmount: 200,
+              currentDataUnit: FileSizeUnit.gigabytes,
+              currentCurrency: 'usd',
+            )).thenAnswer((_) async => mockPriceEstimate200);
+
+        final refreshedPriceEstimate = await turbo.refreshPriceEstimate();
+
+        expect(turbo.currentPriceEstimate, refreshedPriceEstimate);
+      });
+    });
+
+    group('maxQuoteExpirationDate', () {
+      test('throws an Exception when priceEstimate is not yet computed',
+          () async {
+        final mockSessionManager = MockTurboSessionManager();
+        final mockBalanceRetriever = MockTurboBalanceRetriever();
+        final mockPriceEstimator = MockTurboPriceEstimator();
+
+        final turbo = Turbo(
+          sessionManager: mockSessionManager,
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: mockBalanceRetriever,
+          priceEstimator: mockPriceEstimator,
+          wallet: MockWallet(),
+        );
+
+        expect(() => turbo.maxQuoteExpirationDate, throwsA(isA<Exception>()));
+      });
+
+      test(
+          'returns the maxQuoteExpirationDate of the last fetched priceEstimate',
+          () async {
+        final mockSessionManager = MockTurboSessionManager();
+        final mockBalanceRetriever = MockTurboBalanceRetriever();
+        final mockPriceEstimator = MockTurboPriceEstimator();
+
+        final turbo = Turbo(
+          sessionManager: mockSessionManager,
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: mockBalanceRetriever,
+          priceEstimator: mockPriceEstimator,
+          wallet: MockWallet(),
+        );
+
+        final mockPriceEstimate100 = PriceEstimate(
+          credits: BigInt.from(100),
+          estimatedStorage: 1,
+          priceInCurrency: 1,
+        );
+
+        when(() => mockPriceEstimator.maxQuoteExpirationTime)
+            .thenAnswer((_) => DateTime.now());
+
+        when(() => mockPriceEstimator.computePriceEstimate(
+              currentAmount: 100,
+              currentDataUnit: FileSizeUnit.gigabytes,
+              currentCurrency: 'usd',
+            )).thenAnswer((_) async => mockPriceEstimate100);
+
+        await turbo.computePriceEstimate(
+          currentAmount: 100,
+          currentDataUnit: FileSizeUnit.gigabytes,
+          currentCurrency: 'usd',
+        );
+
+        turbo.maxQuoteExpirationDate;
+
+        verify(() => mockPriceEstimator.maxQuoteExpirationTime).called(1);
       });
     });
   });
