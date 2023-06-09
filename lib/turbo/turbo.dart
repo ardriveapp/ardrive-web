@@ -13,21 +13,27 @@ class Turbo {
   final TurboCostCalculator costCalculator;
   final TurboBalanceRetriever balanceRetriever;
   final TurboPriceEstimator priceEstimator;
+  final Wallet wallet;
 
   Turbo({
     required this.sessionManager,
     required this.costCalculator,
     required this.balanceRetriever,
     required this.priceEstimator,
-  });
-
+    required this.wallet,
+  }) {
+    _startOnPriceEstimateChange();
+  }
   Stream<bool> get onSessionExpired => sessionManager.onSessionExpired;
-  Stream<PriceEstimate> get onPriceEstimateChanged =>
-      priceEstimator.onPriceEstimateChanged;
 
-  Future<BigInt> getBalance() => balanceRetriever.getBalance();
+  Stream<PriceEstimate> get onPriceEstimateChanged =>
+      _priceEstimateController.stream;
+
+  Future<BigInt> getBalance() => balanceRetriever.getBalance(wallet);
+
   Future<BigInt> getCostOfOneGB({bool forceGet = false}) =>
       costCalculator.getCostOfOneGB(forceGet: forceGet);
+
   PriceEstimate get currentPriceEstimate => priceEstimator.currentPriceEstimate;
 
   Future<PriceEstimate> computePriceEstimate({
@@ -51,10 +57,28 @@ class Turbo {
     );
   }
 
+  late Timer _priceEstimateTimer;
+
+  final StreamController<PriceEstimate> _priceEstimateController =
+      StreamController.broadcast();
+
+  void _startOnPriceEstimateChange() {
+    _priceEstimateTimer =
+        Timer.periodic(const Duration(minutes: 5), (timer) async {
+      final priceEstimate = await computePriceEstimate(
+        currentAmount: 0,
+        currentCurrency: 'usd',
+        currentDataUnit: FileSizeUnit.gigabytes,
+      );
+
+      _priceEstimateController.add(priceEstimate);
+    });
+  }
+
   Future<void> dispose() async {
     logger.d('Disposing turbo');
+    _priceEstimateTimer.cancel();
     await sessionManager.dispose();
-    await priceEstimator.dispose();
 
     logger.d('Turbo disposed');
   }
@@ -81,10 +105,9 @@ class TurboSessionManager {
   void _startSessionExpirationListener() {
     _sessionExpirationTimer =
         Timer.periodic(const Duration(seconds: 5), (timer) {
-      logger.d('Checking if session is expired');
-
       final currentTime = DateTime.now();
       if (currentTime.isAfter(maxSessionTime)) {
+        logger.d('Session expired');
         _sessionExpiredController.add(true);
         timer.cancel();
       }
@@ -94,7 +117,7 @@ class TurboSessionManager {
   Future<void> dispose() async {
     logger.d('Disposing SessionManager');
     _sessionExpirationTimer.cancel();
-    await _sessionExpiredController.close();
+    _sessionExpiredController.close();
     logger.d('SessionManager disposed');
   }
 }
@@ -130,27 +153,18 @@ class TurboCostCalculator {
 
 class TurboBalanceRetriever {
   final PaymentService paymentService;
-  final Wallet wallet;
 
-  BigInt _currentBalance = BigInt.from(0);
+  TurboBalanceRetriever({
+    required this.paymentService,
+  });
 
-  TurboBalanceRetriever({required this.paymentService, required this.wallet});
-
-  Future<BigInt> getBalance() async {
-    if (_currentBalance != BigInt.from(0)) {
-      return _currentBalance;
-    }
-
-    _currentBalance = await paymentService.getBalance(wallet: wallet);
-
-    return _currentBalance;
+  Future<BigInt> getBalance(Wallet wallet) async {
+    return paymentService.getBalance(wallet: wallet);
   }
 }
 
 class TurboPriceEstimator {
   final PaymentService paymentService;
-  final StreamController<PriceEstimate> _priceEstimateController =
-      StreamController<PriceEstimate>.broadcast();
   final TurboCostCalculator costCalculator;
 
   PriceEstimate _priceEstimate = PriceEstimate(
@@ -163,9 +177,6 @@ class TurboPriceEstimator {
     required this.paymentService,
     required this.costCalculator,
   });
-
-  Stream<PriceEstimate> get onPriceEstimateChanged =>
-      _priceEstimateController.stream;
 
   PriceEstimate get currentPriceEstimate => _priceEstimate;
 
@@ -210,11 +221,5 @@ class TurboPriceEstimator {
     );
 
     return estimatedStorageInBytes;
-  }
-
-  Future<void> dispose() async {
-    logger.d('Disposing PriceEstimator');
-    await _priceEstimateController.close();
-    logger.d('PriceEstimator disposed');
   }
 }

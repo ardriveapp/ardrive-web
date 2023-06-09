@@ -12,13 +12,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 void showTurboModal(BuildContext context) {
   final sessionManager = TurboSessionManager();
+
   final costCalculator = TurboCostCalculator(
     paymentService: context.read<PaymentService>(),
   );
+
   final balanceRetriever = TurboBalanceRetriever(
     paymentService: context.read<PaymentService>(),
-    wallet: context.read<ArDriveAuth>().currentUser!.wallet,
   );
+
   final priceEstimator = TurboPriceEstimator(
     paymentService: context.read<PaymentService>(),
     costCalculator: costCalculator,
@@ -29,6 +31,7 @@ void showTurboModal(BuildContext context) {
     costCalculator: costCalculator,
     balanceRetriever: balanceRetriever,
     priceEstimator: priceEstimator,
+    wallet: context.read<ArDriveAuth>().currentUser!.wallet,
   );
 
   showAnimatedDialog(
