@@ -8,4 +8,9 @@ class PriceEstimate {
     required this.priceInCurrency,
     required this.estimatedStorage,
   });
+
+  @override
+  String toString() {
+    return 'PriceEstimate{credits: $credits, priceInCurrency: $priceInCurrency, estimatedStorage: $estimatedStorage}';
+  }
 }

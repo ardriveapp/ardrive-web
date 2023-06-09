@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -28,56 +29,81 @@ class TurboTopUpEstimationBloc
   TurboTopUpEstimationBloc({
     required this.turbo,
   }) : super(EstimationInitial()) {
-    on<TopupEstimationEvent>((event, emit) async {
-      if (event is LoadInitialData) {
-        try {
-          logger.i('initializing the estimation view');
-          logger.d('getting the balance');
-          await _getBalance();
+    turbo.onPriceEstimateChanged.listen((priceEstimate) {
+      logger.d('price estimate changed: ${priceEstimate.toString()}');
+      add(FetchPriceEstimate(priceEstimate));
+    });
 
-          logger.d('getting the price estimate');
+    on<TopupEstimationEvent>(
+      (event, emit) async {
+        if (event is LoadInitialData) {
+          try {
+            logger.i('initializing the estimation view');
+            logger.i('getting the balance');
+            await _getBalance();
+
+            logger.i('getting the price estimate');
+            await _computeAndUpdatePriceEstimate(
+              emit,
+              currentAmount: 0,
+              currentCurrency: currentCurrency,
+              currentDataUnit: currentDataUnit,
+            );
+          } catch (e, s) {
+            logger.e('error initializing the estimation view', e, s);
+
+            emit(EstimationError());
+          }
+        } else if (event is FiatAmountSelected) {
+          _currentAmount = event.amount;
+
           await _computeAndUpdatePriceEstimate(
             emit,
-            currentAmount: 0,
+            currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
           );
-        } catch (e, s) {
-          logger.e('error initializing the estimation view', e, s);
+        } else if (event is CurrencyUnitChanged) {
+          _currentCurrency = event.currencyUnit;
 
-          emit(EstimationError());
+          await _computeAndUpdatePriceEstimate(
+            emit,
+            currentAmount: _currentAmount,
+            currentCurrency: currentCurrency,
+            currentDataUnit: currentDataUnit,
+          );
+        } else if (event is DataUnitChanged) {
+          _currentDataUnit = event.dataUnit;
+
+          await _computeAndUpdatePriceEstimate(
+            emit,
+            currentAmount: _currentAmount,
+            currentCurrency: currentCurrency,
+            currentDataUnit: currentDataUnit,
+          );
+        } else if (event is FetchPriceEstimate) {
+          final estimatedStorageForBalance =
+              await turbo.computeStorageEstimateForCredits(
+            credits: _balance,
+            outputDataUnit: currentDataUnit,
+          );
+
+          emit(
+            EstimationLoaded(
+              balance: _balance,
+              estimatedStorageForBalance:
+                  estimatedStorageForBalance.toStringAsFixed(2),
+              selectedAmount: event.priceEstimate.priceInCurrency,
+              creditsForSelectedAmount: event.priceEstimate.credits,
+              estimatedStorageForSelectedAmount:
+                  event.priceEstimate.estimatedStorage.toStringAsFixed(2),
+              currencyUnit: currentCurrency,
+              dataUnit: currentDataUnit,
+            ),
+          );
         }
-      } else if (event is FiatAmountSelected) {
-        _currentAmount = event.amount;
-
-        await _computeAndUpdatePriceEstimate(
-          emit,
-          currentAmount: _currentAmount,
-          currentCurrency: currentCurrency,
-          currentDataUnit: currentDataUnit,
-        );
-      } else if (event is CurrencyUnitChanged) {
-        _currentCurrency = event.currencyUnit;
-
-        await _computeAndUpdatePriceEstimate(
-          emit,
-          currentAmount: _currentAmount,
-          currentCurrency: currentCurrency,
-          currentDataUnit: currentDataUnit,
-        );
-      } else if (event is DataUnitChanged) {
-        _currentDataUnit = event.dataUnit;
-
-        await _computeAndUpdatePriceEstimate(
-          emit,
-          currentAmount: _currentAmount,
-          currentCurrency: currentCurrency,
-          currentDataUnit: currentDataUnit,
-        );
-      } else if (event is AddCreditsClicked) {
-        // Handle add credits click here
-      }
-    });
+      },
+    );
   }
 
   Future<void> _computeAndUpdatePriceEstimate(
@@ -86,7 +112,7 @@ class TurboTopUpEstimationBloc
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
   }) async {
-    final priceEstimate = await turbo.computePriceEstimateAndUpdate(
+    final priceEstimate = await turbo.computePriceEstimate(
       currentAmount: currentAmount,
       currentCurrency: currentCurrency,
       currentDataUnit: currentDataUnit,

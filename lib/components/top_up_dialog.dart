@@ -92,7 +92,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                     estimatedStorage: state.estimatedStorageForSelectedAmount,
                     storageUnit: paymentBloc.currentDataUnit.name,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -363,7 +363,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
             // TODO: Localize
             'ArDrive Credits will be automatically applied to your wallet, and you can start using them right away.',
             style: ArDriveTypography.body.buttonNormalBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
             ),
           ),
           // TODO localize
@@ -371,22 +371,19 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           Text(
             'Amount',
             style: ArDriveTypography.body.buttonNormalBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
             ),
           ),
           const SizedBox(height: 12),
           buildButtonBar(context),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            // TODO: Localize
-            child: Text(
-              'Custom Amount (min \$10 - max \$10,000)',
-              style: ArDriveTypography.body.buttonNormalBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-              ),
+          const SizedBox(height: 16),
+          Text(
+            'Custom Amount (min \$10 - max \$10,000)',
+            style: ArDriveTypography.body.buttonNormalBold(
+              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
             ),
           ),
+          const SizedBox(height: 8),
           Row(
             children: [
               SizedBox(
@@ -493,8 +490,7 @@ class _BalanceViewState extends State<_BalanceView> {
             Text(
               '${winstonToAr(widget.balance)} ${appLocalizationsOf(context).creditsTurbo}',
               style: ArDriveTypography.body.buttonXLargeBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
               ),
             ),
           ],
@@ -514,8 +510,7 @@ class _BalanceViewState extends State<_BalanceView> {
             Text(
               '${widget.estimatedStorage} ${widget.fileSizeUnit}',
               style: ArDriveTypography.body.buttonXLargeBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
               ),
             ),
           ],
@@ -564,7 +559,7 @@ class PriceEstimateView extends StatelessWidget {
           '$fiatCurrency $fiatAmount = ${winstonToAr(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
           style: ArDriveTypography.body.buttonNormalBold(),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 4),
         ArDriveClickArea(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -574,7 +569,7 @@ class PriceEstimateView extends StatelessWidget {
                 'How are conversions determined?',
                 style: ArDriveTypography.body.buttonNormalBold(
                   color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
                 ),
               ),
               const SizedBox(width: 4),
@@ -582,7 +577,7 @@ class PriceEstimateView extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 2.0),
                 child: ArDriveIcons.newWindow(
                   color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
                   size: 16,
                 ),
               )
