@@ -60,7 +60,6 @@ Stream<double> _syncDrive(
     } catch (e) {
       logger.e('Error while syncing from snapshot - $e');
       logger.e('Falling back to GQL');
-      addError(e);
       snapshotItems = [];
     }
   }
