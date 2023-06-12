@@ -2,6 +2,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/views/topup_payment_form.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -69,7 +70,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 onTryAgain: () {
                   Navigator.pop(context);
                   context.read<PaymentReviewBloc>().add(
-                        PaymentReviewFinishPayment(),
+                        const PaymentReviewFinishPayment(),
                       );
                 },
               ),
@@ -113,8 +114,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
         },
         builder: (context, state) {
           if (state is PaymentReviewLoadingPaymentModel) {
-            return const Center(
-              child: CircularProgressIndicator(),
+            return const TurboTopupScaffold(
+              child: SizedBox(
+                height: 575,
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
             );
           }
 
@@ -547,7 +553,7 @@ class _RefreshButtonState extends State<RefreshButton>
 
     _animation = Tween<Offset>(
       begin: Offset.zero,
-      end: Offset(1, 0),
+      end: const Offset(1, 0),
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _controller.addStatusListener((status) {
@@ -610,8 +616,8 @@ class _RefreshQuoteButtonState extends State<RefreshQuoteButton>
   void initState() {
     super.initState();
 
-    _controller =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 350));
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 350));
     _fadeAndSizeAnimation =
         Tween<double>(begin: 1, end: 0).animate(_controller);
   }
@@ -642,7 +648,7 @@ class _RefreshQuoteButtonState extends State<RefreshQuoteButton>
             child: Row(
               children: [
                 if (state is PaymentReviewLoadingQuote)
-                  SizedBox(
+                  const SizedBox(
                     height: 14,
                     width: 14,
                     child: CircularProgressIndicator(
@@ -660,7 +666,7 @@ class _RefreshQuoteButtonState extends State<RefreshQuoteButton>
                       size: 16,
                     ),
                   ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 FadeTransition(
                   opacity: _fadeAndSizeAnimation,
                   child: SizeTransition(

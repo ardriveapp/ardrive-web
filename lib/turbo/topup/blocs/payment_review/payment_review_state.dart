@@ -116,10 +116,16 @@ class PaymentReviewError extends PaymentReviewState {
   }) : super(paymentUserInformation: paymentUserInformation);
 }
 
-class PaymentReviewPaymentError extends PaymentReviewError {
+class PaymentReviewPaymentError extends PaymentReviewPaymentModelLoaded {
+  final TurboErrorType errorType;
+
   const PaymentReviewPaymentError({
     required super.paymentUserInformation,
-    required super.errorType,
+    required super.quoteExpirationDate,
+    required super.total,
+    required super.subTotal,
+    required super.credits,
+    required this.errorType,
   });
 }
 

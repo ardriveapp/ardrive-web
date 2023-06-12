@@ -64,16 +64,24 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
       } else {
         emit(
           PaymentReviewPaymentError(
+            credits: _getCreditsFromPaymentModel(),
+            subTotal: _getSubTotalFromPaymentModel(),
+            total: _getTotalFromPaymentModel(),
             paymentUserInformation: state.paymentUserInformation,
             errorType: TurboErrorType.unknown,
+            quoteExpirationDate: _quoteExpirationDate!,
           ),
         );
       }
     } catch (e) {
       emit(
         PaymentReviewPaymentError(
+          credits: _getCreditsFromPaymentModel(),
+          subTotal: _getSubTotalFromPaymentModel(),
+          total: _getTotalFromPaymentModel(),
           paymentUserInformation: state.paymentUserInformation,
           errorType: TurboErrorType.unknown,
+          quoteExpirationDate: _quoteExpirationDate!,
         ),
       );
     }
