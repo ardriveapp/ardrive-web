@@ -4,3 +4,6 @@ include: dart_test_base.yaml
 # Save web results on JSON in a specific folder
 file_reporters:
   json: reports/web/tests.json
+
+tags:
+  golden:

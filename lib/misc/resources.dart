@@ -45,6 +45,7 @@ class Brand {
   final blackLogo2 = 'assets/images/brand/black_logo_2x.png';
   final blackLogo025 = 'assets/images/brand/black_logo_0.25x.png';
   final blackLogo05 = 'assets/images/brand/black_logo_0.5x.png';
+  final turbo = 'assets/images/brand/turbo.svg';
 }
 
 class Profile {

@@ -60,7 +60,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         drive = drive.copyWith(name: newName, lastUpdated: DateTime.now());
         final driveEntity = drive.asEntity();
 
-        if (_turboUploadService.useTurbo) {
+        if (_turboUploadService.useTurboUpload) {
           final driveDataItem = await _arweave.prepareEntityDataItem(
             driveEntity,
             profile.wallet,

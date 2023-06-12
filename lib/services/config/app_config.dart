@@ -5,8 +5,10 @@ part 'app_config.g.dart';
 @JsonSerializable()
 class AppConfig {
   final String? defaultArweaveGatewayUrl;
-  final bool useTurbo;
-  final String? defaultTurboUrl;
+  final bool useTurboUpload;
+  final bool useTurboPayment;
+  final String? defaultTurboUploadUrl;
+  final String? defaultTurboPaymentUrl;
   final int? allowedDataItemSizeForTurbo;
   final bool enableQuickSyncAuthoring;
   final bool enableMultipleFileDownload;
@@ -16,8 +18,10 @@ class AppConfig {
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
-    this.useTurbo = false,
-    this.defaultTurboUrl,
+    this.useTurboUpload = false,
+    this.useTurboPayment = false,
+    this.defaultTurboUploadUrl,
+    this.defaultTurboPaymentUrl,
     this.allowedDataItemSizeForTurbo,
     this.enableQuickSyncAuthoring = false,
     this.enableMultipleFileDownload = false,
@@ -28,8 +32,10 @@ class AppConfig {
 
   AppConfig copyWith({
     String? defaultArweaveGatewayUrl,
-    bool? useTurbo,
-    String? defaultTurboUrl,
+    bool? useTurboUpload,
+    bool? useTurboPayment,
+    String? defaultTurboUploadUrl,
+    String? defaultTurboPaymentUrl,
     int? allowedDataItemSizeForTurbo,
     bool? enableQuickSyncAuthoring,
     bool? enableMultipleFileDownload,
@@ -40,8 +46,12 @@ class AppConfig {
     return AppConfig(
       defaultArweaveGatewayUrl:
           defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
-      useTurbo: useTurbo ?? this.useTurbo,
-      defaultTurboUrl: defaultTurboUrl ?? this.defaultTurboUrl,
+      useTurboUpload: useTurboUpload ?? this.useTurboUpload,
+      useTurboPayment: useTurboPayment ?? this.useTurboPayment,
+      defaultTurboUploadUrl:
+          defaultTurboUploadUrl ?? this.defaultTurboUploadUrl,
+      defaultTurboPaymentUrl:
+          defaultTurboPaymentUrl ?? this.defaultTurboPaymentUrl,
       allowedDataItemSizeForTurbo:
           allowedDataItemSizeForTurbo ?? this.allowedDataItemSizeForTurbo,
       enableMultipleFileDownload:
