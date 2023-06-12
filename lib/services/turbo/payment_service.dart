@@ -87,7 +87,7 @@ class PaymentService {
     return price;
   }
 
-  Future<PaymentSession> getPaymentSession({
+  Future<PaymentModel> getPaymentIntent({
     required Wallet wallet,
     required int amount,
     String currency = 'usd',
@@ -110,7 +110,7 @@ class PaymentService {
       },
     );
 
-    return PaymentSession.fromJson(result.data['paymentSession']);
+    return PaymentModel.fromJson(jsonDecode(result.data));
   }
 }
 
@@ -127,7 +127,7 @@ class DontUsePaymentService implements PaymentService {
       throw UnimplementedError();
 
   @override
-  Future<PaymentSession> getPaymentSession({
+  Future<PaymentModel> getPaymentIntent({
     required Wallet wallet,
     required int amount,
     String currency = 'usd',
