@@ -12,7 +12,7 @@ class FileStorageEstimator {
 
     switch (outputDataUnit) {
       case FileSizeUnit.bytes:
-        return estimatedStorageInBytes.toDouble();
+        return estimatedStorageInBytes;
       case FileSizeUnit.kilobytes:
         return estimatedStorageInBytes / const KiB(1).size;
       case FileSizeUnit.megabytes:
