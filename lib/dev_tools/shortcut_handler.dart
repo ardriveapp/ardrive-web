@@ -29,11 +29,10 @@ class ShortcutHandler extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
-  _ShortcutHandlerState createState() => _ShortcutHandlerState();
+  ShortcutHandlerState createState() => ShortcutHandlerState();
 }
 
-class _ShortcutHandlerState extends State<ShortcutHandler> {
+class ShortcutHandlerState extends State<ShortcutHandler> {
   final FocusNode _focusNode = FocusNode();
 
   @override
