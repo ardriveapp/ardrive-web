@@ -18,6 +18,8 @@ class TurboReviewView extends StatefulWidget {
 
 class _TurboReviewViewState extends State<TurboReviewView> {
   final _emailController = TextEditingController();
+  bool _emailChecked = false;
+  bool _hasAutomaticChecked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -221,101 +223,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               Row(
                                 children: [
                                   Text(
-                                    'Subtotal',
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeAccentDisabled,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  BlocBuilder<PaymentReviewBloc,
-                                      PaymentReviewState>(
-                                    builder: (context, state) {
-                                      if (state
-                                          is PaymentReviewPaymentModelLoaded) {
-                                        return Text(
-                                          '\$${state.subTotal}',
-                                          style: ArDriveTypography.body
-                                              .buttonNormalBold(
-                                            color: ArDriveTheme.of(context)
-                                                .themeData
-                                                .colors
-                                                .themeAccentDisabled,
-                                          ),
-                                        );
-                                      }
-
-                                      return Text(
-                                        '\$0',
-                                        style: ArDriveTypography.body
-                                            .buttonNormalBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeAccentDisabled,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                              const Divider(
-                                height: 32,
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Fees',
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeAccentDisabled,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  BlocBuilder<PaymentReviewBloc,
-                                      PaymentReviewState>(
-                                    builder: (context, state) {
-                                      if (state
-                                          is PaymentReviewPaymentModelLoaded) {
-                                        return Text(
-                                          // TODO: calculate the fee
-                                          '\$${0.3}',
-                                          style: ArDriveTypography.body
-                                              .buttonNormalBold(
-                                            color: ArDriveTheme.of(context)
-                                                .themeData
-                                                .colors
-                                                .themeAccentDisabled,
-                                          ),
-                                        );
-                                      }
-
-                                      return Text(
-                                        '\$0',
-                                        style: ArDriveTypography.body
-                                            .buttonNormalBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeAccentDisabled,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                              const Divider(
-                                height: 32,
-                              ),
-                              Row(
-                                children: [
-                                  Text(
                                     'Total',
                                     style: ArDriveTypography.body
                                         .buttonNormalBold(),
@@ -508,12 +415,23 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         themeData: textTheme,
                         child: ArDriveTextField(
                           controller: _emailController,
+                          onChanged: (s) {
+                            if (_hasAutomaticChecked) {
+                              return;
+                            }
+
+                            setState(() {
+                              _emailChecked = true;
+                              _hasAutomaticChecked = true;
+                            });
+                          },
                         ),
                       ),
                       const SizedBox(
                         height: 16,
                       ),
                       ArDriveCheckBox(
+                        key: ValueKey(_emailChecked),
                         title: 'Keep me up to date on news and promotions.',
                         titleStyle: ArDriveTypography.body.buttonNormalBold(
                           color: ArDriveTheme.of(context)
@@ -521,7 +439,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               .colors
                               .themeAccentDisabled,
                         ),
-                        checked: false,
+                        checked: _emailChecked,
                       ),
                       const Divider(
                         height: 80,
