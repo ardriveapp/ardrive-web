@@ -15,6 +15,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 void showTurboModal(BuildContext context) {
   final sessionManager = TurboSessionManager();
@@ -32,11 +33,17 @@ void showTurboModal(BuildContext context) {
     costCalculator: costCalculator,
   );
 
+  final turboPaymentProvider = StripePaymentProvider(
+    paymentService: context.read<PaymentService>(),
+    stripe: Stripe.instance,
+  );
+
   final turbo = Turbo(
     sessionManager: sessionManager,
     costCalculator: costCalculator,
     balanceRetriever: balanceRetriever,
     priceEstimator: priceEstimator,
+    paymentProvider: turboPaymentProvider,
     wallet: context.read<ArDriveAuth>().currentUser!.wallet,
   );
   showAnimatedDialogWithBuilder(
@@ -138,8 +145,13 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                   context.read<Turbo>(),
                   state.priceEstimate,
                 ),
-                child: const TurboPaymentFormView(
-                  key: ValueKey('payment_form'),
+                child: Container(
+                  key: const ValueKey('payment_form'),
+                  color: Colors.transparent,
+                  child: const Opacity(
+                      key: ValueKey('payment_form'),
+                      opacity: 1,
+                      child: TurboPaymentFormView()),
                 ),
               ),
             ],
@@ -153,16 +165,21 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                   context.read<Turbo>(),
                   state.priceEstimate,
                 ),
-                child: const TurboPaymentFormView(
-                  key: ValueKey('payment_form'),
-                ),
+                child: Container(
+                    key: const ValueKey('payment_form'),
+                    color:
+                        ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                    child: const Opacity(
+                        key: ValueKey('payment_form'),
+                        opacity: 0,
+                        child: TurboPaymentFormView())),
               ),
               BlocProvider<PaymentReviewBloc>(
                 create: (context) => PaymentReviewBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
                   state.paymentUserInformation,
-                ),
+                )..add(PaymentReviewLoadPaymentModel()),
                 child: Container(
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
