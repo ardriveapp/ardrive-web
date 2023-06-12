@@ -538,47 +538,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
     );
   }
 
-  InputBorder _getBorder(Color color) {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(4),
-      borderSide: BorderSide(color: color, width: 2),
-    );
-  }
-
-  InputBorder _getEnabledBorder(ArDriveTextFieldTheme theme) {
-    // if (textFieldState == TextFieldState.success) {
-    //   return _getSuccessBorder(theme);
-    // } else if (textFieldState == TextFieldState.error) {
-    //   return _getErrorBorder(theme);
-    // }
-
-    return _getBorder(theme.defaultBorderColor);
-  }
-
-  InputBorder _getFocusedBoder(ArDriveTextFieldTheme theme) {
-    // if (textFieldState == TextFieldState.success) {
-    //   return _getSuccessBorder(theme);
-    // } else if (textFieldState == TextFieldState.error) {
-    //   return _getErrorBorder(theme);
-    // }
-
-    return _getBorder(
-      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-    );
-  }
-
-  InputBorder _getDisabledBorder(ArDriveTextFieldTheme theme) {
-    return _getBorder(theme.inputDisabledBorderColor);
-  }
-
-  InputBorder _getErrorBorder(ArDriveTextFieldTheme theme) {
-    return _getBorder(theme.errorBorderColor);
-  }
-
-  InputBorder _getSuccessBorder(ArDriveTextFieldTheme theme) {
-    return _getBorder(theme.successBorderColor);
-  }
-
   Widget _footer(BuildContext context) {
     return SizedBox(
       width: double.maxFinite,

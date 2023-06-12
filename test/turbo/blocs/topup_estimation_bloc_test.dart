@@ -10,20 +10,20 @@ class MockTurbo extends Mock implements Turbo {}
 
 void main() {
   late MockTurbo mockTurbo;
-  late TurboTopUpEstimationBloc topUpBloc;
 
-  setUp(() {
-    mockTurbo = MockTurbo();
-    topUpBloc = TurboTopUpEstimationBloc(turbo: mockTurbo);
-    registerFallbackValue(FileSizeUnit.gigabytes);
-  });
+  setUpAll(() => mockTurbo = MockTurbo());
 
-  tearDown(() {
-    topUpBloc.close();
+  setUpAll(() {
+    registerFallbackValue(FileSizeUnit.bytes);
   });
 
   group('TurboTopUpEstimationBloc', () {
     group('LoadInitialData', () {
+      setUp(() {
+        when(() => mockTurbo.onPriceEstimateChanged)
+            .thenAnswer((_) => Stream.empty());
+      });
+
       blocTest<TurboTopUpEstimationBloc, TopupEstimationState>(
         'Emits [EstimationLoaded] with correct data when LoadInitialData is added',
         build: () => TurboTopUpEstimationBloc(turbo: mockTurbo),
@@ -35,7 +35,7 @@ void main() {
 
           when(() => mockTurbo.getBalance())
               .thenAnswer((_) async => BigInt.from(10));
-          when(() => mockTurbo.computePriceEstimateAndUpdate(
+          when(() => mockTurbo.computePriceEstimate(
                 currentAmount: 0,
                 currentCurrency: 'usd',
                 currentDataUnit: FileSizeUnit.gigabytes,
@@ -62,6 +62,8 @@ void main() {
 
       blocTest('Emits [EstimationError] if getBalance throws',
           build: () {
+            when(() => mockTurbo.onPriceEstimateChanged)
+                .thenAnswer((_) => Stream.empty());
             when(() => mockTurbo.getBalance()).thenThrow(Exception());
 
             return TurboTopUpEstimationBloc(turbo: mockTurbo);
@@ -81,9 +83,11 @@ void main() {
             bloc.add(LoadInitialData());
           },
           setUp: () {
+            when(() => mockTurbo.onPriceEstimateChanged)
+                .thenAnswer((_) => Stream.empty());
             when(() => mockTurbo.getBalance())
                 .thenAnswer((_) async => BigInt.from(10));
-            when(() => mockTurbo.computePriceEstimateAndUpdate(
+            when(() => mockTurbo.computePriceEstimate(
                     currentAmount: any(named: 'currentAmount'),
                     currentCurrency: any(named: 'currentCurrency'),
                     currentDataUnit: any(named: 'currentDataUnit')))
@@ -101,6 +105,8 @@ void main() {
             bloc.add(LoadInitialData());
           },
           setUp: () {
+            when(() => mockTurbo.onPriceEstimateChanged)
+                .thenAnswer((_) => Stream.empty());
             final mockPriceEstimate = PriceEstimate(
                 credits: BigInt.from(10),
                 priceInCurrency: 10,
@@ -108,7 +114,7 @@ void main() {
 
             when(() => mockTurbo.getBalance())
                 .thenAnswer((_) async => BigInt.from(10));
-            when(() => mockTurbo.computePriceEstimateAndUpdate(
+            when(() => mockTurbo.computePriceEstimate(
                   currentAmount: 0,
                   currentCurrency: 'usd',
                   currentDataUnit: FileSizeUnit.gigabytes,
@@ -133,17 +139,19 @@ void main() {
         bloc.add(const CurrencyUnitChanged('eur'));
       },
       setUp: () {
+        when(() => mockTurbo.onPriceEstimateChanged)
+            .thenAnswer((_) => Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
 
         when(() => mockTurbo.getBalance())
             .thenAnswer((_) async => BigInt.from(10));
-        when(() => mockTurbo.computePriceEstimateAndUpdate(
+        when(() => mockTurbo.computePriceEstimate(
               currentAmount: 0,
               currentCurrency: 'usd',
               currentDataUnit: FileSizeUnit.gigabytes,
             )).thenAnswer((_) async => mockPriceEstimate);
-        when(() => mockTurbo.computePriceEstimateAndUpdate(
+        when(() => mockTurbo.computePriceEstimate(
               currentAmount: 0,
               currentCurrency: 'eur',
               currentDataUnit: FileSizeUnit.gigabytes,
@@ -187,13 +195,15 @@ void main() {
         bloc.add(const DataUnitChanged(FileSizeUnit.kilobytes));
       },
       setUp: () {
+        when(() => mockTurbo.onPriceEstimateChanged)
+            .thenAnswer((_) => Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
 
         when(() => mockTurbo.getBalance())
             .thenAnswer((_) async => BigInt.from(10));
         // GiB
-        when(() => mockTurbo.computePriceEstimateAndUpdate(
+        when(() => mockTurbo.computePriceEstimate(
               currentAmount: 0,
               currentCurrency: 'usd',
               currentDataUnit: FileSizeUnit.gigabytes,
@@ -204,7 +214,7 @@ void main() {
             )).thenAnswer((_) async => 1);
 
         // KiB
-        when(() => mockTurbo.computePriceEstimateAndUpdate(
+        when(() => mockTurbo.computePriceEstimate(
               currentAmount: 0,
               currentCurrency: 'usd',
               currentDataUnit: FileSizeUnit.kilobytes,
@@ -249,6 +259,8 @@ void main() {
         bloc.add(const FiatAmountSelected(100));
       },
       setUp: () {
+        when(() => mockTurbo.onPriceEstimateChanged)
+            .thenAnswer((_) => Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 0, estimatedStorage: 1);
         final mockPriceEstimate100 = PriceEstimate(
@@ -258,7 +270,7 @@ void main() {
 
         when(() => mockTurbo.getBalance())
             .thenAnswer((_) async => BigInt.from(10));
-        when(() => mockTurbo.computePriceEstimateAndUpdate(
+        when(() => mockTurbo.computePriceEstimate(
               currentAmount: 0,
               currentCurrency: 'usd',
               currentDataUnit: FileSizeUnit.gigabytes,
@@ -269,7 +281,7 @@ void main() {
             )).thenAnswer((_) async => 1);
 
         // second call with 100 amount
-        when(() => mockTurbo.computePriceEstimateAndUpdate(
+        when(() => mockTurbo.computePriceEstimate(
               currentAmount: 100,
               currentCurrency: 'usd',
               currentDataUnit: FileSizeUnit.gigabytes,

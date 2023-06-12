@@ -3,8 +3,8 @@ import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
-import 'package:arweave/utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -155,7 +155,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     _quoteExpirationDate = turbo.quoteExpirationDate;
   }
 
-  String _getCreditsFromPaymentModel() => winstonToAr(
+  String _getCreditsFromPaymentModel() => convertCreditsToLiteralString(
       BigInt.from(int.parse(_paymentModel!.topUpQuote.winstonCreditAmount)));
 
   String _getSubTotalFromPaymentModel() =>
