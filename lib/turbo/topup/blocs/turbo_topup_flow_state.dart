@@ -62,4 +62,6 @@ enum TurboErrorType {
   server,
   unknown,
   sessionExpired,
+  paymentFailed,
+  fetchPaymentIntentFailed,
 }

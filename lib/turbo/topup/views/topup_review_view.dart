@@ -4,7 +4,6 @@ import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dar
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/views/topup_payment_form.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
-import 'package:ardrive/utils/winston_to_ar.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -80,384 +79,461 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 .shadow
                 .withOpacity(0.9),
           );
+        } else if (state is PaymentReviewErrorLoadingPaymentModel) {
+          showAnimatedDialog(
+            context,
+            content: ArDriveStandardModal(
+              width: 575,
+              content: TurboErrorView(
+                errorType: TurboErrorType.fetchPaymentIntentFailed,
+                onDismiss: () {},
+                onTryAgain: () {
+                  Navigator.pop(context);
+                  context.read<PaymentReviewBloc>().add(
+                        PaymentReviewLoadPaymentModel(),
+                      );
+                },
+              ),
+            ),
+            barrierDismissible: false,
+            barrierColor: ArDriveTheme.of(context)
+                .themeData
+                .colors
+                .shadow
+                .withOpacity(0.9),
+          );
         }
       },
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 26, right: 26),
-                child: ArDriveClickArea(
-                  child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: ArDriveIcons.x()),
+      child: BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
+        buildWhen: (previous, current) {
+          return current is PaymentReviewPaymentModelLoaded ||
+              current is PaymentReviewLoadingPaymentModel;
+        },
+        builder: (context, state) {
+          if (state is PaymentReviewLoadingPaymentModel) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 26, right: 26),
+                    child: ArDriveClickArea(
+                      child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: ArDriveIcons.x()),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 40.0),
-                child: Text(
-                  'Review',
-                  style: ArDriveTypography.body
-                      .leadBold()
-                      .copyWith(fontWeight: FontWeight.w700),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 40.0),
+                    child: Text(
+                      'Review',
+                      style: ArDriveTypography.body
+                          .leadBold()
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(40.0),
-              child: ArDriveCard(
-                contentPadding: const EdgeInsets.all(0),
-                backgroundColor:
-                    ArDriveTheme.of(context).themeData.colors.shadow,
-                content: Column(
-                  children: [
-                    Padding(
-                      padding:
-                          const EdgeInsets.only(top: 24, left: 24, right: 24),
-                      child: Column(
-                        children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: SvgPicture.asset(
-                              Resources.images.brand.turbo,
-                              height: 15,
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeAccentDisabled,
-                              colorBlendMode: BlendMode.srcIn,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 18,
-                          ),
-                          BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
-                            builder: (context, state) {
-                              return Text(
-                                winstonToAr(state.priceEstimate.credits)
-                                    .toStringAsFixed(6),
-                                style: ArDriveTypography.headline
-                                    .headline4Regular(
+                Padding(
+                  padding: const EdgeInsets.all(40.0),
+                  child: ArDriveCard(
+                    contentPadding: const EdgeInsets.all(0),
+                    backgroundColor:
+                        ArDriveTheme.of(context).themeData.colors.shadow,
+                    content: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(
+                              top: 24, left: 24, right: 24),
+                          child: Column(
+                            children: [
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: SvgPicture.asset(
+                                  Resources.images.brand.turbo,
+                                  height: 15,
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeAccentDisabled,
+                                  colorBlendMode: BlendMode.srcIn,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              const SizedBox(
+                                height: 18,
+                              ),
+                              BlocBuilder<PaymentReviewBloc,
+                                  PaymentReviewState>(
+                                builder: (context, state) {
+                                  if (state
+                                      is PaymentReviewPaymentModelLoaded) {
+                                    return Text(
+                                      state.credits,
+                                      style: ArDriveTypography.headline
+                                          .headline4Regular(
+                                            color: ArDriveTheme.of(context)
+                                                .themeData
+                                                .colors
+                                                .themeFgMuted,
+                                          )
+                                          .copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    );
+                                  }
+
+                                  return Text(
+                                    '0',
+                                    style: ArDriveTypography.headline
+                                        .headline4Regular(
                                       color: ArDriveTheme.of(context)
                                           .themeData
                                           .colors
                                           .themeFgMuted,
-                                    )
-                                    .copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              );
-                            },
-                          ),
-                          Text(
-                            'Credits',
-                            style: ArDriveTypography.body.buttonLargeRegular(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeAccentDisabled,
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 40,
-                          ),
-                          const Divider(),
-                          Row(
-                            children: [
-                              Text(
-                                'Subtotal',
-                                style: ArDriveTypography.body.buttonNormalBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeAccentDisabled,
-                                ),
-                              ),
-                              const Spacer(),
-                              BlocBuilder<PaymentReviewBloc,
-                                  PaymentReviewState>(
-                                builder: (context, state) {
-                                  return Text(
-                                    '\$${state.priceEstimate.priceInCurrency}',
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeAccentDisabled,
                                     ),
                                   );
                                 },
                               ),
-                            ],
-                          ),
-                          const Divider(
-                            height: 32,
-                          ),
-                          Row(
-                            children: [
                               Text(
-                                'Fees',
-                                style: ArDriveTypography.body.buttonNormalBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeAccentDisabled,
-                                ),
-                              ),
-                              const Spacer(),
-                              BlocBuilder<PaymentReviewBloc,
-                                  PaymentReviewState>(
-                                builder: (context, state) {
-                                  return Text(
-                                    '\$${state.fee}',
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeAccentDisabled,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                          const Divider(
-                            height: 32,
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                'Total taxes',
-                                style: ArDriveTypography.body.buttonNormalBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeAccentDisabled,
-                                ),
-                              ),
-                              const Spacer(),
-                              BlocBuilder<PaymentReviewBloc,
-                                  PaymentReviewState>(
-                                builder: (context, state) {
-                                  return Text(
-                                    '\$${state.taxes}',
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeAccentDisabled,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                          const Divider(
-                            height: 32,
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                'Total',
+                                'Credits',
                                 style:
-                                    ArDriveTypography.body.buttonNormalBold(),
+                                    ArDriveTypography.body.buttonLargeRegular(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeAccentDisabled,
+                                ),
                               ),
-                              const Spacer(),
-                              BlocBuilder<PaymentReviewBloc,
-                                  PaymentReviewState>(
-                                builder: (context, state) {
-                                  return Text(
-                                    '\$${state.total}',
-                                    style: ArDriveTypography.body
-                                        .buttonNormalBold()
-                                        .copyWith(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  );
-                                },
+                              const SizedBox(
+                                height: 40,
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 24,
-                    ),
-                    BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
-                      builder: (context, state) {
-                        return Container(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeBgSurface,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 24,
-                          ),
-                          child: Row(
-                            children: [
-                              TimerWidget(
-                                key: state is PaymentReviewQuoteLoaded
-                                    ? const ValueKey('quote_loaded')
-                                    : null,
-                                durationInSeconds: 600,
-                                onFinished: () {
-                                  context
-                                      .read<PaymentReviewBloc>()
-                                      .add(PaymentReviewRefreshQuote());
-                                },
-                                builder: (context, seconds) {
-                                  Color textColor;
-                                  if (seconds < 30) {
-                                    textColor = ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeErrorDefault;
-                                  } else if (seconds < 60) {
-                                    textColor = ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeWarningMuted;
-                                  } else {
-                                    textColor = ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeAccentDisabled;
-                                  }
-
-                                  String formatDuration(int seconds) {
-                                    int minutes = seconds ~/ 60;
-                                    int remainingSeconds = seconds % 60;
-                                    String minutesStr =
-                                        minutes.toString().padLeft(2, '0');
-                                    String secondsStr = remainingSeconds
-                                        .toString()
-                                        .padLeft(2, '0');
-                                    return '$minutesStr:$secondsStr';
-                                  }
-
-                                  if (state is PaymentReviewLoadingQuote) {
-                                    return Text(
-                                      'Fetching new quote...',
-                                      style: ArDriveTypography.body
-                                          .buttonNormalBold()
-                                          .copyWith(
-                                            color: textColor,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    );
-                                  } else if (state is PaymentReviewQuoteError) {
-                                    return Text(
-                                      'Error fetching new quote, try again.',
-                                      style: ArDriveTypography.body
-                                          .buttonNormalBold(
+                              const Divider(),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Subtotal',
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeAccentDisabled,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  BlocBuilder<PaymentReviewBloc,
+                                      PaymentReviewState>(
+                                    builder: (context, state) {
+                                      if (state
+                                          is PaymentReviewPaymentModelLoaded) {
+                                        return Text(
+                                          '\$${state.subTotal}',
+                                          style: ArDriveTypography.body
+                                              .buttonNormalBold(
                                             color: ArDriveTheme.of(context)
                                                 .themeData
                                                 .colors
-                                                .themeErrorDefault,
-                                          )
-                                          .copyWith(
-                                            fontWeight: FontWeight.w700,
+                                                .themeAccentDisabled,
                                           ),
-                                    );
-                                  }
+                                        );
+                                      }
 
-                                  return RichText(
-                                    text: TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: 'Quote updates in ',
-                                          style: ArDriveTypography.body
-                                              .buttonNormalBold()
-                                              .copyWith(
-                                                color: ArDriveTheme.of(context)
-                                                    .themeData
-                                                    .colors
-                                                    .themeAccentDisabled,
-                                              ),
+                                      return Text(
+                                        '\$0',
+                                        style: ArDriveTypography.body
+                                            .buttonNormalBold(
+                                          color: ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeAccentDisabled,
                                         ),
-                                        TextSpan(
-                                          text: formatDuration(seconds),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const Divider(
+                                height: 32,
+                              ),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Fees',
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeAccentDisabled,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  BlocBuilder<PaymentReviewBloc,
+                                      PaymentReviewState>(
+                                    builder: (context, state) {
+                                      if (state
+                                          is PaymentReviewPaymentModelLoaded) {
+                                        return Text(
+                                          // TODO: calculate the fee
+                                          '\$${0.3}',
+                                          style: ArDriveTypography.body
+                                              .buttonNormalBold(
+                                            color: ArDriveTheme.of(context)
+                                                .themeData
+                                                .colors
+                                                .themeAccentDisabled,
+                                          ),
+                                        );
+                                      }
+
+                                      return Text(
+                                        '\$0',
+                                        style: ArDriveTypography.body
+                                            .buttonNormalBold(
+                                          color: ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeAccentDisabled,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const Divider(
+                                height: 32,
+                              ),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Total',
+                                    style: ArDriveTypography.body
+                                        .buttonNormalBold(),
+                                  ),
+                                  const Spacer(),
+                                  BlocBuilder<PaymentReviewBloc,
+                                      PaymentReviewState>(
+                                    builder: (context, state) {
+                                      if (state
+                                          is PaymentReviewPaymentModelLoaded) {
+                                        return Text(
+                                          '\$${state.total}',
                                           style: ArDriveTypography.body
                                               .buttonNormalBold()
                                               .copyWith(
-                                                color: textColor,
                                                 fontWeight: FontWeight.w700,
                                               ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
+                                        );
+                                      }
+
+                                      return Text(
+                                        // '\$${state.total}',
+                                        '\$0',
+                                        style: ArDriveTypography.body
+                                            .buttonNormalBold()
+                                            .copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
-                              const Spacer(),
-                              RefreshQuoteButton(),
                             ],
                           ),
-                        );
-                      },
+                        ),
+                        const SizedBox(
+                          height: 24,
+                        ),
+                        BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
+                          builder: (context, state) {
+                            if (state is PaymentReviewPaymentModelLoaded) {
+                              return Container(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeBgSurface,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 24,
+                                ),
+                                child: Row(
+                                  children: [
+                                    TimerWidget(
+                                      key: state is PaymentReviewQuoteLoaded
+                                          ? const ValueKey('quote_loaded')
+                                          : null,
+                                      durationInSeconds: state
+                                          .quoteExpirationDate
+                                          .difference(DateTime.now())
+                                          .inSeconds,
+                                      onFinished: () {
+                                        context
+                                            .read<PaymentReviewBloc>()
+                                            .add(PaymentReviewRefreshQuote());
+                                      },
+                                      builder: (context, seconds) {
+                                        Color textColor;
+                                        if (seconds < 30) {
+                                          textColor = ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeErrorDefault;
+                                        } else if (seconds < 60) {
+                                          textColor = ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeWarningMuted;
+                                        } else {
+                                          textColor = ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeAccentDisabled;
+                                        }
+
+                                        String formatDuration(int seconds) {
+                                          int minutes = seconds ~/ 60;
+                                          int remainingSeconds = seconds % 60;
+                                          String minutesStr = minutes
+                                              .toString()
+                                              .padLeft(2, '0');
+                                          String secondsStr = remainingSeconds
+                                              .toString()
+                                              .padLeft(2, '0');
+                                          return '$minutesStr:$secondsStr';
+                                        }
+
+                                        if (state
+                                            is PaymentReviewLoadingQuote) {
+                                          return Text(
+                                            'Fetching new quote...',
+                                            style: ArDriveTypography.body
+                                                .buttonNormalBold()
+                                                .copyWith(
+                                                  color: textColor,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          );
+                                        } else if (state
+                                            is PaymentReviewQuoteError) {
+                                          return Text(
+                                            'Error fetching new quote, try again.',
+                                            style: ArDriveTypography.body
+                                                .buttonNormalBold(
+                                                  color:
+                                                      ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeErrorDefault,
+                                                )
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          );
+                                        }
+
+                                        return RichText(
+                                          text: TextSpan(
+                                            children: [
+                                              TextSpan(
+                                                text: 'Quote updates in ',
+                                                style: ArDriveTypography.body
+                                                    .buttonNormalBold()
+                                                    .copyWith(
+                                                      color: ArDriveTheme.of(
+                                                              context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeAccentDisabled,
+                                                    ),
+                                              ),
+                                              TextSpan(
+                                                text: formatDuration(seconds),
+                                                style: ArDriveTypography.body
+                                                    .buttonNormalBold()
+                                                    .copyWith(
+                                                      color: textColor,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    const Spacer(),
+                                    RefreshQuoteButton(),
+                                  ],
+                                ),
+                              );
+                            }
+                            return Container();
+                          },
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(left: 40.0, right: 40, bottom: 40),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Please leave an email if you want a receipt.',
+                        style: ArDriveTypography.body.buttonNormalBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeAccentDisabled,
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      ArDriveTheme(
+                        key: const ValueKey('turbo_payment_form'),
+                        themeData: textTheme,
+                        child: ArDriveTextField(
+                          controller: _emailController,
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      ArDriveCheckBox(
+                        title: 'Keep me up to date on news and promotions.',
+                        titleStyle: ArDriveTypography.body.buttonNormalBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeAccentDisabled,
+                        ),
+                        checked: false,
+                      ),
+                      const Divider(
+                        height: 80,
+                      ),
+                      _footer(context)
+                    ],
+                  ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 40.0, right: 40, bottom: 40),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Please leave an email if you want a receipt.',
-                    style: ArDriveTypography.body.buttonNormalBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeAccentDisabled,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  ArDriveTheme(
-                    key: const ValueKey('turbo_payment_form'),
-                    themeData: textTheme,
-                    child: ArDriveTextField(
-                      controller: _emailController,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  ArDriveCheckBox(
-                    title: 'Keep me up to date on news and promotions.',
-                    titleStyle: ArDriveTypography.body.buttonNormalBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeAccentDisabled,
-                    ),
-                    checked: false,
-                  ),
-                  const Divider(
-                    height: 80,
-                  ),
-                  _footer(context)
-                ],
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -528,36 +604,40 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               ),
             ),
           ),
-          Hero(
-            tag: 'turbo_success',
-            child: BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
-              builder: (context, state) {
-                return ArDriveButton(
-                  maxHeight: 44,
-                  maxWidth: 143,
-                  // TODO: localize
-                  text: 'Pay',
-                  fontStyle: ArDriveTypography.body.buttonLargeBold(
-                    color: Colors.white,
-                  ),
-                  customContent: state is PaymentReviewLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : null,
-                  onPressed: () async {
-                    context.read<PaymentReviewBloc>().add(
-                          PaymentReviewFinishPayment(),
-                        );
-                  },
-                );
-              },
-            ),
+          BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
+            builder: (context, state) {
+              return ArDriveButton(
+                maxHeight: 44,
+                maxWidth: 143,
+                // TODO: localize
+                text: 'Pay',
+                fontStyle: ArDriveTypography.body.buttonLargeBold(
+                  color: Colors.white,
+                ),
+                isDisabled: state is PaymentReviewLoadingQuote,
+                customContent: state is PaymentReviewLoading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : null,
+                onPressed: () async {
+                  if (state is PaymentReviewLoading) {
+                    return;
+                  }
+
+                  context.read<PaymentReviewBloc>().add(
+                        PaymentReviewFinishPayment(
+                          email: _emailController.text,
+                        ),
+                      );
+                },
+              );
+            },
           ),
         ],
       ),
@@ -647,7 +727,6 @@ class RefreshQuoteButton extends StatefulWidget {
 class _RefreshQuoteButtonState extends State<RefreshQuoteButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _translationAnimation;
   late Animation<double> _fadeAndSizeAnimation;
 
   @override
@@ -656,8 +735,6 @@ class _RefreshQuoteButtonState extends State<RefreshQuoteButton>
 
     _controller =
         AnimationController(vsync: this, duration: Duration(milliseconds: 350));
-    _translationAnimation =
-        Tween<double>(begin: 0, end: 50).animate(_controller);
     _fadeAndSizeAnimation =
         Tween<double>(begin: 1, end: 0).animate(_controller);
   }

@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -76,51 +77,4 @@ class TurboTopupFlowBloc
       }
     });
   }
-}
-
-abstract class PaymentUserInformation extends Equatable {
-  final String name;
-  // final String cardNumber;
-  // final String expirationDate;
-  // final String cvv;
-  // final String country;
-  // final String postalCode;
-  final String? email;
-
-  const PaymentUserInformation({
-    required this.name,
-    // required this.cardNumber,
-    // required this.expirationDate,
-    // required this.cvv,
-    // required this.country,
-    // required this.postalCode,
-    // this.email,
-    this.email,
-  });
-
-  @override
-  List<Object?> get props => [
-        name,
-        email,
-        // cardNumber,
-        // expirationDate,
-        // cvv,
-        // country,
-        // postalCode,
-      ];
-}
-
-class PaymentUserInformationFromUSA extends PaymentUserInformation {
-  const PaymentUserInformationFromUSA({
-    required String name,
-    String? email,
-  }) : super(
-          name: name,
-          email: email,
-          // cardNumber: cardNumber,
-          // expirationDate: expirationDate,
-          // cvv: cvv,
-          // postalCode: postalCode,
-          // country: 'US',
-        );
 }

@@ -23,6 +23,8 @@ class MockTurboPriceEstimator extends Mock implements TurboPriceEstimator {}
 
 class MockTurboCostCalculator extends Mock implements TurboCostCalculator {}
 
+class MockPaymentProvider extends Mock implements TurboPaymentProvider {}
+
 void main() {
   group('Turbo', () {
     setUpAll(() {
@@ -40,6 +42,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -67,6 +70,7 @@ void main() {
           balanceRetriever: MockTurboBalanceRetriever(),
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -94,6 +98,7 @@ void main() {
           balanceRetriever: MockTurboBalanceRetriever(),
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -137,6 +142,7 @@ void main() {
           balanceRetriever: MockTurboBalanceRetriever(),
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -175,6 +181,7 @@ void main() {
           balanceRetriever: MockTurboBalanceRetriever(),
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -277,6 +284,7 @@ void main() {
           balanceRetriever: MockTurboBalanceRetriever(),
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -315,6 +323,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -367,6 +376,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
 
         expect(turbo.currentPriceEstimate, PriceEstimate.zero());
@@ -383,6 +393,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
 
         final mockPriceEstimate100 = PriceEstimate(
@@ -436,6 +447,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
 
         expect(() => turbo.maxQuoteExpirationDate, throwsA(isA<Exception>()));
@@ -454,6 +466,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
 
         final mockPriceEstimate100 = PriceEstimate(
