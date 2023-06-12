@@ -10,7 +10,7 @@ import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
-import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:artemis/artemis.dart';
@@ -219,7 +219,6 @@ class ArweaveService {
     SecretKey? driveKey,
     int lastBlockHeight, {
     required String ownerAddress,
-    required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
     // FIXME - PE-3440
@@ -372,19 +371,23 @@ class ArweaveService {
     required String driveId,
     required bool isPrivate,
   }) async {
-    final Uint8List? cachedData = await SnapshotItemOnChain.getDataForTxId(
-      driveId,
-      txId,
-    );
+    try {
+      final Uint8List? cachedData = await SnapshotItemOnChain.getDataForTxId(
+        driveId,
+        txId,
+      );
 
-    if (cachedData != null) {
-      if (isPrivate) {
-        // then it's base64-encoded
-        return base64.decode(String.fromCharCodes(cachedData));
-      } else {
-        // public data is plain text
-        return cachedData;
+      if (cachedData != null) {
+        if (isPrivate) {
+          // then it's base64-encoded
+          return base64.decode(String.fromCharCodes(cachedData));
+        } else {
+          // public data is plain text
+          return cachedData;
+        }
       }
+    } catch (e) {
+      logger.e('Failed to get cached entity data from snapshot', e);
     }
 
     return null;
