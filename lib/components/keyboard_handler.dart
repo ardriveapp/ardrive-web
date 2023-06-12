@@ -106,14 +106,15 @@ class ArDriveDevToolsShortcuts extends StatelessWidget {
     // Define the shortcuts and their actions
     final List<Shortcut> shortcuts = [
       Shortcut(
-          modifier: LogicalKeyboardKey.shiftLeft,
-          key: LogicalKeyboardKey.keyQ,
-          action: () {
-            if (context.read<ConfigService>().flavor == Flavor.development) {
-              logger.i('Opening dev tools');
-              ArDriveDevTools.instance.showDevTools();
-            }
-          }),
+        modifier: LogicalKeyboardKey.shiftLeft,
+        key: LogicalKeyboardKey.keyQ,
+        action: () {
+          if (context.read<ConfigService>().flavor == Flavor.development) {
+            logger.i('Opening dev tools');
+            ArDriveDevTools.instance.showDevTools();
+          }
+        },
+      ),
       Shortcut(
         modifier: LogicalKeyboardKey.shiftLeft,
         key: LogicalKeyboardKey.keyW,

@@ -6,14 +6,12 @@ import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
-import 'package:ardrive/utils/credit_card_validations.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
-import 'package:ardrive/utils/winston_to_ar.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_multi_formatter/flutter_multi_formatter.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -25,79 +23,15 @@ class TurboPaymentFormView extends StatefulWidget {
 }
 
 class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
-  late final GlobalKey<ArDriveFormState> _formKey;
-  late final TextEditingController _cardNumberController;
-  late final TextEditingController _expiryDateController;
-  late final TextEditingController _cvvController;
-  late final TextEditingController _nameController;
-  late final TextEditingController _stateController;
-  late final TextEditingController _addressLine1Controller;
-  late final TextEditingController _addressLine2Controller;
-  late final TextEditingController _postalCodeController;
   CardFieldInputDetails? card;
-  CountryItem? _selectedCountry;
-
-  @override
-  initState() {
-    super.initState();
-    _formKey = GlobalKey<ArDriveFormState>(debugLabel: 'TurboPaymentForm');
-    _cardNumberController = TextEditingController();
-    _expiryDateController = TextEditingController();
-    _cvvController = TextEditingController();
-    _nameController = TextEditingController();
-    _stateController = TextEditingController();
-    _addressLine1Controller = TextEditingController();
-    _addressLine2Controller = TextEditingController();
-    _postalCodeController = TextEditingController();
-    card = null;
-
-    _listenToFormChanges();
-  }
-
-  bool _isFormValid = false;
-
-  void _listenToFormChanges() {
-    _cardNumberController.addListener(_onFormChange);
-    _expiryDateController.addListener(_onFormChange);
-    _cvvController.addListener(_onFormChange);
-    _nameController.addListener(_onFormChange);
-    _stateController.addListener(_onFormChange);
-    _addressLine1Controller.addListener(_onFormChange);
-    _addressLine2Controller.addListener(_onFormChange);
-    _postalCodeController.addListener(_onFormChange);
-  }
-
-  void prePopulateWithHardcodedData() {
-    _cardNumberController.text = '4242424242424242';
-    _expiryDateController.text = '06/26';
-    _cvvController.text = '123';
-    _nameController.text = 'John Doe';
-    _stateController.text = 'California';
-    _addressLine1Controller.text = '123 Main St';
-    _addressLine2Controller.text = 'Apt 1';
-    _postalCodeController.text = '90210';
-
-    setState(() {});
-  }
-
-  void _onFormChange() async {
-    _isFormValid = _formKey.currentState?.validateSync() ?? false;
-
-    setState(() {});
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = ArDriveTheme.of(context).themeData;
 
-    // custom theme for the text fields on the top-up form
     final textTheme = theme.copyWith(
       textFieldTheme: theme.textFieldTheme.copyWith(
-        // inputBackgroundColor: theme.colors.themeBgCanvas,
-        // labelColor: theme.colors.themeAccentDisabled,
-        // requiredLabelColor: theme.colors.themeAccentDisabled,
         inputTextStyle: theme.textFieldTheme.inputTextStyle.copyWith(
-          // color: theme.colors.themeFgMuted,
           fontWeight: FontWeight.w600,
           height: 1.5,
           fontSize: 16,
@@ -108,12 +42,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           horizontal: 13,
           vertical: 10,
         ),
-        // labelStyle: TextStyle(
-        //   color: theme.colors.themeAccentDisabled,
-        //   fontWeight: FontWeight.w600,
-        //   height: 1.5,
-        //   fontSize: 16,
-        // ),
       ),
     );
 
@@ -133,9 +61,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         const SizedBox(height: 16),
         _header(context),
         const Divider(height: 16),
-        // _body(context),
         const SizedBox(height: 16),
-        // _footer(context),
       ],
     );
   }
@@ -178,20 +104,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                     const Divider(height: 24),
                     _credits(context),
                     const SizedBox(height: 16),
-                    BlocListener<PaymentFormBloc, PaymentFormState>(
-                      listener: (context, state) {
-                        logger.d('state: $state');
-                        if (state is PaymentFormPopulatingFieldsForTesting) {
-                          prePopulateWithHardcodedData();
-                        }
-                      },
-                      child: ArDriveForm(
-                        key: _formKey,
-                        child: _formDesktop(
-                          context,
-                          theme,
-                        ),
-                      ),
+                    _formDesktop(
+                      context,
+                      theme,
                     ),
                   ],
                 ),
@@ -202,215 +117,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  /// TextFields
-  ///
-  Widget nameOnCardTextField() {
-    return Expanded(
-      child: ArDriveTextField(
-        controller: _nameController,
-        label: 'Name on Card',
-        isFieldRequired: true,
-        useErrorMessageOffset: true,
-        onChanged: (s) {
-          String valid = s.replaceAll(RegExp(r'[^a-zA-Z\s]'), '');
-          _nameController.text = valid;
-          _nameController.selection =
-              TextSelection.collapsed(offset: valid.length);
-        },
-        validator: (s) {
-          if (s == null || s.isEmpty) {
-            return 'Can\'t be empty';
-          }
-
-          return null;
-        },
-      ),
-    );
-  }
-
-  Widget cardNumberTextField() {
-    return Expanded(
-      child: ArDriveTextField(
-        controller: _cardNumberController,
-        label: 'Card Number',
-        isFieldRequired: true,
-        useErrorMessageOffset: true,
-        validator: (s) {
-          if (s == null || !validateCreditCardNumber(s)) {
-            return 'Invalid credit card number';
-          }
-
-          return null;
-        },
-        inputFormatters: [
-          CreditCardNumberInputFormatter(
-            useSeparators: true,
-            onCardSystemSelected: (cardSystem) {
-              logger.d('card system selected: $cardSystem');
-            },
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget expiryDateTextField() {
-    return Expanded(
-      child: ArDriveTextField(
-        controller: _expiryDateController,
-        label: 'Expiry Date',
-        isFieldRequired: true,
-        useErrorMessageOffset: true,
-        validator: (s) {
-          if (s == null || !validateCreditCardExpiryDate(s)) {
-            return 'Invalid expiry date';
-          }
-          return null;
-        },
-        inputFormatters: [CreditCardExpirationDateFormatter()],
-      ),
-    );
-  }
-
-  Widget cvvTextField() {
-    return Expanded(
-      child: ArDriveTextField(
-        controller: _cvvController,
-        label: 'CVV',
-        useErrorMessageOffset: true,
-        validator: (s) {
-          if (s == null || !validateCreditCardCVV(s, '4242 4242 4242 4242')) {
-            return 'Please enter a valid CVV';
-          }
-          return null;
-        },
-        isFieldRequired: true,
-        inputFormatters: [CreditCardCvcInputFormatter()],
-      ),
-    );
-  }
-
-  Widget countryTextField(ArDriveTextFieldTheme theme) {
-    return Expanded(
-      child: CountryInputDropdown(
-        onChanged: (country) {
-          setState(() {
-            _selectedCountry = country;
-          });
-        },
-        items: const [
-          CountryItem('United States'),
-        ],
-        buildSelectedItem: (item) {
-          return Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: item != null
-                    ? theme.successBorderColor
-                    : theme.defaultBorderColor,
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(4),
-              color: ArDriveTheme.of(context)
-                  .themeData
-                  .textFieldTheme
-                  .inputBackgroundColor,
-            ),
-            padding:
-                //  ArDriveTheme.of(context)
-                //     .themeData
-                //     .textFieldTheme
-                //     .contentPadding,
-                const EdgeInsets.symmetric(
-              horizontal: 13,
-              vertical: 10,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    item?.label ?? '',
-                    style: theme.inputTextStyle,
-                  ),
-                ),
-                ArDriveIcons.carretDown(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentDisabled,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget stateTextField() {
-    return Expanded(
-      child: ArDriveTextField(
-        controller: _stateController,
-        label: 'State',
-        isFieldRequired: true,
-        useErrorMessageOffset: true,
-        validator: (s) {
-          if (s == null || s.isEmpty) {
-            return 'Can\'t be empty';
-          }
-
-          return null;
-        },
-      ),
-    );
-  }
-
-  Widget addressLine1TextField() {
-    return Expanded(
-      child: ArDriveTextField(
-        controller: _addressLine1Controller,
-        label: 'Address Line 1',
-        isFieldRequired: true,
-        useErrorMessageOffset: true,
-        validator: (s) {
-          if (s == null || s.isEmpty) {
-            return 'Can\'t be empty';
-          }
-          return null;
-        },
-      ),
-    );
-  }
-
-  Widget addressLine2TextField() {
-    return Expanded(
-      child: ArDriveTextField(
-        controller: _addressLine2Controller,
-        label: 'Address Line 2',
-        useErrorMessageOffset: true,
-      ),
-    );
-  }
-
-  Widget postalCodeTextField() {
-    return Flexible(
-      flex: 1,
-      child: ArDriveTextField(
-        controller: _postalCodeController,
-        label: 'Postal Code',
-        isFieldRequired: true,
-        useErrorMessageOffset: true,
-        validator: (s) {
-          if (s == null || s.isEmpty) {
-            return 'Can\'t be empty';
-          }
-          return null;
-        },
       ),
     );
   }
@@ -434,7 +140,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
                     return Text(
-                      '${winstonToAr(state.priceEstimate.credits).toStringAsFixed(6)} Credits',
+                      '${convertCreditsToLiteralString(state.priceEstimate.credits)} Credits',
                       style: ArDriveTypography.body.leadBold(),
                     );
                   },
@@ -573,12 +279,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // TODO: Verify if is needed
-          // Row(
-          //   children: [
-          //     nameOnCardTextField(),
-          //   ],
-          // ),
           Padding(
             padding: const EdgeInsets.only(bottom: 4, right: 16),
             child: Align(
@@ -634,33 +334,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               },
             ),
           ),
-          // TODO: Verify if is needed
-          // const SizedBox(
-          //   height: 16,
-          // ),
-          // Row(
-          //   crossAxisAlignment: CrossAxisAlignment.start,
-          //   children: [
-          //     countryTextField(theme),
-          //     const SizedBox(width: 24),
-          //     // stateTextField(),
-          //   ],
-          // ),
-          // Row(
-          //   crossAxisAlignment: CrossAxisAlignment.start,
-          //   children: [
-          //     addressLine1TextField(),
-          //     const SizedBox(width: 24),
-          //     addressLine2TextField(),
-          //   ],
-          // ),
-          // Row(
-          //   mainAxisAlignment: MainAxisAlignment.start,
-          //   children: [
-          //     postalCodeTextField(),
-          //     Flexible(flex: 1, child: Container()),
-          //   ],
-          // ),
           const SizedBox(
             height: 16,
           ),
@@ -720,11 +393,10 @@ class TimerWidget extends StatefulWidget {
   });
 
   @override
-  // ignore: library_private_types_in_public_api
-  _TimerWidgetState createState() => _TimerWidgetState();
+  TimerWidgetState createState() => TimerWidgetState();
 }
 
-class _TimerWidgetState extends State<TimerWidget> {
+class TimerWidgetState extends State<TimerWidget> {
   late Timer _timer;
   int _secondsLeft = 0;
 
@@ -909,11 +581,10 @@ class QuoteRefreshWidget extends StatefulWidget {
   const QuoteRefreshWidget({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _QuoteRefreshWidgetState createState() => _QuoteRefreshWidgetState();
+  QuoteRefreshWidgetState createState() => QuoteRefreshWidgetState();
 }
 
-class _QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
+class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
   @override
   Widget build(BuildContext context) {
     return ArDriveCard(

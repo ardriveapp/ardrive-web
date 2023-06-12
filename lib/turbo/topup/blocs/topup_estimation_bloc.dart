@@ -124,6 +124,7 @@ class TurboTopUpEstimationBloc
       outputDataUnit: currentDataUnit,
     );
 
+    logger.i('selected amount: ${priceEstimate.priceInCurrency}');
     emit(
       EstimationLoaded(
         balance: _balance,
