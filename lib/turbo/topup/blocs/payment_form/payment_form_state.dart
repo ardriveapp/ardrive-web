@@ -10,7 +10,10 @@ abstract class PaymentFormState extends Equatable {
   final int quoteExpirationTimeInSeconds;
 
   @override
-  List<Object> get props => [];
+  List<Object> get props => [
+        priceEstimate,
+        quoteExpirationTimeInSeconds,
+      ];
 }
 
 class PaymentFormInitial extends PaymentFormState {
