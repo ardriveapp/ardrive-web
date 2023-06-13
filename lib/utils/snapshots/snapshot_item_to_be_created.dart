@@ -41,13 +41,16 @@ class SnapshotItemToBeCreated {
 
   Stream<Uint8List> getSnapshotData() async* {
     StreamController<TxSnapshot> controller = StreamController<TxSnapshot>();
+    List<Completer> futures = []; // A list to hold all futures
 
-    source.listen(
-      (node) async {
+    source.listen((node) {
+      var completer = Completer();
+      futures.add(completer);
+
+      (() async {
         _dataStart = _dataStart == null || node.block!.height < _dataStart!
             ? node.block!.height
             : _dataStart;
-
         _dataEnd = _dataEnd == null || node.block!.height > _dataEnd!
             ? node.block!.height
             : _dataEnd;
@@ -58,13 +61,17 @@ class SnapshotItemToBeCreated {
           var metadata = await _jsonMetadataOfTxId(node.id);
           controller.add(TxSnapshot(gqlNode: node, jsonMetadata: metadata));
         }
-      },
-      onDone: () => controller.close(),
-    );
 
-    final snapshotDataStream = controller.stream.transform<Uint8List>(
-      txSnapshotToSnapshotData,
-    );
+        completer.complete();
+      })();
+    }, onDone: () async {
+      // Wait for all processing to be done before closing the StreamController
+      await Future.wait(futures.map((completer) => completer.future));
+      controller.close();
+    });
+
+    final snapshotDataStream =
+        controller.stream.transform<Uint8List>(txSnapshotToSnapshotData);
 
     yield* snapshotDataStream;
   }
