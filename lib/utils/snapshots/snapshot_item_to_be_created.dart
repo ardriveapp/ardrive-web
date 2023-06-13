@@ -40,26 +40,31 @@ class SnapshotItemToBeCreated {
   }) : _jsonMetadataOfTxId = jsonMetadataOfTxId;
 
   Stream<Uint8List> getSnapshotData() async* {
-    final txSnapshotStream = source.asyncMap<TxSnapshot>(
+    StreamController<TxSnapshot> controller = StreamController<TxSnapshot>();
+
+    source.listen(
       (node) async {
-        // updates dataStart and dataEnd being the start the minimum and end the maximum
         _dataStart = _dataStart == null || node.block!.height < _dataStart!
             ? node.block!.height
             : _dataStart;
+
         _dataEnd = _dataEnd == null || node.block!.height > _dataEnd!
             ? node.block!.height
             : _dataEnd;
 
-        return TxSnapshot(
-          gqlNode: node,
-          jsonMetadata:
-              _isSnapshotTx(node) ? null : await _jsonMetadataOfTxId(node.id),
-        );
+        if (_isSnapshotTx(node)) {
+          controller.add(TxSnapshot(gqlNode: node, jsonMetadata: null));
+        } else {
+          var metadata = await _jsonMetadataOfTxId(node.id);
+          controller.add(TxSnapshot(gqlNode: node, jsonMetadata: metadata));
+        }
       },
+      onDone: () => controller.close(),
     );
 
-    final snapshotDataStream =
-        txSnapshotStream.transform<Uint8List>(txSnapshotToSnapshotData);
+    final snapshotDataStream = controller.stream.transform<Uint8List>(
+      txSnapshotToSnapshotData,
+    );
 
     yield* snapshotDataStream;
   }
