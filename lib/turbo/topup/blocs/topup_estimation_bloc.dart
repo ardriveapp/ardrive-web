@@ -112,6 +112,8 @@ class TurboTopUpEstimationBloc
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
   }) async {
+    emit(EstimationLoading());
+    
     final priceEstimate = await turbo.computePriceEstimate(
       currentAmount: currentAmount,
       currentCurrency: currentCurrency,

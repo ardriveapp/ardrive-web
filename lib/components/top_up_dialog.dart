@@ -40,6 +40,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
 
     return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
       bloc: paymentBloc,
+      buildWhen: (_, current) => current is! EstimationLoading,
       builder: (context, state) {
         if (state is EstimationLoading) {
           return const SizedBox(
@@ -148,20 +149,26 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                           ],
                         ),
                       ),
-                      ArDriveButton(
-                        isDisabled: paymentBloc.currentAmount == 0,
-                        maxWidth: 143,
-                        maxHeight: 40,
-                        fontStyle: ArDriveTypography.body
-                            .buttonLargeBold()
-                            .copyWith(fontWeight: FontWeight.w700),
-                        text: appLocalizationsOf(context).next,
-                        onPressed: () {
-                          // Go to the paumentFormView.
-                          // Will be implemented in the next PR.
-                          context
-                              .read<TurboTopupFlowBloc>()
-                              .add(const TurboTopUpShowPaymentFormView());
+                      BlocBuilder<TurboTopUpEstimationBloc,
+                          TopupEstimationState>(
+                        builder: (context, state) {
+                          return ArDriveButton(
+                            isDisabled: paymentBloc.currentAmount == 0 ||
+                                state is EstimationLoading,
+                            maxWidth: 143,
+                            maxHeight: 40,
+                            fontStyle: ArDriveTypography.body
+                                .buttonLargeBold()
+                                .copyWith(fontWeight: FontWeight.w700),
+                            text: appLocalizationsOf(context).next,
+                            onPressed: () {
+                              // Go to the paumentFormView.
+                              // Will be implemented in the next PR.
+                              context
+                                  .read<TurboTopupFlowBloc>()
+                                  .add(const TurboTopUpShowPaymentFormView());
+                            },
+                          );
                         },
                       ),
                     ],
