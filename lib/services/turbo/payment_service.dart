@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -39,15 +40,19 @@ class PaymentService {
     required String currency,
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
+
     final result = await httpClient.get(
       url: '$turboPaymentUri/v1/price/$currency/$amount',
     );
+
     if (!acceptedStatusCodes.contains(result.statusCode)) {
       throw Exception(
         'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
+
     final price = BigInt.parse((json.decode(result.data)['winc']));
+
     return price;
   }
 
@@ -82,7 +87,7 @@ class PaymentService {
     return price;
   }
 
-  Future topUp({
+  Future<PaymentSession> getPaymentSession({
     required Wallet wallet,
     required BigInt amount,
     String currency = 'usd',
@@ -105,7 +110,7 @@ class PaymentService {
       },
     );
 
-    return jsonDecode(result.data)['paymentSession'];
+    return PaymentSession.fromJson(result.data['paymentSession']);
   }
 }
 
@@ -122,7 +127,7 @@ class DontUsePaymentService implements PaymentService {
       throw UnimplementedError();
 
   @override
-  Future topUp({
+  Future<PaymentSession> getPaymentSession({
     required Wallet wallet,
     required BigInt amount,
     String currency = 'usd',

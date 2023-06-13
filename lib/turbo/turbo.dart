@@ -9,24 +9,168 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 
 class Turbo {
-  Turbo({required this.paymentService, required this.wallet})
-      : _initialSessionTime = DateTime.now() {
-    _startSessionExpirationListener();
+  final TurboSessionManager sessionManager;
+  final TurboCostCalculator costCalculator;
+  final TurboBalanceRetriever balanceRetriever;
+  final TurboPriceEstimator priceEstimator;
+  final Wallet wallet;
+
+  Turbo({
+    required this.sessionManager,
+    required this.costCalculator,
+    required this.balanceRetriever,
+    required this.priceEstimator,
+    required this.wallet,
+  }) {
+    _startOnPriceEstimateChange();
+  }
+  Stream<bool> get onSessionExpired => sessionManager.onSessionExpired;
+
+  Stream<PriceEstimate> get onPriceEstimateChanged =>
+      _priceEstimateController.stream;
+
+  Future<BigInt> getBalance() => balanceRetriever.getBalance(wallet);
+
+  Future<BigInt> getCostOfOneGB({bool forceGet = false}) =>
+      costCalculator.getCostOfOneGB(forceGet: forceGet);
+
+  PriceEstimate get currentPriceEstimate => priceEstimator.currentPriceEstimate;
+
+  Future<PriceEstimate> computePriceEstimate({
+    required int currentAmount,
+    required String currentCurrency,
+    required FileSizeUnit currentDataUnit,
+  }) =>
+      priceEstimator.computePriceEstimate(
+        currentAmount: currentAmount,
+        currentCurrency: currentCurrency,
+        currentDataUnit: currentDataUnit,
+      );
+
+  Future<double> computeStorageEstimateForCredits({
+    required BigInt credits,
+    required FileSizeUnit outputDataUnit,
+  }) {
+    return priceEstimator.computeStorageEstimateForCredits(
+      credits: credits,
+      outputDataUnit: outputDataUnit,
+    );
   }
 
-  final PaymentService paymentService;
-  final Wallet wallet;
+  late Timer _priceEstimateTimer;
+
+  final StreamController<PriceEstimate> _priceEstimateController =
+      StreamController.broadcast();
+
+  void _startOnPriceEstimateChange() {
+    _priceEstimateTimer = _quoteEstimateTimer((timer) async {
+      final priceEstimate = await computePriceEstimate(
+        currentAmount: 0,
+        currentCurrency: 'usd',
+        currentDataUnit: FileSizeUnit.gigabytes,
+      );
+
+      _priceEstimateController.add(priceEstimate);
+    });
+  }
+
+  Future<void> dispose() async {
+    logger.d('Disposing turbo');
+    _priceEstimateTimer.cancel();
+    await sessionManager.dispose();
+
+    logger.d('Turbo disposed');
+  }
+}
+
+class TurboSessionManager {
+  final _sessionExpiredController = StreamController<bool>();
 
   late final DateTime _initialSessionTime;
   late Timer _sessionExpirationTimer;
-  final _sessionExpiredController = StreamController<bool>();
-  DateTime? _lastFetchTime;
 
+  TurboSessionManager() {
+    _initialSessionTime = DateTime.now();
+    _startSessionExpirationListener();
+  }
+
+  DateTime get initialSessionTime => _initialSessionTime;
+  DateTime get maxSessionTime =>
+      _initialSessionTime.add(const Duration(minutes: 25));
+
+  Stream<bool> get onSessionExpired => _sessionExpiredController.stream;
+
+  void _startSessionExpirationListener() {
+    _sessionExpirationTimer = _quoteEstimateTimer((timer) {
+      final currentTime = DateTime.now();
+      if (currentTime.isAfter(maxSessionTime)) {
+        logger.d('Session expired');
+        _sessionExpiredController.add(true);
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> dispose() async {
+    logger.d('Disposing SessionManager');
+    _sessionExpirationTimer.cancel();
+    _sessionExpiredController.close();
+    logger.d('SessionManager disposed');
+  }
+}
+
+class TurboCostCalculator {
+  final PaymentService paymentService;
+
+  DateTime? _lastCostOfOneGbFetchTime;
   BigInt? _costOfOneGb;
-  int _currentAmount = 0;
-  String _currentCurrency = 'usd';
-  BigInt _currentBalance = BigInt.from(0);
-  FileSizeUnit _currentDataUnit = FileSizeUnit.gigabytes;
+
+  TurboCostCalculator({required this.paymentService});
+
+  /// Returns the cost for the given byte size
+  Future<BigInt> getCostForBytes({required int byteSize}) {
+    return paymentService.getPriceForBytes(byteSize: byteSize);
+  }
+
+  /// Caches the cost for 1GiB for 5 minutes
+  Future<BigInt> getCostOfOneGB({
+    bool forceGet = false,
+  }) async {
+    final currentTime = DateTime.now();
+
+    if (!forceGet &&
+        _costOfOneGb != null &&
+        _lastCostOfOneGbFetchTime != null) {
+      final difference = currentTime.difference(_lastCostOfOneGbFetchTime!);
+      if (difference.inMinutes < 5) {
+        return _costOfOneGb!;
+      }
+    }
+
+    _costOfOneGb =
+        await paymentService.getPriceForBytes(byteSize: const GiB(1).size);
+
+    _lastCostOfOneGbFetchTime = currentTime;
+
+    return _costOfOneGb!;
+  }
+}
+
+class TurboBalanceRetriever {
+  final PaymentService paymentService;
+
+  TurboBalanceRetriever({
+    required this.paymentService,
+  });
+
+  Future<BigInt> getBalance(Wallet wallet) async {
+    return paymentService.getBalance(wallet: wallet);
+  }
+}
+
+class TurboPriceEstimator {
+  final PaymentService paymentService;
+  final TurboCostCalculator costCalculator;
 
   PriceEstimate _priceEstimate = PriceEstimate(
     credits: BigInt.from(0),
@@ -34,63 +178,12 @@ class Turbo {
     estimatedStorage: 0,
   );
 
-  // Getters
-  DateTime get initialSessionTime => _initialSessionTime;
-  DateTime get maxSessionTime =>
-      _initialSessionTime.add(const Duration(minutes: 25));
-  int get currentAmount => _currentAmount;
-  String get currentCurrency => _currentCurrency;
-  BigInt get currentBalance => _currentBalance;
-  FileSizeUnit get currentDataUnit => _currentDataUnit;
-  PriceEstimate get priceEstimate => _priceEstimate;
-  Stream<bool> get onSessionExpired => _sessionExpiredController.stream;
+  TurboPriceEstimator({
+    required this.paymentService,
+    required this.costCalculator,
+  });
 
-  void _startSessionExpirationListener() {
-    _sessionExpirationTimer =
-        Timer.periodic(const Duration(seconds: 5), (timer) {
-      logger.d('Checking if session is expired');
-
-      final currentTime = DateTime.now();
-      if (currentTime.isAfter(maxSessionTime)) {
-        _sessionExpiredController.add(true);
-        timer.cancel();
-      }
-    });
-  }
-
-  // Cost related methods
-  Future<BigInt> getCostOfOneGB({bool forceGet = false}) async {
-    final currentTime = DateTime.now();
-
-    if (!forceGet && _costOfOneGb != null && _lastFetchTime != null) {
-      final difference = currentTime.difference(_lastFetchTime!);
-      if (difference.inMinutes < 10) {
-        return _costOfOneGb!;
-      }
-    }
-
-    _costOfOneGb =
-        await paymentService.getPriceForBytes(byteSize: const GiB(1).size);
-    _lastFetchTime = currentTime;
-
-    return _costOfOneGb!;
-  }
-
-  // Balance related methods
-  Future<BigInt> getBalance() async {
-    if (_currentBalance != BigInt.from(0)) {
-      return _currentBalance;
-    }
-
-    _currentBalance = await paymentService.getBalance(wallet: wallet);
-
-    return _currentBalance;
-  }
-
-  // Price estimate methods
-  PriceEstimate getCurrentPriceEstimate() {
-    return _priceEstimate;
-  }
+  PriceEstimate get currentPriceEstimate => _priceEstimate;
 
   Future<PriceEstimate> computePriceEstimate({
     required int currentAmount,
@@ -110,62 +203,36 @@ class Turbo {
       outputDataUnit: currentDataUnit,
     );
 
-    return PriceEstimate(
+    _priceEstimate = PriceEstimate(
       credits: priceEstimate,
       priceInCurrency: currentAmount,
       estimatedStorage: estimatedStorageForSelectedAmount,
-    );
-  }
-
-  Future<PriceEstimate> computePriceEstimateAndUpdate({
-    required int currentAmount,
-    required String currentCurrency,
-    required FileSizeUnit currentDataUnit,
-  }) async {
-    _currentAmount = currentAmount;
-    _currentCurrency = currentCurrency;
-    _currentDataUnit = currentDataUnit;
-
-    _priceEstimate = await computePriceEstimate(
-      currentAmount: currentAmount,
-      currentCurrency: currentCurrency,
-      currentDataUnit: currentDataUnit,
     );
 
     return _priceEstimate;
   }
 
-  Future<PriceEstimate> refreshPriceEstimate() async {
-    _costOfOneGb = await getCostOfOneGB(
-      forceGet: true,
-    );
-
-    return await computePriceEstimate(
-      currentAmount: _currentAmount,
-      currentCurrency: _currentCurrency,
-      currentDataUnit: _currentDataUnit,
-    );
-  }
-
-  // Storage estimate method
   Future<double> computeStorageEstimateForCredits({
     required BigInt credits,
     required FileSizeUnit outputDataUnit,
   }) async {
-    _costOfOneGb ??= await getCostOfOneGB();
+    final costOfOneGb = await costCalculator.getCostOfOneGB();
 
     final estimatedStorageInBytes =
         FileStorageEstimator.computeStorageEstimateForCredits(
       credits: credits,
-      costOfOneGb: _costOfOneGb!,
+      costOfOneGb: costOfOneGb,
       outputDataUnit: outputDataUnit,
     );
 
     return estimatedStorageInBytes;
   }
+}
 
-  void dispose() {
-    _sessionExpiredController.close();
-    _sessionExpirationTimer.cancel();
-  }
+const _quoteExpirationTime = Duration(minutes: 5);
+
+Timer _quoteEstimateTimer<T>(Function(Timer) callback) {
+  return Timer.periodic(_quoteExpirationTime, (timer) async {
+    callback(timer);
+  });
 }
