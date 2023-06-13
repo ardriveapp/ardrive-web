@@ -46,22 +46,17 @@ Stream<double> _syncDrive(
 
   if (configService.config.enableSyncFromSnapshot) {
     logger.i('Syncing from snapshot');
-    try {
-      final snapshotsStream = arweave.getAllSnapshotsOfDrive(
-        driveId,
-        lastBlockHeight,
-        ownerAddress: ownerAddress,
-      );
 
-      snapshotItems = await SnapshotItem.instantiateAll(
-        snapshotsStream,
-        arweave: arweave,
-      ).toList();
-    } catch (e) {
-      logger.e('Error while syncing from snapshot - $e');
-      logger.e('Falling back to GQL');
-      snapshotItems = [];
-    }
+    final snapshotsStream = arweave.getAllSnapshotsOfDrive(
+      driveId,
+      lastBlockHeight,
+      ownerAddress: ownerAddress,
+    );
+
+    snapshotItems = await SnapshotItem.instantiateAll(
+      snapshotsStream,
+      arweave: arweave,
+    ).toList();
   }
 
   final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(

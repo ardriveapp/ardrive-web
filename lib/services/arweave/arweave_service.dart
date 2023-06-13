@@ -12,7 +12,6 @@ import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
-import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:artemis/artemis.dart';
@@ -136,28 +135,34 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      // Get a page of 100 transactions
-      final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
-        SnapshotEntityHistoryQuery(
-          variables: SnapshotEntityHistoryArguments(
-            driveId: driveId,
-            lastBlockHeight: lastBlockHeight,
-            after: cursor,
-            ownerAddress: ownerAddress,
+      try {
+        // Get a page of 100 transactions
+        final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
+          SnapshotEntityHistoryQuery(
+            variables: SnapshotEntityHistoryArguments(
+              driveId: driveId,
+              lastBlockHeight: lastBlockHeight,
+              after: cursor,
+              ownerAddress: ownerAddress,
+            ),
           ),
-        ),
-      );
+        );
+        for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge edge
+            in snapshotEntityHistoryQuery.data!.transactions.edges) {
+          yield edge.node;
+        }
 
-      for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge edge
-          in snapshotEntityHistoryQuery.data!.transactions.edges) {
-        yield edge.node;
-      }
+        cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
+            ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
+            : '';
 
-      cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
-          ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
-          : '';
-
-      if (!snapshotEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
+        if (!snapshotEntityHistoryQuery
+            .data!.transactions.pageInfo.hasNextPage) {
+          break;
+        }
+      } catch (e) {
+        logger.e('Error fetching snapshots for drive $driveId - $e');
+        logger.e('This drive and ones after will fall back to GQL');
         break;
       }
     }
