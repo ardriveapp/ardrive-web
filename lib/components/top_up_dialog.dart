@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
@@ -236,15 +234,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
 
   DateTime lastChanged = DateTime.now();
 
-  Timer? _timer;
-
   void _onAmountChanged(String amount) {
-    if (_timer != null && _timer!.isActive) {
-      _timer?.cancel();
-    }
-    _timer = Timer(const Duration(milliseconds: 500), () {
-      widget.onAmountSelected(int.parse(amount));
-    });
+    widget.onAmountSelected(int.parse(amount));
   }
 
   void _onPresetAmountSelected(int amount) {
