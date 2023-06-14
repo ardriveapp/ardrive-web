@@ -100,6 +100,62 @@ void main() {
           '{"txSnapshots":[{"gqlNode":{"id":"tx-7","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":7,"timestamp":700},"tags":[{"name":"Entity-Type","value":"snapshot"}]},"jsonMetadata":null}]}',
         );
       });
+
+      test('the returned data preserves the order of the source', () async {
+        final snapshotItem = SnapshotItemToBeCreated(
+            driveId: 'DRIVE_ID',
+            blockStart: 0,
+            blockEnd: 10,
+            subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
+            source: Stream.fromIterable(
+              [
+                DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                    .fromJson(
+                  {
+                    'id': '0',
+                    'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+                    'owner': {'address': '1234567890'},
+                    'tags': [],
+                    'block': {
+                      'height': 7,
+                      'timestamp': 700,
+                    }
+                  },
+                ),
+                DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                    .fromJson(
+                  {
+                    'id': '5',
+                    'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+                    'owner': {'address': '1234567890'},
+                    'tags': [],
+                    'block': {
+                      'height': 7,
+                      'timestamp': 700,
+                    }
+                  },
+                ),
+              ],
+            ),
+            jsonMetadataOfTxId: (txId) async {
+              // delay the first ones more than the following ones
+              final txIdAsInteger = int.parse(txId);
+              await Future.delayed(Duration(milliseconds: 10 - txIdAsInteger));
+
+              return Uint8List.fromList(
+                utf8.encode('{"name":"tx-$txId"}'),
+              );
+            });
+
+        final snapshotData = (await snapshotItem
+                .getSnapshotData()
+                .map(utf8.decoder.convert)
+                .toList())
+            .join();
+
+        expect(snapshotData,
+            '{"txSnapshots":[{"gqlNode":{"id":"0","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":7,"timestamp":700},"tags":[]},"jsonMetadata":"{\\"name\\":\\"tx-0\\"}"}]},{"gqlNode":{"id":"5","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":7,"timestamp":700},"tags":[]},"jsonMetadata":"{\\"name\\":\\"tx-5\\"}"}');
+      });
     });
   });
 }
