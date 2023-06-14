@@ -21,7 +21,7 @@ void main() {
     group('LoadInitialData', () {
       setUp(() {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
       });
 
       blocTest<TurboTopUpEstimationBloc, TopupEstimationState>(
@@ -64,7 +64,7 @@ void main() {
       blocTest('Emits [EstimationError] if getBalance throws',
           build: () {
             when(() => mockTurbo.onPriceEstimateChanged)
-                .thenAnswer((_) => Stream.empty());
+                .thenAnswer((_) => const Stream.empty());
             when(() => mockTurbo.getBalance()).thenThrow(Exception());
 
             return TurboTopUpEstimationBloc(turbo: mockTurbo);
@@ -86,7 +86,7 @@ void main() {
           },
           setUp: () {
             when(() => mockTurbo.onPriceEstimateChanged)
-                .thenAnswer((_) => Stream.empty());
+                .thenAnswer((_) => const Stream.empty());
             when(() => mockTurbo.getBalance())
                 .thenAnswer((_) async => BigInt.from(10));
             when(() => mockTurbo.computePriceEstimate(
@@ -109,7 +109,7 @@ void main() {
           },
           setUp: () {
             when(() => mockTurbo.onPriceEstimateChanged)
-                .thenAnswer((_) => Stream.empty());
+                .thenAnswer((_) => const Stream.empty());
             final mockPriceEstimate = PriceEstimate(
                 credits: BigInt.from(10),
                 priceInCurrency: 10,
@@ -144,7 +144,7 @@ void main() {
       },
       setUp: () {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
 
@@ -203,7 +203,7 @@ void main() {
       },
       setUp: () {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
 

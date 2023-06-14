@@ -11,6 +11,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 void showTurboModal(BuildContext context) {
   final sessionManager = TurboSessionManager();
@@ -213,4 +214,15 @@ class PaymentFlowBackView extends StatelessWidget {
       child: view,
     );
   }
+}
+
+bool _isStripeInitialized = false;
+
+void initializeStripe() {
+  if (_isStripeInitialized) return;
+
+  Stripe.publishableKey =
+      'pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z';
+
+  Stripe.merchantIdentifier = 'merchant.com.ardrive';
 }
