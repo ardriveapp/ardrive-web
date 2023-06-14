@@ -597,26 +597,6 @@ class PriceEstimateView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
       builder: (context, state) {
-        if (state is EstimationLoadError) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Divider(height: 32),
-              Text(
-                'Estimation Error',
-                style: ArDriveTypography.body.buttonNormalBold(),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Please try again later',
-                style: ArDriveTypography.body.buttonNormalBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-                ),
-              ),
-            ],
-          );
-        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
