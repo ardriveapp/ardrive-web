@@ -21,7 +21,7 @@ void main() {
     group('LoadInitialData', () {
       setUp(() {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
       });
 
       blocTest<TurboTopUpEstimationBloc, TopupEstimationState>(
@@ -63,7 +63,7 @@ void main() {
       blocTest('Emits [EstimationError] if getBalance throws',
           build: () {
             when(() => mockTurbo.onPriceEstimateChanged)
-                .thenAnswer((_) => Stream.empty());
+                .thenAnswer((_) => const Stream.empty());
             when(() => mockTurbo.getBalance()).thenThrow(Exception());
 
             return TurboTopUpEstimationBloc(turbo: mockTurbo);
@@ -72,7 +72,7 @@ void main() {
             bloc.add(LoadInitialData());
           },
           expect: () => [
-                EstimationError(),
+                FetchEstimationError(),
               ]);
       blocTest(
           'Emits [EstimationError] if getBalance doesnt throw but computePriceEstimateAndUpdate do',
@@ -84,7 +84,7 @@ void main() {
           },
           setUp: () {
             when(() => mockTurbo.onPriceEstimateChanged)
-                .thenAnswer((_) => Stream.empty());
+                .thenAnswer((_) => const Stream.empty());
             when(() => mockTurbo.getBalance())
                 .thenAnswer((_) async => BigInt.from(10));
             when(() => mockTurbo.computePriceEstimate(
@@ -94,7 +94,7 @@ void main() {
                 .thenThrow(Exception());
           },
           expect: () => [
-                EstimationError(),
+                FetchEstimationError(),
               ]);
       blocTest(
           'Emits [EstimationError] if getBalance and computePriceEstimateAndUpdate doent throw but computeStorageEstimateForCredits do',
@@ -106,7 +106,7 @@ void main() {
           },
           setUp: () {
             when(() => mockTurbo.onPriceEstimateChanged)
-                .thenAnswer((_) => Stream.empty());
+                .thenAnswer((_) => const Stream.empty());
             final mockPriceEstimate = PriceEstimate(
                 credits: BigInt.from(10),
                 priceInCurrency: 10,
@@ -125,7 +125,7 @@ void main() {
                 )).thenThrow(Exception());
           },
           expect: () => [
-                EstimationError(),
+                FetchEstimationError(),
               ]);
     });
   });
@@ -140,7 +140,7 @@ void main() {
       },
       setUp: () {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
 
@@ -196,7 +196,7 @@ void main() {
       },
       setUp: () {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
 
@@ -260,7 +260,7 @@ void main() {
       },
       setUp: () {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 0, estimatedStorage: 1);
         final mockPriceEstimate100 = PriceEstimate(

@@ -6,6 +6,7 @@ import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
+import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_size_units.dart';
@@ -169,14 +170,13 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
               ),
             ),
           );
-        } else if (state is EstimationError) {
-          return TurboTopupScaffold(
-            child: SizedBox(
-              height: 575,
-              child: Center(
-                child: Text(appLocalizationsOf(context).error),
-              ),
-            ),
+        } else if (state is FetchEstimationError) {
+          return TurboErrorView(
+            errorType: TurboErrorType.fetchEstimationInformationFailed,
+            onDismiss: () {},
+            onTryAgain: () {
+              paymentBloc.add(LoadInitialData());
+            },
           );
         }
         return TurboTopupScaffold(
