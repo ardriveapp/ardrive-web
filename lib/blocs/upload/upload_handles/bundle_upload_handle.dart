@@ -11,7 +11,6 @@ import 'package:flutter/foundation.dart';
 class BundleUploadHandle implements UploadHandle {
   final List<FileDataItemUploadHandle> fileDataItemUploadHandles;
   final List<FolderDataItemUploadHandle> folderDataItemUploadHandles;
-  final bool useTurbo;
 
   late Transaction bundleTx;
   late DataItem bundleDataItem;
@@ -21,7 +20,6 @@ class BundleUploadHandle implements UploadHandle {
   BundleUploadHandle._create({
     this.fileDataItemUploadHandles = const [],
     this.folderDataItemUploadHandles = const [],
-    this.useTurbo = false,
     this.size = 0,
     this.hasError = false,
   }) {
@@ -31,12 +29,10 @@ class BundleUploadHandle implements UploadHandle {
   static Future<BundleUploadHandle> create({
     List<FileDataItemUploadHandle> fileDataItemUploadHandles = const [],
     List<FolderDataItemUploadHandle> folderDataItemUploadHandles = const [],
-    required bool useTurbo,
   }) async {
     final bundle = BundleUploadHandle._create(
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
-      useTurbo: useTurbo,
     );
     bundle.size = await bundle.computeBundleSize();
     return bundle;
@@ -53,10 +49,11 @@ class BundleUploadHandle implements UploadHandle {
 
   Future<void> prepareAndSignBundleTransaction({
     required ArweaveService arweaveService,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required PstService pstService,
     required Wallet wallet,
     bool isArConnect = false,
+    bool useTurbo = false,
   }) async {
     final bundle = await DataBundle.fromHandles(
       parallelize: !isArConnect,
@@ -66,10 +63,11 @@ class BundleUploadHandle implements UploadHandle {
               folderDataItemUploadHandles),
     );
 
-    debugPrint('Bundle mounted');
+    logger.i('Bundle mounted');
 
-    debugPrint('Creating bundle transaction');
+    logger.i('Creating bundle transaction');
     if (useTurbo) {
+      logger.i('Using turbo upload');
       bundleDataItem = await arweaveService.prepareBundledDataItem(
         bundle,
         wallet,
@@ -84,19 +82,19 @@ class BundleUploadHandle implements UploadHandle {
 
       bundleId = bundleTx.id;
 
-      debugPrint('Bundle transaction created');
+      logger.i('Bundle transaction created');
 
-      debugPrint('Adding tip');
+      logger.i('Adding tip');
 
       await pstService.addCommunityTipToTx(bundleTx);
 
-      debugPrint('Tip added');
+      logger.i('Tip added');
 
-      debugPrint('Signing bundle');
+      logger.i('Signing bundle');
 
       await bundleTx.sign(wallet);
 
-      debugPrint('Bundle signed');
+      logger.i('Bundle signed');
     }
   }
 
@@ -120,29 +118,29 @@ class BundleUploadHandle implements UploadHandle {
   }
 
   /// Uploads the bundle, emitting an event whenever the progress is updated.
-  Stream<double> upload(
-    ArweaveService arweave,
-    UploadService turboUploadService,
-  ) async* {
-    if (useTurbo) {
-      await turboUploadService
-          .postDataItem(dataItem: bundleDataItem)
-          .onError((error, stackTrace) {
-        logger.e(error);
-        return hasError = true;
-      });
-      yield 1;
-    } else {
-      yield* arweave.client.transactions
-          .upload(bundleTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
-          .map((upload) {
-        uploadProgress = upload.progress;
-        return uploadProgress;
-      });
-    }
-  }
+  // Stream<double> upload(
+  //   ArweaveService arweave,
+  //   TurboUploadService turboUploadService,
+  // ) async* {
+  //   if (useTurbo) {
+  //     await turboUploadService
+  //         .postDataItem(dataItem: bundleDataItem)
+  //         .onError((error, stackTrace) {
+  //       logger.e(error);
+  //       return hasError = true;
+  //     });
+  //     yield 1;
+  //   } else {
+  // yield* arweave.client.transactions
+  //     .upload(bundleTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
+  //     .map((upload) {
+  //   uploadProgress = upload.progress;
+  //   return uploadProgress;
+  // });
+  //   }
+  // }
 
-  void dispose() {
+  void dispose({bool useTurbo = false}) {
     if (!useTurbo) {
       bundleTx.setData(Uint8List(0));
     }

@@ -16,7 +16,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final String? fileId;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
@@ -29,7 +29,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     this.folderId,
     this.fileId,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
@@ -88,7 +88,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               key: driveKey,
             );
 
-            await _turboUploadService.postDataItem(dataItem: folderDataItem);
+            // await _turboUploadService.postDataItem(dataItem: folderDataItem);
             folderEntity.txId = folderDataItem.id;
           } else {
             final folderTx = await _arweave.prepareEntityTx(
@@ -130,7 +130,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               key: fileKey,
             );
 
-            await _turboUploadService.postDataItem(dataItem: fileDataItem);
+            // await _turboUploadService.postDataItem(dataItem: fileDataItem);
             fileEntity.txId = fileDataItem.id;
           } else {
             final fileTx = await _arweave.prepareEntityTx(

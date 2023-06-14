@@ -1,5 +1,7 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
@@ -9,13 +11,15 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
-import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:arweave/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,11 +64,27 @@ Future<void> promptToUpload(
       context,
       content: BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
+          arCostCalculator: UploadCostEstimateCalculatorForAR(
+            arweaveService: context.read<ArweaveService>(),
+            pstService: context.read<PstService>(),
+          ),
+          turboUploadCostCalculator: TurboUploadCostCalculator(
+            priceEstimator: TurboPriceEstimator(
+              costCalculator: TurboCostCalculator(
+                paymentService: context.read<PaymentService>(),
+              ),
+              paymentService: context.read<PaymentService>(),
+            ),
+            turboCostCalculator: TurboCostCalculator(
+              paymentService: context.read<PaymentService>(),
+            ),
+            pstService: context.read<PstService>(),
+          ),
           uploadFileChecker: context.read<UploadFileChecker>(),
           uploadPlanUtils: UploadPlanUtils(
             crypto: ArDriveCrypto(),
             arweave: context.read<ArweaveService>(),
-            turboUploadService: context.read<UploadService>(),
+            turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
           ),
           driveId: driveId,
@@ -72,10 +92,14 @@ Future<void> promptToUpload(
           files: selectedFiles,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
-          turbo: context.read<UploadService>(),
+          turbo: context.read<TurboUploadService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
+          auth: context.read<ArDriveAuth>(),
+          turboBalanceRetriever: TurboBalanceRetriever(
+            paymentService: context.read<PaymentService>(),
+          ),
         )..startUploadPreparation(),
         child: UploadForm(),
       ),
@@ -84,10 +108,16 @@ Future<void> promptToUpload(
   );
 }
 
-class UploadForm extends StatelessWidget {
+class UploadForm extends StatefulWidget {
   UploadForm({Key? key}) : super(key: key);
 
+  @override
+  State<UploadForm> createState() => _UploadFormState();
+}
+
+class _UploadFormState extends State<UploadForm> {
   final _scrollController = ScrollController();
+  bool? useTurbo;
 
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
@@ -290,182 +320,252 @@ class UploadForm extends StatelessWidget {
                     : 0;
             final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
 
+            useTurbo ??= state.sufficentCreditsBalance;
+
             return ArDriveStandardModal(
+              width: 408,
               title: appLocalizationsOf(context)
                   .uploadNFiles(numberOfFilesInBundles + numberOfV2Files),
-              content: SizedBox(
-                width: kMediumDialogWidth,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 256),
-                      child: ArDriveScrollBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 256),
+                    child: ArDriveScrollBar(
+                      controller: _scrollController,
+                      alwaysVisible: true,
+                      child: ListView(
                         controller: _scrollController,
-                        alwaysVisible: true,
-                        child: ListView(
-                          controller: _scrollController,
-                          shrinkWrap: true,
-                          children: [
-                            for (final file in state
-                                .uploadPlan.fileV2UploadHandles.values) ...{
-                              ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Text(
-                                    file.entity.name!,
-                                    style: ArDriveTypography.body
-                                        .buttonNormalBold(),
-                                  ),
-                                  subtitle: Text(
-                                    filesize(
-                                      file.size,
-                                    ),
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgOnDisabled,
-                                    ),
-                                  )),
-                            },
-                            for (final bundle
-                                in state.uploadPlan.bundleUploadHandles) ...{
-                              for (final fileEntity in bundle.fileEntities) ...{
-                                ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Text(
-                                    fileEntity.name!,
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgDefault,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    filesize(fileEntity.size),
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgOnDisabled,
-                                    ),
-                                  ),
-                                ),
-                              },
-                            },
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    RichText(
-                      text: TextSpan(
+                        shrinkWrap: true,
                         children: [
-                          TextSpan(
-                            text: 'Size: ',
-                            style: ArDriveTypography.body.buttonNormalRegular(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgOnDisabled,
-                            ),
-                          ),
-                          TextSpan(
-                            text: filesize(
-                              state.uploadSize,
-                            ),
-                            style: ArDriveTypography.body
-                                .buttonNormalBold(
+                          for (final file in state
+                              .uploadPlan.fileV2UploadHandles.values) ...{
+                            ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  file.entity.name!,
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(),
+                                ),
+                                subtitle: Text(
+                                  filesize(
+                                    file.size,
+                                  ),
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(
                                     color: ArDriveTheme.of(context)
                                         .themeData
                                         .colors
-                                        .themeFgDefault)
-                                .copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          if (state.isFreeThanksToTurbo) ...[
-                            TextSpan(
-                              text: appLocalizationsOf(context)
-                                  .freeTurboTransaction,
-                              style:
-                                  ArDriveTypography.body.buttonNormalRegular(),
-                            ),
-                          ] else ...[
-                            TextSpan(
-                              text: appLocalizationsOf(context).costUpload,
-                              style: ArDriveTypography.body.buttonNormalRegular(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgOnDisabled,
-                              ),
-                            ),
-                            TextSpan(
-                              text: ': ${state.costEstimate.arUploadCost} AR',
-                              style: ArDriveTypography.body
-                                  .buttonNormalBold(
+                                        .themeFgOnDisabled,
+                                  ),
+                                )),
+                          },
+                          for (final bundle
+                              in state.uploadPlan.bundleUploadHandles) ...{
+                            for (final fileEntity in bundle.fileEntities) ...{
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  fileEntity.name!,
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(
                                     color: ArDriveTheme.of(context)
                                         .themeData
                                         .colors
                                         .themeFgDefault,
-                                  )
-                                  .copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            if (state.costEstimate.usdUploadCost != null)
-                              TextSpan(
-                                text: usdUploadCostToString(
-                                  state.costEstimate.usdUploadCost!,
+                                  ),
                                 ),
-                                style: ArDriveTypography.body
-                                    .buttonNormalBold()
-                                    .copyWith(fontWeight: FontWeight.bold),
-                              )
-                            else
-                              TextSpan(
-                                text:
-                                    ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
-                                style: ArDriveTypography.body
-                                    .buttonNormalRegular(),
+                                subtitle: Text(
+                                  filesize(fileEntity.size),
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgOnDisabled,
+                                  ),
+                                ),
                               ),
-                          ],
+                            },
+                          },
                         ],
-                        style: ArDriveTypography.body.buttonNormalRegular(),
                       ),
                     ),
-                    const Divider(),
-                    if (state.uploadIsPublic) ...{
-                      Text(
-                        appLocalizationsOf(context).filesWillBeUploadedPublicly(
-                          numberOfFilesInBundles + numberOfV2Files,
+                  ),
+                  const SizedBox(height: 16),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Size: ',
+                          style: ArDriveTypography.body.buttonNormalRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgOnDisabled,
+                          ),
                         ),
-                        style: ArDriveTypography.body.buttonNormalRegular(),
-                      ),
-                    },
-                    if (!state.sufficientArBalance &&
-                        !state.isFreeThanksToTurbo) ...{
-                      const SizedBox(height: 8),
-                      Text(
-                        appLocalizationsOf(context).insufficientARForUpload,
-                        style: ArDriveTypography.body.buttonNormalRegular(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeErrorDefault,
+                        TextSpan(
+                          text: filesize(
+                            state.uploadSize,
+                          ),
+                          style: ArDriveTypography.body
+                              .buttonNormalBold(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgDefault)
+                              .copyWith(fontWeight: FontWeight.bold),
                         ),
+                      ],
+                    ),
+                  ),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        if (state.isFreeThanksToTurbo) ...[
+                          TextSpan(
+                            text: appLocalizationsOf(context)
+                                .freeTurboTransaction,
+                            style: ArDriveTypography.body.buttonNormalRegular(),
+                          ),
+                        ] else ...[
+                          // TextSpan(
+                          //   text: appLocalizationsOf(context).costUpload,
+                          //   style: ArDriveTypography.body.buttonNormalRegular(
+                          //     color: ArDriveTheme.of(context)
+                          //         .themeData
+                          //         .colors
+                          //         .themeFgOnDisabled,
+                          //   ),
+                          // ),
+                          // TextSpan(
+                          //   text: ': ${state.costEstimate.arUploadCost} AR',
+                          //   style: ArDriveTypography.body
+                          //       .buttonNormalBold(
+                          //         color: ArDriveTheme.of(context)
+                          //             .themeData
+                          //             .colors
+                          //             .themeFgDefault,
+                          //       )
+                          //       .copyWith(fontWeight: FontWeight.bold),
+                          // ),
+                          // if (state.costEstimate.usdUploadCost != null)
+                          //   TextSpan(
+                          //     text: usdUploadCostToString(
+                          //       state.costEstimate.usdUploadCost!,
+                          //     ),
+                          //     style: ArDriveTypography.body
+                          //         .buttonNormalBold()
+                          //         .copyWith(fontWeight: FontWeight.bold),
+                          //   )
+                          // else
+                          //   TextSpan(
+                          //     text:
+                          //         ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
+                          //     style: ArDriveTypography.body
+                          //         .buttonNormalRegular(),
+                          //   ),
+                        ],
+                      ],
+                      style: ArDriveTypography.body.buttonNormalRegular(),
+                    ),
+                  ),
+                  const Divider(
+                    height: 20,
+                  ),
+                  if (state.uploadIsPublic) ...{
+                    Text(
+                      appLocalizationsOf(context).filesWillBeUploadedPublicly(
+                        numberOfFilesInBundles + numberOfV2Files,
                       ),
-                    },
-                  ],
-                ),
+                      style: ArDriveTypography.body.buttonNormalRegular(),
+                    ),
+                  },
+                  if (!state.sufficientArBalance &&
+                      !state.isFreeThanksToTurbo) ...{
+                    const SizedBox(height: 8),
+                    Text(
+                      appLocalizationsOf(context).insufficientARForUpload,
+                      style: ArDriveTypography.body.buttonNormalRegular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeErrorDefault,
+                      ),
+                    ),
+                  },
+                  if (!state.isFreeThanksToTurbo) ...[
+                    Text(
+                      'Payment method:',
+                      style: ArDriveTypography.body.buttonLargeBold(),
+                    ),
+                    SizedBox(
+                      height: 16,
+                    ),
+                    ArDriveRadioButtonGroup(
+                      size: 15,
+                      onChanged: (index, value) {
+                        switch (index) {
+                          case 0:
+                            if (value) {
+                              context
+                                  .read<UploadCubit>()
+                                  .setUploadMethod(UploadMethod.ar);
+                            }
+                            break;
+
+                          case 1:
+                            if (value) {
+                              context
+                                  .read<UploadCubit>()
+                                  .setUploadMethod(UploadMethod.turbo);
+                            }
+                            break;
+                        }
+                      },
+                      options: [
+                        RadioButtonOptions(
+                          value: !state.sufficentCreditsBalance,
+                          isEnabled: state.sufficientArBalance,
+                          text:
+                              'Cost: ${winstonToAr(state.costEstimateAr.totalCost)} AR',
+                          textStyle: ArDriveTypography.body.buttonLargeBold(),
+                        ),
+                        if (state.costEstimateTurbo != null)
+                          RadioButtonOptions(
+                            value: state.sufficentCreditsBalance,
+                            isEnabled: state.sufficentCreditsBalance,
+                            text:
+                                'Cost: ${winstonToAr(state.costEstimateTurbo!.totalCost)} Credits',
+                            textStyle: ArDriveTypography.body.buttonLargeBold(),
+                          )
+                      ],
+                      builder: (index, radioButton) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          radioButton,
+                          Padding(
+                            padding: const EdgeInsets.only(left: 24.0),
+                            child: Text(
+                              index == 0
+                                  ? 'Wallet Balance: ${state.arBalance} AR'
+                                  : 'Turbo Balance: ${state.turboCredits} Credits',
+                              style: ArDriveTypography.body.buttonNormalBold(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeGbMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ]
+                ],
               ),
               actions: [
                 ModalAction(
@@ -475,9 +575,9 @@ class UploadForm extends StatelessWidget {
                 ModalAction(
                   action: state.sufficientArBalance || state.isFreeThanksToTurbo
                       ? () {
-                          context
-                              .read<UploadCubit>()
-                              .startUpload(uploadPlan: state.uploadPlan);
+                          context.read<UploadCubit>().startUpload(
+                                uploadPlan: state.uploadPlan,
+                              );
                         }
                       : () {},
                   title: appLocalizationsOf(context).uploadEmphasized,

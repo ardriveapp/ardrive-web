@@ -15,10 +15,11 @@ class UploadPlan {
 
   final List<BundleUploadHandle> bundleUploadHandles = [];
 
-  bool useTurbo = false;
+  // final bool useTurbo;
 
   UploadPlan._create({
     required this.fileV2UploadHandles,
+    // required this.useTurbo,
   });
 
   static Future<UploadPlan> create({
@@ -26,11 +27,14 @@ class UploadPlan {
     required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
     required Map<String, FolderDataItemUploadHandle>
         folderDataItemUploadHandles,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
+    // required bool useTurbo,
   }) async {
     final uploadPlan = UploadPlan._create(
       fileV2UploadHandles: fileV2UploadHandles,
+      // useTurbo: useTurbo,
     );
+
     if (fileDataItemUploadHandles.isNotEmpty ||
         folderDataItemUploadHandles.isNotEmpty) {
       await uploadPlan.createBundleHandlesFromDataItemHandles(
@@ -46,20 +50,29 @@ class UploadPlan {
     Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles = const {},
     Map<String, FolderDataItemUploadHandle> folderDataItemUploadHandles =
         const {},
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
   }) async {
     // Set bundle size limit according the platform
     // This should be reviewed when we implement stream uploads
-    useTurbo = await canWeUseTurbo(
-      fileDataItemUploadHandles: fileDataItemUploadHandles,
-      fileV2UploadHandles: fileV2UploadHandles,
-      turboUploadService: turboUploadService,
-    );
+    // useTurbo = await canWeUseTurbo(
+    //   fileDataItemUploadHandles: fileDataItemUploadHandles,
+    //   fileV2UploadHandles: fileV2UploadHandles,
+    //   turboUploadService: turboUploadService,
+    // );
     const approximateMetadataSize = 200; //Usually less than 50 bytes
-    final int maxBundleSize = useTurbo
-        ? turboUploadService.allowedDataItemSize + approximateMetadataSize
-        : (kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit);
-    final int filesPerBundle = useTurbo ? 2 : maxFilesPerBundle;
+    final int maxBundleSize =
+        // useTurbo
+        //     ? turboUploadService.allowedDataItemSize + approximateMetadataSize
+        //     :
+        (kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit);
+
+    final int filesPerBundle =
+        // useTurbo ?
+        2;
+    // :
+
+    // maxFilesPerBundle;
+
     final bundleItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: maxBundleSize,
       maxDataItemCount: filesPerBundle,
@@ -75,7 +88,7 @@ class UploadPlan {
         folderDataItemUploadHandles: List.from(
           uploadHandles.whereType<FolderDataItemUploadHandle>(),
         ),
-        useTurbo: useTurbo,
+        // useTurbo: useTurbo,
       );
       bundleUploadHandles.add(bundleToUpload);
       uploadHandles.clear();
@@ -84,19 +97,19 @@ class UploadPlan {
   }
 }
 
-Future<bool> canWeUseTurbo({
-  required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
-  required Map<String, FileV2UploadHandle> fileV2UploadHandles,
-  required UploadService turboUploadService,
-}) async {
-  if (!turboUploadService.useTurboUpload) return false;
+// Future<bool> canWeUseTurbo({
+//   required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
+//   required Map<String, FileV2UploadHandle> fileV2UploadHandles,
+//   required TurboUploadService turboUploadService,
+// }) async {
+//   if (!turboUploadService.useTurboUpload) return false;
 
-  final allFileSizesAreWithinTurboThreshold =
-      !fileDataItemUploadHandles.values.any((file) {
-    return file.size > turboUploadService.allowedDataItemSize;
-  });
+//   final allFileSizesAreWithinTurboThreshold =
+//       !fileDataItemUploadHandles.values.any((file) {
+//     return file.size > turboUploadService.allowedDataItemSize;
+//   });
 
-  return turboUploadService.useTurboUpload &&
-      fileV2UploadHandles.isEmpty &&
-      allFileSizesAreWithinTurboThreshold;
-}
+//   return turboUploadService.useTurboUpload &&
+//       fileV2UploadHandles.isEmpty &&
+//       allFileSizesAreWithinTurboThreshold;
+// }

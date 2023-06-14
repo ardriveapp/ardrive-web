@@ -3,18 +3,42 @@ import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
+import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/types/winston.dart';
 import 'package:ardrive/utils/ar_cost_to_usd.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 
-class CostEstimate {
-  /// The cost to upload the data, in AR.
-  final String arUploadCost;
+abstract class ArDriveUploadCostCalculator {
+  Future<UploadCostEstimate> calculateCost({
+    required Map<String, FileV2UploadHandle> fileV2UploadHandles,
+    required List<BundleUploadHandle> bundleUploadHandles,
+  });
 
-  /// The cost to upload the data, in USD.
-  ///
-  /// Null if conversion rate could not be retrieved.
+  Future<int> getSizeOfAllBundles(
+      List<BundleUploadHandle> bundleUploadHandles) async {
+    var totalSize = 0;
+
+    for (var bundle in bundleUploadHandles) {
+      totalSize += await bundle.computeBundleSize();
+    }
+    return totalSize;
+  }
+
+  Future<int> getSizeOfAllV2Files(
+      Map<String, FileV2UploadHandle> fileV2UploadHandles) async {
+    var totalSize = 0;
+
+    for (var file in fileV2UploadHandles.values) {
+      totalSize += file.getFileDataSize();
+      totalSize += file.getMetadataJSONSize();
+    }
+    return totalSize;
+  }
+}
+
+class UploadCostEstimate {
   final double? usdUploadCost;
 
   /// The fee amount provided to PST holders.
@@ -23,99 +47,111 @@ class CostEstimate {
   /// The sum of the upload cost and fees.
   final BigInt totalCost;
 
-  CostEstimate._create({
-    required this.arUploadCost,
+  final int totalSize;
+
+  UploadCostEstimate({
     required this.pstFee,
     required this.totalCost,
-    this.usdUploadCost,
+    required this.totalSize,
+    required this.usdUploadCost,
   });
+}
 
-  static Future<CostEstimate> create({
-    required UploadPlan uploadPlan,
+class UploadCostEstimateCalculatorForAR extends ArDriveUploadCostCalculator {
+  final ArweaveService _arweaveService;
+  final PstService _pstService;
+
+  UploadCostEstimateCalculatorForAR({
     required ArweaveService arweaveService,
     required PstService pstService,
-    required Wallet wallet,
+  })  : _arweaveService = arweaveService,
+        _pstService = pstService;
+
+  @override
+  Future<UploadCostEstimate> calculateCost({
+    required Map<String, FileV2UploadHandle> fileV2UploadHandles,
+    required List<BundleUploadHandle> bundleUploadHandles,
   }) async {
-    final v2FileUploadHandles = uploadPlan.fileV2UploadHandles;
+    final bundleSizes = await getSizeOfAllBundles(bundleUploadHandles);
+    final v2FileSizes = await getSizeOfAllV2Files(fileV2UploadHandles);
 
-    final dataItemsCost = await estimateCostOfAllBundles(
-      bundleUploadHandles: uploadPlan.bundleUploadHandles,
-      arweaveService: arweaveService,
+    final dataItemsCostInAR =
+        await _arweaveService.getPrice(byteSize: bundleSizes);
+    final v2FilesUploadCostInAR =
+        await _arweaveService.getPrice(byteSize: v2FileSizes);
+
+    final bundlePstFeeAR = await _pstService.getPSTFee(dataItemsCostInAR);
+    final v2FilesPstFeeAR = await _pstService.getPSTFee(v2FilesUploadCostInAR);
+
+    final totalCostAR = dataItemsCostInAR +
+        v2FilesUploadCostInAR +
+        bundlePstFeeAR.value +
+        v2FilesPstFeeAR.value;
+
+    final arUploadCost = winstonToAr(totalCostAR);
+
+    final usdUploadCost = await arCostToUsdOrNull(
+      _arweaveService,
+      double.parse(arUploadCost),
     );
-    final v2FilesUploadCost = await estimateV2UploadsCost(
-        fileUploadHandles: v2FileUploadHandles.values.toList(),
-        arweaveService: arweaveService);
 
-    final bundlePstFee = await pstService.getPSTFee(dataItemsCost);
-    final v2FilesPstFee = v2FilesUploadCost <= BigInt.zero
-        ? Winston(BigInt.zero)
-        : await pstService.getPSTFee(v2FilesUploadCost);
-
-    final totalCost = v2FilesUploadCost +
-        dataItemsCost +
-        bundlePstFee.value +
-        v2FilesPstFee.value;
-
-    final arUploadCost = winstonToAr(totalCost);
-
-    double? usdUploadCost;
-
-    if (!uploadPlan.useTurbo) {
-      usdUploadCost = await arCostToUsdOrNull(
-        arweaveService,
-        double.parse(arUploadCost),
-      );
-    }
-
-    return CostEstimate._create(
-      totalCost: totalCost,
-      arUploadCost: arUploadCost,
-      pstFee: v2FilesPstFee.value + bundlePstFee.value,
+    return UploadCostEstimate(
+      pstFee: bundlePstFeeAR.value + v2FilesPstFeeAR.value,
+      totalCost: totalCostAR,
+      totalSize: bundleSizes + v2FileSizes,
       usdUploadCost: usdUploadCost,
     );
   }
+}
 
-  static Future<BigInt> estimateCostOfAllBundles({
+class TurboUploadCostCalculator extends ArDriveUploadCostCalculator {
+  final TurboCostCalculator _turboCostCalculator;
+  final TurboPriceEstimator _priceEstimator;
+  final PstService _pstService;
+
+  TurboUploadCostCalculator({
+    required TurboCostCalculator turboCostCalculator,
+    required TurboPriceEstimator priceEstimator,
+    required PstService pstService,
+  })  : _turboCostCalculator = turboCostCalculator,
+        _priceEstimator = priceEstimator,
+        _pstService = pstService;
+
+  @override
+  Future<UploadCostEstimate> calculateCost({
+    required Map<String, FileV2UploadHandle> fileV2UploadHandles,
     required List<BundleUploadHandle> bundleUploadHandles,
-    required ArweaveService arweaveService,
   }) async {
-    var totalCost = BigInt.zero;
-    for (var bundle in bundleUploadHandles) {
-      totalCost += await estimateBundleUploadCost(
-        bundle: bundle,
-        arweave: arweaveService,
-      );
-    }
-    return totalCost;
-  }
+    final bundleSizes = await getSizeOfAllBundles(bundleUploadHandles);
+    final v2FileSizes = await getSizeOfAllV2Files(fileV2UploadHandles);
 
-  static Future<BigInt> estimateBundleUploadCost({
-    required BundleUploadHandle bundle,
-    required ArweaveService arweave,
-  }) async {
-    return arweave.getPrice(byteSize: await bundle.computeBundleSize());
-  }
+    final dataItemCostInCredits =
+        await _turboCostCalculator.getCostForBytes(byteSize: bundleSizes);
+    final v2FilesUploadCostInCredits =
+        await _turboCostCalculator.getCostForBytes(byteSize: v2FileSizes);
 
-  static Future<BigInt> estimateV2UploadsCost({
-    required List<FileV2UploadHandle> fileUploadHandles,
-    required ArweaveService arweaveService,
-  }) async {
-    var totalCost = BigInt.zero;
-    for (final cost in fileUploadHandles.map((e) async =>
-        await estimateV2FileUploadCost(
-            fileUploadHandle: e, arweaveService: arweaveService))) {
-      totalCost += await cost;
-    }
-    return totalCost;
-  }
+    final bundlePstFeeCredits =
+        await _pstService.getPSTFee(dataItemCostInCredits);
+    final v2FilesPstFeeCredits =
+        await _pstService.getPSTFee(v2FilesUploadCostInCredits);
 
-  static Future<BigInt> estimateV2FileUploadCost({
-    required FileV2UploadHandle fileUploadHandle,
-    required ArweaveService arweaveService,
-  }) async {
-    return await arweaveService.getPrice(
-            byteSize: fileUploadHandle.getFileDataSize()) +
-        await arweaveService.getPrice(
-            byteSize: fileUploadHandle.getMetadataJSONSize());
+    final totalCostCredits = dataItemCostInCredits +
+        v2FilesUploadCostInCredits +
+        bundlePstFeeCredits.value +
+        v2FilesPstFeeCredits.value;
+
+    final usdUploadCostForARWithTurbo =
+        await _priceEstimator.convertCreditsForUSD(
+      credits: totalCostCredits,
+    );
+
+    logger.d('usdUploadCostForARWithTurbo: $usdUploadCostForARWithTurbo');
+
+    return UploadCostEstimate(
+      pstFee: bundlePstFeeCredits.value + v2FilesPstFeeCredits.value,
+      totalCost: totalCostCredits,
+      totalSize: bundleSizes + v2FileSizes,
+      usdUploadCost: usdUploadCostForARWithTurbo,
+    );
   }
 }

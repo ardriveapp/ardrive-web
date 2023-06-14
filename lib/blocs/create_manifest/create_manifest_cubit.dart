@@ -24,7 +24,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   final Drive drive;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final PstService _pst;
 
@@ -34,7 +34,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required this.drive,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required PstService pst,
   })  : _profileCubit = profileCubit,
@@ -291,7 +291,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       emit(CreateManifestUploadInProgress());
       try {
         for (var dataItem in params.manifestDataItems) {
-          await _turboUploadService.postDataItem(dataItem: dataItem);
+          // await _turboUploadService.postDataItem(dataItem: dataItem);
         }
 
         await params.addManifestToDatabase();

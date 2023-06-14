@@ -216,6 +216,12 @@ class TurboCostCalculator {
 
     return _costOfOneGb!;
   }
+
+  Future<BigInt> getCostForBytes({
+    required int byteSize,
+  }) async {
+    return paymentService.getPriceForBytes(byteSize: byteSize);
+  }
 }
 
 class TurboBalanceRetriever {
@@ -274,6 +280,20 @@ class TurboPriceEstimator extends Disposable {
       logger.e('Error computing price estimate: $e');
       rethrow;
     }
+  }
+
+  Future<double> convertCreditsForUSD({
+    required BigInt credits,
+  }) async {
+    // 1 dolar
+    final priceEstimate = await paymentService.getPriceForFiat(
+      currency: 'usd',
+      amount: 100,
+    );
+
+    logger.d('Price estimate for 1 dolar: $priceEstimate');
+
+    return credits / priceEstimate;
   }
 
   Future<double> computeStorageEstimateForCredits({

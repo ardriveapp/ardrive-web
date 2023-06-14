@@ -121,18 +121,18 @@ class FileV2UploadHandle implements UploadHandle {
   }
 
   /// Uploads the file, emitting an event whenever the progress is updated.
-  Stream<double> upload(ArweaveService arweave) async* {
-    await arweave
-        .postTx(entityTx)
-        .onError((error, stackTrace) => hasError = true);
+  // Stream<double> upload(ArweaveService arweave) async* {
+  //   await arweave
+  //       .postTx(entityTx)
+  //       .onError((error, stackTrace) => hasError = true);
 
-    yield* arweave.client.transactions
-        .upload(dataTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
-        .map((upload) {
-      uploadProgress = upload.progress;
-      return uploadProgress;
-    });
-  }
+  //   yield* arweave.client.transactions
+  //       .upload(dataTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
+  //       .map((upload) {
+  //     uploadProgress = upload.progress;
+  //     return uploadProgress;
+  //   });
+  // }
 
   void dispose() {
     entityTx.setData(Uint8List(0));

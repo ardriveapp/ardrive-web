@@ -15,7 +15,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
 
   FolderCreateCubit({
@@ -23,7 +23,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     required this.parentFolderId,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
@@ -80,7 +80,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
             key: driveKey,
           );
 
-          await _turboUploadService.postDataItem(dataItem: folderDataItem);
+          // await _turboUploadService.postDataItem(dataItem: folderDataItem);
           folderEntity.txId = folderDataItem.id;
         } else {
           final folderTx = await _arweave.prepareEntityTx(

@@ -21,7 +21,7 @@ class UploadPlanUtils {
   });
 
   final ArweaveService arweave;
-  final UploadService turboUploadService;
+  final TurboUploadService turboUploadService;
   final DriveDao driveDao;
   final ArDriveCrypto crypto;
   final _uuid = const Uuid();
@@ -35,6 +35,11 @@ class UploadPlanUtils {
     required FolderEntry targetFolder,
     Map<String, WebFolder> foldersByPath = const {},
   }) async {
+    logger.i('Creating upload plan for ${files.length} files');
+    logger.i('Target drive: ${targetDrive.name}');
+    logger.i('Target folder: ${targetFolder.path}');
+    // logger.i('Use turbo: $useTurbo');
+
     final fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
     final fileV2UploadHandles = <String, FileV2UploadHandle>{};
     final folderDataItemUploadHandles = <String, FolderDataItemUploadHandle>{};
@@ -120,6 +125,7 @@ class UploadPlanUtils {
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
       turboUploadService: turboUploadService,
+      // useTurbo: useTurbo,
     );
   }
 

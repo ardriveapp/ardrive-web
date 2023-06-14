@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ar-io/ardrive_http.git
-      ref: v1.2.6
+      ref: fix-timeout-on-turbo
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3695-payment-form
+      ref: PE-3992-upload-with-credits
   artemis: ^7.0.0-beta.13
   arweave:
     git:

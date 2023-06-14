@@ -66,10 +66,13 @@ class UploadFileTooLarge extends UploadState {
 /// [UploadReady] means that the upload is ready to be performed and is awaiting confirmation from the user.
 class UploadReady extends UploadState {
   /// The cost to upload the data, in AR.
-  final CostEstimate costEstimate;
+  final UploadCostEstimate costEstimateAr;
+  final UploadCostEstimate? costEstimateTurbo;
 
   /// Whether or not the user has sufficient AR to cover the `totalCost`.
   final bool sufficientArBalance;
+
+  final bool sufficentCreditsBalance;
 
   /// Whether or not the upload will be made public ie. without encryption.
   final bool uploadIsPublic;
@@ -80,18 +83,27 @@ class UploadReady extends UploadState {
 
   final int uploadSize;
 
+  final String credits;
+  final String arBalance;
+  final String turboCredits;
+
   UploadReady({
-    required this.costEstimate,
+    required this.costEstimateAr,
     required this.sufficientArBalance,
     required this.uploadIsPublic,
     required this.uploadPlan,
     required this.isFreeThanksToTurbo,
     required this.uploadSize,
+    required this.credits,
+    required this.arBalance,
+    required this.sufficentCreditsBalance,
+    required this.turboCredits,
+    this.costEstimateTurbo,
   });
 
   @override
   List<Object?> get props => [
-        costEstimate,
+        costEstimateAr,
         sufficientArBalance,
         uploadPlan,
         isFreeThanksToTurbo,

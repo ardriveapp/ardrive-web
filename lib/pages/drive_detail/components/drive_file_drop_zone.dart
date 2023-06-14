@@ -1,6 +1,8 @@
 import 'dart:ui';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/upload_form.dart';
@@ -8,6 +10,8 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -113,21 +117,41 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
           context,
           content: BlocProvider<UploadCubit>(
             create: (context) => UploadCubit(
+              arCostCalculator: UploadCostEstimateCalculatorForAR(
+                arweaveService: context.read<ArweaveService>(),
+                pstService: context.read<PstService>(),
+              ),
+              turboUploadCostCalculator: TurboUploadCostCalculator(
+                priceEstimator: TurboPriceEstimator(
+                  costCalculator: TurboCostCalculator(
+                    paymentService: context.read<PaymentService>(),
+                  ),
+                  paymentService: context.read<PaymentService>(),
+                ),
+                turboCostCalculator: TurboCostCalculator(
+                  paymentService: context.read<PaymentService>(),
+                ),
+                pstService: context.read<PstService>(),
+              ),
               uploadFileChecker: context.read<UploadFileChecker>(),
               uploadPlanUtils: UploadPlanUtils(
                 crypto: ArDriveCrypto(),
                 arweave: context.read<ArweaveService>(),
-                turboUploadService: context.read<UploadService>(),
+                turboUploadService: context.read<TurboUploadService>(),
                 driveDao: context.read<DriveDao>(),
               ),
               driveId: driveId,
               parentFolderId: parentFolderId,
               files: selectedFiles,
               arweave: context.read<ArweaveService>(),
-              turbo: context.read<UploadService>(),
+              turbo: context.read<TurboUploadService>(),
               pst: context.read<PstService>(),
               profileCubit: context.read<ProfileCubit>(),
               driveDao: context.read<DriveDao>(),
+              auth: context.read<ArDriveAuth>(),
+              turboBalanceRetriever: TurboBalanceRetriever(
+                paymentService: context.read<PaymentService>(),
+              ),
             )..startUploadPreparation(),
             child: UploadForm(),
           ),

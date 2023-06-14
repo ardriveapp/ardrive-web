@@ -1,16 +1,22 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,6 +28,8 @@ part 'upload_state.dart';
 
 final filesNamesToExclude = ['.DS_Store'];
 
+enum UploadMethod { ar, turbo }
+
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String parentFolderId;
@@ -29,14 +37,25 @@ class UploadCubit extends Cubit<UploadState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
-  final UploadService _turbo;
+  final TurboUploadService _turbo;
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
   final UploadFileChecker _uploadFileChecker;
+  final TurboBalanceRetriever _turboBalanceRetriever;
+  final TurboUploadCostCalculator _turboCostCalculator;
+  final ArDriveAuth _auth;
+  final UploadCostEstimateCalculatorForAR _arCostCalculator;
 
   late bool uploadFolders;
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
+  UploadMethod? _uploadMethod;
+
+  void setUploadMethod(UploadMethod? method) {
+    logger.d('Upload method set to $method');
+
+    _uploadMethod = method;
+  }
 
   List<UploadFile> files = [];
   Map<String, WebFolder> foldersByPath = {};
@@ -54,10 +73,14 @@ class UploadCubit extends Cubit<UploadState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
-    required UploadService turbo,
+    required TurboUploadService turbo,
     required PstService pst,
     required UploadPlanUtils uploadPlanUtils,
     required UploadFileChecker uploadFileChecker,
+    required TurboBalanceRetriever turboBalanceRetriever,
+    required ArDriveAuth auth,
+    required UploadCostEstimateCalculatorForAR arCostCalculator,
+    required TurboUploadCostCalculator turboUploadCostCalculator,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
         _uploadFileChecker = uploadFileChecker,
@@ -66,6 +89,10 @@ class UploadCubit extends Cubit<UploadState> {
         _turbo = turbo,
         _pst = pst,
         _uploadPlanUtils = uploadPlanUtils,
+        _turboBalanceRetriever = turboBalanceRetriever,
+        _auth = auth,
+        _turboCostCalculator = turboUploadCostCalculator,
+        _arCostCalculator = arCostCalculator,
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation() async {
@@ -265,6 +292,11 @@ class UploadCubit extends Cubit<UploadState> {
       _removeFilesWithFileNameConflicts();
     }
 
+    logger.i(
+      'Upload preparation started\n'
+      'UploadMethod: $_uploadMethod',
+    );
+
     final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
       targetFolder: _targetFolder,
       targetDrive: _targetDrive,
@@ -273,14 +305,17 @@ class UploadCubit extends Cubit<UploadState> {
       wallet: profile.wallet,
       conflictingFiles: conflictingFiles,
       foldersByPath: foldersByPath,
+      // useTurbo: _uploadMethod == UploadMethod.turbo,
     );
 
     try {
-      final costEstimate = await CostEstimate.create(
-        uploadPlan: uploadPlan,
-        arweaveService: _arweave,
-        pstService: _pst,
-        wallet: profile.wallet,
+      final arCostEstimate = await _arCostCalculator.calculateCost(
+          fileV2UploadHandles: uploadPlan.fileV2UploadHandles,
+          bundleUploadHandles: uploadPlan.bundleUploadHandles);
+
+      final turboCostEstimate = await _turboCostCalculator.calculateCost(
+        fileV2UploadHandles: uploadPlan.fileV2UploadHandles,
+        bundleUploadHandles: uploadPlan.bundleUploadHandles,
       );
 
       if (await _profileCubit.checkIfWalletMismatch()) {
@@ -288,20 +323,49 @@ class UploadCubit extends Cubit<UploadState> {
         return;
       }
 
+      final turboBalance =
+          await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
+
+      logger.i(
+        'Upload preparation finished\n'
+        'UploadMethod: $_uploadMethod\n'
+        'UploadPlan: $uploadPlan\n'
+        'ArCostEstimate: $arCostEstimate\n'
+        'TurboCostEstimate: $turboCostEstimate\n'
+        'TurboBalance: $turboBalance\n',
+      );
+
+      final literalBalance = convertCreditsToLiteralString(turboBalance);
+
+      if (turboBalance >= turboCostEstimate.totalCost) {
+        setUploadMethod(UploadMethod.turbo);
+      } else {
+        setUploadMethod(UploadMethod.ar);
+      }
+
       emit(
         UploadReady(
+          turboCredits: literalBalance,
           uploadSize: uploadPlan.bundleUploadHandles
                   .fold(0, (a, item) => item.size + a) +
               uploadPlan.fileV2UploadHandles.values
                   .fold(0, (a, item) => item.size + a),
-          costEstimate: costEstimate,
+          costEstimateAr: arCostEstimate,
+          costEstimateTurbo: turboCostEstimate,
+          credits: literalBalance,
+          arBalance:
+              convertCreditsToLiteralString(_auth.currentUser!.walletBalance),
           uploadIsPublic: _targetDrive.isPublic,
-          sufficientArBalance: profile.walletBalance >= costEstimate.totalCost,
+          sufficientArBalance:
+              profile.walletBalance >= arCostEstimate.totalCost,
           uploadPlan: uploadPlan,
-          isFreeThanksToTurbo: uploadPlan.useTurbo,
+          isFreeThanksToTurbo:
+              turboCostEstimate.totalSize <= 1000 * 500, // 500kb
+          sufficentCreditsBalance: turboBalance >= turboCostEstimate.totalCost,
         ),
       );
-    } catch (error) {
+    } catch (error, stacktrace) {
+      logger.e('error mounting the upload', error, stacktrace);
       addError(error);
     }
   }
@@ -327,34 +391,48 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    debugPrint('Wallet verified');
+    logger.i('Wallet verified');
 
-    debugPrint('Starting bundle preparation....');
-    debugPrint('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
+    logger.i('Starting bundle preparation....');
+    logger.i('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
 
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       try {
-        debugPrint('Starting bundle with ${bundleHandle.size}');
+        logger.i('Starting bundle with ${bundleHandle.size}');
+
+        logger.i(
+            'Preparing bundle.. using turbo: ${_uploadMethod == UploadMethod.turbo}');
 
         await bundleHandle.prepareAndSignBundleTransaction(
           arweaveService: _arweave,
           turboUploadService: _turbo,
           pstService: _pst,
-          wallet: profile.wallet,
+          wallet: _auth.currentUser!.wallet,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+          useTurbo: _uploadMethod == UploadMethod.turbo,
         );
 
-        debugPrint('Bundle preparation finished');
+        logger.i('Bundle preparation finished');
       } catch (error) {
-        debugPrint(error.toString());
-        addError(error);
+        logger.e(error.toString());
+        logger.e(error);
       }
 
-      debugPrint('Starting bundle uploads');
+      logger.i('Starting bundle uploads');
 
-      await for (final _ in bundleHandle
-          .upload(_arweave, _turbo)
+      final turboUploader = TurboUploader(_turbo, _auth.currentUser!.wallet);
+      final arweaveUploader = ArweaveBunldeUploader(_arweave);
+
+      logger.i('Uploaders created: $turboUploader, $arweaveUploader');
+
+      final uploader = BDIUploader(turboUploader, arweaveUploader,
+          useTurbo: _uploadMethod == UploadMethod.turbo);
+
+      logger.i('Bundle Uploader created: $uploader');
+
+      await for (var _ in uploader
+          .upload(bundleHandle)
           .debounceTime(const Duration(milliseconds: 500))
           .handleError((_) {
         logger.e('Error uploading bundle');
@@ -367,11 +445,29 @@ class UploadCubit extends Cubit<UploadState> {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
 
+      logger.i('Bundle upload finished');
+
+      // await for (final _ in bundleHandle
+      //     .upload(_arweave, _turbo)
+      //     .debounceTime(const Duration(milliseconds: 500))
+      //     .handleError((_) {
+      //   logger.e('Error uploading bundle');
+      //   bundleHandle.hasError = true;
+      //   if (!hasEmittedError) {
+      //     addError(_);
+      //     hasEmittedError = true;
+      //   }
+      // })) {
+      //   emit(UploadInProgress(uploadPlan: uploadPlan));
+      // }
+
       await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
 
-      debugPrint('Disposing bundle');
+      logger.i('Disposing bundle');
 
-      bundleHandle.dispose();
+      bundleHandle.dispose(
+        useTurbo: _uploadMethod == UploadMethod.turbo,
+      );
     }
 
     // Upload V2 Files
@@ -386,8 +482,10 @@ class UploadCubit extends Cubit<UploadState> {
         addError(error);
       }
 
-      await for (final _ in uploadHandle
-          .upload(_arweave)
+      final uploader = FileV2Uploader(_arweave);
+
+      await for (final _ in uploader
+          .upload(uploadHandle)
           .debounceTime(const Duration(milliseconds: 500))
           .handleError((_) {
         uploadHandle.hasError = true;
@@ -461,5 +559,95 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadFailure());
     'Failed to upload file: $error $stackTrace'.logError();
     super.onError(error, stackTrace);
+  }
+}
+
+class BDIUploader {
+  final TurboUploader _turbo;
+  final ArweaveBunldeUploader _arweave;
+  final bool _useTurbo;
+
+  late Uploader _uploader;
+
+  BDIUploader(this._turbo, this._arweave, {bool useTurbo = false})
+      : _useTurbo = useTurbo {
+    logger.i('Creating BDIUploader');
+
+    if (_useTurbo) {
+      logger.i('Using Turbo Uploader');
+
+      _uploader = _turbo;
+    } else {
+      logger.i('Using Arweave Uploader');
+
+      _uploader = _arweave;
+    }
+  }
+
+  Stream<double> upload(BundleUploadHandle handle) async* {
+    yield* _uploader.upload(handle);
+  }
+
+  @override
+  String toString() {
+    return 'BDIUploader{_turbo: $_turbo, _arweave: $_arweave, _useTurbo: $_useTurbo}';
+  }
+}
+
+abstract class Uploader<T extends UploadHandle> {
+  Stream<double> upload(
+    T handle,
+  );
+}
+
+class TurboUploader implements Uploader<BundleUploadHandle> {
+  final TurboUploadService _turbo;
+  final Wallet _wallet;
+
+  TurboUploader(this._turbo, this._wallet);
+
+  @override
+  Stream<double> upload(handle) async* {
+    await _turbo
+        .postDataItem(dataItem: handle.bundleDataItem, wallet: _wallet)
+        .onError((error, stackTrace) {
+      logger.e(error);
+      // return hasError = true;
+      throw Exception();
+    });
+    yield 1;
+  }
+}
+
+class ArweaveBunldeUploader implements Uploader<BundleUploadHandle> {
+  final ArweaveService _arweave;
+
+  ArweaveBunldeUploader(this._arweave);
+
+  @override
+  Stream<double> upload(handle) async* {
+    yield* _arweave.client.transactions
+        .upload(handle.bundleTx,
+            maxConcurrentUploadCount: maxConcurrentUploadCount)
+        .map((upload) {
+      // uploadProgress = upload.progress;
+      return upload.progress;
+    });
+  }
+}
+
+class FileV2Uploader implements Uploader<FileV2UploadHandle> {
+  final ArweaveService _arweave;
+
+  FileV2Uploader(this._arweave);
+
+  @override
+  Stream<double> upload(handle) async* {
+    yield* _arweave.client.transactions
+        .upload(handle.entityTx, maxConcurrentUploadCount: 1)
+        .map((upload) {
+      // uploadProgress = upload.progress;
+      return upload.progress;
+    });
   }
 }

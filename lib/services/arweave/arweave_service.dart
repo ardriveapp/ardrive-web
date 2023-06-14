@@ -10,6 +10,7 @@ import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -931,6 +932,10 @@ class ArweaveService {
       ..addBundleTags()
       ..setOwner(await wallet.getOwner());
     await item.sign(wallet);
+
+    logger.i('Prepared bundled data item with id ${item.id}\n'
+        ' with tags ${item.tags}\n'
+        ' and owner ${item.owner}');
 
     return item;
   }
