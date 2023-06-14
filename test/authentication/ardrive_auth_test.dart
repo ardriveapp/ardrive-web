@@ -4,9 +4,11 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stash_memory/stash_memory.dart';
 
 import '../test_utils/utils.dart';
 
@@ -25,7 +27,7 @@ void main() {
 
   final wallet = getTestWallet();
 
-  setUp(() {
+  setUp(() async {
     mockArweaveService = MockArweaveService();
     mockUserRepository = MockUserRepository();
     mockArDriveCrypto = MockArDriveCrypto();
@@ -33,6 +35,10 @@ void main() {
     mockSecureKeyValueStore = MockSecureKeyValueStore();
     mockArConnectService = MockArConnectService();
     mockDatabaseHelpers = MockDatabaseHelpers();
+
+    final metadataCache = await MetadataCache.fromCacheStore(
+      await newMemoryCacheStore(),
+    );
 
     arDriveAuth = ArDriveAuth(
       arweave: mockArweaveService,
@@ -42,6 +48,7 @@ void main() {
       arConnectService: mockArConnectService,
       biometricAuthentication: mockBiometricAuthentication,
       secureKeyValueStore: mockSecureKeyValueStore,
+      metadataCache: metadataCache,
     );
     // register call back for test drive entity
     registerFallbackValue(DriveEntity(
