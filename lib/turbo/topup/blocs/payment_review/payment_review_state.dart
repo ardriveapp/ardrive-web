@@ -1,22 +1,16 @@
 part of 'payment_review_bloc.dart';
 
 abstract class PaymentReviewState extends Equatable {
-  const PaymentReviewState({required this.paymentUserInformation});
-
-  final PaymentUserInformation paymentUserInformation;
+  const PaymentReviewState();
 
   @override
-  List<Object> get props => [paymentUserInformation];
+  List<Object> get props => [];
 }
 
-class PaymentReviewInitial extends PaymentReviewState {
-  const PaymentReviewInitial(PaymentUserInformation paymentUserInformation)
-      : super(paymentUserInformation: paymentUserInformation);
-}
+class PaymentReviewInitial extends PaymentReviewState {}
 
 class PaymentReviewLoading extends PaymentReviewPaymentModelLoaded {
   const PaymentReviewLoading({
-    required super.paymentUserInformation,
     required super.quoteExpirationDate,
     required super.total,
     required super.subTotal,
@@ -25,9 +19,7 @@ class PaymentReviewLoading extends PaymentReviewPaymentModelLoaded {
 }
 
 class PaymentReviewLoadingPaymentModel extends PaymentReviewState {
-  const PaymentReviewLoadingPaymentModel(
-      PaymentUserInformation paymentUserInformation)
-      : super(paymentUserInformation: paymentUserInformation);
+  const PaymentReviewLoadingPaymentModel();
 }
 
 class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
@@ -37,12 +29,11 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
   final DateTime quoteExpirationDate;
 
   const PaymentReviewPaymentModelLoaded({
-    required PaymentUserInformation paymentUserInformation,
     required this.total,
     required this.subTotal,
     required this.credits,
     required this.quoteExpirationDate,
-  }) : super(paymentUserInformation: paymentUserInformation);
+  });
 
   PaymentReviewPaymentModelLoaded copyWith({
     String? total,
@@ -51,7 +42,6 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
     DateTime? quoteExpirationDate,
   }) {
     return PaymentReviewPaymentModelLoaded(
-      paymentUserInformation: paymentUserInformation,
       total: total ?? this.total,
       subTotal: subTotal ?? this.subTotal,
       credits: credits ?? this.credits,
@@ -62,7 +52,6 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
 
 class PaymentReviewLoadingQuote extends PaymentReviewPaymentModelLoaded {
   const PaymentReviewLoadingQuote({
-    required super.paymentUserInformation,
     required super.quoteExpirationDate,
     required super.total,
     required super.subTotal,
@@ -72,7 +61,6 @@ class PaymentReviewLoadingQuote extends PaymentReviewPaymentModelLoaded {
 
 class PaymentReviewQuoteLoaded extends PaymentReviewPaymentModelLoaded {
   const PaymentReviewQuoteLoaded({
-    required super.paymentUserInformation,
     required super.quoteExpirationDate,
     required super.total,
     required super.subTotal,
@@ -83,14 +71,12 @@ class PaymentReviewQuoteLoaded extends PaymentReviewPaymentModelLoaded {
 class PaymentReviewQuoteError extends PaymentReviewPaymentModelLoaded {
   final TurboErrorType errorType;
   const PaymentReviewQuoteError({
-    required PaymentUserInformation paymentUserInformation,
     required this.errorType,
     required String total,
     required String subTotal,
     required String credits,
     required DateTime quoteExpirationDate,
   }) : super(
-          paymentUserInformation: paymentUserInformation,
           total: total,
           subTotal: subTotal,
           credits: credits,
@@ -100,7 +86,6 @@ class PaymentReviewQuoteError extends PaymentReviewPaymentModelLoaded {
 
 class PaymentReviewPaymentSuccess extends PaymentReviewPaymentModelLoaded {
   const PaymentReviewPaymentSuccess({
-    required super.paymentUserInformation,
     required super.quoteExpirationDate,
     required super.total,
     required super.subTotal,
@@ -111,16 +96,14 @@ class PaymentReviewPaymentSuccess extends PaymentReviewPaymentModelLoaded {
 class PaymentReviewError extends PaymentReviewState {
   final TurboErrorType errorType;
   const PaymentReviewError({
-    required PaymentUserInformation paymentUserInformation,
     required this.errorType,
-  }) : super(paymentUserInformation: paymentUserInformation);
+  });
 }
 
 class PaymentReviewPaymentError extends PaymentReviewPaymentModelLoaded {
   final TurboErrorType errorType;
 
   const PaymentReviewPaymentError({
-    required super.paymentUserInformation,
     required super.quoteExpirationDate,
     required super.total,
     required super.subTotal,
@@ -130,7 +113,5 @@ class PaymentReviewPaymentError extends PaymentReviewPaymentModelLoaded {
 }
 
 class PaymentReviewErrorLoadingPaymentModel extends PaymentReviewError {
-  const PaymentReviewErrorLoadingPaymentModel({
-    required super.paymentUserInformation,
-  }) : super(errorType: TurboErrorType.fetchPaymentIntentFailed);
+  const PaymentReviewErrorLoadingPaymentModel({required super.errorType});
 }

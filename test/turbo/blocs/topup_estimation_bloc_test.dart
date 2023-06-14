@@ -48,6 +48,7 @@ void main() {
           bloc.add(LoadInitialData());
         },
         expect: () => [
+          EstimationLoading(),
           EstimationLoaded(
             balance: BigInt.from(10),
             estimatedStorageForBalance: '1.00',
@@ -72,6 +73,7 @@ void main() {
             bloc.add(LoadInitialData());
           },
           expect: () => [
+                EstimationLoading(),
                 FetchEstimationError(),
               ]);
       blocTest(
@@ -94,6 +96,7 @@ void main() {
                 .thenThrow(Exception());
           },
           expect: () => [
+                EstimationLoading(),
                 FetchEstimationError(),
               ]);
       blocTest(
@@ -125,6 +128,7 @@ void main() {
                 )).thenThrow(Exception());
           },
           expect: () => [
+                EstimationLoading(),
                 FetchEstimationError(),
               ]);
     });
@@ -162,6 +166,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // first loads with usd
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -172,6 +178,7 @@ void main() {
           currencyUnit: 'usd',
           dataUnit: FileSizeUnit.gigabytes,
         ),
+
         // then emit eur
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -226,6 +233,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // first loads with usd
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -292,6 +301,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // start with 0
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -302,6 +313,7 @@ void main() {
           currencyUnit: 'usd',
           dataUnit: FileSizeUnit.gigabytes,
         ),
+
         // 100
         EstimationLoaded(
           balance: BigInt.from(10),

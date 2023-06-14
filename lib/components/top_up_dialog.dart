@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
@@ -42,6 +40,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
 
     return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
       bloc: paymentBloc,
+      buildWhen: (_, current) => current is! EstimationLoading,
       builder: (context, state) {
         if (state is EstimationLoading) {
           return const SizedBox(
@@ -150,18 +149,24 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                           ],
                         ),
                       ),
-                      ArDriveButton(
-                        isDisabled: paymentBloc.currentAmount == 0,
-                        maxWidth: 143,
-                        maxHeight: 40,
-                        fontStyle: ArDriveTypography.body
-                            .buttonLargeBold()
-                            .copyWith(fontWeight: FontWeight.w700),
-                        text: appLocalizationsOf(context).next,
-                        onPressed: () {
-                          context.read<TurboTopupFlowBloc>().add(
-                                TurboTopUpShowPaymentFormView(4),
-                              );
+                      BlocBuilder<TurboTopUpEstimationBloc,
+                          TopupEstimationState>(
+                        builder: (context, state) {
+                          return ArDriveButton(
+                            isDisabled: paymentBloc.currentAmount == 0 ||
+                                state is EstimationLoading,
+                            maxWidth: 143,
+                            maxHeight: 40,
+                            fontStyle: ArDriveTypography.body
+                                .buttonLargeBold()
+                                .copyWith(fontWeight: FontWeight.w700),
+                            text: appLocalizationsOf(context).next,
+                            onPressed: () {
+                              context
+                                  .read<TurboTopupFlowBloc>()
+                                  .add(TurboTopUpShowPaymentFormView(4));
+                            },
+                          );
                         },
                       ),
                     ],
@@ -245,15 +250,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
 
   DateTime lastChanged = DateTime.now();
 
-  Timer? _timer;
-
   void _onAmountChanged(String amount) {
-    if (_timer != null && _timer!.isActive) {
-      _timer?.cancel();
-    }
-    _timer = Timer(const Duration(milliseconds: 500), () {
-      widget.onAmountSelected(int.parse(amount));
-    });
+    widget.onAmountSelected(int.parse(amount));
   }
 
   void _onPresetAmountSelected(int amount) {

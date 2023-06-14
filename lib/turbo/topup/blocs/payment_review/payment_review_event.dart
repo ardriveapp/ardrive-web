@@ -8,9 +8,11 @@ abstract class PaymentReviewEvent extends Equatable {
 }
 
 class PaymentReviewFinishPayment extends PaymentReviewEvent {
-  final String? email;
+  final PaymentUserInformation paymentUserInformation;
 
-  const PaymentReviewFinishPayment({this.email});
+  const PaymentReviewFinishPayment({
+    required this.paymentUserInformation,
+  });
 
   @override
   List<Object> get props => [];

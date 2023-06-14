@@ -54,3 +54,8 @@ class FetchEstimationError extends TopupEstimationState {
   @override
   List<Object?> get props => [];
 }
+
+class EstimationLoadError extends TopupEstimationState {
+  @override
+  List<Object?> get props => [];
+}

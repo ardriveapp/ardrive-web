@@ -1,5 +1,6 @@
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
@@ -68,7 +69,11 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 onTryAgain: () {
                   Navigator.pop(context);
                   context.read<PaymentReviewBloc>().add(
-                        const PaymentReviewFinishPayment(),
+                        PaymentReviewFinishPayment(
+                          paymentUserInformation: PaymentUserInformationFromUSA(
+                            email: _emailController.text,
+                          ),
+                        ),
                       );
                 },
               ),
@@ -523,7 +528,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 
                   context.read<PaymentReviewBloc>().add(
                         PaymentReviewFinishPayment(
-                          email: _emailController.text,
+                          paymentUserInformation: PaymentUserInformationFromUSA(
+                            email: _emailController.text,
+                          ),
                         ),
                       );
                 },
