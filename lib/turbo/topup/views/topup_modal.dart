@@ -1,7 +1,6 @@
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
@@ -316,12 +315,4 @@ class PaymentFlowBackView extends StatelessWidget {
       child: view,
     );
   }
-}
-
-bool _isStripeInitialized = false;
-
-void initializeStripe(BuildContext context) {
-  if (_isStripeInitialized) return;
-
-  Stripe.publishableKey = context.read<AppConfig>().stripePublishableKey;
 }

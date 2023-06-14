@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
+import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
@@ -406,4 +407,14 @@ Timer _quoteEstimateTimer<T>(Function(Timer) callback) {
   return Timer.periodic(_quoteExpirationTime, (timer) async {
     callback(timer);
   });
+}
+
+bool _isStripeInitialized = false;
+
+void initializeStripe(AppConfig appConfig) {
+  if (_isStripeInitialized) return;
+
+  Stripe.publishableKey = appConfig.stripePublishableKey;
+
+  _isStripeInitialized = true;
 }
