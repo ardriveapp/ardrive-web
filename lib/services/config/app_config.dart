@@ -15,6 +15,7 @@ class AppConfig {
   final bool enableVideoPreview;
   final int autoSyncIntervalInSeconds;
   final bool enableSyncFromSnapshot;
+  final String stripePublishableKey;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -28,6 +29,7 @@ class AppConfig {
     this.enableVideoPreview = false,
     this.autoSyncIntervalInSeconds = 5 * 60,
     this.enableSyncFromSnapshot = true,
+    required this.stripePublishableKey,
   });
 
   AppConfig copyWith({
@@ -42,6 +44,7 @@ class AppConfig {
     bool? enableVideoPreview,
     int? autoSyncIntervalInSeconds,
     bool? enableSyncFromSnapshot,
+    String? stripePublishableKey,
   }) {
     return AppConfig(
       defaultArweaveGatewayUrl:
@@ -63,6 +66,7 @@ class AppConfig {
           autoSyncIntervalInSeconds ?? this.autoSyncIntervalInSeconds,
       enableSyncFromSnapshot:
           enableSyncFromSnapshot ?? this.enableSyncFromSnapshot,
+      stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
     );
   }
 
