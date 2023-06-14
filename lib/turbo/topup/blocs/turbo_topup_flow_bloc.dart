@@ -39,8 +39,6 @@ class TurboTopupFlowBloc
           ),
         );
       } else if (event is TurboTopUpShowPaymentReviewView) {
-        _paymentUserInformation = event.paymentUserInformation;
-
         logger.d(_paymentUserInformation.toString());
 
         emit(

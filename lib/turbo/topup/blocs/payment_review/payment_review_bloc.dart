@@ -21,10 +21,10 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   PaymentReviewBloc(this.turbo, PriceEstimate priceEstimate,
       PaymentUserInformation paymentUserInformation)
       : _priceEstimate = priceEstimate,
-        super(PaymentReviewInitial(paymentUserInformation)) {
+        super(PaymentReviewInitial()) {
     on<PaymentReviewEvent>((event, emit) async {
       if (event is PaymentReviewFinishPayment) {
-        await _handlePaymentReviewFinishPayment(emit);
+        await _handlePaymentReviewFinishPayment(emit, event);
       } else if (event is PaymentReviewRefreshQuote) {
         await _handlePaymentReviewRefreshQuote(emit);
       } else if (event is PaymentReviewLoadPaymentModel) {
@@ -34,11 +34,12 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   }
 
   Future<void> _handlePaymentReviewFinishPayment(
-      Emitter<PaymentReviewState> emit) async {
+    Emitter<PaymentReviewState> emit,
+    PaymentReviewFinishPayment event,
+  ) async {
     try {
       emit(
         PaymentReviewLoading(
-          paymentUserInformation: state.paymentUserInformation,
           credits: _getCreditsFromPaymentModel(),
           subTotal: _getSubTotalFromPaymentModel(),
           total: _getTotalFromPaymentModel(),
@@ -46,15 +47,15 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         ),
       );
 
-      logger.i('Top up with ${state.paymentUserInformation.toString()}');
+      logger.d(event.paymentUserInformation.toString());
 
       final paymentStatus = await turbo.confirmPayment(
-        userInformation: state.paymentUserInformation,
+        userInformation: event.paymentUserInformation,
       );
+
       if (paymentStatus == PaymentStatus.success) {
         emit(
           PaymentReviewPaymentSuccess(
-            paymentUserInformation: state.paymentUserInformation,
             credits: _getCreditsFromPaymentModel(),
             subTotal: _getSubTotalFromPaymentModel(),
             total: _getTotalFromPaymentModel(),
@@ -67,7 +68,6 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
             credits: _getCreditsFromPaymentModel(),
             subTotal: _getSubTotalFromPaymentModel(),
             total: _getTotalFromPaymentModel(),
-            paymentUserInformation: state.paymentUserInformation,
             errorType: TurboErrorType.unknown,
             quoteExpirationDate: _quoteExpirationDate!,
           ),
@@ -79,7 +79,6 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
           credits: _getCreditsFromPaymentModel(),
           subTotal: _getSubTotalFromPaymentModel(),
           total: _getTotalFromPaymentModel(),
-          paymentUserInformation: state.paymentUserInformation,
           errorType: TurboErrorType.unknown,
           quoteExpirationDate: _quoteExpirationDate!,
         ),
@@ -92,7 +91,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     try {
       emit(
         PaymentReviewLoadingQuote(
-          paymentUserInformation: state.paymentUserInformation,
+          // paymentUserInformation: state.paymentUserInformation,
           credits: _getCreditsFromPaymentModel(),
           subTotal: _getSubTotalFromPaymentModel(),
           total: _getTotalFromPaymentModel(),
@@ -104,7 +103,6 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
 
       emit(
         PaymentReviewQuoteLoaded(
-          paymentUserInformation: state.paymentUserInformation,
           credits: _getCreditsFromPaymentModel(),
           subTotal: _getSubTotalFromPaymentModel(),
           total: _getTotalFromPaymentModel(),
@@ -115,7 +113,6 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
       emit(
         PaymentReviewQuoteError(
           errorType: TurboErrorType.unknown,
-          paymentUserInformation: state.paymentUserInformation,
           quoteExpirationDate: _quoteExpirationDate!,
           credits: _getCreditsFromPaymentModel(),
           subTotal: _getSubTotalFromPaymentModel(),
@@ -128,9 +125,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   Future<void> _handlePaymentReviewLoadPaymentModel(
       Emitter<PaymentReviewState> emit) async {
     try {
-      emit(PaymentReviewLoadingPaymentModel(
-        state.paymentUserInformation,
-      ));
+      emit(const PaymentReviewLoadingPaymentModel());
 
       await _createPaymentIntent();
 
@@ -138,7 +133,6 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
 
       emit(
         PaymentReviewPaymentModelLoaded(
-          paymentUserInformation: state.paymentUserInformation,
           quoteExpirationDate: _quoteExpirationDate!,
           credits: _getCreditsFromPaymentModel(),
           subTotal: _getSubTotalFromPaymentModel(),
@@ -148,8 +142,8 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     } catch (e) {
       logger.e('Error loading payment model: $e');
 
-      emit(PaymentReviewErrorLoadingPaymentModel(
-        paymentUserInformation: state.paymentUserInformation,
+      emit(const PaymentReviewErrorLoadingPaymentModel(
+        errorType: TurboErrorType.unknown,
       ));
     }
   }

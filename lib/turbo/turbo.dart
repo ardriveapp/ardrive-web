@@ -377,8 +377,12 @@ class StripePaymentProvider implements TurboPaymentProvider {
 
     final paymentIntent = await stripe.confirmPayment(
       paymentIntentClientSecret: paymentModel.paymentSession.clientSecret,
-      data: const PaymentMethodParams.card(
-        paymentMethodData: PaymentMethodData(),
+      data: PaymentMethodParams.card(
+        paymentMethodData: PaymentMethodData(
+          billingDetails: BillingDetails(
+            email: paymentUserInformation.email,
+          ),
+        ),
       ),
     );
 
