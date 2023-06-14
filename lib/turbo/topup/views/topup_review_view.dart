@@ -75,7 +75,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 },
               ),
             ),
-            barrierDismissible: false,
             barrierColor: ArDriveTheme.of(context)
                 .themeData
                 .colors
@@ -98,7 +97,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 },
               ),
             ),
-            barrierDismissible: false,
+            barrierDismissible: true,
             barrierColor: ArDriveTheme.of(context)
                 .themeData
                 .colors
@@ -420,6 +419,17 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         key: const ValueKey('turbo_payment_form'),
                         themeData: textTheme,
                         child: ArDriveTextField(
+                          validator: (s) {
+                            if (s == null) {
+                              return null;
+                            }
+
+                            if (isEmailValid(s)) {
+                              return null;
+                            } else {
+                              return 'Please enter a valid email address';
+                            }
+                          },
                           controller: _emailController,
                           onChanged: (s) {
                             if (_hasAutomaticChecked) {
@@ -691,4 +701,40 @@ class _RefreshQuoteButtonState extends State<RefreshQuoteButton>
       },
     );
   }
+}
+
+bool isEmailValid(String email) {
+  if (email.isEmpty) {
+    return false;
+  }
+
+  // Check if email contains '@' and '.'
+  if (!email.contains('@') || !email.contains('.')) {
+    return false;
+  }
+
+  // Check the position of '@' and '.'
+  var atSignIndex = email.indexOf('@');
+  var dotIndex = email.lastIndexOf('.');
+
+  if (dotIndex <= atSignIndex) {
+    return false;
+  }
+
+  // Check if '@' and '.' are not the first or last characters
+  if (atSignIndex == 0 ||
+      dotIndex == 0 ||
+      atSignIndex == email.length - 1 ||
+      dotIndex == email.length - 1) {
+    return false;
+  }
+
+  // Check if there is a domain after '.'
+  var domain = email.substring(dotIndex + 1);
+  if (domain.isEmpty) {
+    return false;
+  }
+
+  // If none of the checks failed, the email is valid
+  return true;
 }

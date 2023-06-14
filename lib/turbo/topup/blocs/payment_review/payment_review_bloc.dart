@@ -90,17 +90,17 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   Future<void> _handlePaymentReviewRefreshQuote(
       Emitter<PaymentReviewState> emit) async {
     try {
-      emit(PaymentReviewLoadingQuote(
-        paymentUserInformation: state.paymentUserInformation,
-        credits: _getCreditsFromPaymentModel(),
-        subTotal: _getSubTotalFromPaymentModel(),
-        total: _getTotalFromPaymentModel(),
-        quoteExpirationDate: _quoteExpirationDate!,
-      ));
+      emit(
+        PaymentReviewLoadingQuote(
+          paymentUserInformation: state.paymentUserInformation,
+          credits: _getCreditsFromPaymentModel(),
+          subTotal: _getSubTotalFromPaymentModel(),
+          total: _getTotalFromPaymentModel(),
+          quoteExpirationDate: _quoteExpirationDate!,
+        ),
+      );
 
       await _createPaymentIntent();
-
-      await Future.delayed(const Duration(seconds: 1));
 
       emit(
         PaymentReviewQuoteLoaded(

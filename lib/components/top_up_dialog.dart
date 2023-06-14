@@ -595,41 +595,69 @@ class PriceEstimateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Divider(height: 32),
-        Text(
-          '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
-          style: ArDriveTypography.body.buttonNormalBold(),
-        ),
-        const SizedBox(height: 4),
-        ArDriveClickArea(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+    return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
+      builder: (context, state) {
+        if (state is EstimationLoadError) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Divider(height: 32),
               Text(
-                // TODO: Localize
-                'How are conversions determined?',
+                'Estimation Error',
+                style: ArDriveTypography.body.buttonNormalBold(),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Please try again later',
                 style: ArDriveTypography.body.buttonNormalBold(
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
                 ),
               ),
-              const SizedBox(width: 4),
-              Padding(
-                padding: const EdgeInsets.only(top: 2.0),
-                child: ArDriveIcons.newWindow(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-                  size: 16,
-                ),
-              )
             ],
-          ),
-        ),
-        const Divider(height: 32),
-      ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Divider(height: 32),
+            Text(
+              '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
+              style: ArDriveTypography.body.buttonNormalBold(),
+            ),
+            const SizedBox(height: 4),
+            ArDriveClickArea(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    // TODO: Localize
+                    'How are conversions determined?',
+                    style: ArDriveTypography.body.buttonNormalBold(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgSubtle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2.0),
+                    child: ArDriveIcons.newWindow(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgSubtle,
+                      size: 16,
+                    ),
+                  )
+                ],
+              ),
+            ),
+            const Divider(height: 32),
+          ],
+        );
+      },
     );
   }
 }
