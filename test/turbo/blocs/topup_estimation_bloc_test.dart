@@ -48,6 +48,7 @@ void main() {
           bloc.add(LoadInitialData());
         },
         expect: () => [
+          EstimationLoading(),
           EstimationLoaded(
             balance: BigInt.from(10),
             estimatedStorageForBalance: '1.00',
@@ -72,6 +73,7 @@ void main() {
             bloc.add(LoadInitialData());
           },
           expect: () => [
+                EstimationLoading(),
                 EstimationError(),
               ]);
       blocTest(
@@ -94,6 +96,7 @@ void main() {
                 .thenThrow(Exception());
           },
           expect: () => [
+                EstimationLoading(),
                 EstimationError(),
               ]);
       blocTest(
@@ -125,6 +128,7 @@ void main() {
                 )).thenThrow(Exception());
           },
           expect: () => [
+                EstimationLoading(),
                 EstimationError(),
               ]);
     });
@@ -162,6 +166,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // first loads with usd
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -172,6 +178,7 @@ void main() {
           currencyUnit: 'usd',
           dataUnit: FileSizeUnit.gigabytes,
         ),
+
         // then emit eur
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -226,6 +233,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // first loads with usd
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -259,8 +268,6 @@ void main() {
         bloc.add(const FiatAmountSelected(100));
       },
       setUp: () {
-        when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 0, estimatedStorage: 1);
         final mockPriceEstimate100 = PriceEstimate(
@@ -292,6 +299,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // start with 0
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -302,6 +311,7 @@ void main() {
           currencyUnit: 'usd',
           dataUnit: FileSizeUnit.gigabytes,
         ),
+
         // 100
         EstimationLoaded(
           balance: BigInt.from(10),
