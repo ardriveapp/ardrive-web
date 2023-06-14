@@ -41,7 +41,7 @@ class SnapshotItemToBeCreated {
 
   Stream<Uint8List> getSnapshotData() async* {
     StreamController<TxSnapshot> controller = StreamController<TxSnapshot>();
-    List<Completer> futures = []; // A list to hold all futures
+    List<Completer> futures = []; 
 
     source.listen((node) {
       var completer = Completer();
