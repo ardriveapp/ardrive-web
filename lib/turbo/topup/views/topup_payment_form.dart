@@ -159,15 +159,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                                   .themeFgMuted,
                             ),
                           ),
-                          TextSpan(
-                            text: ' + taxes and fees',
-                            style: ArDriveTypography.body.captionBold(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeAccentDisabled,
-                            ),
-                          ),
                         ],
                       ),
                     );
