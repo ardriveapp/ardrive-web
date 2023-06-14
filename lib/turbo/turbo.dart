@@ -418,7 +418,11 @@ bool _isStripeInitialized = false;
 void initializeStripe(AppConfig appConfig) {
   if (_isStripeInitialized) return;
 
+  logger.d('Initializing Stripe');
+
   Stripe.publishableKey = appConfig.stripePublishableKey;
 
   _isStripeInitialized = true;
+
+  logger.d('Stripe initialized');
 }
