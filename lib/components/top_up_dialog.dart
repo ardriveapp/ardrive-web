@@ -1,11 +1,10 @@
-import 'dart:async';
-
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
+import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_size_units.dart';
@@ -41,6 +40,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
 
     return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
       bloc: paymentBloc,
+      buildWhen: (_, current) => current is! EstimationLoading,
       builder: (context, state) {
         if (state is EstimationLoading) {
           return const SizedBox(
@@ -149,18 +149,24 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                           ],
                         ),
                       ),
-                      ArDriveButton(
-                        isDisabled: paymentBloc.currentAmount == 0,
-                        maxWidth: 143,
-                        maxHeight: 40,
-                        fontStyle: ArDriveTypography.body
-                            .buttonLargeBold()
-                            .copyWith(fontWeight: FontWeight.w700),
-                        text: appLocalizationsOf(context).next,
-                        onPressed: () {
-                          context.read<TurboTopupFlowBloc>().add(
-                                TurboTopUpShowPaymentFormView(4),
-                              );
+                      BlocBuilder<TurboTopUpEstimationBloc,
+                          TopupEstimationState>(
+                        builder: (context, state) {
+                          return ArDriveButton(
+                            isDisabled: paymentBloc.currentAmount == 0 ||
+                                state is EstimationLoading,
+                            maxWidth: 143,
+                            maxHeight: 40,
+                            fontStyle: ArDriveTypography.body
+                                .buttonLargeBold()
+                                .copyWith(fontWeight: FontWeight.w700),
+                            text: appLocalizationsOf(context).next,
+                            onPressed: () {
+                              context
+                                  .read<TurboTopupFlowBloc>()
+                                  .add(TurboTopUpShowPaymentFormView(4));
+                            },
+                          );
                         },
                       ),
                     ],
@@ -169,14 +175,13 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
               ),
             ),
           );
-        } else if (state is EstimationError) {
-          return TurboTopupScaffold(
-            child: SizedBox(
-              height: 575,
-              child: Center(
-                child: Text(appLocalizationsOf(context).error),
-              ),
-            ),
+        } else if (state is FetchEstimationError) {
+          return TurboErrorView(
+            errorType: TurboErrorType.fetchEstimationInformationFailed,
+            onDismiss: () {},
+            onTryAgain: () {
+              paymentBloc.add(LoadInitialData());
+            },
           );
         }
         return TurboTopupScaffold(
@@ -245,15 +250,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
 
   DateTime lastChanged = DateTime.now();
 
-  Timer? _timer;
-
   void _onAmountChanged(String amount) {
-    if (_timer != null && _timer!.isActive) {
-      _timer?.cancel();
-    }
-    _timer = Timer(const Duration(milliseconds: 500), () {
-      widget.onAmountSelected(int.parse(amount));
-    });
+    widget.onAmountSelected(int.parse(amount));
   }
 
   void _onPresetAmountSelected(int amount) {

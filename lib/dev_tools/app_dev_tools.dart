@@ -166,6 +166,19 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.text,
     );
 
+    ArDriveDevToolOption stripePublishableKey = ArDriveDevToolOption(
+      name: 'stripePublishableKey',
+      value: settings.stripePublishableKey,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(stripePublishableKey: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.text,
+    );
+
     ArDriveDevToolOption allowedDataItemSizeForTurboOption =
         ArDriveDevToolOption(
       name: 'allowedDataItemSizeForTurbo',
@@ -293,6 +306,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       useTurboPaymentOption,
       defaultTurboPaymentUrlOption,
       enableSyncFromSnapshotOption,
+      stripePublishableKey,
       enableQuickSyncAuthoringOption,
       enableMultipleFileDownloadOption,
       enableVideoPreviewOption,

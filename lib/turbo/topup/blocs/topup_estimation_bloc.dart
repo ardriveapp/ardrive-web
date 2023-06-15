@@ -52,7 +52,7 @@ class TurboTopUpEstimationBloc
           } catch (e, s) {
             logger.e('error initializing the estimation view', e, s);
 
-            emit(EstimationError());
+            emit(FetchEstimationError());
           }
         } else if (event is FiatAmountSelected) {
           _currentAmount = event.amount;
@@ -112,6 +112,8 @@ class TurboTopUpEstimationBloc
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
   }) async {
+    emit(EstimationLoading());
+
     final priceEstimate = await turbo.computePriceEstimate(
       currentAmount: currentAmount,
       currentCurrency: currentCurrency,

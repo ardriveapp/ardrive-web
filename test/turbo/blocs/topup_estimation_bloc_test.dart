@@ -48,6 +48,7 @@ void main() {
           bloc.add(LoadInitialData());
         },
         expect: () => [
+          EstimationLoading(),
           EstimationLoaded(
             balance: BigInt.from(10),
             estimatedStorageForBalance: '1.00',
@@ -72,7 +73,8 @@ void main() {
             bloc.add(LoadInitialData());
           },
           expect: () => [
-                EstimationError(),
+                EstimationLoading(),
+                FetchEstimationError(),
               ]);
       blocTest(
           'Emits [EstimationError] if getBalance doesnt throw but computePriceEstimateAndUpdate do',
@@ -94,7 +96,8 @@ void main() {
                 .thenThrow(Exception());
           },
           expect: () => [
-                EstimationError(),
+                EstimationLoading(),
+                FetchEstimationError(),
               ]);
       blocTest(
           'Emits [EstimationError] if getBalance and computePriceEstimateAndUpdate doent throw but computeStorageEstimateForCredits do',
@@ -125,7 +128,8 @@ void main() {
                 )).thenThrow(Exception());
           },
           expect: () => [
-                EstimationError(),
+                EstimationLoading(),
+                FetchEstimationError(),
               ]);
     });
   });
@@ -162,6 +166,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // first loads with usd
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -227,6 +233,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // first loads with usd
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -261,7 +269,7 @@ void main() {
       },
       setUp: () {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 0, estimatedStorage: 1);
         final mockPriceEstimate100 = PriceEstimate(
@@ -293,6 +301,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // start with 0
         EstimationLoaded(
           balance: BigInt.from(10),

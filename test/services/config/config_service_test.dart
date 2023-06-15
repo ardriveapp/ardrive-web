@@ -24,7 +24,7 @@ void main() {
       when(() => mockAppFlavors.getAppFlavor())
           .thenAnswer((_) async => Flavor.production);
       when(() => mockConfigFetcher.fetchConfig(any()))
-          .thenAnswer((_) async => AppConfig());
+          .thenAnswer((_) async => AppConfig(stripePublishableKey: ''));
 
       await configService.loadConfig();
 
@@ -62,7 +62,9 @@ void main() {
 
   group('updateAppConfig', () {
     test('saves the config to ConfigFetcher and updates local config', () {
-      final config = AppConfig();
+      final config = AppConfig(
+        stripePublishableKey: '',
+      );
 
       configService.updateAppConfig(config);
 
@@ -78,7 +80,9 @@ void main() {
       when(() => mockAppFlavors.getAppFlavor())
           .thenAnswer((_) async => Flavor.production);
       when(() => mockConfigFetcher.fetchConfig(any()))
-          .thenAnswer((_) async => AppConfig());
+          .thenAnswer((_) async => AppConfig(
+                stripePublishableKey: '',
+              ));
 
       await configService.resetDevToolsPrefs();
 
@@ -96,7 +100,9 @@ void main() {
       when(() => mockAppFlavors.getAppFlavor())
           .thenAnswer((_) async => Flavor.production);
       when(() => mockConfigFetcher.fetchConfig(any()))
-          .thenAnswer((_) async => AppConfig());
+          .thenAnswer((_) async => AppConfig(
+                stripePublishableKey: '',
+              ));
 
       await configService.loadConfig();
 
@@ -112,7 +118,9 @@ void main() {
       when(() => mockAppFlavors.getAppFlavor())
           .thenAnswer((_) async => Flavor.production);
       when(() => mockConfigFetcher.fetchConfig(any()))
-          .thenAnswer((_) async => AppConfig());
+          .thenAnswer((_) async => AppConfig(
+                stripePublishableKey: '',
+              ));
 
       await configService.loadConfig(); // Assuming this sets _flavor
 
