@@ -78,6 +78,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 },
               ),
             ),
+            barrierDismissible: false,
             barrierColor: ArDriveTheme.of(context)
                 .themeData
                 .colors
@@ -100,7 +101,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 },
               ),
             ),
-            barrierDismissible: true,
+            barrierDismissible: false,
             barrierColor: ArDriveTheme.of(context)
                 .themeData
                 .colors
@@ -510,7 +511,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 fontStyle: ArDriveTypography.body.buttonLargeBold(
                   color: Colors.white,
                 ),
-                isDisabled: state is PaymentReviewLoadingQuote,
+                isDisabled: state is PaymentReviewLoadingQuote ||
+                    state is PaymentReviewQuoteError ||
+                    state is PaymentReviewErrorLoadingPaymentModel,
                 customContent: state is PaymentReviewLoading
                     ? const SizedBox(
                         height: 24,
@@ -546,7 +549,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 class RefreshButton extends StatefulWidget {
   final void Function() onPressed;
 
-  RefreshButton({required this.onPressed});
+  RefreshButton({super.key, required this.onPressed});
 
   @override
   _RefreshButtonState createState() => _RefreshButtonState();
@@ -618,11 +621,13 @@ class _RefreshButtonState extends State<RefreshButton>
 }
 
 class RefreshQuoteButton extends StatefulWidget {
+  const RefreshQuoteButton({super.key});
+
   @override
-  _RefreshQuoteButtonState createState() => _RefreshQuoteButtonState();
+  RefreshQuoteButtonState createState() => RefreshQuoteButtonState();
 }
 
-class _RefreshQuoteButtonState extends State<RefreshQuoteButton>
+class RefreshQuoteButtonState extends State<RefreshQuoteButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAndSizeAnimation;
