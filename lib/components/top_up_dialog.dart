@@ -250,8 +250,6 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     super.didChangeDependencies();
   }
 
-  DateTime lastChanged = DateTime.now();
-
   void _onAmountChanged(String amount) {
     widget.onAmountSelected(int.parse(amount));
   }
