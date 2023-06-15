@@ -175,7 +175,7 @@ void main() {
       test(
           'calls priceEstimator.computeStorageEstimateForCredits once with the correct arguments',
           () async {
-        final mockStorageEstimate = 1.0;
+        const mockStorageEstimate = 1.0;
         final mockCredits = BigInt.from(100);
         when(() => mockPriceEstimator.computeStorageEstimateForCredits(
               credits: mockCredits,
@@ -213,9 +213,6 @@ void main() {
 
       test('priceEstimate updates when price quote expires', () async {
         fakeAsync((async) async {
-          final mockStorageEstimate = 1.0;
-          final mockCredits = BigInt.from(100);
-
           final mockPriceEstimate1 = PriceEstimate(
             credits: BigInt.from(100),
             estimatedStorage: 1,
@@ -244,7 +241,7 @@ void main() {
 
           expect(priceEstimate, mockPriceEstimate1);
 
-          await Future.delayed(Duration(seconds: 2));
+          await Future.delayed(const Duration(seconds: 2));
 
           when(() => mockPriceEstimator.computePriceEstimate(
                 currentAmount: 100,
@@ -283,7 +280,7 @@ void main() {
 
           expect(priceEstimate, mockPriceEstimate);
 
-          await Future.delayed(Duration(seconds: 2));
+          await Future.delayed(const Duration(seconds: 2));
 
           when(() => mockPriceEstimator.computePriceEstimate(
                 currentAmount: 0,
@@ -702,7 +699,7 @@ void main() {
       expect(priceEstimate.estimatedStorage, expectedEstimatedStorage);
     });
 
-    group("computeStorageEstimateForCredits", () {
+    group('computeStorageEstimateForCredits', () {
       test('should return correct estimate', () async {
         // Setup the method call response
         final expectedCredits = BigInt.from(100);
