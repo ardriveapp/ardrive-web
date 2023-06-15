@@ -153,9 +153,10 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                   key: const ValueKey('payment_form'),
                   color: Colors.transparent,
                   child: const Opacity(
-                      key: ValueKey('payment_form'),
-                      opacity: 1,
-                      child: TurboPaymentFormView()),
+                    key: ValueKey('payment_form'),
+                    opacity: 1,
+                    child: TurboPaymentFormView(),
+                  ),
                 ),
               ),
             ],
@@ -170,13 +171,15 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                   state.priceEstimate,
                 ),
                 child: Container(
-                    key: const ValueKey('payment_form'),
-                    color:
-                        ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-                    child: const Opacity(
-                        key: ValueKey('payment_form'),
-                        opacity: 0,
-                        child: TurboPaymentFormView())),
+                  key: const ValueKey('payment_form'),
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                  child: const Opacity(
+                    key: ValueKey('payment_form'),
+                    opacity: 0,
+                    child: TurboPaymentFormView(),
+                  ),
+                ),
               ),
               BlocProvider<PaymentReviewBloc>(
                 create: (context) => PaymentReviewBloc(
@@ -240,8 +243,10 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
     );
   }
 
-  void _showErrorDialog(TurboErrorType type,
-      {required BuildContext parentContext}) {
+  void _showErrorDialog(
+    TurboErrorType type, {
+    required BuildContext parentContext,
+  }) {
     showAnimatedDialogWithBuilder(
       context,
       builder: (modalContext) => ArDriveStandardModal(

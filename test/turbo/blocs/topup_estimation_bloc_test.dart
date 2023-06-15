@@ -74,7 +74,7 @@ void main() {
           },
           expect: () => [
                 EstimationLoading(),
-                EstimationError(),
+                FetchEstimationError(),
               ]);
       blocTest(
           'Emits [EstimationError] if getBalance doesnt throw but computePriceEstimateAndUpdate do',
@@ -97,7 +97,7 @@ void main() {
           },
           expect: () => [
                 EstimationLoading(),
-                EstimationError(),
+                FetchEstimationError(),
               ]);
       blocTest(
           'Emits [EstimationError] if getBalance and computePriceEstimateAndUpdate doent throw but computeStorageEstimateForCredits do',
@@ -129,7 +129,7 @@ void main() {
           },
           expect: () => [
                 EstimationLoading(),
-                EstimationError(),
+                FetchEstimationError(),
               ]);
     });
   });
@@ -269,7 +269,7 @@ void main() {
       },
       setUp: () {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 0, estimatedStorage: 1);
         final mockPriceEstimate100 = PriceEstimate(
