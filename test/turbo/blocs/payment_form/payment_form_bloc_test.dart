@@ -76,6 +76,7 @@ void main() {
         },
         expect: () => [
           isA<PaymentFormLoadingQuote>(),
+          isA<PaymentFormQuoteLoadFailure>(),
         ],
       );
     });
