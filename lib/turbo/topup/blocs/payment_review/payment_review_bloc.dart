@@ -18,9 +18,10 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   DateTime? _quoteExpirationDate;
   final PriceEstimate _priceEstimate;
 
-  PaymentReviewBloc(this.turbo, PriceEstimate priceEstimate,
-      PaymentUserInformation paymentUserInformation)
-      : _priceEstimate = priceEstimate,
+  PaymentReviewBloc(
+    this.turbo,
+    PriceEstimate priceEstimate,
+  )   : _priceEstimate = priceEstimate,
         super(PaymentReviewInitial()) {
     on<PaymentReviewEvent>((event, emit) async {
       if (event is PaymentReviewFinishPayment) {

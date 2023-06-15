@@ -30,11 +30,9 @@ class TurboTopupFlowShowingPaymentFormView extends TurboTopupFlowState {
 
 class TurboTopupFlowShowingPaymentReviewView extends TurboTopupFlowState {
   final PriceEstimate priceEstimate;
-  final PaymentUserInformation paymentUserInformation;
 
   const TurboTopupFlowShowingPaymentReviewView({
     bool isMovingForward = true,
-    required this.paymentUserInformation,
     required this.priceEstimate,
   }) : super(isMovingForward);
 }
