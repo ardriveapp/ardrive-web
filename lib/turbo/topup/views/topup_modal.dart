@@ -1,6 +1,7 @@
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
@@ -46,6 +47,8 @@ void showTurboModal(BuildContext context) {
     paymentProvider: turboPaymentProvider,
     wallet: context.read<ArDriveAuth>().currentUser!.wallet,
   );
+
+  initializeStripe(context.read<ConfigService>().config);
 
   showAnimatedDialogWithBuilder(
     context,
@@ -180,10 +183,8 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
               ),
               BlocProvider<PaymentReviewBloc>(
                 create: (context) => PaymentReviewBloc(
-                  context.read<Turbo>(),
-                  state.priceEstimate,
-                  state.paymentUserInformation,
-                )..add(PaymentReviewLoadPaymentModel()),
+                    context.read<Turbo>(), state.priceEstimate)
+                  ..add(PaymentReviewLoadPaymentModel()),
                 child: Container(
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
