@@ -41,7 +41,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'blocs/blocs.dart';
@@ -58,9 +57,6 @@ late ArweaveService _arweave;
 late UploadService _turboUpload;
 late PaymentService _turboPayment;
 void main() async {
-  Stripe.publishableKey =
-      'pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z';
-
   WidgetsFlutterBinding.ensureInitialized();
 
   final localStore = await LocalKeyValueStore.getInstance();

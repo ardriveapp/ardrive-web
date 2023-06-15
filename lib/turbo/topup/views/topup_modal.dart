@@ -316,3 +316,14 @@ class PaymentFlowBackView extends StatelessWidget {
     );
   }
 }
+
+bool _isStripeInitialized = false;
+
+void initializeStripe() {
+  if (_isStripeInitialized) return;
+
+  Stripe.publishableKey =
+      'pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z';
+
+  Stripe.merchantIdentifier = 'merchant.com.ardrive';
+}
