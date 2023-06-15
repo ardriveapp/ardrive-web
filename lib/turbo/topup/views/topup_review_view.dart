@@ -65,9 +65,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               width: 575,
               content: TurboErrorView(
                 errorType: state.errorType,
-                onDismiss: () {
-                  // Navigator.pop(context);
-                },
+                onDismiss: () {},
                 onTryAgain: () {
                   Navigator.pop(context);
                   context.read<PaymentReviewBloc>().add(
