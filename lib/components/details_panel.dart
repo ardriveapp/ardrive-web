@@ -338,6 +338,12 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }
 
   List<Widget> _fileDetails() {
+    String? metadataTxId;
+
+    if (widget.item is FileDataTableItem) {
+      metadataTxId = (widget.item as FileDataTableItem).metadataTx?.id;
+    }
+
     return [
       DetailsPanelItem(
         leading: CopyButton(text: widget.item.id),
@@ -375,13 +381,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: 'File type',
       ),
-      sizedBoxHeight16px,
-      DetailsPanelItem(
-        leading: CopyButton(
-          text: widget.item.driveId,
+      if (metadataTxId != null) ...[
+        sizedBoxHeight16px,
+        DetailsPanelItem(
+          leading: CopyButton(
+            text: metadataTxId,
+          ),
+          itemTitle: appLocalizationsOf(context).metadataTxID,
         ),
-        itemTitle: appLocalizationsOf(context).metadataTxID,
-      ),
+      ],
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Row(
