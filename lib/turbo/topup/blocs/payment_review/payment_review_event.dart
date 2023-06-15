@@ -20,4 +20,7 @@ class PaymentReviewFinishPayment extends PaymentReviewEvent {
 
 class PaymentReviewRefreshQuote extends PaymentReviewEvent {}
 
-class PaymentReviewLoadPaymentModel extends PaymentReviewEvent {}
+class PaymentReviewLoadPaymentModel extends PaymentReviewEvent {
+  @override
+  List<Object> get props => [];
+}
