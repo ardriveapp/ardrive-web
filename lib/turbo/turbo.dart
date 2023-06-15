@@ -4,86 +4,114 @@ import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/utils/data_size.dart';
+import 'package:ardrive/utils/disposable.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 
-class Turbo {
-  final TurboSessionManager sessionManager;
-  final TurboCostCalculator costCalculator;
-  final TurboBalanceRetriever balanceRetriever;
-  final TurboPriceEstimator priceEstimator;
+class Turbo extends Disposable {
+  final TurboSessionManager _sessionManager;
+  final TurboCostCalculator _costCalculator;
+  final TurboBalanceRetriever _balanceRetriever;
+  final TurboPriceEstimator _priceEstimator;
   final Wallet wallet;
 
   Turbo({
-    required this.sessionManager,
-    required this.costCalculator,
-    required this.balanceRetriever,
-    required this.priceEstimator,
+    required TurboCostCalculator costCalculator,
+    required TurboSessionManager sessionManager,
+    required TurboBalanceRetriever balanceRetriever,
+    required TurboPriceEstimator priceEstimator,
     required this.wallet,
-  }) {
-    _startOnPriceEstimateChange();
+  })  : _balanceRetriever = balanceRetriever,
+        _costCalculator = costCalculator,
+        _priceEstimator = priceEstimator,
+        _sessionManager = sessionManager;
+
+  DateTime get maxQuoteExpirationDate {
+    final maxQuoteExpirationTime = _priceEstimator.maxQuoteExpirationTime;
+
+    if (maxQuoteExpirationTime == null) {
+      throw Exception(
+          'maxQuoteExpirationTime is null. It can happen when you dont computate the balance first.');
+    }
+
+    return maxQuoteExpirationTime;
   }
-  Stream<bool> get onSessionExpired => sessionManager.onSessionExpired;
+
+  Stream<bool> get onSessionExpired => _sessionManager.onSessionExpired;
 
   Stream<PriceEstimate> get onPriceEstimateChanged =>
-      _priceEstimateController.stream;
+      _priceEstimator.onPriceEstimateChanged;
 
-  Future<BigInt> getBalance() => balanceRetriever.getBalance(wallet);
+  Future<BigInt> getBalance() => _balanceRetriever.getBalance(wallet);
 
   Future<BigInt> getCostOfOneGB({bool forceGet = false}) =>
-      costCalculator.getCostOfOneGB(forceGet: forceGet);
+      _costCalculator.getCostOfOneGB(forceGet: forceGet);
 
-  PriceEstimate get currentPriceEstimate => priceEstimator.currentPriceEstimate;
+  PriceEstimate _priceEstimate = PriceEstimate.zero();
+
+  int? _currentAmount;
+  String? _currentCurrency;
+  FileSizeUnit? _currentDataUnit;
+
+  PriceEstimate get currentPriceEstimate => _priceEstimate;
 
   Future<PriceEstimate> computePriceEstimate({
     required int currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
-  }) =>
-      priceEstimator.computePriceEstimate(
-        currentAmount: currentAmount,
-        currentCurrency: currentCurrency,
-        currentDataUnit: currentDataUnit,
-      );
+  }) async {
+    _currentAmount = currentAmount;
+    _currentCurrency = currentCurrency;
+    _currentDataUnit = currentDataUnit;
+
+    _priceEstimate = await _priceEstimator.computePriceEstimate(
+      currentAmount: currentAmount,
+      currentCurrency: currentCurrency,
+      currentDataUnit: currentDataUnit,
+    );
+
+    return _priceEstimate;
+  }
+
+  Future<PriceEstimate> refreshPriceEstimate() async {
+    assert(
+      _currentAmount != null &&
+          _currentCurrency != null &&
+          _currentDataUnit != null,
+      'Cannot refresh price estimate without first computing it',
+    );
+
+    _priceEstimate = await _priceEstimator.computePriceEstimate(
+      currentAmount: _currentAmount!,
+      currentCurrency: _currentCurrency!,
+      currentDataUnit: _currentDataUnit!,
+    );
+
+    return _priceEstimate;
+  }
 
   Future<double> computeStorageEstimateForCredits({
     required BigInt credits,
     required FileSizeUnit outputDataUnit,
   }) {
-    return priceEstimator.computeStorageEstimateForCredits(
+    return _priceEstimator.computeStorageEstimateForCredits(
       credits: credits,
       outputDataUnit: outputDataUnit,
     );
   }
 
-  late Timer _priceEstimateTimer;
-
-  final StreamController<PriceEstimate> _priceEstimateController =
-      StreamController.broadcast();
-
-  void _startOnPriceEstimateChange() {
-    _priceEstimateTimer = _quoteEstimateTimer((timer) async {
-      final priceEstimate = await computePriceEstimate(
-        currentAmount: 0,
-        currentCurrency: 'usd',
-        currentDataUnit: FileSizeUnit.gigabytes,
-      );
-
-      _priceEstimateController.add(priceEstimate);
-    });
-  }
-
+  @override
   Future<void> dispose() async {
     logger.d('Disposing turbo');
-    _priceEstimateTimer.cancel();
-    await sessionManager.dispose();
+    _priceEstimator.dispose();
+    await _sessionManager.dispose();
 
     logger.d('Turbo disposed');
   }
 }
 
-class TurboSessionManager {
+class TurboSessionManager extends Disposable {
   final _sessionExpiredController = StreamController<bool>();
 
   late final DateTime _initialSessionTime;
@@ -111,6 +139,7 @@ class TurboSessionManager {
     });
   }
 
+  @override
   Future<void> dispose() async {
     logger.d('Disposing SessionManager');
     _sessionExpirationTimer.cancel();
@@ -168,22 +197,19 @@ class TurboBalanceRetriever {
   }
 }
 
-class TurboPriceEstimator {
-  final PaymentService paymentService;
-  final TurboCostCalculator costCalculator;
-
-  PriceEstimate _priceEstimate = PriceEstimate(
-    credits: BigInt.from(0),
-    priceInCurrency: 0,
-    estimatedStorage: 0,
-  );
-
+class TurboPriceEstimator extends Disposable {
   TurboPriceEstimator({
     required this.paymentService,
     required this.costCalculator,
-  });
+  }) {
+    _startOnPriceEstimateChange();
+  }
 
-  PriceEstimate get currentPriceEstimate => _priceEstimate;
+  final PaymentService paymentService;
+  final TurboCostCalculator costCalculator;
+
+  DateTime? _maxQuoteExpirationTime;
+  DateTime? get maxQuoteExpirationTime => _maxQuoteExpirationTime;
 
   Future<PriceEstimate> computePriceEstimate({
     required int currentAmount,
@@ -203,13 +229,13 @@ class TurboPriceEstimator {
       outputDataUnit: currentDataUnit,
     );
 
-    _priceEstimate = PriceEstimate(
+    _maxQuoteExpirationTime = DateTime.now().add(const Duration(minutes: 5));
+
+    return PriceEstimate(
       credits: priceEstimate,
       priceInCurrency: currentAmount,
       estimatedStorage: estimatedStorageForSelectedAmount,
     );
-
-    return _priceEstimate;
   }
 
   Future<double> computeStorageEstimateForCredits({
@@ -226,6 +252,33 @@ class TurboPriceEstimator {
     );
 
     return estimatedStorageInBytes;
+  }
+
+  late Timer _priceEstimateTimer;
+
+  final StreamController<PriceEstimate> _priceEstimateController =
+      StreamController.broadcast();
+
+  Stream<PriceEstimate> get onPriceEstimateChanged =>
+      _priceEstimateController.stream;
+
+  void _startOnPriceEstimateChange() {
+    _priceEstimateTimer =
+        Timer.periodic(const Duration(minutes: 5), (timer) async {
+      final priceEstimate = await computePriceEstimate(
+        currentAmount: 0,
+        currentCurrency: 'usd',
+        currentDataUnit: FileSizeUnit.gigabytes,
+      );
+
+      _priceEstimateController.add(priceEstimate);
+    });
+  }
+
+  @override
+  dispose() {
+    _priceEstimateTimer.cancel();
+    _priceEstimateController.close();
   }
 }
 

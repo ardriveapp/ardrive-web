@@ -19,3 +19,21 @@ class TurboTopupFlowShowingEstimationView extends TurboTopupFlowState {
   const TurboTopupFlowShowingEstimationView({bool isMovingForward = true})
       : super(isMovingForward);
 }
+
+class TurboTopupFlowShowingPaymentFormView extends TurboTopupFlowState {
+  final PriceEstimate priceEstimate;
+
+  const TurboTopupFlowShowingPaymentFormView(
+      {bool isMovingForward = true, required this.priceEstimate})
+      : super(isMovingForward);
+}
+
+class TurboTopupFlowShowingPaymentReviewView extends TurboTopupFlowState {
+  const TurboTopupFlowShowingPaymentReviewView({bool isMovingForward = true})
+      : super(isMovingForward);
+}
+
+class TurboTopupFlowShowingSuccessView extends TurboTopupFlowState {
+  const TurboTopupFlowShowingSuccessView({bool isMovingForward = true})
+      : super(isMovingForward);
+}

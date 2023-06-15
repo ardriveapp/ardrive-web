@@ -15,3 +15,8 @@ abstract class TurboTopupFlowEvent extends Equatable {
 class TurboTopUpShowEstimationView extends TurboTopupFlowEvent {
   const TurboTopUpShowEstimationView() : super(1);
 }
+
+// show payment form
+class TurboTopUpShowPaymentFormView extends TurboTopupFlowEvent {
+  const TurboTopUpShowPaymentFormView() : super(2);
+}

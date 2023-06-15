@@ -89,7 +89,7 @@ class PaymentService {
 
   Future<PaymentSession> getPaymentSession({
     required Wallet wallet,
-    required BigInt amount,
+    required int amount,
     String currency = 'usd',
   }) async {
     final nonce = const Uuid().v4();
@@ -129,10 +129,11 @@ class DontUsePaymentService implements PaymentService {
   @override
   Future<PaymentSession> getPaymentSession({
     required Wallet wallet,
-    required BigInt amount,
+    required int amount,
     String currency = 'usd',
-  }) =>
-      throw UnimplementedError();
+  }) async {
+    throw UnimplementedError();
+  }
 
   @override
   Uri get turboPaymentUri => throw UnimplementedError();

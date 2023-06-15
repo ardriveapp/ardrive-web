@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3693-implementing-balance-and-price-estimate-view-for-turbo-top-up-only-usd
+      ref: PE-3695-payment-form
   artemis: ^7.0.0-beta.13
   arweave:
     git:

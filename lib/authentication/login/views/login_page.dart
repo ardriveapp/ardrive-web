@@ -868,7 +868,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
   }
 
   void _onSubmit() {
-    final isValid = _formKey.currentState!.validate();
+    final isValid = _formKey.currentState!.validateSync();
 
     if (!isValid) {
       showAnimatedDialog(context,

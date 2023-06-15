@@ -2,8 +2,10 @@ import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/views/topup_payment_form.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -34,17 +36,15 @@ void showTurboModal(BuildContext context) {
     priceEstimator: priceEstimator,
     wallet: context.read<ArDriveAuth>().currentUser!.wallet,
   );
-
-  showAnimatedDialog(
+  showAnimatedDialogWithBuilder(
     context,
-    content: MultiBlocProvider(
+    builder: (modalContext) => MultiBlocProvider(
       providers: [
-        RepositoryProvider<Turbo>(
-          create: (context) => turbo,
-        ),
+        RepositoryProvider<Turbo>(create: (context) => turbo),
         BlocProvider(
-          create: (context) =>
-              TurboTopupFlowBloc()..add(const TurboTopUpShowEstimationView()),
+          create: (context) => TurboTopupFlowBloc(
+            context.read<Turbo>(),
+          )..add(const TurboTopUpShowEstimationView()),
         ),
         BlocProvider(
           create: (context) => TurboTopUpEstimationBloc(
@@ -52,7 +52,7 @@ void showTurboModal(BuildContext context) {
           )..add(LoadInitialData()),
         ),
       ],
-      child: const TurboModal(),
+      child: TurboModal(parentContext: modalContext),
     ),
     barrierDismissible: false,
     barrierColor:
@@ -64,7 +64,9 @@ void showTurboModal(BuildContext context) {
 }
 
 class TurboModal extends StatefulWidget {
-  const TurboModal({super.key});
+  const TurboModal({super.key, required this.parentContext});
+
+  final BuildContext parentContext;
 
   @override
   State<TurboModal> createState() => _TurboModalState();
@@ -91,19 +93,12 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<TurboTopupFlowBloc, TurboTopupFlowState>(
-      listener: (context, state) {
-        // listen to states
-        // TODO: will be handled in the next PR
-      },
-      child: ArDriveModal(
-        hasCloseButton: true,
-        contentPadding: EdgeInsets.zero,
-        content: _content(),
-        constraints: BoxConstraints(
-          maxWidth: 575,
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-        ),
+    return ArDriveModal(
+      contentPadding: EdgeInsets.zero,
+      content: _content(),
+      constraints: BoxConstraints(
+        maxWidth: 575,
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
     );
   }
@@ -117,8 +112,20 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
       },
       builder: (context, state) {
         Widget view;
+
         if (state is TurboTopupFlowShowingEstimationView) {
           view = const TopUpEstimationView();
+        } else if (state is TurboTopupFlowShowingPaymentFormView) {
+          view = BlocProvider<PaymentFormBloc>(
+            key: const ValueKey('payment_form'),
+            create: (context) => PaymentFormBloc(
+              context.read<Turbo>(),
+              state.priceEstimate,
+            ),
+            child: const TurboPaymentFormView(
+              key: ValueKey('payment_form'),
+            ),
+          );
         } else {
           view = Container(
             height: 575,
