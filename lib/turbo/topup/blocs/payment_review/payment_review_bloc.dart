@@ -143,8 +143,12 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
 
   void _emitPaymentReviewError(Emitter emit) {
     emit(
-      const PaymentReviewError(
+      PaymentReviewPaymentError(
         errorType: TurboErrorType.unknown,
+        quoteExpirationDate: _quoteExpirationDate!,
+        credits: _getCreditsFromPaymentModel(),
+        subTotal: _getSubTotalFromPaymentModel(),
+        total: _getTotalFromPaymentModel(),
       ),
     );
   }

@@ -197,7 +197,7 @@ void main() {
           const PaymentReviewLoadingPaymentModel(),
           isA<PaymentReviewPaymentModelLoaded>(),
           isA<PaymentReviewLoading>(),
-          isA<PaymentReviewError>(),
+          isA<PaymentReviewPaymentError>(),
         ],
       );
       blocTest<PaymentReviewBloc, PaymentReviewState>(
@@ -238,7 +238,7 @@ void main() {
           const PaymentReviewLoadingPaymentModel(),
           isA<PaymentReviewPaymentModelLoaded>(),
           isA<PaymentReviewLoading>(),
-          isA<PaymentReviewError>(),
+          isA<PaymentReviewPaymentError>(),
         ],
       );
       blocTest<PaymentReviewBloc, PaymentReviewState>(
@@ -280,7 +280,7 @@ void main() {
           const PaymentReviewLoadingPaymentModel(),
           isA<PaymentReviewPaymentModelLoaded>(),
           isA<PaymentReviewLoading>(),
-          isA<PaymentReviewError>(),
+          isA<PaymentReviewPaymentError>(),
         ],
       );
     });

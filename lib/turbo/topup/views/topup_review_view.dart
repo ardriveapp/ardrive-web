@@ -185,6 +185,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               ),
                               BlocBuilder<PaymentReviewBloc,
                                   PaymentReviewState>(
+                                buildWhen: (previous, current) {
+                                  return current
+                                      is PaymentReviewPaymentModelLoaded;
+                                },
                                 builder: (context, state) {
                                   if (state
                                       is PaymentReviewPaymentModelLoaded) {
@@ -239,6 +243,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                   const Spacer(),
                                   BlocBuilder<PaymentReviewBloc,
                                       PaymentReviewState>(
+                                    buildWhen: (previous, current) {
+                                      return current
+                                          is PaymentReviewPaymentModelLoaded;
+                                    },
                                     builder: (context, state) {
                                       if (state
                                           is PaymentReviewPaymentModelLoaded) {
@@ -253,7 +261,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                       }
 
                                       return Text(
-                                        // '\$${state.total}',
                                         '\$0',
                                         style: ArDriveTypography.body
                                             .buttonNormalBold()
@@ -389,7 +396,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                       },
                                     ),
                                     const Spacer(),
-                                    RefreshQuoteButton(),
+                                    const RefreshQuoteButton(),
                                   ],
                                 ),
                               );
