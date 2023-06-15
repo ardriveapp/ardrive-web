@@ -15,13 +15,10 @@ class PaymentReviewFinishPayment extends PaymentReviewEvent {
   });
 
   @override
-  List<Object> get props => [];
+  List<Object> get props => [paymentUserInformation];
 }
 
-class PaymentReviewRefreshQuote extends PaymentReviewEvent {
-  @override
-  List<Object> get props => [];
-}
+class PaymentReviewRefreshQuote extends PaymentReviewEvent {}
 
 class PaymentReviewLoadPaymentModel extends PaymentReviewEvent {
   @override

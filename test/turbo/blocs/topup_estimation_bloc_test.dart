@@ -438,11 +438,6 @@ void main() {
               credits: BigInt.from(10),
               priceInCurrency: 0,
               estimatedStorage: 1);
-          final mockPriceEstimate100 = PriceEstimate(
-              credits: BigInt.from(10),
-              priceInCurrency: 100,
-              estimatedStorage: 1);
-
           when(() => mockTurbo.getBalance())
               .thenAnswer((_) async => BigInt.from(10));
           when(() => mockTurbo.computePriceEstimate(
