@@ -44,7 +44,7 @@ void main() {
 
     test('returns the dev config when flavor is dev', () async {
       when(() => localStore.getString('config')).thenReturn(
-          '{"defaultArweaveGatewayUrl": "devGatewayUrl", "enableQuickSyncAuthoring": false}');
+          '{"defaultArweaveGatewayUrl": "devGatewayUrl", "enableQuickSyncAuthoring": false, "stripePublishableKey": "stripeKey"}');
 
       final result = await configFetcher.fetchConfig(Flavor.development);
 
@@ -76,7 +76,7 @@ void main() {
   group('loadFromDevToolsPrefs', () {
     test('returns config from local storage if present', () async {
       when(() => localStore.getString('config')).thenReturn(
-          '{"defaultArweaveGatewayUrl": "gatewayUrl", "enableQuickSyncAuthoring": true}');
+          '{"defaultArweaveGatewayUrl": "gatewayUrl", "enableQuickSyncAuthoring": true, "stripePublishableKey": "stripeKey"}');
 
       final result = await configFetcher.loadFromDevToolsPrefs();
 
@@ -108,7 +108,7 @@ void main() {
 
   group('saveConfigOnDevToolsPrefs', () {
     test('saves the config to local storage', () {
-      final config = AppConfig();
+      final config = AppConfig(stripePublishableKey: '');
 
       when(() => localStore.putString('config', any()))
           .thenAnswer((i) => Future.value(true));
