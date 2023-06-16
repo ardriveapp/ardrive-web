@@ -248,6 +248,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             isDisabled: !(card?.complete ?? false),
             onPressed: () {
               // TODO: check payment-form-and-checkout branch
+              context.read<TurboTopupFlowBloc>().add(
+                    TurboTopUpShowPaymentReviewView(),
+                  );
             },
           ),
         ],

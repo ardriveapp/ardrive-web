@@ -3,16 +3,33 @@ import 'package:json_annotation/json_annotation.dart';
 part 'payment_model.g.dart';
 
 @JsonSerializable()
+class PaymentModel {
+  // payment session
+  final PaymentSession paymentSession;
+
+  // top up quote
+  final TopUpQuote topUpQuote;
+
+  PaymentModel({
+    required this.paymentSession,
+    required this.topUpQuote,
+  });
+
+  factory PaymentModel.fromJson(Map<String, dynamic> json) =>
+      _$PaymentModelFromJson(json);
+}
+
+@JsonSerializable()
 class PaymentSession {
   final String id;
   @JsonKey(name: 'client_secret')
   final String clientSecret;
-  final String url;
+  // final String url;
 
   PaymentSession({
     required this.id,
     required this.clientSecret,
-    required this.url,
+    // required this.url,
   });
 
   factory PaymentSession.fromJson(Map<String, dynamic> json) =>

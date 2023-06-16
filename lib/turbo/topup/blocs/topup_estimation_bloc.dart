@@ -52,7 +52,7 @@ class TurboTopUpEstimationBloc
           } catch (e, s) {
             logger.e('error initializing the estimation view', e, s);
 
-            emit(EstimationError());
+            emit(FetchEstimationError());
           }
         } else if (event is FiatAmountSelected) {
           _currentAmount = event.amount;

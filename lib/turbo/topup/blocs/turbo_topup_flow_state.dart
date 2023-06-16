@@ -29,11 +29,38 @@ class TurboTopupFlowShowingPaymentFormView extends TurboTopupFlowState {
 }
 
 class TurboTopupFlowShowingPaymentReviewView extends TurboTopupFlowState {
-  const TurboTopupFlowShowingPaymentReviewView({bool isMovingForward = true})
-      : super(isMovingForward);
+  final PriceEstimate priceEstimate;
+
+  const TurboTopupFlowShowingPaymentReviewView({
+    bool isMovingForward = true,
+    required this.priceEstimate,
+  }) : super(isMovingForward);
 }
 
 class TurboTopupFlowShowingSuccessView extends TurboTopupFlowState {
   const TurboTopupFlowShowingSuccessView({bool isMovingForward = true})
       : super(isMovingForward);
+}
+
+class TurboTopupFlowShowingErrorView extends TurboTopupFlowState {
+  final TurboErrorType errorType;
+  const TurboTopupFlowShowingErrorView({
+    bool isMovingForward = true,
+    required this.errorType,
+  }) : super(isMovingForward);
+}
+
+class TurboTopUpShowingSessionExpiredView extends TurboTopupFlowState {
+  const TurboTopUpShowingSessionExpiredView({bool isMovingForward = true})
+      : super(isMovingForward);
+}
+
+enum TurboErrorType {
+  network,
+  server,
+  unknown,
+  sessionExpired,
+  paymentFailed,
+  fetchPaymentIntentFailed,
+  fetchEstimationInformationFailed,
 }
