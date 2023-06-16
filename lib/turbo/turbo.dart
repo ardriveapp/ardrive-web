@@ -57,6 +57,10 @@ class Turbo extends Disposable {
 
   PriceEstimate _priceEstimate = PriceEstimate.zero();
 
+  PaymentStatus? _paymentStatus;
+
+  PaymentStatus? get paymentStatus => _paymentStatus;
+
   int? _currentAmount;
   String? _currentCurrency;
   FileSizeUnit? _currentDataUnit;
@@ -133,11 +137,13 @@ class Turbo extends Disposable {
 
   Future<PaymentStatus> confirmPayment({
     required PaymentUserInformation userInformation,
-  }) {
-    return _paymentProvider.confirmPayment(
+  }) async {
+    _paymentStatus = await _paymentProvider.confirmPayment(
       paymentUserInformation: userInformation,
       paymentModel: _currentPaymentIntent!,
     );
+
+    return _paymentStatus!;
   }
 
   @override
@@ -232,7 +238,16 @@ class TurboBalanceRetriever {
   });
 
   Future<BigInt> getBalance(Wallet wallet) async {
-    return paymentService.getBalance(wallet: wallet);
+    try {
+      final balance = await paymentService.getBalance(wallet: wallet);
+      return balance;
+    } catch (e) {
+      if (e is TurboUserNotFound) {
+        logger.e('Error getting balance: $e');
+        return BigInt.zero;
+      }
+      rethrow;
+    }
   }
 }
 

@@ -6,8 +6,7 @@ import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
-import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
-import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -16,11 +15,9 @@ import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rxdart/rxdart.dart';
 
 import 'enums/conflicting_files_actions.dart';
 
@@ -370,20 +367,19 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
+  bool hasEmittedError = false;
+
   Future<void> startUpload({
     required UploadPlan uploadPlan,
   }) async {
-    bool hasEmittedError = false;
-
-    debugPrint('Starting upload...');
-
-    final profile = _profileCubit.state as ProfileLoggedIn;
+    logger.i('Starting upload...');
 
     //Check if the same wallet it being used before starting upload.
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;
     }
+
     emit(
       UploadSigningInProgress(
         uploadPlan: uploadPlan,
@@ -391,116 +387,25 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    logger.i('Wallet verified');
+    logger.i(
+      'Wallet verified\n'
+      'Starting bundle preparation....\n'
+      'Number of bundles: ${uploadPlan.bundleUploadHandles.length}'
+      'Number of V2 files: ${uploadPlan.fileV2UploadHandles.length}',
+    );
 
-    logger.i('Starting bundle preparation....');
-    logger.i('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
+    final uploader = _getUploader();
 
-    // Upload Bundles
-    for (var bundleHandle in uploadPlan.bundleUploadHandles) {
-      try {
-        logger.i('Starting bundle with ${bundleHandle.size}');
+    await for (final progress in uploader.uploadFromHandles(
+      bundleHandles: uploadPlan.bundleUploadHandles,
+      fileV2Handles: uploadPlan.fileV2UploadHandles.values.toList(),
+    )) {
+      logger.i('Upload progress: $progress');
 
-        logger.i(
-            'Preparing bundle.. using turbo: ${_uploadMethod == UploadMethod.turbo}');
-
-        await bundleHandle.prepareAndSignBundleTransaction(
-          arweaveService: _arweave,
-          turboUploadService: _turbo,
-          pstService: _pst,
-          wallet: _auth.currentUser!.wallet,
-          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
-          useTurbo: _uploadMethod == UploadMethod.turbo,
-        );
-
-        logger.i('Bundle preparation finished');
-      } catch (error) {
-        logger.e(error.toString());
-        logger.e(error);
-      }
-
-      logger.i('Starting bundle uploads');
-
-      final turboUploader = TurboUploader(_turbo, _auth.currentUser!.wallet);
-      final arweaveUploader = ArweaveBunldeUploader(_arweave);
-
-      logger.i('Uploaders created: $turboUploader, $arweaveUploader');
-
-      final uploader = BDIUploader(turboUploader, arweaveUploader,
-          useTurbo: _uploadMethod == UploadMethod.turbo);
-
-      logger.i('Bundle Uploader created: $uploader');
-
-      await for (var _ in uploader
-          .upload(bundleHandle)
-          .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) {
-        logger.e('Error uploading bundle');
-        bundleHandle.hasError = true;
-        if (!hasEmittedError) {
-          addError(_);
-          hasEmittedError = true;
-        }
-      })) {
-        emit(UploadInProgress(uploadPlan: uploadPlan));
-      }
-
-      logger.i('Bundle upload finished');
-
-      // await for (final _ in bundleHandle
-      //     .upload(_arweave, _turbo)
-      //     .debounceTime(const Duration(milliseconds: 500))
-      //     .handleError((_) {
-      //   logger.e('Error uploading bundle');
-      //   bundleHandle.hasError = true;
-      //   if (!hasEmittedError) {
-      //     addError(_);
-      //     hasEmittedError = true;
-      //   }
-      // })) {
-      //   emit(UploadInProgress(uploadPlan: uploadPlan));
-      // }
-
-      await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
-
-      logger.i('Disposing bundle');
-
-      bundleHandle.dispose(
-        useTurbo: _uploadMethod == UploadMethod.turbo,
-      );
+      emit(UploadInProgress(uploadPlan: uploadPlan));
     }
 
-    // Upload V2 Files
-    for (final uploadHandle in uploadPlan.fileV2UploadHandles.values) {
-      try {
-        await uploadHandle.prepareAndSignTransactions(
-          arweaveService: _arweave,
-          wallet: profile.wallet,
-          pstService: _pst,
-        );
-      } catch (error) {
-        addError(error);
-      }
-
-      final uploader = FileV2Uploader(_arweave);
-
-      await for (final _ in uploader
-          .upload(uploadHandle)
-          .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) {
-        uploadHandle.hasError = true;
-        if (!hasEmittedError) {
-          addError(_);
-          hasEmittedError = true;
-        }
-      })) {
-        emit(UploadInProgress(uploadPlan: uploadPlan));
-      }
-
-      await uploadHandle.writeFileEntityToDatabase(driveDao: _driveDao);
-
-      uploadHandle.dispose();
-    }
+    logger.i('Upload complete');
 
     unawaited(_profileCubit.refreshBalance());
 
@@ -560,94 +465,70 @@ class UploadCubit extends Cubit<UploadState> {
     'Failed to upload file: $error $stackTrace'.logError();
     super.onError(error, stackTrace);
   }
-}
 
-class BDIUploader {
-  final TurboUploader _turbo;
-  final ArweaveBunldeUploader _arweave;
-  final bool _useTurbo;
+  ArDriveUploader _getUploader() {
+    final wallet = _auth.currentUser!.wallet;
 
-  late Uploader _uploader;
+    final turboUploader = TurboUploader(_turbo, wallet);
+    final arweaveUploader = ArweaveBunldeUploader(_arweave);
 
-  BDIUploader(this._turbo, this._arweave, {bool useTurbo = false})
-      : _useTurbo = useTurbo {
-    logger.i('Creating BDIUploader');
+    logger.i('Uploaders created: $turboUploader, $arweaveUploader');
 
-    if (_useTurbo) {
-      logger.i('Using Turbo Uploader');
+    final bundleUploader = BundleUploader(
+      turboUploader,
+      arweaveUploader,
+      useTurbo: _uploadMethod == UploadMethod.turbo,
+    );
 
-      _uploader = _turbo;
-    } else {
-      logger.i('Using Arweave Uploader');
+    final v2Uploader = FileV2Uploader(_arweave);
 
-      _uploader = _arweave;
-    }
-  }
+    final uploader = ArDriveUploader(
+      bundleUploader: bundleUploader,
+      fileV2Uploader: v2Uploader,
+      prepareBundle: (handle) async {
+        logger.i(
+            'Preparing bundle.. using turbo: ${_uploadMethod == UploadMethod.turbo}');
 
-  Stream<double> upload(BundleUploadHandle handle) async* {
-    yield* _uploader.upload(handle);
-  }
+        await handle.prepareAndSignBundleTransaction(
+          arweaveService: _arweave,
+          turboUploadService: _turbo,
+          pstService: _pst,
+          wallet: _auth.currentUser!.wallet,
+          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+          useTurbo: _uploadMethod == UploadMethod.turbo,
+        );
 
-  @override
-  String toString() {
-    return 'BDIUploader{_turbo: $_turbo, _arweave: $_arweave, _useTurbo: $_useTurbo}';
-  }
-}
+        logger.i('Bundle preparation finished');
+      },
+      prepareFile: (handle) async {
+        logger.i('Preparing file ${handle.file.ioFile.name}');
 
-abstract class Uploader<T extends UploadHandle> {
-  Stream<double> upload(
-    T handle,
-  );
-}
+        await handle.prepareAndSignTransactions(
+          arweaveService: _arweave,
+          wallet: wallet,
+          pstService: _pst,
+        );
+      },
+      onFinishFileUpload: (handle) async {
+        await handle.writeFileEntityToDatabase(driveDao: _driveDao);
+      },
+      onFinishBundleUpload: (handle) async {
+        await handle.writeBundleItemsToDatabase(driveDao: _driveDao);
+      },
+      onUploadBundleError: (handle, error) async {
+        if (!hasEmittedError) {
+          addError(error);
+          hasEmittedError = true;
+        }
+      },
+      onUploadFileError: (handle, error) async {
+        if (!hasEmittedError) {
+          addError(error);
+          hasEmittedError = true;
+        }
+      },
+    );
 
-class TurboUploader implements Uploader<BundleUploadHandle> {
-  final TurboUploadService _turbo;
-  final Wallet _wallet;
-
-  TurboUploader(this._turbo, this._wallet);
-
-  @override
-  Stream<double> upload(handle) async* {
-    await _turbo
-        .postDataItem(dataItem: handle.bundleDataItem, wallet: _wallet)
-        .onError((error, stackTrace) {
-      logger.e(error);
-      // return hasError = true;
-      throw Exception();
-    });
-    yield 1;
-  }
-}
-
-class ArweaveBunldeUploader implements Uploader<BundleUploadHandle> {
-  final ArweaveService _arweave;
-
-  ArweaveBunldeUploader(this._arweave);
-
-  @override
-  Stream<double> upload(handle) async* {
-    yield* _arweave.client.transactions
-        .upload(handle.bundleTx,
-            maxConcurrentUploadCount: maxConcurrentUploadCount)
-        .map((upload) {
-      // uploadProgress = upload.progress;
-      return upload.progress;
-    });
-  }
-}
-
-class FileV2Uploader implements Uploader<FileV2UploadHandle> {
-  final ArweaveService _arweave;
-
-  FileV2Uploader(this._arweave);
-
-  @override
-  Stream<double> upload(handle) async* {
-    yield* _arweave.client.transactions
-        .upload(handle.entityTx, maxConcurrentUploadCount: 1)
-        .map((upload) {
-      // uploadProgress = upload.progress;
-      return upload.progress;
-    });
+    return uploader;
   }
 }

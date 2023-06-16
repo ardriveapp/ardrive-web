@@ -13,6 +13,7 @@ import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -483,25 +484,12 @@ class _UploadFormState extends State<UploadForm> {
                       style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
                   },
-                  if (!state.sufficientArBalance &&
-                      !state.isFreeThanksToTurbo) ...{
-                    const SizedBox(height: 8),
-                    Text(
-                      appLocalizationsOf(context).insufficientARForUpload,
-                      style: ArDriveTypography.body.buttonNormalRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeErrorDefault,
-                      ),
-                    ),
-                  },
                   if (!state.isFreeThanksToTurbo) ...[
                     Text(
                       'Payment method:',
                       style: ArDriveTypography.body.buttonLargeBold(),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 16,
                     ),
                     ArDriveRadioButtonGroup(
@@ -561,9 +549,79 @@ class _UploadFormState extends State<UploadForm> {
                               ),
                             ),
                           ),
+                          if (index == 0 &&
+                              !state.sufficientArBalance &&
+                              !state.isFreeThanksToTurbo) ...{
+                            const SizedBox(height: 8),
+                            Text(
+                              appLocalizationsOf(context)
+                                  .insufficientARForUpload,
+                              style: ArDriveTypography.body.captionBold(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeErrorDefault,
+                              ),
+                            ),
+                            // ignore: equal_elements_in_set
+                            const SizedBox(height: 8)
+                          },
                         ],
                       ),
                     ),
+                    const SizedBox(
+                      height: 8,
+                    ),
+                    if (!state.sufficentCreditsBalance)
+                      GestureDetector(
+                        onTap: () {
+                          showTurboModal(context, onSuccess: () {
+                            context
+                                .read<UploadCubit>()
+                                .startUploadPreparation();
+                          });
+                        },
+                        child: ArDriveClickArea(
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text:
+                                      'Insufficient balance to pay for this upload. You can either',
+                                  style: ArDriveTypography.body.captionBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeErrorDefault,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' add Turbo credits to your profile',
+                                  style: ArDriveTypography.body
+                                      .captionBold(
+                                        color: ArDriveTheme.of(context)
+                                            .themeData
+                                            .colors
+                                            .themeErrorDefault,
+                                      )
+                                      .copyWith(
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                ),
+                                TextSpan(
+                                  text: ' or use AR',
+                                  style: ArDriveTypography.body.captionBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeErrorDefault,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
                   ]
                 ],
               ),
@@ -573,13 +631,14 @@ class _UploadFormState extends State<UploadForm> {
                   title: appLocalizationsOf(context).cancelEmphasized,
                 ),
                 ModalAction(
-                  action: state.sufficientArBalance || state.isFreeThanksToTurbo
-                      ? () {
-                          context.read<UploadCubit>().startUpload(
-                                uploadPlan: state.uploadPlan,
-                              );
-                        }
-                      : () {},
+                  isEnable: state.sufficientArBalance ||
+                      state.sufficentCreditsBalance ||
+                      state.isFreeThanksToTurbo,
+                  action: () {
+                    context.read<UploadCubit>().startUpload(
+                          uploadPlan: state.uploadPlan,
+                        );
+                  },
                   title: appLocalizationsOf(context).uploadEmphasized,
                 ),
               ],

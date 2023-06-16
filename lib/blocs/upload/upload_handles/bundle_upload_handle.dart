@@ -98,6 +98,7 @@ class BundleUploadHandle implements UploadHandle {
     }
   }
 
+  // TODO: this should not be done here. Implement a new class that handles
   Future<void> writeBundleItemsToDatabase({
     required DriveDao driveDao,
   }) async {
