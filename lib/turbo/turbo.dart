@@ -229,12 +229,6 @@ class TurboCostCalculator {
 
     return _costOfOneGb!;
   }
-
-  Future<BigInt> getCostForBytes({
-    required int byteSize,
-  }) async {
-    return paymentService.getPriceForBytes(byteSize: byteSize);
-  }
 }
 
 class TurboBalanceRetriever {
