@@ -40,40 +40,42 @@ class SnapshotItemToBeCreated {
   }) : _jsonMetadataOfTxId = jsonMetadataOfTxId;
 
   Stream<Uint8List> getSnapshotData() async* {
-    StreamController<TxSnapshot> controller = StreamController<TxSnapshot>();
-    List<Completer> futures = []; 
+    List<Future<TxSnapshot>> tasks = [];
 
-    source.listen((node) {
-      var completer = Completer();
-      futures.add(completer);
+    // Convert the source Stream into a List to get all elements at once
+    List nodes = await source.toList();
 
-      (() async {
-        _dataStart = _dataStart == null || node.block!.height < _dataStart!
-            ? node.block!.height
-            : _dataStart;
-        _dataEnd = _dataEnd == null || node.block!.height > _dataEnd!
-            ? node.block!.height
-            : _dataEnd;
+    // Process each node concurrently
+    for (var node in nodes) {
+      tasks.add(_processNode(node));
+    }
 
-        if (_isSnapshotTx(node)) {
-          controller.add(TxSnapshot(gqlNode: node, jsonMetadata: null));
-        } else {
-          var metadata = await _jsonMetadataOfTxId(node.id);
-          controller.add(TxSnapshot(gqlNode: node, jsonMetadata: metadata));
-        }
+    // Wait for all tasks to finish in their original order
+    List<TxSnapshot> results = await Future.wait(tasks);
 
-        completer.complete();
-      })();
-    }, onDone: () async {
-      // Wait for all processing to be done before closing the StreamController
-      await Future.wait(futures.map((completer) => completer.future));
-      controller.close();
-    });
+    // Create a stream that emits each TxSnapshot in their original order
+    Stream<TxSnapshot> snapshotStream = Stream.fromIterable(results);
 
-    final snapshotDataStream =
-        controller.stream.transform<Uint8List>(txSnapshotToSnapshotData);
+    Stream<Uint8List> snapshotDataStream =
+        snapshotStream.transform(txSnapshotToSnapshotData);
 
     yield* snapshotDataStream;
+  }
+
+  Future<TxSnapshot> _processNode(node) async {
+    _dataStart = _dataStart == null || node.block!.height < _dataStart!
+        ? node.block!.height
+        : _dataStart;
+    _dataEnd = _dataEnd == null || node.block!.height > _dataEnd!
+        ? node.block!.height
+        : _dataEnd;
+
+    if (_isSnapshotTx(node)) {
+      return TxSnapshot(gqlNode: node, jsonMetadata: null);
+    } else {
+      var metadata = await _jsonMetadataOfTxId(node.id);
+      return TxSnapshot(gqlNode: node, jsonMetadata: metadata);
+    }
   }
 
   bool _isSnapshotTx(DriveHistoryTransaction node) {

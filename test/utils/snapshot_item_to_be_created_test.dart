@@ -152,9 +152,8 @@ void main() {
                 .map(utf8.decoder.convert)
                 .toList())
             .join();
-
         expect(snapshotData,
-            '{"txSnapshots":[{"gqlNode":{"id":"0","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":7,"timestamp":700},"tags":[]},"jsonMetadata":"{\\"name\\":\\"tx-0\\"}"}]},{"gqlNode":{"id":"5","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":7,"timestamp":700},"tags":[]},"jsonMetadata":"{\\"name\\":\\"tx-5\\"}"}');
+            '{"txSnapshots":[{"gqlNode":{"id":"0","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":7,"timestamp":700},"tags":[]},"jsonMetadata":"{\\"name\\":\\"tx-0\\"}"},{"gqlNode":{"id":"5","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":7,"timestamp":700},"tags":[]},"jsonMetadata":"{\\"name\\":\\"tx-5\\"}"}]}');
       });
     });
   });
