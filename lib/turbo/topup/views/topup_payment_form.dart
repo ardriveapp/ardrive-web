@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
-import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
@@ -160,15 +159,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                                   .themeFgMuted,
                             ),
                           ),
-                          TextSpan(
-                            text: ' + taxes and fees',
-                            style: ArDriveTypography.body.captionBold(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeAccentDisabled,
-                            ),
-                          ),
                         ],
                       ),
                     );
@@ -259,9 +249,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             onPressed: () {
               // TODO: check payment-form-and-checkout branch
               context.read<TurboTopupFlowBloc>().add(
-                    const TurboTopUpShowPaymentReviewView(
-                        paymentUserInformation:
-                            PaymentUserInformationFromUSA()),
+                    TurboTopUpShowPaymentReviewView(),
                   );
             },
           ),

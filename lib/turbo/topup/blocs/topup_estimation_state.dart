@@ -50,7 +50,12 @@ class EstimationLoaded extends TopupEstimationState {
       ];
 }
 
-class EstimationError extends TopupEstimationState {
+class FetchEstimationError extends TopupEstimationState {
+  @override
+  List<Object?> get props => [];
+}
+
+class EstimationLoadError extends TopupEstimationState {
   @override
   List<Object?> get props => [];
 }

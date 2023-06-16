@@ -12,7 +12,6 @@ class TurboTopupFlowBloc
     extends Bloc<TurboTopupFlowEvent, TurboTopupFlowState> {
   int _currentStep = 1;
   final Turbo turbo;
-  PaymentUserInformation? _paymentUserInformation;
 
   TurboTopupFlowBloc(
     this.turbo,
@@ -39,15 +38,10 @@ class TurboTopupFlowBloc
           ),
         );
       } else if (event is TurboTopUpShowPaymentReviewView) {
-        _paymentUserInformation = event.paymentUserInformation;
-
-        logger.d(_paymentUserInformation.toString());
-
         emit(
           TurboTopupFlowShowingPaymentReviewView(
             isMovingForward: _currentStep <= event.stepNumber,
             priceEstimate: turbo.currentPriceEstimate,
-            paymentUserInformation: _paymentUserInformation!,
           ),
         );
       } else if (event is TurboTopUpShowSuccessView) {
