@@ -239,7 +239,7 @@ class TurboBalanceRetriever {
       logger.e('Error getting balance', e, s);
 
       if (e is TurboUserNotFound) {
-        logger.e('User not found, returning 0 balance');
+        logger.w('User not found, returning 0 balance');
         return BigInt.zero;
       }
 
