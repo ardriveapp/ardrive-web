@@ -233,7 +233,18 @@ class TurboBalanceRetriever {
   });
 
   Future<BigInt> getBalance(Wallet wallet) async {
-    return paymentService.getBalance(wallet: wallet);
+    try {
+      return paymentService.getBalance(wallet: wallet);
+    } catch (e, s) {
+      logger.e('Error getting balance', e, s);
+
+      if (e is TurboUserNotFound) {
+        logger.e('User not found, returning 0 balance');
+        return BigInt.zero;
+      }
+
+      rethrow;
+    }
   }
 }
 
