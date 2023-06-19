@@ -400,9 +400,12 @@ class UploadCubit extends Cubit<UploadState> {
       bundleHandles: uploadPlan.bundleUploadHandles,
       fileV2Handles: uploadPlan.fileV2UploadHandles.values.toList(),
     )) {
-      logger.i('Upload progress: $progress');
-
-      emit(UploadInProgress(uploadPlan: uploadPlan));
+      emit(
+        UploadInProgress(
+          uploadPlan: uploadPlan,
+          progress: progress,
+        ),
+      );
     }
 
     logger.i('Upload complete');

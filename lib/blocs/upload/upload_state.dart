@@ -113,9 +113,11 @@ class UploadReady extends UploadState {
 class UploadInProgress extends UploadState {
   final UploadPlan uploadPlan;
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
+  final double progress;
 
   UploadInProgress({
     required this.uploadPlan,
+    required this.progress,
   });
 
   @override
