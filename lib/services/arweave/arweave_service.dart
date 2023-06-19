@@ -136,6 +136,7 @@ class ArweaveService {
 
     while (true) {
       try {
+        throw Exception('Exception on Snapshot Fetch for testing');
         // Get a page of 100 transactions
         final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
           SnapshotEntityHistoryQuery(
