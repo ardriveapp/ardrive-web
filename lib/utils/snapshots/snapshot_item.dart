@@ -60,7 +60,6 @@ abstract class SnapshotItem implements SegmentedGQLData {
     HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
       if (lastBlockHeight != null) Range(start: 0, end: lastBlockHeight),
     ]);
-
     await for (SnapshotEntityTransaction item in itemsStream) {
       late SnapshotItem snapshotItem;
 
@@ -95,6 +94,8 @@ abstract class SnapshotItem implements SegmentedGQLData {
     required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
   }) {
+    throw Exception('For testing fail case parsing');
+
     late Range totalRange;
     List<TransactionCommonMixin$Tag> tags = item.tags;
     String? maybeBlockHeightStart =
