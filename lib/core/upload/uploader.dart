@@ -1,7 +1,18 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/models/upload_plan.dart';
+import 'package:ardrive/blocs/upload/models/web_folder.dart';
+import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/turbo/upload_service.dart';
+import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/size_utils.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:async/async.dart';
 import 'package:tuple/tuple.dart';
@@ -70,6 +81,8 @@ class ArDriveUploader {
     }
 
     for (final fileV2Handle in fileV2Handles) {
+      logger.d('Uploading v2 file}');
+
       await uploadProgressGroup.add(
         _uploadItem(
           index: index++,
@@ -233,5 +246,220 @@ class FileV2Uploader implements Uploader<FileV2UploadHandle> {
         .map((upload) {
       return upload.progress;
     });
+  }
+}
+
+class UploadPreparer {
+  final UploadPlanUtils _uploadPlanUtils;
+
+  UploadPreparer({
+    required UploadPlanUtils uploadPlanUtils,
+  }) : _uploadPlanUtils = uploadPlanUtils;
+
+  Future<UploadPlansPreparation> prepareUpload({
+    required User user,
+    required List<UploadFile> files,
+    required FolderEntry targetFolder,
+    required Drive targetDrive,
+    required Map<String, String> conflictingFiles,
+    required Map<String, WebFolder> foldersByPath,
+  }) async {
+    final uploadPlanForAR = await _mountUploadPlan(
+      conflictingFiles: conflictingFiles,
+      files: files,
+      foldersByPath: foldersByPath,
+      method: UploadMethod.ar,
+      targetDrive: targetDrive,
+      targetFolder: targetFolder,
+      user: user,
+    );
+
+    final uploadPlanForTurbo = await _mountUploadPlan(
+      conflictingFiles: conflictingFiles,
+      files: files,
+      foldersByPath: foldersByPath,
+      method: UploadMethod.turbo,
+      targetDrive: targetDrive,
+      targetFolder: targetFolder,
+      user: user,
+    );
+
+    return UploadPlansPreparation(
+      uploadPlanForAr: uploadPlanForAR,
+      uploadPlanForTurbo: uploadPlanForTurbo,
+    );
+  }
+
+  Future<UploadPlan> _mountUploadPlan({
+    required User user,
+    required UploadMethod method,
+    required List<UploadFile> files,
+    required FolderEntry targetFolder,
+    required Drive targetDrive,
+    required Map<String, String> conflictingFiles,
+    required Map<String, WebFolder> foldersByPath,
+  }) async {
+    final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
+      targetFolder: targetFolder,
+      targetDrive: targetDrive,
+      files: files,
+      cipherKey: user.cipherKey,
+      wallet: user.wallet,
+      conflictingFiles: conflictingFiles,
+      foldersByPath: foldersByPath,
+      useTurbo: method == UploadMethod.turbo,
+    );
+
+    return uploadPlan;
+  }
+}
+
+class UploadPreparePaymentOptions {
+  final TurboBalanceRetriever _turboBalanceRetriever;
+  final UploadCostEstimateCalculatorForAR _uploadCostEstimateCalculatorForAR;
+  final TurboUploadCostCalculator _turboUploadCostCalculator;
+  final ArDriveAuth _auth;
+  final SizeUtils sizeUtils = SizeUtils();
+
+  UploadPreparePaymentOptions({
+    required TurboBalanceRetriever turboBalanceRetriever,
+    required UploadCostEstimateCalculatorForAR
+        uploadCostEstimateCalculatorForAR,
+    required ArDriveAuth auth,
+    required TurboUploadCostCalculator turboUploadCostCalculator,
+  })  : _turboBalanceRetriever = turboBalanceRetriever,
+        _uploadCostEstimateCalculatorForAR = uploadCostEstimateCalculatorForAR,
+        _auth = auth,
+        _turboUploadCostCalculator = turboUploadCostCalculator;
+
+  Future<UploadPaymentInfo> getUploadPaymentInfo({
+    required UploadPlan uploadPlanForAR,
+    required UploadPlan uploadPlanForTurbo,
+  }) async {
+    UploadMethod uploadMethod;
+
+    final turboBalance =
+        await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
+
+    if (turboBalance > BigInt.zero) {
+      uploadMethod = UploadMethod.turbo;
+    }
+
+    final bundleSizesForAr = await sizeUtils
+        .getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles);
+    final fileSizesForAR = await sizeUtils
+        .getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles);
+
+    final bundleSizesForTurbo = await sizeUtils
+        .getSizeOfAllBundles(uploadPlanForTurbo.bundleUploadHandles);
+
+    final arCostEstimate =
+        await _uploadCostEstimateCalculatorForAR.calculateCost(
+      totalSize: bundleSizesForAr + fileSizesForAR,
+    );
+
+    final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
+      totalSize: bundleSizesForTurbo,
+    );
+
+    bool isTurboUploadPossible =
+        uploadPlanForTurbo.bundleUploadHandles.isNotEmpty;
+
+    if (turboBalance >= turboCostEstimate.totalCost) {
+      uploadMethod = UploadMethod.turbo;
+    } else {
+      uploadMethod = UploadMethod.ar;
+    }
+
+    final allFileSizesAreWithinTurboThreshold =
+        uploadPlanForTurbo.bundleUploadHandles.any((file) {
+      return file.size < 1000 * 500; // 500kb
+    });
+
+    bool isFreeUploadPossibleUsingTurbo = allFileSizesAreWithinTurboThreshold;
+
+    return UploadPaymentInfo(
+      defaultPaymentMethod: uploadMethod,
+      isTurboUploadPossible: isTurboUploadPossible,
+      arCostEstimate: arCostEstimate,
+      turboCostEstimate: turboCostEstimate,
+      isFreeUploadPossibleUsingTurbo: isFreeUploadPossibleUsingTurbo,
+    );
+  }
+}
+
+class UploadPreparation {
+  final UploadPlansPreparation uploadPlansPreparation;
+  final UploadPaymentInfo uploadPaymentInfo;
+
+  UploadPreparation({
+    required this.uploadPlansPreparation,
+    required this.uploadPaymentInfo,
+  });
+}
+
+class UploadPaymentInfo {
+  final UploadMethod defaultPaymentMethod;
+  final bool isTurboUploadPossible;
+  final bool isFreeUploadPossibleUsingTurbo;
+  final UploadCostEstimate arCostEstimate;
+  final UploadCostEstimate turboCostEstimate;
+
+  UploadPaymentInfo({
+    required this.defaultPaymentMethod,
+    required this.isTurboUploadPossible,
+    required this.arCostEstimate,
+    required this.turboCostEstimate,
+    required this.isFreeUploadPossibleUsingTurbo,
+  });
+}
+
+class UploadPlansPreparation {
+  final UploadPlan uploadPlanForAr;
+  final UploadPlan uploadPlanForTurbo;
+
+  UploadPlansPreparation({
+    required this.uploadPlanForAr,
+    required this.uploadPlanForTurbo,
+  });
+}
+
+class ArDriveUploadPreparationManager {
+  final UploadPreparer _uploadPreparer;
+  final UploadPreparePaymentOptions _uploadPreparePaymentOptions;
+
+  ArDriveUploadPreparationManager({
+    required UploadPreparer uploadPreparer,
+    required UploadPreparePaymentOptions uploadPreparePaymentOptions,
+  })  : _uploadPreparer = uploadPreparer,
+        _uploadPreparePaymentOptions = uploadPreparePaymentOptions;
+
+  Future<UploadPreparation> prepareUpload({
+    required User user,
+    required List<UploadFile> files,
+    required FolderEntry targetFolder,
+    required Drive targetDrive,
+    required Map<String, String> conflictingFiles,
+    required Map<String, WebFolder> foldersByPath,
+  }) async {
+    final uploadPreparation = await _uploadPreparer.prepareUpload(
+      user: user,
+      files: files,
+      targetFolder: targetFolder,
+      targetDrive: targetDrive,
+      conflictingFiles: conflictingFiles,
+      foldersByPath: foldersByPath,
+    );
+
+    final uploadPaymentInfo =
+        await _uploadPreparePaymentOptions.getUploadPaymentInfo(
+      uploadPlanForAR: uploadPreparation.uploadPlanForAr,
+      uploadPlanForTurbo: uploadPreparation.uploadPlanForTurbo,
+    );
+
+    return UploadPreparation(
+      uploadPlansPreparation: uploadPreparation,
+      uploadPaymentInfo: uploadPaymentInfo,
+    );
   }
 }
