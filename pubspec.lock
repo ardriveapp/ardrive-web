@@ -86,9 +86,11 @@ packages:
   ardrive_ui:
     dependency: "direct main"
     description:
-      path: "../ardrive_ui"
-      relative: true
-    source: path
+      path: "."
+      ref: PE-3992-upload-with-credits
+      resolved-ref: "167f995b4062da2f8d96e846cb3a1d48891ecf01"
+      url: "https://github.com/ar-io/ardrive_ui.git"
+    source: git
     version: "1.1.0"
   args:
     dependency: transitive
