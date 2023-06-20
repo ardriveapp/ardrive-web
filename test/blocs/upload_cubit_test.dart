@@ -27,6 +27,7 @@ import 'package:cryptography/helpers.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../core/upload/uploader_test.dart';
 import '../test_utils/utils.dart';
 
 class MockArweaveService extends Mock implements ArweaveService {}
@@ -97,6 +98,7 @@ void main() {
   setUpAll(() async {
     registerFallbackValue(SecretKey([]));
     registerFallbackValue(Wallet());
+    registerFallbackValue(getFakeUser());
     registerFallbackValue(FolderEntry(
         id: '',
         dateCreated: tDefaultDate,
@@ -162,6 +164,7 @@ void main() {
     mockTurboBalanceRetriever = MockTurboBalanceRetriever();
     mockTurboUploadCostCalculator = MockTurboUploadCostCalculator();
     mockArDriveUploadPreparationManager = MockArDriveUploadPreparationManager();
+    late MockUploadPlan uploadPlan;
 
     // Setup mock drive.
     await addTestFilesToDb(
@@ -175,6 +178,21 @@ void main() {
       nestedFolderFileCount: tNestedFolderFileCount,
     );
 
+    final mockUploadCostEstimateAR = UploadCostEstimate(
+      totalCost: BigInt.from(100),
+      pstFee: BigInt.from(10),
+      totalSize: 200,
+      usdUploadCost: 25,
+    );
+
+    /// total cost 400
+    final mockUploadCostEstimateTurbo = UploadCostEstimate(
+      totalCost: BigInt.from(400),
+      pstFee: BigInt.from(40),
+      totalSize: 1000,
+      usdUploadCost: 100,
+    );
+
     // mock limit for UploadFileChecker
     when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
         files: any(named: 'files'))).thenAnswer((invocation) async => false);
@@ -182,6 +200,29 @@ void main() {
     when(() => mockArweave.getArUsdConversionRateOrNull()).thenAnswer(
       (_) => Future.value(stubArToUsdFactor),
     );
+    uploadPlan = MockUploadPlan();
+
+    when(() => mockArDriveUploadPreparationManager.prepareUpload(
+          user: any(named: 'user'),
+          files: any(named: 'files'),
+          targetFolder: any(named: 'targetFolder'),
+          targetDrive: any(named: 'targetDrive'),
+          conflictingFiles: any(named: 'conflictingFiles'),
+          foldersByPath: any(named: 'foldersByPath'),
+        )).thenAnswer((invocation) => Future.value(UploadPreparation(
+          uploadPlansPreparation: UploadPlansPreparation(
+            uploadPlanForAr: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          ),
+          uploadPaymentInfo: UploadPaymentInfo(
+            defaultPaymentMethod: UploadMethod.ar,
+            isTurboUploadPossible: false,
+            arCostEstimate: mockUploadCostEstimateAR,
+            turboCostEstimate: mockUploadCostEstimateTurbo,
+            isFreeUploadPossibleUsingTurbo: false,
+            totalSize: 100,
+          ),
+        )));
   });
 
   final costEstimate = UploadCostEstimate(
@@ -302,19 +343,20 @@ void main() {
             ]);
 
     blocTest<UploadCubit, UploadState>(
-        'should not found any conflicting file when there isnt any conflicting file to upload',
-        build: () {
-          return getUploadCubitInstanceWith(tNoConflictingFiles);
-        },
-        act: (cubit) async {
-          await cubit.startUploadPreparation();
-          await cubit.checkConflictingFiles();
-        },
-        expect: () => <dynamic>[
-              const TypeMatcher<UploadPreparationInitialized>(),
-              const TypeMatcher<UploadPreparationInProgress>(),
-              const TypeMatcher<UploadReady>()
-            ]);
+      'should not found any conflicting file when there isnt any conflicting file to upload',
+      build: () {
+        return getUploadCubitInstanceWith(tNoConflictingFiles);
+      },
+      act: (cubit) async {
+        await cubit.startUploadPreparation();
+        await cubit.checkConflictingFiles();
+      },
+      expect: () => <dynamic>[
+        const TypeMatcher<UploadPreparationInitialized>(),
+        const TypeMatcher<UploadPreparationInProgress>(),
+        const TypeMatcher<UploadReady>()
+      ],
+    );
   });
 
   group(
@@ -455,7 +497,7 @@ void main() {
             fileDataItemUploadHandles: {},
             folderDataItemUploadHandles: {},
             turboUploadService: DontUseUploadService(),
-      ),
+          ),
         ),
       );
       when(() => mockProfileCubit!.isCurrentProfileArConnect())

@@ -250,6 +250,14 @@ void main() {
       test(
           'getUploadPaymentInfo assigns UploadMethod.turbo when turbo balance is enough',
           () async {
+        final mockFile = MockBundleUploadHandle();
+        when(() => mockFile.size).thenReturn(501);
+        // limit of 500
+        when(() => mockFile.computeBundleSize())
+            .thenAnswer((invocation) => Future.value(501));
+
+        when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+
         final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
           uploadPlanForAR: uploadPlan,
           uploadPlanForTurbo: uploadPlan,
@@ -257,6 +265,7 @@ void main() {
 
         expect(result.defaultPaymentMethod, equals(UploadMethod.turbo));
         expect(result.isTurboUploadPossible, isTrue);
+        expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
       });
       test(
           'getUploadPaymentInfo assigns UploadMethod.ar when turbo balance is not enough',

@@ -26,6 +26,13 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
   });
 
+  final configStringDev = json.encode(AppConfig(
+    allowedDataItemSizeForTurbo: 100,
+    stripePublishableKey: 'stripeKey',
+    defaultArweaveGatewayUrl: 'devGatewayUrl',
+    enableQuickSyncAuthoring: false,
+  )..toJson());
+
   group('fetchConfig', () {
     test('returns the production config when flavor is production', () async {
       when(() => localStore.getString('arweaveGatewayUrl'))
@@ -43,8 +50,7 @@ void main() {
     });
 
     test('returns the dev config when flavor is dev', () async {
-      when(() => localStore.getString('config')).thenReturn(
-          '{"defaultArweaveGatewayUrl": "devGatewayUrl", "enableQuickSyncAuthoring": false, "stripePublishableKey": "stripeKey"}');
+      when(() => localStore.getString('config')).thenReturn(configStringDev);
 
       final result = await configFetcher.fetchConfig(Flavor.development);
 
@@ -75,14 +81,13 @@ void main() {
 
   group('loadFromDevToolsPrefs', () {
     test('returns config from local storage if present', () async {
-      when(() => localStore.getString('config')).thenReturn(
-          '{"defaultArweaveGatewayUrl": "gatewayUrl", "enableQuickSyncAuthoring": true, "stripePublishableKey": "stripeKey"}');
+      when(() => localStore.getString('config')).thenReturn(configStringDev);
 
       final result = await configFetcher.loadFromDevToolsPrefs();
 
       expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
-      expect(result.enableQuickSyncAuthoring, equals(true));
+      expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
+      expect(result.enableQuickSyncAuthoring, equals(false));
     });
 
     test('loads config from env and saves to local storage if not present',

@@ -341,6 +341,8 @@ class UploadPaymentEvaluator {
     required UploadPlan uploadPlanForTurbo,
   }) async {
     UploadMethod uploadMethod;
+    
+    int totalSize = 0;
 
     final turboBalance =
         await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
@@ -366,8 +368,10 @@ class UploadPaymentEvaluator {
         uploadPlanForTurbo.bundleUploadHandles.isNotEmpty;
 
     if (turboBalance >= turboCostEstimate.totalCost) {
+      totalSize = turboBundleSizes;
       uploadMethod = UploadMethod.turbo;
     } else {
+      totalSize = arBundleSizes + arFileSizes;
       uploadMethod = UploadMethod.ar;
     }
 
@@ -386,6 +390,7 @@ class UploadPaymentEvaluator {
       arCostEstimate: arCostEstimate,
       turboCostEstimate: turboCostEstimate,
       isFreeUploadPossibleUsingTurbo: isFreeUploadPossibleUsingTurbo,
+      totalSize: totalSize,
     );
   }
 }
@@ -406,6 +411,7 @@ class UploadPaymentInfo {
   final bool isFreeUploadPossibleUsingTurbo;
   final UploadCostEstimate arCostEstimate;
   final UploadCostEstimate turboCostEstimate;
+  final int totalSize;
 
   UploadPaymentInfo({
     required this.defaultPaymentMethod,
@@ -413,6 +419,7 @@ class UploadPaymentInfo {
     required this.arCostEstimate,
     required this.turboCostEstimate,
     required this.isFreeUploadPossibleUsingTurbo,
+    required this.totalSize,
   });
 }
 

@@ -324,23 +324,23 @@ class UploadCubit extends Cubit<UploadState> {
 
       int uploadSize = 0;
 
-      if (_uploadMethod == UploadMethod.ar) {
-        uploadSize = uploadPlansPreparation.uploadPlanForAr.bundleUploadHandles
-                .fold(0, (a, item) => item.size + a) +
-            uploadPlansPreparation.uploadPlanForAr.fileV2UploadHandles.values
-                .fold(0, (a, item) => item.size + a);
-      } else {
-        uploadSize = uploadPlansPreparation
-            .uploadPlanForTurbo.bundleUploadHandles
-            .fold(0, (a, item) => item.size + a);
-      }
+      // if (_uploadMethod == UploadMethod.ar) {
+      //   uploadSize = uploadPlansPreparation.uploadPlanForAr.bundleUploadHandles
+      //           .fold(0, (a, item) => item.size + a) +
+      //       uploadPlansPreparation.uploadPlanForAr.fileV2UploadHandles.values
+      //           .fold(0, (a, item) => item.size + a);
+      // } else {
+      //   uploadSize = uploadPlansPreparation
+      //       .uploadPlanForTurbo.bundleUploadHandles
+      //       .fold(0, (a, item) => item.size + a);
+      // }
 
       emit(
         UploadReady(
           isTurboUploadPossible: paymentInfo.isTurboUploadPossible,
           isZeroBalance: turboBalance == BigInt.zero,
           turboCredits: literalBalance,
-          uploadSize: uploadSize,
+          uploadSize: paymentInfo.totalSize,
           costEstimateAr: paymentInfo.arCostEstimate,
           costEstimateTurbo: paymentInfo.turboCostEstimate,
           credits: literalBalance,
