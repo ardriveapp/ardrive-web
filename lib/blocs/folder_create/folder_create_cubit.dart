@@ -80,7 +80,10 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
             key: driveKey,
           );
 
-          // await _turboUploadService.postDataItem(dataItem: folderDataItem);
+          await _turboUploadService.postDataItem(
+            dataItem: folderDataItem,
+            wallet: profile.wallet,
+          );
           folderEntity.txId = folderDataItem.id;
         } else {
           final folderTx = await _arweave.prepareEntityTx(

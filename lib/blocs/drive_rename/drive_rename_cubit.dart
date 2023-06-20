@@ -66,7 +66,10 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
             profile.wallet,
             key: driveKey,
           );
-          // await _turboUploadService.postDataItem(dataItem: driveDataItem);
+          await _turboUploadService.postDataItem(
+            dataItem: driveDataItem,
+            wallet: profile.wallet,
+          );
           driveEntity.txId = driveDataItem.id;
         } else {
           final driveTx = await _arweave.prepareEntityTx(

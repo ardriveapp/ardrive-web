@@ -253,7 +253,10 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     if (_turboUploadService.useTurboUpload) {
       for (var dataItem in moveTxDataItems) {
-        // await _turboUploadService.postDataItem(dataItem: dataItem);
+        await _turboUploadService.postDataItem(
+          dataItem: dataItem,
+          wallet: profile.wallet,
+        );
       }
     } else {
       final moveTx = await _arweave.prepareDataBundleTx(

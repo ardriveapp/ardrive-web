@@ -103,7 +103,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
           ),
           profile.wallet,
         );
-        // await _turboUploadService.postDataItem(dataItem: createTx as DataItem);
+        await _turboUploadService.postDataItem(
+          dataItem: createTx as DataItem,
+          wallet: profile.wallet,
+        );
       } else {
         createTx = await _arweave.prepareDataBundleTx(
           await DataBundle.fromDataItems(
