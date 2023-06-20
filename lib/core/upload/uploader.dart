@@ -61,10 +61,7 @@ class ArDriveUploader {
         itemName: 'bundle item',
       )) {
         uploadedSize += size;
-        yield uploadedSize / totalSize;
-
         logger.d('Progress: $size');
-
         // Yield the total progress
         yield uploadedSize / totalSize;
       }
@@ -81,10 +78,7 @@ class ArDriveUploader {
         itemName: fileV2Handle.entity.name ?? 'file',
       )) {
         uploadedSize += size;
-        yield uploadedSize / totalSize;
-
         logger.d('Progress: $size');
-
         // Yield the total progress
         yield uploadedSize / totalSize;
       }
@@ -116,15 +110,14 @@ class ArDriveUploader {
 
       if (hasError) {
         logger.d('Error in $itemName upload, breaking upload for $itemHandle');
-
         logger.i('Disposing $itemName');
+
         dispose(itemHandle);
 
         throw Exception();
       }
 
       logger.i('Finished uploading $itemName');
-
       logger.i('Disposing $itemName');
       dispose(itemHandle);
 
@@ -155,7 +148,7 @@ class ArDriveUploader {
 
 class BundleUploader extends Uploader<BundleUploadHandle> {
   final TurboUploader _turbo;
-  final ArweaveBunldeUploader _arweave;
+  final ArweaveBundleUploader _arweave;
   final bool _useTurbo;
 
   late Uploader _uploader;
@@ -218,10 +211,10 @@ class TurboUploader implements Uploader<BundleUploadHandle> {
   }
 }
 
-class ArweaveBunldeUploader implements Uploader<BundleUploadHandle> {
+class ArweaveBundleUploader implements Uploader<BundleUploadHandle> {
   final ArweaveService _arweave;
 
-  ArweaveBunldeUploader(this._arweave);
+  ArweaveBundleUploader(this._arweave);
 
   @override
   Stream<double> upload(handle) async* {
