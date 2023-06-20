@@ -1,14 +1,23 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/services/turbo/upload_service.dart';
+import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/types/winston.dart';
+import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -18,6 +27,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/utils.dart';
+
+class MockArweaveService extends Mock implements ArweaveService {}
+
+class MockPstService extends Mock implements PstService {}
+
+class MockUploadPlanUtils extends Mock implements UploadPlanUtils {}
+
+class MockUploadFileChecker extends Mock implements UploadFileChecker {}
+
+class MockTurboUploadService extends Mock implements TurboUploadService {}
+
+class MockArDriveAuth extends Mock implements ArDriveAuth {}
+
+class MockUploadCostEstimateCalculatorForAR extends Mock
+    implements UploadCostEstimateCalculatorForAR {}
+
+class MockTurboBalanceRetriever extends Mock implements TurboBalanceRetriever {}
+
+class MockTurboUploadCostCalculator extends Mock
+    implements TurboUploadCostCalculator {}
 
 // TODO(thiagocarvalhodev): Test the case of remove files before download when pass ConflictingFileActions.SKIP.
 // TODO: Test startUpload
@@ -29,6 +58,11 @@ void main() {
   late MockUploadPlanUtils mockUploadPlanUtils;
   MockProfileCubit? mockProfileCubit;
   late MockUploadFileChecker mockUploadFileChecker;
+  late MockArDriveAuth mockArDriveAuth;
+  late MockUploadCostEstimateCalculatorForAR
+      mockUploadCostEstimateCalculatorForAR;
+  late MockTurboBalanceRetriever mockTurboBalanceRetriever;
+  late MockTurboUploadCostCalculator mockTurboUploadCostCalculator;
 
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
@@ -117,6 +151,11 @@ void main() {
     mockProfileCubit = MockProfileCubit();
     mockUploadPlanUtils = MockUploadPlanUtils();
     mockUploadFileChecker = MockUploadFileChecker();
+    mockArDriveAuth = MockArDriveAuth();
+    mockUploadCostEstimateCalculatorForAR =
+        MockUploadCostEstimateCalculatorForAR();
+    mockTurboBalanceRetriever = MockTurboBalanceRetriever();
+    mockTurboUploadCostCalculator = MockTurboUploadCostCalculator();
 
     // Setup mock drive.
     await addTestFilesToDb(
@@ -139,6 +178,12 @@ void main() {
     );
   });
 
+  final costEstimate = UploadCostEstimate(
+      pstFee: BigInt.one,
+      totalCost: BigInt.one,
+      totalSize: 100,
+      usdUploadCost: 100);
+
   UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
     return UploadCubit(
         uploadFileChecker: mockUploadFileChecker,
@@ -149,7 +194,11 @@ void main() {
         profileCubit: mockProfileCubit!,
         driveDao: mockDriveDao,
         arweave: mockArweave,
+        arCostCalculator: mockUploadCostEstimateCalculatorForAR,
         turbo: DontUseUploadService(),
+        auth: mockArDriveAuth,
+        turboBalanceRetriever: mockTurboBalanceRetriever,
+        turboUploadCostCalculator: mockTurboUploadCostCalculator,
         pst: mockPst);
   }
 
@@ -188,6 +237,25 @@ void main() {
           .thenAnswer((i) => Future.value(false));
       when(() => mockPst.getPSTFee(BigInt.zero))
           .thenAnswer((invocation) => Future.value(Winston(BigInt.zero)));
+      when(() => mockUploadCostEstimateCalculatorForAR.calculateCost(
+              totalSize: any(named: 'totalSize')))
+          .thenAnswer((invocation) => Future.value(costEstimate));
+
+      when(() => mockTurboUploadCostCalculator.calculateCost(
+              totalSize: any(named: 'totalSize')))
+          .thenAnswer((invocation) => Future.value(costEstimate));
+      when(() => mockTurboBalanceRetriever.getBalance(any()))
+          .thenAnswer((invocation) => Future.value(BigInt.zero));
+      when(() => mockArDriveAuth.currentUser).thenAnswer(
+        (_) => User(
+          password: 'password',
+          wallet: getTestWallet(),
+          walletAddress: 'walletAddress',
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey([]),
+          profileType: ProfileType.json,
+        ),
+      );
 
       setDumbUploadPlan();
     });

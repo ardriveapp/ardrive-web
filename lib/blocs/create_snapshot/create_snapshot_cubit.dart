@@ -4,13 +4,13 @@ import 'dart:io' show BytesBuilder;
 
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
-import 'package:ardrive/utils/ar_cost_to_usd.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
@@ -351,10 +351,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   ) async {
     final arUploadCost = winstonToAr(totalCost);
 
-    final double? usdUploadCost = await arCostToUsdOrNull(
-      _arweave,
-      double.parse(arUploadCost),
-    );
+    final double? usdUploadCost = await ConvertArToUSD(arweave: _arweave)
+        .convertForUSD(double.parse(arUploadCost));
 
     emit(ConfirmingSnapshotCreation(
       snapshotSize: dataSize,

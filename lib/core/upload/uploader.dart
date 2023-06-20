@@ -1,10 +1,10 @@
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/entities/constants.dart';
-import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/turbo/upload_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:async/async.dart';
+import 'package:tuple/tuple.dart';
 
 class ArDriveUploader {
   final BundleUploader _bundleUploader;
@@ -44,105 +44,102 @@ class ArDriveUploader {
     List<BundleUploadHandle> bundleHandles = const [],
     List<FileV2UploadHandle> fileV2Handles = const [],
   }) async* {
-    final double totalSize = _getTotalSize(
-        bundleHandles: bundleHandles, fileV2Handles: fileV2Handles);
+    final StreamGroup<Tuple2<int, double>> uploadProgressGroup =
+        StreamGroup<Tuple2<int, double>>();
 
-    double uploadedSize = 0.0;
+    final List<double> progresses = List.filled(
+      bundleHandles.length + fileV2Handles.length,
+      0.0,
+    );
+
+    int index = 0;
 
     for (final bundleHandle in bundleHandles) {
-      await for (var size in _uploadItem(
-        itemHandle: bundleHandle,
-        prepare: _prepareBundle,
-        upload: _bundleUploader.upload,
-        onFinishUpload: _onFinishBundleUpload,
-        onUploadError: _onUploadBundleError,
-        dispose: (handle) =>
-            handle.dispose(useTurbo: _bundleUploader._useTurbo),
-        itemName: 'bundle item',
-      )) {
-        uploadedSize += size;
-        logger.d('Progress: $size');
-        // Yield the total progress
-        yield uploadedSize / totalSize;
-      }
+      await uploadProgressGroup.add(
+        _uploadItem(
+          index: index++,
+          itemHandle: bundleHandle,
+          prepare: _prepareBundle,
+          upload: _bundleUploader.upload,
+          onFinishUpload: _onFinishBundleUpload,
+          onUploadError: _onUploadBundleError,
+          dispose: (handle) =>
+              handle.dispose(useTurbo: _bundleUploader._useTurbo),
+        ),
+      );
     }
 
     for (final fileV2Handle in fileV2Handles) {
-      await for (var size in _uploadItem(
-        itemHandle: fileV2Handle,
-        prepare: _prepareFile,
-        upload: _fileV2Uploader.upload,
-        onFinishUpload: _onFinishFileUpload,
-        onUploadError: _onUploadFileError,
-        dispose: (handle) => handle.dispose(),
-        itemName: fileV2Handle.entity.name ?? 'file',
-      )) {
-        uploadedSize += size;
-        logger.d('Progress: $size');
-        // Yield the total progress
-        yield uploadedSize / totalSize;
+      await uploadProgressGroup.add(
+        _uploadItem(
+          index: index++,
+          itemHandle: fileV2Handle,
+          prepare: _prepareFile,
+          upload: _fileV2Uploader.upload,
+          onFinishUpload: _onFinishFileUpload,
+          onUploadError: _onUploadFileError,
+          dispose: (handle) => handle.dispose(),
+        ),
+      );
+    }
+
+    await for (final progress in uploadProgressGroup.stream) {
+      progresses[progress.item1] = progress.item2;
+      final totalProgress =
+          progresses.reduce((a, b) => a + b) / progresses.length;
+
+      yield progresses.reduce((a, b) => a + b) / progresses.length;
+
+      if (totalProgress == 1.0) {
+        break;
       }
     }
   }
 
-  Stream<double> _uploadItem<T>({
+  Stream<Tuple2<int, double>> _uploadItem<T>({
     required T itemHandle,
+    required int index,
     required Future<void> Function(T handle) prepare,
     required Stream<double> Function(T handle) upload,
     required Future<void> Function(T handle) onFinishUpload,
     required Future<void> Function(T handle, Object error) onUploadError,
     required void Function(T handle) dispose,
-    required String itemName,
   }) async* {
     try {
-      logger.i('Preparing $itemName');
+      final itemString = itemHandle.toString();
+
+      logger.i('Preparing $itemString');
 
       await prepare(itemHandle);
 
       bool hasError = false;
 
       await for (var progress in upload(itemHandle).handleError((e, s) {
-        logger.e('Handling error on ArDriveUploader with $itemName', e, s);
+        logger.e('Handling error on ArDriveUploader with $itemString', e, s);
         hasError = true;
-      }).debounceTime(const Duration(milliseconds: 500))) {
-        yield progress;
+      })) {
+        yield Tuple2(index, progress);
       }
 
       if (hasError) {
-        logger.d('Error in $itemName upload, breaking upload for $itemHandle');
-        logger.i('Disposing $itemName');
+        logger.d(
+            'Error in ${itemString.toString()} upload, breaking upload for $itemString');
+        logger.i('Disposing ${itemString.toString()}');
 
         dispose(itemHandle);
 
         throw Exception();
       }
 
-      logger.i('Finished uploading $itemName');
-      logger.i('Disposing $itemName');
+      logger.i('Finished uploading $itemString');
+      logger.i('Disposing $itemString');
       dispose(itemHandle);
 
       await onFinishUpload(itemHandle);
     } catch (e, stacktrace) {
-      logger.e('Error in $itemName upload', e, stacktrace);
+      logger.e('Error in ${itemHandle.toString()} upload', e, stacktrace);
       await onUploadError(itemHandle, e);
     }
-  }
-
-  double _getTotalSize({
-    List<BundleUploadHandle> bundleHandles = const [],
-    List<FileV2UploadHandle> fileV2Handles = const [],
-  }) {
-    double totalSize = 0.0;
-
-    for (final bundleHandle in bundleHandles) {
-      totalSize += bundleHandle.size;
-    }
-
-    for (final fileV2Handle in fileV2Handles) {
-      totalSize += fileV2Handle.size;
-    }
-
-    return totalSize;
   }
 }
 
@@ -196,48 +193,45 @@ class TurboUploader implements Uploader<BundleUploadHandle> {
 
   @override
   Stream<double> upload(handle) async* {
-    try {
-      await _turbo
-          .postDataItem(dataItem: handle.bundleDataItem, wallet: _wallet)
-          .onError((error, stackTrace) {
-        logger.e(error);
-        throw Exception();
-      });
-      yield handle.size.toDouble();
-    } catch (e, stacktrace) {
-      logger.e('Error in turbo upload', e, stacktrace);
+    await _turbo
+        .postDataItem(dataItem: handle.bundleDataItem, wallet: _wallet)
+        .onError((error, stackTrace) {
+      logger.e(error);
       throw Exception();
-    }
+    });
+    handle.setUploadProgress(1);
+    yield 1;
   }
 }
 
 class ArweaveBundleUploader implements Uploader<BundleUploadHandle> {
-  final ArweaveService _arweave;
+  final Arweave _arweave;
 
   ArweaveBundleUploader(this._arweave);
 
   @override
   Stream<double> upload(handle) async* {
-    yield* _arweave.client.transactions
+    yield* _arweave.transactions
         .upload(handle.bundleTx,
             maxConcurrentUploadCount: maxConcurrentUploadCount)
         .map((upload) {
+      handle.setUploadProgress(upload.progress);
       return upload.progress;
     });
   }
 }
 
 class FileV2Uploader implements Uploader<FileV2UploadHandle> {
-  final ArweaveService _arweave;
+  final Arweave _arweave;
 
   FileV2Uploader(this._arweave);
 
   @override
   Stream<double> upload(handle) async* {
-    yield* _arweave.client.transactions
+    yield* _arweave.transactions
         .upload(handle.entityTx, maxConcurrentUploadCount: 1)
         .map((upload) {
-      return upload.progress * handle.size;
+      return upload.progress;
     });
   }
 }

@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -13,6 +13,7 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/size_utils.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:equatable/equatable.dart';
@@ -302,17 +303,23 @@ class UploadCubit extends Cubit<UploadState> {
       wallet: profile.wallet,
       conflictingFiles: conflictingFiles,
       foldersByPath: foldersByPath,
-      // useTurbo: _uploadMethod == UploadMethod.turbo,
     );
 
     try {
+      final sizeUtils = SizeUtils();
+
+      final bundleSizes =
+          await sizeUtils.getSizeOfAllBundles(uploadPlan.bundleUploadHandles);
+
+      final fileSizes =
+          await sizeUtils.getSizeOfAllV2Files(uploadPlan.fileV2UploadHandles);
+
       final arCostEstimate = await _arCostCalculator.calculateCost(
-          fileV2UploadHandles: uploadPlan.fileV2UploadHandles,
-          bundleUploadHandles: uploadPlan.bundleUploadHandles);
+        totalSize: bundleSizes + fileSizes,
+      );
 
       final turboCostEstimate = await _turboCostCalculator.calculateCost(
-        fileV2UploadHandles: uploadPlan.fileV2UploadHandles,
-        bundleUploadHandles: uploadPlan.bundleUploadHandles,
+        totalSize: bundleSizes + fileSizes,
       );
 
       if (await _profileCubit.checkIfWalletMismatch()) {
@@ -474,7 +481,7 @@ class UploadCubit extends Cubit<UploadState> {
     final wallet = _auth.currentUser!.wallet;
 
     final turboUploader = TurboUploader(_turbo, wallet);
-    final arweaveUploader = ArweaveBunldeUploader(_arweave);
+    final arweaveUploader = ArweaveBundleUploader(_arweave.client);
 
     logger.i('Uploaders created: $turboUploader, $arweaveUploader');
 
@@ -484,7 +491,7 @@ class UploadCubit extends Cubit<UploadState> {
       useTurbo: _uploadMethod == UploadMethod.turbo,
     );
 
-    final v2Uploader = FileV2Uploader(_arweave);
+    final v2Uploader = FileV2Uploader(_arweave.client);
 
     final uploader = ArDriveUploader(
       bundleUploader: bundleUploader,

@@ -2,11 +2,11 @@ import 'dart:ui';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -120,6 +120,8 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
               arCostCalculator: UploadCostEstimateCalculatorForAR(
                 arweaveService: context.read<ArweaveService>(),
                 pstService: context.read<PstService>(),
+                arCostToUsd:
+                    ConvertArToUSD(arweave: context.read<ArweaveService>()),
               ),
               turboUploadCostCalculator: TurboUploadCostCalculator(
                 priceEstimator: TurboPriceEstimator(

@@ -47,6 +47,10 @@ class BundleUploadHandle implements UploadHandle {
   @override
   double uploadProgress = 0;
 
+  void setUploadProgress(double progress) {
+    uploadProgress = progress;
+  }
+
   Future<void> prepareAndSignBundleTransaction({
     required ArweaveService arweaveService,
     required TurboUploadService turboUploadService,
