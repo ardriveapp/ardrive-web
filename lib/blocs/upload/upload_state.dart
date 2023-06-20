@@ -78,7 +78,9 @@ class UploadReady extends UploadState {
   /// Whether or not the upload will be made public ie. without encryption.
   final bool uploadIsPublic;
 
-  final UploadPlan uploadPlan;
+  final UploadPlan uploadPlanForAR;
+  final UploadPlan? uploadPlanForTurbo;
+  final bool isTurboUploadPossible;
 
   final bool isFreeThanksToTurbo;
 
@@ -92,7 +94,7 @@ class UploadReady extends UploadState {
     required this.costEstimateAr,
     required this.sufficientArBalance,
     required this.uploadIsPublic,
-    required this.uploadPlan,
+    required this.uploadPlanForAR,
     required this.isFreeThanksToTurbo,
     required this.uploadSize,
     required this.credits,
@@ -101,13 +103,15 @@ class UploadReady extends UploadState {
     required this.turboCredits,
     this.costEstimateTurbo,
     required this.isZeroBalance,
+    this.uploadPlanForTurbo,
+    required this.isTurboUploadPossible,
   });
 
   @override
   List<Object?> get props => [
         costEstimateAr,
         sufficientArBalance,
-        uploadPlan,
+        uploadPlanForAR,
         isFreeThanksToTurbo,
       ];
 }

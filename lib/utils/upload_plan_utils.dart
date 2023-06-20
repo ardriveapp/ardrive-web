@@ -34,6 +34,7 @@ class UploadPlanUtils {
     required Drive targetDrive,
     required FolderEntry targetFolder,
     Map<String, WebFolder> foldersByPath = const {},
+    bool useTurbo = false,
   }) async {
     logger.i('Creating upload plan for ${files.length} files');
     logger.i('Target drive: ${targetDrive.name}');
@@ -125,7 +126,7 @@ class UploadPlanUtils {
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
       turboUploadService: turboUploadService,
-      // useTurbo: useTurbo,
+      maxBundleSize: useTurbo ? 2 : maxFilesPerBundle,
     );
   }
 
