@@ -293,12 +293,14 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       final uploadPreparation = await _arDriveUploadManager.prepareUpload(
-        user: _auth.currentUser!,
-        files: files,
-        targetFolder: _targetFolder,
-        targetDrive: _targetDrive,
-        conflictingFiles: conflictingFiles,
-        foldersByPath: foldersByPath,
+        params: UploadParams(
+          user: _auth.currentUser!,
+          files: files,
+          targetFolder: _targetFolder,
+          targetDrive: _targetDrive,
+          conflictingFiles: conflictingFiles,
+          foldersByPath: foldersByPath,
+        ),
       );
 
       _uploadMethod = uploadPreparation.uploadPaymentInfo.defaultPaymentMethod;
@@ -311,29 +313,18 @@ class UploadCubit extends Cubit<UploadState> {
         return;
       }
 
-      logger.i('Upload preparation finished\n'
-          'UploadMethod: $_uploadMethod\n'
-          'UploadPlan For AR: ${uploadPreparation.uploadPaymentInfo.arCostEstimate.toString()}\n'
-          'UploadPlan For Turbo: ${uploadPreparation.uploadPlansPreparation.uploadPlanForTurbo.toString()}\n'
-          // 'ArCostEstimate: $\n'
-          // 'TurboCostEstimate: $turboCostEstimate\n'
-          // 'TurboBalance: $turboBalance\n',
-          );
+      logger.i(
+        'Upload preparation finished\n'
+        'UploadMethod: $_uploadMethod\n'
+        'UploadPlan For AR: ${uploadPreparation.uploadPaymentInfo.arCostEstimate.toString()}\n'
+        'UploadPlan For Turbo: ${uploadPreparation.uploadPlansPreparation.uploadPlanForTurbo.toString()}\n'
+        'Turbo Balance: $turboBalance\n'
+        'AR Balance: ${_auth.currentUser!.walletBalance}\n'
+        'Is Turbo Upload Possible: ${paymentInfo.isTurboUploadPossible}\n'
+        'Is Zero Balance: ${turboBalance == BigInt.zero}\n',
+      );
 
       final literalBalance = convertCreditsToLiteralString(turboBalance);
-
-      int uploadSize = 0;
-
-      // if (_uploadMethod == UploadMethod.ar) {
-      //   uploadSize = uploadPlansPreparation.uploadPlanForAr.bundleUploadHandles
-      //           .fold(0, (a, item) => item.size + a) +
-      //       uploadPlansPreparation.uploadPlanForAr.fileV2UploadHandles.values
-      //           .fold(0, (a, item) => item.size + a);
-      // } else {
-      //   uploadSize = uploadPlansPreparation
-      //       .uploadPlanForTurbo.bundleUploadHandles
-      //       .fold(0, (a, item) => item.size + a);
-      // }
 
       emit(
         UploadReady(

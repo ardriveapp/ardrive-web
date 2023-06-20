@@ -5,10 +5,12 @@ import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/size_utils.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,6 +51,15 @@ class MockUploadPlan extends Mock implements UploadPlan {}
 class MockUploadPaymentInfo extends Mock implements UploadPaymentInfo {}
 
 class MockUploadCostEstimate extends Mock implements UploadCostEstimate {}
+
+class MockUploadPlanUtils extends Mock implements UploadPlanUtils {}
+
+class MockUploadParams extends Mock implements UploadParams {}
+
+class MockUploadPreparer extends Mock implements UploadPreparer {}
+
+class MockUploadPaymentEvaluator extends Mock
+    implements UploadPaymentEvaluator {}
 
 void main() {
   ArDriveUploader uploader;
@@ -190,7 +201,6 @@ void main() {
     late MockTurboUploadCostCalculator turboUploadCostCalculator;
     late MockArDriveAuth auth;
     late MockSizeUtils sizeUtils;
-    late MockConfigService configService;
     late MockUploadPlan uploadPlan;
 
     final mockUploadCostEstimateAR = UploadCostEstimate(
@@ -215,7 +225,6 @@ void main() {
       turboUploadCostCalculator = MockTurboUploadCostCalculator();
       auth = MockArDriveAuth();
       sizeUtils = MockSizeUtils();
-      configService = MockConfigService();
       uploadPaymentEvaluator = UploadPaymentEvaluator(
         turboBalanceRetriever: turboBalanceRetriever,
         uploadCostEstimateCalculatorForAR: uploadCostEstimateCalculatorForAR,
@@ -430,6 +439,250 @@ void main() {
       });
     });
   });
+
+  group('UploadPreparer', () {
+    late UploadPreparer uploadPreparer;
+    late UploadPlanUtils uploadPlanUtils;
+    late UploadParams uploadParams;
+
+    setUpAll(() {
+      registerFallbackValue(SecretKey([]));
+      registerFallbackValue(UploadParams(
+        user: getFakeUser(),
+        files: [],
+        targetFolder: getFakeFolder(),
+        targetDrive: getFakeDrive(),
+        conflictingFiles: {},
+        foldersByPath: {},
+      ));
+      registerFallbackValue(getFakeFolder());
+      registerFallbackValue(getFakeDrive());
+      registerFallbackValue(getFakeUser());
+      registerFallbackValue(getTestWallet());
+    });
+
+    setUp(() {
+      uploadPlanUtils = MockUploadPlanUtils();
+      uploadParams = UploadParams(
+        user: getFakeUser(),
+        files: [],
+        targetFolder: getFakeFolder(),
+        targetDrive: getFakeDrive(),
+        conflictingFiles: {},
+        foldersByPath: {},
+      );
+      uploadPreparer = UploadPreparer(uploadPlanUtils: uploadPlanUtils);
+    });
+
+    test('Should prepare AR and Turbo upload plans', () async {
+      final uploadPlan = MockUploadPlan();
+
+      when(() => uploadPlanUtils.filesToUploadPlan(
+            cipherKey: any(named: 'cipherKey'),
+            files: any(named: 'files'),
+            targetFolder: any(named: 'targetFolder'),
+            targetDrive: any(named: 'targetDrive'),
+            foldersByPath: any(named: 'foldersByPath'),
+            conflictingFiles: any(named: 'conflictingFiles'),
+            wallet: any(named: 'wallet'),
+            useTurbo: any(named: 'useTurbo'),
+          )).thenAnswer((_) async => uploadPlan);
+
+      // Act
+      final result = await uploadPreparer.prepareUpload(uploadParams);
+
+      // Assert
+      expect(result.uploadPlanForAr, uploadPlan);
+      expect(result.uploadPlanForTurbo, uploadPlan);
+      verify(() => uploadPlanUtils.filesToUploadPlan(
+                cipherKey: any(named: 'cipherKey'),
+                files: any(named: 'files'),
+                targetFolder: any(named: 'targetFolder'),
+                targetDrive: any(named: 'targetDrive'),
+                foldersByPath: any(named: 'foldersByPath'),
+                conflictingFiles: any(named: 'conflictingFiles'),
+                wallet: any(named: 'wallet'),
+                useTurbo: any(named: 'useTurbo'),
+              ))
+          .called(
+              2); // Method should be called twice, one for each upload method.
+    });
+
+    test('Should throw if preparing AR plan fails', () async {
+      when(() => uploadPlanUtils.filesToUploadPlan(
+            cipherKey: any(named: 'cipherKey'),
+            files: any(named: 'files'),
+            targetFolder: any(named: 'targetFolder'),
+            targetDrive: any(named: 'targetDrive'),
+            foldersByPath: any(named: 'foldersByPath'),
+            conflictingFiles: any(named: 'conflictingFiles'),
+            wallet: any(named: 'wallet'),
+            useTurbo: any(named: 'useTurbo'),
+          )).thenThrow(Exception());
+
+      // Assert
+      expectLater(() => uploadPreparer.prepareUpload(uploadParams),
+          throwsA(isA<Exception>()));
+    });
+
+    // test('Should throw if preparing Turbo plan fails', () async {
+    //   final uploadPlan = MockUploadPlan();
+
+    //   // Arrange
+    //   when(() => uploadPlanUtils.filesToUploadPlan(
+    //         cipherKey: any(named: 'cipherKey'),
+    //         files: any(named: 'files'),
+    //         targetFolder: any(named: 'targetFolder'),
+    //         targetDrive: any(named: 'targetDrive'),
+    //         foldersByPath: any(named: 'foldersByPath'),
+    //         conflictingFiles: any(named: 'conflictingFiles'),
+    //         wallet: any(named: 'wallet'),
+    //         useTurbo: false,
+    //       )).thenAnswer((_) async => uploadPlan);
+    //   when(() => uploadPlanUtils.filesToUploadPlan(
+    //             cipherKey: any(named: 'cipherKey'),
+    //             files: any(named: 'files'),
+    //             targetFolder: any(named: 'targetFolder'),
+    //             targetDrive: any(named: 'targetDrive'),
+    //             foldersByPath: any(named: 'foldersByPath'),
+    //             conflictingFiles: any(named: 'conflictingFiles'),
+    //             wallet: any(named: 'wallet'),
+    //             useTurbo: true,
+    //           ))
+    //       .thenThrow(Future<UploadPlan>.error(
+    //           Exception('Failed to prepare Turbo plan')));
+
+    //   // Assert
+    //   expectLater(() => uploadPreparer.prepareUpload(uploadParams),
+    //       throwsA(isA<Exception>()));
+    // });
+  });
+
+  group('ArDriveUploadPreparationManager', () {
+    final uploadPlan = MockUploadPlan();
+
+    final mockUploadCostEstimateAR = UploadCostEstimate(
+      totalCost: BigInt.from(100),
+      pstFee: BigInt.from(10),
+      totalSize: 200,
+      usdUploadCost: 25,
+    );
+
+    /// total cost 400
+    final mockUploadCostEstimateTurbo = UploadCostEstimate(
+      totalCost: BigInt.from(400),
+      pstFee: BigInt.from(40),
+      totalSize: 1000,
+      usdUploadCost: 100,
+    );
+
+    late ArDriveUploadPreparationManager uploadPreparationManager;
+    late UploadPreparer uploadPreparer;
+    late UploadPaymentEvaluator uploadPaymentEvaluator;
+    late UploadParams uploadParams;
+
+    setUpAll(() {
+      uploadPreparer = MockUploadPreparer();
+      uploadPaymentEvaluator = MockUploadPaymentEvaluator();
+      uploadParams = MockUploadParams();
+      uploadPreparationManager = ArDriveUploadPreparationManager(
+        uploadPreparer: uploadPreparer,
+        uploadPreparePaymentOptions: uploadPaymentEvaluator,
+      );
+      registerFallbackValue(MockUploadPlan());
+
+      registerFallbackValue(UploadParams(
+        user: getFakeUser(),
+        files: [],
+        targetFolder: getFakeFolder(),
+        targetDrive: getFakeDrive(),
+        conflictingFiles: {},
+        foldersByPath: {},
+      ));
+    });
+
+    group('prepareUpload', () {
+      test('Should prepare upload and compute payment info', () async {
+        // Arrange
+        final uploadPlansPreparation = UploadPlansPreparation(
+          uploadPlanForAr: uploadPlan,
+          uploadPlanForTurbo: uploadPlan,
+        );
+
+        final uploadPaymentInfo = UploadPaymentInfo(
+          defaultPaymentMethod: UploadMethod.ar,
+          isTurboUploadPossible: true,
+          arCostEstimate: mockUploadCostEstimateAR,
+          turboCostEstimate: mockUploadCostEstimateTurbo,
+          isFreeUploadPossibleUsingTurbo: true,
+          totalSize: 100,
+        );
+
+        when(() => uploadPreparer.prepareUpload(uploadParams))
+            .thenAnswer((_) async => uploadPlansPreparation);
+        when(() => uploadPaymentEvaluator.getUploadPaymentInfo(
+                uploadPlanForAR: uploadPlan, uploadPlanForTurbo: uploadPlan))
+            .thenAnswer((_) async => uploadPaymentInfo);
+
+        // Act
+        final result =
+            await uploadPreparationManager.prepareUpload(params: uploadParams);
+
+        // Assert
+        expect(result.uploadPlansPreparation, uploadPlansPreparation);
+        expect(result.uploadPaymentInfo, uploadPaymentInfo);
+        verify(() => uploadPreparer.prepareUpload(any())).called(1);
+        verify(() => uploadPaymentEvaluator.getUploadPaymentInfo(
+            uploadPlanForAR: any(named: 'uploadPlanForAR'),
+            uploadPlanForTurbo: any(named: 'uploadPlanForTurbo'))).called(1);
+      });
+
+      test('Should throw if preparing upload plans fails', () async {
+        // Arrange
+        when(() => uploadPreparer.prepareUpload(any()))
+            .thenThrow(Exception('Failed to prepare upload plans'));
+
+        // Act
+        final call =
+            uploadPreparationManager.prepareUpload(params: uploadParams);
+
+        // Assert
+        expect(() async => await call, throwsA(isA<Exception>()));
+      });
+
+      test('Should throw if upload prepartion fails', () async {
+        when(() => uploadPreparer.prepareUpload(uploadParams))
+            .thenThrow(Exception('Failed to prepare upload plans'));
+
+        final call =
+            uploadPreparationManager.prepareUpload(params: uploadParams);
+
+        // Assert
+        expect(() async => await call, throwsA(isA<Exception>()));
+      });
+
+      test('Should throw if getting upload payment info fails', () async {
+        // Arrange
+        final uploadPlansPreparation = UploadPlansPreparation(
+          uploadPlanForAr: uploadPlan,
+          uploadPlanForTurbo: uploadPlan,
+        );
+
+        when(() => uploadPreparer.prepareUpload(uploadParams))
+            .thenAnswer((_) async => uploadPlansPreparation);
+        when(() => uploadPaymentEvaluator.getUploadPaymentInfo(
+                uploadPlanForAR: uploadPlan, uploadPlanForTurbo: uploadPlan))
+            .thenThrow(Exception('Failed to get upload payment info'));
+
+        // Act
+        final call =
+            uploadPreparationManager.prepareUpload(params: uploadParams);
+
+        // Assert
+        expect(() async => await call, throwsA(isA<Exception>()));
+      });
+    });
+  });
 }
 
 AppConfig getFakeConfig() =>
@@ -442,3 +695,23 @@ User getFakeUser() => User(
     walletBalance: BigInt.one,
     cipherKey: SecretKey([]),
     profileType: ProfileType.arConnect);
+
+FolderEntry getFakeFolder() => FolderEntry(
+      id: 'id',
+      driveId: 'drive id',
+      name: 'name',
+      path: 'path',
+      dateCreated: DateTime.now(),
+      lastUpdated: DateTime.now(),
+      isGhost: false,
+    );
+
+Drive getFakeDrive() => Drive(
+      id: 'id',
+      name: 'name',
+      dateCreated: DateTime.now(),
+      lastUpdated: DateTime.now(),
+      rootFolderId: 'rootFolderId',
+      ownerAddress: 'ownerAddress',
+      privacy: 'privacy',
+    );

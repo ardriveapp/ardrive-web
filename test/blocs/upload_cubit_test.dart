@@ -118,6 +118,15 @@ void main() {
         lastUpdated: tDefaultDate,
         privacy: ''));
 
+    registerFallbackValue(UploadParams(
+      user: getFakeUser(),
+      files: [],
+      targetFolder: getFakeFolder(),
+      targetDrive: getFakeDrive(),
+      conflictingFiles: {},
+      foldersByPath: {},
+    ));
+
     tWalletAddress = await tWallet.getAddress();
 
     db = getTestDb();
@@ -203,12 +212,7 @@ void main() {
     uploadPlan = MockUploadPlan();
 
     when(() => mockArDriveUploadPreparationManager.prepareUpload(
-          user: any(named: 'user'),
-          files: any(named: 'files'),
-          targetFolder: any(named: 'targetFolder'),
-          targetDrive: any(named: 'targetDrive'),
-          conflictingFiles: any(named: 'conflictingFiles'),
-          foldersByPath: any(named: 'foldersByPath'),
+          params: any(named: 'params'),
         )).thenAnswer((invocation) => Future.value(UploadPreparation(
           uploadPlansPreparation: UploadPlansPreparation(
             uploadPlanForAr: uploadPlan,

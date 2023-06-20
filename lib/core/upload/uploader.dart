@@ -257,32 +257,15 @@ class UploadPreparer {
     required UploadPlanUtils uploadPlanUtils,
   }) : _uploadPlanUtils = uploadPlanUtils;
 
-  Future<UploadPlansPreparation> prepareUpload({
-    required User user,
-    required List<UploadFile> files,
-    required FolderEntry targetFolder,
-    required Drive targetDrive,
-    required Map<String, String> conflictingFiles,
-    required Map<String, WebFolder> foldersByPath,
-  }) async {
+  Future<UploadPlansPreparation> prepareUpload(UploadParams params) async {
     final uploadPlanForAR = await _mountUploadPlan(
-      conflictingFiles: conflictingFiles,
-      files: files,
-      foldersByPath: foldersByPath,
+      params: params,
       method: UploadMethod.ar,
-      targetDrive: targetDrive,
-      targetFolder: targetFolder,
-      user: user,
     );
 
     final uploadPlanForTurbo = await _mountUploadPlan(
-      conflictingFiles: conflictingFiles,
-      files: files,
-      foldersByPath: foldersByPath,
+      params: params,
       method: UploadMethod.turbo,
-      targetDrive: targetDrive,
-      targetFolder: targetFolder,
-      user: user,
     );
 
     return UploadPlansPreparation(
@@ -292,22 +275,17 @@ class UploadPreparer {
   }
 
   Future<UploadPlan> _mountUploadPlan({
-    required User user,
+    required UploadParams params,
     required UploadMethod method,
-    required List<UploadFile> files,
-    required FolderEntry targetFolder,
-    required Drive targetDrive,
-    required Map<String, String> conflictingFiles,
-    required Map<String, WebFolder> foldersByPath,
   }) async {
     final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
-      targetFolder: targetFolder,
-      targetDrive: targetDrive,
-      files: files,
-      cipherKey: user.cipherKey,
-      wallet: user.wallet,
-      conflictingFiles: conflictingFiles,
-      foldersByPath: foldersByPath,
+      targetFolder: params.targetFolder,
+      targetDrive: params.targetDrive,
+      files: params.files,
+      cipherKey: params.user.cipherKey,
+      wallet: params.user.wallet,
+      conflictingFiles: params.conflictingFiles,
+      foldersByPath: params.foldersByPath,
       useTurbo: method == UploadMethod.turbo,
     );
 
@@ -341,7 +319,7 @@ class UploadPaymentEvaluator {
     required UploadPlan uploadPlanForTurbo,
   }) async {
     UploadMethod uploadMethod;
-    
+
     int totalSize = 0;
 
     final turboBalance =
@@ -444,21 +422,9 @@ class ArDriveUploadPreparationManager {
         _uploadPaymentEvaluator = uploadPreparePaymentOptions;
 
   Future<UploadPreparation> prepareUpload({
-    required User user,
-    required List<UploadFile> files,
-    required FolderEntry targetFolder,
-    required Drive targetDrive,
-    required Map<String, String> conflictingFiles,
-    required Map<String, WebFolder> foldersByPath,
+    required UploadParams params,
   }) async {
-    final uploadPreparation = await _uploadPreparer.prepareUpload(
-      user: user,
-      files: files,
-      targetFolder: targetFolder,
-      targetDrive: targetDrive,
-      conflictingFiles: conflictingFiles,
-      foldersByPath: foldersByPath,
-    );
+    final uploadPreparation = await _uploadPreparer.prepareUpload(params);
 
     final uploadPaymentInfo =
         await _uploadPaymentEvaluator.getUploadPaymentInfo(
@@ -471,4 +437,22 @@ class ArDriveUploadPreparationManager {
       uploadPaymentInfo: uploadPaymentInfo,
     );
   }
+}
+
+class UploadParams {
+  final User user;
+  final List<UploadFile> files;
+  final FolderEntry targetFolder;
+  final Drive targetDrive;
+  final Map<String, String> conflictingFiles;
+  final Map<String, WebFolder> foldersByPath;
+
+  UploadParams({
+    required this.user,
+    required this.files,
+    required this.targetFolder,
+    required this.targetDrive,
+    required this.conflictingFiles,
+    required this.foldersByPath,
+  });
 }
