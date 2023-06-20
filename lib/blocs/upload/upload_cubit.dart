@@ -342,6 +342,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       emit(
         UploadReady(
+          isZeroBalance: turboBalance == BigInt.zero,
           turboCredits: literalBalance,
           uploadSize: uploadPlan.bundleUploadHandles
                   .fold(0, (a, item) => item.size + a) +

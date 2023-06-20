@@ -431,44 +431,7 @@ class _UploadFormState extends State<UploadForm> {
                                 .freeTurboTransaction,
                             style: ArDriveTypography.body.buttonNormalRegular(),
                           ),
-                        ] else ...[
-                          // TextSpan(
-                          //   text: appLocalizationsOf(context).costUpload,
-                          //   style: ArDriveTypography.body.buttonNormalRegular(
-                          //     color: ArDriveTheme.of(context)
-                          //         .themeData
-                          //         .colors
-                          //         .themeFgOnDisabled,
-                          //   ),
-                          // ),
-                          // TextSpan(
-                          //   text: ': ${state.costEstimate.arUploadCost} AR',
-                          //   style: ArDriveTypography.body
-                          //       .buttonNormalBold(
-                          //         color: ArDriveTheme.of(context)
-                          //             .themeData
-                          //             .colors
-                          //             .themeFgDefault,
-                          //       )
-                          //       .copyWith(fontWeight: FontWeight.bold),
-                          // ),
-                          // if (state.costEstimate.usdUploadCost != null)
-                          //   TextSpan(
-                          //     text: usdUploadCostToString(
-                          //       state.costEstimate.usdUploadCost!,
-                          //     ),
-                          //     style: ArDriveTypography.body
-                          //         .buttonNormalBold()
-                          //         .copyWith(fontWeight: FontWeight.bold),
-                          //   )
-                          // else
-                          //   TextSpan(
-                          //     text:
-                          //         ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
-                          //     style: ArDriveTypography.body
-                          //         .buttonNormalRegular(),
-                          //   ),
-                        ],
+                        ]
                       ],
                       style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
@@ -525,9 +488,48 @@ class _UploadFormState extends State<UploadForm> {
                           RadioButtonOptions(
                             value: state.sufficentCreditsBalance,
                             isEnabled: state.sufficentCreditsBalance,
-                            text:
-                                'Cost: ${winstonToAr(state.costEstimateTurbo!.totalCost)} Credits',
-                            textStyle: ArDriveTypography.body.buttonLargeBold(),
+                            text: '',
+                            content: GestureDetector(
+                              onTap: () {
+                                showTurboModal(context, onSuccess: () {
+                                  context
+                                      .read<UploadCubit>()
+                                      .startUploadPreparation();
+                                });
+                              },
+                              child: ArDriveClickArea(
+                                child: RichText(
+                                  text: TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: 'Use Turbo Credits',
+                                        style: ArDriveTypography.body
+                                            .buttonLargeBold(
+                                              color: ArDriveTheme.of(context)
+                                                  .themeData
+                                                  .colors
+                                                  .themeFgDefault,
+                                            )
+                                            .copyWith(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                      ),
+                                      TextSpan(
+                                        text: ' for faster uploads.',
+                                        style: ArDriveTypography.body
+                                            .buttonLargeBold(
+                                          color: ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeFgDefault,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           )
                       ],
                       builder: (index, radioButton) => Column(
@@ -569,10 +571,8 @@ class _UploadFormState extends State<UploadForm> {
                         ],
                       ),
                     ),
-                    const SizedBox(
-                      height: 8,
-                    ),
-                    if (!state.sufficentCreditsBalance)
+                    const SizedBox(height: 8),
+                    if (!state.sufficentCreditsBalance && !state.isZeroBalance)
                       GestureDetector(
                         onTap: () {
                           showTurboModal(context, onSuccess: () {

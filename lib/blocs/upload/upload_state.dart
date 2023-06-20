@@ -71,6 +71,7 @@ class UploadReady extends UploadState {
 
   /// Whether or not the user has sufficient AR to cover the `totalCost`.
   final bool sufficientArBalance;
+  final bool isZeroBalance;
 
   final bool sufficentCreditsBalance;
 
@@ -99,6 +100,7 @@ class UploadReady extends UploadState {
     required this.sufficentCreditsBalance,
     required this.turboCredits,
     this.costEstimateTurbo,
+    required this.isZeroBalance,
   });
 
   @override
