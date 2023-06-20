@@ -64,7 +64,7 @@ class _TurboBalanceState extends State<TurboBalance> {
     logger.d('Building turbo balance widget');
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,

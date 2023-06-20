@@ -107,17 +107,14 @@ class _ProfileCardState extends State<ProfileCard> {
           ),
           _buildBalanceRow(context, state),
           if (context.read<PaymentService>().useTurboPayment) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 20.0),
-              child: TurboBalance(
-                paymentService: context.read<PaymentService>(),
-                wallet: state.wallet,
-                onTapAddButton: () {
-                  setState(() {
-                    _showProfileCard = false;
-                  });
-                },
-              ),
+            TurboBalance(
+              paymentService: context.read<PaymentService>(),
+              wallet: state.wallet,
+              onTapAddButton: () {
+                setState(() {
+                  _showProfileCard = false;
+                });
+              },
             ),
           ],
           Padding(
