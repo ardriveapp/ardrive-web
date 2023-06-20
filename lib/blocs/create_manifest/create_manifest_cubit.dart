@@ -292,7 +292,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       emit(CreateManifestUploadInProgress());
       try {
         for (var dataItem in params.manifestDataItems) {
-          // await _turboUploadService.postDataItem(dataItem: dataItem);
+          await _turboUploadService.postDataItem(
+            dataItem: dataItem,
+            wallet: (_profileCubit.state as ProfileLoggedIn).wallet,
+          );
         }
 
         await params.addManifestToDatabase();
