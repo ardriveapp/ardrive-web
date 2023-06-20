@@ -583,6 +583,25 @@ void main() {
       expect(balance, equals(mockBalance));
       verify(() => mockPaymentService.getBalance(wallet: mockWallet)).called(1);
     });
+
+    test(
+        'getBalance returns 0 when PaymentService.getBalance returns TurboUserNotFound',
+        () async {
+      when(() => mockPaymentService.getBalance(wallet: mockWallet))
+          .thenThrow(TurboUserNotFound());
+
+      final balance = await balanceRetriever.getBalance(mockWallet);
+
+      expect(balance, BigInt.zero);
+      verify(() => mockPaymentService.getBalance(wallet: mockWallet)).called(1);
+    });
+
+    test('getBalance throws when PaymentService.getBalance throws', () async {
+      when(() => mockPaymentService.getBalance(wallet: mockWallet))
+          .thenThrow(Exception());
+
+      expect(() => balanceRetriever.getBalance(mockWallet), throwsException);
+    });
   });
   group('TurboSessionManager', () {
     late TurboSessionManager sessionManager;
