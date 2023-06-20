@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/turbo/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
@@ -314,20 +315,23 @@ class UploadPreparer {
   }
 }
 
-class UploadPreparePaymentOptions {
+class UploadPaymentEvaluator {
   final TurboBalanceRetriever _turboBalanceRetriever;
   final UploadCostEstimateCalculatorForAR _uploadCostEstimateCalculatorForAR;
   final TurboUploadCostCalculator _turboUploadCostCalculator;
   final ArDriveAuth _auth;
   final SizeUtils sizeUtils = SizeUtils();
+  final AppConfig _appConfig;
 
-  UploadPreparePaymentOptions({
+  UploadPaymentEvaluator({
     required TurboBalanceRetriever turboBalanceRetriever,
     required UploadCostEstimateCalculatorForAR
         uploadCostEstimateCalculatorForAR,
     required ArDriveAuth auth,
     required TurboUploadCostCalculator turboUploadCostCalculator,
+    required AppConfig appConfig,
   })  : _turboBalanceRetriever = turboBalanceRetriever,
+        _appConfig = appConfig,
         _uploadCostEstimateCalculatorForAR = uploadCostEstimateCalculatorForAR,
         _auth = auth,
         _turboUploadCostCalculator = turboUploadCostCalculator;
@@ -341,25 +345,21 @@ class UploadPreparePaymentOptions {
     final turboBalance =
         await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
 
-    if (turboBalance > BigInt.zero) {
-      uploadMethod = UploadMethod.turbo;
-    }
-
-    final bundleSizesForAr = await sizeUtils
+    final arBundleSizes = await sizeUtils
         .getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles);
-    final fileSizesForAR = await sizeUtils
+    final arFileSizes = await sizeUtils
         .getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles);
 
-    final bundleSizesForTurbo = await sizeUtils
+    final turboBundleSizes = await sizeUtils
         .getSizeOfAllBundles(uploadPlanForTurbo.bundleUploadHandles);
 
     final arCostEstimate =
         await _uploadCostEstimateCalculatorForAR.calculateCost(
-      totalSize: bundleSizesForAr + fileSizesForAR,
+      totalSize: arBundleSizes + arFileSizes,
     );
 
     final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
-      totalSize: bundleSizesForTurbo,
+      totalSize: turboBundleSizes,
     );
 
     bool isTurboUploadPossible =
@@ -371,9 +371,11 @@ class UploadPreparePaymentOptions {
       uploadMethod = UploadMethod.ar;
     }
 
+    final allowedDataItemSizeForTurbo = _appConfig.allowedDataItemSizeForTurbo;
+
     final allFileSizesAreWithinTurboThreshold =
         uploadPlanForTurbo.bundleUploadHandles.any((file) {
-      return file.size < 1000 * 500; // 500kb
+      return file.size < allowedDataItemSizeForTurbo;
     });
 
     bool isFreeUploadPossibleUsingTurbo = allFileSizesAreWithinTurboThreshold;
@@ -426,13 +428,13 @@ class UploadPlansPreparation {
 
 class ArDriveUploadPreparationManager {
   final UploadPreparer _uploadPreparer;
-  final UploadPreparePaymentOptions _uploadPreparePaymentOptions;
+  final UploadPaymentEvaluator _uploadPaymentEvaluator;
 
   ArDriveUploadPreparationManager({
     required UploadPreparer uploadPreparer,
-    required UploadPreparePaymentOptions uploadPreparePaymentOptions,
+    required UploadPaymentEvaluator uploadPreparePaymentOptions,
   })  : _uploadPreparer = uploadPreparer,
-        _uploadPreparePaymentOptions = uploadPreparePaymentOptions;
+        _uploadPaymentEvaluator = uploadPreparePaymentOptions;
 
   Future<UploadPreparation> prepareUpload({
     required User user,
@@ -452,7 +454,7 @@ class ArDriveUploadPreparationManager {
     );
 
     final uploadPaymentInfo =
-        await _uploadPreparePaymentOptions.getUploadPaymentInfo(
+        await _uploadPaymentEvaluator.getUploadPaymentInfo(
       uploadPlanForAR: uploadPreparation.uploadPlanForAr,
       uploadPlanForTurbo: uploadPreparation.uploadPlanForTurbo,
     );

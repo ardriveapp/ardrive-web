@@ -8,6 +8,7 @@ import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -48,6 +49,9 @@ class MockTurboBalanceRetriever extends Mock implements TurboBalanceRetriever {}
 class MockTurboUploadCostCalculator extends Mock
     implements TurboUploadCostCalculator {}
 
+class MockArDriveUploadPreparationManager extends Mock
+    implements ArDriveUploadPreparationManager {}
+
 // TODO(thiagocarvalhodev): Test the case of remove files before download when pass ConflictingFileActions.SKIP.
 // TODO: Test startUpload
 void main() {
@@ -63,6 +67,7 @@ void main() {
       mockUploadCostEstimateCalculatorForAR;
   late MockTurboBalanceRetriever mockTurboBalanceRetriever;
   late MockTurboUploadCostCalculator mockTurboUploadCostCalculator;
+  late MockArDriveUploadPreparationManager mockArDriveUploadPreparationManager;
 
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
@@ -156,6 +161,7 @@ void main() {
         MockUploadCostEstimateCalculatorForAR();
     mockTurboBalanceRetriever = MockTurboBalanceRetriever();
     mockTurboUploadCostCalculator = MockTurboUploadCostCalculator();
+    mockArDriveUploadPreparationManager = MockArDriveUploadPreparationManager();
 
     // Setup mock drive.
     await addTestFilesToDb(
@@ -186,19 +192,17 @@ void main() {
 
   UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
     return UploadCubit(
+        arDriveUploadManager: mockArDriveUploadPreparationManager,
         uploadFileChecker: mockUploadFileChecker,
-        uploadPlanUtils: mockUploadPlanUtils,
         driveId: tDriveId,
         parentFolderId: tRootFolderId,
         files: files,
         profileCubit: mockProfileCubit!,
         driveDao: mockDriveDao,
         arweave: mockArweave,
-        arCostCalculator: mockUploadCostEstimateCalculatorForAR,
         turbo: DontUseUploadService(),
         auth: mockArDriveAuth,
         turboBalanceRetriever: mockTurboBalanceRetriever,
-        turboUploadCostCalculator: mockTurboUploadCostCalculator,
         pst: mockPst);
   }
 
@@ -211,6 +215,7 @@ void main() {
           targetFolder: any<FolderEntry>(named: 'targetFolder')))
       .thenAnswer((invocation) => Future.value(
             UploadPlan.create(
+              maxBundleSize: 10,
               fileV2UploadHandles: {},
               fileDataItemUploadHandles: {},
               folderDataItemUploadHandles: {},
@@ -342,6 +347,7 @@ void main() {
             targetFolder: any<FolderEntry>(named: 'targetFolder'))).thenAnswer(
           (invocation) => Future.value(
             UploadPlan.create(
+              maxBundleSize: 10,
               turboUploadService: DontUseUploadService(),
               fileV2UploadHandles: {},
               fileDataItemUploadHandles: {},
@@ -444,11 +450,12 @@ void main() {
           targetFolder: any<FolderEntry>(named: 'targetFolder'))).thenAnswer(
         (invocation) => Future.value(
           UploadPlan.create(
+            maxBundleSize: 10,
             fileV2UploadHandles: {},
             fileDataItemUploadHandles: {},
             folderDataItemUploadHandles: {},
             turboUploadService: DontUseUploadService(),
-          ),
+      ),
         ),
       );
       when(() => mockProfileCubit!.isCurrentProfileArConnect())

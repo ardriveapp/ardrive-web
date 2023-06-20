@@ -23,8 +23,12 @@ void main() {
     test('loads config from ConfigFetcher', () async {
       when(() => mockAppFlavors.getAppFlavor())
           .thenAnswer((_) async => Flavor.production);
-      when(() => mockConfigFetcher.fetchConfig(any()))
-          .thenAnswer((_) async => AppConfig(stripePublishableKey: ''));
+      when(() => mockConfigFetcher.fetchConfig(any())).thenAnswer(
+        (_) async => AppConfig(
+          stripePublishableKey: '',
+          allowedDataItemSizeForTurbo: 100,
+        ),
+      );
 
       await configService.loadConfig();
 
@@ -64,6 +68,7 @@ void main() {
     test('saves the config to ConfigFetcher and updates local config', () {
       final config = AppConfig(
         stripePublishableKey: '',
+        allowedDataItemSizeForTurbo: 100,
       );
 
       configService.updateAppConfig(config);
@@ -82,6 +87,7 @@ void main() {
       when(() => mockConfigFetcher.fetchConfig(any()))
           .thenAnswer((_) async => AppConfig(
                 stripePublishableKey: '',
+                allowedDataItemSizeForTurbo: 100,
               ));
 
       await configService.resetDevToolsPrefs();
@@ -102,6 +108,7 @@ void main() {
       when(() => mockConfigFetcher.fetchConfig(any()))
           .thenAnswer((_) async => AppConfig(
                 stripePublishableKey: '',
+                allowedDataItemSizeForTurbo: 100,
               ));
 
       await configService.loadConfig();
@@ -119,6 +126,7 @@ void main() {
           .thenAnswer((_) async => Flavor.production);
       when(() => mockConfigFetcher.fetchConfig(any()))
           .thenAnswer((_) async => AppConfig(
+                allowedDataItemSizeForTurbo: 100,
                 stripePublishableKey: '',
               ));
 

@@ -108,7 +108,12 @@ void main() {
 
   group('saveConfigOnDevToolsPrefs', () {
     test('saves the config to local storage', () {
-      final config = AppConfig(stripePublishableKey: '');
+      final config = AppConfig(
+        stripePublishableKey: '',
+        enableQuickSyncAuthoring: false,
+        defaultArweaveGatewayUrl: '',
+        allowedDataItemSizeForTurbo: 100,
+      );
 
       when(() => localStore.putString('config', any()))
           .thenAnswer((i) => Future.value(true));

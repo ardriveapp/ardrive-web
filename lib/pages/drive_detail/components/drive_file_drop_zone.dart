@@ -119,7 +119,8 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
           content: BlocProvider<UploadCubit>(
             create: (context) => UploadCubit(
               arDriveUploadManager: ArDriveUploadPreparationManager(
-                uploadPreparePaymentOptions: UploadPreparePaymentOptions(
+                uploadPreparePaymentOptions: UploadPaymentEvaluator(
+                  appConfig: context.read<AppConfig>(),
                   auth: context.read<ArDriveAuth>(),
                   turboBalanceRetriever: TurboBalanceRetriever(
                     paymentService: context.read<PaymentService>(),

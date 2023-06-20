@@ -31,7 +31,10 @@ void main() {
   group('initializeStripe', () {
     test('should use the stripePublishableKey from config', () {
       // arrange
-      initializeStripe(AppConfig(stripePublishableKey: 'stripePublishableKey'));
+      initializeStripe(AppConfig(
+        stripePublishableKey: 'stripePublishableKey',
+        allowedDataItemSizeForTurbo: 100,
+      ));
 
       // assert
       expect(Stripe.publishableKey, equals('stripePublishableKey'));
@@ -40,11 +43,18 @@ void main() {
 
     test('should initialize only once', () {
       // arrange
-      initializeStripe(AppConfig(stripePublishableKey: 'stripePublishableKey'));
-      initializeStripe(
-          AppConfig(stripePublishableKey: 'stripePublishableKey1'));
-      initializeStripe(
-          AppConfig(stripePublishableKey: 'stripePublishableKey2'));
+      initializeStripe(AppConfig(
+        stripePublishableKey: 'stripePublishableKey',
+        allowedDataItemSizeForTurbo: 100,
+      ));
+      initializeStripe(AppConfig(
+        stripePublishableKey: 'stripePublishableKey1',
+        allowedDataItemSizeForTurbo: 100,
+      ));
+      initializeStripe(AppConfig(
+        stripePublishableKey: 'stripePublishableKey2',
+        allowedDataItemSizeForTurbo: 100,
+      ));
 
       // assert
       expect(Stripe.publishableKey, equals('stripePublishableKey'));
