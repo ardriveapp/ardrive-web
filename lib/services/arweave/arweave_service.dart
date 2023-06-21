@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -162,8 +164,8 @@ class ArweaveService {
           break;
         }
       } catch (e) {
-        logger.e('Error fetching snapshots for drive $driveId - $e');
-        logger.e('This drive and ones after will fall back to GQL');
+        print('Error fetching snapshots for drive $driveId - $e');
+        print('This drive and ones after will fall back to GQL');
         break;
       }
     }
