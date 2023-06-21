@@ -1,9 +1,10 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
@@ -72,7 +73,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
           arweave: arweave,
         );
       } catch (e) {
-        logger.e('Ignoring snapshot transaction with invalid block range - $e');
+        print('Ignoring snapshot transaction with invalid block range - $e');
         continue;
       }
 
