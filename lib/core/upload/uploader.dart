@@ -325,15 +325,21 @@ class UploadPaymentEvaluator {
     int totalSize = 0;
 
     BigInt turboBalance;
+
     bool isTurboAvailable = true;
 
-    /// Check the balance of the user
-    /// If we can't get the balance, turbo won't be available
-    try {
-      turboBalance =
-          await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
-    } catch (e) {
-      logger.e(e);
+    if (_appConfig.useTurboUpload) {
+      /// Check the balance of the user
+      /// If we can't get the balance, turbo won't be available
+      try {
+        turboBalance =
+            await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
+      } catch (e) {
+        logger.e(e);
+        isTurboAvailable = false;
+        turboBalance = BigInt.zero;
+      }
+    } else {
       isTurboAvailable = false;
       turboBalance = BigInt.zero;
     }
@@ -343,22 +349,18 @@ class UploadPaymentEvaluator {
     final arFileSizes = await sizeUtils
         .getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles);
 
-    final turboBundleSizes = await sizeUtils
-        .getSizeOfAllBundles(uploadPlanForTurbo.bundleUploadHandles);
-
-    /// Calculate the upload with AR is not optional
-    final arCostEstimate =
-        await _uploadCostEstimateCalculatorForAR.calculateCost(
-      totalSize: arBundleSizes + arFileSizes,
-    );
-
     bool isUploadEligibleToTurbo =
         uploadPlanForTurbo.bundleUploadHandles.isNotEmpty;
 
     UploadCostEstimate turboCostEstimate = UploadCostEstimate.zero();
 
+    int turboBundleSizes = 0;
+
     /// Calculate the upload with Turbo if possible
     if (isTurboAvailable) {
+      turboBundleSizes = await sizeUtils
+          .getSizeOfAllBundles(uploadPlanForTurbo.bundleUploadHandles);
+
       try {
         turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
           totalSize: turboBundleSizes,
@@ -367,6 +369,12 @@ class UploadPaymentEvaluator {
         isTurboAvailable = false;
       }
     }
+
+    /// Calculate the upload with AR is not optional
+    final arCostEstimate =
+        await _uploadCostEstimateCalculatorForAR.calculateCost(
+      totalSize: arBundleSizes + arFileSizes,
+    );
 
     if (isTurboAvailable &&
         isUploadEligibleToTurbo &&

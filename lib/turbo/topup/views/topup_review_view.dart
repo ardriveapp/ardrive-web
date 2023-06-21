@@ -21,6 +21,7 @@ class TurboReviewView extends StatefulWidget {
 class _TurboReviewViewState extends State<TurboReviewView> {
   final _emailController = TextEditingController();
   bool _emailChecked = false;
+  bool _emailIsValid = true;
   bool _hasAutomaticChecked = false;
 
   @override
@@ -423,15 +424,16 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         themeData: textTheme,
                         child: ArDriveTextField(
                           validator: (s) {
-                            if (s == null) {
+                            if (s == null || s.isEmpty || isEmailValid(s)) {
+                              setState(() {
+                                _emailIsValid = true;
+                              });
                               return null;
                             }
-
-                            if (isEmailValid(s)) {
-                              return null;
-                            } else {
-                              return 'Please enter a valid email address';
-                            }
+                            setState(() {
+                              _emailIsValid = false;
+                            });
+                            return 'Please enter a valid email address';
                           },
                           controller: _emailController,
                           onChanged: (s) {
@@ -510,7 +512,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 fontStyle: ArDriveTypography.body.buttonLargeBold(
                   color: Colors.white,
                 ),
-                isDisabled: state is PaymentReviewLoadingQuote,
+                isDisabled:
+                    state is PaymentReviewLoadingQuote || !_emailIsValid,
                 customContent: state is PaymentReviewLoading
                     ? const SizedBox(
                         height: 24,
