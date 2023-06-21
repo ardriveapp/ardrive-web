@@ -122,29 +122,6 @@ class BundleUploadHandle implements UploadHandle {
     }
   }
 
-  /// Uploads the bundle, emitting an event whenever the progress is updated.
-  // Stream<double> upload(
-  //   ArweaveService arweave,
-  //   TurboUploadService turboUploadService,
-  // ) async* {
-  //   if (useTurbo) {
-  //     await turboUploadService
-  //         .postDataItem(dataItem: bundleDataItem)
-  //         .onError((error, stackTrace) {
-  //       logger.e(error);
-  //       return hasError = true;
-  //     });
-  //     yield 1;
-  //   } else {
-  // yield* arweave.client.transactions
-  //     .upload(bundleTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
-  //     .map((upload) {
-  //   uploadProgress = upload.progress;
-  //   return uploadProgress;
-  // });
-  //   }
-  // }
-
   void dispose({bool useTurbo = false}) {
     if (!useTurbo) {
       bundleTx.setData(Uint8List(0));

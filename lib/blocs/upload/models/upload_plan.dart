@@ -82,20 +82,3 @@ class UploadPlan {
     fileDataItemUploadHandles.clear();
   }
 }
-
-// Future<bool> canWeUseTurbo({
-//   required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
-//   required Map<String, FileV2UploadHandle> fileV2UploadHandles,
-//   required TurboUploadService turboUploadService,
-// }) async {
-//   if (!turboUploadService.useTurboUpload) return false;
-
-//   final allFileSizesAreWithinTurboThreshold =
-//       !fileDataItemUploadHandles.values.any((file) {
-//     return file.size > turboUploadService.allowedDataItemSize;
-//   });
-
-//   return turboUploadService.useTurboUpload &&
-//       fileV2UploadHandles.isEmpty &&
-//       allFileSizesAreWithinTurboThreshold;
-// }
