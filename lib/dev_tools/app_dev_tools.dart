@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:ardrive/main.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:universal_html/html.dart' as html;
@@ -23,6 +27,12 @@ class ArDriveDevTools {
 
   factory ArDriveDevTools() => _instance;
 
+  BuildContext? _context;
+
+  // getter
+  static ArDriveDevTools get instance => _instance;
+  BuildContext? get context => _context;
+
   ArDriveDevTools._internal();
 
   final _devToolsWindow =
@@ -30,7 +40,9 @@ class ArDriveDevTools {
 
   bool _isDevToolsOpen = false;
 
-  void showDevTools() {
+  void showDevTools({BuildContext? optionalContext}) {
+    _context = optionalContext;
+
     if (_isDevToolsOpen) return;
 
     _isDevToolsOpen = true;
@@ -81,6 +93,8 @@ class AppConfigWindowManager extends StatefulWidget {
 
 class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
   final _windowTitle = ValueNotifier('Dev Tools');
+
+  final _devTools = ArDriveDevTools.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -146,6 +160,19 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
         setState(() {
           configService.updateAppConfig(
             settings.copyWith(defaultTurboPaymentUrl: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.text,
+    );
+
+    ArDriveDevToolOption stripePublishableKey = ArDriveDevToolOption(
+      name: 'stripePublishableKey',
+      value: settings.stripePublishableKey,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(stripePublishableKey: value),
           );
         });
       },
@@ -257,11 +284,29 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    // reload option
+    ArDriveDevToolOption turboSetDefaultData = ArDriveDevToolOption(
+      name: 'setDefaultDataOnPaymentForm',
+      value: '',
+      onChange: (value) {},
+      onInteraction: () {
+        try {
+          _devTools.context
+              ?.read<PaymentFormBloc>()
+              .add(PaymentFormPrePopulateFields());
+        } catch (e) {
+          logger.e(e);
+        }
+      },
+      type: ArDriveDevToolOptionType.button,
+    );
+
     List options = [
       useTurboOption,
       useTurboPaymentOption,
       defaultTurboPaymentUrlOption,
       enableSyncFromSnapshotOption,
+      stripePublishableKey,
       enableQuickSyncAuthoringOption,
       enableMultipleFileDownloadOption,
       enableVideoPreviewOption,
@@ -269,20 +314,88 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       defaultArweaveGatewayUrlOption,
       defaultTurboUrlOption,
       autoSyncIntervalInSecondsOption,
+      turboSetDefaultData,
       reloadOption,
       resetOptions,
     ];
 
     return DraggableWindow(
       windowTitle: _windowTitle,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        shrinkWrap: true,
-        itemBuilder: (context, index) => buildOption(options[index]),
-        separatorBuilder: (context, index) => const SizedBox(height: 16),
-        itemCount: options.length,
+      child: SingleChildScrollView(
+        primary: true,
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            FutureBuilder(
+                future: _readConfigsFromEnv(),
+                builder: (context, snapshot) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ArDriveButton(
+                        text: 'dev env',
+                        onPressed: () {
+                          setState(() {
+                            _windowTitle.value = 'Reloading...';
+
+                            configService.updateAppConfig(
+                              AppConfig.fromJson(snapshot.data![0]),
+                            );
+                          });
+
+                          Future.delayed(const Duration(seconds: 1), () {
+                            setState(() {
+                              _windowTitle.value = 'Dev config';
+                            });
+                          });
+                        },
+                      ),
+                      ArDriveButton(
+                        text: 'prod env',
+                        onPressed: () {
+                          setState(() {
+                            _windowTitle.value = 'Reloading...';
+
+                            configService.updateAppConfig(
+                              AppConfig.fromJson(snapshot.data![1]),
+                            );
+                          });
+
+                          Future.delayed(const Duration(seconds: 1), () {
+                            setState(() {
+                              _windowTitle.value = 'Prod config';
+                            });
+                          });
+                        },
+                      )
+                    ],
+                  );
+                }),
+            ListView.separated(
+              padding: const EdgeInsets.all(16),
+              shrinkWrap: true,
+              itemBuilder: (context, index) => buildOption(options[index]),
+              separatorBuilder: (context, index) => const SizedBox(height: 16),
+              itemCount: options.length,
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Future<List<Map<String, dynamic>>> _readConfigsFromEnv() async {
+    final String devConfig =
+        await rootBundle.loadString('assets/config/dev.json');
+    final String prodConfig =
+        await rootBundle.loadString('assets/config/prod.json');
+
+    final List<Map<String, dynamic>> configs = [
+      jsonDecode(devConfig),
+      jsonDecode(prodConfig)
+    ];
+
+    return configs;
   }
 
   Widget buildOption(ArDriveDevToolOption option) {
@@ -319,7 +432,10 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       case ArDriveDevToolOptionType.button:
         return ArDriveButton(
           text: option.name,
-          onPressed: () => option.onChange(option.value),
+          onPressed: () {
+            option.onChange(option.value);
+            option.onInteraction?.call();
+          },
         );
       case ArDriveDevToolOptionType.buttonTertiary:
         return ArDriveButton(
@@ -351,7 +467,7 @@ class DraggableWindow extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final windowSize = useState<Size>(const Size(600, 1000));
+    final windowSize = useState<Size>(const Size(600, 600));
     final windowPos = useState<Offset>(Offset.zero);
     final isWindowVisible = useState<bool>(true);
 
@@ -464,11 +580,13 @@ class ArDriveDevToolOption {
   dynamic value;
   final OnChange onChange;
   final ArDriveDevToolOptionType type;
+  final Function? onInteraction;
 
   ArDriveDevToolOption({
     required this.name,
     required this.value,
     required this.onChange,
     required this.type,
+    this.onInteraction,
   });
 }

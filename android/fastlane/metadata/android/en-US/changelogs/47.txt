@@ -1,0 +1,1 @@
+- Fixes an issue copying wrong Metadata Tx ID from the details panel

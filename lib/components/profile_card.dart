@@ -93,6 +93,7 @@ class _ProfileCardState extends State<ProfileCard> {
     return ArDriveCard(
       contentPadding: const EdgeInsets.all(0),
       width: 281,
+      boxShadow: BoxShadowCard.shadow60,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
