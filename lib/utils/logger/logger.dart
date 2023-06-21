@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
 final logger = Logger(
-  level: Level.verbose,
+  filter: ProductionFilter(),
+  level: kDebugMode ? Level.verbose : Level.info,
 );
