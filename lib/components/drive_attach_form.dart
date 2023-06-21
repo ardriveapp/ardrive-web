@@ -145,7 +145,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                     autofocus: true,
                     obscureText: true,
                     onChanged: (s) async {},
-                    validator: (s) async {
+                    asyncValidator: (s) async {
                       final cubit = context.read<DriveAttachCubit>();
 
                       final validation = await cubit.driveKeyValidator();
@@ -160,7 +160,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                       context.read<DriveAttachCubit>().driveNameController,
                   hintText: appLocalizationsOf(context).driveName,
                   onChanged: (s) async {},
-                  validator: (s) async {
+                  asyncValidator: (s) async {
                     final nameValidation = validateEntityName(s, context);
 
                     setState(() {
