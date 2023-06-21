@@ -36,10 +36,12 @@ class UploadPlanUtils {
     Map<String, WebFolder> foldersByPath = const {},
     bool useTurbo = false,
   }) async {
-    logger.i('Creating upload plan for ${files.length} files');
-    logger.i('Target drive: ${targetDrive.name}');
-    logger.i('Target folder: ${targetFolder.path}');
-    // logger.i('Use turbo: $useTurbo');
+    logger.i(
+      'Creating upload plan for ${files.length} files\n'
+      'Target drive: ${targetDrive.name}\n'
+      'Target folder: ${targetFolder.path}\n'
+      'Use turbo: $useTurbo',
+    );
 
     final fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
     final fileV2UploadHandles = <String, FileV2UploadHandle>{};
@@ -126,7 +128,7 @@ class UploadPlanUtils {
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
       turboUploadService: turboUploadService,
-      maxBundleSize: useTurbo ? 2 : maxFilesPerBundle,
+      maxDataItemCount: useTurbo ? 2 : maxFilesPerBundle,
     );
   }
 

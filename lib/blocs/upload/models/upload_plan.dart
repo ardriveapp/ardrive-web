@@ -16,11 +16,11 @@ class UploadPlan {
 
   final List<BundleUploadHandle> bundleUploadHandles = [];
 
-  final int maxBundleSize;
+  final int maxDataItemCount;
 
   UploadPlan._create({
     required this.fileV2UploadHandles,
-    required this.maxBundleSize,
+    required this.maxDataItemCount,
   });
 
   static Future<UploadPlan> create({
@@ -29,11 +29,11 @@ class UploadPlan {
     required Map<String, FolderDataItemUploadHandle>
         folderDataItemUploadHandles,
     required TurboUploadService turboUploadService,
-    required int maxBundleSize,
+    required int maxDataItemCount,
   }) async {
     final uploadPlan = UploadPlan._create(
       fileV2UploadHandles: fileV2UploadHandles,
-      maxBundleSize: maxBundleSize,
+      maxDataItemCount: maxDataItemCount,
     );
 
     if (fileDataItemUploadHandles.isNotEmpty ||
@@ -42,7 +42,7 @@ class UploadPlan {
         fileDataItemUploadHandles: fileDataItemUploadHandles,
         folderDataItemUploadHandles: folderDataItemUploadHandles,
         turboUploadService: turboUploadService,
-        maxFilesPerBundle: maxBundleSize,
+        maxDataItemCount: maxDataItemCount,
       );
     }
     return uploadPlan;
@@ -53,16 +53,16 @@ class UploadPlan {
     Map<String, FolderDataItemUploadHandle> folderDataItemUploadHandles =
         const {},
     required TurboUploadService turboUploadService,
-    required int maxFilesPerBundle,
+    required int maxDataItemCount,
   }) async {
-    logger.i('Creating bundle handles from data item handles...');
-    logger.i('max files per bundle: $maxFilesPerBundle');
+    logger.i(
+        'Creating bundle handles from data item handles with a max number of files of $maxDataItemCount');
     final int maxBundleSize =
         (kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit);
 
     final bundleItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: maxBundleSize,
-      maxDataItemCount: maxFilesPerBundle,
+      maxDataItemCount: maxDataItemCount,
     ).packItems([
       ...fileDataItemUploadHandles.values,
       ...folderDataItemUploadHandles.values

@@ -49,6 +49,32 @@ class UploadCubit extends Cubit<UploadState> {
   void setUploadMethod(UploadMethod? method) {
     logger.d('Upload method set to $method');
     _uploadMethod = method;
+
+    bool isButtonEnabled = false;
+
+    if (state is UploadReady) {
+      final uploadReady = state as UploadReady;
+      logger.d(
+          'Sufficient Balance To Pay With AR: ${uploadReady.sufficientArBalance}');
+
+      if (_uploadMethod == UploadMethod.ar && uploadReady.sufficientArBalance) {
+        logger.d('Enabling button for AR payment method');
+        isButtonEnabled = true;
+      } else if (_uploadMethod == UploadMethod.turbo &&
+          uploadReady.isTurboUploadPossible &&
+          uploadReady.sufficentCreditsBalance) {
+        logger.d('Enabling button for Turbo payment method');
+        isButtonEnabled = true;
+      } else if (uploadReady.isFreeThanksToTurbo) {
+        logger.d('Enabling button for free upload using Turbo');
+        isButtonEnabled = true;
+      } else {
+        logger.d('Disabling button');
+      }
+
+      emit((state as UploadReady).copyWith(
+          uploadMethod: method, isButtonToUploadEnabled: isButtonEnabled));
+    }
   }
 
   List<UploadFile> files = [];
@@ -328,6 +354,32 @@ class UploadCubit extends Cubit<UploadState> {
       final literalBalance = convertCreditsToLiteralString(
           uploadPreparation.uploadPaymentInfo.turboBalance);
 
+      bool isButtonEnabled = false;
+      bool sufficientBalanceToPayWithAR =
+          profile.walletBalance >= paymentInfo.arCostEstimate.totalCost;
+      bool sufficientBalanceToPayWithTurbo =
+          paymentInfo.turboCostEstimate.totalCost <=
+              uploadPreparation.uploadPaymentInfo.turboBalance;
+
+      logger.d(
+          'Sufficient Balance To Pay With AR: $sufficientBalanceToPayWithAR');
+
+      if (_uploadMethod == UploadMethod.ar && sufficientBalanceToPayWithAR) {
+        logger.d('Enabling button for AR payment method');
+        isButtonEnabled = true;
+      } else if (_uploadMethod == UploadMethod.turbo &&
+          paymentInfo.isUploadEligibleToTurbo &&
+          paymentInfo.isTurboAvailable &&
+          sufficientBalanceToPayWithTurbo) {
+        logger.d('Enabling button for Turbo payment method');
+        isButtonEnabled = true;
+      } else if (paymentInfo.isFreeUploadPossibleUsingTurbo) {
+        logger.d('Enabling button for free upload using Turbo');
+        isButtonEnabled = true;
+      } else {
+        logger.d('Disabling button');
+      }
+
       emit(
         UploadReady(
           isTurboUploadPossible: paymentInfo.isUploadEligibleToTurbo &&
@@ -347,9 +399,9 @@ class UploadCubit extends Cubit<UploadState> {
           uploadPlanForTurbo: uploadPlansPreparation.uploadPlanForTurbo,
           isFreeThanksToTurbo: (_uploadMethod == UploadMethod.turbo &&
               paymentInfo.isFreeUploadPossibleUsingTurbo),
-          sufficentCreditsBalance: paymentInfo.turboBalance >=
-              paymentInfo.turboCostEstimate.totalCost,
+          sufficentCreditsBalance: sufficientBalanceToPayWithTurbo,
           uploadMethod: _uploadMethod!,
+          isButtonToUploadEnabled: isButtonEnabled,
         ),
       );
     } catch (error, stacktrace) {
@@ -372,7 +424,7 @@ class UploadCubit extends Cubit<UploadState> {
       uploadPlan = uploadPlanForTurbo;
     }
 
-    logger.d('Max files per bundle: ${uploadPlan.maxBundleSize}');
+    logger.d('Max files per bundle: ${uploadPlan.maxDataItemCount}');
 
     logger.i('Starting upload...');
 
@@ -399,12 +451,12 @@ class UploadCubit extends Cubit<UploadState> {
     final uploader = _getUploader();
 
     await for (final progress in uploader.uploadFromHandles(
-      bundleHandles: uploadPlanForAr.bundleUploadHandles,
-      fileV2Handles: uploadPlanForAr.fileV2UploadHandles.values.toList(),
+      bundleHandles: uploadPlan.bundleUploadHandles,
+      fileV2Handles: uploadPlan.fileV2UploadHandles.values.toList(),
     )) {
       emit(
         UploadInProgress(
-          uploadPlan: uploadPlanForAr,
+          uploadPlan: uploadPlan,
           progress: progress,
         ),
       );

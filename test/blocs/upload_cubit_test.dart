@@ -266,7 +266,7 @@ void main() {
           targetFolder: any<FolderEntry>(named: 'targetFolder')))
       .thenAnswer((invocation) => Future.value(
             UploadPlan.create(
-              maxBundleSize: 10,
+              maxDataItemCount: 10,
               fileV2UploadHandles: {},
               fileDataItemUploadHandles: {},
               folderDataItemUploadHandles: {},
@@ -399,7 +399,7 @@ void main() {
             targetFolder: any<FolderEntry>(named: 'targetFolder'))).thenAnswer(
           (invocation) => Future.value(
             UploadPlan.create(
-              maxBundleSize: 10,
+              maxDataItemCount: 10,
               turboUploadService: DontUseUploadService(),
               fileV2UploadHandles: {},
               fileDataItemUploadHandles: {},
@@ -502,7 +502,7 @@ void main() {
           targetFolder: any<FolderEntry>(named: 'targetFolder'))).thenAnswer(
         (invocation) => Future.value(
           UploadPlan.create(
-            maxBundleSize: 10,
+            maxDataItemCount: 10,
             fileV2UploadHandles: {},
             fileDataItemUploadHandles: {},
             folderDataItemUploadHandles: {},

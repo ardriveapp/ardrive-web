@@ -89,6 +89,7 @@ class UploadReady extends UploadState {
   final String arBalance;
   final String turboCredits;
   final UploadMethod uploadMethod;
+  final bool isButtonToUploadEnabled;
 
   UploadReady({
     required this.costEstimateAr,
@@ -106,7 +107,50 @@ class UploadReady extends UploadState {
     this.uploadPlanForTurbo,
     required this.isTurboUploadPossible,
     required this.uploadMethod,
+    required this.isButtonToUploadEnabled,
   });
+
+// copyWith
+  UploadReady copyWith({
+    UploadCostEstimate? costEstimateAr,
+    UploadCostEstimate? costEstimateTurbo,
+    bool? sufficientArBalance,
+    bool? isZeroBalance,
+    bool? sufficentCreditsBalance,
+    bool? uploadIsPublic,
+    UploadPlan? uploadPlanForAR,
+    UploadPlan? uploadPlanForTurbo,
+    bool? isTurboUploadPossible,
+    bool? isFreeThanksToTurbo,
+    int? uploadSize,
+    String? credits,
+    String? arBalance,
+    String? turboCredits,
+    UploadMethod? uploadMethod,
+    bool? isButtonToUploadEnabled,
+  }) {
+    return UploadReady(
+      costEstimateAr: costEstimateAr ?? this.costEstimateAr,
+      costEstimateTurbo: costEstimateTurbo ?? this.costEstimateTurbo,
+      sufficientArBalance: sufficientArBalance ?? this.sufficientArBalance,
+      isZeroBalance: isZeroBalance ?? this.isZeroBalance,
+      sufficentCreditsBalance:
+          sufficentCreditsBalance ?? this.sufficentCreditsBalance,
+      uploadIsPublic: uploadIsPublic ?? this.uploadIsPublic,
+      uploadPlanForAR: uploadPlanForAR ?? this.uploadPlanForAR,
+      uploadPlanForTurbo: uploadPlanForTurbo ?? this.uploadPlanForTurbo,
+      isTurboUploadPossible:
+          isTurboUploadPossible ?? this.isTurboUploadPossible,
+      isFreeThanksToTurbo: isFreeThanksToTurbo ?? this.isFreeThanksToTurbo,
+      uploadSize: uploadSize ?? this.uploadSize,
+      credits: credits ?? this.credits,
+      arBalance: arBalance ?? this.arBalance,
+      turboCredits: turboCredits ?? this.turboCredits,
+      uploadMethod: uploadMethod ?? this.uploadMethod,
+      isButtonToUploadEnabled:
+          isButtonToUploadEnabled ?? this.isButtonToUploadEnabled,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -114,6 +158,7 @@ class UploadReady extends UploadState {
         sufficientArBalance,
         uploadPlanForAR,
         isFreeThanksToTurbo,
+        isButtonToUploadEnabled,
       ];
 }
 
