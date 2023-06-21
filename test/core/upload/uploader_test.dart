@@ -728,8 +728,12 @@ void main() {
   });
 }
 
-AppConfig getFakeConfig() =>
-    AppConfig(allowedDataItemSizeForTurbo: 500, stripePublishableKey: '');
+AppConfig getFakeConfig() => AppConfig(
+      allowedDataItemSizeForTurbo: 500,
+      stripePublishableKey: '',
+      useTurboUpload: true,
+      useTurboPayment: true,
+    );
 
 User getFakeUser() => User(
     password: 'password',
