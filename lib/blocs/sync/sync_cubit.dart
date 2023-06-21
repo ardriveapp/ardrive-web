@@ -32,6 +32,7 @@ part 'utils/add_file_entity_revisions.dart';
 part 'utils/add_folder_entity_revisions.dart';
 part 'utils/create_ghosts.dart';
 part 'utils/generate_paths.dart';
+part 'utils/get_all_file_entities.dart';
 part 'utils/log_sync.dart';
 part 'utils/parse_drive_transactions.dart';
 part 'utils/sync_drive.dart';
@@ -336,13 +337,25 @@ class SyncCubit extends Cubit<SyncState> {
 
       logSync('Updating transaction statuses...');
 
-      await Future.wait([
-        if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
-        _updateTransactionStatuses(
-          driveDao: _driveDao,
-          arweave: _arweave,
-        ),
-      ]);
+      final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
+      final metadataTxsFromSnapshots =
+          await SnapshotItemOnChain.getAllCachedTransactionIds();
+
+      final confirmedFileTxIds = allFileRevisions
+          .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
+          .map((file) => file.dataTxId)
+          .toList();
+
+      await Future.wait(
+        [
+          if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
+          _updateTransactionStatuses(
+            driveDao: _driveDao,
+            arweave: _arweave,
+            txsIdsToSkip: confirmedFileTxIds,
+          ),
+        ],
+      );
 
       logSync('Transaction statuses updated');
 

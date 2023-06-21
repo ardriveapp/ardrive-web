@@ -84,11 +84,11 @@ Stream<double> _syncDrive(
     ownerAddress: ownerAddress,
   );
 
-  print('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');
-  print(
+  logger.i('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');
+  logger.i(
     'Sub ranges in snapshots (DRIVE ID: $driveId): ${snapshotDriveHistory.subRanges.rangeSegments}',
   );
-  print(
+  logger.i(
     'Sub ranges in GQL (DRIVE ID: $driveId): ${gqlDriveHistorySubRanges.rangeSegments}',
   );
 
@@ -124,7 +124,7 @@ Stream<double> _syncDrive(
         'The transaction block is null. \nTransaction node id: ${t.id}',
       );
 
-      print('New fetch-phase percentage: $fetchPhasePercentage');
+      logger.i('New fetch-phase percentage: $fetchPhasePercentage');
 
       /// if the block is null, we don't calculate and keep the same percentage
       return fetchPhasePercentage;
@@ -137,7 +137,7 @@ Stream<double> _syncDrive(
       if (block != null) {
         firstBlockHeight = block.height;
         totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
-        print(
+        logger.i(
           'First height: $firstBlockHeight, totalHeightDiff: $totalBlockHeightDifference',
         );
       } else {
@@ -146,10 +146,10 @@ Stream<double> _syncDrive(
         );
       }
     } else {
-      print('Block attribute is already present - $firstBlockHeight');
+      logger.i('Block attribute is already present - $firstBlockHeight');
     }
 
-    print('Adding transaction ${t.id}');
+    logger.i('Adding transaction ${t.id}');
     transactions.add(t);
 
     /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
@@ -158,7 +158,7 @@ Stream<double> _syncDrive(
         fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
       } else {
         // If the difference is zero means that the first phase was concluded.
-        print('The first phase just finished!');
+        logger.i('The first phase just finished!');
         fetchPhasePercentage = 1;
       }
       final percentage =
@@ -166,7 +166,7 @@ Stream<double> _syncDrive(
       yield percentage;
     }
   }
-  print('Done fetching data - ${gqlDriveHistory.driveId}');
+  logger.i('Done fetching data - ${gqlDriveHistory.driveId}');
 
   final fetchPhaseTotalTime =
       DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
@@ -197,7 +197,7 @@ Stream<double> _syncDrive(
       (parseProgress) => parseProgress * 0.9,
     );
   } catch (e) {
-    print('[Sync Drive] Error while parsing transactions: $e');
+    logger.i('[Sync Drive] Error while parsing transactions: $e');
     rethrow;
   }
 

@@ -3,10 +3,18 @@ part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 Future<void> _updateTransactionStatuses({
   required DriveDao driveDao,
   required ArweaveService arweave,
+  List<TxID> txsIdsToSkip = const [],
 }) async {
   final pendingTxMap = {
     for (final tx in await driveDao.pendingTransactions().get()) tx.id: tx,
   };
+
+  /// Remove all confirmed transactions from the pending map
+  /// and update the status of the remaining ones
+
+  for (final txId in txsIdsToSkip) {
+    pendingTxMap.remove(txId);
+  }
 
   final length = pendingTxMap.length;
   final list = pendingTxMap.keys.toList();
@@ -80,8 +88,19 @@ Future<void> _updateTransactionStatuses({
         }
       }
     });
+
     await Future.delayed(const Duration(milliseconds: 200));
   }
+  await driveDao.transaction(() async {
+    for (final txId in txsIdsToSkip) {
+      await driveDao.writeToTransaction(
+        NetworkTransactionsCompanion(
+          id: Value(txId),
+          status: const Value(TransactionStatus.confirmed),
+        ),
+      );
+    }
+  });
 }
 
 bool _isOverThePendingTime(DateTime? transactionCreatedDate) {
