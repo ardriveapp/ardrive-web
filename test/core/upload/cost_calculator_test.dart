@@ -108,10 +108,9 @@ void main() {
       priceEstimator = MockTurboPriceEstimator();
       pstService = MockPstService();
       turboUploadCostCalculator = TurboUploadCostCalculator(
-          turboCostCalculator: turboCostCalculator,
-          priceEstimator: priceEstimator,
-          
-          pstService: pstService);
+        turboCostCalculator: turboCostCalculator,
+        priceEstimator: priceEstimator,
+      );
     });
 
     test(
@@ -120,9 +119,7 @@ void main() {
       when(() => turboCostCalculator.getCostForBytes(
               byteSize: any(named: 'byteSize')))
           .thenAnswer((_) => Future.value(BigInt.from(10)));
-      when(() => pstService.getPSTFee(any()))
-          .thenAnswer((_) => Future.value(Winston(BigInt.from(2))));
-      when(() => priceEstimator.convertForUSD(BigInt.from(12)))
+      when(() => priceEstimator.convertForUSD(BigInt.from(10)))
           .thenAnswer((_) => Future.value(10.0));
 
       final result =
@@ -130,13 +127,12 @@ void main() {
 
       verify(() => turboCostCalculator.getCostForBytes(byteSize: 100))
           .called(1);
-      verify(() => pstService.getPSTFee(BigInt.from(10))).called(1);
-      verify(() => priceEstimator.convertForUSD(BigInt.from(12))).called(1);
+      verify(() => priceEstimator.convertForUSD(BigInt.from(10))).called(1);
       expect(
         result,
         UploadCostEstimate(
-          pstFee: BigInt.from(2),
-          totalCost: BigInt.from(12),
+          pstFee: BigInt.zero,
+          totalCost: BigInt.from(10),
           totalSize: 100,
           usdUploadCost: 10,
         ),
