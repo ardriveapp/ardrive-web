@@ -60,7 +60,7 @@ class PaymentService {
     required Wallet wallet,
   }) async {
     final nonce = const Uuid().v4();
-    final publicKey = await wallet.getPublicKey();
+    final publicKey = await wallet.getOwner();
     final signature = await signNonceAndData(
       nonce: nonce,
       wallet: wallet,
@@ -70,7 +70,7 @@ class PaymentService {
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
-        'x-public-key': publicKeyToHeader(publicKey),
+        'x-public-key': publicKey,
       },
     ).onError((ArDriveHTTPException error, stackTrace) {
       logger.e('error getting balance', error, stackTrace);
@@ -94,7 +94,7 @@ class PaymentService {
   }) async {
     final nonce = const Uuid().v4();
     final walletAddress = await wallet.getAddress();
-    final publicKey = await wallet.getPublicKey();
+    final publicKey = await wallet.getOwner();
     final signature = await signNonceAndData(
       nonce: nonce,
       wallet: wallet,
@@ -106,7 +106,7 @@ class PaymentService {
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
-        'x-public-key': publicKeyToHeader(publicKey),
+        'x-public-key': publicKey,
       },
     );
 
