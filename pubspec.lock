@@ -87,8 +87,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.2.1"
-      resolved-ref: e773802517a668ff61664e5ff3f6202bb56dc1a0
+      ref: "v1.3.1"
+      resolved-ref: f45178502c62f97a9d300495e0c5a14668aed896
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.2.0"
@@ -141,6 +141,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.3"
+  base58check:
+    dependency: transitive
+    description:
+      name: base58check
+      sha256: "6c300dfc33e598d2fe26319e13f6243fea81eaf8204cb4c6b69ef20a625319a5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
+  bech32:
+    dependency: transitive
+    description:
+      name: bech32
+      sha256: "156cbace936f7720c79a79d16a03efad343b1ef17106716e04b8b8e39f99f7f7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.2"
   bloc:
     dependency: transitive
     description:
@@ -341,6 +357,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.6.3"
+  credit_card_type_detector:
+    dependency: transitive
+    description:
+      name: credit_card_type_detector
+      sha256: f2fb9c7b23fae331d4c5a0dc26437f4c0d4a2306a6c3a5cdb29401f69823070d
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
+  credit_card_validator:
+    dependency: "direct main"
+    description:
+      name: credit_card_validator
+      sha256: e8e6d7250319fd1898340d63c72b1a66817d8abfc6aedcaca76f3633bac515a3
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   cross_file:
     dependency: transitive
     description:
@@ -729,6 +761,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_multi_formatter:
+    dependency: "direct main"
+    description:
+      name: flutter_multi_formatter
+      sha256: "9ca354ca115c07991874688b28022464db2fcbd4141e008c9eb418bd4251f19c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.11.1"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:

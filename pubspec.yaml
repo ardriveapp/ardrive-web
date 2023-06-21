@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.3.0
+version: 2.3.1
 
 environment:
   sdk: '>=2.18.5 <3.0.0'
@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: v1.2.1
+      ref: v1.3.1
   artemis: ^7.0.0-beta.13
   arweave:
     git:
@@ -108,6 +108,8 @@ dependencies:
   flutter_portal: ^1.1.3
   alchemist: ^0.6.0
   flutter_hooks: ^0.18.6
+  flutter_multi_formatter: ^2.11.1
+  credit_card_validator: ^2.1.0
 
 dev_dependencies:
   flutter_test:
