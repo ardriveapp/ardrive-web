@@ -534,7 +534,7 @@ class UploadCubit extends Cubit<UploadState> {
     final bundleUploader = BundleUploader(
       turboUploader,
       arweaveUploader,
-      useTurbo: _uploadMethod == UploadMethod.turbo,
+      _uploadMethod == UploadMethod.turbo,
     );
 
     final v2Uploader = FileV2Uploader(_arweave.client);
@@ -567,10 +567,14 @@ class UploadCubit extends Cubit<UploadState> {
         );
       },
       onFinishFileUpload: (handle) async {
-        await handle.writeFileEntityToDatabase(driveDao: _driveDao);
+        handle.writeFileEntityToDatabase(driveDao: _driveDao);
       },
       onFinishBundleUpload: (handle) async {
-        await handle.writeBundleItemsToDatabase(driveDao: _driveDao);
+        try {
+          handle.writeBundleItemsToDatabase(driveDao: _driveDao);
+        } catch (e) {
+          logger.e('Error writing bundle items to database', e);
+        }
       },
       onUploadBundleError: (handle, error) async {
         if (!hasEmittedError) {

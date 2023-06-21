@@ -15,7 +15,6 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/size_utils.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';
-import 'package:async/async.dart';
 import 'package:tuple/tuple.dart';
 
 class ArDriveUploader {
@@ -56,9 +55,6 @@ class ArDriveUploader {
     List<BundleUploadHandle> bundleHandles = const [],
     List<FileV2UploadHandle> fileV2Handles = const [],
   }) async* {
-    final StreamGroup<Tuple2<int, double>> uploadProgressGroup =
-        StreamGroup<Tuple2<int, double>>();
-
     final List<double> progresses = List.filled(
       bundleHandles.length + fileV2Handles.length,
       0.0,
@@ -67,45 +63,32 @@ class ArDriveUploader {
     int index = 0;
 
     for (final bundleHandle in bundleHandles) {
-      await uploadProgressGroup.add(
-        _uploadItem(
-          index: index++,
-          itemHandle: bundleHandle,
-          prepare: _prepareBundle,
-          upload: _bundleUploader.upload,
-          onFinishUpload: _onFinishBundleUpload,
-          onUploadError: _onUploadBundleError,
-          dispose: (handle) =>
-              handle.dispose(useTurbo: _bundleUploader._useTurbo),
-        ),
-      );
+      await for (var progress in _uploadItem(
+        index: index++,
+        itemHandle: bundleHandle,
+        prepare: _prepareBundle,
+        upload: _bundleUploader.upload,
+        onFinishUpload: _onFinishBundleUpload,
+        onUploadError: _onUploadBundleError,
+        dispose: (handle) => handle.dispose(useTurbo: _bundleUploader.useTurbo),
+      )) {
+        progresses[progress.item1] = progress.item2;
+        yield progresses.reduce((a, b) => a + b) / progresses.length;
+      }
     }
 
     for (final fileV2Handle in fileV2Handles) {
-      logger.d('Uploading v2 file}');
-
-      await uploadProgressGroup.add(
-        _uploadItem(
-          index: index++,
-          itemHandle: fileV2Handle,
-          prepare: _prepareFile,
-          upload: _fileV2Uploader.upload,
-          onFinishUpload: _onFinishFileUpload,
-          onUploadError: _onUploadFileError,
-          dispose: (handle) => handle.dispose(),
-        ),
-      );
-    }
-
-    await for (final progress in uploadProgressGroup.stream) {
-      progresses[progress.item1] = progress.item2;
-      final totalProgress =
-          progresses.reduce((a, b) => a + b) / progresses.length;
-
-      yield progresses.reduce((a, b) => a + b) / progresses.length;
-
-      if (totalProgress == 1.0) {
-        break;
+      await for (var progress in _uploadItem(
+        index: index++,
+        itemHandle: fileV2Handle,
+        prepare: _prepareFile,
+        upload: _fileV2Uploader.upload,
+        onFinishUpload: _onFinishFileUpload,
+        onUploadError: _onUploadFileError,
+        dispose: (handle) => handle.dispose(),
+      )) {
+        progresses[progress.item1] = progress.item2;
+        yield progresses.reduce((a, b) => a + b) / progresses.length;
       }
     }
   }
@@ -147,12 +130,11 @@ class ArDriveUploader {
 
       logger.i('Finished uploading $itemString');
       logger.i('Disposing $itemString');
-      dispose(itemHandle);
 
-      await onFinishUpload(itemHandle);
+      onFinishUpload(itemHandle).then((value) => dispose(itemHandle));
     } catch (e, stacktrace) {
       logger.e('Error in ${itemHandle.toString()} upload', e, stacktrace);
-      await onUploadError(itemHandle, e);
+      onUploadError(itemHandle, e);
     }
   }
 }
@@ -160,18 +142,14 @@ class ArDriveUploader {
 class BundleUploader extends Uploader<BundleUploadHandle> {
   final TurboUploader _turbo;
   final ArweaveBundleUploader _arweave;
-  final bool _useTurbo;
+  final bool useTurbo;
 
   late Uploader _uploader;
 
-  BundleUploader(
-    this._turbo,
-    this._arweave, {
-    bool useTurbo = false,
-  }) : _useTurbo = useTurbo {
+  BundleUploader(this._turbo, this._arweave, this.useTurbo) {
     logger.i('Creating BundleUploader');
 
-    if (_useTurbo) {
+    if (useTurbo) {
       logger.i('Using TurboUploader');
 
       _uploader = _turbo;
@@ -189,7 +167,7 @@ class BundleUploader extends Uploader<BundleUploadHandle> {
 
   @override
   String toString() {
-    return 'BundleUploader{_turbo: $_turbo, _arweave: $_arweave, _useTurbo: $_useTurbo}';
+    return 'BundleUploader{_turbo: $_turbo, _arweave: $_arweave, _useTurbo: $useTurbo}';
   }
 }
 

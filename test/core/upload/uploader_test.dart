@@ -88,6 +88,8 @@ void main() {
         when(() => bundleUploader.upload(mockBundleHandle)).thenAnswer(
           (_) => Stream<double>.fromIterable([0.1, 0.5, 1.0]),
         );
+        when(() => bundleUploader.useTurbo).thenReturn(false);
+
         when(() => fileV2Uploader.upload(mockFileV2Handle)).thenAnswer(
           (_) => Stream<double>.fromIterable([0.1, 0.7, 1.0]),
         );
@@ -101,11 +103,11 @@ void main() {
             // (0.1 / 2) (from bundle handle) 5%
             closeTo(0.05, 0.001),
             // (0.1 / 2) 10% (from file handle) + (0.1 / 2) 5% (from bundle handle) 10%
-            closeTo(0.1, 0.001),
+            closeTo(0.25, 0.001),
             // (0.5 / 2) 25% (from bundle handle) + (0.1 / 2) 5% (from file handle) 30%
-            closeTo(0.3, 0.001),
+            closeTo(0.5, 0.001),
             // (0.7 / 2) 35% (from file handle) + (0.5 / 2) 25% (from bundle handle) 60%
-            closeTo(0.6, 0.001),
+            closeTo(0.55, 0.001),
             // (1.0 / 2) 50% (from bundle handle) + (0.7 / 2) 35% (from file handle) 85%
             closeTo(0.85, 0.001),
             // (1.0 / 2) 50% (from file handle) + (1.0 / 2) 50% (from bundle handle) 100%
@@ -135,15 +137,15 @@ void main() {
             // (0.25 / 2) (from bundle handle) 12.5%
             closeTo(0.125, 0.001),
             // (0.25 / 2) 12.5% (from file handle) + (0.1 / 2) 5% (from bundle handle) 17.5%
-            closeTo(0.175, 0.001),
+            closeTo(0.25, 0.001),
             // (0.5 / 2) 25% (from bundle handle) + (0.1 / 2) 5% (from file handle) 30%
             closeTo(0.3, 0.001),
             // (0.5 / 2) 25% (from file handle) + (0.75 / 2) 37.5% (from bundle handle) 62.5%
-            closeTo(0.625, 0.001),
+            closeTo(0.5, 0.001),
             // (0.6 / 2) 30% (from bundle handle) + (0.75 / 2) 37.5% (from file handle) 67.5%
-            closeTo(0.675, 0.001),
+            closeTo(0.55, 0.001),
             // (0.6 / 2) 30% (from file handle) + (1.0 / 2) 50% (from bundle handle) 80%
-            closeTo(0.8, 0.001),
+            closeTo(0.875, 0.001),
             // (1.0 / 2) 50% (from file handle) + (1.0 / 2) 50% (from bundle handle) 100%
             closeTo(1.0, 0.001),
             emitsDone,

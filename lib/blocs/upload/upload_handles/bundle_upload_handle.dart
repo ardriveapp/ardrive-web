@@ -106,9 +106,13 @@ class BundleUploadHandle implements UploadHandle {
   Future<void> writeBundleItemsToDatabase({
     required DriveDao driveDao,
   }) async {
-    if (hasError) return;
+    print('Checking bundle for errors');
+    if (hasError) {
+      print('Bundle has error, not writing to database');
+      return;
+    }
 
-    debugPrint('Writing bundle items to database');
+    print('Writing bundle items to database');
 
     // Write entities to database
     for (var folder in folderDataItemUploadHandles) {

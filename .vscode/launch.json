@@ -12,7 +12,7 @@
       "program": "lib/main.dart"
     },
     {
-      "name": "Flutter Debug - Web",
+      "name": "Flutter Debug - Web - Dev",
       "request": "launch",
       "type": "dart",
       "args": ["--debug", "--dart-define", "environment=development"],
