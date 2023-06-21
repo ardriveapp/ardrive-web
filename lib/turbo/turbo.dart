@@ -132,7 +132,8 @@ class Turbo extends Disposable {
     );
 
     _quoteExpirationDate =
-        DateTime.parse(_currentPaymentIntent!.topUpQuote.quoteExpirationDate);
+        DateTime.parse(_currentPaymentIntent!.topUpQuote.quoteExpirationDate)
+            .subtract(const Duration(seconds: 5));
 
     return _currentPaymentIntent!;
   }
@@ -286,13 +287,18 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
         outputDataUnit: currentDataUnit,
       );
 
-      _maxQuoteExpirationTime = DateTime.now().add(const Duration(minutes: 5));
+      _maxQuoteExpirationTime =
+          DateTime.now().add(const Duration(minutes: 4, seconds: 55));
 
-      return PriceEstimate(
+      final price = PriceEstimate(
         credits: priceEstimate,
         priceInCurrency: currentAmount,
         estimatedStorage: estimatedStorageForSelectedAmount,
       );
+
+      _priceEstimateController.add(price);
+
+      return price;
     } catch (e) {
       logger.e('Error computing price estimate: $e');
       rethrow;
