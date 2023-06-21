@@ -94,7 +94,7 @@ class PaymentService {
   }) async {
     final nonce = const Uuid().v4();
     final walletAddress = await wallet.getAddress();
-    final publicKey = await wallet.getPublicKey();
+    final publicKey = await wallet.getOwner();
     final signature = await signNonceAndData(
       nonce: nonce,
       wallet: wallet,
@@ -106,7 +106,7 @@ class PaymentService {
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
-        'x-public-key': publicKeyToHeader(publicKey),
+        'x-public-key': publicKey,
       },
     );
 
