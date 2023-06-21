@@ -38,3 +38,13 @@ class PaymentFormQuoteLoaded extends PaymentFormState {
   @override
   List<Object> get props => [];
 }
+
+class PaymentFormQuoteLoadFailure extends PaymentFormState {
+  const PaymentFormQuoteLoadFailure(
+    super.priceEstimate,
+    super.quoteExpirationTime,
+  );
+
+  @override
+  List<Object> get props => [priceEstimate, quoteExpirationTimeInSeconds];
+}

@@ -40,7 +40,8 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
 
     return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
       bloc: paymentBloc,
-      buildWhen: (_, current) => current is! EstimationLoading,
+      buildWhen: (_, current) =>
+          current is! EstimationLoading && current is! EstimationLoadError,
       builder: (context, state) {
         if (state is EstimationLoading) {
           return const SizedBox(
@@ -154,7 +155,8 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                         builder: (context, state) {
                           return ArDriveButton(
                             isDisabled: paymentBloc.currentAmount == 0 ||
-                                state is EstimationLoading,
+                                state is EstimationLoading ||
+                                state is EstimationLoadError,
                             maxWidth: 143,
                             maxHeight: 40,
                             fontStyle: ArDriveTypography.body
@@ -247,8 +249,6 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   void didChangeDependencies() {
     super.didChangeDependencies();
   }
-
-  DateTime lastChanged = DateTime.now();
 
   void _onAmountChanged(String amount) {
     widget.onAmountSelected(int.parse(amount));
@@ -594,7 +594,28 @@ class PriceEstimateView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
+      buildWhen: (previous, current) {
+        return current is EstimationLoaded || current is EstimationLoadError;
+      },
       builder: (context, state) {
+        if (state is EstimationLoadError) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Divider(height: 32),
+              Text(
+                'Unable to fetch the estimate at this time.',
+                style: ArDriveTypography.body.buttonNormalBold(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeErrorDefault,
+                ),
+              ),
+            ],
+          );
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
