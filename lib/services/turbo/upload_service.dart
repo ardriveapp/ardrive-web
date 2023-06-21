@@ -16,8 +16,10 @@ class TurboUploadService {
     required this.httpClient,
   });
 
-  Future<void> postDataItem(
-      {required DataItem dataItem, required Wallet wallet}) async {
+  Future<void> postDataItem({
+    required DataItem dataItem,
+    required Wallet wallet,
+  }) async {
     final acceptedStatusCodes = [200, 202, 204];
 
     final nonce = const Uuid().v4();

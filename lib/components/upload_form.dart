@@ -68,7 +68,7 @@ Future<void> promptToUpload(
         create: (context) => UploadCubit(
           arDriveUploadManager: ArDriveUploadPreparationManager(
             uploadPreparePaymentOptions: UploadPaymentEvaluator(
-              appConfig: context.read<AppConfig>(),
+              appConfig: context.read<ConfigService>().config,
               auth: context.read<ArDriveAuth>(),
               turboBalanceRetriever: TurboBalanceRetriever(
                 paymentService: context.read<PaymentService>(),
@@ -83,7 +83,6 @@ Future<void> promptToUpload(
                 turboCostCalculator: TurboCostCalculator(
                   paymentService: context.read<PaymentService>(),
                 ),
-                pstService: context.read<PstService>(),
               ),
               uploadCostEstimateCalculatorForAR:
                   UploadCostEstimateCalculatorForAR(
@@ -494,7 +493,7 @@ class _UploadFormState extends State<UploadForm> {
                       },
                       options: [
                         RadioButtonOptions(
-                          value: !state.sufficentCreditsBalance,
+                          value: state.uploadMethod == UploadMethod.ar,
                           isEnabled: state.sufficientArBalance,
                           text:
                               'Cost: ${winstonToAr(state.costEstimateAr.totalCost)} AR',
@@ -503,7 +502,7 @@ class _UploadFormState extends State<UploadForm> {
                         if (state.costEstimateTurbo != null &&
                             state.isTurboUploadPossible)
                           RadioButtonOptions(
-                            value: state.sufficentCreditsBalance,
+                            value: state.uploadMethod == UploadMethod.turbo,
                             isEnabled: state.sufficentCreditsBalance,
                             text: state.isZeroBalance
                                 ? ''

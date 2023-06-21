@@ -288,10 +288,6 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     try {
-      final turboBalance = await _turboBalanceRetriever.getBalance(
-        _auth.currentUser!.wallet,
-      );
-
       final uploadPreparation = await _arDriveUploadManager.prepareUpload(
         params: UploadParams(
           user: _auth.currentUser!,
@@ -305,6 +301,8 @@ class UploadCubit extends Cubit<UploadState> {
 
       _uploadMethod = uploadPreparation.uploadPaymentInfo.defaultPaymentMethod;
 
+      logger.d('Upload method: $_uploadMethod');
+
       final paymentInfo = uploadPreparation.uploadPaymentInfo;
       final uploadPlansPreparation = uploadPreparation.uploadPlansPreparation;
 
@@ -313,23 +311,28 @@ class UploadCubit extends Cubit<UploadState> {
         return;
       }
 
+      bool isTurboZeroBalance =
+          uploadPreparation.uploadPaymentInfo.turboBalance == BigInt.zero;
+
       logger.i(
         'Upload preparation finished\n'
         'UploadMethod: $_uploadMethod\n'
         'UploadPlan For AR: ${uploadPreparation.uploadPaymentInfo.arCostEstimate.toString()}\n'
         'UploadPlan For Turbo: ${uploadPreparation.uploadPlansPreparation.uploadPlanForTurbo.toString()}\n'
-        'Turbo Balance: $turboBalance\n'
+        'Turbo Balance: ${uploadPreparation.uploadPaymentInfo.turboBalance}\n'
         'AR Balance: ${_auth.currentUser!.walletBalance}\n'
-        'Is Turbo Upload Possible: ${paymentInfo.isTurboUploadPossible}\n'
-        'Is Zero Balance: ${turboBalance == BigInt.zero}\n',
+        'Is Turbo Upload Possible: ${paymentInfo.isUploadEligibleToTurbo}\n'
+        'Is Zero Balance: $isTurboZeroBalance\n',
       );
 
-      final literalBalance = convertCreditsToLiteralString(turboBalance);
+      final literalBalance = convertCreditsToLiteralString(
+          uploadPreparation.uploadPaymentInfo.turboBalance);
 
       emit(
         UploadReady(
-          isTurboUploadPossible: paymentInfo.isTurboUploadPossible,
-          isZeroBalance: turboBalance == BigInt.zero,
+          isTurboUploadPossible: paymentInfo.isUploadEligibleToTurbo &&
+              paymentInfo.isTurboAvailable,
+          isZeroBalance: isTurboZeroBalance,
           turboCredits: literalBalance,
           uploadSize: paymentInfo.totalSize,
           costEstimateAr: paymentInfo.arCostEstimate,
@@ -343,9 +346,10 @@ class UploadCubit extends Cubit<UploadState> {
           uploadPlanForAR: uploadPlansPreparation.uploadPlanForAr,
           uploadPlanForTurbo: uploadPlansPreparation.uploadPlanForTurbo,
           isFreeThanksToTurbo: (_uploadMethod == UploadMethod.turbo &&
-              paymentInfo.isFreeUploadPossibleUsingTurbo), // 500kb
-          sufficentCreditsBalance:
-              turboBalance >= paymentInfo.turboCostEstimate.totalCost,
+              paymentInfo.isFreeUploadPossibleUsingTurbo),
+          sufficentCreditsBalance: paymentInfo.turboBalance >=
+              paymentInfo.turboCostEstimate.totalCost,
+          uploadMethod: _uploadMethod!,
         ),
       );
     } catch (error, stacktrace) {

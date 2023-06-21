@@ -120,7 +120,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
             create: (context) => UploadCubit(
               arDriveUploadManager: ArDriveUploadPreparationManager(
                 uploadPreparePaymentOptions: UploadPaymentEvaluator(
-                  appConfig: context.read<AppConfig>(),
+                  appConfig: context.read<ConfigService>().config,
                   auth: context.read<ArDriveAuth>(),
                   turboBalanceRetriever: TurboBalanceRetriever(
                     paymentService: context.read<PaymentService>(),
@@ -135,7 +135,6 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
                     turboCostCalculator: TurboCostCalculator(
                       paymentService: context.read<PaymentService>(),
                     ),
-                    pstService: context.read<PstService>(),
                   ),
                   uploadCostEstimateCalculatorForAR:
                       UploadCostEstimateCalculatorForAR(

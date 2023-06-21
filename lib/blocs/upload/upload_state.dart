@@ -81,7 +81,6 @@ class UploadReady extends UploadState {
   final UploadPlan uploadPlanForAR;
   final UploadPlan? uploadPlanForTurbo;
   final bool isTurboUploadPossible;
-
   final bool isFreeThanksToTurbo;
 
   final int uploadSize;
@@ -89,6 +88,7 @@ class UploadReady extends UploadState {
   final String credits;
   final String arBalance;
   final String turboCredits;
+  final UploadMethod uploadMethod;
 
   UploadReady({
     required this.costEstimateAr,
@@ -105,6 +105,7 @@ class UploadReady extends UploadState {
     required this.isZeroBalance,
     this.uploadPlanForTurbo,
     required this.isTurboUploadPossible,
+    required this.uploadMethod,
   });
 
   @override

@@ -213,20 +213,26 @@ void main() {
 
     when(() => mockArDriveUploadPreparationManager.prepareUpload(
           params: any(named: 'params'),
-        )).thenAnswer((invocation) => Future.value(UploadPreparation(
+        )).thenAnswer(
+      (invocation) => Future.value(
+        UploadPreparation(
           uploadPlansPreparation: UploadPlansPreparation(
             uploadPlanForAr: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           ),
           uploadPaymentInfo: UploadPaymentInfo(
             defaultPaymentMethod: UploadMethod.ar,
-            isTurboUploadPossible: false,
+            isUploadEligibleToTurbo: false,
             arCostEstimate: mockUploadCostEstimateAR,
             turboCostEstimate: mockUploadCostEstimateTurbo,
             isFreeUploadPossibleUsingTurbo: false,
             totalSize: 100,
+            isTurboAvailable: true,
+            turboBalance: BigInt.from(100),
           ),
-        )));
+        ),
+      ),
+    );
   });
 
   final costEstimate = UploadCostEstimate(

@@ -27,6 +27,15 @@ class UploadCostEstimate extends Equatable {
     required this.usdUploadCost,
   });
 
+  factory UploadCostEstimate.zero() {
+    return UploadCostEstimate(
+      pstFee: BigInt.zero,
+      totalCost: BigInt.zero,
+      totalSize: 0,
+      usdUploadCost: 0,
+    );
+  }
+
   @override
   List<Object?> get props => [
         usdUploadCost,
@@ -79,15 +88,12 @@ class UploadCostEstimateCalculatorForAR extends ArDriveUploadCostCalculator {
 class TurboUploadCostCalculator extends ArDriveUploadCostCalculator {
   final TurboCostCalculator _turboCostCalculator;
   final TurboPriceEstimator _priceEstimator;
-  final PstService _pstService;
 
   TurboUploadCostCalculator({
     required TurboCostCalculator turboCostCalculator,
     required TurboPriceEstimator priceEstimator,
-    required PstService pstService,
   })  : _turboCostCalculator = turboCostCalculator,
-        _priceEstimator = priceEstimator,
-        _pstService = pstService;
+        _priceEstimator = priceEstimator;
 
   @override
   Future<UploadCostEstimate> calculateCost({
@@ -96,16 +102,14 @@ class TurboUploadCostCalculator extends ArDriveUploadCostCalculator {
     final cost =
         await _turboCostCalculator.getCostForBytes(byteSize: totalSize);
 
-    final pstFee = await _pstService.getPSTFee(cost);
-
-    final totalCostCredits = cost + pstFee.value;
+    final totalCostCredits = cost;
 
     final usdUploadCostForARWithTurbo = await _priceEstimator.convertForUSD(
       totalCostCredits,
     );
 
     return UploadCostEstimate(
-      pstFee: pstFee.value,
+      pstFee: BigInt.zero,
       totalCost: totalCostCredits,
       totalSize: totalSize,
       usdUploadCost: usdUploadCostForARWithTurbo,

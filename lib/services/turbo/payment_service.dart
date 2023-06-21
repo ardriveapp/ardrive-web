@@ -46,7 +46,7 @@ class PaymentService {
     );
 
     if (!acceptedStatusCodes.contains(result.statusCode)) {
-      throw Exception(
+      throw PaymentServiceException(
         'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
@@ -151,4 +151,10 @@ class DontUsePaymentService implements PaymentService {
 
 class TurboUserNotFound implements Exception {
   TurboUserNotFound();
+}
+
+class PaymentServiceException implements Exception {
+  final String message;
+
+  PaymentServiceException([this.message = '']);
 }

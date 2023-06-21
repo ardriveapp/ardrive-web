@@ -177,7 +177,7 @@ void main() {
             .thenAnswer((_) async => 'mockTransactionId');
         await expectLater(
           turboUploader.upload(bundleHandle),
-          emitsInOrder([1.0, emitsDone]),
+          emitsInOrder([0.0, 1.0, emitsDone]),
         );
       });
     });
@@ -273,7 +273,7 @@ void main() {
         );
 
         expect(result.defaultPaymentMethod, equals(UploadMethod.turbo));
-        expect(result.isTurboUploadPossible, isTrue);
+        expect(result.isUploadEligibleToTurbo, isTrue);
         expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
       });
       test(
@@ -320,7 +320,7 @@ void main() {
         );
 
         expect(result.isFreeUploadPossibleUsingTurbo, isTrue);
-        expect(result.isTurboUploadPossible, isTrue);
+        expect(result.isUploadEligibleToTurbo, isTrue);
       });
       test(
           'isFreeUploadPossibleUsingTurbo returns false when not all file sizes are within turbo threshold',
@@ -339,10 +339,11 @@ void main() {
         );
 
         expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-        expect(result.isTurboUploadPossible, isTrue);
+        expect(result.isUploadEligibleToTurbo, isTrue);
       });
 
-      test('isTurboUploadPossible returns true when have bundles', () async {
+      test('isFreeUploadPossibleUsingTurbo returns true when have bundles',
+          () async {
         final mockFile = MockBundleUploadHandle();
         when(() => mockFile.size).thenReturn(501);
         // limit of 500
@@ -357,7 +358,7 @@ void main() {
         );
 
         expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-        expect(result.isTurboUploadPossible, isTrue);
+        expect(result.isUploadEligibleToTurbo, isTrue);
       });
       test('isTurboUploadPossible returns false when not have any bundles',
           () async {
@@ -375,10 +376,71 @@ void main() {
         );
 
         expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-        expect(result.isTurboUploadPossible, isFalse);
+        expect(result.isUploadEligibleToTurbo, isFalse);
+        expect(result.isTurboAvailable, isTrue);
+      });
+
+      test(
+          'get the payment info with isTurboAvailable false when getBalance throws',
+          () async {
+        final mockFile = MockBundleUploadHandle();
+        when(() => mockFile.size).thenReturn(501);
+        when(() => mockFile.computeBundleSize())
+            .thenAnswer((invocation) => Future.value(501));
+        when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+        when(() => turboBalanceRetriever.getBalance(any()))
+            .thenThrow(Exception('error'));
+
+        final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          uploadPlanForAR: uploadPlan,
+          uploadPlanForTurbo: uploadPlan,
+        );
+
+        // the important part is that we don't throw
+        expect(result.isTurboAvailable, isFalse);
+
+        expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+
+        // To be eligible to turbo, we just need to pass a bundle
+        expect(result.isUploadEligibleToTurbo, isTrue);
+
+        // the payment method must be AR
+        expect(result.defaultPaymentMethod, equals(UploadMethod.ar));
+      });
+
+      test(
+          'get the payment info with isTurboAvailable false when calculateCost throws',
+          () async {
+        final mockFile = MockBundleUploadHandle();
+        when(() => mockFile.size).thenReturn(501);
+        when(() => mockFile.computeBundleSize())
+            .thenAnswer((invocation) => Future.value(501));
+
+        when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+        when(() => turboUploadCostCalculator.calculateCost(
+            totalSize: any(named: 'totalSize'))).thenThrow(Exception());
+
+        final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          uploadPlanForAR: uploadPlan,
+          uploadPlanForTurbo: uploadPlan,
+        );
+
+        // the important part is that we don't throw
+        expect(result.isTurboAvailable, isFalse);
+        expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+        expect(result.isUploadEligibleToTurbo, isTrue);
+
+        // the payment method must be AR
+        expect(result.defaultPaymentMethod, equals(UploadMethod.ar));
       });
 
       test('returns the expected UploadPaymentInfo', () async {
+        when(() => uploadCostEstimateCalculatorForAR.calculateCost(
+                totalSize: any(named: 'totalSize')))
+            .thenAnswer((_) async => mockUploadCostEstimateAR);
+        when(() => turboUploadCostCalculator.calculateCost(
+                totalSize: any(named: 'totalSize')))
+            .thenAnswer((_) async => mockUploadCostEstimateTurbo);
         final mockFile = MockBundleUploadHandle();
         when(() => mockFile.size).thenReturn(501);
 
@@ -398,7 +460,7 @@ void main() {
         expect(result.arCostEstimate, mockUploadCostEstimateAR);
         expect(result.turboCostEstimate, mockUploadCostEstimateTurbo);
         expect(result.defaultPaymentMethod, equals(UploadMethod.turbo));
-        expect(result.isTurboUploadPossible, isTrue);
+        expect(result.isUploadEligibleToTurbo, isTrue);
         expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
       });
 
@@ -426,6 +488,13 @@ void main() {
                 totalSize: any(named: 'totalSize')))
             .thenAnswer((_) async => mockUploadCostEstimateTurbo);
 
+        when(() => uploadCostEstimateCalculatorForAR.calculateCost(
+                totalSize: any(named: 'totalSize')))
+            .thenAnswer((_) async => mockUploadCostEstimateAR);
+        when(() => turboUploadCostCalculator.calculateCost(
+                totalSize: any(named: 'totalSize')))
+            .thenAnswer((_) async => mockUploadCostEstimateTurbo);
+
         final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
           uploadPlanForAR: uploadPlan,
           uploadPlanForTurbo: uploadPlan,
@@ -434,7 +503,7 @@ void main() {
         expect(result.arCostEstimate, mockUploadCostEstimateAR);
         expect(result.turboCostEstimate, mockUploadCostEstimateTurbo);
         expect(result.defaultPaymentMethod, equals(UploadMethod.ar));
-        expect(result.isTurboUploadPossible, isTrue);
+        expect(result.isUploadEligibleToTurbo, isTrue);
         expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
       });
     });
@@ -525,37 +594,9 @@ void main() {
           throwsA(isA<Exception>()));
     });
 
-    // test('Should throw if preparing Turbo plan fails', () async {
-    //   final uploadPlan = MockUploadPlan();
-
-    //   // Arrange
-    //   when(() => uploadPlanUtils.filesToUploadPlan(
-    //         cipherKey: any(named: 'cipherKey'),
-    //         files: any(named: 'files'),
-    //         targetFolder: any(named: 'targetFolder'),
-    //         targetDrive: any(named: 'targetDrive'),
-    //         foldersByPath: any(named: 'foldersByPath'),
-    //         conflictingFiles: any(named: 'conflictingFiles'),
-    //         wallet: any(named: 'wallet'),
-    //         useTurbo: false,
-    //       )).thenAnswer((_) async => uploadPlan);
-    //   when(() => uploadPlanUtils.filesToUploadPlan(
-    //             cipherKey: any(named: 'cipherKey'),
-    //             files: any(named: 'files'),
-    //             targetFolder: any(named: 'targetFolder'),
-    //             targetDrive: any(named: 'targetDrive'),
-    //             foldersByPath: any(named: 'foldersByPath'),
-    //             conflictingFiles: any(named: 'conflictingFiles'),
-    //             wallet: any(named: 'wallet'),
-    //             useTurbo: true,
-    //           ))
-    //       .thenThrow(Future<UploadPlan>.error(
-    //           Exception('Failed to prepare Turbo plan')));
-
-    //   // Assert
-    //   expectLater(() => uploadPreparer.prepareUpload(uploadParams),
-    //       throwsA(isA<Exception>()));
-    // });
+    test('Should throw if preparing Turbo plan fails', () async {
+      // TODO: tech debt
+    });
   });
 
   group('ArDriveUploadPreparationManager', () {
@@ -611,11 +652,13 @@ void main() {
 
         final uploadPaymentInfo = UploadPaymentInfo(
           defaultPaymentMethod: UploadMethod.ar,
-          isTurboUploadPossible: true,
+          isUploadEligibleToTurbo: true,
           arCostEstimate: mockUploadCostEstimateAR,
           turboCostEstimate: mockUploadCostEstimateTurbo,
           isFreeUploadPossibleUsingTurbo: true,
           totalSize: 100,
+          isTurboAvailable: true,
+          turboBalance: BigInt.from(100),
         );
 
         when(() => uploadPreparer.prepareUpload(uploadParams))

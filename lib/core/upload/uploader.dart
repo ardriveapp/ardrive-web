@@ -207,6 +207,8 @@ class TurboUploader implements Uploader<BundleUploadHandle> {
 
   @override
   Stream<double> upload(handle) async* {
+    yield 0;
+    handle.setUploadProgress(0);
     await _turbo
         .postDataItem(dataItem: handle.bundleDataItem, wallet: _wallet)
         .onError((error, stackTrace) {
@@ -322,8 +324,19 @@ class UploadPaymentEvaluator {
 
     int totalSize = 0;
 
-    final turboBalance =
-        await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
+    BigInt turboBalance;
+    bool isTurboAvailable = true;
+
+    /// Check the balance of the user
+    /// If we can't get the balance, turbo won't be available
+    try {
+      turboBalance =
+          await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
+    } catch (e) {
+      logger.e(e);
+      isTurboAvailable = false;
+      turboBalance = BigInt.zero;
+    }
 
     final arBundleSizes = await sizeUtils
         .getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles);
@@ -333,19 +346,31 @@ class UploadPaymentEvaluator {
     final turboBundleSizes = await sizeUtils
         .getSizeOfAllBundles(uploadPlanForTurbo.bundleUploadHandles);
 
+    /// Calculate the upload with AR is not optional
     final arCostEstimate =
         await _uploadCostEstimateCalculatorForAR.calculateCost(
       totalSize: arBundleSizes + arFileSizes,
     );
 
-    final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
-      totalSize: turboBundleSizes,
-    );
-
-    bool isTurboUploadPossible =
+    bool isUploadEligibleToTurbo =
         uploadPlanForTurbo.bundleUploadHandles.isNotEmpty;
 
-    if (turboBalance >= turboCostEstimate.totalCost) {
+    UploadCostEstimate turboCostEstimate = UploadCostEstimate.zero();
+
+    /// Calculate the upload with Turbo if possible
+    if (isTurboAvailable) {
+      try {
+        turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
+          totalSize: turboBundleSizes,
+        );
+      } catch (e) {
+        isTurboAvailable = false;
+      }
+    }
+
+    if (isTurboAvailable &&
+        isUploadEligibleToTurbo &&
+        turboBalance >= turboCostEstimate.totalCost) {
       totalSize = turboBundleSizes;
       uploadMethod = UploadMethod.turbo;
     } else {
@@ -353,22 +378,29 @@ class UploadPaymentEvaluator {
       uploadMethod = UploadMethod.ar;
     }
 
-    final allowedDataItemSizeForTurbo = _appConfig.allowedDataItemSizeForTurbo;
+    bool isFreeUploadPossibleUsingTurbo = false;
 
-    final allFileSizesAreWithinTurboThreshold =
-        uploadPlanForTurbo.bundleUploadHandles.any((file) {
-      return file.size < allowedDataItemSizeForTurbo;
-    });
+    if (isTurboAvailable && isUploadEligibleToTurbo) {
+      final allowedDataItemSizeForTurbo =
+          _appConfig.allowedDataItemSizeForTurbo;
 
-    bool isFreeUploadPossibleUsingTurbo = allFileSizesAreWithinTurboThreshold;
+      final allFileSizesAreWithinTurboThreshold =
+          uploadPlanForTurbo.bundleUploadHandles.any((file) {
+        return file.size < allowedDataItemSizeForTurbo;
+      });
+
+      isFreeUploadPossibleUsingTurbo = allFileSizesAreWithinTurboThreshold;
+    }
 
     return UploadPaymentInfo(
+      isTurboAvailable: isTurboAvailable,
       defaultPaymentMethod: uploadMethod,
-      isTurboUploadPossible: isTurboUploadPossible,
+      isUploadEligibleToTurbo: isUploadEligibleToTurbo,
       arCostEstimate: arCostEstimate,
       turboCostEstimate: turboCostEstimate,
       isFreeUploadPossibleUsingTurbo: isFreeUploadPossibleUsingTurbo,
       totalSize: totalSize,
+      turboBalance: turboBalance,
     );
   }
 }
@@ -385,19 +417,23 @@ class UploadPreparation {
 
 class UploadPaymentInfo {
   final UploadMethod defaultPaymentMethod;
-  final bool isTurboUploadPossible;
+  final bool isUploadEligibleToTurbo;
   final bool isFreeUploadPossibleUsingTurbo;
+  final bool isTurboAvailable;
   final UploadCostEstimate arCostEstimate;
   final UploadCostEstimate turboCostEstimate;
   final int totalSize;
+  final BigInt turboBalance;
 
   UploadPaymentInfo({
     required this.defaultPaymentMethod,
-    required this.isTurboUploadPossible,
+    required this.isUploadEligibleToTurbo,
     required this.arCostEstimate,
     required this.turboCostEstimate,
     required this.isFreeUploadPossibleUsingTurbo,
     required this.totalSize,
+    required this.isTurboAvailable,
+    required this.turboBalance,
   });
 }
 
