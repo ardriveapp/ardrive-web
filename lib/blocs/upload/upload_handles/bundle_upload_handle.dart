@@ -122,7 +122,7 @@ class BundleUploadHandle implements UploadHandle {
     }
   }
 
-  void dispose({bool useTurbo = false}) {
+  void clearBundleData({bool useTurbo = false}) {
     if (!useTurbo) {
       bundleTx.setData(Uint8List(0));
     }

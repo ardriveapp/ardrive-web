@@ -70,7 +70,8 @@ class ArDriveUploader {
         upload: _bundleUploader.upload,
         onFinishUpload: _onFinishBundleUpload,
         onUploadError: _onUploadBundleError,
-        dispose: (handle) => handle.dispose(useTurbo: _bundleUploader.useTurbo),
+        dispose: (handle) =>
+            handle.clearBundleData(useTurbo: _bundleUploader.useTurbo),
       )) {
         progresses[progress.item1] = progress.item2;
         yield progresses.reduce((a, b) => a + b) / progresses.length;

@@ -375,10 +375,12 @@ class _UploadFormState extends State<UploadForm> {
                             if (file is FileV2UploadHandle) {
                               return Row(
                                 children: [
-                                  Text(
-                                    file.entity.name!,
-                                    style: ArDriveTypography.body
-                                        .buttonNormalBold(),
+                                  Flexible(
+                                    child: Text(
+                                      file.entity.name!,
+                                      style: ArDriveTypography.body
+                                          .buttonNormalBold(),
+                                    ),
                                   ),
                                   Text(
                                     filesize(file.size),
@@ -400,14 +402,16 @@ class _UploadFormState extends State<UploadForm> {
                                   children: bundle.fileEntities.map((e) {
                                     return Row(
                                       children: [
-                                        Text(
-                                          '${e.name!} ',
-                                          style:
-                                              ArDriveTypography.body.smallBold(
-                                            color: ArDriveTheme.of(context)
-                                                .themeData
-                                                .colors
-                                                .themeFgSubtle,
+                                        Flexible(
+                                          child: Text(
+                                            '${e.name!} ',
+                                            style: ArDriveTypography.body
+                                                .smallBold(
+                                              color: ArDriveTheme.of(context)
+                                                  .themeData
+                                                  .colors
+                                                  .themeFgSubtle,
+                                            ),
                                           ),
                                         ),
                                         Text(
