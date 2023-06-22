@@ -60,7 +60,7 @@ class PaymentService {
     required Wallet wallet,
   }) async {
     final nonce = const Uuid().v4();
-    final publicKey = await wallet.getPublicKey();
+    final publicKey = await wallet.getOwner();
     final signature = await signNonceAndData(
       nonce: nonce,
       wallet: wallet,
@@ -70,7 +70,7 @@ class PaymentService {
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
-        'x-public-key': publicKeyToHeader(publicKey),
+        'x-public-key': publicKey,
       },
     ).onError((ArDriveHTTPException error, stackTrace) {
       logger.e('Error getting balance', error, stackTrace);
@@ -87,14 +87,14 @@ class PaymentService {
     return price;
   }
 
-  Future<PaymentSession> getPaymentSession({
+  Future<PaymentModel> getPaymentIntent({
     required Wallet wallet,
     required int amount,
     String currency = 'usd',
   }) async {
     final nonce = const Uuid().v4();
     final walletAddress = await wallet.getAddress();
-    final publicKey = await wallet.getPublicKey();
+    final publicKey = await wallet.getOwner();
     final signature = await signNonceAndData(
       nonce: nonce,
       wallet: wallet,
@@ -106,11 +106,11 @@ class PaymentService {
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
-        'x-public-key': publicKeyToHeader(publicKey),
+        'x-public-key': publicKey,
       },
     );
 
-    return PaymentSession.fromJson(result.data['paymentSession']);
+    return PaymentModel.fromJson(jsonDecode(result.data));
   }
 }
 
@@ -127,7 +127,7 @@ class DontUsePaymentService implements PaymentService {
       throw UnimplementedError();
 
   @override
-  Future<PaymentSession> getPaymentSession({
+  Future<PaymentModel> getPaymentIntent({
     required Wallet wallet,
     required int amount,
     String currency = 'usd',

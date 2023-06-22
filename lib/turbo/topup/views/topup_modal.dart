@@ -1,11 +1,16 @@
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
+import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/views/topup_payment_form.dart';
+import 'package:ardrive/turbo/topup/views/topup_review_view.dart';
+import 'package:ardrive/turbo/topup/views/topup_success_view.dart';
+import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -29,13 +34,22 @@ void showTurboModal(BuildContext context) {
     costCalculator: costCalculator,
   );
 
+  final turboPaymentProvider = StripePaymentProvider(
+    paymentService: context.read<PaymentService>(),
+    stripe: Stripe.instance,
+  );
+
   final turbo = Turbo(
     sessionManager: sessionManager,
     costCalculator: costCalculator,
     balanceRetriever: balanceRetriever,
     priceEstimator: priceEstimator,
+    paymentProvider: turboPaymentProvider,
     wallet: context.read<ArDriveAuth>().currentUser!.wallet,
   );
+
+  initializeStripe(context.read<ConfigService>().config);
+
   showAnimatedDialogWithBuilder(
     context,
     builder: (modalContext) => MultiBlocProvider(
@@ -93,12 +107,23 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveModal(
-      contentPadding: EdgeInsets.zero,
-      content: _content(),
-      constraints: BoxConstraints(
-        maxWidth: 575,
-        maxHeight: MediaQuery.of(context).size.height * 0.9,
+    return BlocListener<TurboTopupFlowBloc, TurboTopupFlowState>(
+      listener: (context, state) {
+        if (state is TurboTopupFlowShowingSuccessView) {
+          Navigator.of(context).pop();
+          _showSuccessDialog();
+        } else if (state is TurboTopupFlowShowingErrorView) {
+          _showErrorDialog(state.errorType,
+              parentContext: widget.parentContext);
+        }
+      },
+      child: ArDriveModal(
+        contentPadding: EdgeInsets.zero,
+        content: _content(),
+        constraints: BoxConstraints(
+          maxWidth: 575,
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
       ),
     );
   }
@@ -116,15 +141,56 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         if (state is TurboTopupFlowShowingEstimationView) {
           view = const TopUpEstimationView();
         } else if (state is TurboTopupFlowShowingPaymentFormView) {
-          view = BlocProvider<PaymentFormBloc>(
-            key: const ValueKey('payment_form'),
-            create: (context) => PaymentFormBloc(
-              context.read<Turbo>(),
-              state.priceEstimate,
-            ),
-            child: const TurboPaymentFormView(
-              key: ValueKey('payment_form'),
-            ),
+          view = Stack(
+            children: [
+              BlocProvider<PaymentFormBloc>(
+                key: const ValueKey('payment_form'),
+                create: (context) => PaymentFormBloc(
+                  context.read<Turbo>(),
+                  state.priceEstimate,
+                ),
+                child: Container(
+                  key: const ValueKey('payment_form'),
+                  color: Colors.transparent,
+                  child: const Opacity(
+                    key: ValueKey('payment_form'),
+                    opacity: 1,
+                    child: TurboPaymentFormView(),
+                  ),
+                ),
+              ),
+            ],
+          );
+        } else if (state is TurboTopupFlowShowingPaymentReviewView) {
+          view = Stack(
+            children: [
+              BlocProvider<PaymentFormBloc>(
+                key: const ValueKey('payment_form'),
+                create: (context) => PaymentFormBloc(
+                  context.read<Turbo>(),
+                  state.priceEstimate,
+                ),
+                child: Container(
+                  key: const ValueKey('payment_form'),
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                  child: const Opacity(
+                    key: ValueKey('payment_form'),
+                    opacity: 0,
+                    child: TurboPaymentFormView(),
+                  ),
+                ),
+              ),
+              BlocProvider<PaymentReviewBloc>(
+                create: (context) => PaymentReviewBloc(
+                    context.read<Turbo>(), state.priceEstimate)
+                  ..add(PaymentReviewLoadPaymentModel()),
+                child: Container(
+                    color:
+                        ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                    child: const TurboReviewView()),
+              ),
+            ],
           );
         } else {
           view = Container(
@@ -161,6 +227,48 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
           ),
         );
       },
+    );
+  }
+
+  void _showSuccessDialog() {
+    showAnimatedDialog(
+      context,
+      content: const ArDriveStandardModal(
+        width: 575,
+        content: Hero(tag: 'turbo_success', child: TurboSuccessView()),
+      ),
+      barrierDismissible: false,
+      barrierColor:
+          ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
+    );
+  }
+
+  void _showErrorDialog(
+    TurboErrorType type, {
+    required BuildContext parentContext,
+  }) {
+    showAnimatedDialogWithBuilder(
+      context,
+      builder: (modalContext) => ArDriveStandardModal(
+        width: 575,
+        content: TurboErrorView(
+          errorType: type,
+          onDismiss: () {
+            logger.d('dismiss');
+            Navigator.of(modalContext).pop();
+          },
+          onTryAgain: () {
+            logger.d('try again');
+            Navigator.of(modalContext).pop();
+            Navigator.of(context).pop();
+
+            showTurboModal(parentContext);
+          },
+        ),
+      ),
+      barrierDismissible: false,
+      barrierColor:
+          ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
     );
   }
 }
@@ -214,15 +322,4 @@ class PaymentFlowBackView extends StatelessWidget {
       child: view,
     );
   }
-}
-
-bool _isStripeInitialized = false;
-
-void initializeStripe() {
-  if (_isStripeInitialized) return;
-
-  Stripe.publishableKey =
-      'pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z';
-
-  Stripe.merchantIdentifier = 'merchant.com.ardrive';
 }

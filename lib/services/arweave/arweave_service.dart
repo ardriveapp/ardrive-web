@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -12,7 +14,6 @@ import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
-import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:artemis/artemis.dart';
@@ -136,28 +137,34 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      // Get a page of 100 transactions
-      final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
-        SnapshotEntityHistoryQuery(
-          variables: SnapshotEntityHistoryArguments(
-            driveId: driveId,
-            lastBlockHeight: lastBlockHeight,
-            after: cursor,
-            ownerAddress: ownerAddress,
+      try {
+        // Get a page of 100 transactions
+        final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
+          SnapshotEntityHistoryQuery(
+            variables: SnapshotEntityHistoryArguments(
+              driveId: driveId,
+              lastBlockHeight: lastBlockHeight,
+              after: cursor,
+              ownerAddress: ownerAddress,
+            ),
           ),
-        ),
-      );
+        );
+        for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge edge
+            in snapshotEntityHistoryQuery.data!.transactions.edges) {
+          yield edge.node;
+        }
 
-      for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge edge
-          in snapshotEntityHistoryQuery.data!.transactions.edges) {
-        yield edge.node;
-      }
+        cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
+            ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
+            : '';
 
-      cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
-          ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
-          : '';
-
-      if (!snapshotEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
+        if (!snapshotEntityHistoryQuery
+            .data!.transactions.pageInfo.hasNextPage) {
+          break;
+        }
+      } catch (e) {
+        print('Error fetching snapshots for drive $driveId - $e');
+        print('This drive and ones after will fall back to GQL');
         break;
       }
     }
@@ -222,7 +229,6 @@ class ArweaveService {
     SecretKey? driveKey,
     int lastBlockHeight, {
     required String ownerAddress,
-    required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
     // FIXME - PE-3440
@@ -381,19 +387,23 @@ class ArweaveService {
     required String driveId,
     required bool isPrivate,
   }) async {
-    final Uint8List? cachedData = await SnapshotItemOnChain.getDataForTxId(
-      driveId,
-      txId,
-    );
+    try {
+      final Uint8List? cachedData = await SnapshotItemOnChain.getDataForTxId(
+        driveId,
+        txId,
+      );
 
-    if (cachedData != null) {
-      if (isPrivate) {
-        // then it's base64-encoded
-        return base64.decode(String.fromCharCodes(cachedData));
-      } else {
-        // public data is plain text
-        return cachedData;
+      if (cachedData != null) {
+        if (isPrivate) {
+          // then it's base64-encoded
+          return base64.decode(String.fromCharCodes(cachedData));
+        } else {
+          // public data is plain text
+          return cachedData;
+        }
       }
+    } catch (e) {
+      logger.e('Failed to get cached entity data from snapshot', e);
     }
 
     return null;

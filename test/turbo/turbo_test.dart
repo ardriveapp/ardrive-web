@@ -1,3 +1,4 @@
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -6,6 +7,7 @@ import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -23,7 +25,33 @@ class MockTurboPriceEstimator extends Mock implements TurboPriceEstimator {}
 
 class MockTurboCostCalculator extends Mock implements TurboCostCalculator {}
 
+class MockPaymentProvider extends Mock implements TurboPaymentProvider {}
+
 void main() {
+  group('initializeStripe', () {
+    test('should use the stripePublishableKey from config', () {
+      // arrange
+      initializeStripe(AppConfig(stripePublishableKey: 'stripePublishableKey'));
+
+      // assert
+      expect(Stripe.publishableKey, equals('stripePublishableKey'));
+      expect(Stripe.publishableKey, isNot(equals('pk_test_123')));
+    });
+
+    test('should initialize only once', () {
+      // arrange
+      initializeStripe(AppConfig(stripePublishableKey: 'stripePublishableKey'));
+      initializeStripe(
+          AppConfig(stripePublishableKey: 'stripePublishableKey1'));
+      initializeStripe(
+          AppConfig(stripePublishableKey: 'stripePublishableKey2'));
+
+      // assert
+      expect(Stripe.publishableKey, equals('stripePublishableKey'));
+      expect(Stripe.publishableKey, isNot(equals('stripePublishableKey1')));
+      expect(Stripe.publishableKey, isNot(equals('stripePublishableKey2')));
+    });
+  });
   group('Turbo', () {
     setUpAll(() {
       registerFallbackValue(getTestWallet());
@@ -40,6 +68,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -67,6 +96,7 @@ void main() {
           balanceRetriever: MockTurboBalanceRetriever(),
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -94,6 +124,7 @@ void main() {
           balanceRetriever: MockTurboBalanceRetriever(),
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -137,6 +168,7 @@ void main() {
           balanceRetriever: MockTurboBalanceRetriever(),
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -175,6 +207,7 @@ void main() {
           balanceRetriever: MockTurboBalanceRetriever(),
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -277,6 +310,7 @@ void main() {
           balanceRetriever: MockTurboBalanceRetriever(),
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -315,6 +349,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
       });
 
@@ -367,6 +402,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
 
         expect(turbo.currentPriceEstimate, PriceEstimate.zero());
@@ -383,6 +419,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
 
         final mockPriceEstimate100 = PriceEstimate(
@@ -436,6 +473,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
 
         expect(() => turbo.maxQuoteExpirationDate, throwsA(isA<Exception>()));
@@ -454,6 +492,7 @@ void main() {
           balanceRetriever: mockBalanceRetriever,
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
         );
 
         final mockPriceEstimate100 = PriceEstimate(

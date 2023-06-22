@@ -1,5 +1,7 @@
+import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,12 +13,17 @@ class TurboTopupFlowBloc
   int _currentStep = 1;
   final Turbo turbo;
 
-  TurboTopupFlowBloc(this.turbo) : super(const TurboTopupFlowInitial()) {
+  TurboTopupFlowBloc(
+    this.turbo,
+  ) : super(const TurboTopupFlowInitial()) {
+    listenToSessionExpiration();
     on<TurboTopupFlowEvent>((event, emit) async {
       if (event is TurboTopUpShowEstimationView) {
-        emit(TurboTopupFlowShowingEstimationView(
-          isMovingForward: _currentStep <= event.stepNumber,
-        ));
+        emit(
+          TurboTopupFlowShowingEstimationView(
+            isMovingForward: _currentStep <= event.stepNumber,
+          ),
+        );
       } else if (event is TurboTopUpShowPaymentFormView) {
         emit(
           TurboTopupFlowShowingPaymentFormView(
@@ -24,8 +31,44 @@ class TurboTopupFlowBloc
             priceEstimate: turbo.currentPriceEstimate,
           ),
         );
+      } else if (event is TurboTopUpShowSuccessView) {
+        emit(
+          TurboTopupFlowShowingSuccessView(
+            isMovingForward: _currentStep <= event.stepNumber,
+          ),
+        );
+      } else if (event is TurboTopUpShowPaymentReviewView) {
+        emit(
+          TurboTopupFlowShowingPaymentReviewView(
+            isMovingForward: _currentStep <= event.stepNumber,
+            priceEstimate: turbo.currentPriceEstimate,
+          ),
+        );
+      } else if (event is TurboTopUpShowSuccessView) {
+        emit(TurboTopupFlowShowingSuccessView(
+          isMovingForward: _currentStep <= event.stepNumber,
+        ));
+      } else if (event is TurboTopUpShowSessionExpiredView) {
+        emit(TurboTopupFlowShowingErrorView(
+          isMovingForward: _currentStep <= event.stepNumber,
+          errorType: TurboErrorType.sessionExpired,
+        ));
+      } else if (event is TurboTopUpShowErrorView) {
+        emit(TurboTopupFlowShowingErrorView(
+          isMovingForward: _currentStep <= event.stepNumber,
+          errorType: event.errorType,
+        ));
       }
       _currentStep = event.stepNumber;
+    });
+  }
+
+  void listenToSessionExpiration() {
+    turbo.onSessionExpired.listen((isExpired) {
+      logger.d('Session expired: $isExpired');
+      if (isExpired) {
+        add(const TurboTopUpShowSessionExpiredView());
+      }
     });
   }
 }

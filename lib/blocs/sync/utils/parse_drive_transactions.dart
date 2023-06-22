@@ -56,7 +56,6 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           items,
           driveKey,
           lastBlockHeight,
-          snapshotDriveHistory: snapshotDriveHistory,
           driveId: drive.id,
           ownerAddress: ownerAddress,
         );
