@@ -23,7 +23,7 @@ class TurboUploadService {
     final acceptedStatusCodes = [200, 202, 204];
 
     final nonce = const Uuid().v4();
-    final publicKey = await wallet.getPublicKey();
+    final publicKey = await wallet.getOwner();
     final signature = await signNonceAndData(
       nonce: nonce,
       wallet: wallet,
@@ -34,7 +34,7 @@ class TurboUploadService {
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
-        'x-public-key': publicKeyToHeader(publicKey),
+        'x-public-key': publicKey,
       },
       data: (await dataItem.asBinary()).toBytes(),
     );
