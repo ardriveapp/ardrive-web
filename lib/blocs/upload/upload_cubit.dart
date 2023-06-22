@@ -567,14 +567,10 @@ class UploadCubit extends Cubit<UploadState> {
         );
       },
       onFinishFileUpload: (handle) async {
-        handle.writeFileEntityToDatabase(driveDao: _driveDao);
+        unawaited(handle.writeFileEntityToDatabase(driveDao: _driveDao));
       },
       onFinishBundleUpload: (handle) async {
-        try {
-          handle.writeBundleItemsToDatabase(driveDao: _driveDao);
-        } catch (e) {
-          logger.e('Error writing bundle items to database', e);
-        }
+        unawaited(handle.writeBundleItemsToDatabase(driveDao: _driveDao));
       },
       onUploadBundleError: (handle, error) async {
         if (!hasEmittedError) {
