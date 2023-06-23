@@ -89,14 +89,14 @@ Future<bool> canWeUseTurbo({
   required Map<String, FileV2UploadHandle> fileV2UploadHandles,
   required UploadService turboUploadService,
 }) async {
-  if (!turboUploadService.useTurbo) return false;
+  if (!turboUploadService.useTurboUpload) return false;
 
   final allFileSizesAreWithinTurboThreshold =
       !fileDataItemUploadHandles.values.any((file) {
     return file.size > turboUploadService.allowedDataItemSize;
   });
 
-  return turboUploadService.useTurbo &&
+  return turboUploadService.useTurboUpload &&
       fileV2UploadHandles.isEmpty &&
       allFileSizesAreWithinTurboThreshold;
 }

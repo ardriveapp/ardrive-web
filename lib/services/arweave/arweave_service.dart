@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -10,7 +12,8 @@ import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
-import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
+import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:artemis/artemis.dart';
@@ -21,6 +24,7 @@ import 'package:drift/drift.dart';
 import 'package:http/http.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
+import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 
 import 'error/gateway_response_handler.dart';
 
@@ -51,7 +55,7 @@ class ArweaveService {
         GatewayResponseHandler(),
         HttpRetryOptions(onRetry: (exception) {
           if (exception is GatewayError) {
-            print(
+            logger.i(
               'Retrying for ${exception.runtimeType} exception\n'
               'for route ${exception.requestUrl}\n'
               'and status code ${exception.statusCode}',
@@ -59,7 +63,7 @@ class ArweaveService {
             return;
           }
 
-          print('Retrying for unknown exception: ${exception.toString()}');
+          logger.w('Retrying for unknown exception: ${exception.toString()}');
         }, retryIf: (exception) {
           return exception is! RateLimitError;
         }));
@@ -133,28 +137,34 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      // Get a page of 100 transactions
-      final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
-        SnapshotEntityHistoryQuery(
-          variables: SnapshotEntityHistoryArguments(
-            driveId: driveId,
-            lastBlockHeight: lastBlockHeight,
-            after: cursor,
-            ownerAddress: ownerAddress,
+      try {
+        // Get a page of 100 transactions
+        final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
+          SnapshotEntityHistoryQuery(
+            variables: SnapshotEntityHistoryArguments(
+              driveId: driveId,
+              lastBlockHeight: lastBlockHeight,
+              after: cursor,
+              ownerAddress: ownerAddress,
+            ),
           ),
-        ),
-      );
+        );
+        for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge edge
+            in snapshotEntityHistoryQuery.data!.transactions.edges) {
+          yield edge.node;
+        }
 
-      for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge edge
-          in snapshotEntityHistoryQuery.data!.transactions.edges) {
-        yield edge.node;
-      }
+        cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
+            ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
+            : '';
 
-      cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
-          ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
-          : '';
-
-      if (!snapshotEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
+        if (!snapshotEntityHistoryQuery
+            .data!.transactions.pageInfo.hasNextPage) {
+          break;
+        }
+      } catch (e) {
+        print('Error fetching snapshots for drive $driveId - $e');
+        print('This drive and ones after will fall back to GQL');
         break;
       }
     }
@@ -219,7 +229,6 @@ class ArweaveService {
     SecretKey? driveKey,
     int lastBlockHeight, {
     required String ownerAddress,
-    required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
     // FIXME - PE-3440
@@ -242,7 +251,7 @@ class ArweaveService {
 
           // don't fetch data for snapshots
           if (isSnapshot) {
-            print('skipping unnecessary request for snapshot data');
+            logger.d('skipping unnecessary request for snapshot data');
             return Uint8List(0);
           }
 
@@ -253,6 +262,10 @@ class ArweaveService {
           );
         },
       ),
+    );
+
+    final metadataCache = await MetadataCache.fromCacheStore(
+      await newSharedPreferencesCacheStore(),
     );
 
     final blockHistory = <BlockEntities>[];
@@ -275,6 +288,8 @@ class ArweaveService {
         final entityType = transaction.getTag(EntityTag.entityType);
         final entityResponse = responses[i];
         final rawEntityData = entityResponse;
+
+        await metadataCache.put(transaction.id, rawEntityData);
 
         Entity? entity;
         if (entityType == EntityType.drive) {
@@ -304,12 +319,12 @@ class ArweaveService {
 
         // If there are errors in parsing the entity, ignore it.
       } on EntityTransactionParseException catch (parseException) {
-        print(
+        logger.e(
           'Failed to parse transaction '
           'with id ${parseException.transactionId}',
         );
       } on GatewayError catch (fetchException) {
-        print(
+        logger.e(
           'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
           'for transaction ${transaction.id}, '
           'with status ${fetchException.statusCode} '
@@ -372,19 +387,23 @@ class ArweaveService {
     required String driveId,
     required bool isPrivate,
   }) async {
-    final Uint8List? cachedData = await SnapshotItemOnChain.getDataForTxId(
-      driveId,
-      txId,
-    );
+    try {
+      final Uint8List? cachedData = await SnapshotItemOnChain.getDataForTxId(
+        driveId,
+        txId,
+      );
 
-    if (cachedData != null) {
-      if (isPrivate) {
-        // then it's base64-encoded
-        return base64.decode(String.fromCharCodes(cachedData));
-      } else {
-        // public data is plain text
-        return cachedData;
+      if (cachedData != null) {
+        if (isPrivate) {
+          // then it's base64-encoded
+          return base64.decode(String.fromCharCodes(cachedData));
+        } else {
+          // public data is plain text
+          return cachedData;
+        }
       }
+    } catch (e) {
+      logger.e('Failed to get cached entity data from snapshot', e);
     }
 
     return null;
@@ -461,8 +480,9 @@ class ArweaveService {
           () async => await Future.wait(
                 driveTxs.map((e) => client.api.getSandboxedTx(e.id)),
               ), onRetry: (Exception err) {
-        print(
-            'Retrying for get unique user drive entities on Exception: ${err.toString()}');
+        logger.i(
+          'Retrying for get unique user drive entities on Exception: ${err.toString()}',
+        );
       });
 
       final drivesById = <String?, DriveEntity>{};
@@ -497,7 +517,7 @@ class ArweaveService {
 
           // If there's an error parsing the drive entity, just ignore it.
         } on EntityTransactionParseException catch (parseException) {
-          print(
+          logger.e(
             'Failed to parse transaction '
             'with id ${parseException.transactionId}',
           );
@@ -505,8 +525,10 @@ class ArweaveService {
       }
       return drivesWithKey;
     } catch (e, stacktrace) {
-      print(
-          'An error occurs getting the unique user drive entities. Exception: ${e.toString()} stacktrace: ${stacktrace.toString()}');
+      logger.e(
+        'An error occurred when getting the unique user drive entities.'
+        ' Exception: ${e.toString()} stacktrace: ${stacktrace.toString()}',
+      );
       rethrow;
     }
   }
@@ -557,7 +579,7 @@ class ArweaveService {
       return await DriveEntity.fromTransaction(
           fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
     } on EntityTransactionParseException catch (parseException) {
-      print(
+      logger.e(
         'Failed to parse transaction '
         'with id ${parseException.transactionId}',
       );
@@ -719,7 +741,7 @@ class ArweaveService {
         crypto: _crypto,
       );
     } on EntityTransactionParseException catch (parseException) {
-      print(
+      logger.e(
         'Failed to parse transaction '
         'with id ${parseException.transactionId}',
       );
@@ -836,7 +858,7 @@ class ArweaveService {
     try {
       await Future.wait(confirmationFutures);
     } catch (e) {
-      print('Error getting transactions confirmations on exception: $e');
+      logger.e('Error getting transactions confirmations on exception: $e');
       rethrow;
     }
 

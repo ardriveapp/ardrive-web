@@ -1,32 +1,58 @@
 import 'dart:convert';
 
+import 'package:ardrive/turbo/topup/models/payment_model.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
 import 'package:uuid/uuid.dart';
 
-const paymentUri = 'https://payment.ardrive.dev';
-
 class PaymentService {
+  final bool useTurboPayment = true;
+  final Uri turboPaymentUri;
+
   ArDriveHTTP httpClient;
 
   PaymentService({
+    required this.turboPaymentUri,
     required this.httpClient,
   });
 
-  Future<BigInt> getPrice({
+  Future<BigInt> getPriceForBytes({
     required int byteSize,
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
-    final priceResponse = await httpClient.get(
-      url: '$paymentUri/v1/price/bytes/$byteSize',
+    final result = await httpClient.get(
+      url: '$turboPaymentUri/v1/price/bytes/$byteSize',
     );
-    if (!acceptedStatusCodes.contains(priceResponse.statusCode)) {
+    if (!acceptedStatusCodes.contains(result.statusCode)) {
       throw Exception(
-        'Turbo price fetch failed with status code ${priceResponse.statusCode}',
+        'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
-    final price = BigInt.parse(priceResponse.data);
+    final price = BigInt.parse((json.decode(result.data)['winc']));
+
+    return price;
+  }
+
+  Future<BigInt> getPriceForFiat({
+    required int amount,
+    required String currency,
+  }) async {
+    final acceptedStatusCodes = [200, 202, 204];
+
+    final result = await httpClient.get(
+      url: '$turboPaymentUri/v1/price/$currency/$amount',
+    );
+
+    if (!acceptedStatusCodes.contains(result.statusCode)) {
+      throw Exception(
+        'Turbo price fetch failed with status code ${result.statusCode}',
+      );
+    }
+
+    final price = BigInt.parse((json.decode(result.data)['winc']));
+
     return price;
   }
 
@@ -34,35 +60,41 @@ class PaymentService {
     required Wallet wallet,
   }) async {
     final nonce = const Uuid().v4();
-    final publicKey = await wallet.getPublicKey();
+    final publicKey = await wallet.getOwner();
     final signature = await signNonceAndData(
       nonce: nonce,
       wallet: wallet,
     );
     final result = await httpClient.get(
-      url: '$paymentUri/v1/balance',
+      url: '$turboPaymentUri/v1/balance',
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
-        'x-public-key': publicKeyToHeader(publicKey),
+        'x-public-key': publicKey,
       },
-    );
+    ).onError((ArDriveHTTPException error, stackTrace) {
+      logger.e('Error getting balance', error, stackTrace);
 
-    if (result.data == 'User not found') {
-      return BigInt.zero;
-    }
+      if (error.statusCode == 404) {
+        throw TurboUserNotFound();
+      }
 
-    return BigInt.parse(result.data);
+      throw error;
+    });
+
+    final price = BigInt.parse((json.decode(result.data)['winc']));
+
+    return price;
   }
 
-  Future topUp({
+  Future<PaymentModel> getPaymentIntent({
     required Wallet wallet,
-    required BigInt amount,
+    required int amount,
     String currency = 'usd',
   }) async {
     final nonce = const Uuid().v4();
     final walletAddress = await wallet.getAddress();
-    final publicKey = await wallet.getPublicKey();
+    final publicKey = await wallet.getOwner();
     final signature = await signNonceAndData(
       nonce: nonce,
       wallet: wallet,
@@ -70,15 +102,15 @@ class PaymentService {
 
     final result = await httpClient.get(
       url:
-          '$paymentUri/v1/top-up/payment-BigIntent/$walletAddress/$currency/$amount',
+          '$turboPaymentUri/v1/top-up/payment-intent/$walletAddress/$currency/$amount',
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
-        'x-public-key': publicKeyToHeader(publicKey),
+        'x-public-key': publicKey,
       },
     );
 
-    return jsonDecode(result.data)['paymentSession'];
+    return PaymentModel.fromJson(jsonDecode(result.data));
   }
 }
 
@@ -87,20 +119,36 @@ class DontUsePaymentService implements PaymentService {
   late ArDriveHTTP httpClient;
 
   @override
-  Future<BigInt> getPrice({required int byteSize}) {
+  Future<BigInt> getPriceForBytes({required int byteSize}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<BigInt> getBalance({required Wallet wallet}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<PaymentModel> getPaymentIntent({
+    required Wallet wallet,
+    required int amount,
+    String currency = 'usd',
+  }) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<BigInt> getBalance({required Wallet wallet}) {
-    throw UnimplementedError();
-  }
+  Uri get turboPaymentUri => throw UnimplementedError();
 
   @override
-  Future topUp(
-      {required Wallet wallet,
-      required BigInt amount,
-      String currency = 'usd'}) {
-    throw UnimplementedError();
-  }
+  bool get useTurboPayment => false;
+
+  @override
+  Future<BigInt> getPriceForFiat({
+    required int amount,
+    required String currency,
+  }) =>
+      throw UnimplementedError();
+}
+
+class TurboUserNotFound implements Exception {
+  TurboUserNotFound();
 }

@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 
@@ -126,7 +127,10 @@ class BundleUploadHandle implements UploadHandle {
     if (useTurbo) {
       await turboUploadService
           .postDataItem(dataItem: bundleDataItem)
-          .onError((error, stackTrace) => hasError = true);
+          .onError((error, stackTrace) {
+        logger.e(error);
+        return hasError = true;
+      });
       yield 1;
     } else {
       yield* arweave.client.transactions

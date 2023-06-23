@@ -5,10 +5,17 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Flutter Debug",
+      "name": "Flutter Debug - mobile",
       "request": "launch",
       "type": "dart",
       "args": ["--debug", "--flavor", "development"],
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "Flutter Debug - Web",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--debug", "--dart-define", "environment=development"],
       "program": "lib/main.dart"
     },
     {

@@ -73,7 +73,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           parentFolderId: targetFolder.id,
           name: folderName,
         );
-        if (_turboUploadService.useTurbo) {
+        if (_turboUploadService.useTurboUpload) {
           final folderDataItem = await _arweave.prepareEntityDataItem(
             folderEntity,
             profile.wallet,

@@ -239,7 +239,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleForgetWalletEvent(
-      ForgetWallet event, Emitter<LoginState> emit) async {
+    ForgetWallet event,
+    Emitter<LoginState> emit,
+  ) async {
     if (await _arDriveAuth.isUserLoggedIn()) {
       await _arDriveAuth.logout();
     }

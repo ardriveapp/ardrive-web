@@ -357,6 +357,7 @@ class UploadCubit extends Cubit<UploadState> {
           .upload(_arweave, _turbo)
           .debounceTime(const Duration(milliseconds: 500))
           .handleError((_) {
+        logger.e('Error uploading bundle');
         bundleHandle.hasError = true;
         if (!hasEmittedError) {
           addError(_);
@@ -365,6 +366,7 @@ class UploadCubit extends Cubit<UploadState> {
       })) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
+
       await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
 
       debugPrint('Disposing bundle');

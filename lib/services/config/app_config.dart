@@ -5,8 +5,10 @@ part 'app_config.g.dart';
 @JsonSerializable()
 class AppConfig {
   final String? defaultArweaveGatewayUrl;
-  final bool useTurbo;
-  final String? defaultTurboUrl;
+  final bool useTurboUpload;
+  final bool useTurboPayment;
+  final String? defaultTurboUploadUrl;
+  final String? defaultTurboPaymentUrl;
   final int? allowedDataItemSizeForTurbo;
   final bool enableQuickSyncAuthoring;
   final bool enableMultipleFileDownload;
@@ -14,11 +16,14 @@ class AppConfig {
   final int autoSyncIntervalInSeconds;
   final bool enableSyncFromSnapshot;
   final bool enableSeedPhraseLogin;
+  final String stripePublishableKey;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
-    this.useTurbo = false,
-    this.defaultTurboUrl,
+    this.useTurboUpload = false,
+    this.useTurboPayment = false,
+    this.defaultTurboUploadUrl,
+    this.defaultTurboPaymentUrl,
     this.allowedDataItemSizeForTurbo,
     this.enableQuickSyncAuthoring = false,
     this.enableMultipleFileDownload = false,
@@ -26,12 +31,15 @@ class AppConfig {
     this.autoSyncIntervalInSeconds = 5 * 60,
     this.enableSyncFromSnapshot = true,
     this.enableSeedPhraseLogin = true,
+    required this.stripePublishableKey,
   });
 
   AppConfig copyWith({
     String? defaultArweaveGatewayUrl,
-    bool? useTurbo,
-    String? defaultTurboUrl,
+    bool? useTurboUpload,
+    bool? useTurboPayment,
+    String? defaultTurboUploadUrl,
+    String? defaultTurboPaymentUrl,
     int? allowedDataItemSizeForTurbo,
     bool? enableQuickSyncAuthoring,
     bool? enableMultipleFileDownload,
@@ -39,12 +47,17 @@ class AppConfig {
     int? autoSyncIntervalInSeconds,
     bool? enableSyncFromSnapshot,
     bool? enableSeedPhraseLogin,
+    String? stripePublishableKey,
   }) {
     return AppConfig(
       defaultArweaveGatewayUrl:
           defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
-      useTurbo: useTurbo ?? this.useTurbo,
-      defaultTurboUrl: defaultTurboUrl ?? this.defaultTurboUrl,
+      useTurboUpload: useTurboUpload ?? this.useTurboUpload,
+      useTurboPayment: useTurboPayment ?? this.useTurboPayment,
+      defaultTurboUploadUrl:
+          defaultTurboUploadUrl ?? this.defaultTurboUploadUrl,
+      defaultTurboPaymentUrl:
+          defaultTurboPaymentUrl ?? this.defaultTurboPaymentUrl,
       allowedDataItemSizeForTurbo:
           allowedDataItemSizeForTurbo ?? this.allowedDataItemSizeForTurbo,
       enableMultipleFileDownload:
@@ -58,6 +71,7 @@ class AppConfig {
           enableSyncFromSnapshot ?? this.enableSyncFromSnapshot,
       enableSeedPhraseLogin:
           enableSeedPhraseLogin ?? this.enableSeedPhraseLogin,
+      stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
     );
   }
 

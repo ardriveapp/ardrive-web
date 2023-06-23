@@ -877,10 +877,6 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
-  "howDoIGetAR": "如何取得 AR ?",
-  "@howDoIGetAR": {
-    "description": "Link to a help page explaining how to get Arweave tokens"
-  },
   "infernoIsInFullSwing": "地獄獎勵計劃正如火如荼！點擊這裡查看參與規則！",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
@@ -892,10 +888,6 @@
   "insufficientARToCreateDrive": "你沒有足夠的 AR 去建立檔案盤",
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
-  },
-  "insufficientARWarning": "剩餘的資金不足",
-  "@insufficientARWarning": {
-    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
   },
   "insufficientBalanceForManifest": "提供的錢包餘額 ({walletBalance} AR) 不足以進行交易，因這項資訊清單交易需要 {totalCost} AR...",
   "@insufficientBalanceForManifest": {

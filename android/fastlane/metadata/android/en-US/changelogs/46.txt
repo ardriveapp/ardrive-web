@@ -1,0 +1,1 @@
+- Utilize cached metadata for Snapshot authoring
