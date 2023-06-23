@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/error_codes.dart' as error_codes;
 import 'package:local_auth/local_auth.dart';
@@ -93,8 +93,8 @@ class BiometricAuthentication {
 
       return authenticated;
     } on PlatformException catch (e) {
-      debugPrint(e.toString());
-      debugPrint(e.code);
+      logger.e(e.toString());
+      logger.e(e.code);
       disable();
 
       switch (e.code) {

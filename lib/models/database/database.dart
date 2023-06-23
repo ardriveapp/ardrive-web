@@ -1,4 +1,5 @@
 import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:drift/drift.dart';
 
 import 'unsupported.dart'
@@ -23,7 +24,7 @@ class Database extends _$Database {
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          print('schema changed from $from to $to ');
+          logger.i('schema changed from $from to $to ');
           if (from >= 1 && from < schemaVersion) {
             // Reset the database.
             for (final table in allTables) {

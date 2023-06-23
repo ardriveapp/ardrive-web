@@ -6,6 +6,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -235,6 +236,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     emit(DriveAttachFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to attach drive: $error $stackTrace');
+    logger.i('Failed to attach drive: $error $stackTrace');
   }
 }

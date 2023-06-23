@@ -38,9 +38,9 @@ class _AppSideBarState extends State<AppSideBar> {
   Widget build(BuildContext context) {
     return Material(
       color: ArDriveTheme.of(context).themeData.backgroundColor,
-      child: ScreenTypeLayout(
-        mobile: _mobileView(),
-        desktop: _desktopView(),
+      child: ScreenTypeLayout.builder(
+        mobile: (context) => _mobileView(),
+        desktop: (context) => _desktopView(),
       ),
     );
   }
@@ -454,16 +454,9 @@ class _AppSideBarState extends State<AppSideBar> {
     BuildContext context,
     bool isMobile,
   ) {
-    final minimumWalletBalance = BigInt.from(10000000);
-
     final profileState = context.watch<ProfileCubit>().state;
 
     if (profileState is ProfileLoggedIn) {
-      final profile = profileState;
-      final notEnoughARInWallet = !profile.hasMinimumBalanceForUpload(
-        minimumWalletBalance: minimumWalletBalance,
-      );
-
       return AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child: Column(

@@ -77,7 +77,7 @@ void main() async {
     }
   }
 
-  debugPrint('Starting without crashlytics');
+  logger.d('Starting without crashlytics');
 
   _runWithoutCrashlytics();
 }

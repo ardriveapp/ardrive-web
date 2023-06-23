@@ -73,8 +73,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenTypeLayout(
-      desktop: Material(
+    return ScreenTypeLayout.builder(
+      desktop: (context) => Material(
         color: ArDriveTheme.of(context).themeData.backgroundColor,
         child: Row(
           children: [
@@ -95,7 +95,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           ],
         ),
       ),
-      mobile: Scaffold(
+      mobile: (context) => Scaffold(
         resizeToAvoidBottomInset: true,
         body: SingleChildScrollView(
           child: Padding(
@@ -315,9 +315,9 @@ class _PromptWalletViewState extends State<PromptWalletView> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            ScreenTypeLayout(
-              desktop: const SizedBox.shrink(),
-              mobile: ArDriveImage(
+            ScreenTypeLayout.builder(
+              desktop: (context) => const SizedBox.shrink(),
+              mobile: (context) => ArDriveImage(
                 image: AssetImage(Resources.images.brand.logo1),
                 height: 50,
               ),
@@ -515,7 +515,7 @@ class _LoginCard extends StatelessWidget {
       final deviceType = getDeviceType(MediaQuery.of(context).size);
 
       switch (deviceType) {
-        case DeviceScreenType.desktop:
+        case DeviceScreenType.desktop: 
           if (constraints.maxWidth >= 512) {
             horizontalPadding = 72;
           } else {
@@ -715,9 +715,9 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ScreenTypeLayout(
-                desktop: const SizedBox.shrink(),
-                mobile: ArDriveImage(
+              ScreenTypeLayout.builder(
+                desktop: (context) => const SizedBox.shrink(),
+                mobile: (context) => ArDriveImage(
                   image: AssetImage(Resources.images.brand.logo1),
                   height: 50,
                 ),
@@ -996,8 +996,8 @@ class OnBoardingViewState extends State<OnBoardingView> {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenTypeLayout(
-      desktop: Material(
+    return ScreenTypeLayout.builder(
+      desktop: (context) => Material(
         color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1027,7 +1027,7 @@ class OnBoardingViewState extends State<OnBoardingView> {
           ],
         ),
       ),
-      mobile: Scaffold(
+      mobile: (context) => Scaffold(
         resizeToAvoidBottomInset: true,
         body: Container(
           color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
