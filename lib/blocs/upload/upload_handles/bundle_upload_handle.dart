@@ -66,9 +66,9 @@ class BundleUploadHandle implements UploadHandle {
               folderDataItemUploadHandles),
     );
 
-    debugPrint('Bundle mounted');
+    logger.d('Bundle mounted');
 
-    debugPrint('Creating bundle transaction');
+    logger.d('Creating bundle transaction');
     if (useTurbo) {
       bundleDataItem = await arweaveService.prepareBundledDataItem(
         bundle,
@@ -84,19 +84,19 @@ class BundleUploadHandle implements UploadHandle {
 
       bundleId = bundleTx.id;
 
-      debugPrint('Bundle transaction created');
+      logger.d('Bundle transaction created');
 
-      debugPrint('Adding tip');
+      logger.d('Adding tip');
 
       await pstService.addCommunityTipToTx(bundleTx);
 
-      debugPrint('Tip added');
+      logger.d('Tip added');
 
-      debugPrint('Signing bundle');
+      logger.d('Signing bundle');
 
       await bundleTx.sign(wallet);
 
-      debugPrint('Bundle signed');
+      logger.d('Bundle signed');
     }
   }
 
@@ -105,7 +105,7 @@ class BundleUploadHandle implements UploadHandle {
   }) async {
     if (hasError) return;
 
-    debugPrint('Writing bundle items to database');
+    logger.d('Writing bundle items to database');
 
     // Write entities to database
     for (var folder in folderDataItemUploadHandles) {
