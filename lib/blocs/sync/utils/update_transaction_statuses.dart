@@ -14,7 +14,7 @@ Future<void> _updateTransactionStatuses({
   /// Remove all confirmed transactions from the pending map
   /// and update the status of the remaining ones
 
-  print(
+  logger.i(
     'Skipping status update for ${txsIdsToSkip.length} transactions that were captured in snapshots',
   );
   for (final txId in txsIdsToSkip) {
