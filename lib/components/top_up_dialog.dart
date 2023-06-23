@@ -562,16 +562,14 @@ class _BalanceViewState extends State<_BalanceView> {
   @override
   Widget build(BuildContext context) {
     return ScreenTypeLayout.builder(
-      desktop: (context) => Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: balanceContents(),
-      ),
-      mobile: (context) => Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: balanceContents(),
-      ),
-    );
+        mobile: (context) => Row(
+              mainAxisSize: MainAxisSize.max,
+              children: balanceContents(),
+            ),
+        desktop: (context) => Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: balanceContents(),
+            ));
   }
 }
 
