@@ -593,77 +593,16 @@ class _UploadFormState extends State<UploadForm> {
                               ),
                             ),
                           ),
-                          if (index == 0 &&
-                              !state.sufficientArBalance &&
-                              !state.isFreeThanksToTurbo) ...{
-                            const SizedBox(height: 8),
-                            Text(
-                              appLocalizationsOf(context)
-                                  .insufficientARForUpload,
-                              style: ArDriveTypography.body.captionBold(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeErrorDefault,
-                              ),
-                            ),
-                            // ignore: equal_elements_in_set
-                            const SizedBox(height: 8)
-                          },
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    if (!state.sufficentCreditsBalance && !state.isZeroBalance)
-                      GestureDetector(
-                        onTap: () {
-                          showTurboModal(context, onSuccess: () {
-                            context
-                                .read<UploadCubit>()
-                                .startUploadPreparation();
-                          });
-                        },
-                        child: ArDriveClickArea(
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text:
-                                      'Insufficient balance to pay for this upload. You can either',
-                                  style: ArDriveTypography.body.captionBold(
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeErrorDefault,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: ' add Turbo credits to your profile',
-                                  style: ArDriveTypography.body
-                                      .captionBold(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeErrorDefault,
-                                      )
-                                      .copyWith(
-                                        decoration: TextDecoration.underline,
-                                      ),
-                                ),
-                                TextSpan(
-                                  text: ' or use AR',
-                                  style: ArDriveTypography.body.captionBold(
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeErrorDefault,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      )
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    _getInsufficientBalanceMessage(
+                      sufficentCreditsBalance: state.sufficentCreditsBalance,
+                      sufficientArBalance: state.sufficientArBalance,
+                    ),
                   ]
                 ],
               ),
@@ -880,138 +819,114 @@ class _UploadFormState extends State<UploadForm> {
           return const SizedBox();
         },
       );
-}
 
-late OverlayEntry entry;
-
-showDownloadOverlay({
-  required BuildContext context,
-  required Widget child,
-}) {
-  entry = OverlayEntry(
-    builder: (context) => Positioned(
-      right: 20,
-      bottom: 20,
-      child: Material(
-        borderRadius: BorderRadius.circular(15),
-        child: child,
-      ),
-    ),
-  );
-
-  Overlay.of(context).insert(entry);
-}
-
-class UploadProgressModal extends StatefulWidget {
-  const UploadProgressModal({super.key, required this.cubit});
-
-  final UploadCubit cubit;
-
-  @override
-  State<UploadProgressModal> createState() => _UploadProgressModalState();
-}
-
-class _UploadProgressModalState extends State<UploadProgressModal> {
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<UploadCubit, UploadState>(
-      bloc: widget.cubit,
-      builder: (context, state) {
-        if (state is UploadInProgress) {
-          final numberOfItems = state.uploadPlan.fileV2UploadHandles.length +
-              state.uploadPlan.bundleUploadHandles.length;
-
-          double maxHeight = 92 + 40;
-
-          if (numberOfItems > 5) {
-            maxHeight += 5 * 40;
-          } else {
-            maxHeight += numberOfItems * 40;
-          }
-
-          return ArDriveCard(
-            contentPadding: EdgeInsets.zero,
-            backgroundColor:
-                ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-            width: 348,
-            height: maxHeight,
-            content: Column(
+  Widget _getInsufficientBalanceMessage({
+    required bool sufficientArBalance,
+    required bool sufficentCreditsBalance,
+  }) {
+    if (_uploadMethod == UploadMethod.turbo &&
+        !sufficentCreditsBalance &&
+        sufficientArBalance) {
+      return GestureDetector(
+        onTap: () {
+          showTurboModal(context, onSuccess: () {
+            context.read<UploadCubit>().startUploadPreparation();
+          });
+        },
+        child: ArDriveClickArea(
+          child: Text.rich(
+            TextSpan(
+              text: 'Insufficient Credit balance for purchase. ',
+              style: ArDriveTypography.body.captionBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+              ),
               children: [
-                Container(
-                  color:
-                      ArDriveTheme.of(context).themeData.tableTheme.cellColor,
-                  height: 40,
-                  alignment: Alignment.centerLeft,
-                  width: double.maxFinite,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Uploading... (${(state.progress * 100).toStringAsFixed(2)}%)',
-                          style: ArDriveTypography.body.buttonLargeBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                          ),
-                        ),
-                        ArDriveIcons.x()
-                      ],
-                    ),
-                  ),
+                TextSpan(
+                  text: 'Add Credits',
+                  style: ArDriveTypography.body
+                      .captionBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeErrorDefault,
+                      )
+                      .copyWith(decoration: TextDecoration.underline),
                 ),
-                Expanded(
-                  child: Container(
+                TextSpan(
+                  text: ' to use Turbo.',
+                  style: ArDriveTypography.body.captionBold(
                     color: ArDriveTheme.of(context)
                         .themeData
-                        .tableTheme
-                        .backgroundColor,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: state.uploadPlan.fileV2UploadHandles.length +
-                          state.uploadPlan.bundleUploadHandles.length,
-                      itemBuilder: (context, index) {
-                        String itemName;
-
-                        if (index <
-                            state.uploadPlan.fileV2UploadHandles.length) {
-                          itemName = state.uploadPlan.fileV2UploadHandles.values
-                              .elementAt(index)
-                              .entity
-                              .name!;
-                        } else {
-                          itemName = state.uploadPlan.bundleUploadHandles
-                              .elementAt(index -
-                                  state.uploadPlan.fileV2UploadHandles.length)
-                              .fileEntities
-                              .map((e) => e.name!)
-                              .join(', ');
-                        }
-
-                        return ListTile(
-                          leading: ArDriveIcons.file(),
-                          title: Text(
-                            itemName,
-                            style: ArDriveTypography.body.buttonNormalBold(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDefault,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                        .colors
+                        .themeErrorDefault,
                   ),
-                )
+                ),
               ],
             ),
-          );
-        }
-        return const SizedBox();
-      },
-    );
+          ),
+        ),
+      );
+    }
+
+    if (_uploadMethod == UploadMethod.ar &&
+        !sufficientArBalance &&
+        sufficentCreditsBalance) {
+      return Text(
+        'Insufficient AR balance for purchase.',
+        style: ArDriveTypography.body.captionBold(
+          color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+        ),
+      );
+    } else if (!sufficentCreditsBalance && !sufficientArBalance) {
+      return GestureDetector(
+        onTap: () {
+          showTurboModal(context, onSuccess: () {
+            context.read<UploadCubit>().startUploadPreparation();
+          });
+        },
+        child: ArDriveClickArea(
+          child: RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text:
+                      'Insufficient balance to pay for this upload. You can either',
+                  style: ArDriveTypography.body.captionBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeErrorDefault,
+                  ),
+                ),
+                TextSpan(
+                  text: ' add Turbo credits to your profile',
+                  style: ArDriveTypography.body
+                      .captionBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeErrorDefault,
+                      )
+                      .copyWith(
+                        decoration: TextDecoration.underline,
+                      ),
+                ),
+                TextSpan(
+                  text: ' or use AR',
+                  style: ArDriveTypography.body.captionBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeErrorDefault,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return const SizedBox();
   }
 }
