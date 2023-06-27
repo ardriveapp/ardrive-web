@@ -23,7 +23,7 @@ class TurboErrorView extends StatelessWidget {
       case TurboErrorType.server:
         return 'The payment was not successful. Please check your card information and try again.';
       case TurboErrorType.fetchPaymentIntentFailed:
-        return 'We could not load the payment check-out. Please try again.';
+        return 'Payment processor is currently unavailable, please try again later';
       case TurboErrorType.fetchEstimationInformationFailed:
         return 'Error loading information. Please try again.';
       default:
