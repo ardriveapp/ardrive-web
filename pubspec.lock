@@ -88,7 +88,7 @@ packages:
     description:
       path: "."
       ref: PE-4033-add-country-and-to-s-checkbox-to-top-up-modal
-      resolved-ref: "05b75d7a81836787628aa5bf2b12ffe3c897c29e"
+      resolved-ref: "7ecb381d6936b8bbf098af26ffd01912f858b19c"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.2.0"

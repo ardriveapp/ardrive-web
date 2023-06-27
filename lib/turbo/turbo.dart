@@ -383,13 +383,24 @@ class StripePaymentProvider implements TurboPaymentProvider {
       return PaymentStatus.quoteExpired;
     }
 
+    final billingDetails = BillingDetails(
+      email: paymentUserInformation.email,
+      address: Address(
+        city: '',
+        country: paymentUserInformation.country,
+        line1: '',
+        line2: '',
+        postalCode: '',
+        state: '',
+      ),
+      name: paymentUserInformation.name,
+    );
+
     final paymentIntent = await stripe.confirmPayment(
       paymentIntentClientSecret: paymentModel.paymentSession.clientSecret,
       data: PaymentMethodParams.card(
         paymentMethodData: PaymentMethodData(
-          billingDetails: BillingDetails(
-            email: paymentUserInformation.email,
-          ),
+          billingDetails: billingDetails,
         ),
       ),
     );
@@ -401,7 +412,7 @@ class StripePaymentProvider implements TurboPaymentProvider {
       return PaymentStatus.success;
     }
 
-    logger.e('Payment failed');
+    logger.e('Payment failed with status: ${paymentIntent.status}');
     return PaymentStatus.failed;
   }
 }

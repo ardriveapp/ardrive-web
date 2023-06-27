@@ -6,6 +6,9 @@ import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/views/topup_payment_form.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,6 +26,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
   bool _emailChecked = false;
   bool _emailIsValid = true;
   bool _hasAutomaticChecked = false;
+  bool _isTermsChecked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -463,6 +467,62 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         ),
                         checked: _emailChecked,
                       ),
+                      Row(
+                        children: [
+                          ArDriveCheckBox(
+                            title: '',
+                            checked: _isTermsChecked,
+                            onChange: ((value) {
+                              setState(() => _isTermsChecked = value);
+                            }),
+                          ),
+                          GestureDetector(
+                            onTap: () => openUrl(
+                              url: Resources.agreementLink,
+                            ),
+                            child: ArDriveClickArea(
+                              child: Text.rich(
+                                TextSpan(
+                                  children: splitTranslationsWithMultipleStyles<
+                                      InlineSpan>(
+                                    originalText: appLocalizationsOf(context)
+                                        .aggreeToTerms_body,
+                                    defaultMapper: (text) => TextSpan(
+                                      text: text,
+                                      style: ArDriveTypography.body
+                                          .buttonNormalBold(
+                                        color: ArDriveTheme.of(context)
+                                            .themeData
+                                            .colors
+                                            .themeAccentDisabled,
+                                      ),
+                                    ),
+                                    parts: {
+                                      appLocalizationsOf(context)
+                                              .aggreeToTerms_link:
+                                          (text) => TextSpan(
+                                                text: text,
+                                                style: ArDriveTypography.body
+                                                    .buttonNormalBold(
+                                                      color: ArDriveTheme.of(
+                                                              context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeAccentDisabled,
+                                                    )
+                                                    .copyWith(
+                                                      decoration: TextDecoration
+                                                          .underline,
+                                                    ),
+                                              ),
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const Divider(
                         height: 80,
                       ),
@@ -513,8 +573,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 fontStyle: ArDriveTypography.body.buttonLargeBold(
                   color: Colors.white,
                 ),
-                isDisabled:
-                    state is PaymentReviewLoadingQuote || !_emailIsValid,
+                isDisabled: state is PaymentReviewLoadingQuote ||
+                    !_emailIsValid ||
+                    !_isTermsChecked,
                 customContent: state is PaymentReviewLoading
                     ? const SizedBox(
                         height: 24,

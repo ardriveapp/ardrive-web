@@ -3,14 +3,10 @@ import 'dart:async';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
-import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
-import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,8 +25,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   CardFieldInputDetails? card;
 
   CountryItem? _selectedCountry;
-  TextEditingController _nameController = TextEditingController();
-  bool _isTermsChecked = false;
+  final TextEditingController _nameController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -254,7 +249,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               color: Colors.white,
             ),
             isDisabled: _selectedCountry == null ||
-                !_isTermsChecked ||
                 _nameController.text.isEmpty ||
                 !(card?.complete ?? false),
             onPressed: () {
@@ -350,42 +344,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           const SizedBox(
             height: 16,
           ),
-          Row(
-            children: [
-              ArDriveCheckBox(
-                title: '',
-                checked: _isTermsChecked,
-                onChange: ((value) {
-                  setState(() => _isTermsChecked = value);
-                }),
-              ),
-              GestureDetector(
-                onTap: () => openUrl(
-                  url: Resources.agreementLink,
-                ),
-                child: ArDriveClickArea(
-                  child: Text.rich(
-                    TextSpan(
-                      children: splitTranslationsWithMultipleStyles<InlineSpan>(
-                        originalText:
-                            appLocalizationsOf(context).aggreeToTerms_body,
-                        defaultMapper: (text) => TextSpan(text: text),
-                        parts: {
-                          appLocalizationsOf(context).aggreeToTerms_link:
-                              (text) => TextSpan(
-                                    text: text,
-                                    style: const TextStyle(
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -400,15 +358,15 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         label: 'Name on Card',
         isFieldRequired: true,
         useErrorMessageOffset: true,
-        onChanged: (s) {
-          String valid = s.replaceAll(RegExp(r'[^a-zA-Z\s]'), '');
+        validator: (s) {
+          String valid = s?.replaceAll(RegExp(r'[^a-zA-Z\s]'), '') ?? '';
           _nameController.text = valid;
           _nameController.selection =
               TextSelection.collapsed(offset: valid.length);
+
           setState(() {});
-        },
-        validator: (s) {
-          if (s == null || s.isEmpty) {
+
+          if (valid.isEmpty) {
             return 'Can\'t be empty';
           }
 
