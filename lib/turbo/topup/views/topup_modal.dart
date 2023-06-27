@@ -39,6 +39,9 @@ void showTurboModal(BuildContext context) {
     stripe: Stripe.instance,
   );
 
+  final turboSupportedCountriesRetriever = TurboSupportedCountriesRetriever(
+      paymentService: context.read<PaymentService>());
+
   final turbo = Turbo(
     sessionManager: sessionManager,
     costCalculator: costCalculator,
@@ -46,6 +49,7 @@ void showTurboModal(BuildContext context) {
     priceEstimator: priceEstimator,
     paymentProvider: turboPaymentProvider,
     wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+    supportedCountriesRetriever: turboSupportedCountriesRetriever,
   );
 
   initializeStripe(context.read<ConfigService>().config);
@@ -148,7 +152,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                 create: (context) => PaymentFormBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
-                ),
+                )..add(PaymentFormLoadSupportedCountries()),
                 child: Container(
                   key: const ValueKey('payment_form'),
                   color: Colors.transparent,
@@ -169,7 +173,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                 create: (context) => PaymentFormBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
-                ),
+                )..add(PaymentFormLoadSupportedCountries()),
                 child: Container(
                   key: const ValueKey('payment_form'),
                   color:

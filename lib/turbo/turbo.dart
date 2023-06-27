@@ -19,6 +19,7 @@ class Turbo extends Disposable {
   final TurboBalanceRetriever _balanceRetriever;
   final TurboPriceEstimator _priceEstimator;
   final TurboPaymentProvider _paymentProvider;
+  final TurboSupportedCountriesRetriever _supportedCountriesRetriever;
   final Wallet _wallet;
 
   Turbo({
@@ -28,12 +29,14 @@ class Turbo extends Disposable {
     required TurboPriceEstimator priceEstimator,
     required TurboPaymentProvider paymentProvider,
     required Wallet wallet,
+    required TurboSupportedCountriesRetriever supportedCountriesRetriever,
   })  : _balanceRetriever = balanceRetriever,
         _costCalculator = costCalculator,
         _priceEstimator = priceEstimator,
         _paymentProvider = paymentProvider,
         _wallet = wallet,
-        _sessionManager = sessionManager;
+        _sessionManager = sessionManager,
+        _supportedCountriesRetriever = supportedCountriesRetriever;
 
   DateTime get maxQuoteExpirationDate {
     final maxQuoteExpirationTime = _priceEstimator.maxQuoteExpirationTime;
@@ -142,6 +145,9 @@ class Turbo extends Disposable {
       paymentModel: _currentPaymentIntent!,
     );
   }
+
+  Future<List<String>> getSupportedCountries() =>
+      _supportedCountriesRetriever.getSupportedCountries();
 
   @override
   Future<void> dispose() async {
@@ -414,6 +420,18 @@ class StripePaymentProvider implements TurboPaymentProvider {
 
     logger.e('Payment failed with status: ${paymentIntent.status}');
     return PaymentStatus.failed;
+  }
+}
+
+class TurboSupportedCountriesRetriever {
+  final PaymentService paymentService;
+
+  TurboSupportedCountriesRetriever({
+    required this.paymentService,
+  });
+
+  Future<List<String>> getSupportedCountries() async {
+    return paymentService.getSupportedCountries();
   }
 }
 

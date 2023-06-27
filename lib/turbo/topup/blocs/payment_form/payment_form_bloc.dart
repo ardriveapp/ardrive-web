@@ -16,17 +16,58 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
     on<PaymentFormEvent>(
       (event, emit) async {
         if (event is PaymentFormPrePopulateFields) {
-          emit(PaymentFormPopulatingFieldsForTesting(state.priceEstimate,
-              _expirationTimeInSeconds(turbo.maxQuoteExpirationDate)));
+          emit(
+            PaymentFormPopulatingFieldsForTesting(
+              state.priceEstimate,
+              _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+              (state as PaymentFormLoaded).supportedCountries,
+            ),
+          );
+        } else if (event is PaymentFormLoadSupportedCountries) {
+          try {
+            emit(PaymentFormLoading(
+              state.priceEstimate,
+              _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+            ));
+
+            final supportedCountries = await turbo.getSupportedCountries();
+
+            emit(
+              PaymentFormLoaded(
+                state.priceEstimate,
+                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+                supportedCountries,
+              ),
+            );
+          } catch (e) {
+            emit(
+              PaymentFormError(
+                state.priceEstimate,
+                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+              ),
+            );
+          }
         } else if (event is PaymentFormUpdateQuote) {
           try {
-            emit(PaymentFormLoadingQuote(state.priceEstimate,
-                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate)));
+            emit(
+              PaymentFormLoadingQuote(
+                state.priceEstimate,
+                _expirationTimeInSeconds(
+                  turbo.maxQuoteExpirationDate,
+                ),
+                (state as PaymentFormLoaded).supportedCountries,
+              ),
+            );
 
             final priceEstimate = await turbo.refreshPriceEstimate();
 
-            emit(PaymentFormQuoteLoaded(priceEstimate,
-                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate)));
+            emit(
+              PaymentFormQuoteLoaded(
+                priceEstimate,
+                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+                (state as PaymentFormLoaded).supportedCountries,
+              ),
+            );
           } catch (e) {
             logger.e(e);
           }
