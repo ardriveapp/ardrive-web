@@ -3,10 +3,14 @@ import 'dart:async';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +27,10 @@ class TurboPaymentFormView extends StatefulWidget {
 
 class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   CardFieldInputDetails? card;
+
+  CountryItem? _selectedCountry;
+  TextEditingController _nameController = TextEditingController();
+  bool _isTermsChecked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -245,11 +253,16 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             fontStyle: ArDriveTypography.body.buttonLargeBold(
               color: Colors.white,
             ),
-            isDisabled: !(card?.complete ?? false),
+            isDisabled: _selectedCountry == null ||
+                !_isTermsChecked ||
+                _nameController.text.isEmpty ||
+                !(card?.complete ?? false),
             onPressed: () {
-              // TODO: check payment-form-and-checkout branch
               context.read<TurboTopupFlowBloc>().add(
-                    TurboTopUpShowPaymentReviewView(),
+                    TurboTopUpShowPaymentReviewView(
+                      name: _nameController.text,
+                      country: _selectedCountry!.label,
+                    ),
                   );
             },
           ),
@@ -267,6 +280,18 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              nameOnCardTextField(),
+            ],
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              countryTextField(theme),
+            ],
+          ),
+          SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(bottom: 4, right: 16),
             child: Align(
@@ -325,7 +350,130 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           const SizedBox(
             height: 16,
           ),
+          Row(
+            children: [
+              ArDriveCheckBox(
+                title: '',
+                checked: _isTermsChecked,
+                onChange: ((value) {
+                  setState(() => _isTermsChecked = value);
+                }),
+              ),
+              GestureDetector(
+                onTap: () => openUrl(
+                  url: Resources.agreementLink,
+                ),
+                child: ArDriveClickArea(
+                  child: Text.rich(
+                    TextSpan(
+                      children: splitTranslationsWithMultipleStyles<InlineSpan>(
+                        originalText:
+                            appLocalizationsOf(context).aggreeToTerms_body,
+                        defaultMapper: (text) => TextSpan(text: text),
+                        parts: {
+                          appLocalizationsOf(context).aggreeToTerms_link:
+                              (text) => TextSpan(
+                                    text: text,
+                                    style: const TextStyle(
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  /// TextFields
+  ///
+  Widget nameOnCardTextField() {
+    return Expanded(
+      child: ArDriveTextField(
+        controller: _nameController,
+        label: 'Name on Card',
+        isFieldRequired: true,
+        useErrorMessageOffset: true,
+        onChanged: (s) {
+          String valid = s.replaceAll(RegExp(r'[^a-zA-Z\s]'), '');
+          _nameController.text = valid;
+          _nameController.selection =
+              TextSelection.collapsed(offset: valid.length);
+          setState(() {});
+        },
+        validator: (s) {
+          if (s == null || s.isEmpty) {
+            return 'Can\'t be empty';
+          }
+
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget countryTextField(ArDriveTextFieldTheme theme) {
+    return Expanded(
+      child: CountryInputDropdown(
+        onChanged: (country) {
+          setState(() {
+            _selectedCountry = country;
+          });
+        },
+        items: _recognizedCountries.map((country) {
+          return CountryItem(
+            country,
+          );
+        }).toList(),
+        buildSelectedItem: (item) {
+          return Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: item != null
+                    ? theme.successBorderColor
+                    : theme.defaultBorderColor,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(4),
+              color: ArDriveTheme.of(context)
+                  .themeData
+                  .textFieldTheme
+                  .inputBackgroundColor,
+            ),
+            padding:
+                //  ArDriveTheme.of(context)
+                //     .themeData
+                //     .textFieldTheme
+                //     .contentPadding,
+                const EdgeInsets.symmetric(
+              horizontal: 13,
+              vertical: 10,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    item?.label ?? '',
+                    style: theme.inputTextStyle,
+                  ),
+                ),
+                ArDriveIcons.carretDown(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentDisabled,
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -482,6 +630,8 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
   Widget build(BuildContext context) {
     return ArDriveClickArea(
       child: ArDriveDropdown(
+        showScrollbars: true,
+        maxHeight: 275,
         anchor: widget.anchor,
         width: 200,
         items: widget.items
@@ -665,3 +815,198 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
     );
   }
 }
+
+List<String> _recognizedCountries = [
+  'Afghanistan',
+  'Albania',
+  'Algeria',
+  'Andorra',
+  'Angola',
+  'Antigua and Barbuda',
+  'Argentina',
+  'Armenia',
+  'Australia',
+  'Austria',
+  'Azerbaijan',
+  'Bahamas',
+  'Bahrain',
+  'Bangladesh',
+  'Barbados',
+  'Belarus',
+  'Belgium',
+  'Belize',
+  'Benin',
+  'Bhutan',
+  'Bolivia',
+  'Bosnia and Herzegovina',
+  'Botswana',
+  'Brazil',
+  'Brunei',
+  'Bulgaria',
+  'Burkina Faso',
+  'Burundi',
+  'Cabo Verde',
+  'Cambodia',
+  'Cameroon',
+  'Canada',
+  'Central African Republic',
+  'Chad',
+  'Chile',
+  'China',
+  'Colombia',
+  'Comoros',
+  'Congo',
+  'Costa Rica',
+  'Cote d\'Ivoire',
+  'Croatia',
+  'Cyprus',
+  'Czech Republic',
+  'Democratic Republic of the Congo',
+  'Denmark',
+  'Djibouti',
+  'Dominica',
+  'Dominican Republic',
+  'East Timor',
+  'Ecuador',
+  'Egypt',
+  'El Salvador',
+  'Equatorial Guinea',
+  'Eritrea',
+  'Estonia',
+  'Eswatini',
+  'Ethiopia',
+  'Fiji',
+  'Finland',
+  'France',
+  'Gabon',
+  'Gambia',
+  'Georgia',
+  'Germany',
+  'Ghana',
+  'Greece',
+  'Grenada',
+  'Guatemala',
+  'Guinea',
+  'Guinea-Bissau',
+  'Guyana',
+  'Haiti',
+  'Honduras',
+  'Hungary',
+  'Iceland',
+  'India',
+  'Indonesia',
+  'Iraq',
+  'Ireland',
+  'Israel',
+  'Italy',
+  'Jamaica',
+  'Japan',
+  'Jordan',
+  'Kazakhstan',
+  'Kenya',
+  'Kiribati',
+  'Kuwait',
+  'Kyrgyzstan',
+  'Laos',
+  'Latvia',
+  'Lebanon',
+  'Lesotho',
+  'Liberia',
+  'Libya',
+  'Liechtenstein',
+  'Lithuania',
+  'Luxembourg',
+  'Madagascar',
+  'Malawi',
+  'Malaysia',
+  'Maldives',
+  'Mali',
+  'Malta',
+  'Marshall Islands',
+  'Mauritania',
+  'Mauritius',
+  'Mexico',
+  'Micronesia',
+  'Moldova',
+  'Monaco',
+  'Mongolia',
+  'Montenegro',
+  'Morocco',
+  'Mozambique',
+  'Myanmar',
+  'Namibia',
+  'Nauru',
+  'Nepal',
+  'Netherlands',
+  'New Zealand',
+  'Nicaragua',
+  'Niger',
+  'Nigeria',
+  'North Macedonia',
+  'Norway',
+  'Oman',
+  'Pakistan',
+  'Palau',
+  'Palestine',
+  'Panama',
+  'Papua New Guinea',
+  'Paraguay',
+  'Peru',
+  'Philippines',
+  'Poland',
+  'Portugal',
+  'Qatar',
+  'Romania',
+  'Russia',
+  'Rwanda',
+  'Saint Kitts and Nevis',
+  'Saint Lucia',
+  'Saint Vincent and the Grenadines',
+  'Samoa',
+  'San Marino',
+  'Sao Tome and Principe',
+  'Saudi Arabia',
+  'Senegal',
+  'Serbia',
+  'Seychelles',
+  'Sierra Leone',
+  'Singapore',
+  'Slovakia',
+  'Slovenia',
+  'Solomon Islands',
+  'Somalia',
+  'South Africa',
+  'South Korea',
+  'South Sudan',
+  'Spain',
+  'Sri Lanka',
+  'Sudan',
+  'Suriname',
+  'Sweden',
+  'Switzerland',
+  'Taiwan',
+  'Tajikistan',
+  'Tanzania',
+  'Thailand',
+  'Togo',
+  'Tonga',
+  'Trinidad and Tobago',
+  'Tunisia',
+  'Turkey',
+  'Turkmenistan',
+  'Tuvalu',
+  'Uganda',
+  'Ukraine',
+  'United Arab Emirates',
+  'United Kingdom',
+  'United States',
+  'Uruguay',
+  'Uzbekistan',
+  'Vanuatu',
+  'Vatican City',
+  'Venezuela',
+  'Vietnam',
+  'Yemen',
+  'Zambia',
+  'Zimbabwe',
+];
