@@ -21,8 +21,11 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   PaymentReviewBloc(
     this.turbo,
     PriceEstimate priceEstimate,
+    PaymentUserInformation userInformation,
   )   : _priceEstimate = priceEstimate,
-        super(PaymentReviewInitial()) {
+        super(PaymentReviewInitial(
+          userInformation: userInformation,
+        )) {
     on<PaymentReviewEvent>((event, emit) async {
       if (event is PaymentReviewFinishPayment) {
         await _handlePaymentReviewFinishPayment(emit, event);
@@ -45,6 +48,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
           subTotal: _getSubTotalFromPaymentModel(),
           total: _getTotalFromPaymentModel(),
           quoteExpirationDate: _quoteExpirationDate!,
+          userInformation: state.userInformation,
         ),
       );
 
@@ -61,6 +65,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
             subTotal: _getSubTotalFromPaymentModel(),
             total: _getTotalFromPaymentModel(),
             quoteExpirationDate: _quoteExpirationDate!,
+            userInformation: state.userInformation,
           ),
         );
       } else {
@@ -71,6 +76,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
             total: _getTotalFromPaymentModel(),
             errorType: TurboErrorType.unknown,
             quoteExpirationDate: _quoteExpirationDate!,
+            userInformation: state.userInformation,
           ),
         );
       }
@@ -82,6 +88,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
           total: _getTotalFromPaymentModel(),
           errorType: TurboErrorType.unknown,
           quoteExpirationDate: _quoteExpirationDate!,
+          userInformation: state.userInformation,
         ),
       );
     }
@@ -92,11 +99,11 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     try {
       emit(
         PaymentReviewLoadingQuote(
-          // paymentUserInformation: state.paymentUserInformation,
           credits: _getCreditsFromPaymentModel(),
           subTotal: _getSubTotalFromPaymentModel(),
           total: _getTotalFromPaymentModel(),
           quoteExpirationDate: _quoteExpirationDate!,
+          userInformation: state.userInformation,
         ),
       );
 
@@ -108,6 +115,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
           subTotal: _getSubTotalFromPaymentModel(),
           total: _getTotalFromPaymentModel(),
           quoteExpirationDate: _quoteExpirationDate!,
+          userInformation: state.userInformation,
         ),
       );
     } catch (e) {
@@ -118,6 +126,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
           credits: _getCreditsFromPaymentModel(),
           subTotal: _getSubTotalFromPaymentModel(),
           total: _getTotalFromPaymentModel(),
+          userInformation: state.userInformation,
         ),
       );
     }
@@ -126,7 +135,9 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   Future<void> _handlePaymentReviewLoadPaymentModel(
       Emitter<PaymentReviewState> emit) async {
     try {
-      emit(const PaymentReviewLoadingPaymentModel());
+      emit(PaymentReviewLoadingPaymentModel(
+        userInformation: state.userInformation,
+      ));
 
       await _createPaymentIntent();
 
@@ -138,13 +149,15 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
           credits: _getCreditsFromPaymentModel(),
           subTotal: _getSubTotalFromPaymentModel(),
           total: _getTotalFromPaymentModel(),
+          userInformation: state.userInformation,
         ),
       );
     } catch (e) {
       logger.e('Error loading payment model: $e');
 
-      emit(const PaymentReviewErrorLoadingPaymentModel(
+      emit(PaymentReviewErrorLoadingPaymentModel(
         errorType: TurboErrorType.unknown,
+        userInformation: state.userInformation,
       ));
     }
   }

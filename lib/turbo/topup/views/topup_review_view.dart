@@ -73,6 +73,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         PaymentReviewFinishPayment(
                           paymentUserInformation: PaymentUserInformationFromUSA(
                             email: _emailController.text,
+                            name: state.userInformation.name,
                           ),
                         ),
                       );
@@ -533,6 +534,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         PaymentReviewFinishPayment(
                           paymentUserInformation: PaymentUserInformationFromUSA(
                             email: _emailController.text,
+                            name: state.userInformation.name,
                           ),
                         ),
                       );

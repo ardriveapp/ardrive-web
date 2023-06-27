@@ -183,8 +183,10 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
               ),
               BlocProvider<PaymentReviewBloc>(
                 create: (context) => PaymentReviewBloc(
-                    context.read<Turbo>(), state.priceEstimate)
-                  ..add(PaymentReviewLoadPaymentModel()),
+                  context.read<Turbo>(),
+                  state.priceEstimate,
+                  state.userInformation,
+                )..add(PaymentReviewLoadPaymentModel()),
                 child: Container(
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeBgCanvas,

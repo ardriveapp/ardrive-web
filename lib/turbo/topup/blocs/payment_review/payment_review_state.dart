@@ -1,13 +1,17 @@
 part of 'payment_review_bloc.dart';
 
 abstract class PaymentReviewState extends Equatable {
-  const PaymentReviewState();
+  const PaymentReviewState({required this.userInformation});
+
+  final PaymentUserInformation userInformation;
 
   @override
   List<Object> get props => [];
 }
 
-class PaymentReviewInitial extends PaymentReviewState {}
+class PaymentReviewInitial extends PaymentReviewState {
+  PaymentReviewInitial({required super.userInformation});
+}
 
 class PaymentReviewLoading extends PaymentReviewPaymentModelLoaded {
   const PaymentReviewLoading({
@@ -15,11 +19,12 @@ class PaymentReviewLoading extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.userInformation,
   });
 }
 
 class PaymentReviewLoadingPaymentModel extends PaymentReviewState {
-  const PaymentReviewLoadingPaymentModel();
+  const PaymentReviewLoadingPaymentModel({required super.userInformation});
 }
 
 class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
@@ -33,6 +38,7 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
     required this.subTotal,
     required this.credits,
     required this.quoteExpirationDate,
+    required super.userInformation,
   });
 
   PaymentReviewPaymentModelLoaded copyWith({
@@ -40,12 +46,14 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
     String? subTotal,
     String? credits,
     DateTime? quoteExpirationDate,
+    PaymentUserInformation? userInformation,
   }) {
     return PaymentReviewPaymentModelLoaded(
       total: total ?? this.total,
       subTotal: subTotal ?? this.subTotal,
       credits: credits ?? this.credits,
       quoteExpirationDate: quoteExpirationDate ?? this.quoteExpirationDate,
+      userInformation: userInformation ?? this.userInformation,
     );
   }
 }
@@ -56,6 +64,7 @@ class PaymentReviewLoadingQuote extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.userInformation,
   });
 }
 
@@ -65,6 +74,7 @@ class PaymentReviewQuoteLoaded extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.userInformation,
   });
 }
 
@@ -72,16 +82,12 @@ class PaymentReviewQuoteError extends PaymentReviewPaymentModelLoaded {
   final TurboErrorType errorType;
   const PaymentReviewQuoteError({
     required this.errorType,
-    required String total,
-    required String subTotal,
-    required String credits,
-    required DateTime quoteExpirationDate,
-  }) : super(
-          total: total,
-          subTotal: subTotal,
-          credits: credits,
-          quoteExpirationDate: quoteExpirationDate,
-        );
+    required super.total,
+    required super.subTotal,
+    required super.credits,
+    required super.quoteExpirationDate,
+    required super.userInformation,
+  });
 }
 
 class PaymentReviewPaymentSuccess extends PaymentReviewPaymentModelLoaded {
@@ -90,6 +96,7 @@ class PaymentReviewPaymentSuccess extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.userInformation,
   });
 }
 
@@ -97,6 +104,7 @@ class PaymentReviewError extends PaymentReviewState {
   final TurboErrorType errorType;
   const PaymentReviewError({
     required this.errorType,
+    required super.userInformation,
   });
 }
 
@@ -109,9 +117,11 @@ class PaymentReviewPaymentError extends PaymentReviewPaymentModelLoaded {
     required super.subTotal,
     required super.credits,
     required this.errorType,
+    required super.userInformation,
   });
 }
 
 class PaymentReviewErrorLoadingPaymentModel extends PaymentReviewError {
-  const PaymentReviewErrorLoadingPaymentModel({required super.errorType});
+  const PaymentReviewErrorLoadingPaymentModel(
+      {required super.errorType, required super.userInformation});
 }

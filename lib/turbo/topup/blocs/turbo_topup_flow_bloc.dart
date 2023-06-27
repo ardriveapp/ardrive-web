@@ -42,6 +42,9 @@ class TurboTopupFlowBloc
           TurboTopupFlowShowingPaymentReviewView(
             isMovingForward: _currentStep <= event.stepNumber,
             priceEstimate: turbo.currentPriceEstimate,
+            userInformation: PaymentUserInformationFromUSA(
+              name: event.name,
+            ),
           ),
         );
       } else if (event is TurboTopUpShowSuccessView) {

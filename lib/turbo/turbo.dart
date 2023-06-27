@@ -136,6 +136,7 @@ class Turbo extends Disposable {
   Future<PaymentStatus> confirmPayment({
     required PaymentUserInformation userInformation,
   }) {
+    logger.d('Confirming payment: ${userInformation.toString()}');
     return _paymentProvider.confirmPayment(
       paymentUserInformation: userInformation,
       paymentModel: _currentPaymentIntent!,
