@@ -9,6 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: ./.github/workflows/setup.yml
+      
+      # Checkout
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
 
       - name: Lint
         run: flutter analyze
@@ -19,6 +24,11 @@ jobs:
     steps:
       # Install Flutter
       - uses: ./.github/workflows/setup.yml
+
+      # Checkout
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
 
       - name: Test app
         run: scr test
