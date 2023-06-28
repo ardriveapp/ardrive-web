@@ -7,6 +7,7 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/ar_cost_to_usd.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:collection/collection.dart';
@@ -336,7 +337,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     emit(CreateManifestFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to create manifest: $error $stackTrace');
+    logger.i('Failed to create manifest: $error $stackTrace');
   }
 }
 

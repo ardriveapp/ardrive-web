@@ -47,9 +47,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     return ArDriveTheme(
       key: const ValueKey('turbo_payment_form'),
       themeData: textTheme,
-      child: ScreenTypeLayout(
-        mobile: _mobileView(context),
-        desktop: _desktopView(context, textTheme.textFieldTheme),
+      child: ScreenTypeLayout.builder(
+        mobile: (context) => _mobileView(context),
+        desktop: (context) => _desktopView(context, textTheme.textFieldTheme),
       ),
     );
   }
