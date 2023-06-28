@@ -14,14 +14,6 @@ import 'package:arweave/arweave.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 class Turbo extends Disposable {
-  final TurboSessionManager _sessionManager;
-  final TurboCostCalculator _costCalculator;
-  final TurboBalanceRetriever _balanceRetriever;
-  final TurboPriceEstimator _priceEstimator;
-  final TurboPaymentProvider _paymentProvider;
-  final TurboSupportedCountriesRetriever _supportedCountriesRetriever;
-  final Wallet _wallet;
-
   Turbo({
     required TurboCostCalculator costCalculator,
     required TurboSessionManager sessionManager,
@@ -49,6 +41,23 @@ class Turbo extends Disposable {
     return maxQuoteExpirationTime;
   }
 
+  final TurboSessionManager _sessionManager;
+  final TurboCostCalculator _costCalculator;
+  final TurboBalanceRetriever _balanceRetriever;
+  final TurboPriceEstimator _priceEstimator;
+  final TurboPaymentProvider _paymentProvider;
+  final TurboSupportedCountriesRetriever _supportedCountriesRetriever;
+  final Wallet _wallet;
+
+  PriceEstimate _priceEstimate = PriceEstimate.zero();
+  int? _currentAmount;
+  String? _currentCurrency;
+  FileSizeUnit? _currentDataUnit;
+
+  PaymentUserInformation? _paymentUserInformation;
+
+  PriceEstimate get currentPriceEstimate => _priceEstimate;
+
   Stream<bool> get onSessionExpired => _sessionManager.onSessionExpired;
 
   Stream<PriceEstimate> get onPriceEstimateChanged =>
@@ -59,13 +68,18 @@ class Turbo extends Disposable {
   Future<BigInt> getCostOfOneGB({bool forceGet = false}) =>
       _costCalculator.getCostOfOneGB(forceGet: forceGet);
 
-  PriceEstimate _priceEstimate = PriceEstimate.zero();
+  set paymentUserInformation(PaymentUserInformation paymentUserInformation) {
+    _paymentUserInformation = paymentUserInformation;
+  }
 
-  int? _currentAmount;
-  String? _currentCurrency;
-  FileSizeUnit? _currentDataUnit;
+  PaymentUserInformation get paymentUserInformation {
+    if (_paymentUserInformation == null) {
+      throw Exception(
+          'Payment user information is null. You should set it before calling this method.');
+    }
 
-  PriceEstimate get currentPriceEstimate => _priceEstimate;
+    return _paymentUserInformation!;
+  }
 
   Future<PriceEstimate> computePriceEstimate({
     required int currentAmount,
@@ -136,12 +150,16 @@ class Turbo extends Disposable {
     return _currentPaymentIntent!;
   }
 
-  Future<PaymentStatus> confirmPayment({
-    required PaymentUserInformation userInformation,
-  }) {
-    logger.d('Confirming payment: ${userInformation.toString()}');
+  Future<PaymentStatus> confirmPayment() {
+    if (_currentPaymentIntent == null) {
+      throw Exception(
+          'Current payment intent is null. You should create it before calling this method.');
+    }
+
+    logger.d('Confirming payment: ${paymentUserInformation.toString()}');
+
     return _paymentProvider.confirmPayment(
-      paymentUserInformation: userInformation,
+      paymentUserInformation: paymentUserInformation,
       paymentModel: _currentPaymentIntent!,
     );
   }
@@ -241,7 +259,16 @@ class TurboBalanceRetriever {
   });
 
   Future<BigInt> getBalance(Wallet wallet) async {
-    return paymentService.getBalance(wallet: wallet);
+    try {
+      final balance = await paymentService.getBalance(wallet: wallet);
+      return balance;
+    } catch (e) {
+      if (e is TurboUserNotFound) {
+        logger.e('Error getting balance: $e');
+        return BigInt.zero;
+      }
+      rethrow;
+    }
   }
 }
 

@@ -189,7 +189,6 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                 create: (context) => PaymentReviewBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
-                  state.userInformation,
                 )..add(PaymentReviewLoadPaymentModel()),
                 child: Container(
                     color:

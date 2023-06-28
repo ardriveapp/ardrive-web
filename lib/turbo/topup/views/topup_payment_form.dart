@@ -163,10 +163,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     );
   }
 
-  Widget _quoteRefresh(BuildContext context) {
-    return const QuoteRefreshWidget();
-  }
-
   Widget _credits(BuildContext context) {
     return SizedBox(
       width: double.maxFinite,
@@ -210,13 +206,11 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               ],
             ),
           ),
-          Flexible(
+          const Flexible(
             flex: 1,
             child: Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: _quoteRefresh(
-                context,
-              ),
+              padding: EdgeInsets.only(left: 8.0),
+              child: QuoteRefreshWidget(),
             ),
           ),
         ],
@@ -283,7 +277,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           ArDriveButton(
             maxHeight: 44,
             maxWidth: 143,
-            // TODO: localize
             text: 'Review',
             fontStyle: ArDriveTypography.body.buttonLargeBold(
               color: Colors.white,
@@ -740,20 +733,26 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // TODO: localize
-              Text(
-                'Quote updates in ',
-                style: ArDriveTypography.body.captionBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-                ),
-              ),
-              BlocBuilder<PaymentFormBloc, PaymentFormState>(
-                builder: (context, state) {
-                  return TimerWidget(
+          BlocBuilder<PaymentFormBloc, PaymentFormState>(
+            builder: (context, state) {
+              if (state is PaymentFormQuoteLoadFailure) {
+                return const SizedBox();
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // TODO: localize
+                  Text(
+                    'Quote updates in ',
+                    style: ArDriveTypography.body.captionBold(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDisabled,
+                    ),
+                  ),
+                  TimerWidget(
                     key: state is PaymentFormQuoteLoaded
                         ? const ValueKey('reset_timer')
                         : null,
@@ -764,57 +763,98 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           .read<PaymentFormBloc>()
                           .add(PaymentFormUpdateQuote());
                     },
-                  );
-                },
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 4),
-          BlocBuilder<PaymentFormBloc, PaymentFormState>(
-            builder: (context, state) {
-              if (state is PaymentFormLoadingQuote) {
-                return const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
-                );
-              }
+          Flexible(
+            child: BlocBuilder<PaymentFormBloc, PaymentFormState>(
+              builder: (context, state) {
+                if (state is PaymentFormLoadingQuote) {
+                  return const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  );
+                }
 
-              return ArDriveClickArea(
-                child: GestureDetector(
-                  onTap: () {
-                    context
-                        .read<PaymentFormBloc>()
-                        .add(PaymentFormUpdateQuote());
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ArDriveIcons.refresh(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDisabled,
-                        size: 16,
+                if (state is PaymentFormQuoteLoadFailure) {
+                  return ArDriveClickArea(
+                    child: GestureDetector(
+                      onTap: () {
+                        context
+                            .read<PaymentFormBloc>()
+                            .add(PaymentFormUpdateQuote());
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Unable to update quote. Please try again.',
+                                style: ArDriveTypography.body.captionBold(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeErrorDefault,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            ArDriveIcons.refresh(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeErrorDefault,
+                              size: 16,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(width: 4),
-                      // TODO: localize
-                      Text(
-                        'Refresh',
-                        style: ArDriveTypography.body.captionBold(
+                    ),
+                  );
+                }
+
+                return ArDriveClickArea(
+                  child: GestureDetector(
+                    onTap: () {
+                      context
+                          .read<PaymentFormBloc>()
+                          .add(PaymentFormUpdateQuote());
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ArDriveIcons.refresh(
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
                               .themeFgDisabled,
+                          size: 16,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        // TODO: localize
+                        Text(
+                          'Refresh',
+                          style: ArDriveTypography.body.captionBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDisabled,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           )
         ],
       ),

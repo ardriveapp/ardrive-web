@@ -73,9 +73,9 @@ class PaymentService {
         'x-public-key': publicKey,
       },
     ).onError((ArDriveHTTPException error, stackTrace) {
-      logger.e('Error getting balance', error, stackTrace);
-
+      logger.e('error getting balance', error, stackTrace);
       if (error.statusCode == 404) {
+        logger.e('user not found');
         throw TurboUserNotFound();
       }
 

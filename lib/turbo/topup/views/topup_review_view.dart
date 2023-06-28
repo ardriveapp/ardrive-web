@@ -1,6 +1,5 @@
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
@@ -75,15 +74,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                   Navigator.pop(context);
                   context.read<PaymentReviewBloc>().add(
                         PaymentReviewFinishPayment(
-                          paymentUserInformation: PaymentUserInformationFromUSA(
-                            email: _emailController.text,
-                            name: state.userInformation.name,
-                          ),
+                          email: _emailController.text,
                         ),
                       );
                 },
               ),
             ),
+            barrierDismissible: false,
             barrierColor: ArDriveTheme.of(context)
                 .themeData
                 .colors
@@ -106,7 +103,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 },
               ),
             ),
-            barrierDismissible: true,
+            barrierDismissible: false,
             barrierColor: ArDriveTheme.of(context)
                 .themeData
                 .colors
@@ -190,6 +187,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               ),
                               BlocBuilder<PaymentReviewBloc,
                                   PaymentReviewState>(
+                                buildWhen: (previous, current) {
+                                  return current
+                                      is PaymentReviewPaymentModelLoaded;
+                                },
                                 builder: (context, state) {
                                   if (state
                                       is PaymentReviewPaymentModelLoaded) {
@@ -244,6 +245,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                   const Spacer(),
                                   BlocBuilder<PaymentReviewBloc,
                                       PaymentReviewState>(
+                                    buildWhen: (previous, current) {
+                                      return current
+                                          is PaymentReviewPaymentModelLoaded;
+                                    },
                                     builder: (context, state) {
                                       if (state
                                           is PaymentReviewPaymentModelLoaded) {
@@ -258,7 +263,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                       }
 
                                       return Text(
-                                        // '\$${state.total}',
                                         '\$0',
                                         style: ArDriveTypography.body
                                             .buttonNormalBold()
@@ -394,7 +398,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                       },
                                     ),
                                     const Spacer(),
-                                    RefreshQuoteButton(),
+                                    const RefreshQuoteButton(),
                                   ],
                                 ),
                               );
@@ -593,10 +597,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 
                   context.read<PaymentReviewBloc>().add(
                         PaymentReviewFinishPayment(
-                          paymentUserInformation: PaymentUserInformationFromUSA(
-                            email: _emailController.text,
-                            name: state.userInformation.name,
-                          ),
+                          email: _emailController.text,
                         ),
                       );
                 },
@@ -612,7 +613,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 class RefreshButton extends StatefulWidget {
   final void Function() onPressed;
 
-  RefreshButton({required this.onPressed});
+  RefreshButton({super.key, required this.onPressed});
 
   @override
   _RefreshButtonState createState() => _RefreshButtonState();
@@ -684,11 +685,13 @@ class _RefreshButtonState extends State<RefreshButton>
 }
 
 class RefreshQuoteButton extends StatefulWidget {
+  const RefreshQuoteButton({super.key});
+
   @override
-  _RefreshQuoteButtonState createState() => _RefreshQuoteButtonState();
+  RefreshQuoteButtonState createState() => RefreshQuoteButtonState();
 }
 
-class _RefreshQuoteButtonState extends State<RefreshQuoteButton>
+class RefreshQuoteButtonState extends State<RefreshQuoteButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAndSizeAnimation;

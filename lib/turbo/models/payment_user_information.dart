@@ -11,24 +11,53 @@ abstract class PaymentUserInformation extends Equatable {
     required this.country,
   });
 
-  @override
-  List<Object?> get props => [
-        email,
-      ];
+  factory PaymentUserInformation.create({
+    String? email,
+    required String name,
+    required String country,
+  }) {
+    return _PaymentUserInformation(
+      email: email,
+      name: name,
+      country: country,
+    );
+  }
+
+  PaymentUserInformation copyWith({
+    String? email,
+    String? name,
+    String? country,
+  });
 }
 
-class PaymentUserInformationFromUSA extends PaymentUserInformation {
-  const PaymentUserInformationFromUSA({
+class _PaymentUserInformation extends PaymentUserInformation {
+  const _PaymentUserInformation({
     String? email,
+    required String country,
     required String name,
   }) : super(
           email: email,
           name: name,
-          country: 'United States',
+          country: country,
         );
 
   @override
   List<Object?> get props => [
-        ...super.props,
+        email,
+        name,
+        country,
       ];
+
+  @override
+  _PaymentUserInformation copyWith({
+    String? email,
+    String? name,
+    String? country,
+  }) {
+    return _PaymentUserInformation(
+      email: email ?? this.email,
+      name: name ?? this.name,
+      country: country ?? this.country,
+    );
+  }
 }

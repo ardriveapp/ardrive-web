@@ -15,15 +15,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             _expirationTimeInSeconds(turbo.maxQuoteExpirationDate))) {
     on<PaymentFormEvent>(
       (event, emit) async {
-        if (event is PaymentFormPrePopulateFields) {
-          emit(
-            PaymentFormPopulatingFieldsForTesting(
-              state.priceEstimate,
-              _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
-              (state as PaymentFormLoaded).supportedCountries,
-            ),
-          );
-        } else if (event is PaymentFormLoadSupportedCountries) {
+        if (event is PaymentFormLoadSupportedCountries) {
           try {
             emit(PaymentFormLoading(
               state.priceEstimate,
@@ -68,8 +60,15 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
                 (state as PaymentFormLoaded).supportedCountries,
               ),
             );
-          } catch (e) {
-            logger.e(e);
+          } catch (e, s) {
+            logger.e('Error upading the quote.', e, s);
+
+            emit(
+              PaymentFormQuoteLoadFailure(
+                state.priceEstimate,
+                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+              ),
+            );
           }
         }
       },
