@@ -26,6 +26,8 @@ class TurboErrorView extends StatelessWidget {
         return 'Payment processor is currently unavailable, please try again later';
       case TurboErrorType.fetchEstimationInformationFailed:
         return 'Error loading information. Please try again.';
+      case TurboErrorType.network:
+        return 'We can\'t connect to the internet. Please check your connection and try again.';
       default:
         return 'The payment was not successful. Please check your card information and try again.';
     }

@@ -69,7 +69,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               width: 575,
               content: TurboErrorView(
                 errorType: state.errorType,
-                onDismiss: () {},
+                onDismiss: () {
+                  Navigator.pop(context);
+                },
                 onTryAgain: () {
                   Navigator.pop(context);
                   context.read<PaymentReviewBloc>().add(
@@ -94,7 +96,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               width: 575,
               content: TurboErrorView(
                 errorType: TurboErrorType.fetchPaymentIntentFailed,
-                onDismiss: () {},
+                onDismiss: () {
+                  Navigator.pop(context);
+                },
                 onTryAgain: () {
                   Navigator.pop(context);
                   context.read<PaymentReviewBloc>().add(
