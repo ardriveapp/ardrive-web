@@ -67,9 +67,9 @@ class BundleUploadHandle implements UploadHandle {
               folderDataItemUploadHandles),
     );
 
-    logger.i('Bundle mounted');
+    logger.d('Bundle mounted');
 
-    logger.i('Creating bundle transaction');
+    logger.d('Creating bundle transaction');
     if (useTurbo) {
       logger.i('Using turbo upload');
       bundleDataItem = await arweaveService.prepareBundledDataItem(

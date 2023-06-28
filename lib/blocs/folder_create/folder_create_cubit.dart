@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -123,6 +124,6 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     emit(FolderCreateFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to create folder: $error $stackTrace');
+    logger.e('Failed to create folder: $error $stackTrace');
   }
 }

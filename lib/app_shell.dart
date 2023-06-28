@@ -123,8 +123,8 @@ class AppShellState extends State<AppShell> {
                       : scaffold,
                 ),
               );
-          return ScreenTypeLayout(
-            desktop: buildPage(
+          return ScreenTypeLayout.builder(
+            desktop: (context) => buildPage(
               Row(
                 children: [
                   const AppSideBar(),
@@ -142,7 +142,7 @@ class AppShellState extends State<AppShell> {
                 ],
               ),
             ),
-            mobile: buildPage(widget.page),
+            mobile: (context) => buildPage(widget.page),
           );
         },
       );
