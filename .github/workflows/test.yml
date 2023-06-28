@@ -3,6 +3,7 @@ on:
 
 jobs:
   pr-title-check:
+    name: PR title check
     uses: ./.github/workflows/pr_title_check.yaml
 
   test-and-lint:
