@@ -32,6 +32,8 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
               ),
             );
           } catch (e) {
+            logger.e('Error loading the supported countries.', e);
+
             emit(
               PaymentFormError(
                 state.priceEstimate,

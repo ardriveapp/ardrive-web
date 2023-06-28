@@ -76,16 +76,21 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         if (state is PaymentFormError) {
           showAnimatedDialog(
             context,
-            content: TurboErrorView(
-              errorType: TurboErrorType.server,
-              onTryAgain: () {
-                context
-                    .read<PaymentFormBloc>()
-                    .add(PaymentFormLoadSupportedCountries());
-              },
-              onDismiss: () {
-                Navigator.pop(context);
-              },
+            barrierDismissible: false,
+            content: ArDriveStandardModal(
+              width: 600,
+              content: TurboErrorView(
+                errorType: TurboErrorType.network,
+                onTryAgain: () {
+                  context
+                      .read<PaymentFormBloc>()
+                      .add(PaymentFormLoadSupportedCountries());
+                  Navigator.pop(context);
+                },
+                onDismiss: () {
+                  Navigator.pop(context);
+                },
+              ),
             ),
           );
         }
@@ -440,12 +445,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                         .textFieldTheme
                         .inputBackgroundColor,
                   ),
-                  padding:
-                      //  ArDriveTheme.of(context)
-                      //     .themeData
-                      //     .textFieldTheme
-                      //     .contentPadding,
-                      const EdgeInsets.symmetric(
+                  padding: const EdgeInsets.symmetric(
                     horizontal: 13,
                     vertical: 10,
                   ),
@@ -647,6 +647,7 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
                               .inputTextStyle
                               .color,
                         ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 onClick: () {

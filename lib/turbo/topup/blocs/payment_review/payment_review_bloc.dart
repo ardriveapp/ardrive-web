@@ -17,7 +17,6 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   PaymentModel? _paymentModel;
   DateTime? _quoteExpirationDate;
   final PriceEstimate _priceEstimate;
-  
 
   PaymentReviewBloc(
     this.turbo,
@@ -43,6 +42,10 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
       _emitPaymentReviewLoading(emit);
 
       logger.d(event.email.toString());
+
+      turbo.paymentUserInformation = turbo.paymentUserInformation.copyWith(
+        email: event.email,
+      );
 
       final paymentStatus = await turbo.confirmPayment();
 

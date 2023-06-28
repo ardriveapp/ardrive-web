@@ -114,15 +114,13 @@ class PaymentService {
   }
 
   Future<List<String>> getSupportedCountries() async {
-    // final result = await httpClient.get(
-    //   url: '$turboPaymentUri/v1/countries',
-    // );
+    final result = await httpClient.get(
+      url: '$turboPaymentUri/v1/countries',
+    );
 
-    // final countries = jsonDecode(result.data) as List<dynamic>;
+    final countries = jsonDecode(result.data) as List<dynamic>;
 
-    await Future.delayed(Duration(seconds: 1));
-
-    return _recognizedCountries;
+    return countries.map((e) => e as String).toList();
   }
 }
 
