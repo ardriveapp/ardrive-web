@@ -8,9 +8,6 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
       - uses: ./.github/workflows/setup.yml
 
       - name: Lint
@@ -20,14 +17,6 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     steps:
-      # Checkout
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
-
-      # Set Flutter version from fvm
-      - uses: kuhnroyal/flutter-fvm-config-action@v1
-
       # Install Flutter
       - uses: ./.github/workflows/setup.yml
 
