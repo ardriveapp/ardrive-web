@@ -160,7 +160,6 @@ class DontUsePaymentService implements PaymentService {
 
   @override
   Future<List<String>> getSupportedCountries() {
-    // TODO: implement getSupportedCountries
     throw UnimplementedError();
   }
 }
