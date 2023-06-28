@@ -21,10 +21,6 @@ jobs:
       - name: Fetch dependencies
         run: flutter pub get
 
-      - name: Fetch storybook dependencies
-        working-directory: ./storybook
-        run: flutter pub get
-
       - name: Lint
         run: flutter analyze
 
