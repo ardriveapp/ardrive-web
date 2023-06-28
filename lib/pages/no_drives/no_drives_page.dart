@@ -16,8 +16,8 @@ class NoDrivesPage extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => ScreenTypeLayout(
-        desktop: Padding(
+  Widget build(BuildContext context) => ScreenTypeLayout.builder(
+        desktop: (context) => Padding(
           padding: const EdgeInsets.only(top: 32, right: 16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -39,7 +39,7 @@ class NoDrivesPage extends StatelessWidget {
             ],
           ),
         ),
-        mobile: Scaffold(
+        mobile: (context) => Scaffold(
           bottomNavigationBar: BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {
               return const CustomBottomNavigation();

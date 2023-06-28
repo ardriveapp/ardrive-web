@@ -24,7 +24,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
-  final BiometricAuthentication _biometricAuthentication;
   final ArDriveCrypto _crypto;
 
   ProfileAddCubit({
@@ -36,7 +35,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     required BiometricAuthentication biometricAuthentication,
   })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
-        _biometricAuthentication = biometricAuthentication,
         _arweave = arweave,
         _crypto = crypto,
         super(ProfileAddPromptWallet());

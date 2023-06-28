@@ -60,7 +60,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void initState() {
-    debugPrint('Initializing video player: ${widget.videoUrl}');
+    logger.d('Initializing video player: ${widget.videoUrl}');
     super.initState();
     _videoPlayerController = VideoPlayerController.network(widget.videoUrl);
     _chewieController = ChewieController(
@@ -86,7 +86,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void dispose() {
-    debugPrint('Disposing video player');
+    logger.d('Disposing video player');
     _chewieController.videoPlayerController.dispose();
     _chewieController.dispose();
 
@@ -95,7 +95,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('Building video player');
+    logger.d('Building video player');
     return VisibilityDetector(
       key: const Key('video-player'),
       onVisibilityChanged: (VisibilityInfo info) {

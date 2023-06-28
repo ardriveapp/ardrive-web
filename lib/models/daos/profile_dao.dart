@@ -5,6 +5,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -98,7 +99,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     Wallet wallet,
     ProfileType profileType,
   ) async {
-    debugPrint('Adding profile $username with type $profileType');
+    logger.d('Adding profile $username with type $profileType');
 
     final profileKdRes =
         await compute<Map<String, dynamic>, ProfileKeyDerivationResult>(
@@ -106,7 +107,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       {'password': password},
     );
 
-    debugPrint('Profile key derivation result: $profileKdRes');
+    logger.d('Profile key derivation result: $profileKdRes');
 
     final profileSalt = profileKdRes.salt;
     final encryptedWallet = await () async {
@@ -125,11 +126,11 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       }
     }();
 
-    debugPrint('Encrypted wallet finished');
+    logger.d('Encrypted wallet finished');
 
     final publicKey = await wallet.getOwner();
 
-    debugPrint('Public key finished');
+    logger.d('Public key finished');
 
     final encryptedPublicKey =
         await compute<Map<String, dynamic>, SecretBox>(encryptPublicKey, {
@@ -137,7 +138,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       'profileKdRes': profileKdRes,
     });
 
-    debugPrint('Encrypted public key: $encryptedPublicKey');
+    logger.d('Encrypted public key: $encryptedPublicKey');
 
     await into(profiles).insert(
       ProfilesCompanion.insert(

@@ -26,6 +26,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
@@ -83,15 +84,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 state.currentDrive.isPublic &&
                 !state.hasFoldersSelected;
 
-            return ScreenTypeLayout(
-              desktop: _desktopView(
+            return ScreenTypeLayout.builder(
+              desktop: (context) => _desktopView(
                 isDriveOwner: isOwner,
                 state: state,
                 hasSubfolders: hasSubfolders,
                 hasFiles: hasFiles,
                 canDownloadMultipleFiles: canDownloadMultipleFiles,
               ),
-              mobile: Scaffold(
+              mobile: (context) => Scaffold(
                 drawerScrimColor: Colors.transparent,
                 drawer: const AppSideBar(),
                 appBar: (state.showSelectedItemDetails &&
@@ -522,48 +523,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     );
   }
 
-  Widget _buildGridView(DriveDetailLoadSuccess state, bool hasSubfolders,
-      bool hasFiles, List<ArDriveDataTableItem> items) {
-    return GridView.builder(
-      controller: _scrollController,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final file = items[index];
-        return ArDriveGridItem(
-          item: file,
-          drive: state.currentDrive,
-        );
-      },
-    );
-  }
-
   _buildItem(String name, ArDriveIcon icon) {
     return ArDriveDropdownItemTile(name: name, icon: icon);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 41.0),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: 375,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              name,
-              style: ArDriveTypography.body.buttonNormalBold(),
-            ),
-            icon,
-          ],
-        ),
-      ),
-    );
   }
 }
 

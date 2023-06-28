@@ -2,7 +2,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/services/config/config_service.dart';
-import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
@@ -68,7 +67,7 @@ Future<bool> isCtrlOrMetaKeyPressed(RawKeyEvent event) async {
     }
     return ctrlMetaKeyPressed;
   } catch (e) {
-    'Unable to compute platform'.logError();
+    logger.e('Unable to compute platform');
     return false;
   }
 }
