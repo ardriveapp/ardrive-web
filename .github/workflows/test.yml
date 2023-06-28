@@ -25,6 +25,7 @@ jobs:
         run: flutter analyze
 
   test:
+    needs: lint
     runs-on: ubuntu-latest
     steps:
       # Checkout
