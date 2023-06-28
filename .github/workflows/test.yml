@@ -4,30 +4,35 @@ on:
 jobs:
   pr-title-check:
     uses: ./.github/workflows/pr_title_check.yaml
-  
-  setup:
-    uses: ./.github/workflows/setup.yml
 
-  lint:
-    needs: setup
+  test-and-lint:
+    needs: pr-title-check
     runs-on: ubuntu-latest
     steps:
       # Checkout
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
+
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
+      # Install Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Install script_runner
+        run: flutter pub global activate script_runner
+
+      - name: Build app
+        run: scr setup
 
       - name: Lint
         run: flutter analyze
 
-  test:
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
-
       - name: Test app
         run: scr test
+    
+      
