@@ -4,12 +4,13 @@ on:
 jobs:
   pr-title-check:
     uses: ./.github/workflows/pr_title_check.yaml
+  
+  setup:
+    uses: ./.github/workflows/setup.yml
 
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/workflows/setup.yml
-      
       # Checkout
       - uses: actions/checkout@v3
         with:
@@ -22,9 +23,6 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     steps:
-      # Install Flutter
-      - uses: ./.github/workflows/setup.yml
-
       # Checkout
       - uses: actions/checkout@v3
         with:
