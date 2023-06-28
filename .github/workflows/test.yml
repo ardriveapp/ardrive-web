@@ -15,14 +15,7 @@ jobs:
         id: get-flutter-version
         uses: zgosalvez/github-actions-get-flutter-version-env@v2
 
-      - name: Install flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ steps.get-flutter-version.outputs.version }}
-          cache: true
-
-      - name: Fetch dependencies
-        run: flutter pub get
+      - uses: ./.github/workflows/setup.yml
 
       - name: Lint
         run: flutter analyze
@@ -40,16 +33,7 @@ jobs:
       - uses: kuhnroyal/flutter-fvm-config-action@v1
 
       # Install Flutter
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: ${{ env.FLUTTER_CHANNEL }}
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-
-      - name: Install script_runner
-        run: flutter pub global activate script_runner
-
-      - name: Build app
-        run: scr setup
+      - uses: ./.github/workflows/setup.yml
 
       - name: Test app
         run: scr test
