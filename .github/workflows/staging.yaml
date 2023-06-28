@@ -18,11 +18,11 @@ env:
   RELEASE_NOTES: Staging - ${{ github.sha }}
 
 jobs:
-  test:
+  pre-build:
     uses: ./.github/workflows/test.yml
 
-  web:
-    needs: test
+  build-web:
+    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -56,8 +56,8 @@ jobs:
           folder: build/web
           clean: true
 
-  ios:
-    needs: test
+  build-ios:
+    needs: pre-build
     runs-on: macos-latest
     steps:
       # Checkout
@@ -96,8 +96,8 @@ jobs:
         working-directory: ./ios
         run: bundle exec fastlane deploy type:staging
 
-  android:
-    needs: test
+  build-android:
+    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout

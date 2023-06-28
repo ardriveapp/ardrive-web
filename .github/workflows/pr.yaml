@@ -14,11 +14,11 @@ env:
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
 
 jobs:
-  test:
+  pre-build:
     uses: ./.github/workflows/test.yml
 
-  web:
-    needs: test
+  build-web:
+    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -57,8 +57,8 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
           expires: 14d
 
-  ios:
-    needs: test
+  build-ios:
+    needs: pre-build
     runs-on: macos-latest
     steps:
       # Checkout
@@ -106,8 +106,8 @@ jobs:
         working-directory: ./ios
         run: bundle exec fastlane update_release_url
 
-  android:
-    needs: test
+  build-android:
+    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout
