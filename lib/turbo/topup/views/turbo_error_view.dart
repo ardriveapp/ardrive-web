@@ -1,4 +1,5 @@
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -14,22 +15,24 @@ class TurboErrorView extends StatelessWidget {
   final Function onTryAgain;
   final Function onDismiss;
 
-  String _getErrorMessageForErrorType() {
+  String _getErrorMessageForErrorType(BuildContext context) {
     switch (errorType) {
       case TurboErrorType.sessionExpired:
-        return 'Your session has expired. Please try again.';
+        return appLocalizationsOf(context).turboErrorMessageSessionExpired;
       case TurboErrorType.unknown:
-        return 'The payment was not successful. Please check your card information and try again.';
+        return appLocalizationsOf(context).turboErrorMessageUnknown;
       case TurboErrorType.server:
-        return 'The payment was not successful. Please check your card information and try again.';
+        return appLocalizationsOf(context).turboErrorMessageServer;
       case TurboErrorType.fetchPaymentIntentFailed:
-        return 'Payment processor is currently unavailable, please try again later';
+        return appLocalizationsOf(context)
+            .turboErrorMessageEstimationInformationFailed;
       case TurboErrorType.fetchEstimationInformationFailed:
-        return 'Error loading information. Please try again.';
+        return appLocalizationsOf(context)
+            .turboErrorMessageEstimationInformationFailed;
       case TurboErrorType.network:
-        return 'We can\'t connect to the internet. Please check your connection and try again.';
+        return appLocalizationsOf(context).turboErrorMessageNetwork;
       default:
-        return 'The payment was not successful. Please check your card information and try again.';
+        return appLocalizationsOf(context).turboErrorMessageUnknown;
     }
   }
 
@@ -68,11 +71,11 @@ class TurboErrorView extends StatelessWidget {
                       .colors
                       .themeErrorDefault,
                 ),
-                Text('There\'s been a problem.',
+                Text(appLocalizationsOf(context).theresBeenAProblem,
                     style: ArDriveTypography.body.leadBold()),
                 const SizedBox(height: 16),
                 Text(
-                  _getErrorMessageForErrorType(),
+                  _getErrorMessageForErrorType(context),
                   style: ArDriveTypography.body.buttonNormalRegular(
                     color: ArDriveTheme.of(context)
                         .themeData
@@ -90,8 +93,7 @@ class TurboErrorView extends StatelessWidget {
               child: ArDriveButton(
                 maxHeight: 44,
                 maxWidth: 143,
-                // TODO: localize
-                text: 'Try Again',
+                text: appLocalizationsOf(context).tryAgain,
                 fontStyle: ArDriveTypography.body.buttonLargeBold(
                   color: Colors.white,
                 ),

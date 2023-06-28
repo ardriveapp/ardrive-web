@@ -8,6 +8,7 @@ import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -231,8 +232,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            // TODO: localize
-            'Payment Details',
+            appLocalizationsOf(context).paymentDetails,
             style: ArDriveTypography.body
                 .leadBold()
                 .copyWith(fontWeight: FontWeight.w700),
@@ -241,8 +241,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             height: 12,
           ),
           Text(
-            // TODO: localize
-            'This is a one-time payment, powered by Stripe.',
+            appLocalizationsOf(context).thisIsAOneTimePaymentPoweredByStripe,
             style: ArDriveTypography.body.captionBold(
               color:
                   ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
@@ -268,8 +267,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                     .add(const TurboTopUpShowEstimationView());
               },
               child: Text(
-                // TODO: localize
-                'Back',
+                appLocalizationsOf(context).back,
                 style: ArDriveTypography.body.buttonLargeBold(
                   color: ArDriveTheme.of(context)
                       .themeData
@@ -282,7 +280,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           ArDriveButton(
             maxHeight: 44,
             maxWidth: 143,
-            text: 'Review',
+            text: appLocalizationsOf(context).review,
             fontStyle: ArDriveTypography.body.buttonLargeBold(
               color: Colors.white,
             ),
@@ -323,13 +321,13 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               countryTextField(theme),
             ],
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(bottom: 4, right: 16),
             child: Align(
               alignment: Alignment.centerLeft,
               child: TextFieldLabel(
-                text: 'Credit Card *',
+                text: '${appLocalizationsOf(context).creditCard} *',
                 style: ArDriveTypography.body.buttonNormalBold(
                   color: theme.requiredLabelColor,
                 ),
@@ -393,7 +391,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     return Expanded(
       child: ArDriveTextField(
         controller: _nameController,
-        label: 'Name on Card',
+        label: appLocalizationsOf(context).nameOnCard,
         isFieldRequired: true,
         useErrorMessageOffset: true,
         validator: (s) {
@@ -405,7 +403,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           setState(() {});
 
           if (valid.isEmpty) {
-            return 'Can\'t be empty';
+            return appLocalizationsOf(context).validationRequired;
           }
 
           return null;
@@ -420,6 +418,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         if (state is PaymentFormLoaded) {
           return Expanded(
             child: CountryInputDropdown(
+              context: context,
               onChanged: (country) {
                 setState(() {
                   _selectedCountry = country;
@@ -699,18 +698,19 @@ class CountryItem implements InputDropdownItem {
 }
 
 class CountryInputDropdown extends InputDropdownMenu<CountryItem> {
-  const CountryInputDropdown({
+  CountryInputDropdown({
     Key? key,
     required List<CountryItem> items,
     required Widget Function(CountryItem?) buildSelectedItem,
     CountryItem? selectedItem,
     required Function(CountryItem) onChanged,
+    required BuildContext context,
   }) : super(
           key: key,
           items: items,
           selectedItem: selectedItem,
           buildSelectedItem: buildSelectedItem,
-          label: 'Country *',
+          label: '${appLocalizationsOf(context).country} *',
           onChanged: onChanged,
         );
 }
@@ -743,9 +743,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
               return Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // TODO: localize
                   Text(
-                    'Quote updates in ',
+                    appLocalizationsOf(context).quoteUpdatesIn,
                     style: ArDriveTypography.body.captionBold(
                       color: ArDriveTheme.of(context)
                           .themeData
@@ -798,7 +797,7 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           children: [
                             Flexible(
                               child: Text(
-                                'Unable to update quote. Please try again.',
+                                appLocalizationsOf(context).unableToUpdateQuote,
                                 style: ArDriveTypography.body.captionBold(
                                   color: ArDriveTheme.of(context)
                                       .themeData
@@ -840,9 +839,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           size: 16,
                         ),
                         const SizedBox(width: 4),
-                        // TODO: localize
                         Text(
-                          'Refresh',
+                          appLocalizationsOf(context).refresh,
                           style: ArDriveTypography.body.captionBold(
                             color: ArDriveTheme.of(context)
                                 .themeData
