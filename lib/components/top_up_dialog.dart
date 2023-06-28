@@ -661,7 +661,7 @@ class PriceEstimateView extends StatelessWidget {
 }
 
 class CurrencyDropdownMenu extends InputDropdownMenu<CurrencyItem> {
-  CurrencyDropdownMenu({
+  const CurrencyDropdownMenu({
     super.key,
     required super.items,
     required super.buildSelectedItem,
