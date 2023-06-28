@@ -5,7 +5,10 @@ import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
+import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +26,9 @@ class TurboPaymentFormView extends StatefulWidget {
 
 class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   CardFieldInputDetails? card;
+
+  CountryItem? _selectedCountry;
+  final TextEditingController _nameController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -66,56 +72,99 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget _desktopView(BuildContext context, ArDriveTextFieldTheme theme) {
-    return ArDriveDevToolsShortcuts(
-      customShortcuts: [
-        Shortcut(
-          modifier: LogicalKeyboardKey.shiftLeft,
-          key: LogicalKeyboardKey.keyT,
-          action: () {
-            ArDriveDevTools.instance.showDevTools(optionalContext: context);
-          },
-        )
-      ],
-      child: Container(
-        color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 26, right: 26),
-                  child: ArDriveClickArea(
-                    child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: ArDriveIcons.x()),
-                  ),
+    return BlocListener<PaymentFormBloc, PaymentFormState>(
+      listener: (context, state) {
+        if (state is PaymentFormError) {
+          showAnimatedDialog(
+            context,
+            barrierDismissible: false,
+            content: ArDriveStandardModal(
+              width: 600,
+              content: TurboErrorView(
+                errorType: TurboErrorType.network,
+                onTryAgain: () {
+                  context
+                      .read<PaymentFormBloc>()
+                      .add(PaymentFormLoadSupportedCountries());
+                  Navigator.pop(context);
+                },
+                onDismiss: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<PaymentFormBloc, PaymentFormState>(
+        builder: (context, state) {
+          if (state is PaymentFormLoading) {
+            return TurboTopupScaffold(
+              child: Container(
+                height: 600,
+                color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                child: const Center(
+                  child: CircularProgressIndicator(),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: 40,
-                  right: 40,
-                ),
+            );
+          }
+
+          return ArDriveDevToolsShortcuts(
+            customShortcuts: [
+              Shortcut(
+                modifier: LogicalKeyboardKey.shiftLeft,
+                key: LogicalKeyboardKey.keyT,
+                action: () {
+                  ArDriveDevTools.instance
+                      .showDevTools(optionalContext: context);
+                },
+              ),
+            ],
+            child: Container(
+              color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+              child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    _header(context),
-                    const Divider(height: 24),
-                    _credits(context),
-                    const SizedBox(height: 16),
-                    _formDesktop(
-                      context,
-                      theme,
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 26, right: 26),
+                        child: ArDriveClickArea(
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: ArDriveIcons.x(),
+                          ),
+                        ),
+                      ),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 40,
+                        right: 40,
+                      ),
+                      child: Column(
+                        children: [
+                          _header(context),
+                          const Divider(height: 24),
+                          _credits(context),
+                          const SizedBox(height: 16),
+                          _formDesktop(
+                            context,
+                            theme,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 16),
+                    const SizedBox(height: 24),
+                    _footer(context),
                   ],
                 ),
               ),
-              const Divider(height: 16),
-              const SizedBox(height: 24),
-              _footer(context),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -183,8 +232,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            // TODO: localize
-            'Payment Details',
+            appLocalizationsOf(context).paymentDetails,
             style: ArDriveTypography.body
                 .leadBold()
                 .copyWith(fontWeight: FontWeight.w700),
@@ -193,8 +241,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             height: 12,
           ),
           Text(
-            // TODO: localize
-            'This is a one-time payment, powered by Stripe.',
+            appLocalizationsOf(context).thisIsAOneTimePaymentPoweredByStripe,
             style: ArDriveTypography.body.captionBold(
               color:
                   ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
@@ -220,8 +267,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                     .add(const TurboTopUpShowEstimationView());
               },
               child: Text(
-                // TODO: localize
-                'Back',
+                appLocalizationsOf(context).back,
                 style: ArDriveTypography.body.buttonLargeBold(
                   color: ArDriveTheme.of(context)
                       .themeData
@@ -234,14 +280,19 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           ArDriveButton(
             maxHeight: 44,
             maxWidth: 143,
-            text: 'Review',
+            text: appLocalizationsOf(context).review,
             fontStyle: ArDriveTypography.body.buttonLargeBold(
               color: Colors.white,
             ),
-            isDisabled: !(card?.complete ?? false),
+            isDisabled: _selectedCountry == null ||
+                _nameController.text.isEmpty ||
+                !(card?.complete ?? false),
             onPressed: () {
               context.read<TurboTopupFlowBloc>().add(
-                    const TurboTopUpShowPaymentReviewView(),
+                    TurboTopUpShowPaymentReviewView(
+                      name: _nameController.text,
+                      country: _selectedCountry!.label,
+                    ),
                   );
             },
           ),
@@ -259,12 +310,24 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              nameOnCardTextField(),
+            ],
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              countryTextField(theme),
+            ],
+          ),
+          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(bottom: 4, right: 16),
             child: Align(
               alignment: Alignment.centerLeft,
               child: TextFieldLabel(
-                text: 'Credit Card *',
+                text: '${appLocalizationsOf(context).creditCard} *',
                 style: ArDriveTypography.body.buttonNormalBold(
                   color: theme.requiredLabelColor,
                 ),
@@ -319,6 +382,97 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           ),
         ],
       ),
+    );
+  }
+
+  /// TextFields
+  ///
+  Widget nameOnCardTextField() {
+    return Expanded(
+      child: ArDriveTextField(
+        controller: _nameController,
+        label: appLocalizationsOf(context).nameOnCard,
+        isFieldRequired: true,
+        useErrorMessageOffset: true,
+        validator: (s) {
+          String valid = s?.replaceAll(RegExp(r'[^a-zA-Z\s]'), '') ?? '';
+          _nameController.text = valid;
+          _nameController.selection =
+              TextSelection.collapsed(offset: valid.length);
+
+          setState(() {});
+
+          if (valid.isEmpty) {
+            return appLocalizationsOf(context).validationRequired;
+          }
+
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget countryTextField(ArDriveTextFieldTheme theme) {
+    return BlocBuilder<PaymentFormBloc, PaymentFormState>(
+      builder: (context, state) {
+        if (state is PaymentFormLoaded) {
+          return Expanded(
+            child: CountryInputDropdown(
+              context: context,
+              onChanged: (country) {
+                setState(() {
+                  _selectedCountry = country;
+                });
+              },
+              items: state.supportedCountries.map((country) {
+                return CountryItem(
+                  country,
+                );
+              }).toList(),
+              buildSelectedItem: (item) {
+                return Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: item != null
+                          ? theme.successBorderColor
+                          : theme.defaultBorderColor,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .textFieldTheme
+                        .inputBackgroundColor,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item?.label ?? '',
+                          style: theme.inputTextStyle,
+                        ),
+                      ),
+                      ArDriveIcons.carretDown(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeAccentDisabled,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+        }
+
+        return const SizedBox();
+      },
     );
   }
 
@@ -474,6 +628,8 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
   Widget build(BuildContext context) {
     return ArDriveClickArea(
       child: ArDriveDropdown(
+        showScrollbars: true,
+        maxHeight: 275,
         anchor: widget.anchor,
         width: 200,
         items: widget.items
@@ -490,6 +646,7 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
                               .inputTextStyle
                               .color,
                         ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 onClick: () {
@@ -541,18 +698,19 @@ class CountryItem implements InputDropdownItem {
 }
 
 class CountryInputDropdown extends InputDropdownMenu<CountryItem> {
-  const CountryInputDropdown({
+  CountryInputDropdown({
     Key? key,
     required List<CountryItem> items,
     required Widget Function(CountryItem?) buildSelectedItem,
     CountryItem? selectedItem,
     required Function(CountryItem) onChanged,
+    required BuildContext context,
   }) : super(
           key: key,
           items: items,
           selectedItem: selectedItem,
           buildSelectedItem: buildSelectedItem,
-          label: 'Country *',
+          label: '${appLocalizationsOf(context).country} *',
           onChanged: onChanged,
         );
 }
@@ -585,9 +743,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
               return Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // TODO: localize
                   Text(
-                    'Quote updates in ',
+                    appLocalizationsOf(context).quoteUpdatesIn,
                     style: ArDriveTypography.body.captionBold(
                       color: ArDriveTheme.of(context)
                           .themeData
@@ -640,7 +797,7 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           children: [
                             Flexible(
                               child: Text(
-                                'Unable to update quote. Please try again.',
+                                appLocalizationsOf(context).unableToUpdateQuote,
                                 style: ArDriveTypography.body.captionBold(
                                   color: ArDriveTheme.of(context)
                                       .themeData
@@ -682,9 +839,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           size: 16,
                         ),
                         const SizedBox(width: 4),
-                        // TODO: localize
                         Text(
-                          'Refresh',
+                          appLocalizationsOf(context).refresh,
                           style: ArDriveTypography.body.captionBold(
                             color: ArDriveTheme.of(context)
                                 .themeData

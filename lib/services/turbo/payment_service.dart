@@ -112,6 +112,16 @@ class PaymentService {
 
     return PaymentModel.fromJson(jsonDecode(result.data));
   }
+
+  Future<List<String>> getSupportedCountries() async {
+    final result = await httpClient.get(
+      url: '$turboPaymentUri/v1/countries',
+    );
+
+    final countries = jsonDecode(result.data) as List<dynamic>;
+
+    return countries.map((e) => e as String).toList();
+  }
 }
 
 class DontUsePaymentService implements PaymentService {
@@ -147,6 +157,11 @@ class DontUsePaymentService implements PaymentService {
     required String currency,
   }) =>
       throw UnimplementedError();
+
+  @override
+  Future<List<String>> getSupportedCountries() {
+    throw UnimplementedError();
+  }
 }
 
 class TurboUserNotFound implements Exception {

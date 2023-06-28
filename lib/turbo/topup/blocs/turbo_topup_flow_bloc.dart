@@ -38,6 +38,11 @@ class TurboTopupFlowBloc
           ),
         );
       } else if (event is TurboTopUpShowPaymentReviewView) {
+        turbo.paymentUserInformation = PaymentUserInformation.create(
+          name: event.name,
+          country: event.country,
+        );
+
         emit(
           TurboTopupFlowShowingPaymentReviewView(
             isMovingForward: _currentStep <= event.stepNumber,

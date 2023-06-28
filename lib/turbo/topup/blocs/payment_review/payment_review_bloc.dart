@@ -22,7 +22,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     this.turbo,
     PriceEstimate priceEstimate,
   )   : _priceEstimate = priceEstimate,
-        super(PaymentReviewInitial()) {
+        super(const PaymentReviewInitial()) {
     on<PaymentReviewEvent>((event, emit) async {
       if (event is PaymentReviewFinishPayment) {
         await _handlePaymentReviewFinishPayment(emit, event);
@@ -41,11 +41,13 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     try {
       _emitPaymentReviewLoading(emit);
 
-      logger.d(event.paymentUserInformation.toString());
+      logger.d(event.email.toString());
 
-      final paymentStatus = await turbo.confirmPayment(
-        userInformation: event.paymentUserInformation,
+      turbo.paymentUserInformation = turbo.paymentUserInformation.copyWith(
+        email: event.email,
       );
+
+      final paymentStatus = await turbo.confirmPayment();
 
       if (paymentStatus == PaymentStatus.success) {
         _emitPaymentSuccess(emit);
@@ -75,9 +77,11 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     try {
       _emitPaymentReviewLoadingPaymentModel(emit);
 
-      await _createPaymentIntent();
+      turbo.paymentUserInformation = turbo.paymentUserInformation.copyWith(
+        email: turbo.paymentUserInformation.email,
+      );
 
-      // await Future.delayed(const Duration(seconds: 1));
+      await _createPaymentIntent();
 
       _emitStatePaymentReviewPaymentModelLoaded(emit);
     } catch (e, s) {
@@ -178,7 +182,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
 
   void _emitPaymentReviewErrorLoadingPaymentModel(Emitter emit) {
     emit(
-      const PaymentReviewErrorLoadingPaymentModel(
+      PaymentReviewErrorLoadingPaymentModel(
         errorType: TurboErrorType.unknown,
       ),
     );
@@ -186,7 +190,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
 
   void _emitPaymentReviewLoadingPaymentModel(Emitter emit) {
     emit(
-      const PaymentReviewLoadingPaymentModel(),
+      PaymentReviewLoadingPaymentModel(),
     );
   }
 

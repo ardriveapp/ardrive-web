@@ -7,6 +7,8 @@ abstract class PaymentFormEvent extends Equatable {
   List<Object> get props => [];
 }
 
+class PaymentFormLoadSupportedCountries extends PaymentFormEvent {}
+
 class PaymentFormPrePopulateFields extends PaymentFormEvent {}
 
 class PaymentFormUpdateQuote extends PaymentFormEvent {}

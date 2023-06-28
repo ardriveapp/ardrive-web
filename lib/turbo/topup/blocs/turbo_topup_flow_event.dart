@@ -23,7 +23,13 @@ class TurboTopUpShowPaymentFormView extends TurboTopupFlowEvent {
 
 // show payment review
 class TurboTopUpShowPaymentReviewView extends TurboTopupFlowEvent {
-  const TurboTopUpShowPaymentReviewView() : super(3);
+  const TurboTopUpShowPaymentReviewView({
+    required this.name,
+    required this.country,
+  }) : super(3);
+
+  final String name;
+  final String country;
 }
 
 // show success
