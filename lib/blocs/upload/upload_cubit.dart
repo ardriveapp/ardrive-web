@@ -397,8 +397,7 @@ class UploadCubit extends Cubit<UploadState> {
               profile.walletBalance >= paymentInfo.arCostEstimate.totalCost,
           uploadPlanForAR: uploadPlansPreparation.uploadPlanForAr,
           uploadPlanForTurbo: uploadPlansPreparation.uploadPlanForTurbo,
-          isFreeThanksToTurbo: (_uploadMethod == UploadMethod.turbo &&
-              paymentInfo.isFreeUploadPossibleUsingTurbo),
+          isFreeThanksToTurbo: (paymentInfo.isFreeUploadPossibleUsingTurbo),
           sufficentCreditsBalance: sufficientBalanceToPayWithTurbo,
           uploadMethod: _uploadMethod!,
           isButtonToUploadEnabled: isButtonEnabled,
