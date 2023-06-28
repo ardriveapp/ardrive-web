@@ -11,10 +11,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Get Flutter version
-        id: get-flutter-version
-        uses: zgosalvez/github-actions-get-flutter-version-env@v2
-
       - uses: ./.github/workflows/setup.yml
 
       - name: Lint
