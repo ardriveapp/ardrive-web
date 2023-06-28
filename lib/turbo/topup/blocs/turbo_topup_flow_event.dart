@@ -18,7 +18,7 @@ class TurboTopUpShowEstimationView extends TurboTopupFlowEvent {
 
 // show payment form
 class TurboTopUpShowPaymentFormView extends TurboTopupFlowEvent {
-  TurboTopUpShowPaymentFormView(super.stepNumber);
+  const TurboTopUpShowPaymentFormView(super.stepNumber);
 }
 
 // show payment review

@@ -88,8 +88,6 @@ class _UserRepository implements UserRepository {
   }
 }
 
-// TODO: move this to a constants file
-
 class NoProfileFoundException implements Exception {
   final String message;
 

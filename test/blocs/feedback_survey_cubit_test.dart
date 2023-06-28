@@ -1,6 +1,4 @@
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
-import 'package:ardrive/utils/key_value_store.dart';
-import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,7 +8,6 @@ import '../test_utils/fakes.dart';
 
 void main() {
   group('FeedbackSurveyCubit', () {
-    late KeyValueStore store;
     late FeedbackSurveyCubit feedbackCubit;
 
     setUp(() async {
@@ -19,8 +16,6 @@ void main() {
 
       Map<String, Object> values = <String, Object>{};
       SharedPreferences.setMockInitialValues(values);
-      final fakePrefs = await SharedPreferences.getInstance();
-      store = await LocalKeyValueStore.getInstance(prefs: fakePrefs);
 
       feedbackCubit = FeedbackSurveyCubit(FeedbackSurveyInitialState());
     });

@@ -495,7 +495,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
             child: GestureDetector(
               onTap: () {
                 context.read<TurboTopupFlowBloc>().add(
-                      TurboTopUpShowPaymentFormView(4),
+                      const TurboTopUpShowPaymentFormView(4),
                     );
               },
               child: Text(
@@ -557,13 +557,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 class RefreshButton extends StatefulWidget {
   final void Function() onPressed;
 
-  RefreshButton({super.key, required this.onPressed});
+  const RefreshButton({super.key, required this.onPressed});
 
   @override
-  _RefreshButtonState createState() => _RefreshButtonState();
+  RefreshButtonState createState() => RefreshButtonState();
 }
 
-class _RefreshButtonState extends State<RefreshButton>
+class RefreshButtonState extends State<RefreshButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _animation;

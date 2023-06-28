@@ -100,7 +100,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
     return nameAlreadyExists;
   }
 
-  Future<Map<String, dynamic>?> _uniqueDriveName(
+  Future<Map<String, dynamic>?> uniqueDriveName(
       AbstractControl<dynamic> control) async {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
     final String? newDriveName = control.value;

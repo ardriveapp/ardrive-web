@@ -23,13 +23,13 @@ class ProfileAuthFailScreen extends StatelessWidget {
             Text(
               appLocalizationsOf(context).loginFailed,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headline5,
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 32),
             Text(
               appLocalizationsOf(context).sorryLoginFailed,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headline6,
+              style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 32),
             TextButton(

@@ -25,7 +25,7 @@ class ProfileAuthShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget _buildContent() => SizedBox(
+    Widget buildContent() => SizedBox(
           height: MediaQuery.of(context).size.height,
           child: Column(
             mainAxisSize: MainAxisSize.max,
@@ -55,7 +55,7 @@ class ProfileAuthShell extends StatelessWidget {
             ],
           ),
         );
-    Widget _buildIllustration() => Stack(
+    Widget buildIllustration() => Stack(
           fit: StackFit.expand,
           children: [
             Container(
@@ -93,13 +93,13 @@ class ProfileAuthShell extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: _buildIllustration(),
+              child: buildIllustration(),
             ),
             Expanded(
               child: FractionallySizedBox(
                 alignment: Alignment.center,
                 widthFactor: contentWidthFactor,
-                child: _buildContent(),
+                child: buildContent(),
               ),
             ),
           ],
@@ -109,7 +109,7 @@ class ProfileAuthShell extends StatelessWidget {
         resizeToAvoidBottomInset: resizeToAvoidBottomInset,
         body: SingleChildScrollView(
           child: Padding(
-              padding: const EdgeInsets.all(16.0), child: _buildContent()),
+              padding: const EdgeInsets.all(16.0), child: buildContent()),
         ),
       ),
     );

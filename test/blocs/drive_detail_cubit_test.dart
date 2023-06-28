@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/config/config.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/helpers.dart';
 import 'package:drift/drift.dart';
@@ -12,17 +11,11 @@ import '../test_utils/utils.dart';
 void main() {
   group('DriveDetailCubit:', () {
     late Database db;
-    late DriveDao driveDao;
 
     late ProfileCubit profileCubit;
-    late DriveDetailCubit driveDetailCubit;
-    late ConfigService config;
-    const mockDriveId = 'mock-drive-id';
 
     setUp(() async {
       db = getTestDb();
-      driveDao = db.driveDao;
-      config = MockConfigService();
       profileCubit = MockProfileCubit();
 
       final keyBytes = Uint8List(32);
@@ -38,14 +31,6 @@ void main() {
           walletBalance: BigInt.one,
           useTurbo: false,
         ),
-      );
-
-      driveDetailCubit = DriveDetailCubit(
-        driveId: mockDriveId,
-        profileCubit: profileCubit,
-        driveDao: driveDao,
-        configService: config,
-        auth: MockArDriveAuth(),
       );
     });
 

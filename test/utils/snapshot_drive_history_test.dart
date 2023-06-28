@@ -1,5 +1,4 @@
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';

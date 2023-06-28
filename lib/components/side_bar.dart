@@ -348,9 +348,9 @@ class _AppSideBarState extends State<AppSideBar> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
+                    const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         ThemeSwitcher(),
                         SizedBox(
                           height: 8,
@@ -408,7 +408,7 @@ class _AppSideBarState extends State<AppSideBar> {
           );
   }
 
-  Widget _buildSyncButton() {
+  Widget buildSyncButton() {
     return BlocBuilder<SyncCubit, SyncState>(
       builder: (context, syncState) {
         return PopupMenuButton(

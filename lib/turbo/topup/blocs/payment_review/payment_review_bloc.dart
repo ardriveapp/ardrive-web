@@ -90,7 +90,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   Future<void> _createPaymentIntent() async {
     _paymentModel = await turbo.createPaymentIntent(
       amount: _priceEstimate.priceInCurrency,
-      currency: 'usd', // TODO: get more currencies from backend in a follow up
+      currency: 'usd',
     );
 
     _quoteExpirationDate = turbo.quoteExpirationDate;

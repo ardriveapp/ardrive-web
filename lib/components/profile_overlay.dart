@@ -74,7 +74,7 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                       SelectableText.rich(
                         TextSpan(
                           text: state.walletAddress,
-                          style: Theme.of(context).textTheme.bodyText2,
+                          style: Theme.of(context).textTheme.bodyMedium,
                           children: [
                             WidgetSpan(
                               alignment: PlaceholderAlignment.baseline,
@@ -103,7 +103,7 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                       const SizedBox(height: 4),
                       Text(
                         '${double.tryParse(utils.winstonToAr(state.walletBalance))?.toStringAsFixed(5) ?? 0} AR',
-                        style: Theme.of(context).textTheme.headline6!.copyWith(
+                        style: Theme.of(context).textTheme.titleLarge!.copyWith(
                               color: kPrimarySwatch,
                               fontWeight: FontWeight.bold,
                             ),

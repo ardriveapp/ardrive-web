@@ -30,7 +30,7 @@ class ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           contentWidthFactor: 0.75,
           content: DefaultTextStyle(
-            style: Theme.of(context).textTheme.headline6!,
+            style: Theme.of(context).textTheme.titleLarge!,
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(
@@ -38,7 +38,7 @@ class ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
                 children: [
                   Text(
                     appLocalizationsOf(context).welcomeToThePermawebEmphasized,
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 32),
                   Text(appLocalizationsOf(context)
@@ -63,14 +63,14 @@ class ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           contentWidthFactor: 0.75,
           content: DefaultTextStyle(
-            style: Theme.of(context).textTheme.headline6!,
+            style: Theme.of(context).textTheme.titleLarge!,
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(
                 children: [
                   Text(
                     appLocalizationsOf(context).payPerFileEmphasized,
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 32),
                   Text(appLocalizationsOf(context).noSubscriptions),
@@ -92,14 +92,14 @@ class ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           contentWidthFactor: 0.75,
           content: DefaultTextStyle(
-            style: Theme.of(context).textTheme.headline6!,
+            style: Theme.of(context).textTheme.titleLarge!,
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(
                 children: [
                   Text(
                     appLocalizationsOf(context).secondsFromForeverEmphasized,
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 32),
                   Text(appLocalizationsOf(context).decentralizedPermanent),
@@ -121,14 +121,14 @@ class ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           contentWidthFactor: 0.75,
           content: DefaultTextStyle(
-            style: Theme.of(context).textTheme.headline6!,
+            style: Theme.of(context).textTheme.titleLarge!,
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(
                 children: [
                   Text(
                     appLocalizationsOf(context).totalPrivacyControlEmphasized,
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 32),
                   Text(appLocalizationsOf(context).yourChoice),
@@ -150,14 +150,14 @@ class ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           contentWidthFactor: 0.75,
           content: DefaultTextStyle(
-            style: Theme.of(context).textTheme.headline6!,
+            style: Theme.of(context).textTheme.titleLarge!,
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(
                 children: [
                   Text(
                     appLocalizationsOf(context).neverDeletedEmphasized,
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 32),
                   Text(appLocalizationsOf(context).noDeleteButton),

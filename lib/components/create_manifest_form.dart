@@ -34,13 +34,13 @@ Future<void> promptToCreateManifest(
         driveDao: context.read<DriveDao>(),
         pst: context.read<PstService>(),
       ),
-      child: CreateManifestForm(),
+      child: const CreateManifestForm(),
     ),
   );
 }
 
 class CreateManifestForm extends StatefulWidget {
-  CreateManifestForm({Key? key}) : super(key: key);
+  const CreateManifestForm({Key? key}) : super(key: key);
 
   @override
   State<CreateManifestForm> createState() => _CreateManifestFormState();

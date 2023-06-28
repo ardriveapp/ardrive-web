@@ -47,7 +47,7 @@ void main() {
   late List<UploadFile> tNoConflictingFiles;
 
   // limits
-  final tPrivateFileSizeLimit = 100;
+  const tPrivateFileSizeLimit = 100;
 
   final tWallet = getTestWallet();
   String? tWalletAddress;

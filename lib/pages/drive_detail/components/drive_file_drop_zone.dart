@@ -137,7 +137,6 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
     }
   }
 
-  void _onHover() => setState(() => isHovering = true);
   void _onLeave() => setState(() => isHovering = false);
 
   Widget _buildDropZoneOnHover() => Center(

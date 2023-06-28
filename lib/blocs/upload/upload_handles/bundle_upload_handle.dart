@@ -22,8 +22,6 @@ class BundleUploadHandle implements UploadHandle {
     this.fileDataItemUploadHandles = const [],
     this.folderDataItemUploadHandles = const [],
     this.useTurbo = false,
-    this.size = 0,
-    this.hasError = false,
   }) {
     fileEntities = fileDataItemUploadHandles.map((item) => item.entity);
   }
@@ -127,6 +125,7 @@ class BundleUploadHandle implements UploadHandle {
     if (useTurbo) {
       await turboUploadService
           .postDataItem(dataItem: bundleDataItem)
+          // ignore: void_checks
           .onError((error, stackTrace) {
         logger.e(error);
         return hasError = true;
@@ -163,16 +162,18 @@ class BundleUploadHandle implements UploadHandle {
     size += (fileSizes.length * 64);
     // Add bytes that denote number of data items
     size += 32;
+
     this.size = size;
+
     return size;
   }
 
   @override
-  int size;
+  int size = 0;
 
   @override
   int get uploadedSize => (size * uploadProgress).round();
 
   @override
-  bool hasError;
+  bool hasError = false;
 }
