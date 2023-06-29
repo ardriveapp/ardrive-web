@@ -87,11 +87,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3693-implementing-balance-and-price-estimate-view-for-turbo-top-up-only-usd
-      resolved-ref: ccf36956c1e9d9d132e9af4e7e29f36c06cbc857
+      ref: PE-4033-add-country-and-to-s-checkbox-to-top-up-modal
+      resolved-ref: "7ecb381d6936b8bbf098af26ffd01912f858b19c"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.1.0"
+    version: "1.2.0"
   args:
     dependency: transitive
     description:
@@ -1765,6 +1765,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.5.3"
+  stash_shared_preferences:
+    dependency: "direct main"
+    description:
+      name: stash_shared_preferences
+      sha256: be81ec8f69c0a67475b77509558f78385dd09ee16493bb985312aad0442d4d59
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.6.2"
   stream_channel:
     dependency: transitive
     description:

@@ -82,7 +82,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       return wallet;
     } catch (e) {
-      debugPrint('Invalid wallet file: $e');
+      logger.d('Invalid wallet file: $e');
 
       return null;
     }
@@ -224,7 +224,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleForgetWalletEvent(
-      ForgetWallet event, Emitter<LoginState> emit) async {
+    ForgetWallet event,
+    Emitter<LoginState> emit,
+  ) async {
     if (await _arDriveAuth.isUserLoggedIn()) {
       await _arDriveAuth.logout();
     }

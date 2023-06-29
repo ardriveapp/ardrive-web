@@ -38,6 +38,7 @@ class TurboTopUpEstimationBloc
       (event, emit) async {
         if (event is LoadInitialData) {
           try {
+            emit(EstimationLoading());
             logger.i('initializing the estimation view');
             logger.i('getting the balance');
             await _getBalance();
@@ -48,11 +49,12 @@ class TurboTopUpEstimationBloc
               currentAmount: 0,
               currentCurrency: currentCurrency,
               currentDataUnit: currentDataUnit,
+              shouldRethrow: true,
             );
           } catch (e, s) {
             logger.e('error initializing the estimation view', e, s);
 
-            emit(EstimationError());
+            emit(FetchEstimationError());
           }
         } else if (event is FiatAmountSelected) {
           _currentAmount = event.amount;
@@ -111,33 +113,46 @@ class TurboTopUpEstimationBloc
     required int currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
+    bool shouldRethrow = false,
   }) async {
-    final priceEstimate = await turbo.computePriceEstimate(
-      currentAmount: currentAmount,
-      currentCurrency: currentCurrency,
-      currentDataUnit: currentDataUnit,
-    );
+    try {
+      emit(EstimationLoading());
+      final priceEstimate = await turbo.computePriceEstimate(
+        currentAmount: currentAmount,
+        currentCurrency: currentCurrency,
+        currentDataUnit: currentDataUnit,
+      );
 
-    final estimatedStorageForBalance =
-        await turbo.computeStorageEstimateForCredits(
-      credits: _balance,
-      outputDataUnit: currentDataUnit,
-    );
+      final estimatedStorageForBalance =
+          await turbo.computeStorageEstimateForCredits(
+        credits: _balance,
+        outputDataUnit: currentDataUnit,
+      );
 
-    logger.i('selected amount: ${priceEstimate.priceInCurrency}');
-    emit(
-      EstimationLoaded(
-        balance: _balance,
-        estimatedStorageForBalance:
-            estimatedStorageForBalance.toStringAsFixed(2),
-        selectedAmount: priceEstimate.priceInCurrency,
-        creditsForSelectedAmount: priceEstimate.credits,
-        estimatedStorageForSelectedAmount:
-            priceEstimate.estimatedStorage.toStringAsFixed(2),
-        currencyUnit: currentCurrency,
-        dataUnit: currentDataUnit,
-      ),
-    );
+      logger.i('selected amount: ${priceEstimate.priceInCurrency}');
+
+      emit(
+        EstimationLoaded(
+          balance: _balance,
+          estimatedStorageForBalance:
+              estimatedStorageForBalance.toStringAsFixed(2),
+          selectedAmount: priceEstimate.priceInCurrency,
+          creditsForSelectedAmount: priceEstimate.credits,
+          estimatedStorageForSelectedAmount:
+              priceEstimate.estimatedStorage.toStringAsFixed(2),
+          currencyUnit: currentCurrency,
+          dataUnit: currentDataUnit,
+        ),
+      );
+    } catch (e, s) {
+      logger.e('Error calculating the estimation', e, s);
+
+      if (shouldRethrow) {
+        rethrow;
+      }
+
+      emit(EstimationLoadError());
+    }
   }
 
   Future<void> _getBalance() async {
@@ -145,7 +160,7 @@ class TurboTopUpEstimationBloc
       _balance = await turbo.getBalance();
     } catch (e) {
       logger.e(e);
-      _balance = BigInt.zero;
+      rethrow;
     }
   }
 }

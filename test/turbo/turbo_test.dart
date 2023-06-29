@@ -1,4 +1,7 @@
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/models/payment_user_information.dart';
+import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/data_size.dart';
@@ -6,6 +9,7 @@ import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -25,10 +29,59 @@ class MockTurboCostCalculator extends Mock implements TurboCostCalculator {}
 
 class MockPaymentProvider extends Mock implements TurboPaymentProvider {}
 
+class MockPaymentModel extends Mock implements PaymentModel {}
+
+class MockTurboSupportedCountriesRetriever extends Mock
+    implements TurboSupportedCountriesRetriever {}
+
 void main() {
+  final mockPaymentSession = PaymentSession(
+    clientSecret: 'clientSecret',
+    id: 'paymentIntentId',
+  );
+
+  final mockTopUpQuote = TopUpQuote(
+    currencyType: 'usd',
+    destinationAddress: 'destinationAddress',
+    destinationAddressType: 'address',
+    paymentAmount: 100,
+    paymentProvider: 'stripe',
+    quoteExpirationDate: DateTime.now().toIso8601String(),
+    quoteId: 'quoteId',
+    winstonCreditAmount: '5000',
+  );
+
+  group('initializeStripe', () {
+    test('should use the stripePublishableKey from config', () {
+      // arrange
+      initializeStripe(AppConfig(stripePublishableKey: 'stripePublishableKey'));
+
+      // assert
+      expect(Stripe.publishableKey, equals('stripePublishableKey'));
+      expect(Stripe.publishableKey, isNot(equals('pk_test_123')));
+    });
+
+    test('should initialize only once', () {
+      // arrange
+      initializeStripe(AppConfig(stripePublishableKey: 'stripePublishableKey'));
+      initializeStripe(
+          AppConfig(stripePublishableKey: 'stripePublishableKey1'));
+      initializeStripe(
+          AppConfig(stripePublishableKey: 'stripePublishableKey2'));
+
+      // assert
+      expect(Stripe.publishableKey, equals('stripePublishableKey'));
+      expect(Stripe.publishableKey, isNot(equals('stripePublishableKey1')));
+      expect(Stripe.publishableKey, isNot(equals('stripePublishableKey2')));
+    });
+  });
   group('Turbo', () {
     setUpAll(() {
       registerFallbackValue(getTestWallet());
+      registerFallbackValue(PaymentModel(
+        paymentSession: mockPaymentSession,
+        topUpQuote: mockTopUpQuote,
+      ));
     });
     group('getBalance', () {
       late TurboBalanceRetriever mockBalanceRetriever;
@@ -37,6 +90,7 @@ void main() {
       setUp(() {
         mockBalanceRetriever = MockTurboBalanceRetriever();
         turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: MockTurboSessionManager(),
           costCalculator: MockTurboCostCalculator(),
           balanceRetriever: mockBalanceRetriever,
@@ -65,6 +119,7 @@ void main() {
       setUp(() {
         mockCostCalculator = MockTurboCostCalculator();
         turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: MockTurboSessionManager(),
           costCalculator: mockCostCalculator,
           balanceRetriever: MockTurboBalanceRetriever(),
@@ -93,6 +148,7 @@ void main() {
       setUp(() {
         mockPriceEstimator = MockTurboPriceEstimator();
         turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: MockTurboSessionManager(),
           costCalculator: MockTurboCostCalculator(),
           balanceRetriever: MockTurboBalanceRetriever(),
@@ -137,6 +193,7 @@ void main() {
       setUp(() {
         mockPriceEstimator = MockTurboPriceEstimator();
         turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: MockTurboSessionManager(),
           costCalculator: MockTurboCostCalculator(),
           balanceRetriever: MockTurboBalanceRetriever(),
@@ -149,7 +206,7 @@ void main() {
       test(
           'calls priceEstimator.computeStorageEstimateForCredits once with the correct arguments',
           () async {
-        final mockStorageEstimate = 1.0;
+        const mockStorageEstimate = 1.0;
         final mockCredits = BigInt.from(100);
         when(() => mockPriceEstimator.computeStorageEstimateForCredits(
               credits: mockCredits,
@@ -176,6 +233,7 @@ void main() {
       setUp(() {
         mockPriceEstimator = MockTurboPriceEstimator();
         turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: MockTurboSessionManager(),
           costCalculator: MockTurboCostCalculator(),
           balanceRetriever: MockTurboBalanceRetriever(),
@@ -187,9 +245,6 @@ void main() {
 
       test('priceEstimate updates when price quote expires', () async {
         fakeAsync((async) async {
-          final mockStorageEstimate = 1.0;
-          final mockCredits = BigInt.from(100);
-
           final mockPriceEstimate1 = PriceEstimate(
             credits: BigInt.from(100),
             estimatedStorage: 1,
@@ -218,7 +273,7 @@ void main() {
 
           expect(priceEstimate, mockPriceEstimate1);
 
-          await Future.delayed(Duration(seconds: 2));
+          await Future.delayed(const Duration(seconds: 2));
 
           when(() => mockPriceEstimator.computePriceEstimate(
                 currentAmount: 100,
@@ -257,7 +312,7 @@ void main() {
 
           expect(priceEstimate, mockPriceEstimate);
 
-          await Future.delayed(Duration(seconds: 2));
+          await Future.delayed(const Duration(seconds: 2));
 
           when(() => mockPriceEstimator.computePriceEstimate(
                 currentAmount: 0,
@@ -279,6 +334,7 @@ void main() {
       setUp(() {
         mockSessionManager = MockTurboSessionManager();
         turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: MockTurboSessionManager(),
           costCalculator: MockTurboCostCalculator(),
           balanceRetriever: MockTurboBalanceRetriever(),
@@ -318,6 +374,7 @@ void main() {
         mockBalanceRetriever = MockTurboBalanceRetriever();
         mockPriceEstimator = MockTurboPriceEstimator();
         turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: mockSessionManager,
           costCalculator: MockTurboCostCalculator(),
           balanceRetriever: mockBalanceRetriever,
@@ -371,6 +428,7 @@ void main() {
         final mockBalanceRetriever = MockTurboBalanceRetriever();
         final mockPriceEstimator = MockTurboPriceEstimator();
         final turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: mockSessionManager,
           costCalculator: MockTurboCostCalculator(),
           balanceRetriever: mockBalanceRetriever,
@@ -388,6 +446,7 @@ void main() {
         final mockPriceEstimator = MockTurboPriceEstimator();
 
         final turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: mockSessionManager,
           costCalculator: MockTurboCostCalculator(),
           balanceRetriever: mockBalanceRetriever,
@@ -442,6 +501,7 @@ void main() {
         final mockPriceEstimator = MockTurboPriceEstimator();
 
         final turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: mockSessionManager,
           costCalculator: MockTurboCostCalculator(),
           balanceRetriever: mockBalanceRetriever,
@@ -461,6 +521,7 @@ void main() {
         final mockPriceEstimator = MockTurboPriceEstimator();
 
         final turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
           sessionManager: mockSessionManager,
           costCalculator: MockTurboCostCalculator(),
           balanceRetriever: mockBalanceRetriever,
@@ -493,6 +554,323 @@ void main() {
         turbo.maxQuoteExpirationDate;
 
         verify(() => mockPriceEstimator.maxQuoteExpirationTime).called(1);
+      });
+    });
+
+    group('paymentUserInformation', () {
+      late Turbo turbo;
+      setUp(() {
+        final mockSessionManager = MockTurboSessionManager();
+        final mockBalanceRetriever = MockTurboBalanceRetriever();
+        final mockPriceEstimator = MockTurboPriceEstimator();
+
+        turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
+          sessionManager: mockSessionManager,
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: mockBalanceRetriever,
+          priceEstimator: mockPriceEstimator,
+          wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
+        );
+      });
+
+      test('sets the paymentUserInformation', () {
+        final mockPaymentUserInformation = PaymentUserInformation.create(
+            email: 'email', country: 'US', name: 'name');
+
+        turbo.paymentUserInformation = mockPaymentUserInformation;
+
+        expect(turbo.paymentUserInformation, mockPaymentUserInformation);
+      });
+
+      test('changes the paymentUserInformation', () {
+        final mockPaymentUserInformation = PaymentUserInformation.create(
+            email: 'email', country: 'US', name: 'name');
+
+        turbo.paymentUserInformation = mockPaymentUserInformation;
+
+        expect(turbo.paymentUserInformation, mockPaymentUserInformation);
+
+        final mockPaymentUserInformation2 = PaymentUserInformation.create(
+            email: 'email2', country: 'US', name: 'name');
+
+        turbo.paymentUserInformation = mockPaymentUserInformation2;
+
+        expect(turbo.paymentUserInformation, mockPaymentUserInformation2);
+      });
+
+      test('throws an exception when paymentUserInformation is null', () {
+        turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
+          sessionManager: MockTurboSessionManager(),
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: MockTurboBalanceRetriever(),
+          priceEstimator: MockTurboPriceEstimator(),
+          wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
+        );
+
+        expect(() => turbo.paymentUserInformation, throwsException);
+      });
+    });
+    group('getSupportedCountries', () {
+      late Turbo turbo;
+      late MockTurboSupportedCountriesRetriever mockSupportedCountriesRetriever;
+
+      setUp(() {
+        // Set up the test environment
+        mockSupportedCountriesRetriever =
+            MockTurboSupportedCountriesRetriever();
+        turbo = Turbo(
+          supportedCountriesRetriever: mockSupportedCountriesRetriever,
+          sessionManager: MockTurboSessionManager(),
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: MockTurboBalanceRetriever(),
+          priceEstimator: MockTurboPriceEstimator(),
+          wallet: MockWallet(),
+          paymentProvider: MockPaymentProvider(),
+        );
+      });
+
+      test('getSupportedCountries returns a list of supported countries',
+          () async {
+        // Arrange
+        final supportedCountries = ['Country A', 'Country B'];
+        when(() => mockSupportedCountriesRetriever.getSupportedCountries())
+            .thenAnswer((_) => Future.value(supportedCountries));
+
+        // Act
+        final result = await turbo.getSupportedCountries();
+
+        // Assert
+        expect(result, supportedCountries);
+        verify(() => mockSupportedCountriesRetriever.getSupportedCountries())
+            .called(1);
+      });
+    });
+    group('confirmPayment', () {
+      late MockPaymentProvider mockPaymentProvider;
+      late PaymentUserInformation mockPaymentUserInformation;
+      late PaymentModel paymentModel;
+
+      setUp(() {
+        mockPaymentProvider = MockPaymentProvider();
+        mockPaymentUserInformation = PaymentUserInformation.create(
+          country: 'US',
+          email: 'email',
+          name: 'name',
+        );
+
+        paymentModel = PaymentModel(
+          paymentSession: mockPaymentSession,
+          topUpQuote: mockTopUpQuote,
+        );
+
+        when(
+          () => mockPaymentProvider.createPaymentIntent(
+            currency: any(named: 'currency'),
+            amount: any(named: 'amount'),
+            wallet: any(named: 'wallet'),
+          ),
+        ).thenAnswer(
+          (invocation) => Future.value(paymentModel),
+        );
+      });
+
+      test('calls PaymentProvider.confirmPayment and returns success',
+          () async {
+        when(() => mockPaymentProvider.confirmPayment(
+              paymentModel: paymentModel,
+              paymentUserInformation: mockPaymentUserInformation,
+            )).thenAnswer((_) => Future.value(PaymentStatus.success));
+
+        final turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
+          sessionManager: MockTurboSessionManager(),
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: MockTurboBalanceRetriever(),
+          priceEstimator: MockTurboPriceEstimator(),
+          wallet: MockWallet(),
+          paymentProvider: mockPaymentProvider,
+        );
+
+        // must to set before doing the payment
+        turbo.paymentUserInformation = mockPaymentUserInformation;
+
+        await turbo.createPaymentIntent(amount: 100, currency: 'usd');
+
+        final payment = await turbo.confirmPayment();
+
+        expect(payment, PaymentStatus.success);
+        verify(() => mockPaymentProvider.confirmPayment(
+              paymentModel: paymentModel,
+              paymentUserInformation: mockPaymentUserInformation,
+            )).called(1);
+      });
+
+      test(
+          'calls PaymentProvider.confirmPayment and returns PaymentStatus failed',
+          () async {
+        when(() => mockPaymentProvider.confirmPayment(
+              paymentModel: paymentModel,
+              paymentUserInformation: mockPaymentUserInformation,
+            )).thenAnswer((_) => Future.value(PaymentStatus.failed));
+
+        final turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
+          sessionManager: MockTurboSessionManager(),
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: MockTurboBalanceRetriever(),
+          priceEstimator: MockTurboPriceEstimator(),
+          wallet: MockWallet(),
+          paymentProvider: mockPaymentProvider,
+        );
+
+        // must to set before doing the payment
+        turbo.paymentUserInformation = mockPaymentUserInformation;
+        await turbo.createPaymentIntent(amount: 100, currency: 'usd');
+
+        final payment = await turbo.confirmPayment();
+
+        expect(payment, PaymentStatus.failed);
+        verify(() => mockPaymentProvider.confirmPayment(
+              paymentModel: paymentModel,
+              paymentUserInformation: mockPaymentUserInformation,
+            )).called(1);
+      });
+
+      test(
+          'calls PaymentProvider.confirmPayment and returns PaymentStatus quoteExpired',
+          () async {
+        when(() => mockPaymentProvider.confirmPayment(
+              paymentModel: paymentModel,
+              paymentUserInformation: mockPaymentUserInformation,
+            )).thenAnswer((_) => Future.value(PaymentStatus.quoteExpired));
+
+        final turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
+          sessionManager: MockTurboSessionManager(),
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: MockTurboBalanceRetriever(),
+          priceEstimator: MockTurboPriceEstimator(),
+          wallet: MockWallet(),
+          paymentProvider: mockPaymentProvider,
+        );
+
+        // must to set before doing the payment
+        turbo.paymentUserInformation = mockPaymentUserInformation;
+        await turbo.createPaymentIntent(amount: 100, currency: 'usd');
+
+        final payment = await turbo.confirmPayment();
+
+        expect(payment, PaymentStatus.quoteExpired);
+        verify(() => mockPaymentProvider.confirmPayment(
+              paymentModel: paymentModel,
+              paymentUserInformation: mockPaymentUserInformation,
+            )).called(1);
+      });
+
+      test('throws an exeception if payment user information is not provided',
+          () async {
+        final mockPaymentProvider = MockPaymentProvider();
+
+        final turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
+          sessionManager: MockTurboSessionManager(),
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: MockTurboBalanceRetriever(),
+          priceEstimator: MockTurboPriceEstimator(),
+          wallet: MockWallet(),
+          paymentProvider: mockPaymentProvider,
+        );
+
+        expect(() async => await turbo.confirmPayment(), throwsException);
+      });
+
+      test('throws an exeception if the payment intent was not created',
+          () async {
+        final mockPaymentProvider = MockPaymentProvider();
+        final mockPaymentUserInformation = PaymentUserInformation.create(
+          country: 'US',
+          email: 'email',
+          name: 'name',
+        );
+
+        when(() => mockPaymentProvider.confirmPayment(
+              paymentModel: paymentModel,
+              paymentUserInformation: mockPaymentUserInformation,
+            )).thenAnswer((_) => Future.value(PaymentStatus.failed));
+
+        final turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
+          sessionManager: MockTurboSessionManager(),
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: MockTurboBalanceRetriever(),
+          priceEstimator: MockTurboPriceEstimator(),
+          wallet: MockWallet(),
+          paymentProvider: mockPaymentProvider,
+        );
+
+        // ONLY SET THE PAYMENT USER INFO, NOT THE PAYMENT INTENT
+        turbo.paymentUserInformation = mockPaymentUserInformation;
+
+        expect(() async => await turbo.confirmPayment(), throwsException);
+      });
+    });
+
+    group('createPaymentIntent', () {
+      late Turbo turbo;
+      late MockPaymentProvider mockPaymentProvider;
+
+      setUp(() {
+        // Set up the test environment
+        mockPaymentProvider = MockPaymentProvider();
+        turbo = Turbo(
+          supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
+          sessionManager: MockTurboSessionManager(),
+          costCalculator: MockTurboCostCalculator(),
+          balanceRetriever: MockTurboBalanceRetriever(),
+          priceEstimator: MockTurboPriceEstimator(),
+          wallet: MockWallet(),
+          paymentProvider: mockPaymentProvider,
+        );
+      });
+
+      test(
+          'createPaymentIntent sets currentPaymentIntent and quoteExpirationDate correctly',
+          () async {
+        // Arrange
+        const amount = 100;
+        const currency = 'USD';
+        final paymentIntent = PaymentModel(
+          topUpQuote: mockTopUpQuote,
+          paymentSession: mockPaymentSession,
+          // Add other necessary properties for the PaymentModel
+        );
+        when(() => mockPaymentProvider.createPaymentIntent(
+              amount: amount,
+              currency: currency,
+              wallet: any(named: 'wallet'),
+            )).thenAnswer((_) => Future.value(paymentIntent));
+
+        // Act
+        final result =
+            await turbo.createPaymentIntent(amount: amount, currency: currency);
+
+        // Assert
+        expect(turbo.currentPaymentIntent, paymentIntent);
+        expect(
+          turbo.quoteExpirationDate,
+          DateTime.parse(paymentIntent.topUpQuote.quoteExpirationDate)
+              .subtract(const Duration(seconds: 5)),
+        );
+        expect(result, paymentIntent);
+        verify(() => mockPaymentProvider.createPaymentIntent(
+              amount: amount,
+              currency: currency,
+              wallet: any(named: 'wallet'),
+            )).called(1);
       });
     });
   });
@@ -559,6 +937,25 @@ void main() {
 
       expect(balance, equals(mockBalance));
       verify(() => mockPaymentService.getBalance(wallet: mockWallet)).called(1);
+    });
+
+    test(
+        'getBalance returns 0 when PaymentService.getBalance returns TurboUserNotFound',
+        () async {
+      when(() => mockPaymentService.getBalance(wallet: mockWallet))
+          .thenThrow(TurboUserNotFound());
+
+      final balance = await balanceRetriever.getBalance(mockWallet);
+
+      expect(balance, BigInt.zero);
+      verify(() => mockPaymentService.getBalance(wallet: mockWallet)).called(1);
+    });
+
+    test('getBalance throws when PaymentService.getBalance throws', () async {
+      when(() => mockPaymentService.getBalance(wallet: mockWallet))
+          .thenThrow(Exception());
+
+      expect(() => balanceRetriever.getBalance(mockWallet), throwsException);
     });
   });
   group('TurboSessionManager', () {
@@ -676,7 +1073,7 @@ void main() {
       expect(priceEstimate.estimatedStorage, expectedEstimatedStorage);
     });
 
-    group("computeStorageEstimateForCredits", () {
+    group('computeStorageEstimateForCredits', () {
       test('should return correct estimate', () async {
         // Setup the method call response
         final expectedCredits = BigInt.from(100);
@@ -761,6 +1158,34 @@ void main() {
         // Verify the result
         expect(estimatedStorage, expectedEstimatedStorage);
       });
+    });
+  });
+
+  group('TurboSupportedCountriesRetriever', () {
+    late TurboSupportedCountriesRetriever turboSupportedCountriesRetriever;
+    late MockPaymentService mockPaymentService;
+
+    setUp(() {
+      // Set up the test environment
+      mockPaymentService = MockPaymentService();
+      turboSupportedCountriesRetriever =
+          TurboSupportedCountriesRetriever(paymentService: mockPaymentService);
+    });
+
+    test('getSupportedCountries returns a list of supported countries',
+        () async {
+      // Arrange
+      final supportedCountries = ['Country A', 'Country B'];
+      when(() => mockPaymentService.getSupportedCountries())
+          .thenAnswer((_) => Future.value(supportedCountries));
+
+      // Act
+      final result =
+          await turboSupportedCountriesRetriever.getSupportedCountries();
+
+      // Assert
+      expect(result, supportedCountries);
+      verify(() => mockPaymentService.getSupportedCountries()).called(1);
     });
   });
 }

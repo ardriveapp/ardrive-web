@@ -21,7 +21,7 @@ void main() {
     group('LoadInitialData', () {
       setUp(() {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
       });
 
       blocTest<TurboTopUpEstimationBloc, TopupEstimationState>(
@@ -48,6 +48,7 @@ void main() {
           bloc.add(LoadInitialData());
         },
         expect: () => [
+          EstimationLoading(),
           EstimationLoaded(
             balance: BigInt.from(10),
             estimatedStorageForBalance: '1.00',
@@ -63,7 +64,7 @@ void main() {
       blocTest('Emits [EstimationError] if getBalance throws',
           build: () {
             when(() => mockTurbo.onPriceEstimateChanged)
-                .thenAnswer((_) => Stream.empty());
+                .thenAnswer((_) => const Stream.empty());
             when(() => mockTurbo.getBalance()).thenThrow(Exception());
 
             return TurboTopUpEstimationBloc(turbo: mockTurbo);
@@ -72,7 +73,8 @@ void main() {
             bloc.add(LoadInitialData());
           },
           expect: () => [
-                EstimationError(),
+                EstimationLoading(),
+                FetchEstimationError(),
               ]);
       blocTest(
           'Emits [EstimationError] if getBalance doesnt throw but computePriceEstimateAndUpdate do',
@@ -84,7 +86,7 @@ void main() {
           },
           setUp: () {
             when(() => mockTurbo.onPriceEstimateChanged)
-                .thenAnswer((_) => Stream.empty());
+                .thenAnswer((_) => const Stream.empty());
             when(() => mockTurbo.getBalance())
                 .thenAnswer((_) async => BigInt.from(10));
             when(() => mockTurbo.computePriceEstimate(
@@ -94,7 +96,8 @@ void main() {
                 .thenThrow(Exception());
           },
           expect: () => [
-                EstimationError(),
+                EstimationLoading(),
+                FetchEstimationError(),
               ]);
       blocTest(
           'Emits [EstimationError] if getBalance and computePriceEstimateAndUpdate doent throw but computeStorageEstimateForCredits do',
@@ -106,7 +109,7 @@ void main() {
           },
           setUp: () {
             when(() => mockTurbo.onPriceEstimateChanged)
-                .thenAnswer((_) => Stream.empty());
+                .thenAnswer((_) => const Stream.empty());
             final mockPriceEstimate = PriceEstimate(
                 credits: BigInt.from(10),
                 priceInCurrency: 10,
@@ -125,7 +128,8 @@ void main() {
                 )).thenThrow(Exception());
           },
           expect: () => [
-                EstimationError(),
+                EstimationLoading(),
+                FetchEstimationError(),
               ]);
     });
   });
@@ -140,7 +144,7 @@ void main() {
       },
       setUp: () {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
 
@@ -162,6 +166,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // first loads with usd
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -172,6 +178,7 @@ void main() {
           currencyUnit: 'usd',
           dataUnit: FileSizeUnit.gigabytes,
         ),
+
         // then emit eur
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -184,6 +191,54 @@ void main() {
         ),
       ],
     );
+    blocTest(
+        'should emit [EstimationLoading] and [EstimationLoadError] when throws calculating new estimation',
+        build: () => TurboTopUpEstimationBloc(turbo: mockTurbo),
+        setUp: () {
+          when(() => mockTurbo.onPriceEstimateChanged)
+              .thenAnswer((_) => const Stream.empty());
+          final mockPriceEstimate = PriceEstimate(
+              credits: BigInt.from(10),
+              priceInCurrency: 10,
+              estimatedStorage: 1);
+
+          when(() => mockTurbo.getBalance())
+              .thenAnswer((_) async => BigInt.from(10));
+          when(() => mockTurbo.computePriceEstimate(
+                currentAmount: 0,
+                currentCurrency: 'usd',
+                currentDataUnit: FileSizeUnit.gigabytes,
+              )).thenAnswer((_) async => mockPriceEstimate);
+          when(() => mockTurbo.computePriceEstimate(
+                currentAmount: 0,
+                currentCurrency: 'eur',
+                currentDataUnit: FileSizeUnit.gigabytes,
+              )).thenThrow(Exception());
+          when(() => mockTurbo.computeStorageEstimateForCredits(
+                credits: BigInt.from(10),
+                outputDataUnit: FileSizeUnit.gigabytes,
+              )).thenAnswer((_) async => 1);
+        },
+        act: (bloc) async {
+          bloc.add(LoadInitialData());
+          await Future.delayed(const Duration(milliseconds: 500));
+          bloc.add(const CurrencyUnitChanged('eur'));
+        },
+        expect: () => [
+              EstimationLoading(),
+              // first loads with usd
+              EstimationLoaded(
+                balance: BigInt.from(10),
+                estimatedStorageForBalance: '1.00',
+                selectedAmount: 10,
+                creditsForSelectedAmount: BigInt.from(10),
+                estimatedStorageForSelectedAmount: '1.00',
+                currencyUnit: 'usd',
+                dataUnit: FileSizeUnit.gigabytes,
+              ),
+              EstimationLoading(),
+              EstimationLoadError()
+            ]);
   });
 
   group('DataUnitChanged', () {
@@ -192,11 +247,12 @@ void main() {
       build: () => TurboTopUpEstimationBloc(turbo: mockTurbo),
       act: (bloc) async {
         bloc.add(LoadInitialData());
+        await Future.delayed(const Duration(milliseconds: 500));
         bloc.add(const DataUnitChanged(FileSizeUnit.kilobytes));
       },
       setUp: () {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
 
@@ -226,6 +282,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // first loads with usd
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -236,6 +294,8 @@ void main() {
           currencyUnit: 'usd',
           dataUnit: FileSizeUnit.gigabytes,
         ),
+        EstimationLoading(),
+
         // then emit eur
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -248,6 +308,57 @@ void main() {
         ),
       ],
     );
+
+    blocTest(
+        'should emit [EstimationLoading] and [EstimationLoadError] when throws calculating new estimation',
+        build: () => TurboTopUpEstimationBloc(turbo: mockTurbo),
+        setUp: () {
+          when(() => mockTurbo.onPriceEstimateChanged)
+              .thenAnswer((_) => const Stream.empty());
+          final mockPriceEstimate = PriceEstimate(
+              credits: BigInt.from(10),
+              priceInCurrency: 10,
+              estimatedStorage: 1);
+
+          when(() => mockTurbo.getBalance())
+              .thenAnswer((_) async => BigInt.from(10));
+          // GiB
+          when(() => mockTurbo.computePriceEstimate(
+                currentAmount: 0,
+                currentCurrency: 'usd',
+                currentDataUnit: FileSizeUnit.gigabytes,
+              )).thenAnswer((_) async => mockPriceEstimate);
+          when(() => mockTurbo.computeStorageEstimateForCredits(
+                credits: BigInt.from(10),
+                outputDataUnit: FileSizeUnit.gigabytes,
+              )).thenAnswer((_) async => 1);
+
+          // KiB
+          when(() => mockTurbo.computePriceEstimate(
+                currentAmount: 0,
+                currentCurrency: 'usd',
+                currentDataUnit: FileSizeUnit.kilobytes,
+              )).thenThrow((_) => Exception());
+        },
+        act: (bloc) async {
+          bloc.add(LoadInitialData());
+          await Future.delayed(const Duration(milliseconds: 500));
+          bloc.add(const DataUnitChanged(FileSizeUnit.kilobytes));
+        },
+        expect: () => [
+              EstimationLoading(),
+              EstimationLoaded(
+                balance: BigInt.from(10),
+                estimatedStorageForBalance: '1.00',
+                selectedAmount: 10,
+                creditsForSelectedAmount: BigInt.from(10),
+                estimatedStorageForSelectedAmount: '1.00',
+                currencyUnit: 'usd',
+                dataUnit: FileSizeUnit.gigabytes,
+              ),
+              EstimationLoading(),
+              EstimationLoadError()
+            ]);
   });
 
   group('FiatAmountSelected', () {
@@ -260,7 +371,7 @@ void main() {
       },
       setUp: () {
         when(() => mockTurbo.onPriceEstimateChanged)
-            .thenAnswer((_) => Stream.empty());
+            .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
             credits: BigInt.from(10), priceInCurrency: 0, estimatedStorage: 1);
         final mockPriceEstimate100 = PriceEstimate(
@@ -292,6 +403,8 @@ void main() {
             )).thenAnswer((_) async => 1);
       },
       expect: () => [
+        EstimationLoading(),
+
         // start with 0
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -302,6 +415,7 @@ void main() {
           currencyUnit: 'usd',
           dataUnit: FileSizeUnit.gigabytes,
         ),
+
         // 100
         EstimationLoaded(
           balance: BigInt.from(10),
@@ -314,5 +428,54 @@ void main() {
         ),
       ],
     );
+    blocTest(
+        'should emit [EstimationLoading] and [EstimationLoadError] when throws calculating new estimation',
+        build: () => TurboTopUpEstimationBloc(turbo: mockTurbo),
+        setUp: () {
+          when(() => mockTurbo.onPriceEstimateChanged)
+              .thenAnswer((_) => const Stream.empty());
+          final mockPriceEstimate = PriceEstimate(
+              credits: BigInt.from(10),
+              priceInCurrency: 0,
+              estimatedStorage: 1);
+          when(() => mockTurbo.getBalance())
+              .thenAnswer((_) async => BigInt.from(10));
+          when(() => mockTurbo.computePriceEstimate(
+                currentAmount: 0,
+                currentCurrency: 'usd',
+                currentDataUnit: FileSizeUnit.gigabytes,
+              )).thenAnswer((_) async => mockPriceEstimate);
+          when(() => mockTurbo.computeStorageEstimateForCredits(
+                credits: BigInt.from(10),
+                outputDataUnit: FileSizeUnit.gigabytes,
+              )).thenAnswer((_) async => 1);
+
+          // second call with 100 amount
+          when(() => mockTurbo.computePriceEstimate(
+                currentAmount: 100,
+                currentCurrency: 'usd',
+                currentDataUnit: FileSizeUnit.gigabytes,
+              )).thenThrow(Exception());
+        },
+        act: (bloc) async {
+          bloc.add(LoadInitialData());
+          await Future.delayed(const Duration(milliseconds: 1000));
+          bloc.add(const FiatAmountSelected(100));
+        },
+        expect: () => [
+              EstimationLoading(),
+              // start with 0
+              EstimationLoaded(
+                balance: BigInt.from(10),
+                estimatedStorageForBalance: '1.00',
+                selectedAmount: 0,
+                creditsForSelectedAmount: BigInt.from(10),
+                estimatedStorageForSelectedAmount: '1.00',
+                currencyUnit: 'usd',
+                dataUnit: FileSizeUnit.gigabytes,
+              ),
+              EstimationLoading(),
+              EstimationLoadError()
+            ]);
   });
 }

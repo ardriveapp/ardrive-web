@@ -2,8 +2,8 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
-import 'package:flutter/foundation.dart';
 
 abstract class UserRepository {
   Future<bool> hasUser();
@@ -54,7 +54,7 @@ class _UserRepository implements UserRepository {
       ),
     );
 
-    debugPrint('Loaded user: ${user.walletAddress}');
+    logger.d('Loaded user: ${user.walletAddress}');
 
     return user;
   }
@@ -62,7 +62,7 @@ class _UserRepository implements UserRepository {
   @override
   Future<void> saveUser(
       String password, ProfileType profileType, Wallet wallet) async {
-    debugPrint('Saving user');
+    logger.d('Saving user');
 
     await _profileDao.addProfile(
       // FIXME: This is a hack to get the username from the user object

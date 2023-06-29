@@ -138,8 +138,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 content: Column(
                   children: [
                     if (!widget.isSharePage)
-                      ScreenTypeLayout(
-                        desktop: Column(
+                      ScreenTypeLayout.builder(
+                        desktop: (context) => Column(
                           children: [
                             DetailsPanelToolbar(
                               item: widget.item,
@@ -149,7 +149,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                             ),
                           ],
                         ),
-                        mobile: const SizedBox.shrink(),
+                        mobile: (context) => const SizedBox.shrink(),
                       ),
                     ArDriveCard(
                       contentPadding: const EdgeInsets.all(24),
@@ -174,9 +174,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           ),
                           if (widget.currentDrive != null &&
                               !widget.isSharePage)
-                            ScreenTypeLayout(
-                              desktop: const SizedBox.shrink(),
-                              mobile: EntityActionsMenu(
+                            ScreenTypeLayout.builder(
+                              desktop: (context) => const SizedBox.shrink(),
+                              mobile: (context) => EntityActionsMenu(
                                 drive: widget.currentDrive,
                                 withInfo: false,
                                 item: widget.item,
@@ -338,6 +338,12 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }
 
   List<Widget> _fileDetails() {
+    String? metadataTxId;
+
+    if (widget.item is FileDataTableItem) {
+      metadataTxId = (widget.item as FileDataTableItem).metadataTx?.id;
+    }
+
     return [
       DetailsPanelItem(
         leading: CopyButton(text: widget.item.id),
@@ -375,13 +381,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: 'File type',
       ),
-      sizedBoxHeight16px,
-      DetailsPanelItem(
-        leading: CopyButton(
-          text: widget.item.driveId,
+      if (metadataTxId != null) ...[
+        sizedBoxHeight16px,
+        DetailsPanelItem(
+          leading: CopyButton(
+            text: metadataTxId,
+          ),
+          itemTitle: appLocalizationsOf(context).metadataTxID,
         ),
-        itemTitle: appLocalizationsOf(context).metadataTxID,
-      ),
+      ],
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Row(

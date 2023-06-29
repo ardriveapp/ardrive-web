@@ -18,16 +18,18 @@ class TurboTopUpShowEstimationView extends TurboTopupFlowEvent {
 
 // show payment form
 class TurboTopUpShowPaymentFormView extends TurboTopupFlowEvent {
-  TurboTopUpShowPaymentFormView(super.stepNumber);
+  const TurboTopUpShowPaymentFormView(super.stepNumber);
 }
 
 // show payment review
 class TurboTopUpShowPaymentReviewView extends TurboTopupFlowEvent {
   const TurboTopUpShowPaymentReviewView({
-    required this.paymentUserInformation,
+    required this.name,
+    required this.country,
   }) : super(3);
 
-  final PaymentUserInformation paymentUserInformation;
+  final String name;
+  final String country;
 }
 
 // show success

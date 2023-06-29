@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
+import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
@@ -13,13 +14,6 @@ import 'package:arweave/arweave.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 class Turbo extends Disposable {
-  final TurboSessionManager _sessionManager;
-  final TurboCostCalculator _costCalculator;
-  final TurboBalanceRetriever _balanceRetriever;
-  final TurboPriceEstimator _priceEstimator;
-  final TurboPaymentProvider _paymentProvider;
-  final Wallet _wallet;
-
   Turbo({
     required TurboCostCalculator costCalculator,
     required TurboSessionManager sessionManager,
@@ -27,12 +21,14 @@ class Turbo extends Disposable {
     required TurboPriceEstimator priceEstimator,
     required TurboPaymentProvider paymentProvider,
     required Wallet wallet,
+    required TurboSupportedCountriesRetriever supportedCountriesRetriever,
   })  : _balanceRetriever = balanceRetriever,
         _costCalculator = costCalculator,
         _priceEstimator = priceEstimator,
         _paymentProvider = paymentProvider,
         _wallet = wallet,
-        _sessionManager = sessionManager;
+        _sessionManager = sessionManager,
+        _supportedCountriesRetriever = supportedCountriesRetriever;
 
   DateTime get maxQuoteExpirationDate {
     final maxQuoteExpirationTime = _priceEstimator.maxQuoteExpirationTime;
@@ -45,6 +41,23 @@ class Turbo extends Disposable {
     return maxQuoteExpirationTime;
   }
 
+  final TurboSessionManager _sessionManager;
+  final TurboCostCalculator _costCalculator;
+  final TurboBalanceRetriever _balanceRetriever;
+  final TurboPriceEstimator _priceEstimator;
+  final TurboPaymentProvider _paymentProvider;
+  final TurboSupportedCountriesRetriever _supportedCountriesRetriever;
+  final Wallet _wallet;
+
+  PriceEstimate _priceEstimate = PriceEstimate.zero();
+  int? _currentAmount;
+  String? _currentCurrency;
+  FileSizeUnit? _currentDataUnit;
+
+  PaymentUserInformation? _paymentUserInformation;
+
+  PriceEstimate get currentPriceEstimate => _priceEstimate;
+
   Stream<bool> get onSessionExpired => _sessionManager.onSessionExpired;
 
   Stream<PriceEstimate> get onPriceEstimateChanged =>
@@ -55,13 +68,18 @@ class Turbo extends Disposable {
   Future<BigInt> getCostOfOneGB({bool forceGet = false}) =>
       _costCalculator.getCostOfOneGB(forceGet: forceGet);
 
-  PriceEstimate _priceEstimate = PriceEstimate.zero();
+  set paymentUserInformation(PaymentUserInformation paymentUserInformation) {
+    _paymentUserInformation = paymentUserInformation;
+  }
 
-  int? _currentAmount;
-  String? _currentCurrency;
-  FileSizeUnit? _currentDataUnit;
+  PaymentUserInformation get paymentUserInformation {
+    if (_paymentUserInformation == null) {
+      throw Exception(
+          'Payment user information is null. You should set it before calling this method.');
+    }
 
-  PriceEstimate get currentPriceEstimate => _priceEstimate;
+    return _paymentUserInformation!;
+  }
 
   Future<PriceEstimate> computePriceEstimate({
     required int currentAmount,
@@ -126,19 +144,28 @@ class Turbo extends Disposable {
     );
 
     _quoteExpirationDate =
-        DateTime.parse(_currentPaymentIntent!.topUpQuote.quoteExpirationDate);
+        DateTime.parse(_currentPaymentIntent!.topUpQuote.quoteExpirationDate)
+            .subtract(const Duration(seconds: 5));
 
     return _currentPaymentIntent!;
   }
 
-  Future<PaymentStatus> confirmPayment({
-    required PaymentUserInformation userInformation,
-  }) {
+  Future<PaymentStatus> confirmPayment() {
+    if (_currentPaymentIntent == null) {
+      throw Exception(
+          'Current payment intent is null. You should create it before calling this method.');
+    }
+
+    logger.d('Confirming payment: ${paymentUserInformation.toString()}');
+
     return _paymentProvider.confirmPayment(
-      paymentUserInformation: userInformation,
+      paymentUserInformation: paymentUserInformation,
       paymentModel: _currentPaymentIntent!,
     );
   }
+
+  Future<List<String>> getSupportedCountries() =>
+      _supportedCountriesRetriever.getSupportedCountries();
 
   @override
   Future<void> dispose() async {
@@ -156,7 +183,6 @@ class TurboSessionManager extends Disposable {
   late final DateTime _initialSessionTime;
   late Timer _sessionExpirationTimer;
 
-  // Constructor
   TurboSessionManager() {
     _initialSessionTime = DateTime.now();
     _startSessionExpirationListener();
@@ -169,8 +195,7 @@ class TurboSessionManager extends Disposable {
   Stream<bool> get onSessionExpired => _sessionExpiredController.stream;
 
   void _startSessionExpirationListener() {
-    _sessionExpirationTimer =
-        Timer.periodic(const Duration(seconds: 5), (timer) {
+    _sessionExpirationTimer = _quoteEstimateTimer((timer) {
       final currentTime = DateTime.now();
       if (currentTime.isAfter(maxSessionTime)) {
         logger.d('Session expired');
@@ -197,14 +222,22 @@ class TurboCostCalculator {
 
   TurboCostCalculator({required this.paymentService});
 
-  Future<BigInt> getCostOfOneGB({bool forceGet = false}) async {
+  /// Returns the cost for the given byte size
+  Future<BigInt> getCostForBytes({required int byteSize}) {
+    return paymentService.getPriceForBytes(byteSize: byteSize);
+  }
+
+  /// Caches the cost for 1GiB for 5 minutes
+  Future<BigInt> getCostOfOneGB({
+    bool forceGet = false,
+  }) async {
     final currentTime = DateTime.now();
 
     if (!forceGet &&
         _costOfOneGb != null &&
         _lastCostOfOneGbFetchTime != null) {
       final difference = currentTime.difference(_lastCostOfOneGbFetchTime!);
-      if (difference.inMinutes < 10) {
+      if (difference.inMinutes < 5) {
         return _costOfOneGb!;
       }
     }
@@ -226,7 +259,16 @@ class TurboBalanceRetriever {
   });
 
   Future<BigInt> getBalance(Wallet wallet) async {
-    return paymentService.getBalance(wallet: wallet);
+    try {
+      final balance = await paymentService.getBalance(wallet: wallet);
+      return balance;
+    } catch (e) {
+      if (e is TurboUserNotFound) {
+        logger.e('Error getting balance: $e');
+        return BigInt.zero;
+      }
+      rethrow;
+    }
   }
 }
 
@@ -263,13 +305,18 @@ class TurboPriceEstimator extends Disposable {
         outputDataUnit: currentDataUnit,
       );
 
-      _maxQuoteExpirationTime = DateTime.now().add(const Duration(minutes: 5));
+      _maxQuoteExpirationTime =
+          DateTime.now().add(const Duration(minutes: 4, seconds: 55));
 
-      return PriceEstimate(
+      final price = PriceEstimate(
         credits: priceEstimate,
         priceInCurrency: currentAmount,
         estimatedStorage: estimatedStorageForSelectedAmount,
       );
+
+      _priceEstimateController.add(price);
+
+      return price;
     } catch (e) {
       logger.e('Error computing price estimate: $e');
       rethrow;
@@ -369,10 +416,25 @@ class StripePaymentProvider implements TurboPaymentProvider {
       return PaymentStatus.quoteExpired;
     }
 
+    final billingDetails = BillingDetails(
+      email: paymentUserInformation.email,
+      address: Address(
+        city: '',
+        country: paymentUserInformation.country,
+        line1: '',
+        line2: '',
+        postalCode: '',
+        state: '',
+      ),
+      name: paymentUserInformation.name,
+    );
+
     final paymentIntent = await stripe.confirmPayment(
       paymentIntentClientSecret: paymentModel.paymentSession.clientSecret,
-      data: const PaymentMethodParams.card(
-        paymentMethodData: PaymentMethodData(),
+      data: PaymentMethodParams.card(
+        paymentMethodData: PaymentMethodData(
+          billingDetails: billingDetails,
+        ),
       ),
     );
 
@@ -383,8 +445,20 @@ class StripePaymentProvider implements TurboPaymentProvider {
       return PaymentStatus.success;
     }
 
-    logger.e('Payment failed');
+    logger.e('Payment failed with status: ${paymentIntent.status}');
     return PaymentStatus.failed;
+  }
+}
+
+class TurboSupportedCountriesRetriever {
+  final PaymentService paymentService;
+
+  TurboSupportedCountriesRetriever({
+    required this.paymentService,
+  });
+
+  Future<List<String>> getSupportedCountries() async {
+    return paymentService.getSupportedCountries();
   }
 }
 
@@ -392,4 +466,26 @@ enum PaymentStatus {
   success,
   failed,
   quoteExpired,
+}
+
+const _quoteExpirationTime = Duration(minutes: 5);
+
+Timer _quoteEstimateTimer<T>(Function(Timer) callback) {
+  return Timer.periodic(_quoteExpirationTime, (timer) async {
+    callback(timer);
+  });
+}
+
+bool _isStripeInitialized = false;
+
+void initializeStripe(AppConfig appConfig) {
+  if (_isStripeInitialized) return;
+
+  logger.d('Initializing Stripe');
+
+  Stripe.publishableKey = appConfig.stripePublishableKey;
+
+  _isStripeInitialized = true;
+
+  logger.d('Stripe initialized');
 }

@@ -1,11 +1,10 @@
-import 'dart:async';
-
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
+import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_size_units.dart';
@@ -41,6 +40,8 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
 
     return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
       bloc: paymentBloc,
+      buildWhen: (_, current) =>
+          current is! EstimationLoading && current is! EstimationLoadError,
       builder: (context, state) {
         if (state is EstimationLoading) {
           return const SizedBox(
@@ -101,6 +102,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                         child: Row(
                           children: [
                             CurrencyDropdownMenu(
+                              label: appLocalizationsOf(context).currency,
                               itemsTextStyle:
                                   ArDriveTypography.body.captionBold(),
                               items: [
@@ -122,6 +124,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                               width: 40,
                             ),
                             UnitDropdownMenu(
+                              label: appLocalizationsOf(context).unit,
                               itemsTextStyle:
                                   ArDriveTypography.body.captionBold(),
                               items: FileSizeUnit.values
@@ -149,18 +152,25 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                           ],
                         ),
                       ),
-                      ArDriveButton(
-                        isDisabled: paymentBloc.currentAmount == 0,
-                        maxWidth: 143,
-                        maxHeight: 40,
-                        fontStyle: ArDriveTypography.body
-                            .buttonLargeBold()
-                            .copyWith(fontWeight: FontWeight.w700),
-                        text: appLocalizationsOf(context).next,
-                        onPressed: () {
-                          context.read<TurboTopupFlowBloc>().add(
-                                TurboTopUpShowPaymentFormView(4),
-                              );
+                      BlocBuilder<TurboTopUpEstimationBloc,
+                          TopupEstimationState>(
+                        builder: (context, state) {
+                          return ArDriveButton(
+                            isDisabled: paymentBloc.currentAmount == 0 ||
+                                state is EstimationLoading ||
+                                state is EstimationLoadError,
+                            maxWidth: 143,
+                            maxHeight: 40,
+                            fontStyle: ArDriveTypography.body
+                                .buttonLargeBold()
+                                .copyWith(fontWeight: FontWeight.w700),
+                            text: appLocalizationsOf(context).next,
+                            onPressed: () {
+                              context
+                                  .read<TurboTopupFlowBloc>()
+                                  .add(const TurboTopUpShowPaymentFormView(4));
+                            },
+                          );
                         },
                       ),
                     ],
@@ -169,14 +179,13 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
               ),
             ),
           );
-        } else if (state is EstimationError) {
-          return TurboTopupScaffold(
-            child: SizedBox(
-              height: 575,
-              child: Center(
-                child: Text(appLocalizationsOf(context).error),
-              ),
-            ),
+        } else if (state is FetchEstimationError) {
+          return TurboErrorView(
+            errorType: TurboErrorType.fetchEstimationInformationFailed,
+            onDismiss: () {},
+            onTryAgain: () {
+              paymentBloc.add(LoadInitialData());
+            },
           );
         }
         return TurboTopupScaffold(
@@ -243,17 +252,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     super.didChangeDependencies();
   }
 
-  DateTime lastChanged = DateTime.now();
-
-  Timer? _timer;
-
   void _onAmountChanged(String amount) {
-    if (_timer != null && _timer!.isActive) {
-      _timer?.cancel();
-    }
-    _timer = Timer(const Duration(milliseconds: 500), () {
-      widget.onAmountSelected(int.parse(amount));
-    });
+    widget.onAmountSelected(int.parse(amount));
   }
 
   void _onPresetAmountSelected(int amount) {
@@ -373,22 +373,20 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            // TODO: Localize
-            'Buy Credits',
+            appLocalizationsOf(context).buyCredits,
             style: ArDriveTypography.body.smallBold(),
           ),
           const SizedBox(height: 8),
           Text(
-            // TODO: Localize
-            'ArDrive Credits will be automatically added to your Turbo balance, and you can start using them right away.',
+            appLocalizationsOf(context)
+                .arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance,
             style: ArDriveTypography.body.buttonNormalBold(
               color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
             ),
           ),
-          // TODO localize
           const SizedBox(height: 32),
           Text(
-            'Amount',
+            appLocalizationsOf(context).amount,
             style: ArDriveTypography.body.buttonNormalBold(
               color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
             ),
@@ -545,7 +543,7 @@ class _BalanceViewState extends State<_BalanceView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Estimated Storage',
+                appLocalizationsOf(context).estimatedStorage,
                 style: ArDriveTypography.body.smallBold(),
               ),
               const SizedBox(height: 4),
@@ -595,52 +593,79 @@ class PriceEstimateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Divider(height: 32),
-        Text(
-          '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
-          style: ArDriveTypography.body.buttonNormalBold(),
-        ),
-        const SizedBox(height: 4),
-        ArDriveClickArea(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+    return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
+      buildWhen: (previous, current) {
+        return current is EstimationLoaded || current is EstimationLoadError;
+      },
+      builder: (context, state) {
+        if (state is EstimationLoadError) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Divider(height: 32),
               Text(
-                // TODO: Localize
-                'How are conversions determined?',
+                appLocalizationsOf(context).unableToFetchEstimateAtThisTime,
                 style: ArDriveTypography.body.buttonNormalBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeErrorDefault,
                 ),
               ),
-              const SizedBox(width: 4),
-              Padding(
-                padding: const EdgeInsets.only(top: 2.0),
-                child: ArDriveIcons.newWindow(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-                  size: 16,
-                ),
-              )
             ],
-          ),
-        ),
-        const Divider(height: 32),
-      ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Divider(height: 32),
+            Text(
+              '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
+              style: ArDriveTypography.body.buttonNormalBold(),
+            ),
+            const SizedBox(height: 4),
+            ArDriveClickArea(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    appLocalizationsOf(context).howAreConversionsDetermined,
+                    style: ArDriveTypography.body.buttonNormalBold(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgSubtle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2.0),
+                    child: ArDriveIcons.newWindow(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgSubtle,
+                      size: 16,
+                    ),
+                  )
+                ],
+              ),
+            ),
+            const Divider(height: 32),
+          ],
+        );
+      },
     );
   }
 }
 
 class CurrencyDropdownMenu extends InputDropdownMenu<CurrencyItem> {
-  const CurrencyDropdownMenu({
+  CurrencyDropdownMenu({
     super.key,
     required super.items,
     required super.buildSelectedItem,
-    // TODO: Localize
-    super.label = 'Currency',
+    required super.label,
     super.onChanged,
     super.anchor = const Aligned(
       follower: Alignment.bottomLeft,
@@ -663,8 +688,7 @@ class UnitDropdownMenu extends InputDropdownMenu<UnitItem> {
     super.key,
     required super.items,
     required super.buildSelectedItem,
-    // TODO: Localize
-    super.label = 'Unit',
+    required super.label,
     super.onChanged,
     super.anchor = const Aligned(
       follower: Alignment.bottomLeft,

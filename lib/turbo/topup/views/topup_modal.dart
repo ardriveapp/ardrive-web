@@ -1,6 +1,7 @@
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
@@ -38,6 +39,9 @@ void showTurboModal(BuildContext context) {
     stripe: Stripe.instance,
   );
 
+  final turboSupportedCountriesRetriever = TurboSupportedCountriesRetriever(
+      paymentService: context.read<PaymentService>());
+
   final turbo = Turbo(
     sessionManager: sessionManager,
     costCalculator: costCalculator,
@@ -45,7 +49,11 @@ void showTurboModal(BuildContext context) {
     priceEstimator: priceEstimator,
     paymentProvider: turboPaymentProvider,
     wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+    supportedCountriesRetriever: turboSupportedCountriesRetriever,
   );
+
+  initializeStripe(context.read<ConfigService>().config);
+
   showAnimatedDialogWithBuilder(
     context,
     builder: (modalContext) => MultiBlocProvider(
@@ -144,14 +152,15 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                 create: (context) => PaymentFormBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
-                ),
+                )..add(PaymentFormLoadSupportedCountries()),
                 child: Container(
                   key: const ValueKey('payment_form'),
                   color: Colors.transparent,
                   child: const Opacity(
-                      key: ValueKey('payment_form'),
-                      opacity: 1,
-                      child: TurboPaymentFormView()),
+                    key: ValueKey('payment_form'),
+                    opacity: 1,
+                    child: TurboPaymentFormView(),
+                  ),
                 ),
               ),
             ],
@@ -164,21 +173,22 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                 create: (context) => PaymentFormBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
-                ),
+                )..add(PaymentFormLoadSupportedCountries()),
                 child: Container(
-                    key: const ValueKey('payment_form'),
-                    color:
-                        ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-                    child: const Opacity(
-                        key: ValueKey('payment_form'),
-                        opacity: 0,
-                        child: TurboPaymentFormView())),
+                  key: const ValueKey('payment_form'),
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                  child: const Opacity(
+                    key: ValueKey('payment_form'),
+                    opacity: 0,
+                    child: TurboPaymentFormView(),
+                  ),
+                ),
               ),
               BlocProvider<PaymentReviewBloc>(
                 create: (context) => PaymentReviewBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
-                  state.paymentUserInformation,
                 )..add(PaymentReviewLoadPaymentModel()),
                 child: Container(
                     color:
@@ -238,8 +248,10 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
     );
   }
 
-  void _showErrorDialog(TurboErrorType type,
-      {required BuildContext parentContext}) {
+  void _showErrorDialog(
+    TurboErrorType type, {
+    required BuildContext parentContext,
+  }) {
     showAnimatedDialogWithBuilder(
       context,
       builder: (modalContext) => ArDriveStandardModal(

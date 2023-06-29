@@ -12,6 +12,8 @@ import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/utils/ar_cost_to_usd.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
@@ -20,6 +22,7 @@ import 'package:arweave/utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 part 'create_snapshot_state.dart';
@@ -137,7 +140,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
 
     // ignore: avoid_print
-    print(
+    logger.i(
       'Trusted range to be snapshotted (Current height: $_currentHeight): $_range',
     );
   }
@@ -181,7 +184,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     Uint8List data,
   ) async {
     // ignore: avoid_print
-    print('About to prepare and sign snapshot transaction');
+    logger.i('About to prepare and sign snapshot transaction');
 
     final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
 
@@ -203,7 +206,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     try {
       // ignore: avoid_print
-      print(
+      logger.i(
         'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
@@ -218,7 +221,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       final isTabFocused = _tabVisibility.isTabFocused();
       if (isArConnectProfile && !isTabFocused) {
         // ignore: avoid_print
-        print(
+        logger.i(
           'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await _tabVisibility.onTabGetsFocusedFuture(
@@ -226,7 +229,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         );
       } else {
         // ignore: avoid_print
-        print(
+        logger.i(
             'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
         rethrow;
       }
@@ -240,7 +243,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     try {
       // ignore: avoid_print
-      print(
+      logger.i(
         'Signing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
@@ -255,7 +258,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       final isTabFocused = _tabVisibility.isTabFocused();
       if (isArConnectProfile && !isTabFocused) {
         // ignore: avoid_print
-        print(
+        logger.i(
           'Signing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await _tabVisibility.onTabGetsFocusedFuture(
@@ -265,7 +268,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         );
       } else {
         // ignore: avoid_print
-        print(
+        logger.i(
             'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
         rethrow;
       }
@@ -274,7 +277,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<Uint8List> _getSnapshotData() async {
     // ignore: avoid_print
-    print('Computing snapshot data');
+    logger.i('Computing snapshot data');
 
     emit(ComputingSnapshotData(
       driveId: _driveId,
@@ -302,7 +305,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
 
     // ignore: avoid_print
-    print('Finished computing snapshot data');
+    logger.i('Finished computing snapshot data');
 
     final data = dataBuffer.takeBytes();
     return data;
@@ -366,11 +369,22 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
     final isPrivate = drive != null && drive.privacy != DrivePrivacy.public;
 
-    // gather from arweave if not cached
-    final Uint8List entityJsonData = await _arweave.dataFromTxId(
-      txId,
-      null, // key is null because we don't re-encrypt the snapshot data
+    final metadataCache = await MetadataCache.fromCacheStore(
+      await newSharedPreferencesCacheStore(),
     );
+
+    final Uint8List? cachedMetadata = await metadataCache.get(txId);
+
+    final Uint8List entityJsonData = cachedMetadata ??
+        await _arweave.dataFromTxId(
+          txId,
+          null, // key is null because we don't re-encrypt the snapshot data
+        );
+
+    if (cachedMetadata == null) {
+      // Write to the cache the data we just fetched
+      await metadataCache.put(txId, entityJsonData);
+    }
 
     if (isPrivate) {
       final safeEntityDataFromArweave = Uint8List.fromList(
@@ -386,7 +400,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
       // ignore: avoid_print
-      print('Failed to confirm the upload: Wallet mismatch');
+      logger.i('Failed to confirm the upload: Wallet mismatch');
       emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
       return;
     }
@@ -399,7 +413,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       emit(SnapshotUploadSuccess());
     } catch (err) {
       // ignore: avoid_print
-      print(
+      logger.i(
           'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}');
       emit(SnapshotUploadFailure(errorMessage: '$err'));
     }
@@ -407,7 +421,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   void cancelSnapshotCreation() {
     // ignore: avoid_print
-    print('User cancelled the snapshot creation');
+    logger.i('User cancelled the snapshot creation');
 
     _wasSnapshotDataComputingCanceled = true;
   }
