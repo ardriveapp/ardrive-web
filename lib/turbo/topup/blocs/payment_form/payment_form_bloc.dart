@@ -15,20 +15,62 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             _expirationTimeInSeconds(turbo.maxQuoteExpirationDate))) {
     on<PaymentFormEvent>(
       (event, emit) async {
-        if (event is PaymentFormPrePopulateFields) {
-          emit(PaymentFormPopulatingFieldsForTesting(state.priceEstimate,
-              _expirationTimeInSeconds(turbo.maxQuoteExpirationDate)));
+        if (event is PaymentFormLoadSupportedCountries) {
+          try {
+            emit(PaymentFormLoading(
+              state.priceEstimate,
+              _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+            ));
+
+            final supportedCountries = await turbo.getSupportedCountries();
+
+            emit(
+              PaymentFormLoaded(
+                state.priceEstimate,
+                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+                supportedCountries,
+              ),
+            );
+          } catch (e) {
+            logger.e('Error loading the supported countries.', e);
+
+            emit(
+              PaymentFormError(
+                state.priceEstimate,
+                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+              ),
+            );
+          }
         } else if (event is PaymentFormUpdateQuote) {
           try {
-            emit(PaymentFormLoadingQuote(state.priceEstimate,
-                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate)));
+            emit(
+              PaymentFormLoadingQuote(
+                state.priceEstimate,
+                _expirationTimeInSeconds(
+                  turbo.maxQuoteExpirationDate,
+                ),
+                (state as PaymentFormLoaded).supportedCountries,
+              ),
+            );
 
             final priceEstimate = await turbo.refreshPriceEstimate();
 
-            emit(PaymentFormQuoteLoaded(priceEstimate,
-                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate)));
-          } catch (e) {
-            logger.e(e);
+            emit(
+              PaymentFormQuoteLoaded(
+                priceEstimate,
+                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+                (state as PaymentFormLoaded).supportedCountries,
+              ),
+            );
+          } catch (e, s) {
+            logger.e('Error upading the quote.', e, s);
+
+            emit(
+              PaymentFormQuoteLoadFailure(
+                state.priceEstimate,
+                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+              ),
+            );
           }
         }
       },

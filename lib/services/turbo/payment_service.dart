@@ -73,9 +73,9 @@ class PaymentService {
         'x-public-key': publicKey,
       },
     ).onError((ArDriveHTTPException error, stackTrace) {
-      logger.e('Error getting balance', error, stackTrace);
-
+      logger.e('error getting balance', error, stackTrace);
       if (error.statusCode == 404) {
+        logger.e('user not found');
         throw TurboUserNotFound();
       }
 
@@ -94,7 +94,7 @@ class PaymentService {
   }) async {
     final nonce = const Uuid().v4();
     final walletAddress = await wallet.getAddress();
-    final publicKey = await wallet.getPublicKey();
+    final publicKey = await wallet.getOwner();
     final signature = await signNonceAndData(
       nonce: nonce,
       wallet: wallet,
@@ -106,11 +106,19 @@ class PaymentService {
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
-        'x-public-key': publicKeyToHeader(publicKey),
+        'x-public-key': publicKey,
       },
     );
 
     return PaymentModel.fromJson(jsonDecode(result.data));
+  }
+
+  Future<List<String>> getSupportedCountries() async {
+    final result = await httpClient.get(
+      url: '$turboPaymentUri/v1/countries',
+    );
+
+    return List<String>.from(jsonDecode(result.data));
   }
 }
 
@@ -147,6 +155,11 @@ class DontUsePaymentService implements PaymentService {
     required String currency,
   }) =>
       throw UnimplementedError();
+
+  @override
+  Future<List<String>> getSupportedCountries() {
+    throw UnimplementedError();
+  }
 }
 
 class TurboUserNotFound implements Exception {

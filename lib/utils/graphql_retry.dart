@@ -1,6 +1,6 @@
 import 'package:ardrive/utils/exceptions.dart';
-import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/internet_checker.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:artemis/client.dart';
 import 'package:artemis/schema/graphql_query.dart';
 import 'package:artemis/schema/graphql_response.dart';
@@ -26,11 +26,10 @@ class GraphQLRetry {
         maxAttempts: maxAttempts,
         onRetry: (exception) {
           onRetry?.call(exception);
-          '''
+          logger.i('''
           Retrying Query: ${query.toString()}\n
           On Exception: ${exception.toString()}
-          '''
-              .logError();
+          ''');
         },
       );
 
@@ -38,12 +37,11 @@ class GraphQLRetry {
     } catch (e) {
       final isConnected = await _internetChecker.isConnected();
 
-      '''
+      logger.e('''
         Fatal error while querying: ${query.operationName}\n
         Number of retries exceeded.
         Exception: ${e.toString()}
-        '''
-          .logError();
+        ''');
 
       if (!isConnected) {
         throw NoConnectionException();

@@ -2,7 +2,7 @@ part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 
 void logSync(String message) {
   // ignore: avoid_print
-  print('sync: $message');
+  logger.i('sync: $message');
 }
 
 void logSyncError(Object error, StackTrace stackTrace) {

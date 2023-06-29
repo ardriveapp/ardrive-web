@@ -7,7 +7,6 @@ import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -311,7 +310,7 @@ class UploadCubit extends Cubit<UploadState> {
   }) async {
     bool hasEmittedError = false;
 
-    debugPrint('Starting upload...');
+    logger.d('Starting upload...');
 
     final profile = _profileCubit.state as ProfileLoggedIn;
 
@@ -327,15 +326,15 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    debugPrint('Wallet verified');
+    logger.d('Wallet verified');
 
-    debugPrint('Starting bundle preparation....');
-    debugPrint('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
+    logger.d('Starting bundle preparation....');
+    logger.d('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
 
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       try {
-        debugPrint('Starting bundle with ${bundleHandle.size}');
+        logger.d('Starting bundle with ${bundleHandle.size}');
 
         await bundleHandle.prepareAndSignBundleTransaction(
           arweaveService: _arweave,
@@ -345,13 +344,13 @@ class UploadCubit extends Cubit<UploadState> {
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
         );
 
-        debugPrint('Bundle preparation finished');
+        logger.d('Bundle preparation finished');
       } catch (error) {
-        debugPrint(error.toString());
+        logger.d(error.toString());
         addError(error);
       }
 
-      debugPrint('Starting bundle uploads');
+      logger.d('Starting bundle uploads');
 
       await for (final _ in bundleHandle
           .upload(_arweave, _turbo)
@@ -369,7 +368,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
 
-      debugPrint('Disposing bundle');
+      logger.d('Disposing bundle');
 
       bundleHandle.dispose();
     }
@@ -459,7 +458,7 @@ class UploadCubit extends Cubit<UploadState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     emit(UploadFailure());
-    'Failed to upload file: $error $stackTrace'.logError();
+    logger.e('Failed to upload file: $error $stackTrace');
     super.onError(error, stackTrace);
   }
 }

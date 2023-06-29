@@ -263,15 +263,15 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
                       const Divider(),
                       Padding(
                           padding: const EdgeInsets.only(right: 16),
-                          child: ScreenTypeLayout(
-                            desktop: Row(
+                          child: ScreenTypeLayout.builder(
+                            desktop: (context) => Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 buildCreateFolderButton(),
                                 buildButtonBar(),
                               ],
                             ),
-                            mobile: Wrap(
+                            mobile: (context) => Wrap(
                               alignment: WrapAlignment.spaceBetween,
                               children: [
                                 buildCreateFolderButton(),

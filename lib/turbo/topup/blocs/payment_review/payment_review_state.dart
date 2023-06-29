@@ -7,7 +7,9 @@ abstract class PaymentReviewState extends Equatable {
   List<Object> get props => [];
 }
 
-class PaymentReviewInitial extends PaymentReviewState {}
+class PaymentReviewInitial extends PaymentReviewState {
+  const PaymentReviewInitial();
+}
 
 class PaymentReviewLoading extends PaymentReviewPaymentModelLoaded {
   const PaymentReviewLoading({
@@ -40,6 +42,7 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
     String? subTotal,
     String? credits,
     DateTime? quoteExpirationDate,
+    PaymentUserInformation? userInformation,
   }) {
     return PaymentReviewPaymentModelLoaded(
       total: total ?? this.total,
@@ -72,16 +75,11 @@ class PaymentReviewQuoteError extends PaymentReviewPaymentModelLoaded {
   final TurboErrorType errorType;
   const PaymentReviewQuoteError({
     required this.errorType,
-    required String total,
-    required String subTotal,
-    required String credits,
-    required DateTime quoteExpirationDate,
-  }) : super(
-          total: total,
-          subTotal: subTotal,
-          credits: credits,
-          quoteExpirationDate: quoteExpirationDate,
-        );
+    required super.total,
+    required super.subTotal,
+    required super.credits,
+    required super.quoteExpirationDate,
+  });
 }
 
 class PaymentReviewPaymentSuccess extends PaymentReviewPaymentModelLoaded {
@@ -113,5 +111,7 @@ class PaymentReviewPaymentError extends PaymentReviewPaymentModelLoaded {
 }
 
 class PaymentReviewErrorLoadingPaymentModel extends PaymentReviewError {
-  const PaymentReviewErrorLoadingPaymentModel({required super.errorType});
+  const PaymentReviewErrorLoadingPaymentModel({
+    required super.errorType,
+  });
 }

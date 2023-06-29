@@ -22,7 +22,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     this.turbo,
     PriceEstimate priceEstimate,
   )   : _priceEstimate = priceEstimate,
-        super(PaymentReviewInitial()) {
+        super(const PaymentReviewInitial()) {
     on<PaymentReviewEvent>((event, emit) async {
       if (event is PaymentReviewFinishPayment) {
         await _handlePaymentReviewFinishPayment(emit, event);
@@ -39,113 +39,55 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     PaymentReviewFinishPayment event,
   ) async {
     try {
-      emit(
-        PaymentReviewLoading(
-          credits: _getCreditsFromPaymentModel(),
-          subTotal: _getSubTotalFromPaymentModel(),
-          total: _getTotalFromPaymentModel(),
-          quoteExpirationDate: _quoteExpirationDate!,
-        ),
+      _emitPaymentReviewLoading(emit);
+
+      logger.d(event.email.toString());
+
+      turbo.paymentUserInformation = turbo.paymentUserInformation.copyWith(
+        email: event.email,
       );
 
-      logger.d(event.paymentUserInformation.toString());
-
-      final paymentStatus = await turbo.confirmPayment(
-        userInformation: event.paymentUserInformation,
-      );
+      final paymentStatus = await turbo.confirmPayment();
 
       if (paymentStatus == PaymentStatus.success) {
-        emit(
-          PaymentReviewPaymentSuccess(
-            credits: _getCreditsFromPaymentModel(),
-            subTotal: _getSubTotalFromPaymentModel(),
-            total: _getTotalFromPaymentModel(),
-            quoteExpirationDate: _quoteExpirationDate!,
-          ),
-        );
+        _emitPaymentSuccess(emit);
       } else {
-        emit(
-          PaymentReviewPaymentError(
-            credits: _getCreditsFromPaymentModel(),
-            subTotal: _getSubTotalFromPaymentModel(),
-            total: _getTotalFromPaymentModel(),
-            errorType: TurboErrorType.unknown,
-            quoteExpirationDate: _quoteExpirationDate!,
-          ),
-        );
+        _emitPaymentReviewError(emit);
       }
     } catch (e) {
-      emit(
-        PaymentReviewPaymentError(
-          credits: _getCreditsFromPaymentModel(),
-          subTotal: _getSubTotalFromPaymentModel(),
-          total: _getTotalFromPaymentModel(),
-          errorType: TurboErrorType.unknown,
-          quoteExpirationDate: _quoteExpirationDate!,
-        ),
-      );
+      _emitPaymentReviewError(emit);
     }
   }
 
   Future<void> _handlePaymentReviewRefreshQuote(
       Emitter<PaymentReviewState> emit) async {
     try {
-      emit(
-        PaymentReviewLoadingQuote(
-          // paymentUserInformation: state.paymentUserInformation,
-          credits: _getCreditsFromPaymentModel(),
-          subTotal: _getSubTotalFromPaymentModel(),
-          total: _getTotalFromPaymentModel(),
-          quoteExpirationDate: _quoteExpirationDate!,
-        ),
-      );
+      _emitPaymentReviewLoadingQuote(emit);
 
       await _createPaymentIntent();
 
-      emit(
-        PaymentReviewQuoteLoaded(
-          credits: _getCreditsFromPaymentModel(),
-          subTotal: _getSubTotalFromPaymentModel(),
-          total: _getTotalFromPaymentModel(),
-          quoteExpirationDate: _quoteExpirationDate!,
-        ),
-      );
+      _emitPaymentReviewQuoteLoaded(emit);
     } catch (e) {
-      emit(
-        PaymentReviewQuoteError(
-          errorType: TurboErrorType.unknown,
-          quoteExpirationDate: _quoteExpirationDate!,
-          credits: _getCreditsFromPaymentModel(),
-          subTotal: _getSubTotalFromPaymentModel(),
-          total: _getTotalFromPaymentModel(),
-        ),
-      );
+      _emitPaymentReviewQuoteError(emit);
     }
   }
 
   Future<void> _handlePaymentReviewLoadPaymentModel(
       Emitter<PaymentReviewState> emit) async {
     try {
-      emit(const PaymentReviewLoadingPaymentModel());
+      _emitPaymentReviewLoadingPaymentModel(emit);
+
+      turbo.paymentUserInformation = turbo.paymentUserInformation.copyWith(
+        email: turbo.paymentUserInformation.email,
+      );
 
       await _createPaymentIntent();
 
-      await Future.delayed(const Duration(seconds: 1));
+      _emitStatePaymentReviewPaymentModelLoaded(emit);
+    } catch (e, s) {
+      logger.e('Error loading payment model', e, s);
 
-      emit(
-        PaymentReviewPaymentModelLoaded(
-          quoteExpirationDate: _quoteExpirationDate!,
-          credits: _getCreditsFromPaymentModel(),
-          subTotal: _getSubTotalFromPaymentModel(),
-          total: _getTotalFromPaymentModel(),
-        ),
-      );
-    } catch (e) {
-      logger.e('Error loading payment model: $e');
-
-      emit(const PaymentReviewErrorLoadingPaymentModel(
-        errorType: TurboErrorType.unknown,
-      ));
+      _emitPaymentReviewErrorLoadingPaymentModel(emit);
     }
   }
 
@@ -156,6 +98,100 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     );
 
     _quoteExpirationDate = turbo.quoteExpirationDate;
+  }
+
+  void _emitStatePaymentReviewPaymentModelLoaded(
+      Emitter<PaymentReviewState> emit) {
+    emit(
+      PaymentReviewPaymentModelLoaded(
+        quoteExpirationDate: _quoteExpirationDate!,
+        credits: _getCreditsFromPaymentModel(),
+        subTotal: _getSubTotalFromPaymentModel(),
+        total: _getTotalFromPaymentModel(),
+      ),
+    );
+  }
+
+  void _emitPaymentReviewLoadingQuote(Emitter emi) {
+    emi(
+      PaymentReviewLoadingQuote(
+        credits: _getCreditsFromPaymentModel(),
+        subTotal: _getSubTotalFromPaymentModel(),
+        total: _getTotalFromPaymentModel(),
+        quoteExpirationDate: _quoteExpirationDate!,
+      ),
+    );
+  }
+
+  void _emitPaymentReviewLoading(Emitter emit) {
+    emit(
+      PaymentReviewLoading(
+        credits: _getCreditsFromPaymentModel(),
+        subTotal: _getSubTotalFromPaymentModel(),
+        total: _getTotalFromPaymentModel(),
+        quoteExpirationDate: _quoteExpirationDate!,
+      ),
+    );
+  }
+
+  void _emitPaymentReviewQuoteLoaded(Emitter<PaymentReviewState> emit) {
+    emit(
+      PaymentReviewQuoteLoaded(
+        credits: _getCreditsFromPaymentModel(),
+        subTotal: _getSubTotalFromPaymentModel(),
+        total: _getTotalFromPaymentModel(),
+        quoteExpirationDate: _quoteExpirationDate!,
+      ),
+    );
+  }
+
+  void _emitPaymentReviewError(Emitter emit) {
+    emit(
+      PaymentReviewPaymentError(
+        errorType: TurboErrorType.unknown,
+        quoteExpirationDate: _quoteExpirationDate!,
+        credits: _getCreditsFromPaymentModel(),
+        subTotal: _getSubTotalFromPaymentModel(),
+        total: _getTotalFromPaymentModel(),
+      ),
+    );
+  }
+
+  void _emitPaymentReviewQuoteError(Emitter emit) {
+    emit(
+      PaymentReviewQuoteError(
+        errorType: TurboErrorType.unknown,
+        quoteExpirationDate: _quoteExpirationDate!,
+        credits: _getCreditsFromPaymentModel(),
+        subTotal: _getSubTotalFromPaymentModel(),
+        total: _getTotalFromPaymentModel(),
+      ),
+    );
+  }
+
+  void _emitPaymentSuccess(Emitter emit) {
+    emit(
+      PaymentReviewPaymentSuccess(
+        credits: _getCreditsFromPaymentModel(),
+        subTotal: _getSubTotalFromPaymentModel(),
+        total: _getTotalFromPaymentModel(),
+        quoteExpirationDate: _quoteExpirationDate!,
+      ),
+    );
+  }
+
+  void _emitPaymentReviewErrorLoadingPaymentModel(Emitter emit) {
+    emit(
+      PaymentReviewErrorLoadingPaymentModel(
+        errorType: TurboErrorType.unknown,
+      ),
+    );
+  }
+
+  void _emitPaymentReviewLoadingPaymentModel(Emitter emit) {
+    emit(
+      PaymentReviewLoadingPaymentModel(),
+    );
   }
 
   String _getCreditsFromPaymentModel() => convertCreditsToLiteralString(
