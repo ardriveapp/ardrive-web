@@ -118,9 +118,7 @@ class PaymentService {
       url: '$turboPaymentUri/v1/countries',
     );
 
-    final countries = jsonDecode(result.data) as List<dynamic>;
-
-    return countries.map((e) => e as String).toList();
+    return List<String>.from(jsonDecode(result.data));
   }
 }
 
