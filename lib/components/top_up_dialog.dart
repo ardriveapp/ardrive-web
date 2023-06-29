@@ -55,6 +55,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
             child: TurboTopupScaffold(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -95,86 +96,28 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                     storageUnit: paymentBloc.currentDataUnit.name,
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            CurrencyDropdownMenu(
-                              label: appLocalizationsOf(context).currency,
-                              itemsTextStyle:
-                                  ArDriveTypography.body.captionBold(),
-                              items: [
-                                CurrencyItem('USD'),
-                              ],
-                              buildSelectedItem: (item) => Row(
-                                children: [
-                                  Text(
-                                    item?.label ?? 'USD',
-                                    style: ArDriveTypography.body
-                                        .buttonNormalBold(),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  ArDriveIcons.carretDown(size: 16),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(
-                              width: 40,
-                            ),
-                            UnitDropdownMenu(
-                              label: appLocalizationsOf(context).unit,
-                              itemsTextStyle:
-                                  ArDriveTypography.body.captionBold(),
-                              items: FileSizeUnit.values
-                                  .map(
-                                    (unit) => UnitItem(unit),
-                                  )
-                                  .toList(),
-                              buildSelectedItem: (item) => Row(
-                                children: [
-                                  Text(
-                                    item?.label ?? 'GB',
-                                    style: ArDriveTypography.body
-                                        .buttonNormalBold(),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  ArDriveIcons.carretDown(size: 16),
-                                ],
-                              ),
-                              onChanged: (value) {
-                                paymentBloc.add(
-                                  DataUnitChanged(value.unit),
-                                );
-                              },
-                            ),
-                          ],
+                  ScreenTypeLayout.builder(
+                    mobile: (context) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const UnitSelector(),
+                        const SizedBox(height: 16),
+                        _nextButton(maxWidth: double.maxFinite, maxHeight: 44),
+                      ],
+                    ),
+                    desktop: (context) => Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: UnitSelector(),
                         ),
-                      ),
-                      BlocBuilder<TurboTopUpEstimationBloc,
-                          TopupEstimationState>(
-                        builder: (context, state) {
-                          return ArDriveButton(
-                            isDisabled: paymentBloc.currentAmount == 0 ||
-                                state is EstimationLoading ||
-                                state is EstimationLoadError,
-                            maxWidth: 143,
-                            maxHeight: 40,
-                            fontStyle: ArDriveTypography.body
-                                .buttonLargeBold()
-                                .copyWith(fontWeight: FontWeight.w700),
-                            text: appLocalizationsOf(context).next,
-                            onPressed: () {
-                              context
-                                  .read<TurboTopupFlowBloc>()
-                                  .add(const TurboTopUpShowPaymentFormView(4));
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  )
+                        _nextButton(
+                          maxWidth: 143,
+                          maxHeight: 40,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -198,6 +141,92 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
           ),
         );
       },
+    );
+  }
+
+  Widget _nextButton({
+    required double maxWidth,
+    required double maxHeight,
+  }) {
+    final paymentBloc = context.read<TurboTopUpEstimationBloc>();
+
+    return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
+      builder: (context, state) {
+        return ArDriveButton(
+          isDisabled: paymentBloc.currentAmount == 0 ||
+              state is EstimationLoading ||
+              state is EstimationLoadError,
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+          fontStyle: ArDriveTypography.body
+              .buttonLargeBold()
+              .copyWith(fontWeight: FontWeight.w700),
+          text: appLocalizationsOf(context).next,
+          onPressed: () {
+            context
+                .read<TurboTopupFlowBloc>()
+                .add(const TurboTopUpShowPaymentFormView(4));
+          },
+        );
+      },
+    );
+  }
+}
+
+class UnitSelector extends StatelessWidget {
+  const UnitSelector({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final paymentBloc = context.read<TurboTopUpEstimationBloc>();
+
+    return Row(
+      children: [
+        CurrencyDropdownMenu(
+          label: appLocalizationsOf(context).currency,
+          itemsTextStyle: ArDriveTypography.body.captionBold(),
+          items: [
+            CurrencyItem('USD'),
+          ],
+          buildSelectedItem: (item) => Row(
+            children: [
+              Text(
+                item?.label ?? 'USD',
+                style: ArDriveTypography.body.buttonNormalBold(),
+              ),
+              const SizedBox(width: 8),
+              ArDriveIcons.carretDown(size: 16),
+            ],
+          ),
+        ),
+        const SizedBox(
+          width: 40,
+        ),
+        UnitDropdownMenu(
+          label: appLocalizationsOf(context).unit,
+          itemsTextStyle: ArDriveTypography.body.captionBold(),
+          items: FileSizeUnit.values
+              .map(
+                (unit) => UnitItem(unit),
+              )
+              .toList(),
+          buildSelectedItem: (item) => Row(
+            children: [
+              Text(
+                item?.label ?? 'GB',
+                style: ArDriveTypography.body.buttonNormalBold(),
+              ),
+              const SizedBox(width: 8),
+              ArDriveIcons.carretDown(size: 16),
+            ],
+          ),
+          onChanged: (value) {
+            paymentBloc.add(
+              DataUnitChanged(value.unit),
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -291,35 +320,38 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   Widget buildButtonBar(BuildContext context) {
     buildButtons(double height, double width) => widget.amounts
         .map(
-          (amount) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ArDriveButton(
-              backgroundColor: selectedAmount == amount
-                  ? ArDriveTheme.of(context).themeData.colors.themeFgMuted
-                  : ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeBorderDefault,
-              style: ArDriveButtonStyle.primary,
-              maxHeight: height,
-              maxWidth: width,
-              fontStyle: ArDriveTypography.body.smallBold().copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: selectedAmount == amount
-                        ? ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeBgSurface
-                        : ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgMuted,
-                  ),
-              text: '${widget.currencyUnit}$amount',
-              onPressed: () {
-                _onPresetAmountSelected(amount);
-                _resetCustomAmount();
-              },
+          (amount) => Flexible(
+            flex: 1,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: ArDriveButton(
+                backgroundColor: selectedAmount == amount
+                    ? ArDriveTheme.of(context).themeData.colors.themeFgMuted
+                    : ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeBorderDefault,
+                style: ArDriveButtonStyle.primary,
+                maxHeight: height,
+                maxWidth: width,
+                fontStyle: ArDriveTypography.body.smallBold().copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: selectedAmount == amount
+                          ? ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeBgSurface
+                          : ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgMuted,
+                    ),
+                text: '${widget.currencyUnit}$amount',
+                onPressed: () {
+                  _onPresetAmountSelected(amount);
+                  _resetCustomAmount();
+                },
+              ),
             ),
           ),
         )
@@ -328,7 +360,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     return ScreenTypeLayout.builder(
       mobile: (context) => Row(
         mainAxisSize: MainAxisSize.max,
-        children: buildButtons(32, 64),
+        children: buildButtons(44, 75),
       ),
       desktop: (context) => Row(
         mainAxisSize: MainAxisSize.max,
@@ -401,95 +433,105 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              SizedBox(
-                width: 114,
-                child: ArDriveTheme(
-                  key: const ValueKey('turbo_payment_form'),
-                  themeData: textTheme,
-                  child: ArDriveTextField(
-                    focusNode: _customAmountFocus,
-                    controller: _customAmountController,
-                    showErrorMessage: false,
-                    preffix: Text(
-                      '\$ ',
-                      style: ArDriveTypography.body.buttonLargeBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      ),
-                    ),
-                    autovalidateMode: AutovalidateMode.disabled,
-                    validator: (s) {
-                      setState(() {
-                        if (s == null || s.isEmpty) {
-                          _customAmountValidationMessage = null;
-                          return;
-                        }
-
-                        String? errorMessage;
-
-                        final numValue = int.tryParse(s);
-
-                        if (numValue == null ||
-                            numValue < 10 ||
-                            numValue > 10000) {
-                          // TODO: Localize
-                          errorMessage =
-                              'Please enter an amount between \$10 - \$10,000';
-                        }
-
-                        _customAmountValidationMessage = errorMessage;
-
-                        logger.d('validator: $s, error: $errorMessage');
-
-                        _onCustomAmountSelected(s);
-                      });
-
-                      return _customAmountValidationMessage;
-                    },
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      TextInputFormatter.withFunction((oldValue, newValue) {
-                        // Remove any non-digit character
-                        String newValueText =
-                            newValue.text.replaceAll(RegExp(r'\D'), '');
-
-                        if (newValueText.isNotEmpty) {
-                          int valueAsInt = int.parse(newValueText);
-                          if (valueAsInt > 10000) {
-                            // If the value is greater than 10000, truncate the last digit and place the cursor at the end
-                            String newString = newValueText.substring(
-                                0, newValueText.length - 1);
-                            return TextEditingValue(
-                              text: newString,
-                              selection: TextSelection.collapsed(
-                                  offset: newString.length),
-                            );
-                          }
-                        }
-                        return TextEditingValue(
-                          text: newValueText,
-                          selection: TextSelection.collapsed(
-                              offset: newValueText.length),
-                        );
-                      }),
-                    ],
+          ScreenTypeLayout.builder(
+            desktop: (_) => Row(
+              children: [
+                _textField(textTheme),
+                if (_customAmountValidationMessage != null &&
+                    _customAmountValidationMessage!.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  AnimatedFeedbackMessage(
+                    text: _customAmountValidationMessage!,
                   ),
-                ),
-              ),
-              if (_customAmountValidationMessage != null &&
-                  _customAmountValidationMessage!.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                AnimatedFeedbackMessage(
-                  text: _customAmountValidationMessage!,
-                ),
-              ]
-            ],
+                ]
+              ],
+            ),
+            mobile: (_) => Column(
+              children: [
+                if (_customAmountValidationMessage != null &&
+                    _customAmountValidationMessage!.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  AnimatedFeedbackMessage(
+                    text: _customAmountValidationMessage!,
+                  ),
+                ],
+                _textField(textTheme),
+              ],
+            ),
           )
         ],
+      ),
+    );
+  }
+
+  Widget _textField(textTheme) {
+    return SizedBox(
+      width: 114,
+      child: ArDriveTheme(
+        key: const ValueKey('turbo_payment_form'),
+        themeData: textTheme,
+        child: ArDriveTextField(
+          focusNode: _customAmountFocus,
+          controller: _customAmountController,
+          showErrorMessage: false,
+          preffix: Text(
+            '\$ ',
+            style: ArDriveTypography.body.buttonLargeBold(
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            ),
+          ),
+          autovalidateMode: AutovalidateMode.disabled,
+          validator: (s) {
+            setState(() {
+              if (s == null || s.isEmpty) {
+                _customAmountValidationMessage = null;
+                return;
+              }
+
+              String? errorMessage;
+
+              final numValue = int.tryParse(s);
+
+              if (numValue == null || numValue < 10 || numValue > 10000) {
+                // TODO: Localize
+                errorMessage = 'Please enter an amount between \$10 - \$10,000';
+              }
+
+              _customAmountValidationMessage = errorMessage;
+
+              logger.d('validator: $s, error: $errorMessage');
+
+              _onCustomAmountSelected(s);
+            });
+
+            return _customAmountValidationMessage;
+          },
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            TextInputFormatter.withFunction((oldValue, newValue) {
+              // Remove any non-digit character
+              String newValueText = newValue.text.replaceAll(RegExp(r'\D'), '');
+
+              if (newValueText.isNotEmpty) {
+                int valueAsInt = int.parse(newValueText);
+                if (valueAsInt > 10000) {
+                  // If the value is greater than 10000, truncate the last digit and place the cursor at the end
+                  String newString =
+                      newValueText.substring(0, newValueText.length - 1);
+                  return TextEditingValue(
+                    text: newString,
+                    selection:
+                        TextSelection.collapsed(offset: newString.length),
+                  );
+                }
+              }
+              return TextEditingValue(
+                text: newValueText,
+                selection: TextSelection.collapsed(offset: newValueText.length),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -567,6 +609,7 @@ class _BalanceViewState extends State<_BalanceView> {
         children: balanceContents(),
       ),
       mobile: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: balanceContents(),
@@ -758,13 +801,25 @@ class AnimatedFeedbackMessageState extends State<AnimatedFeedbackMessage>
           child: child,
         );
       },
-      child: FeedbackMessage(
-        text: widget.text,
-        arrowSide: ArrowSide.right,
-        height: 48,
-        borderColor: ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
-        backgroundColor:
-            ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
+      child: ScreenTypeLayout.builder(
+        desktop: (_) => FeedbackMessage(
+          text: widget.text,
+          arrowSide: ArrowSide.right,
+          height: 48,
+          borderColor:
+              ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
+          backgroundColor:
+              ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
+        ),
+        mobile: (_) => FeedbackMessage(
+          text: widget.text,
+          arrowSide: ArrowSide.bottomLeft,
+          height: 50,
+          borderColor:
+              ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
+          backgroundColor:
+              ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
+        ),
       ),
     );
   }
