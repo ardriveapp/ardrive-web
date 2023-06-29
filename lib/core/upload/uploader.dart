@@ -305,9 +305,9 @@ class UploadPaymentEvaluator {
 
     BigInt turboBalance;
 
-    bool isTurboAvailable = true;
+    bool isTurboAvailable = _appConfig.useTurboUpload;
 
-    if (_appConfig.useTurboUpload) {
+    if (isTurboAvailable) {
       /// Check the balance of the user
       /// If we can't get the balance, turbo won't be available
       try {
@@ -319,7 +319,6 @@ class UploadPaymentEvaluator {
         turboBalance = BigInt.zero;
       }
     } else {
-      isTurboAvailable = false;
       turboBalance = BigInt.zero;
     }
 
@@ -371,14 +370,12 @@ class UploadPaymentEvaluator {
       final allowedDataItemSizeForTurbo =
           _appConfig.allowedDataItemSizeForTurbo;
 
-      final isThereAnyFileThatExceedsTurboThreshold = uploadPlanForTurbo
-          .bundleUploadHandles
-          .any((file) => file.size > allowedDataItemSizeForTurbo);
-
-      final allFileSizesAreWithinTurboThreshold =
-          !isThereAnyFileThatExceedsTurboThreshold;
-
-      isFreeUploadPossibleUsingTurbo = allFileSizesAreWithinTurboThreshold;
+      isFreeUploadPossibleUsingTurbo =
+          uploadPlanForTurbo.bundleUploadHandles.every(
+        (bundle) => bundle.fileDataItemUploadHandles.every(
+          (file) => file.size <= allowedDataItemSizeForTurbo,
+        ),
+      );
     }
 
     return UploadPaymentInfo(
