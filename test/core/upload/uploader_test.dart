@@ -257,17 +257,21 @@ void main() {
           .thenAnswer((_) async => mockUploadCostEstimateTurbo);
     });
 
+    /// Tests for `getUploadPaymentInfo`
+    ///
     group('getUploadPaymentInfo', () {
       test(
           'getUploadPaymentInfo assigns UploadMethod.turbo when turbo balance is enough',
           () async {
         final mockFile = MockBundleUploadHandle();
+
         when(() => mockFile.size).thenReturn(501);
+
+        when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+
         // limit of 500
         when(() => mockFile.computeBundleSize())
             .thenAnswer((invocation) => Future.value(501));
-
-        when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
 
         final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
           uploadPlanForAR: uploadPlan,
@@ -305,16 +309,28 @@ void main() {
         expect(result.defaultPaymentMethod, equals(UploadMethod.ar));
         expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
       });
+
+      /// Tests `isFreeUploadPossibleUsingTurbo`
+      /// This is a special case where the user has enough balance to upload
+      /// using turbo but the file size is small enough to be uploaded for free
+      ///
       test(
           'isFreeUploadPossibleUsingTurbo returns true when all file sizes are within turbo threshold',
           () async {
         final mockFile = MockBundleUploadHandle();
+        final mockFile2 = MockBundleUploadHandle();
+
         when(() => mockFile.size).thenReturn(499);
+        when(() => mockFile2.size).thenReturn(498);
+
         // limit of 500
         when(() => mockFile.computeBundleSize())
             .thenAnswer((invocation) => Future.value(499));
+        when(() => mockFile2.computeBundleSize())
+            .thenAnswer((invocation) => Future.value(498));
 
-        when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+        when(() => uploadPlan.bundleUploadHandles)
+            .thenReturn([mockFile, mockFile2]);
 
         final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
           uploadPlanForAR: uploadPlan,
@@ -328,12 +344,19 @@ void main() {
           'isFreeUploadPossibleUsingTurbo returns true when all file sizes are THE SAME turbo threshold',
           () async {
         final mockFile = MockBundleUploadHandle();
+        final mockFile2 = MockBundleUploadHandle();
+
         when(() => mockFile.size).thenReturn(500);
+        when(() => mockFile2.size).thenReturn(500);
+
         // limit of 500
         when(() => mockFile.computeBundleSize())
             .thenAnswer((invocation) => Future.value(500));
+        when(() => mockFile2.computeBundleSize())
+            .thenAnswer((invocation) => Future.value(500));
 
-        when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+        when(() => uploadPlan.bundleUploadHandles)
+            .thenReturn([mockFile, mockFile2]);
 
         final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
           uploadPlanForAR: uploadPlan,
@@ -347,12 +370,22 @@ void main() {
           'isFreeUploadPossibleUsingTurbo returns false when not all file sizes are within turbo threshold',
           () async {
         final mockFile = MockBundleUploadHandle();
+        final mockFile2 = MockBundleUploadHandle();
+
         when(() => mockFile.size).thenReturn(501);
+        // it tests that if one single file is bigger than 500, it should
+        when(() => mockFile2.size).thenReturn(499);
+
         // limit of 500
         when(() => mockFile.computeBundleSize())
             .thenAnswer((invocation) => Future.value(501));
 
-        when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+        // even if this file is less than 500, the previous one is not so it should return false
+        when(() => mockFile2.computeBundleSize())
+            .thenAnswer((invocation) => Future.value(499));
+
+        when(() => uploadPlan.bundleUploadHandles)
+            .thenReturn([mockFile, mockFile2]);
 
         final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
           uploadPlanForAR: uploadPlan,
@@ -381,6 +414,9 @@ void main() {
         expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
         expect(result.isUploadEligibleToTurbo, isTrue);
       });
+
+      /// Tests `isTurboAvailable`
+      ///
       test('isTurboUploadPossible returns false when not have any bundles',
           () async {
         final mockFile = MockBundleUploadHandle();

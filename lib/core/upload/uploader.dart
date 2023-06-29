@@ -371,10 +371,12 @@ class UploadPaymentEvaluator {
       final allowedDataItemSizeForTurbo =
           _appConfig.allowedDataItemSizeForTurbo;
 
+      final isThereAnyFileThatExceedsTurboThreshold = uploadPlanForTurbo
+          .bundleUploadHandles
+          .any((file) => file.size > allowedDataItemSizeForTurbo);
+
       final allFileSizesAreWithinTurboThreshold =
-          uploadPlanForTurbo.bundleUploadHandles.any((file) {
-        return file.size <= allowedDataItemSizeForTurbo;
-      });
+          !isThereAnyFileThatExceedsTurboThreshold;
 
       isFreeUploadPossibleUsingTurbo = allFileSizesAreWithinTurboThreshold;
     }
