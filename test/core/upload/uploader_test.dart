@@ -325,6 +325,25 @@ void main() {
         expect(result.isUploadEligibleToTurbo, isTrue);
       });
       test(
+          'isFreeUploadPossibleUsingTurbo returns true when all file sizes are THE SAME turbo threshold',
+          () async {
+        final mockFile = MockBundleUploadHandle();
+        when(() => mockFile.size).thenReturn(500);
+        // limit of 500
+        when(() => mockFile.computeBundleSize())
+            .thenAnswer((invocation) => Future.value(500));
+
+        when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+
+        final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          uploadPlanForAR: uploadPlan,
+          uploadPlanForTurbo: uploadPlan,
+        );
+
+        expect(result.isFreeUploadPossibleUsingTurbo, isTrue);
+        expect(result.isUploadEligibleToTurbo, isTrue);
+      });
+      test(
           'isFreeUploadPossibleUsingTurbo returns false when not all file sizes are within turbo threshold',
           () async {
         final mockFile = MockBundleUploadHandle();
