@@ -8,7 +8,6 @@ import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_size_units.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -447,14 +446,23 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
               ],
             ),
             mobile: (_) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (_customAmountValidationMessage != null &&
-                    _customAmountValidationMessage!.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  AnimatedFeedbackMessage(
-                    text: _customAmountValidationMessage!,
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  child: Column(
+                    children: [
+                      if (_customAmountValidationMessage != null &&
+                          _customAmountValidationMessage!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        AnimatedFeedbackMessage(
+                          text: _customAmountValidationMessage!,
+                        ),
+                        const SizedBox(height: 4),
+                      ]
+                    ],
                   ),
-                ],
+                ),
                 _textField(textTheme),
               ],
             ),
@@ -466,9 +474,9 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
 
   Widget _textField(textTheme) {
     return SizedBox(
+      key: const ValueKey('custom_amount_text_field'),
       width: 114,
       child: ArDriveTheme(
-        key: const ValueKey('turbo_payment_form'),
         themeData: textTheme,
         child: ArDriveTextField(
           focusNode: _customAmountFocus,
@@ -498,8 +506,6 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
               }
 
               _customAmountValidationMessage = errorMessage;
-
-              logger.d('validator: $s, error: $errorMessage');
 
               _onCustomAmountSelected(s);
             });
@@ -704,7 +710,7 @@ class PriceEstimateView extends StatelessWidget {
 }
 
 class CurrencyDropdownMenu extends InputDropdownMenu<CurrencyItem> {
-  CurrencyDropdownMenu({
+  const CurrencyDropdownMenu({
     super.key,
     required super.items,
     required super.buildSelectedItem,
@@ -793,45 +799,62 @@ class AnimatedFeedbackMessageState extends State<AnimatedFeedbackMessage>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return ClipRect(
-          clipper: _CustomClipper(_animation.value),
-          child: child,
-        );
-      },
-      child: ScreenTypeLayout.builder(
-        desktop: (_) => FeedbackMessage(
-          text: widget.text,
-          arrowSide: ArrowSide.right,
-          height: 48,
-          borderColor:
-              ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
-          backgroundColor:
-              ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
-        ),
-        mobile: (_) => FeedbackMessage(
+    return ScreenTypeLayout.builder(
+      mobile: (_) => AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          return ClipRect(
+            clipper: _CustomClipper(_animation.value, ArrowSide.bottomLeft),
+            child: child,
+          );
+        },
+        child: FeedbackMessage(
           text: widget.text,
           arrowSide: ArrowSide.bottomLeft,
-          height: 50,
+          height: 65,
           borderColor:
               ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
           backgroundColor:
               ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
         ),
       ),
+      desktop: (context) {
+        return AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            return ClipRect(
+              clipper: _CustomClipper(_animation.value, ArrowSide.left),
+              child: child,
+            );
+          },
+          child: FeedbackMessage(
+            text: widget.text,
+            arrowSide: ArrowSide.right,
+            height: 48,
+            borderColor:
+                ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
+            backgroundColor:
+                ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
+          ),
+        );
+      },
     );
   }
 }
 
 class _CustomClipper extends CustomClipper<Rect> {
+  final ArrowSide arrowSide;
+
   final double progress;
 
-  _CustomClipper(this.progress);
+  _CustomClipper(this.progress, this.arrowSide);
 
   @override
   Rect getClip(Size size) {
+    if (arrowSide == ArrowSide.bottomLeft) {
+      return Rect.fromLTWH(
+          0, size.height * (1 - progress), size.width, size.height);
+    }
     return Rect.fromLTWH(0, 0, size.width * progress, size.height);
   }
 
