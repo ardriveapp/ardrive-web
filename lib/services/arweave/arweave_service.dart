@@ -962,7 +962,7 @@ class ArweaveService {
     final bundleTx = await client.transactions.prepare(
       Transaction.withDataBundle(bundleBlob: bundleBlob)
         ..addApplicationTags(version: packageInfo.version)
-        ..addBarTags(),
+        ..addUTags(),
       wallet,
     );
 
