@@ -40,14 +40,14 @@ class ConfigFetcher {
 
   @visibleForTesting
   Future<AppConfig> loadFromDevToolsPrefs() async {
-    final config = localStore.getString('config');
+    try {
+      final config = localStore.getString('config');
 
-    if (config != null) {
-      try {
+      if (config != null) {
         return AppConfig.fromJson(json.decode(config));
-      } catch (e) {
-        logger.e('Error when loading config from dev tools prefs', e);
       }
+    } catch (e) {
+      logger.e('Error when loading config from dev tools prefs', e);
     }
 
     final configFromEnv = await loadFromEnv('dev');
