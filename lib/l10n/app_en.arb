@@ -1604,7 +1604,7 @@
   "@termsAndConditions": {
     "description": "terms and conditions"
   },
-  "theresBeenAProblem": "There\\'s been a problem.",
+  "theresBeenAProblem": "There's been a problem.",
   "@theresBeenAProblem": {},
   "thinkTwiceBeforeUploading": "Think twice before uploading all your teenage love poetry...",
   "@thinkTwiceBeforeUploading": {
@@ -1652,7 +1652,7 @@
   "@turboErrorMessageEstimationInformationFailed": {},
   "turboErrorMessageFetchPaymentIntentFailed": "Payment processor is currently unavailable, please try again later",
   "@turboErrorMessageFetchPaymentIntentFailed": {},
-  "turboErrorMessageNetwork": "We can\\'t connect to the internet. Please check your connection and try again.",
+  "turboErrorMessageNetwork": "We can't connect to the internet. Please check your connection and try again.",
   "@turboErrorMessageNetwork": {},
   "turboErrorMessageServer": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageServer": {},
