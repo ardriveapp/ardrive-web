@@ -460,10 +460,12 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               return;
                             }
 
-                            setState(() {
-                              _emailChecked = true;
-                              _hasAutomaticChecked = true;
-                            });
+                            if (_emailIsValid) {
+                              setState(() {
+                                _emailChecked = true;
+                                _hasAutomaticChecked = true;
+                              });
+                            }
                           },
                         ),
                       ),
@@ -471,7 +473,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         height: 16,
                       ),
                       ArDriveCheckBox(
-                        key: ValueKey(_emailChecked),
+                        isDisabled: !_emailIsValid,
+                        key: ValueKey(
+                            '${_emailIsValid && _emailChecked}${_emailController.text}'),
                         title: appLocalizationsOf(context)
                             .keepMeUpToDateOnNewsAndPromotions,
                         titleStyle: ArDriveTypography.body.buttonNormalBold(
@@ -480,7 +484,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               .colors
                               .themeAccentDisabled,
                         ),
-                        checked: _emailChecked,
+                        onChange: (value) => setState(() {
+                          _emailChecked = value;
+                        }),
+                        checked: _emailIsValid && _emailChecked,
                       ),
                       Row(
                         children: [
