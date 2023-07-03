@@ -9,6 +9,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 class ProfileCard extends StatefulWidget {
   const ProfileCard({
@@ -65,22 +66,46 @@ class _ProfileCardState extends State<ProfileCard> {
     final walletAddress = state.walletAddress;
 
     return ArDriveClickArea(
-      child: ArDriveOverlay(
-        onVisibleChange: (visible) {
-          if (!visible) {
-            setState(() {
-              _showProfileCard = false;
-            });
-          }
-        },
-        visible: _showProfileCard,
-        anchor: const Aligned(
-          follower: Alignment.topRight,
-          target: Alignment.bottomRight,
-          offset: Offset(0, 4),
+      child: ScreenTypeLayout.builder(
+        mobile: (context) => ArDriveOverlay(
+          onVisibleChange: (visible) {
+            if (!visible) {
+              setState(() {
+                _showProfileCard = false;
+              });
+            }
+          },
+          visible: _showProfileCard,
+          anchor: const Aligned(
+            follower: Alignment.topRight,
+            target: Alignment.bottomRight,
+            offset: Offset(12, -60),
+          ),
+          content: _buildProfileCardContent(
+            context,
+            state,
+            walletAddress,
+            isMobile: true,
+          ),
+          child: _buildProfileCardHeader(context, walletAddress),
         ),
-        content: _buildProfileCardContent(context, state, walletAddress),
-        child: _buildProfileCardHeader(context, walletAddress),
+        desktop: (context) => ArDriveOverlay(
+          onVisibleChange: (visible) {
+            if (!visible) {
+              setState(() {
+                _showProfileCard = false;
+              });
+            }
+          },
+          visible: _showProfileCard,
+          anchor: const Aligned(
+            follower: Alignment.topRight,
+            target: Alignment.bottomRight,
+            offset: Offset(0, 4),
+          ),
+          content: _buildProfileCardContent(context, state, walletAddress),
+          child: _buildProfileCardHeader(context, walletAddress),
+        ),
       ),
     );
   }
@@ -88,11 +113,13 @@ class _ProfileCardState extends State<ProfileCard> {
   Widget _buildProfileCardContent(
     BuildContext context,
     ProfileLoggedIn state,
-    String walletAddress,
-  ) {
+    String walletAddress, {
+    bool isMobile = false,
+  }) {
     return ArDriveCard(
       contentPadding: const EdgeInsets.all(0),
       width: 281,
+      height: isMobile ? double.infinity : null,
       boxShadow: BoxShadowCard.shadow60,
       content: Column(
         mainAxisSize: MainAxisSize.min,
