@@ -104,6 +104,27 @@ void main() {
       expect(result.enableQuickSyncAuthoring, equals(true));
       verify(() => localStore.putString('config', any())).called(1);
     });
+
+    test(
+        'loads config from env and saves to local storage if loading from dev tools throws',
+        () async {
+      when(() => localStore.getString('config')).thenThrow(Exception());
+      when(() => localStore.getString('arweaveGatewayUrl'))
+          .thenReturn('gatewayUrl');
+      when(() => localStore.getBool('enableQuickSyncAuthoring'))
+          .thenReturn(true);
+      when(() => assetBundle.loadString('assets/config/dev.json'))
+          .thenAnswer((_) async => '{}');
+      when(() => localStore.putString('config', any()))
+          .thenAnswer((i) => Future.value(true));
+
+      final result = await configFetcher.loadFromDevToolsPrefs();
+
+      expect(result, isInstanceOf<AppConfig>());
+      expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
+      expect(result.enableQuickSyncAuthoring, equals(true));
+      verify(() => localStore.putString('config', any())).called(1);
+    });
   });
 
   group('saveConfigOnDevToolsPrefs', () {
