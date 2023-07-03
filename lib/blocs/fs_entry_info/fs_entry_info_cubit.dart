@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -91,7 +92,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     emit(FsEntryInfoFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to load entity info: $error $stackTrace');
+    logger.e('Failed to load entity info: $error $stackTrace');
   }
 
   @override

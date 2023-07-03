@@ -88,8 +88,8 @@ class ProfileAuthShell extends StatelessWidget {
             ),
           ],
         );
-    return ScreenTypeLayout(
-      desktop: Material(
+    return ScreenTypeLayout.builder(
+      desktop: (context) => Material(
         child: Row(
           children: [
             Expanded(
@@ -105,7 +105,7 @@ class ProfileAuthShell extends StatelessWidget {
           ],
         ),
       ),
-      mobile: Scaffold(
+      mobile: (context) => Scaffold(
         resizeToAvoidBottomInset: resizeToAvoidBottomInset,
         body: SingleChildScrollView(
           child: Padding(

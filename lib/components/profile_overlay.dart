@@ -4,6 +4,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
@@ -130,7 +131,7 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
             onDisableBiometric: () {},
             onEnableBiometric: () {},
             onError: () {
-              debugPrint('close profile overlay');
+              logger.d('close profile overlay');
               widget.onCloseProfileOverlay?.call();
             },
           ),

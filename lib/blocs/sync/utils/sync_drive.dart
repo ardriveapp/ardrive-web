@@ -47,7 +47,7 @@ Stream<double> _syncDrive(
   List<SnapshotItem> snapshotItems = [];
 
   if (configService.config.enableSyncFromSnapshot) {
-    logger.i('Syncing from snapshot');
+    logger.e('Syncing from snapshot');
 
     final snapshotsStream = arweave.getAllSnapshotsOfDrive(
       driveId,
@@ -86,11 +86,11 @@ Stream<double> _syncDrive(
     ownerAddress: ownerAddress,
   );
 
-  logger.i('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');
-  logger.i(
+  logger.e('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');
+  logger.e(
     'Sub ranges in snapshots (DRIVE ID: $driveId): ${snapshotDriveHistory.subRanges.rangeSegments}',
   );
-  logger.i(
+  logger.e(
     'Sub ranges in GQL (DRIVE ID: $driveId): ${gqlDriveHistorySubRanges.rangeSegments}',
   );
 
@@ -126,7 +126,7 @@ Stream<double> _syncDrive(
         'The transaction block is null. \nTransaction node id: ${t.id}',
       );
 
-      logger.i('New fetch-phase percentage: $fetchPhasePercentage');
+      logger.e('New fetch-phase percentage: $fetchPhasePercentage');
 
       /// if the block is null, we don't calculate and keep the same percentage
       return fetchPhasePercentage;
@@ -139,7 +139,7 @@ Stream<double> _syncDrive(
       if (block != null) {
         firstBlockHeight = block.height;
         totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
-        logger.i(
+        logger.e(
           'First height: $firstBlockHeight, totalHeightDiff: $totalBlockHeightDifference',
         );
       } else {
@@ -148,10 +148,10 @@ Stream<double> _syncDrive(
         );
       }
     } else {
-      logger.i('Block attribute is already present - $firstBlockHeight');
+      logger.e('Block attribute is already present - $firstBlockHeight');
     }
 
-    logger.i('Adding transaction ${t.id}');
+    logger.e('Adding transaction ${t.id}');
     transactions.add(t);
 
     /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
@@ -160,7 +160,7 @@ Stream<double> _syncDrive(
         fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
       } else {
         // If the difference is zero means that the first phase was concluded.
-        logger.i('The first phase just finished!');
+        logger.e('The first phase just finished!');
         fetchPhasePercentage = 1;
       }
       final percentage =
@@ -168,7 +168,7 @@ Stream<double> _syncDrive(
       yield percentage;
     }
   }
-  logger.i('Done fetching data - ${gqlDriveHistory.driveId}');
+  logger.e('Done fetching data - ${gqlDriveHistory.driveId}');
 
   final fetchPhaseTotalTime =
       DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
@@ -199,7 +199,7 @@ Stream<double> _syncDrive(
       (parseProgress) => parseProgress * 0.9,
     );
   } catch (e) {
-    logger.i('[Sync Drive] Error while parsing transactions: $e');
+    logger.e('[Sync Drive] Error while parsing transactions: $e');
     rethrow;
   }
 

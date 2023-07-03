@@ -27,8 +27,15 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
 
             emit(PaymentFormQuoteLoaded(priceEstimate,
                 _expirationTimeInSeconds(turbo.maxQuoteExpirationDate)));
-          } catch (e) {
-            logger.e(e);
+          } catch (e, s) {
+            logger.e('Error upading the quote.', e, s);
+
+            emit(
+              PaymentFormQuoteLoadFailure(
+                state.priceEstimate,
+                _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+              ),
+            );
           }
         }
       },

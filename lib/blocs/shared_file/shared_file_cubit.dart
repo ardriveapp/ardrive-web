@@ -2,6 +2,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -115,7 +116,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
       return;
     } catch (e) {
-      debugPrint(e.toString());
+      logger.e(e.toString());
     }
 
     emit(SharedFileKeyInvalid());
