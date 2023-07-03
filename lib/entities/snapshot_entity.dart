@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -59,7 +60,7 @@ class SnapshotEntity extends Entity {
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
       // ignore: avoid_print
-      print('Error parsing transaction: ${transaction.id}');
+      logger.e('Error parsing transaction: ${transaction.id}');
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }

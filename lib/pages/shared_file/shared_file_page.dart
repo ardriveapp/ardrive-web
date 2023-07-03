@@ -60,8 +60,8 @@ class SharedFilePage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        ScreenTypeLayout(
-                          desktop: Row(
+                        ScreenTypeLayout.builder(
+                          desktop: (context) => Row(
                             children: [
                               ArDriveImage(
                                 image: AssetImage(
@@ -75,7 +75,7 @@ class SharedFilePage extends StatelessWidget {
                               ),
                             ],
                           ),
-                          mobile: Row(
+                          mobile: (context) => Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               ArDriveImage(
@@ -196,8 +196,8 @@ class SharedFilePage extends StatelessWidget {
 
           return Padding(
             padding: const EdgeInsets.all(24.0),
-            child: ScreenTypeLayout(
-              desktop: Row(
+            child: ScreenTypeLayout.builder(
+              desktop: (context) => Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Flexible(
@@ -215,7 +215,7 @@ class SharedFilePage extends StatelessWidget {
                   }
                 ],
               ),
-              mobile: SingleChildScrollView(
+              mobile: (context) => SingleChildScrollView(
                 primary: true,
                 child: SizedBox(
                   child: Column(

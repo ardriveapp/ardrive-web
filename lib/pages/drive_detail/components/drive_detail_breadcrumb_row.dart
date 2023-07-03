@@ -16,12 +16,12 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     const mobileBreadcrumbCount = 2;
     const desktopBreadcrumbCount = 4;
 
-    return ScreenTypeLayout(
-      desktop: _buildBreadcrumbs(
+    return ScreenTypeLayout.builder(
+      desktop: (context) => _buildBreadcrumbs(
         desktopBreadcrumbCount,
         context,
       ),
-      mobile: _buildBreadcrumbs(
+      mobile: (context) => _buildBreadcrumbs(
         mobileBreadcrumbCount,
         context,
       ),
