@@ -11,7 +11,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
-import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -518,7 +517,7 @@ class UploadCubit extends Cubit<UploadState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     emit(UploadFailure());
-    'Failed to upload file: $error $stackTrace'.logError();
+    logger.e('Failed to upload file: $error $stackTrace');
     super.onError(error, stackTrace);
   }
 

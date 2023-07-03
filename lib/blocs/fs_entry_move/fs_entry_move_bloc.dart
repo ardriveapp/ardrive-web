@@ -5,6 +5,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
@@ -77,7 +78,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
                 parentFolder: folderInView,
               );
             } catch (err) {
-              print('Error moving items: $err');
+              logger.e('Error moving items: $err');
             }
             emit(const FsEntryMoveSuccess());
           } else {
