@@ -86,9 +86,11 @@ packages:
   ardrive_ui:
     dependency: "direct main"
     description:
-      path: "../ardrive_ui"
-      relative: true
-    source: path
+      path: "."
+      ref: PE-4003-implementing-balance-and-price-estimate-view-for-turbo-top-up-only-usd-mobile
+      resolved-ref: "050f015d0910b4498f1f943d1f7f6b0ebd10006e"
+      url: "https://github.com/ar-io/ardrive_ui.git"
+    source: git
     version: "1.2.0"
   args:
     dependency: transitive
