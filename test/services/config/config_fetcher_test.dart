@@ -53,6 +53,16 @@ void main() {
       expect(result.enableQuickSyncAuthoring, equals(false));
     });
 
+    test('returns the staging config when flavor is destagingv', () async {
+      when(() => localStore.getString('config')).thenReturn(
+          '{"defaultArweaveGatewayUrl": "devGatewayUrl", "enableQuickSyncAuthoring": false, "stripePublishableKey": "stripeKey"}');
+
+      final result = await configFetcher.fetchConfig(Flavor.staging);
+
+      expect(result, isInstanceOf<AppConfig>());
+      expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
+      expect(result.enableQuickSyncAuthoring, equals(false));
+    });
     test(
         'returns the dev config when flavor is dev from env when there is no previous dev config saved on dev tools',
         () async {
@@ -88,6 +98,27 @@ void main() {
     test('loads config from env and saves to local storage if not present',
         () async {
       when(() => localStore.getString('config')).thenReturn(null);
+      when(() => localStore.getString('arweaveGatewayUrl'))
+          .thenReturn('gatewayUrl');
+      when(() => localStore.getBool('enableQuickSyncAuthoring'))
+          .thenReturn(true);
+      when(() => assetBundle.loadString('assets/config/dev.json'))
+          .thenAnswer((_) async => '{}');
+      when(() => localStore.putString('config', any()))
+          .thenAnswer((i) => Future.value(true));
+
+      final result = await configFetcher.loadFromDevToolsPrefs();
+
+      expect(result, isInstanceOf<AppConfig>());
+      expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
+      expect(result.enableQuickSyncAuthoring, equals(true));
+      verify(() => localStore.putString('config', any())).called(1);
+    });
+
+    test(
+        'loads config from env and saves to local storage if loading from dev tools throws',
+        () async {
+      when(() => localStore.getString('config')).thenThrow(Exception());
       when(() => localStore.getString('arweaveGatewayUrl'))
           .thenReturn('gatewayUrl');
       when(() => localStore.getBool('enableQuickSyncAuthoring'))
