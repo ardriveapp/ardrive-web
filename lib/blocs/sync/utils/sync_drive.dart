@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_logger.i
+
 part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 
 const fetchPhaseWeight = 0.1;

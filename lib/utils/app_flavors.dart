@@ -18,6 +18,8 @@ class AppFlavors {
         return Flavor.production;
       case 'development':
         return Flavor.development;
+      case 'staging':
+        return Flavor.staging;
       default:
         return Flavor.production;
     }
