@@ -67,6 +67,14 @@ void main() {
       expect(flavor, Flavor.development);
     });
 
+    test('should return staging flavor', () async {
+      when(() => mockEnvFetcher.getEnv()).thenAnswer((_) async => 'staging');
+
+      final flavor = await appFlavors.getAppFlavor();
+
+      expect(flavor, Flavor.staging);
+    });
+
     test('should return production flavor when pass a different env', () async {
       when(() => mockEnvFetcher.getEnv()).thenAnswer((_) async => 'test');
 

@@ -53,6 +53,16 @@ void main() {
       expect(result.enableQuickSyncAuthoring, equals(false));
     });
 
+    test('returns the staging config when flavor is destagingv', () async {
+      when(() => localStore.getString('config')).thenReturn(
+          '{"defaultArweaveGatewayUrl": "devGatewayUrl", "enableQuickSyncAuthoring": false, "stripePublishableKey": "stripeKey"}');
+
+      final result = await configFetcher.fetchConfig(Flavor.staging);
+
+      expect(result, isInstanceOf<AppConfig>());
+      expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
+      expect(result.enableQuickSyncAuthoring, equals(false));
+    });
     test(
         'returns the dev config when flavor is dev from env when there is no previous dev config saved on dev tools',
         () async {
