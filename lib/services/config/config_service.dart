@@ -67,4 +67,4 @@ class ConfigService {
   }
 }
 
-enum Flavor { production, development }
+enum Flavor { production, development, staging }
