@@ -61,7 +61,7 @@ void main() {
 
     test('returns the staging config when flavor is destagingv', () async {
       when(() => localStore.getString('config')).thenReturn(
-          '{"defaultArweaveGatewayUrl": "devGatewayUrl", "enableQuickSyncAuthoring": false, "stripePublishableKey": "stripeKey"}');
+          '{"defaultArweaveGatewayUrl": "devGatewayUrl", "enableQuickSyncAuthoring": false, "stripePublishableKey": "stripeKey", "allowedDataItemSizeForTurbo": 100}');
 
       final result = await configFetcher.fetchConfig(Flavor.staging);
 
