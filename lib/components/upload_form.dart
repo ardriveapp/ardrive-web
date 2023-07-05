@@ -867,11 +867,7 @@ class _UploadFormState extends State<UploadForm> {
           ),
         ),
       );
-    }
-
-    if (_uploadMethod == UploadMethod.ar &&
-        !sufficientArBalance &&
-        sufficentCreditsBalance) {
+    } else if (_uploadMethod == UploadMethod.ar && !sufficientArBalance) {
       return Text(
         'Insufficient AR balance for purchase.',
         style: ArDriveTypography.body.captionBold(
