@@ -367,15 +367,19 @@ class UploadPaymentEvaluator {
     bool isFreeUploadPossibleUsingTurbo = false;
 
     if (isTurboAvailable && isUploadEligibleToTurbo) {
-      final allowedDataItemSizeForTurbo =
-          _appConfig.allowedDataItemSizeForTurbo;
+      if (uploadPlanForTurbo.fileV2UploadHandles.isEmpty) {
+        final allowedDataItemSizeForTurbo =
+            _appConfig.allowedDataItemSizeForTurbo;
 
-      isFreeUploadPossibleUsingTurbo =
-          uploadPlanForTurbo.bundleUploadHandles.every(
-        (bundle) => bundle.fileDataItemUploadHandles.every(
-          (file) => file.size <= allowedDataItemSizeForTurbo,
-        ),
-      );
+        isFreeUploadPossibleUsingTurbo =
+            uploadPlanForTurbo.bundleUploadHandles.every(
+          (bundle) => bundle.fileDataItemUploadHandles.every(
+            (file) => file.size <= allowedDataItemSizeForTurbo,
+          ),
+        );
+      } else {
+        isFreeUploadPossibleUsingTurbo = false;
+      }
     }
 
     return UploadPaymentInfo(

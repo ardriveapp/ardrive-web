@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
@@ -349,11 +350,39 @@ void main() {
           expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
           expect(result.isUploadEligibleToTurbo, isTrue);
         });
+        test(
+            'isFreeUploadPossibleUsingTurbo returns false when having a single v2 file',
+            () async {
+          // bundle mock
+          when(() => mockFile.size).thenReturn(499);
+          // it tests that if one single file is bigger than 500, it should
+          when(() => mockFile2.size).thenReturn(499);
+          // limit of 500
+          when(() => mockBundle.computeBundleSize())
+              .thenAnswer((invocation) => Future.value(499));
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
+
+          // v2 file mock
+          final mockV2Upload = MockFileV2UploadHandle();
+          when(() => mockV2Upload.getFileDataSize()).thenReturn(501);
+          when(() => mockV2Upload.getMetadataJSONSize()).thenReturn(0);
+          when(() => uploadPlan.fileV2UploadHandles).thenReturn({
+            'fileId': mockV2Upload,
+          });
+          when(() => mockV2Upload.size).thenReturn(501);
+
+          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+            uploadPlanForAR: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          );
+
+          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.isUploadEligibleToTurbo, isTrue);
+        });
       });
 
       /// Tests `isTurboAvailable`
       ///
-
       group('testing turbo eligibility', () {
         setUp(() {});
         test('isUploadEligibleToTurbo returns true when have bundles',
