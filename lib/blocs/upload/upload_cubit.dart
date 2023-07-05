@@ -346,7 +346,7 @@ class UploadCubit extends Cubit<UploadState> {
         'UploadPlan For Turbo: ${uploadPreparation.uploadPlansPreparation.uploadPlanForTurbo.toString()}\n'
         'Turbo Balance: ${uploadPreparation.uploadPaymentInfo.turboBalance}\n'
         'AR Balance: ${_auth.currentUser!.walletBalance}\n'
-        'Is Turbo Upload Possible: ${paymentInfo.isUploadEligibleToTurbo}\n'
+        'Is Turbo Upload Possible: ${paymentInfo.turboEligibility.isTurboAvailable}\n'
         'Is Zero Balance: $isTurboZeroBalance\n',
       );
 
@@ -367,12 +367,12 @@ class UploadCubit extends Cubit<UploadState> {
         logger.d('Enabling button for AR payment method');
         isButtonEnabled = true;
       } else if (_uploadMethod == UploadMethod.turbo &&
-          paymentInfo.isUploadEligibleToTurbo &&
-          paymentInfo.isTurboAvailable &&
+          paymentInfo.turboEligibility.isUploadEligibleToTurbo &&
+          paymentInfo.turboEligibility.isTurboAvailable &&
           sufficientBalanceToPayWithTurbo) {
         logger.d('Enabling button for Turbo payment method');
         isButtonEnabled = true;
-      } else if (paymentInfo.isFreeUploadPossibleUsingTurbo) {
+      } else if (paymentInfo.turboEligibility.isFreeUploadPossibleUsingTurbo) {
         logger.d('Enabling button for free upload using Turbo');
         isButtonEnabled = true;
       } else {
@@ -381,8 +381,9 @@ class UploadCubit extends Cubit<UploadState> {
 
       emit(
         UploadReady(
-          isTurboUploadPossible: paymentInfo.isUploadEligibleToTurbo &&
-              paymentInfo.isTurboAvailable,
+          isTurboUploadPossible:
+              paymentInfo.turboEligibility.isUploadEligibleToTurbo &&
+                  paymentInfo.turboEligibility.isTurboAvailable,
           isZeroBalance: isTurboZeroBalance,
           turboCredits: literalBalance,
           uploadSize: paymentInfo.totalSize,
@@ -396,7 +397,8 @@ class UploadCubit extends Cubit<UploadState> {
               profile.walletBalance >= paymentInfo.arCostEstimate.totalCost,
           uploadPlanForAR: uploadPlansPreparation.uploadPlanForAr,
           uploadPlanForTurbo: uploadPlansPreparation.uploadPlanForTurbo,
-          isFreeThanksToTurbo: (paymentInfo.isFreeUploadPossibleUsingTurbo),
+          isFreeThanksToTurbo:
+              (paymentInfo.turboEligibility.isFreeUploadPossibleUsingTurbo),
           sufficentCreditsBalance: sufficientBalanceToPayWithTurbo,
           uploadMethod: _uploadMethod!,
           isButtonToUploadEnabled: isButtonEnabled,

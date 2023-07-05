@@ -309,8 +309,9 @@ void main() {
             uploadPlanForTurbo: uploadPlan,
           );
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isTrue);
-          expect(result.isUploadEligibleToTurbo, isTrue);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isTrue);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isTrue);
         });
         test(
             'isFreeUploadPossibleUsingTurbo returns true when all file sizes are THE SAME turbo threshold',
@@ -329,8 +330,9 @@ void main() {
             uploadPlanForTurbo: uploadPlan,
           );
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isTrue);
-          expect(result.isUploadEligibleToTurbo, isTrue);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isTrue);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isTrue);
         });
         test(
             'isFreeUploadPossibleUsingTurbo returns false when not all file sizes are within turbo threshold',
@@ -350,8 +352,9 @@ void main() {
             uploadPlanForTurbo: uploadPlan,
           );
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-          expect(result.isUploadEligibleToTurbo, isTrue);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isTrue);
         });
         test(
             'isFreeUploadPossibleUsingTurbo returns false when having a single v2 file',
@@ -379,8 +382,9 @@ void main() {
             uploadPlanForTurbo: uploadPlan,
           );
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-          expect(result.isUploadEligibleToTurbo, isFalse);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isFalse);
         });
       });
 
@@ -406,8 +410,9 @@ void main() {
             uploadPlanForTurbo: uploadPlan,
           );
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-          expect(result.isUploadEligibleToTurbo, isTrue);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isTrue);
         });
 
         test('isTurboUploadPossible returns false when not have any bundles',
@@ -425,9 +430,10 @@ void main() {
             uploadPlanForTurbo: uploadPlan,
           );
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-          expect(result.isUploadEligibleToTurbo, isFalse);
-          expect(result.isTurboAvailable, isTrue);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isFalse);
+          expect(result.turboEligibility.isTurboAvailable, isTrue);
         });
 
         test(
@@ -458,9 +464,10 @@ void main() {
             uploadPlanForTurbo: uploadPlan,
           );
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-          expect(result.isUploadEligibleToTurbo, isFalse);
-          expect(result.isTurboAvailable, isTrue);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isFalse);
+          expect(result.turboEligibility.isTurboAvailable, isTrue);
         });
 
         test(
@@ -494,9 +501,10 @@ void main() {
             uploadPlanForTurbo: uploadPlan,
           );
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-          expect(result.isUploadEligibleToTurbo, isFalse);
-          expect(result.isTurboAvailable, isTrue);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isFalse);
+          expect(result.turboEligibility.isTurboAvailable, isTrue);
         });
 
         test('isTurboAvailable returns false when the feature flag is false',
@@ -526,9 +534,10 @@ void main() {
             uploadPlanForTurbo: uploadPlan,
           );
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-          expect(result.isUploadEligibleToTurbo, isTrue);
-          expect(result.isTurboAvailable, isFalse);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isTrue);
+          expect(result.turboEligibility.isTurboAvailable, isFalse);
 
           verifyNever(() => turboBalanceRetriever.getBalance(any()));
         });
@@ -548,12 +557,13 @@ void main() {
           );
 
           // the important part is that we don't throw
-          expect(result.isTurboAvailable, isFalse);
+          expect(result.turboEligibility.isTurboAvailable, isFalse);
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
 
           // To be eligible to turbo, we just need to pass a bundle
-          expect(result.isUploadEligibleToTurbo, isTrue);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isTrue);
 
           // the payment method must be AR
           expect(result.defaultPaymentMethod, equals(UploadMethod.ar));
@@ -576,9 +586,10 @@ void main() {
           );
 
           // the important part is that we don't throw
-          expect(result.isTurboAvailable, isFalse);
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-          expect(result.isUploadEligibleToTurbo, isTrue);
+          expect(result.turboEligibility.isTurboAvailable, isFalse);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isTrue);
 
           // the payment method must be AR
           expect(result.defaultPaymentMethod, equals(UploadMethod.ar));
@@ -632,8 +643,9 @@ void main() {
           );
 
           expect(result.defaultPaymentMethod, equals(UploadMethod.turbo));
-          expect(result.isUploadEligibleToTurbo, isTrue);
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isTrue);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
         });
         test(
             'getUploadPaymentInfo assigns UploadMethod.ar when turbo balance is not enough',
@@ -671,7 +683,8 @@ void main() {
           );
 
           expect(result.defaultPaymentMethod, equals(UploadMethod.ar));
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
         });
 
         test('returns the expected UploadPaymentInfo', () async {
@@ -694,8 +707,9 @@ void main() {
           expect(result.arCostEstimate, mockUploadCostEstimateAR);
           expect(result.turboCostEstimate, mockUploadCostEstimateTurbo);
           expect(result.defaultPaymentMethod, equals(UploadMethod.turbo));
-          expect(result.isUploadEligibleToTurbo, isTrue);
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isTrue);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
         });
 
         test('returns the expected UploadPaymentInfo', () async {
@@ -731,8 +745,9 @@ void main() {
           expect(result.arCostEstimate, mockUploadCostEstimateAR);
           expect(result.turboCostEstimate, mockUploadCostEstimateTurbo);
           expect(result.defaultPaymentMethod, equals(UploadMethod.ar));
-          expect(result.isUploadEligibleToTurbo, isTrue);
-          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.turboEligibility.isUploadEligibleToTurbo, isTrue);
+          expect(
+              result.turboEligibility.isFreeUploadPossibleUsingTurbo, isFalse);
         });
       });
     });
@@ -881,13 +896,18 @@ void main() {
 
         final uploadPaymentInfo = UploadPaymentInfo(
           defaultPaymentMethod: UploadMethod.ar,
-          isUploadEligibleToTurbo: true,
           arCostEstimate: mockUploadCostEstimateAR,
           turboCostEstimate: mockUploadCostEstimateTurbo,
-          isFreeUploadPossibleUsingTurbo: true,
           totalSize: 100,
-          isTurboAvailable: true,
           turboBalance: BigInt.from(100),
+          turboEligibility: TurboAvailability(
+            isFreeUploadPossibleUsingTurbo: true,
+            isTurboAvailable: true,
+            isUploadEligibleToTurbo: true,
+            turboBalance: BigInt.from(100),
+            turboBundleSizes: 100,
+            turboCostEstimate: mockUploadCostEstimateTurbo,
+          ),
         );
 
         when(() => uploadPreparer.prepareUpload(uploadParams))

@@ -303,7 +303,46 @@ class UploadPaymentEvaluator {
 
     int totalSize = 0;
 
-    BigInt turboBalance;
+    final turboEligibility = await _getTurboAvailability(
+      uploadPlanForTurbo: uploadPlanForTurbo,
+      uploadPlanForAR: uploadPlanForAR,
+    );
+
+    final arSize = await _getARSize(uploadPlanForAR);
+
+    /// Calculate the upload with AR is not optional
+    final arCostEstimate =
+        await _uploadCostEstimateCalculatorForAR.calculateCost(
+      totalSize: arSize,
+    );
+
+    uploadMethod = _determineUploadMethod(
+      turboEligibility: turboEligibility,
+      arCostEstimate: arCostEstimate,
+      arSize: arSize,
+    );
+
+    if (uploadMethod == UploadMethod.turbo) {
+      totalSize = turboEligibility.turboBundleSizes;
+    } else {
+      totalSize = arSize;
+    }
+
+    return UploadPaymentInfo(
+      defaultPaymentMethod: uploadMethod,
+      arCostEstimate: arCostEstimate,
+      turboCostEstimate: turboEligibility.turboCostEstimate,
+      totalSize: totalSize,
+      turboBalance: turboEligibility.turboBalance,
+      turboEligibility: turboEligibility,
+    );
+  }
+
+  Future<TurboAvailability> _getTurboAvailability({
+    required UploadPlan uploadPlanForAR,
+    required UploadPlan uploadPlanForTurbo,
+  }) async {
+    late BigInt turboBalance;
 
     bool isTurboAvailable = _appConfig.useTurboUpload;
 
@@ -321,11 +360,6 @@ class UploadPaymentEvaluator {
     } else {
       turboBalance = BigInt.zero;
     }
-
-    final arBundleSizes = await sizeUtils
-        .getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles);
-    final arFileSizes = await sizeUtils
-        .getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles);
 
     bool isUploadEligibleToTurbo =
         uploadPlanForAR.fileV2UploadHandles.isEmpty &&
@@ -349,22 +383,6 @@ class UploadPaymentEvaluator {
       }
     }
 
-    /// Calculate the upload with AR is not optional
-    final arCostEstimate =
-        await _uploadCostEstimateCalculatorForAR.calculateCost(
-      totalSize: arBundleSizes + arFileSizes,
-    );
-
-    if (isTurboAvailable &&
-        isUploadEligibleToTurbo &&
-        turboBalance >= turboCostEstimate.totalCost) {
-      totalSize = turboBundleSizes;
-      uploadMethod = UploadMethod.turbo;
-    } else {
-      totalSize = arBundleSizes + arFileSizes;
-      uploadMethod = UploadMethod.ar;
-    }
-
     bool isFreeUploadPossibleUsingTurbo = false;
 
     if (isTurboAvailable && isUploadEligibleToTurbo) {
@@ -379,17 +397,67 @@ class UploadPaymentEvaluator {
       );
     }
 
-    return UploadPaymentInfo(
+    return TurboAvailability(
       isTurboAvailable: isTurboAvailable,
-      defaultPaymentMethod: uploadMethod,
-      isUploadEligibleToTurbo: isUploadEligibleToTurbo,
-      arCostEstimate: arCostEstimate,
-      turboCostEstimate: turboCostEstimate,
-      isFreeUploadPossibleUsingTurbo: isFreeUploadPossibleUsingTurbo,
-      totalSize: totalSize,
       turboBalance: turboBalance,
+      isUploadEligibleToTurbo: isUploadEligibleToTurbo,
+      turboCostEstimate: turboCostEstimate,
+      turboBundleSizes: turboBundleSizes,
+      isFreeUploadPossibleUsingTurbo: isFreeUploadPossibleUsingTurbo,
     );
   }
+
+  Future<int> _getARSize(UploadPlan uploadPlan) async {
+    final arBundleSizes =
+        await sizeUtils.getSizeOfAllBundles(uploadPlan.bundleUploadHandles);
+    final arFileSizes =
+        await sizeUtils.getSizeOfAllV2Files(uploadPlan.fileV2UploadHandles);
+
+    return arBundleSizes + arFileSizes;
+  }
+
+  UploadMethod _determineUploadMethod({
+    required TurboAvailability turboEligibility,
+    required UploadCostEstimate arCostEstimate,
+    required int arSize,
+  }) {
+    if (turboEligibility.isTurboAvailable &&
+        turboEligibility.isUploadEligibleToTurbo &&
+        turboEligibility.turboBalance >=
+            turboEligibility.turboCostEstimate.totalCost) {
+      return UploadMethod.turbo;
+    } else {
+      return UploadMethod.ar;
+    }
+  }
+}
+
+class TurboAvailability {
+  final bool isTurboAvailable;
+  final bool isUploadEligibleToTurbo;
+  final bool isFreeUploadPossibleUsingTurbo;
+  final BigInt turboBalance;
+  final UploadCostEstimate turboCostEstimate;
+  final int turboBundleSizes;
+
+  TurboAvailability({
+    required this.isTurboAvailable,
+    required this.turboBalance,
+    required this.isUploadEligibleToTurbo,
+    required this.turboCostEstimate,
+    required this.turboBundleSizes,
+    required this.isFreeUploadPossibleUsingTurbo,
+  });
+}
+
+class _CostEstimates {
+  final UploadCostEstimate arCostEstimate;
+  final UploadCostEstimate turboCostEstimate;
+
+  _CostEstimates({
+    required this.arCostEstimate,
+    required this.turboCostEstimate,
+  });
 }
 
 class UploadPreparation {
@@ -404,9 +472,7 @@ class UploadPreparation {
 
 class UploadPaymentInfo {
   final UploadMethod defaultPaymentMethod;
-  final bool isUploadEligibleToTurbo;
-  final bool isFreeUploadPossibleUsingTurbo;
-  final bool isTurboAvailable;
+  final TurboAvailability turboEligibility;
   final UploadCostEstimate arCostEstimate;
   final UploadCostEstimate turboCostEstimate;
   final int totalSize;
@@ -414,13 +480,11 @@ class UploadPaymentInfo {
 
   UploadPaymentInfo({
     required this.defaultPaymentMethod,
-    required this.isUploadEligibleToTurbo,
     required this.arCostEstimate,
     required this.turboCostEstimate,
-    required this.isFreeUploadPossibleUsingTurbo,
     required this.totalSize,
-    required this.isTurboAvailable,
     required this.turboBalance,
+    required this.turboEligibility,
   });
 }
 
