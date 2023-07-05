@@ -118,6 +118,7 @@ class _ProfileCardState extends State<ProfileCard> {
       contentPadding: const EdgeInsets.all(0),
       width: 281,
       height: isMobile ? double.infinity : null,
+      borderRadius: isMobile ? 0 : null,
       boxShadow: BoxShadowCard.shadow60,
       content: Column(
         mainAxisSize: MainAxisSize.min,
