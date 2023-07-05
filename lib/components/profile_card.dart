@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/turbo_balance_widget.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -62,51 +63,48 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _loggedInView(BuildContext context) {
+    return ArDriveClickArea(
+      child: ScreenTypeLayout.builder(
+        mobile: (context) => _buildLoggedInViewForPlatform(
+          context,
+          isMobile: true,
+        ),
+        desktop: (context) => _buildLoggedInViewForPlatform(
+          context,
+          isMobile: false,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoggedInViewForPlatform(
+    BuildContext context, {
+    required bool isMobile,
+  }) {
     final state = context.read<ProfileCubit>().state as ProfileLoggedIn;
     final walletAddress = state.walletAddress;
 
-    return ArDriveClickArea(
-      child: ScreenTypeLayout.builder(
-        mobile: (context) => ArDriveOverlay(
-          onVisibleChange: (visible) {
-            if (!visible) {
-              setState(() {
-                _showProfileCard = false;
-              });
-            }
-          },
-          visible: _showProfileCard,
-          anchor: const Aligned(
-            follower: Alignment.topRight,
-            target: Alignment.bottomRight,
-            offset: Offset(12, -60),
-          ),
-          content: _buildProfileCardContent(
-            context,
-            state,
-            walletAddress,
-            isMobile: true,
-          ),
-          child: _buildProfileCardHeader(context, walletAddress),
-        ),
-        desktop: (context) => ArDriveOverlay(
-          onVisibleChange: (visible) {
-            if (!visible) {
-              setState(() {
-                _showProfileCard = false;
-              });
-            }
-          },
-          visible: _showProfileCard,
-          anchor: const Aligned(
-            follower: Alignment.topRight,
-            target: Alignment.bottomRight,
-            offset: Offset(0, 4),
-          ),
-          content: _buildProfileCardContent(context, state, walletAddress),
-          child: _buildProfileCardHeader(context, walletAddress),
-        ),
+    return ArDriveOverlay(
+      onVisibleChange: (visible) {
+        if (!visible) {
+          setState(() {
+            _showProfileCard = false;
+          });
+        }
+      },
+      visible: _showProfileCard,
+      anchor: Aligned(
+        follower: Alignment.topRight,
+        target: Alignment.bottomRight,
+        offset: isMobile ? const Offset(12, -60) : const Offset(0, 4),
       ),
+      content: _buildProfileCardContent(
+        context,
+        state,
+        walletAddress,
+        isMobile: isMobile,
+      ),
+      child: _buildProfileCardHeader(context, walletAddress),
     );
   }
 
@@ -125,6 +123,24 @@ class _ProfileCardState extends State<ProfileCard> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (isMobile)
+            Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ArDriveIconButton(
+                    onPressed: () {
+                      setState(() {
+                        _showProfileCard = false;
+                      });
+                    },
+                    icon: ArDriveIcons.x(
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           const SizedBox(height: 8),
           _buildWalletAddressRow(context, state),
           const Divider(
@@ -151,6 +167,12 @@ class _ProfileCardState extends State<ProfileCard> {
             padding: const EdgeInsets.only(top: 20.0),
             child: _buildLogoutButton(context),
           ),
+          if (isMobile)
+            Expanded(
+              child: Container(
+                color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+              ),
+            ),
         ],
       ),
     );
