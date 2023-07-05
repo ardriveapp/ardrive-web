@@ -425,6 +425,75 @@ void main() {
           expect(result.isTurboAvailable, isTrue);
         });
 
+        test(
+            'isTurboUploadPossible returns false when not have any bundles but have a v2',
+            () async {
+          final mockFile = MockBundleUploadHandle();
+          when(() => mockFile.size).thenReturn(501);
+          // limit of 500
+          when(() => mockFile.computeBundleSize())
+              .thenAnswer((invocation) => Future.value(501));
+
+          // NO BUNDLES
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([]);
+
+          // v2 file mock
+          final mockV2Upload = MockFileV2UploadHandle();
+          when(() => mockV2Upload.getFileDataSize()).thenReturn(501);
+          when(() => mockV2Upload.getMetadataJSONSize()).thenReturn(0);
+          when(() => mockV2Upload.size).thenReturn(501);
+
+          // a V2
+          when(() => uploadPlan.fileV2UploadHandles).thenReturn({
+            'fileId': mockV2Upload,
+          });
+
+          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+            uploadPlanForAR: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          );
+
+          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.isUploadEligibleToTurbo, isFalse);
+          expect(result.isTurboAvailable, isTrue);
+        });
+
+        test(
+            'isTurboUploadPossible returns false when we have bundles but have at least one v2',
+            () async {
+          final mockFile = MockBundleUploadHandle();
+          when(() => mockFile.size).thenReturn(501);
+          // limit of 500
+          when(() => mockFile.computeBundleSize())
+              .thenAnswer((invocation) => Future.value(501));
+
+          // NO BUNDLES
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
+
+          when(() => mockBundle.computeBundleSize())
+              .thenAnswer((invocation) => Future.value(503));
+
+          // v2 file mock
+          final mockV2Upload = MockFileV2UploadHandle();
+          when(() => mockV2Upload.getFileDataSize()).thenReturn(501);
+          when(() => mockV2Upload.getMetadataJSONSize()).thenReturn(0);
+          when(() => mockV2Upload.size).thenReturn(501);
+
+          // a V2
+          when(() => uploadPlan.fileV2UploadHandles).thenReturn({
+            'fileId': mockV2Upload,
+          });
+
+          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+            uploadPlanForAR: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          );
+
+          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.isUploadEligibleToTurbo, isFalse);
+          expect(result.isTurboAvailable, isTrue);
+        });
+
         test('isTurboAvailable returns false when the feature flag is false',
             () async {
           final turboBalanceRetriever = MockTurboBalanceRetriever();

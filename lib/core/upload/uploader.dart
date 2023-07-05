@@ -328,14 +328,15 @@ class UploadPaymentEvaluator {
         .getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles);
 
     bool isUploadEligibleToTurbo =
-        uploadPlanForTurbo.bundleUploadHandles.isNotEmpty;
+        uploadPlanForAR.fileV2UploadHandles.isEmpty &&
+            uploadPlanForTurbo.bundleUploadHandles.isNotEmpty;
 
     UploadCostEstimate turboCostEstimate = UploadCostEstimate.zero();
 
     int turboBundleSizes = 0;
 
     /// Calculate the upload with Turbo if possible
-    if (isTurboAvailable) {
+    if (isTurboAvailable && isUploadEligibleToTurbo) {
       turboBundleSizes = await sizeUtils
           .getSizeOfAllBundles(uploadPlanForTurbo.bundleUploadHandles);
 
@@ -367,19 +368,15 @@ class UploadPaymentEvaluator {
     bool isFreeUploadPossibleUsingTurbo = false;
 
     if (isTurboAvailable && isUploadEligibleToTurbo) {
-      if (uploadPlanForTurbo.fileV2UploadHandles.isEmpty) {
-        final allowedDataItemSizeForTurbo =
-            _appConfig.allowedDataItemSizeForTurbo;
+      final allowedDataItemSizeForTurbo =
+          _appConfig.allowedDataItemSizeForTurbo;
 
-        isFreeUploadPossibleUsingTurbo =
-            uploadPlanForTurbo.bundleUploadHandles.every(
-          (bundle) => bundle.fileDataItemUploadHandles.every(
-            (file) => file.size <= allowedDataItemSizeForTurbo,
-          ),
-        );
-      } else {
-        isFreeUploadPossibleUsingTurbo = false;
-      }
+      isFreeUploadPossibleUsingTurbo =
+          uploadPlanForTurbo.bundleUploadHandles.every(
+        (bundle) => bundle.fileDataItemUploadHandles.every(
+          (file) => file.size <= allowedDataItemSizeForTurbo,
+        ),
+      );
     }
 
     return UploadPaymentInfo(
