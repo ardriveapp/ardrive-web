@@ -3,7 +3,7 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/NOTICES": "abe87f2fd1c7877800fd8c6dcdb112bf",
+const RESOURCES = {"assets/NOTICES": "afc1a77e346568e1cac3ce71338bea91",
 "assets/assets/animations/lottie.json": "191a5283adba0ee925152e6bb1c36cce",
 "assets/assets/images/brand/white_logo_0.25x.png": "587846e83c2c6480533b92b963d2f3d2",
 "assets/assets/images/brand/white_logo_4x.png": "fdeaea3326301d60d798b04f5e309c06",
@@ -374,10 +374,10 @@ const RESOURCES = {"assets/NOTICES": "abe87f2fd1c7877800fd8c6dcdb112bf",
 "assets/packages/alchemist/assets/fonts/Roboto/Roboto-Regular.ttf": "3e1af3ef546b9e6ecef9f3ba197bf7d2",
 "assets/packages/alchemist/assets/fonts/Roboto/Roboto-Bold.ttf": "ee7b96fa85d8fdb8c126409326ac2d2b",
 "assets/fonts/MaterialIcons-Regular.otf": "effd371e95b5a5505f35237869c0ebe5",
-"index.html": "0c9326dc1d65f42eb953eeca9f90a24c",
-"/": "0c9326dc1d65f42eb953eeca9f90a24c",
+"index.html": "348e8cb609e2e244851d664b4d8f41ee",
+"/": "348e8cb609e2e244851d664b4d8f41ee",
 "worker.js": "f916974921b8b3d98f9fdfc4b68e5432",
-"main.dart.js": "fe4e997c69fd88ece307ab396e8e005d",
+"main.dart.js": "f5be7483872123fd58473f3fbd4e3204",
 "flutter.js": "6fef97aeca90b426343ba6c5c9dc5d4a",
 "ardrive-http.js": "02734007a6c6df531f242b329a99a623",
 "sql-wasm.wasm": "8b3b3fe7c9c611db53b9e43661bf38dd",
