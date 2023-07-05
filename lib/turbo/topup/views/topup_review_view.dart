@@ -451,6 +451,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             }
                             setState(() {
                               _emailIsValid = false;
+                              _emailChecked = false;
                             });
                             return appLocalizationsOf(context)
                                 .pleaseEnterAValidEmail;
@@ -474,7 +475,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         height: 16,
                       ),
                       ArDriveCheckBox(
-                        isDisabled: !_emailIsValid,
+                        isDisabled:
+                            !_emailIsValid || _emailController.text.isEmpty,
                         key: ValueKey(
                             '${_emailIsValid && _emailChecked}${_emailController.text}'),
                         title: appLocalizationsOf(context)
@@ -488,7 +490,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         onChange: (value) => setState(() {
                           _emailChecked = value;
                         }),
-                        checked: _emailIsValid && _emailChecked,
+                        checked: _emailIsValid &&
+                            _emailChecked &&
+                            _emailController.text.isNotEmpty,
                       ),
                       Row(
                         children: [
