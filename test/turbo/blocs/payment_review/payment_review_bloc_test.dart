@@ -11,8 +11,10 @@ import 'package:test/test.dart';
 class MockTurbo extends Mock implements Turbo {}
 
 void main() {
+  final mockPaymentUserInformation =
+      PaymentUserInformation.create(name: 'naem', country: 'country');
   setUpAll(() {
-    registerFallbackValue(FakePaymentUserInformation());
+    registerFallbackValue(mockPaymentUserInformation);
   });
 
   final mockPaymentSession = PaymentSession(
@@ -43,7 +45,10 @@ void main() {
             priceInCurrency: 100,
             credits: BigInt.from(100),
             estimatedStorage: 1);
-        paymentReviewBloc = PaymentReviewBloc(mockTurbo, mockPriceEstimate);
+        paymentReviewBloc = PaymentReviewBloc(
+          mockTurbo,
+          mockPriceEstimate,
+        );
       });
 
       blocTest<PaymentReviewBloc, PaymentReviewState>(
@@ -63,6 +68,10 @@ void main() {
                 topUpQuote: mockTopUpQuote,
               ),
             ),
+          );
+
+          when(() => mockTurbo.paymentUserInformation).thenReturn(
+            mockPaymentUserInformation,
           );
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
@@ -92,6 +101,10 @@ void main() {
             ),
           ).thenThrow(Exception());
 
+          when(() => mockTurbo.paymentUserInformation).thenReturn(
+            mockPaymentUserInformation,
+          );
+
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
         },
@@ -110,7 +123,10 @@ void main() {
             priceInCurrency: 100,
             credits: BigInt.from(100),
             estimatedStorage: 1);
-        paymentReviewBloc = PaymentReviewBloc(mockTurbo, mockPriceEstimate);
+        paymentReviewBloc = PaymentReviewBloc(
+          mockTurbo,
+          mockPriceEstimate,
+        );
       });
 
       blocTest<PaymentReviewBloc, PaymentReviewState>(
@@ -119,8 +135,7 @@ void main() {
         act: (bloc) async {
           bloc.add(PaymentReviewLoadPaymentModel());
           await Future.delayed(const Duration(milliseconds: 100));
-          bloc.add(PaymentReviewFinishPayment(
-              paymentUserInformation: FakePaymentUserInformation()));
+          bloc.add(const PaymentReviewFinishPayment());
         },
         setUp: () {
           when(
@@ -135,13 +150,14 @@ void main() {
                   topUpQuote: mockTopUpQuote),
             ),
           );
+          when(() => mockTurbo.paymentUserInformation).thenReturn(
+            mockPaymentUserInformation,
+          );
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
           when(
-            () => mockTurbo.confirmPayment(
-              userInformation: any(named: 'userInformation'),
-            ),
+            () => mockTurbo.confirmPayment(),
           ).thenAnswer(
             (invocation) => Future.value(
               PaymentStatus.success,
@@ -152,7 +168,7 @@ void main() {
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
         },
         expect: () => [
-          const PaymentReviewLoadingPaymentModel(),
+          isA<PaymentReviewLoadingPaymentModel>(),
           isA<PaymentReviewPaymentModelLoaded>(),
           isA<PaymentReviewLoading>(),
           isA<PaymentReviewPaymentSuccess>(),
@@ -165,8 +181,7 @@ void main() {
         act: (bloc) async {
           bloc.add(PaymentReviewLoadPaymentModel());
           await Future.delayed(const Duration(milliseconds: 100));
-          bloc.add(PaymentReviewFinishPayment(
-              paymentUserInformation: FakePaymentUserInformation()));
+          bloc.add(const PaymentReviewFinishPayment());
         },
         setUp: () {
           when(
@@ -181,20 +196,21 @@ void main() {
                   topUpQuote: mockTopUpQuote),
             ),
           );
+          when(() => mockTurbo.paymentUserInformation).thenReturn(
+            mockPaymentUserInformation,
+          );
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
           when(
-            () => mockTurbo.confirmPayment(
-              userInformation: any(named: 'userInformation'),
-            ),
+            () => mockTurbo.confirmPayment(),
           ).thenThrow(Exception());
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
         },
         expect: () => [
-          const PaymentReviewLoadingPaymentModel(),
+          isA<PaymentReviewLoadingPaymentModel>(),
           isA<PaymentReviewPaymentModelLoaded>(),
           isA<PaymentReviewLoading>(),
           isA<PaymentReviewPaymentError>(),
@@ -206,8 +222,7 @@ void main() {
         act: (bloc) async {
           bloc.add(PaymentReviewLoadPaymentModel());
           await Future.delayed(const Duration(milliseconds: 100));
-          bloc.add(PaymentReviewFinishPayment(
-              paymentUserInformation: FakePaymentUserInformation()));
+          bloc.add(const PaymentReviewFinishPayment());
         },
         setUp: () {
           when(
@@ -222,20 +237,21 @@ void main() {
                   topUpQuote: mockTopUpQuote),
             ),
           );
+          when(() => mockTurbo.paymentUserInformation).thenReturn(
+            mockPaymentUserInformation,
+          );
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
           when(
-            () => mockTurbo.confirmPayment(
-              userInformation: any(named: 'userInformation'),
-            ),
+            () => mockTurbo.confirmPayment(),
           ).thenAnswer((invocation) => Future.value(PaymentStatus.failed));
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
         },
         expect: () => [
-          const PaymentReviewLoadingPaymentModel(),
+          isA<PaymentReviewLoadingPaymentModel>(),
           isA<PaymentReviewPaymentModelLoaded>(),
           isA<PaymentReviewLoading>(),
           isA<PaymentReviewPaymentError>(),
@@ -247,8 +263,7 @@ void main() {
         act: (bloc) async {
           bloc.add(PaymentReviewLoadPaymentModel());
           await Future.delayed(const Duration(milliseconds: 100));
-          bloc.add(PaymentReviewFinishPayment(
-              paymentUserInformation: FakePaymentUserInformation()));
+          bloc.add(const PaymentReviewFinishPayment());
         },
         setUp: () {
           when(
@@ -263,13 +278,13 @@ void main() {
                   topUpQuote: mockTopUpQuote),
             ),
           );
-
+          when(() => mockTurbo.paymentUserInformation).thenReturn(
+            mockPaymentUserInformation,
+          );
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
           when(
-            () => mockTurbo.confirmPayment(
-              userInformation: any(named: 'userInformation'),
-            ),
+            () => mockTurbo.confirmPayment(),
           ).thenAnswer(
               (invocation) => Future.value(PaymentStatus.quoteExpired));
 
@@ -277,7 +292,7 @@ void main() {
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
         },
         expect: () => [
-          const PaymentReviewLoadingPaymentModel(),
+          isA<PaymentReviewLoadingPaymentModel>(),
           isA<PaymentReviewPaymentModelLoaded>(),
           isA<PaymentReviewLoading>(),
           isA<PaymentReviewPaymentError>(),
@@ -292,7 +307,10 @@ void main() {
             priceInCurrency: 100,
             credits: BigInt.from(100),
             estimatedStorage: 1);
-        paymentReviewBloc = PaymentReviewBloc(mockTurbo, mockPriceEstimate);
+        paymentReviewBloc = PaymentReviewBloc(
+          mockTurbo,
+          mockPriceEstimate,
+        );
       });
       blocTest<PaymentReviewBloc, PaymentReviewState>(
         'emits [PaymentReviewLoadingPaymentModel, PaymentReviewPaymentModelLoaded] when turbo returns a payment model',
@@ -311,9 +329,13 @@ void main() {
           ).thenAnswer(
             (invocation) => Future.value(
               PaymentModel(
-                  paymentSession: mockPaymentSession,
-                  topUpQuote: mockTopUpQuote),
+                paymentSession: mockPaymentSession,
+                topUpQuote: mockTopUpQuote,
+              ),
             ),
+          );
+          when(() => mockTurbo.paymentUserInformation).thenReturn(
+            mockPaymentUserInformation,
           );
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
@@ -353,6 +375,9 @@ void main() {
           bloc.add(PaymentReviewRefreshQuote());
         },
         setUp: () {
+          when(() => mockTurbo.paymentUserInformation).thenReturn(
+            mockPaymentUserInformation,
+          );
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
         },
@@ -366,6 +391,3 @@ void main() {
     });
   });
 }
-
-class FakePaymentUserInformation extends Fake
-    implements PaymentUserInformation {}
