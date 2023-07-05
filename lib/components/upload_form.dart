@@ -377,19 +377,22 @@ class _UploadFormState extends State<UploadForm> {
                                 children: [
                                   Flexible(
                                     child: Text(
-                                      file.entity.name!,
-                                      style: ArDriveTypography.body
-                                          .buttonNormalBold(),
+                                      '${file.entity.name!} ',
+                                      style: ArDriveTypography.body.smallBold(
+                                        color: ArDriveTheme.of(context)
+                                            .themeData
+                                            .colors
+                                            .themeFgSubtle,
+                                      ),
                                     ),
                                   ),
                                   Text(
                                     filesize(file.size),
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
+                                    style: ArDriveTypography.body.smallRegular(
                                       color: ArDriveTheme.of(context)
                                           .themeData
                                           .colors
-                                          .themeFgOnDisabled,
+                                          .themeFgSubtle,
                                     ),
                                   ),
                                 ],
