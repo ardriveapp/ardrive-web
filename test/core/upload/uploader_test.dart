@@ -287,6 +287,9 @@ void main() {
       ///
 
       group('testing free uploads logic', () {
+        setUp(() {
+          when(() => uploadPlan.fileV2UploadHandles).thenReturn({});
+        });
         test(
             'isFreeUploadPossibleUsingTurbo returns true when all file sizes are within turbo threshold',
             () async {
@@ -377,14 +380,16 @@ void main() {
           );
 
           expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
-          expect(result.isUploadEligibleToTurbo, isTrue);
+          expect(result.isUploadEligibleToTurbo, isFalse);
         });
       });
 
       /// Tests `isTurboAvailable`
       ///
       group('testing turbo eligibility', () {
-        setUp(() {});
+        setUp(() {
+          when(() => uploadPlan.fileV2UploadHandles).thenReturn({});
+        });
         test('isUploadEligibleToTurbo returns true when have bundles',
             () async {
           when(() => mockFile.size).thenReturn(503);
