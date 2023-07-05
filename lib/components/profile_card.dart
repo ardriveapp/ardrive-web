@@ -112,7 +112,7 @@ class _ProfileCardState extends State<ProfileCard> {
     BuildContext context,
     ProfileLoggedIn state,
     String walletAddress, {
-    bool isMobile = false,
+    required bool isMobile,
   }) {
     return ArDriveCard(
       contentPadding: const EdgeInsets.all(0),
