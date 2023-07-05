@@ -88,10 +88,10 @@ packages:
     description:
       path: "."
       ref: PE-3992-upload-with-credits
-      resolved-ref: "6c1b4a2d28442682e2b619f1707133c2c951ba66"
+      resolved-ref: de2625027fe2e813228bf767edde5e9d7ae34287
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.1.0"
+    version: "1.2.0"
   args:
     dependency: transitive
     description:
