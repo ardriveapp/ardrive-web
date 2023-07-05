@@ -769,6 +769,12 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                     key: state is PaymentFormQuoteLoaded
                         ? const ValueKey('reset_timer')
                         : null,
+                    textStyle: ArDriveTypography.body.captionBold(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDisabled,
+                    ),
                     durationInSeconds: state.quoteExpirationTimeInSeconds,
                     onFinished: () {
                       logger.d('fetching quote');

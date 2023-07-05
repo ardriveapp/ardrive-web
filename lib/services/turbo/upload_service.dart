@@ -1,24 +1,41 @@
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
+import 'package:uuid/uuid.dart';
 
-class UploadService {
+class TurboUploadService {
   final bool useTurboUpload = true;
   final Uri turboUploadUri;
   final int allowedDataItemSize;
   ArDriveHTTP httpClient;
 
-  UploadService({
+  TurboUploadService({
     required this.turboUploadUri,
     required this.allowedDataItemSize,
     required this.httpClient,
   });
 
-  Future<void> postDataItem({required DataItem dataItem}) async {
+  Future<void> postDataItem({
+    required DataItem dataItem,
+    required Wallet wallet,
+  }) async {
     final acceptedStatusCodes = [200, 202, 204];
+
+    final nonce = const Uuid().v4();
+    final publicKey = await wallet.getOwner();
+    final signature = await signNonceAndData(
+      nonce: nonce,
+      wallet: wallet,
+    );
 
     final response = await httpClient.postBytes(
       url: '$turboUploadUri/v1/tx',
+      headers: {
+        'x-nonce': nonce,
+        'x-signature': signature,
+        'x-public-key': publicKey,
+      },
       data: (await dataItem.asBinary()).toBytes(),
     );
     if (!acceptedStatusCodes.contains(response.statusCode)) {
@@ -30,12 +47,15 @@ class UploadService {
   }
 }
 
-class DontUseUploadService implements UploadService {
+class DontUseUploadService implements TurboUploadService {
   @override
   int get allowedDataItemSize => throw UnimplementedError();
 
   @override
-  Future<void> postDataItem({required DataItem dataItem}) {
+  Future<void> postDataItem({
+    required DataItem dataItem,
+    required Wallet wallet,
+  }) {
     throw UnimplementedError();
   }
 
