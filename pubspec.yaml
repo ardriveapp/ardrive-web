@@ -29,9 +29,10 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   ardrive_http:
-    git:
-      url: https://github.com/ar-io/ardrive_http.git
-      ref: fix-timeout-on-turbo
+    path: ../../ardrive_http
+    # git:
+    #   url: https://github.com/ar-io/ardrive_http.git
+    #   ref: fix-timeout-on-turbo
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git

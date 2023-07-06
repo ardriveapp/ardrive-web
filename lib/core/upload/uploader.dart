@@ -186,16 +186,16 @@ class TurboUploader implements Uploader<BundleUploadHandle> {
 
   @override
   Stream<double> upload(handle) async* {
-    yield 0;
-    handle.setUploadProgress(0);
-    await _turbo
-        .postDataItem(dataItem: handle.bundleDataItem, wallet: _wallet)
-        .onError((error, stackTrace) {
-      logger.e(error);
-      throw Exception();
-    });
-    handle.setUploadProgress(1);
-    yield 1;
+    await for (var progress in _turbo.postDataItemWithProgress(
+      dataItem: handle.bundleDataItem,
+      wallet: _wallet,
+    )) {
+      logger.i('Progress on TurboUploader: $progress');
+      handle.setUploadProgress(progress);
+      yield progress;
+    }
+
+    yield 1.0;
   }
 }
 

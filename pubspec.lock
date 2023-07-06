@@ -68,11 +68,9 @@ packages:
   ardrive_http:
     dependency: "direct main"
     description:
-      path: "."
-      ref: fix-timeout-on-turbo
-      resolved-ref: "5b259db31d51eb43ef0187d473bb3fb921601955"
-      url: "https://github.com/ar-io/ardrive_http.git"
-    source: git
+      path: "../../ardrive_http"
+      relative: true
+    source: path
     version: "1.2.5"
   ardrive_io:
     dependency: "direct main"
