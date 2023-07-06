@@ -232,6 +232,7 @@ class FileV2Uploader implements Uploader<FileV2UploadHandle> {
     yield* _arweave.transactions
         .upload(handle.dataTx, maxConcurrentUploadCount: 1)
         .map((upload) {
+      handle.uploadProgress = upload.progress;
       return upload.progress;
     });
   }
