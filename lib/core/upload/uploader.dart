@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/turbo/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -218,13 +219,18 @@ class ArweaveBundleUploader implements Uploader<BundleUploadHandle> {
 
 class FileV2Uploader implements Uploader<FileV2UploadHandle> {
   final Arweave _arweave;
+  final ArweaveService _arweaveService;
 
-  FileV2Uploader(this._arweave);
+  FileV2Uploader(this._arweave, this._arweaveService);
 
   @override
   Stream<double> upload(handle) async* {
+    await _arweaveService
+        .postTx(handle.entityTx)
+        .onError((error, stackTrace) => handle.hasError = true);
+
     yield* _arweave.transactions
-        .upload(handle.entityTx, maxConcurrentUploadCount: 1)
+        .upload(handle.dataTx, maxConcurrentUploadCount: 1)
         .map((upload) {
       return upload.progress;
     });
