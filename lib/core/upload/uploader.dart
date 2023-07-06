@@ -194,8 +194,6 @@ class TurboUploader implements Uploader<BundleUploadHandle> {
       handle.setUploadProgress(progress);
       yield progress;
     }
-
-    yield 1.0;
   }
 }
 

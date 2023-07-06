@@ -178,9 +178,9 @@ void main() {
     group('TurboUploader', () {
       test('upload correctly emits progress', () async {
         when(() => bundleHandle.bundleDataItem).thenReturn(DataItem());
-        when(() => turboUploadService.postDataItem(
+        when(() => turboUploadService.postDataItemWithProgress(
                 dataItem: any(named: 'dataItem'), wallet: any(named: 'wallet')))
-            .thenAnswer((_) async => 'mockTransactionId');
+            .thenAnswer((_) => Stream.fromIterable([0.0, 1.0]));
         await expectLater(
           turboUploader.upload(bundleHandle),
           emitsInOrder([0.0, 1.0, emitsDone]),

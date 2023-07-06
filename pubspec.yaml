@@ -29,10 +29,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   ardrive_http:
-    path: ../../ardrive_http
-    # git:
-    #   url: https://github.com/ar-io/ardrive_http.git
-    #   ref: fix-timeout-on-turbo
+    git:
+      url: https://github.com/ar-io/ardrive_http.git
+      ref: PE-4143-add-upload-progress-indicator-to-turbo-uploads
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git

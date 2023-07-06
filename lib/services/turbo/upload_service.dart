@@ -73,6 +73,8 @@ class TurboUploadService {
           onSendProgress(progress);
         }
       },
+      receiveTimeout: const Duration(days: 365),
+      sendTimeout: const Duration(days: 365),
       data: await convertToStream(dataItem),
     );
     if (!acceptedStatusCodes.contains(response.statusCode)) {
