@@ -651,7 +651,6 @@ class _UploadFormState extends State<UploadForm> {
               ),
             );
           } else if (state is UploadInProgress) {
-            // return SizedBox();
             final numberOfFilesInBundles =
                 state.uploadPlan.bundleUploadHandles.isNotEmpty
                     ? state.uploadPlan.bundleUploadHandles
@@ -666,8 +665,8 @@ class _UploadFormState extends State<UploadForm> {
             final files = [...v2Files, ...bundles];
 
             return ArDriveStandardModal(
-              title: appLocalizationsOf(context)
-                  .uploadingNFiles(numberOfFilesInBundles + numberOfV2Files),
+              title:
+                  '${appLocalizationsOf(context).uploadingNFiles(numberOfFilesInBundles + numberOfV2Files)} ${(state.progress * 100).toStringAsFixed(2)}%',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ConstrainedBox(

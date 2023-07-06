@@ -70,7 +70,7 @@ packages:
     description:
       path: "."
       ref: PE-4143-add-upload-progress-indicator-to-turbo-uploads
-      resolved-ref: "20032ccac31b5139a53cdb60152bfb3440565922"
+      resolved-ref: f9dc3dae733eb10d3ad3b79f69d4738e9912a60a
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.2.5"
