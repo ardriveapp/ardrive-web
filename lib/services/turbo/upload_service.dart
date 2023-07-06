@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:ardrive/utils/data_item_utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -75,7 +75,7 @@ class TurboUploadService {
       },
       receiveTimeout: const Duration(days: 365),
       sendTimeout: const Duration(days: 365),
-      data: await convertToStream(dataItem),
+      data: await convertDataItemToStreamBytes(dataItem),
     );
     if (!acceptedStatusCodes.contains(response.statusCode)) {
       logger.e(response.data);
@@ -84,17 +84,6 @@ class TurboUploadService {
       );
     }
   }
-}
-
-// Assuming dataItem.asBinary() returns a Future<BytesBuilder>
-Future<Stream<List<int>>> convertToStream(DataItem dataItem) async {
-  // Get the Uint8List
-  Uint8List byteList = (await dataItem.asBinary()).toBytes();
-
-  // Convert Uint8List to Stream<List<int>>
-  Stream<List<int>> stream = Stream.fromIterable([byteList]);
-
-  return stream;
 }
 
 class DontUseUploadService implements TurboUploadService {
