@@ -64,8 +64,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleEnterSeedPhrase(event, emit);
     } else if (event is AddWalletFromMnemonic) {
       await _handleAddWalletFromMnemonicEvent(event, emit);
-    } else if (event is CreateWallet) {
-      await _handleCreateWalletEvent(event, emit);
+    } else if (event is GenerateWallet) {
+      await _handleGenerateWalletEvent(event, emit);
     } else if (event is VerifyWalletMnemonic) {
       await _handleVerifyWalletMnemonicEvent(event, emit);
     } else if (event is CompleteWalletGeneration) {
@@ -331,32 +331,21 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleAddWalletFromMnemonicEvent(
       AddWalletFromMnemonic event, Emitter<LoginState> emit) async {
     final previousState = state;
+    profileType = ProfileType.json;
 
-    try {
-      emit(LoginLoading());
+    emit(LoginGenerateWallet(event.mnemonic));
 
-      profileType = ProfileType.json;
-
-      final wallet = await generateWalletFromMnemonic(event.mnemonic);
-
-      if (await _arDriveAuth.isExistingUser(wallet)) {
-        emit(PromptPassword(walletFile: wallet));
-      } else {
-        emit(LoginOnBoarding(wallet));
-      }
-    } catch (e) {
-      emit(LoginFailure(e));
-      emit(previousState);
-    }
+    final wallet = await generateWalletFromMnemonic(event.mnemonic);
+    emit(LoginDownloadGeneratedWallet(event.mnemonic, wallet));
   }
 
-  Future<void> _handleCreateWalletEvent(
-      CreateWallet event, Emitter<LoginState> emit) async {
+  Future<void> _handleGenerateWalletEvent(
+      GenerateWallet event, Emitter<LoginState> emit) async {
     final mnemonic = bip39.generateMnemonic();
-    emit(LoginCreateWallet(mnemonic));
+    emit(LoginGenerateWallet(mnemonic));
 
     final wallet = await generateWalletFromMnemonic(mnemonic);
-    emit(LoginCreateWalletGenerated(mnemonic, wallet));
+    emit(LoginDownloadGeneratedWallet(mnemonic, wallet));
   }
 
   Future<void> _handleVerifyWalletMnemonicEvent(

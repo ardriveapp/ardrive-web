@@ -91,8 +91,8 @@ class AddWalletFromMnemonic extends LoginEvent {
   List<Object> get props => [mnemonic];
 }
 
-class CreateWallet extends LoginEvent {
-  const CreateWallet();
+class GenerateWallet extends LoginEvent {
+  const GenerateWallet();
 }
 
 class ConfirmWalletMnemonic extends LoginEvent {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:animations/animations.dart';
@@ -238,6 +239,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       builder: (context, state) {
         late Widget content;
 
+        // content = DownloadWalletView(mnemonic: 'test', wallet: null);
+
         if (state is PromptPassword) {
           content = PromptPasswordView(
             wallet: state.walletFile,
@@ -256,11 +259,11 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           );
         } else if (enableSeedPhraseLogin && state is LoginEnterSeedPhrase) {
           content = const EnterSeedPhraseView();
-        } else if (enableSeedPhraseLogin && state is LoginCreateWallet) {
-          content = CreateWalletView(mnemonic: state.mnemonic);
+        } else if (enableSeedPhraseLogin && state is LoginGenerateWallet) {
+          content = GenerateWalletView(mnemonic: state.mnemonic);
         } else if (enableSeedPhraseLogin &&
-            state is LoginCreateWalletGenerated) {
-          content = CreateWalletView(
+            state is LoginDownloadGeneratedWallet) {
+          content = DownloadWalletView(
               mnemonic: state.mnemonic, wallet: state.walletFile);
         } else if (enableSeedPhraseLogin && state is LoginConfirmMnemonic) {
           content = MemoryCheckView(
@@ -347,21 +350,38 @@ class _PromptWalletViewState extends State<PromptWalletView> {
             Align(
               alignment: Alignment.topCenter,
               child: Text(
-                appLocalizationsOf(context).welcome,
+                appLocalizationsOf(context).login,
                 style: ArDriveTypography.headline.headline4Regular(),
               ),
             ),
             heightSpacing(),
             Column(
               children: [
+                if (context
+                    .read<ConfigService>()
+                    .config
+                    .enableSeedPhraseLogin) ...[
+                  ArDriveButton(
+                    key: const Key('loginWithSeedPhraseButton'),
+                    text: "Enter Seed Phrase",
+                    onPressed: () {
+                      context.read<LoginBloc>().add(EnterSeedPhrase());
+                    },
+                    style: ArDriveButtonStyle.secondary,
+                    fontStyle: ArDriveTypography.body
+                        .smallBold700(color: Colors.white),
+                    maxWidth: double.maxFinite,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 ArDriveDropAreaSingleInput(
                   controller: _dropAreaController,
                   keepButtonVisible: true,
                   width: double.maxFinite,
-                  dragAndDropDescription:
-                      appLocalizationsOf(context).dragAndDropDescription,
-                  dragAndDropButtonTitle:
-                      appLocalizationsOf(context).dragAndDropButtonTitle,
+                  dragAndDropDescription: "Select a KeyFile",
+                  // dragAndDropButtonTitle:
+                  //     appLocalizationsOf(context).dragAndDropButtonTitle,
+                  dragAndDropButtonTitle: "Select a KeyFile",
                   errorDescription: appLocalizationsOf(context).invalidKeyFile,
                   validateFile: (file) async {
                     final wallet = await context
@@ -372,7 +392,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   },
                   platformSupportsDragAndDrop: !AppPlatform.isMobile,
                 ),
-                heightSpacing(),
+                const SizedBox(height: 24),
                 ArDriveOverlay(
                   visible: _showSecurityOverlay,
                   content: ArDriveCard(
@@ -437,76 +457,75 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       hoverScale: 1,
                       child: Text(
                           appLocalizationsOf(context).howDoesKeyfileLoginWork,
-                          style: ArDriveTypography.body.smallBold()),
+                          style: ArDriveTypography.body.smallBold().copyWith(
+                                decoration: TextDecoration.underline,
+                                fontSize: 14,
+                                height: 1.5,
+                              )),
                     ),
                   ),
                 ),
-                if (context
-                    .read<ConfigService>()
-                    .config
-                    .enableSeedPhraseLogin) ...[
-                  heightSpacing(),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                            text: 'Login with your ',
-                            style: ArDriveTypography.body.smallBold(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgMuted,
-                            )),
-                        TextSpan(
-                          text: 'Seed Phrase',
-                          style: ArDriveTypography.body.smallBold().copyWith(
-                                decoration: TextDecoration.underline,
-                              ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              context.read<LoginBloc>().add(EnterSeedPhrase());
-                              // openUrl(url: Resources.getWalletLink);
-                            },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
                 if (widget.isArConnectAvailable) ...[
-                  heightSpacing(),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      appLocalizationsOf(context).orContinueWith,
-                      style: ArDriveTypography.body.smallRegular(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgMuted),
-                    ),
+                  const SizedBox(height: 40),
+                  Row(
+                    children: [
+                      Expanded(
+                          child: Container(
+                        decoration: const ShapeDecoration(
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                              width: 0.50,
+                              strokeAlign: BorderSide.strokeAlignCenter,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                        ),
+                      )),
+                      Padding(
+                          padding: const EdgeInsets.only(left: 25, right: 25),
+                          child: Text(
+                            'OR',
+                            textAlign: TextAlign.center,
+                            style: ArDriveTypography.body
+                                .smallBold(color: Color(0xFF9E9E9E)),
+                          )),
+                      Expanded(
+                          child: Container(
+                        decoration: const ShapeDecoration(
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                              width: 0.50,
+                              strokeAlign: BorderSide.strokeAlignCenter,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                        ),
+                      )),
+                    ],
                   ),
                   Row(
                     children: [
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.only(top: 16),
+                          padding: const EdgeInsets.only(top: 40),
                           child: ArDriveButton(
                             icon: Padding(
-                              padding: const EdgeInsets.only(right: 20),
-                              child: ArDriveIcons.arconnectIcon1(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: ArDriveIcons.arconnectIcon1(
+                                  color: Colors.white,
+                                )),
+                            style: ArDriveButtonStyle.secondary,
+                            fontStyle: ArDriveTypography.body.smallBold700(
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
-                                    .themeFgDefault,
-                              ),
-                            ),
-                            style: ArDriveButtonStyle.secondary,
+                                    .themeFgDefault),
                             onPressed: () {
                               context
                                   .read<LoginBloc>()
                                   .add(const AddWalletFromArConnect());
                             },
-                            text: 'ArConnect',
+                            text: 'Login with ArConnect',
                           ),
                         ),
                       ),
@@ -514,7 +533,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   ),
                 ],
                 const SizedBox(
-                  height: 24,
+                  height: 72,
                 ),
               ],
             ),
@@ -522,7 +541,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               TextSpan(
                 children: [
                   TextSpan(
-                      text: appLocalizationsOf(context).dontHaveAWallet1Part,
+                      // text: appLocalizationsOf(context).dontHaveAWallet1Part,
+                      text: "New User? Get started ",
                       style: ArDriveTypography.body.smallBold(
                         color: ArDriveTheme.of(context)
                             .themeData
@@ -536,7 +556,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () {
-                        context.read<LoginBloc>().add(CreateWallet());
+                        context.read<LoginBloc>().add(GenerateWallet());
                         // openUrl(url: Resources.getWalletLink);
                       },
                   ),
@@ -1314,7 +1334,7 @@ class EnterSeedPhraseView extends StatefulWidget {
 }
 
 class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
-  final _seedPhraseController = TextEditingController();
+  final _seedPhraseController = ArDriveMultlineObscureTextController();
   final _formKey = GlobalKey<ArDriveFormState>();
 
   bool _seedPhraseFormatIsValid = false;
@@ -1342,13 +1362,21 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
                   height: 50,
                 ),
               ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: Text(
+                  'Enter Seed Phrase',
+                  style: ArDriveTypography.headline.headline4Regular(),
+                ),
+              ),
+              const SizedBox(height: 8),
               Text(
                 // appLocalizationsOf(context).createAndConfirmPassword,
-                'Enter your 12-word mnemonic seed phrase to login.',
+                'Please enter your 12 word seed phrase and separate each word with a space.',
                 textAlign: TextAlign.center,
-                style: ArDriveTypography.headline.headline5Regular(),
+                style: ArDriveTypography.body.smallBold(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 50),
               _createSeedPhraseForm(),
             ],
           ),
@@ -1362,6 +1390,14 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
       key: _formKey,
       child: Column(
         children: [
+          Align(
+              alignment: Alignment.topLeft,
+              child: Text(
+                "Seed Phrase",
+                style:
+                    ArDriveTypography.body.smallBold().copyWith(fontSize: 14),
+              )),
+          const SizedBox(height: 8),
           ArDriveTextField(
             autofocus: true,
             controller: _seedPhraseController,
@@ -1374,6 +1410,8 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
               _formKey.currentState?.validate();
             },
             textInputAction: TextInputAction.next,
+            minLines: 3,
+            maxLines: 3,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 setState(() {
@@ -1402,26 +1440,38 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
             child: ArDriveButton(
               isDisabled: !_seedPhraseFormatIsValid,
               onPressed: _onSubmit,
-              text: appLocalizationsOf(context).proceed,
+              // text: appLocalizationsOf(context).proceed,
+              text: 'Continue',
+              fontStyle:
+                  ArDriveTypography.body.smallBold700(color: Colors.white),
             ),
           ),
+          const SizedBox(height: 56),
           Align(
-            alignment: Alignment.bottomCenter,
-            child: ArDriveButton(
-              onPressed: () {
-                _forgetWallet(context);
-              },
-              style: ArDriveButtonStyle.tertiary,
-              text: appLocalizationsOf(context).forgetWallet,
-            ),
-          ),
+              alignment: Alignment.bottomLeft,
+              child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {
+                      _forgetWallet(context);
+                    },
+                    child: Row(children: [
+                      ArDriveIcons.carretLeft(
+                          size: 16,
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault),
+                      Text(appLocalizationsOf(context).back),
+                    ]),
+                  ))),
         ],
       ),
     );
   }
 
-  void _onSubmit() {
-    final isValid = _formKey.currentState!.validate();
+  void _onSubmit() async {
+    final isValid = await _formKey.currentState!.validate();
 
     if (!isValid) {
       showAnimatedDialog(context,
@@ -1450,17 +1500,46 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
   }
 }
 
-class CreateWalletView extends StatefulWidget {
-  const CreateWalletView({super.key, required this.mnemonic, this.wallet});
+class GenerateWalletView extends StatefulWidget {
+  const GenerateWalletView({super.key, required this.mnemonic, this.wallet});
 
   final String mnemonic;
   final Wallet? wallet;
 
   @override
-  State<CreateWalletView> createState() => _CreateWalletViewState();
+  State<GenerateWalletView> createState() => _GenerateWalletViewState();
 }
 
-class _CreateWalletViewState extends State<CreateWalletView> {
+class _GenerateWalletViewState extends State<GenerateWalletView> {
+  late Timer _periodicTimer;
+  int _index = 0;
+  final _messages = [
+    'ArDrive helps you upload your data to the permaweb and keep it safe for generations to come!',
+    'With Turbo you can pay with a credit card and increase the reliability of your uploads!',
+    'You can download a copy of your keyfile from the Profile menu.',
+    'If you have large drives, you can take a Snapshot to speed up the syncing time.'
+  ];
+  late String _message;
+
+  @override
+  void initState() {
+    super.initState();
+    _message = 'Did you know?\n\n${_messages[0]}';
+
+    _periodicTimer = Timer.periodic(Duration(seconds: 7), (Timer t) {
+      setState(() {
+        _index = (_index + 1) % _messages.length;
+        _message = 'Did you know?\n\n${_messages[_index]}';
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _periodicTimer.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
@@ -1479,40 +1558,196 @@ class _CreateWalletViewState extends State<CreateWalletView> {
                   height: 50,
                 ),
               ),
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
               Text(
-                // appLocalizationsOf(context).createAndConfirmPassword,
-                'Record your 12-word mnemonic wallet seed phrase.',
+                'Generating Wallet...',
                 textAlign: TextAlign.center,
-                style: ArDriveTypography.headline.headline5Regular(),
+                style: ArDriveTypography.headline
+                    .headline4Regular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgMuted)
+                    .copyWith(fontSize: 32),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                  enabled: false,
-                  controller: TextEditingController(text: widget.mnemonic),
-                  maxLines: 3),
-              const SizedBox(height: 16),
-              ArDriveButton(
-                style: ArDriveButtonStyle.secondary,
-                isDisabled: widget.wallet == null,
-                onPressed: () {
-                  _onDownload();
-                },
-                // FIXME - localize
-                text: widget.wallet == null
-                    ? 'Generating Wallet...'
-                    : 'Download Wallet File',
-                icon:
-                    widget.wallet == null ? CircularProgressIndicator() : null,
+              const SizedBox(height: 74),
+              // Did you Know box
+              Container(
+                width: 227,
+                height: 150,
+                child: Text(
+                  _message,
+                  textAlign: TextAlign.right,
+                  style: ArDriveTypography.body.smallBold700(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgMuted),
+                ),
               ),
-              const SizedBox(height: 16),
-              ArDriveButton(
-                isDisabled: widget.wallet == null,
-                onPressed: () {
-                  context.read<LoginBloc>().add(
-                      VerifyWalletMnemonic(widget.mnemonic, widget.wallet!));
-                },
-                text: appLocalizationsOf(context).proceed,
+              const SizedBox(height: 79),
+              // Info Box
+              Container(
+                  decoration: BoxDecoration(
+                      border: Border.all(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeBorderDefault,
+                          width: 1),
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeBgSurface,
+                      borderRadius: BorderRadius.circular(6)),
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      ArDriveIcons.info(
+                          size: 24,
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgSubtle),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                            'Nobody (including the ArDrive core team) can help you recover your wallet if the keyfile is lost. So, remember to keep it safe!',
+                            style: ArDriveTypography.body.buttonNormalBold(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgSubtle)),
+                      ),
+                    ],
+                  ))
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class DownloadWalletView extends StatefulWidget {
+  const DownloadWalletView(
+      {super.key, required this.mnemonic, required this.wallet});
+
+  final String mnemonic;
+  final Wallet wallet;
+
+  @override
+  State<DownloadWalletView> createState() => _DownloadWalletViewState();
+}
+
+class _DownloadWalletViewState extends State<DownloadWalletView> {
+  @override
+  Widget build(BuildContext context) {
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxHeight: 798,
+      maxHeightPercent: 1,
+      child: _LoginCard(
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ScreenTypeLayout(
+                desktop: const SizedBox.shrink(),
+                mobile: ArDriveImage(
+                  image: AssetImage(Resources.images.brand.logo1),
+                  height: 50,
+                ),
               ),
+              ArDriveIcons.checkmark(
+                  size: 32,
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeSuccessDefault),
+              const SizedBox(height: 16),
+              Text(
+                'Wallet Created',
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.headline
+                    .headline4Regular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgMuted)
+                    .copyWith(fontSize: 32),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Download your keyfile. You can also find it under the profile menu.',
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.body.smallBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgSubtle),
+              ),
+              const SizedBox(height: 56),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                    onTap: () {
+                      _onDownload();
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeBorderDefault,
+                              width: 1),
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeBgSurface),
+                      padding: const EdgeInsets.all(6),
+                      child: Container(
+                          width: double.maxFinite,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(3),
+                              // border: Border.all(color: ArDriveTheme.of(context).themeData.colors.themeBorderDefault, width: 1),
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeBgSubtle),
+                          padding: const EdgeInsets.all(44),
+                          child: Column(
+                            children: [
+                              ArDriveIcons.download(size: 40),
+                              const SizedBox(height: 4),
+                              Text('Download Keyfile',
+                                  style: ArDriveTypography.body.smallBold700(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault))
+                            ],
+                          )),
+                    )),
+              ),
+              const SizedBox(height: 56),
+              SizedBox(
+                width: double.infinity,
+                child: ArDriveButton(
+                  onPressed: () {
+                    context
+                        .read<LoginBloc>()
+                        .add(CompleteWalletGeneration(widget.wallet));
+                  },
+                  // text: appLocalizationsOf(context).proceed,
+                  text: 'Continue',
+                  fontStyle:
+                      ArDriveTypography.body.smallBold700(color: Colors.white),
+                ),
+              )
             ],
           ),
         ),
