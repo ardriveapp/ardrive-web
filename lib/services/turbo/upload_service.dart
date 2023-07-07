@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -60,7 +61,8 @@ class TurboUploadService {
     final uploadSpeed = dataSize / elapsedSeconds;
 
     logger.d('Total time elapsed: $elapsedSeconds seconds');
-    logger.d('Average upload speed: $uploadSpeed bytes/sec');
+    logger  
+        .d('Average upload speed: ${filesize(uploadSpeed.toInt())} bytes/sec');
   }
 }
 
