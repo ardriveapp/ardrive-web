@@ -1,6 +1,7 @@
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
@@ -54,6 +55,8 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
 
   initializeStripe(context.read<ConfigService>().config);
 
+  context.read<ActivityTracker>().setToppingUp(true);
+
   showAnimatedDialogWithBuilder(
     context,
     builder: (modalContext) => MultiBlocProvider(
@@ -81,6 +84,8 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
     if (turbo.paymentStatus == PaymentStatus.success) {
       onSuccess?.call();
     }
+
+    context.read<ActivityTracker>().setToppingUp(false);
 
     turbo.dispose();
   });
