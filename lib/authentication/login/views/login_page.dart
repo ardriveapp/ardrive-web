@@ -2035,6 +2035,12 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     var radius = const Radius.circular(4);
     var colors = ArDriveTheme.of(context).themeData.colors;
     var selected = wordOption.word.isNotEmpty;
+
+    var currentWordToCheckIndex =
+        _wordsToCheck.indexWhere((e) => e.word.isEmpty);
+    var showCursor = (currentWordToCheckIndex >= 0 &&
+        wordOption == _wordsToCheck[currentWordToCheckIndex]);
+
     var borderColor = selected ? colors.themeFgDefault : colors.themeBgCanvas;
     var numberColor = selected ? colors.themeBgSurface : colors.themeFgDefault;
 
@@ -2053,21 +2059,44 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                     child: Text('${wordOption.index + 1}',
                         style: ArDriveTypography.body
                             .smallBold700(color: numberColor)))),
-            Container(
-                width: 174 - 22,
-                height: 43,
-                decoration: BoxDecoration(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeBgSurface,
-                    borderRadius: BorderRadius.only(
-                        topRight: radius, bottomRight: radius)),
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.only(left: 16),
-                child: Text(wordOption.word,
-                    style: ArDriveTypography.body
-                        .smallBold700(color: colors.themeFgDefault)))
+            Stack(
+                alignment:
+                    showCursor ? Alignment.centerLeft : Alignment.centerRight,
+                children: [
+                  Container(
+                      width: 174 - 22,
+                      height: 43,
+                      decoration: BoxDecoration(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeBgSurface,
+                          borderRadius: BorderRadius.only(
+                              topRight: radius, bottomRight: radius)),
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Text(showCursor ? "|" : wordOption.word,
+                          style: ArDriveTypography.body
+                              .smallBold700(color: colors.themeFgDefault))),
+                  if (wordOption.word.isNotEmpty)
+                    Container(
+                        child: IconButton.filled(
+                            onPressed: () {
+                              setState(() {
+                                _wordOptions.forEach((element) {
+                                  if (element.word == wordOption.word) {
+                                    element.index = -1;
+                                  }
+                                });
+                                wordOption.word = '';
+                              });
+                            },
+                            icon: Icon(
+                              Icons.highlight_off,
+                              size: 16,
+                              color: colors.themeFgDefault,
+                            ))),
+                ])
           ],
         ));
   }
