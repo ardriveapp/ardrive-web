@@ -187,8 +187,8 @@ class SyncCubit extends Cubit<SyncState> {
   var ghostFolders = <FolderID, GhostFolder>{};
 
   Future<void> startSync({bool syncDeep = false}) async {
-    if (_activityTracker.isToppingUp) {
-      logger.i('Activity tracker is topping up, aborting sync...');
+    if (!_activityTracker.isSyncAllowed) {
+      logger.i('Activity tracker is not allowing sync');
       return;
     }
 
