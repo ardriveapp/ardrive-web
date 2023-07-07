@@ -17,6 +17,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/size_utils.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/foundation.dart';
 import 'package:tuple/tuple.dart';
 
 class ArDriveUploader {
@@ -67,6 +68,10 @@ class ArDriveUploader {
     for (final bundleHandle in bundleHandles) {
       await _prepareBundle(bundleHandle);
 
+      final stopwatch = Stopwatch()..start();
+
+      final dataSize = bundleHandle.size;
+
       await for (var progress in _uploadItem(
         index: index++,
         itemHandle: bundleHandle,
@@ -79,6 +84,13 @@ class ArDriveUploader {
         progresses[progress.item1] = progress.item2;
         yield progresses.reduce((a, b) => a + b) / progresses.length;
       }
+
+      stopwatch.stop();
+      final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
+      final uploadSpeed = dataSize / elapsedSeconds;
+
+      debugPrint('Total time elapsed: $elapsedSeconds seconds');
+      debugPrint('Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
     }
 
     for (final fileV2Handle in fileV2Handles) {
@@ -105,9 +117,8 @@ class ArDriveUploader {
       final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
       final uploadSpeed = dataSize / elapsedSeconds;
 
-      logger.d('Total time elapsed: $elapsedSeconds seconds');
-      logger.d(
-          'Average upload speed: ${filesize(uploadSpeed.toInt())} bytes/sec');
+      debugPrint('Total time elapsed: $elapsedSeconds seconds');
+      debugPrint('Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
     }
   }
 

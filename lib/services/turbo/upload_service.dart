@@ -1,4 +1,3 @@
-import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -56,13 +55,6 @@ class TurboUploadService {
         'Turbo upload failed with status code ${response.statusCode}',
       );
     }
-
-    final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
-    final uploadSpeed = dataSize / elapsedSeconds;
-
-    logger.d('Total time elapsed: $elapsedSeconds seconds');
-    logger  
-        .d('Average upload speed: ${filesize(uploadSpeed.toInt())} bytes/sec');
   }
 }
 
