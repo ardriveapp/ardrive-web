@@ -12,6 +12,7 @@ import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/turbo/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/size_utils.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -81,7 +82,12 @@ class ArDriveUploader {
     }
 
     for (final fileV2Handle in fileV2Handles) {
+      logger.i('Uploading fileV2Handle: ${fileV2Handle.toString()}');
       await _prepareFile(fileV2Handle);
+
+      final stopwatch = Stopwatch()..start();
+
+      final dataSize = fileV2Handle.size;
 
       await for (var progress in _uploadItem(
         index: index++,
@@ -94,6 +100,14 @@ class ArDriveUploader {
         progresses[progress.item1] = progress.item2;
         yield progresses.reduce((a, b) => a + b) / progresses.length;
       }
+
+      stopwatch.stop();
+      final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
+      final uploadSpeed = dataSize / elapsedSeconds;
+
+      logger.d('Total time elapsed: $elapsedSeconds seconds');
+      logger.d(
+          'Average upload speed: ${filesize(uploadSpeed.toInt())} bytes/sec');
     }
   }
 
