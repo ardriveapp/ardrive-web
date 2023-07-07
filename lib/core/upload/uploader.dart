@@ -64,10 +64,11 @@ class ArDriveUploader {
     int index = 0;
 
     for (final bundleHandle in bundleHandles) {
+      await _prepareBundle(bundleHandle);
+
       await for (var progress in _uploadItem(
         index: index++,
         itemHandle: bundleHandle,
-        prepare: _prepareBundle,
         upload: _bundleUploader.upload,
         onFinishUpload: _onFinishBundleUpload,
         onUploadError: _onUploadBundleError,
@@ -80,10 +81,11 @@ class ArDriveUploader {
     }
 
     for (final fileV2Handle in fileV2Handles) {
+      await _prepareFile(fileV2Handle);
+
       await for (var progress in _uploadItem(
         index: index++,
         itemHandle: fileV2Handle,
-        prepare: _prepareFile,
         upload: _fileV2Uploader.upload,
         onFinishUpload: _onFinishFileUpload,
         onUploadError: _onUploadFileError,
@@ -98,40 +100,31 @@ class ArDriveUploader {
   Stream<Tuple2<int, double>> _uploadItem<T>({
     required T itemHandle,
     required int index,
-    required Future<void> Function(T handle) prepare,
     required Stream<double> Function(T handle) upload,
     required Future<void> Function(T handle) onFinishUpload,
     required Future<void> Function(T handle, Object error) onUploadError,
     required void Function(T handle) dispose,
   }) async* {
     try {
-      final itemString = itemHandle.toString();
-
-      logger.i('Preparing $itemString');
-
-      await prepare(itemHandle);
-
       bool hasError = false;
 
       await for (var progress in upload(itemHandle).handleError((e, s) {
-        logger.e('Handling error on ArDriveUploader with $itemString', e, s);
+        logger.e('Handling error on ArDriveUploader', e, s);
         hasError = true;
       })) {
         yield Tuple2(index, progress);
       }
 
       if (hasError) {
-        logger.d(
-            'Error in ${itemString.toString()} upload, breaking upload for $itemString');
-        logger.i('Disposing ${itemString.toString()}');
+        logger.d('Error uploading. Breaking upload');
 
         dispose(itemHandle);
 
         throw Exception();
       }
 
-      logger.i('Finished uploading $itemString');
-      logger.i('Disposing $itemString');
+      logger.i('Finished uploading item handle');
+      logger.i('Disposing item handle');
 
       onFinishUpload(itemHandle).then((value) => dispose(itemHandle));
     } catch (e, stacktrace) {

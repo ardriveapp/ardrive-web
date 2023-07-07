@@ -29,6 +29,14 @@ class TurboUploadService {
       wallet: wallet,
     );
 
+    final data = (await dataItem.asBinary()).toBytes();
+    final dataSize = data.length;
+
+    logger.d('Uploading data item to turbo');
+    logger.d('Data item size: ${dataSize} bytes');
+
+    final stopwatch = Stopwatch()..start();
+
     final response = await httpClient.postBytes(
       url: '$turboUploadUri/v1/tx',
       headers: {
@@ -36,14 +44,23 @@ class TurboUploadService {
         'x-signature': signature,
         'x-public-key': publicKey,
       },
-      data: (await dataItem.asBinary()).toBytes(),
+      data: data,
     );
+
+    stopwatch.stop();
+
     if (!acceptedStatusCodes.contains(response.statusCode)) {
       logger.e(response.data);
       throw Exception(
         'Turbo upload failed with status code ${response.statusCode}',
       );
     }
+
+    final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
+    final uploadSpeed = dataSize / elapsedSeconds;
+
+    logger.d('Total time elapsed: $elapsedSeconds seconds');
+    logger.d('Average upload speed: $uploadSpeed bytes/sec');
   }
 }
 
