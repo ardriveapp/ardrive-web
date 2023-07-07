@@ -57,6 +57,11 @@ class LoginDownloadGeneratedWallet extends LoginState {
   final Wallet walletFile;
 }
 
+class LoginCreateNewWallet extends LoginState {
+  const LoginCreateNewWallet(this.mnemonic);
+  final String mnemonic;
+}
+
 class LoginConfirmMnemonic extends LoginState {
   const LoginConfirmMnemonic(this.mnemonic, this.walletFile);
   final String mnemonic;
