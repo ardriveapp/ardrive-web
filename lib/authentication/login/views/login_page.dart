@@ -2034,15 +2034,15 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   Widget _buildWordToCheck(WordOption wordOption) {
     var radius = const Radius.circular(4);
     var colors = ArDriveTheme.of(context).themeData.colors;
-    var selected = wordOption.word.isNotEmpty;
 
     var currentWordToCheckIndex =
         _wordsToCheck.indexWhere((e) => e.word.isEmpty);
     var showCursor = (currentWordToCheckIndex >= 0 &&
         wordOption == _wordsToCheck[currentWordToCheckIndex]);
 
-    var borderColor = selected ? colors.themeFgDefault : colors.themeBgCanvas;
-    var numberColor = selected ? colors.themeBgSurface : colors.themeFgDefault;
+    var borderColor = showCursor ? colors.themeFgDefault : colors.themeBgCanvas;
+    var numberColor =
+        showCursor ? colors.themeBgSurface : colors.themeFgDefault;
 
     return Container(
         width: 176,
