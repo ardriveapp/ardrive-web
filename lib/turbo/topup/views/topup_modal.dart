@@ -1,6 +1,7 @@
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
+import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
@@ -54,36 +55,39 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
 
   initializeStripe(context.read<ConfigService>().config);
 
-  showAnimatedDialogWithBuilder(
+  showModalDialog(
     context,
-    builder: (modalContext) => MultiBlocProvider(
-      providers: [
-        RepositoryProvider<Turbo>(create: (context) => turbo),
-        BlocProvider(
-          create: (context) => TurboTopupFlowBloc(
-            context.read<Turbo>(),
-          )..add(const TurboTopUpShowEstimationView()),
-        ),
-        BlocProvider(
-          create: (context) => TurboTopUpEstimationBloc(
-            turbo: context.read<Turbo>(),
-          )..add(LoadInitialData()),
-        ),
-      ],
-      child: TurboModal(parentContext: modalContext),
-    ),
-    barrierDismissible: false,
-    barrierColor:
-        ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
-  ).then((value) {
-    logger.d('Turbo modal closed with value: ${turbo.paymentStatus}');
+    () async => await showAnimatedDialogWithBuilder(
+      context,
+      builder: (modalContext) => MultiBlocProvider(
+        providers: [
+          RepositoryProvider<Turbo>(create: (context) => turbo),
+          BlocProvider(
+            create: (context) => TurboTopupFlowBloc(
+              context.read<Turbo>(),
+            )..add(const TurboTopUpShowEstimationView()),
+          ),
+          BlocProvider(
+            create: (context) => TurboTopUpEstimationBloc(
+              turbo: context.read<Turbo>(),
+            )..add(LoadInitialData()),
+          ),
+        ],
+        child: TurboModal(parentContext: modalContext),
+      ),
+      barrierDismissible: false,
+      barrierColor:
+          ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
+    ).then((value) {
+      logger.d('Turbo modal closed with value: ${turbo.paymentStatus}');
 
-    if (turbo.paymentStatus == PaymentStatus.success) {
-      onSuccess?.call();
-    }
+      if (turbo.paymentStatus == PaymentStatus.success) {
+        onSuccess?.call();
+      }
 
-    turbo.dispose();
-  });
+      turbo.dispose();
+    }),
+  );
 }
 
 class TurboModal extends StatefulWidget {
