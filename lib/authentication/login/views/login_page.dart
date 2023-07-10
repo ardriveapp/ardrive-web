@@ -59,9 +59,6 @@ class _LoginPageState extends State<LoginPage> {
           } else {
             view = const LoginPageScaffold();
           }
-          // Widget view = CreateNewWalletView(
-          //     mnemonic:
-          //         "child collect expose tunnel youth response idle suspect accuse drink clip athlete");
 
           return _FadeThroughTransitionSwitcher(
             fillColor: Colors.transparent,
@@ -250,8 +247,6 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       builder: (context, state) {
         late Widget content;
 
-        // content = DownloadWalletView(mnemonic: 'test', wallet: null);
-
         if (state is PromptPassword) {
           content = PromptPasswordView(
             wallet: state.walletFile,
@@ -282,6 +277,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
           );
         }
+
+        // content = GenerateWalletView(mnemonic: "test");
 
         return SizedBox(
           height: MediaQuery.of(context).size.height,
@@ -1549,6 +1546,8 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
 
   @override
   Widget build(BuildContext context) {
+    var colors = ArDriveTheme.of(context).themeData.colors;
+
     return MaxDeviceSizesConstrainedBox(
       defaultMaxHeight: 798,
       maxHeightPercent: 1,
@@ -1558,74 +1557,57 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ScreenTypeLayout(
-                desktop: const SizedBox.shrink(),
-                mobile: ArDriveImage(
-                  image: AssetImage(Resources.images.brand.logo1),
-                  height: 50,
-                ),
-              ),
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
               Text(
                 'Generating Wallet...',
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.headline
-                    .headline4Regular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgMuted)
+                    .headline4Regular(color: colors.themeFgMuted)
                     .copyWith(fontSize: 32),
               ),
               const SizedBox(height: 74),
               // Did you Know box
-              Container(
-                width: 227,
-                height: 150,
-                child: Text(
-                  _message,
-                  textAlign: TextAlign.right,
-                  style: ArDriveTypography.body.smallBold700(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgMuted),
-                ),
+              Stack(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.only(right: 16),
+                    width: 227,
+                    height: 150,
+                    child: Text(
+                      _message,
+                      textAlign: TextAlign.right,
+                      style: ArDriveTypography.body
+                          .smallBold700(color: colors.themeFgMuted),
+                    ),
+                  ),
+                  Container(
+                      margin: const EdgeInsets.fromLTRB(239, 5, 0, 0),
+                      width: 5,
+                      height: 20,
+                      child: CustomPaint(
+                        painter: AccentPainter(lineHeight: 173),
+                      )),
+                ],
               ),
               const SizedBox(height: 79),
               // Info Box
               Container(
                   decoration: BoxDecoration(
                       border: Border.all(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeBorderDefault,
-                          width: 1),
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeBgSurface,
+                          color: colors.themeBorderDefault, width: 1),
+                      color: colors.themeBgSurface,
                       borderRadius: BorderRadius.circular(6)),
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      ArDriveIcons.info(
-                          size: 24,
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgSubtle),
+                      ArDriveIcons.info(size: 24, color: colors.themeFgSubtle),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Text(
                             'Nobody (including the ArDrive core team) can help you recover your wallet if the keyfile is lost. So, remember to keep it safe!',
-                            style: ArDriveTypography.body.buttonNormalBold(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgSubtle)),
+                            style: ArDriveTypography.body
+                                .buttonNormalBold(color: colors.themeFgSubtle)),
                       ),
                     ],
                   ))
@@ -1774,13 +1756,17 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
 }
 
 class AccentPainter extends CustomPainter {
+  double lineHeight;
+
+  AccentPainter({required this.lineHeight});
+
   @override
   void paint(Canvas canvas, Size size) {
     var paint = Paint()
       ..color = Colors.red.shade500
       ..style = PaintingStyle.fill;
     canvas.drawCircle(const Offset(3, 8), 2.5, paint);
-    var rect = const Rect.fromLTWH(2.5, 8, 1, 83);
+    var rect = Rect.fromLTWH(2.5, 8, 1, lineHeight);
     paint = Paint()
       ..shader = LinearGradient(
           begin: Alignment.topCenter,
@@ -1964,6 +1950,28 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
             )));
   }
 
+  Widget _nextButton({required String text, required bool isDisabled}) {
+    return Expanded(
+        child: ArDriveButton(
+            isDisabled: isDisabled,
+            iconAlignment: IconButtonAlignment.right,
+            icon: Container(
+                padding: const EdgeInsets.only(top: 4),
+                child: Icon(Icons.arrow_forward,
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgOnAccent,
+                    size: 20)),
+            fontStyle: ArDriveTypography.body.smallBold700(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgOnAccent),
+            maxWidth: double.maxFinite,
+            borderRadius: 0,
+            text: text,
+            onPressed: advancePage));
+  }
+
   Widget _buildCard(List<String> cardInfo) {
     return Container(
       child: Stack(
@@ -1997,7 +2005,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
             width: 5,
             height: 20,
             child: CustomPaint(
-              painter: AccentPainter(),
+              painter: AccentPainter(lineHeight: 83),
             ),
           ),
         ],
@@ -2302,23 +2310,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
-        Expanded(
-            child: ArDriveButton(
-                iconAlignment: IconButtonAlignment.right,
-                icon: ArDriveIcons.arrowRightOutline(
-                  size: 16,
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
-                ),
-                fontStyle: ArDriveTypography.body.smallBold700(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgOnAccent),
-                maxWidth: double.maxFinite,
-                borderRadius: 0,
-                text: "I wrote it down",
-                onPressed: advancePage))
+        _nextButton(text: 'I wrote it down', isDisabled: false)
       ])),
     );
   }
@@ -2369,24 +2361,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
-        Expanded(
-            child: ArDriveButton(
-                isDisabled: !_wordsAreCorrect,
-                iconAlignment: IconButtonAlignment.right,
-                icon: ArDriveIcons.arrowRightOutline(
-                  size: 16,
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
-                ),
-                fontStyle: ArDriveTypography.body.smallBold700(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgOnAccent),
-                maxWidth: double.maxFinite,
-                borderRadius: 0,
-                text: 'Continue',
-                onPressed: advancePage))
+        _nextButton(text: 'Continue', isDisabled: !_wordsAreCorrect)
       ])),
     );
   }
@@ -2444,23 +2419,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
-        Expanded(
-            child: ArDriveButton(
-                iconAlignment: IconButtonAlignment.right,
-                icon: ArDriveIcons.arrowRightOutline(
-                  size: 16,
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
-                ),
-                fontStyle: ArDriveTypography.body.smallBold700(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgOnAccent),
-                maxWidth: double.maxFinite,
-                borderRadius: 0,
-                text: 'Continue',
-                onPressed: advancePage))
+        _nextButton(text: 'Continue', isDisabled: false)
       ])),
     );
   }
