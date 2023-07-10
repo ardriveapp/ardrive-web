@@ -248,38 +248,38 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       builder: (context, state) {
         late Widget content;
 
-        // if (state is PromptPassword) {
-        //   content = PromptPasswordView(
-        //     wallet: state.walletFile,
-        //   );
-        // } else if (state is CreatingNewPassword) {
-        //   content = CreatePasswordView(
-        //     wallet: state.walletFile,
-        //   );
-        // } else if (state is LoginLoading) {
-        //   content = const MaxDeviceSizesConstrainedBox(
-        //     child: _LoginCard(
-        //       content: Center(
-        //         child: CircularProgressIndicator(),
-        //       ),
-        //     ),
-        //   );
-        // } else if (enableSeedPhraseLogin && state is LoginEnterSeedPhrase) {
-        //   content = const EnterSeedPhraseView();
-        // } else if (enableSeedPhraseLogin && state is LoginGenerateWallet) {
-        //   content = GenerateWalletView(mnemonic: state.mnemonic);
-        // } else if (enableSeedPhraseLogin &&
-        //     state is LoginDownloadGeneratedWallet) {
-        //   content = DownloadWalletView(
-        //       mnemonic: state.mnemonic, wallet: state.walletFile);
-        // } else {
-        //   content = PromptWalletView(
-        //     key: const Key('promptWalletView'),
-        //     isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
-        //   );
-        // }
+        if (state is PromptPassword) {
+          content = PromptPasswordView(
+            wallet: state.walletFile,
+          );
+        } else if (state is CreatingNewPassword) {
+          content = CreatePasswordView(
+            wallet: state.walletFile,
+          );
+        } else if (state is LoginLoading) {
+          content = const MaxDeviceSizesConstrainedBox(
+            child: _LoginCard(
+              content: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        } else if (enableSeedPhraseLogin && state is LoginEnterSeedPhrase) {
+          content = const EnterSeedPhraseView();
+        } else if (enableSeedPhraseLogin && state is LoginGenerateWallet) {
+          content = GenerateWalletView(mnemonic: state.mnemonic);
+        } else if (enableSeedPhraseLogin &&
+            state is LoginDownloadGeneratedWallet) {
+          content = DownloadWalletView(
+              mnemonic: state.mnemonic, wallet: state.walletFile);
+        } else {
+          content = PromptWalletView(
+            key: const Key('promptWalletView'),
+            isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
+          );
+        }
 
-        content = GenerateWalletView(mnemonic: "test");
+        // content = GenerateWalletView(mnemonic: "test");
 
         return SizedBox(
           height: MediaQuery.of(context).size.height,
