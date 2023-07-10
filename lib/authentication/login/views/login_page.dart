@@ -2217,6 +2217,18 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                     } else {
                       setState(() {
                         _resetMemoryCheckItems();
+                        var snackBar = SnackBar(
+                          content: Text(
+                              'Order of phrases is not correct. Please try again.',
+                              style: ArDriveTypography.body.smallBold700(
+                                color: colors.themeErrorMuted,
+                              )),
+                          showCloseIcon: true,
+                          backgroundColor: colors.themeErrorSubtle,
+                          closeIconColor: colors.themeErrorMuted,
+                        );
+
+                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
                       });
                     }
                   } else {
