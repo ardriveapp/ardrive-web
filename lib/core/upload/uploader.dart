@@ -365,7 +365,7 @@ class UploadPaymentEvaluator {
 
     bool isFreeUploadPossibleUsingTurbo = false;
 
-    if (isTurboAvailable && isUploadEligibleToTurbo) {
+    if (isUploadEligibleToTurbo) {
       final allowedDataItemSizeForTurbo =
           _appConfig.allowedDataItemSizeForTurbo;
 
