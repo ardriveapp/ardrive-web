@@ -348,7 +348,7 @@
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
   },
-  "creditsTurbo": "credits",
+  "creditsTurbo": "Credits",
   "@creditsTurbo": {
     "description": "suffix for turbo balance"
   },
