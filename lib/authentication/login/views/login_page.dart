@@ -1939,6 +1939,31 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     return view;
   }
 
+  Widget _backButton() {
+    var colors = ArDriveTheme.of(context).themeData.colors;
+    return Expanded(
+        child: Container(
+            decoration: BoxDecoration(
+                border: Border(
+                    top: BorderSide(
+                        color: colors.themeBorderDefault, width: 1))),
+            child: TextButton(
+              style: ButtonStyle(
+                overlayColor: MaterialStateProperty.resolveWith<Color?>(
+                    (Set<MaterialState> states) {
+                  return colors.themeFgDefault.withOpacity(0.1);
+                }),
+              ),
+              onPressed: back,
+              child: SizedBox(
+                  height: 56,
+                  child: Center(
+                      child: Text("Back",
+                          style: ArDriveTypography.body
+                              .smallBold700(color: colors.themeFgDefault)))),
+            )));
+  }
+
   Widget _buildCard(List<String> cardInfo) {
     return Container(
       child: Stack(
@@ -2276,18 +2301,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
       )),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
-        Expanded(
-            child: ArDriveButton(
-                style: ArDriveButtonStyle.secondary,
-                fontStyle: ArDriveTypography.body.smallBold700(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault),
-                maxWidth: double.maxFinite,
-                borderRadius: 0,
-                text: "Back",
-                onPressed: back)),
+        _backButton(),
         Expanded(
             child: ArDriveButton(
                 iconAlignment: IconButtonAlignment.right,
@@ -2354,18 +2368,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
       )),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
-        Expanded(
-            child: ArDriveButton(
-                style: ArDriveButtonStyle.secondary,
-                fontStyle: ArDriveTypography.body.smallBold700(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault),
-                maxWidth: double.maxFinite,
-                borderRadius: 0,
-                text: "Back",
-                onPressed: back)),
+        _backButton(),
         Expanded(
             child: ArDriveButton(
                 isDisabled: !_wordsAreCorrect,
@@ -2440,18 +2443,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
       )),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
-        Expanded(
-            child: ArDriveButton(
-                style: ArDriveButtonStyle.secondary,
-                fontStyle: ArDriveTypography.body.smallBold700(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault),
-                maxWidth: double.maxFinite,
-                borderRadius: 0,
-                text: "Back",
-                onPressed: back)),
+        _backButton(),
         Expanded(
             child: ArDriveButton(
                 iconAlignment: IconButtonAlignment.right,
