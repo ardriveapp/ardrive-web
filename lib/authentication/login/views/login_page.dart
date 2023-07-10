@@ -1998,6 +1998,12 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildCard(List<String> cardInfo) {
+    final screenSize = MediaQuery.of(context).size;
+
+    final wideScreen = screenSize.width > (374 * 2 + 24 * 3);
+    final containerWidth = wideScreen ? 374.0 : screenSize.width - 40.0;
+    final height = wideScreen ? 180.0 : null;
+
     return Container(
       child: Stack(
         children: [
@@ -2010,8 +2016,8 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                 )),
             const SizedBox(height: 16),
             Container(
-              width: 376,
-              height: 180,
+              width: containerWidth,
+              height: height,
               padding: const EdgeInsets.fromLTRB(30, 24, 30, 24),
               decoration: BoxDecoration(
                 color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
@@ -2038,10 +2044,11 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     );
   }
 
-  Widget blurred(String word, bool isBlurred) {
+  Widget blurred(double width, String word, bool isBlurred) {
     var radius = const Radius.circular(4);
+
     var text = Container(
-        width: 172 - 22,
+        width: width,
         height: 45,
         decoration: BoxDecoration(
             color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
@@ -2060,9 +2067,13 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildSeedPhraseWord(int num, String word) {
+    final screenSize = MediaQuery.of(context).size;
+    final width = screenSize.width > (176 * 3 + 24 * 4)
+        ? 176.0
+        : (screenSize.width - 24 * 3) / 2;
     var radius = const Radius.circular(4);
     return Container(
-        width: 176,
+        width: width,
         height: 45,
         child: Row(
           children: [
@@ -2084,12 +2095,12 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                           .colors
                           .themeFgDefault),
                 ))),
-            blurred(word, _isBlurredSeedPhrase),
+            blurred(width - 22, word, _isBlurredSeedPhrase),
           ],
         ));
   }
 
-  Widget _buildWordToCheck(WordOption wordOption) {
+  Widget _buildWordToCheck(double width, WordOption wordOption) {
     var radius = const Radius.circular(4);
     var colors = ArDriveTheme.of(context).themeData.colors;
 
@@ -2103,7 +2114,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
         showCursor ? colors.themeBgSurface : colors.themeFgDefault;
 
     return Container(
-        width: 176,
+        width: width,
         height: 45,
         decoration: BoxDecoration(
             color: borderColor, borderRadius: BorderRadius.circular(4)),
@@ -2122,7 +2133,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                     showCursor ? Alignment.centerLeft : Alignment.centerRight,
                 children: [
                   Container(
-                      width: 174 - 22,
+                      width: width - 24,
                       height: 43,
                       decoration: BoxDecoration(
                           color: ArDriveTheme.of(context)
@@ -2159,7 +2170,8 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
         ));
   }
 
-  Widget _buildConfirmSeedPhraseWordOption(WordOption wordOption) {
+  Widget _buildConfirmSeedPhraseWordOption(
+      double width, WordOption wordOption) {
     var radius = const Radius.circular(4);
     var selected = wordOption.index >= 0;
     var colors = ArDriveTheme.of(context).themeData.colors;
@@ -2169,7 +2181,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
 
     return selected
         ? Container(
-            width: 176,
+            width: width,
             height: 45,
             child: Row(
               children: [
@@ -2186,7 +2198,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                             style: ArDriveTypography.body
                                 .smallBold700(color: colors.themeFgOnAccent)))),
                 Container(
-                    width: 176 - 22,
+                    width: width - 22,
                     height: 45,
                     decoration: BoxDecoration(
                         color: colors.themeFgDefault,
@@ -2262,7 +2274,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                   }
                 },
                 child: Container(
-                    width: 176,
+                    width: width,
                     height: 45,
                     padding: const EdgeInsets.only(left: 16),
                     decoration: BoxDecoration(
@@ -2275,98 +2287,117 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildWriteDownSeedPhrase() {
-    var rows = createRows(
-        items: _mnemonicWords
-            .asMap()
-            .map((i, e) => MapEntry(i, _buildSeedPhraseWord(i + 1, e)))
-            .values
-            .toList(),
-        rowCount: 3,
-        hGap: 24,
-        vGap: 24);
+    final screenSize = MediaQuery.of(context).size;
+
+    final rowCount = screenSize.width > (176 * 3 + 24 * 4) ? 3 : 2;
+    final topBottomPadding = rowCount == 2 ? 40.0 : 0.0;
+
+    var rows = Column(
+        children: createRows(
+            items: _mnemonicWords
+                .asMap()
+                .map((i, e) => MapEntry(i, _buildSeedPhraseWord(i + 1, e)))
+                .values
+                .toList(),
+            rowCount: rowCount,
+            hGap: 24,
+            vGap: 24));
 
     return Scaffold(
       body: Center(
-          child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'Write Down Seed Phrase',
-            textAlign: TextAlign.center,
-            style: ArDriveTypography.headline
-                .headline4Regular(
-                    color:
-                        ArDriveTheme.of(context).themeData.colors.themeFgMuted)
-                .copyWith(fontSize: 32),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Please carefully write down your seed phrase, in this order, and keep\nit somewhere safe.',
-            textAlign: TextAlign.center,
-            style: ArDriveTypography.body.smallBold(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle),
-          ),
-          const SizedBox(height: 72),
-          ...rows,
-          const SizedBox(height: 72),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              TextButton.icon(
-                icon: _isBlurredSeedPhrase
-                    ? ArDriveIcons.eyeClosed(
-                        size: 24,
+          child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                  top: topBottomPadding, bottom: topBottomPadding),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Write Down Seed Phrase',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.headline
+                        .headline4Regular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgMuted)
+                        .copyWith(fontSize: 32),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please carefully write down your seed phrase, in this order, and keep\nit somewhere safe.',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.body.smallBold(
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
-                            .themeFgMuted)
-                    : ArDriveIcons.eyeOpen(
-                        size: 24,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgMuted),
-                label: Container(
-                    width: 92,
-                    child: Text(
-                      _isBlurredSeedPhrase ? 'Show Words' : 'Hide Words',
-                      style: ArDriveTypography.body.smallBold(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgMuted),
-                    )),
-                onPressed: () {
-                  setState(() {
-                    _isBlurredSeedPhrase = !_isBlurredSeedPhrase;
-                  });
-                },
-              ),
-              const SizedBox(width: 16),
-              TextButton.icon(
-                icon: ArDriveIcons.copy(
-                    size: 24,
-                    color:
-                        ArDriveTheme.of(context).themeData.colors.themeFgMuted),
-                label: Container(
-                    child: Text(
-                  'Copy to Clipboard',
-                  style: ArDriveTypography.body.smallBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgMuted),
-                )),
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: widget.mnemonic));
-                },
-              )
-            ],
-          )
-        ],
-      )),
+                            .themeFgSubtle),
+                  ),
+                  const SizedBox(height: 72),
+                  rows,
+                  const SizedBox(height: 72),
+                  ...createRows(
+                    items: [
+                      TextButton.icon(
+                        icon: _isBlurredSeedPhrase
+                            ? ArDriveIcons.eyeClosed(
+                                size: 24,
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgMuted)
+                            : ArDriveIcons.eyeOpen(
+                                size: 24,
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgMuted),
+                        label: Container(
+                            width: 92,
+                            child: Text(
+                              _isBlurredSeedPhrase
+                                  ? 'Show Words'
+                                  : 'Hide Words',
+                              style: ArDriveTypography.body.smallBold(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgMuted),
+                            )),
+                        onPressed: () {
+                          setState(() {
+                            _isBlurredSeedPhrase = !_isBlurredSeedPhrase;
+                          });
+                        },
+                      ),
+                      TextButton.icon(
+                        icon: ArDriveIcons.copy(
+                            size: 24,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgMuted),
+                        label: Container(
+                            child: Text(
+                          'Copy to Clipboard',
+                          style: ArDriveTypography.body.smallBold(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted),
+                        )),
+                        onPressed: () async {
+                          await Clipboard.setData(
+                              ClipboardData(text: widget.mnemonic));
+                        },
+                      )
+                    ],
+                    rowCount: rowCount == 3 ? 2 : 1,
+                    hGap: 16,
+                    vGap: 16,
+                  ),
+                ],
+              ))),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
@@ -2376,17 +2407,22 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildConfirmYourSeedPhrase() {
+    final screenSize = MediaQuery.of(context).size;
+
+    final rowCount = screenSize.width > (176 * 4 + 24 * 5) ? 4 : 2;
+    final width = rowCount == 4 ? 176.0 : (screenSize.width - 24 * 3) / 2;
+
     var wordsToCheck = createRows(
-        items: _wordsToCheck.map((e) => _buildWordToCheck(e)).toList(),
-        rowCount: 4,
+        items: _wordsToCheck.map((e) => _buildWordToCheck(width, e)).toList(),
+        rowCount: rowCount,
         hGap: 24,
         vGap: 24);
 
     var wordOptions = createRows(
         items: _wordOptions.map((e) {
-          return _buildConfirmSeedPhraseWordOption(e);
+          return _buildConfirmSeedPhraseWordOption(width, e);
         }).toList(),
-        rowCount: 4,
+        rowCount: rowCount,
         hGap: 24,
         vGap: 24);
 
@@ -2446,36 +2482,49 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
       ],
     ];
 
+    final screenSize = MediaQuery.of(context).size;
+
+    final rowCount = screenSize.width > (374 * 2 + 24 * 3) ? 2 : 1;
+    final topBottomPadding = rowCount == 1 ? 40.0 : 0.0;
+
     return Scaffold(
       body: Center(
-          child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'Getting Started',
-            textAlign: TextAlign.center,
-            style: ArDriveTypography.headline
-                .headline4Regular(
-                    color:
-                        ArDriveTheme.of(context).themeData.colors.themeFgMuted)
-                .copyWith(fontSize: 32),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Learn some important information about your wallet\nwhile we begin generating it.',
-            textAlign: TextAlign.center,
-            style: ArDriveTypography.body.smallBold(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle),
-          ),
-          const SizedBox(height: 72),
-          ...createRows(
-              items: cardInfos.map(_buildCard).toList(),
-              rowCount: 2,
-              hGap: 24,
-              vGap: 40)
-        ],
-      )),
+          child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                  top: topBottomPadding, bottom: topBottomPadding),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Getting Started',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.headline
+                        .headline4Regular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgMuted)
+                        .copyWith(fontSize: 32),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Learn some important information about your wallet\nwhile we begin generating it.',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.body.smallBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgSubtle),
+                  ),
+                  const SizedBox(height: 72),
+                  ...createRows(
+                      items: cardInfos.map(_buildCard).toList(),
+                      rowCount: rowCount,
+                      hGap: 24,
+                      vGap: 40)
+                ],
+              ))),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
@@ -2486,59 +2535,52 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenTypeLayout(
-      desktop: Material(
-          color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-          child: _buildContent(context)),
-      mobile: Material(
-          color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-          child: Scaffold(
-            body: _buildContent(context),
-            bottomNavigationBar: Row(children: []),
-          )),
+    return Material(
+        color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+        child: _buildContent(context));
 
-      //     Row(
-      //       mainAxisAlignment: MainAxisAlignment.center,
-      //       children: [
-      //         Expanded(
-      //           child: Container(
-      //             color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
-      //             child: Align(
-      //               child: MaxDeviceSizesConstrainedBox(
-      //                 child: _FadeThroughTransitionSwitcher(
-      //                   fillColor: ArDriveTheme.of(context)
-      //                       .themeData
-      //                       .colors
-      //                       .themeBgSurface,
-      //                   child: _buildOnBoardingContent(),
-      //                 ),
-      //               ),
-      //             ),
-      //           ),
-      //         ),
-      //         Expanded(
-      //           child: FractionallySizedBox(
-      //             heightFactor: 1,
-      //             child: _buildOnBoardingIllustration(_currentPage),
-      //           ),
-      //         ),
-      //       ],
-      //     ),
-      //   ),
-      //   mobile: Scaffold(
-      //     resizeToAvoidBottomInset: true,
-      //     body: Container(
-      //       color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-      //       child: Align(
-      //         child: MaxDeviceSizesConstrainedBox(
-      //           child: Padding(
-      //             padding: const EdgeInsets.all(16),
-      //             child: _buildOnBoardingContent(),
-      //           ),
-      //         ),
-      //       ),
-      //     ),
-      // ),
-    );
+    //     Row(
+    //       mainAxisAlignment: MainAxisAlignment.center,
+    //       children: [
+    //         Expanded(
+    //           child: Container(
+    //             color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+    //             child: Align(
+    //               child: MaxDeviceSizesConstrainedBox(
+    //                 child: _FadeThroughTransitionSwitcher(
+    //                   fillColor: ArDriveTheme.of(context)
+    //                       .themeData
+    //                       .colors
+    //                       .themeBgSurface,
+    //                   child: _buildOnBoardingContent(),
+    //                 ),
+    //               ),
+    //             ),
+    //           ),
+    //         ),
+    //         Expanded(
+    //           child: FractionallySizedBox(
+    //             heightFactor: 1,
+    //             child: _buildOnBoardingIllustration(_currentPage),
+    //           ),
+    //         ),
+    //       ],
+    //     ),
+    //   ),
+    //   mobile: Scaffold(
+    //     resizeToAvoidBottomInset: true,
+    //     body: Container(
+    //       color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+    //       child: Align(
+    //         child: MaxDeviceSizesConstrainedBox(
+    //           child: Padding(
+    //             padding: const EdgeInsets.all(16),
+    //             child: _buildOnBoardingContent(),
+    //           ),
+    //         ),
+    //       ),
+    //     ),
+    // ),
+    // );
   }
 }
