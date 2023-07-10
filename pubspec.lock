@@ -88,7 +88,7 @@ packages:
     description:
       path: "."
       ref: seed-phrase-login
-      resolved-ref: "61447f982d21d25153151caddac536940e81cab4"
+      resolved-ref: "920673e71049d59f9a01abe61ba33bf97ed0cd25"
       url: "https://github.com/kunstmusik/ardrive_ui.git"
     source: git
     version: "1.2.0"

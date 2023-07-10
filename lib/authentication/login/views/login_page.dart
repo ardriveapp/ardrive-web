@@ -367,6 +367,12 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     .config
                     .enableSeedPhraseLogin) ...[
                   ArDriveButton(
+                    icon: ArDriveIcons.keypad(
+                        size: 24,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault),
                     key: const Key('loginWithSeedPhraseButton'),
                     text: "Enter Seed Phrase",
                     onPressed: () {
