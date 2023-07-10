@@ -353,19 +353,9 @@ class UploadPaymentEvaluator {
       totalSize: arBundleSizes + arFileSizes,
     );
 
-    if (isTurboAvailable &&
-        isUploadEligibleToTurbo &&
-        turboBalance >= turboCostEstimate.totalCost) {
-      totalSize = turboBundleSizes;
-      uploadMethod = UploadMethod.turbo;
-    } else {
-      totalSize = arBundleSizes + arFileSizes;
-      uploadMethod = UploadMethod.ar;
-    }
-
     bool isFreeUploadPossibleUsingTurbo = false;
 
-    if (isTurboAvailable && isUploadEligibleToTurbo) {
+    if (isUploadEligibleToTurbo) {
       final allowedDataItemSizeForTurbo =
           _appConfig.allowedDataItemSizeForTurbo;
 
@@ -375,6 +365,17 @@ class UploadPaymentEvaluator {
           (file) => file.size <= allowedDataItemSizeForTurbo,
         ),
       );
+    }
+
+    if ((isTurboAvailable &&
+            isUploadEligibleToTurbo &&
+            turboBalance >= turboCostEstimate.totalCost) ||
+        isFreeUploadPossibleUsingTurbo) {
+      totalSize = turboBundleSizes;
+      uploadMethod = UploadMethod.turbo;
+    } else {
+      totalSize = arBundleSizes + arFileSizes;
+      uploadMethod = UploadMethod.ar;
     }
 
     return UploadPaymentInfo(

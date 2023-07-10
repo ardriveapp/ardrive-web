@@ -534,11 +534,10 @@ void main() {
         });
 
         test('isTurboAvailable returns false when getBalance throws', () async {
-          final mockFile = MockBundleUploadHandle();
           when(() => mockFile.size).thenReturn(501);
-          when(() => mockFile.computeBundleSize())
+          when(() => mockBundle.computeBundleSize())
               .thenAnswer((invocation) => Future.value(501));
-          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
           when(() => turboBalanceRetriever.getBalance(any()))
               .thenThrow(Exception('error'));
 
@@ -561,12 +560,10 @@ void main() {
 
         test('isTurboAvailable returns false when calculateCost throws',
             () async {
-          final mockFile = MockBundleUploadHandle();
           when(() => mockFile.size).thenReturn(501);
-          when(() => mockFile.computeBundleSize())
+          when(() => mockBundle.computeBundleSize())
               .thenAnswer((invocation) => Future.value(501));
-
-          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
           when(() => turboUploadCostCalculator.calculateCost(
               totalSize: any(named: 'totalSize'))).thenThrow(Exception());
 
