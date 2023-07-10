@@ -559,7 +559,7 @@ class _BalanceView extends StatefulWidget {
 }
 
 class _BalanceViewState extends State<_BalanceView> {
-  balanceContents() => [
+  balanceContents(bool isMobile) => [
         Flexible(
           flex: 1,
           child: Column(
@@ -581,8 +581,9 @@ class _BalanceViewState extends State<_BalanceView> {
             ],
           ),
         ),
-        const SizedBox(
-          width: 32,
+        SizedBox(
+          height: isMobile ? 24 : 0,
+          width: isMobile ? 0 : 32,
         ),
         Flexible(
           flex: 1,
@@ -612,13 +613,13 @@ class _BalanceViewState extends State<_BalanceView> {
     return ScreenTypeLayout.builder(
       desktop: (context) => Row(
         mainAxisAlignment: MainAxisAlignment.start,
-        children: balanceContents(),
+        children: balanceContents(false),
       ),
       mobile: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: balanceContents(),
+        children: balanceContents(true),
       ),
     );
   }
