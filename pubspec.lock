@@ -82,7 +82,7 @@ packages:
       resolved-ref: "81874d1efebd4a74a7ea56dad3b81e3758d9d572"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
-    version: "1.3.0"
+  version: "1.3.0"
   ardrive_ui:
     dependency: "direct main"
     description:
