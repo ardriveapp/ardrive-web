@@ -1365,8 +1365,7 @@ class EnterSeedPhraseView extends StatefulWidget {
 class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
   final _seedPhraseController = ArDriveMultlineObscureTextController();
   final _formKey = GlobalKey<ArDriveFormState>();
-
-  bool _seedPhraseFormatIsValid = false;
+  // var _seedPhraseFormatIsValid = false;
 
   @override
   void initState() {
@@ -1435,41 +1434,39 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
             // autofillHints: const [AutofillHints.password],
             // hintText: appLocalizationsOf(context).enterPassword,
             hintText: 'Enter Seed Phrase',
-            onChanged: (s) {
-              _formKey.currentState?.validate();
-            },
+            // onChanged: (s) {
+            //   _formKey.currentState?.validate();
+            // },
             textInputAction: TextInputAction.next,
             minLines: 3,
             maxLines: 3,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                setState(() {
-                  _seedPhraseFormatIsValid = false;
-                });
-                return appLocalizationsOf(context).validationRequired;
-              } else if (!bip39.validateMnemonic(value)) {
-                setState(() {
-                  _seedPhraseFormatIsValid = false;
-                });
-                // FIXME - localize
-                return 'Please enter a valid 12-word mnemonic.';
-                // return appLocalizationsOf(context).validationRequired;
-              }
+            //   validator: (value) {
+            //     if (value == null || value.isEmpty) {
+            //       setState(() {
+            //         _seedPhraseFormatIsValid = false;
+            //       });
+            //       return appLocalizationsOf(context).validationRequired;
+            //     } else if (!bip39.validateMnemonic(value)) {
+            //       setState(() {
+            //         _seedPhraseFormatIsValid = false;
+            //       });
+            //       // FIXME - localize
+            //       return 'Please enter a valid 12-word mnemonic.';
+            //       // return appLocalizationsOf(context).validationRequired;
+            //     }
 
-              setState(() {
-                _seedPhraseFormatIsValid = true;
-              });
+            //     setState(() {
+            //       _seedPhraseFormatIsValid = true;
+            //     });
 
-              return null;
-            },
+            //     return null;
+            //   },
           ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ArDriveButton(
-              isDisabled: !_seedPhraseFormatIsValid,
               onPressed: _onSubmit,
-              // text: appLocalizationsOf(context).proceed,
               text: 'Continue',
               fontStyle:
                   ArDriveTypography.body.smallBold700(color: Colors.white),
@@ -1500,7 +1497,8 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
   }
 
   void _onSubmit() async {
-    final isValid = await _formKey.currentState!.validate();
+    final isValid = _seedPhraseController.text.isNotEmpty &&
+        bip39.validateMnemonic(_seedPhraseController.text);
 
     if (!isValid) {
       showAnimatedDialog(context,
@@ -1509,8 +1507,9 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
               size: 88,
               color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
             ),
-            title: appLocalizationsOf(context).passwordCannotBeEmpty,
-            content: appLocalizationsOf(context).pleaseTryAgain,
+            title: appLocalizationsOf(context).error,
+            content:
+                'The seed phrase you have provided is invalid. Please correct and retry.',
             actions: [
               ModalAction(
                 action: () {
