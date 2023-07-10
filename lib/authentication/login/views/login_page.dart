@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -23,10 +25,10 @@ import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-
-import '../blocs/memory_check_item.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -50,11 +52,18 @@ class _LoginPageState extends State<LoginPage> {
           }
         },
         builder: (context, state) {
+          late Widget view;
+          if (state is LoginOnBoarding) {
+            view = OnBoardingView(wallet: state.walletFile);
+          } else if (state is LoginCreateNewWallet) {
+            view = CreateNewWalletView(mnemonic: state.mnemonic);
+          } else {
+            view = const LoginPageScaffold();
+          }
+
           return _FadeThroughTransitionSwitcher(
             fillColor: Colors.transparent,
-            child: state is LoginOnBoarding
-                ? OnBoardingView(wallet: state.walletFile)
-                : const LoginPageScaffold(),
+            child: view,
           );
         },
       ),
@@ -192,7 +201,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       buildWhen: (previous, current) =>
           current is! LoginFailure &&
           current is! LoginSuccess &&
-          current is! LoginOnBoarding,
+          current is! LoginOnBoarding &&
+          current is! LoginCreateNewWallet,
       listener: (context, state) {
         if (state is LoginFailure) {
           // TODO: Verify if the error is `NoConnectionException` and show an appropriate message after validating with UI/UX
@@ -256,14 +266,11 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           );
         } else if (enableSeedPhraseLogin && state is LoginEnterSeedPhrase) {
           content = const EnterSeedPhraseView();
-        } else if (enableSeedPhraseLogin && state is LoginCreateWallet) {
-          content = CreateWalletView(mnemonic: state.mnemonic);
+        } else if (enableSeedPhraseLogin && state is LoginGenerateWallet) {
+          content = GenerateWalletView(mnemonic: state.mnemonic);
         } else if (enableSeedPhraseLogin &&
-            state is LoginCreateWalletGenerated) {
-          content = CreateWalletView(
-              mnemonic: state.mnemonic, wallet: state.walletFile);
-        } else if (enableSeedPhraseLogin && state is LoginConfirmMnemonic) {
-          content = MemoryCheckView(
+            state is LoginDownloadGeneratedWallet) {
+          content = DownloadWalletView(
               mnemonic: state.mnemonic, wallet: state.walletFile);
         } else {
           content = PromptWalletView(
@@ -271,6 +278,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
           );
         }
+
+        // content = GenerateWalletView(mnemonic: "test");
 
         return SizedBox(
           height: MediaQuery.of(context).size.height,
@@ -347,21 +356,44 @@ class _PromptWalletViewState extends State<PromptWalletView> {
             Align(
               alignment: Alignment.topCenter,
               child: Text(
-                appLocalizationsOf(context).welcome,
+                appLocalizationsOf(context).login,
                 style: ArDriveTypography.headline.headline4Regular(),
               ),
             ),
             heightSpacing(),
             Column(
               children: [
+                if (context
+                    .read<ConfigService>()
+                    .config
+                    .enableSeedPhraseLogin) ...[
+                  ArDriveButton(
+                    icon: ArDriveIcons.keypad(
+                        size: 24,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault),
+                    key: const Key('loginWithSeedPhraseButton'),
+                    text: "Enter Seed Phrase",
+                    onPressed: () {
+                      context.read<LoginBloc>().add(EnterSeedPhrase());
+                    },
+                    style: ArDriveButtonStyle.secondary,
+                    fontStyle: ArDriveTypography.body
+                        .smallBold700(color: Colors.white),
+                    maxWidth: double.maxFinite,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 ArDriveDropAreaSingleInput(
                   controller: _dropAreaController,
                   keepButtonVisible: true,
                   width: double.maxFinite,
-                  dragAndDropDescription:
-                      appLocalizationsOf(context).dragAndDropDescription,
-                  dragAndDropButtonTitle:
-                      appLocalizationsOf(context).dragAndDropButtonTitle,
+                  dragAndDropDescription: "Select a KeyFile",
+                  // dragAndDropButtonTitle:
+                  //     appLocalizationsOf(context).dragAndDropButtonTitle,
+                  dragAndDropButtonTitle: "Select a KeyFile",
                   errorDescription: appLocalizationsOf(context).invalidKeyFile,
                   validateFile: (file) async {
                     final wallet = await context
@@ -372,7 +404,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   },
                   platformSupportsDragAndDrop: !AppPlatform.isMobile,
                 ),
-                heightSpacing(),
+                const SizedBox(height: 24),
                 ArDriveOverlay(
                   visible: _showSecurityOverlay,
                   content: ArDriveCard(
@@ -437,76 +469,75 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       hoverScale: 1,
                       child: Text(
                           appLocalizationsOf(context).howDoesKeyfileLoginWork,
-                          style: ArDriveTypography.body.smallBold()),
+                          style: ArDriveTypography.body.smallBold().copyWith(
+                                decoration: TextDecoration.underline,
+                                fontSize: 14,
+                                height: 1.5,
+                              )),
                     ),
                   ),
                 ),
-                if (context
-                    .read<ConfigService>()
-                    .config
-                    .enableSeedPhraseLogin) ...[
-                  heightSpacing(),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                            text: 'Login with your ',
-                            style: ArDriveTypography.body.smallBold(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgMuted,
-                            )),
-                        TextSpan(
-                          text: 'Seed Phrase',
-                          style: ArDriveTypography.body.smallBold().copyWith(
-                                decoration: TextDecoration.underline,
-                              ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              context.read<LoginBloc>().add(EnterSeedPhrase());
-                              // openUrl(url: Resources.getWalletLink);
-                            },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
                 if (widget.isArConnectAvailable) ...[
-                  heightSpacing(),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      appLocalizationsOf(context).orContinueWith,
-                      style: ArDriveTypography.body.smallRegular(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgMuted),
-                    ),
+                  const SizedBox(height: 40),
+                  Row(
+                    children: [
+                      Expanded(
+                          child: Container(
+                        decoration: const ShapeDecoration(
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                              width: 0.50,
+                              strokeAlign: BorderSide.strokeAlignCenter,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                        ),
+                      )),
+                      Padding(
+                          padding: const EdgeInsets.only(left: 25, right: 25),
+                          child: Text(
+                            'OR',
+                            textAlign: TextAlign.center,
+                            style: ArDriveTypography.body
+                                .smallBold(color: Color(0xFF9E9E9E)),
+                          )),
+                      Expanded(
+                          child: Container(
+                        decoration: const ShapeDecoration(
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                              width: 0.50,
+                              strokeAlign: BorderSide.strokeAlignCenter,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                        ),
+                      )),
+                    ],
                   ),
                   Row(
                     children: [
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.only(top: 16),
+                          padding: const EdgeInsets.only(top: 40),
                           child: ArDriveButton(
                             icon: Padding(
-                              padding: const EdgeInsets.only(right: 20),
-                              child: ArDriveIcons.arconnectIcon1(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: ArDriveIcons.arconnectIcon1(
+                                  color: Colors.white,
+                                )),
+                            style: ArDriveButtonStyle.secondary,
+                            fontStyle: ArDriveTypography.body.smallBold700(
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
-                                    .themeFgDefault,
-                              ),
-                            ),
-                            style: ArDriveButtonStyle.secondary,
+                                    .themeFgDefault),
                             onPressed: () {
                               context
                                   .read<LoginBloc>()
                                   .add(const AddWalletFromArConnect());
                             },
-                            text: 'ArConnect',
+                            text: 'Login with ArConnect',
                           ),
                         ),
                       ),
@@ -514,7 +545,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   ),
                 ],
                 const SizedBox(
-                  height: 24,
+                  height: 72,
                 ),
               ],
             ),
@@ -522,7 +553,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               TextSpan(
                 children: [
                   TextSpan(
-                      text: appLocalizationsOf(context).dontHaveAWallet1Part,
+                      // text: appLocalizationsOf(context).dontHaveAWallet1Part,
+                      text: "New User? Get started ",
                       style: ArDriveTypography.body.smallBold(
                         color: ArDriveTheme.of(context)
                             .themeData
@@ -536,8 +568,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () {
-                        context.read<LoginBloc>().add(CreateWallet());
-                        // openUrl(url: Resources.getWalletLink);
+                        context.read<LoginBloc>().add(CreateNewWallet());
                       },
                   ),
                 ],
@@ -556,9 +587,10 @@ class _PromptWalletViewState extends State<PromptWalletView> {
 }
 
 class _LoginCard extends StatelessWidget {
-  const _LoginCard({required this.content});
+  const _LoginCard({required this.content, this.showLattice = false});
 
   final Widget content;
+  final bool showLattice;
 
   @override
   Widget build(BuildContext context) {
@@ -588,18 +620,35 @@ class _LoginCard extends StatelessWidget {
       }
 
       return ArDriveCard(
-        backgroundColor:
-            ArDriveTheme.of(context).themeData.colors.themeBgSurface,
-        borderRadius: 24,
-        boxShadow: BoxShadowCard.shadow80,
-        contentPadding: EdgeInsets.fromLTRB(
-          horizontalPadding,
-          _topPadding(context),
-          horizontalPadding,
-          _bottomPadding(context),
-        ),
-        content: content,
-      );
+          backgroundColor:
+              ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+          borderRadius: 24,
+          boxShadow: BoxShadowCard.shadow80,
+          contentPadding: EdgeInsets.zero,
+          content: Stack(
+            children: [
+              if (showLattice)
+                Positioned(
+                  bottom: 30,
+                  right: 0,
+                  child: SvgPicture.asset(
+                    Resources.images.login.lattice,
+                    // fit: BoxFit.fitHeight,
+                  ),
+                ),
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  _topPadding(context),
+                  horizontalPadding,
+                  _bottomPadding(context),
+                ),
+                child: content,
+              )
+            ],
+          )
+          // content,
+          );
     });
   }
 
@@ -1314,10 +1363,9 @@ class EnterSeedPhraseView extends StatefulWidget {
 }
 
 class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
-  final _seedPhraseController = TextEditingController();
+  final _seedPhraseController = ArDriveMultlineObscureTextController();
   final _formKey = GlobalKey<ArDriveFormState>();
-
-  bool _seedPhraseFormatIsValid = false;
+  // var _seedPhraseFormatIsValid = false;
 
   @override
   void initState() {
@@ -1342,13 +1390,21 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
                   height: 50,
                 ),
               ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: Text(
+                  'Enter Seed Phrase',
+                  style: ArDriveTypography.headline.headline4Regular(),
+                ),
+              ),
+              const SizedBox(height: 8),
               Text(
                 // appLocalizationsOf(context).createAndConfirmPassword,
-                'Enter your 12-word mnemonic seed phrase to login.',
+                'Please enter your 12 word seed phrase and separate each word with a space.',
                 textAlign: TextAlign.center,
-                style: ArDriveTypography.headline.headline5Regular(),
+                style: ArDriveTypography.body.smallBold(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 50),
               _createSeedPhraseForm(),
             ],
           ),
@@ -1362,6 +1418,14 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
       key: _formKey,
       child: Column(
         children: [
+          Align(
+              alignment: Alignment.topLeft,
+              child: Text(
+                "Seed Phrase",
+                style:
+                    ArDriveTypography.body.smallBold().copyWith(fontSize: 14),
+              )),
+          const SizedBox(height: 8),
           ArDriveTextField(
             autofocus: true,
             controller: _seedPhraseController,
@@ -1370,58 +1434,71 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
             // autofillHints: const [AutofillHints.password],
             // hintText: appLocalizationsOf(context).enterPassword,
             hintText: 'Enter Seed Phrase',
-            onChanged: (s) {
-              _formKey.currentState?.validate();
-            },
+            // onChanged: (s) {
+            //   _formKey.currentState?.validate();
+            // },
             textInputAction: TextInputAction.next,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                setState(() {
-                  _seedPhraseFormatIsValid = false;
-                });
-                return appLocalizationsOf(context).validationRequired;
-              } else if (!bip39.validateMnemonic(value)) {
-                setState(() {
-                  _seedPhraseFormatIsValid = false;
-                });
-                // FIXME - localize
-                return 'Please enter a valid 12-word mnemonic.';
-                // return appLocalizationsOf(context).validationRequired;
-              }
+            minLines: 3,
+            maxLines: 3,
+            //   validator: (value) {
+            //     if (value == null || value.isEmpty) {
+            //       setState(() {
+            //         _seedPhraseFormatIsValid = false;
+            //       });
+            //       return appLocalizationsOf(context).validationRequired;
+            //     } else if (!bip39.validateMnemonic(value)) {
+            //       setState(() {
+            //         _seedPhraseFormatIsValid = false;
+            //       });
+            //       // FIXME - localize
+            //       return 'Please enter a valid 12-word mnemonic.';
+            //       // return appLocalizationsOf(context).validationRequired;
+            //     }
 
-              setState(() {
-                _seedPhraseFormatIsValid = true;
-              });
+            //     setState(() {
+            //       _seedPhraseFormatIsValid = true;
+            //     });
 
-              return null;
-            },
+            //     return null;
+            //   },
           ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ArDriveButton(
-              isDisabled: !_seedPhraseFormatIsValid,
               onPressed: _onSubmit,
-              text: appLocalizationsOf(context).proceed,
+              text: 'Continue',
+              fontStyle:
+                  ArDriveTypography.body.smallBold700(color: Colors.white),
             ),
           ),
+          const SizedBox(height: 56),
           Align(
-            alignment: Alignment.bottomCenter,
-            child: ArDriveButton(
-              onPressed: () {
-                _forgetWallet(context);
-              },
-              style: ArDriveButtonStyle.tertiary,
-              text: appLocalizationsOf(context).forgetWallet,
-            ),
-          ),
+              alignment: Alignment.bottomLeft,
+              child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {
+                      context.read<LoginBloc>().add(const ForgetWallet());
+                    },
+                    child: Row(children: [
+                      ArDriveIcons.carretLeft(
+                          size: 16,
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault),
+                      Text(appLocalizationsOf(context).back),
+                    ]),
+                  ))),
         ],
       ),
     );
   }
 
-  void _onSubmit() {
-    final isValid = _formKey.currentState!.validate();
+  void _onSubmit() async {
+    final isValid = _seedPhraseController.text.isNotEmpty &&
+        bip39.validateMnemonic(_seedPhraseController.text);
 
     if (!isValid) {
       showAnimatedDialog(context,
@@ -1430,8 +1507,9 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
               size: 88,
               color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
             ),
-            title: appLocalizationsOf(context).passwordCannotBeEmpty,
-            content: appLocalizationsOf(context).pleaseTryAgain,
+            title: appLocalizationsOf(context).error,
+            content:
+                'The seed phrase you have provided is invalid. Please correct and retry.',
             actions: [
               ModalAction(
                 action: () {
@@ -1450,109 +1528,134 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
   }
 }
 
-class CreateWalletView extends StatefulWidget {
-  const CreateWalletView({super.key, required this.mnemonic, this.wallet});
+class GenerateWalletView extends StatefulWidget {
+  const GenerateWalletView({super.key, required this.mnemonic, this.wallet});
 
   final String mnemonic;
   final Wallet? wallet;
 
   @override
-  State<CreateWalletView> createState() => _CreateWalletViewState();
+  State<GenerateWalletView> createState() => _GenerateWalletViewState();
 }
 
-class _CreateWalletViewState extends State<CreateWalletView> {
-  @override
-  Widget build(BuildContext context) {
-    return MaxDeviceSizesConstrainedBox(
-      defaultMaxHeight: 798,
-      maxHeightPercent: 1,
-      child: _LoginCard(
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ScreenTypeLayout(
-                desktop: const SizedBox.shrink(),
-                mobile: ArDriveImage(
-                  image: AssetImage(Resources.images.brand.logo1),
-                  height: 50,
-                ),
-              ),
-              Text(
-                // appLocalizationsOf(context).createAndConfirmPassword,
-                'Record your 12-word mnemonic wallet seed phrase.',
-                textAlign: TextAlign.center,
-                style: ArDriveTypography.headline.headline5Regular(),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                  enabled: false,
-                  controller: TextEditingController(text: widget.mnemonic),
-                  maxLines: 3),
-              const SizedBox(height: 16),
-              ArDriveButton(
-                style: ArDriveButtonStyle.secondary,
-                isDisabled: widget.wallet == null,
-                onPressed: () {
-                  _onDownload();
-                },
-                // FIXME - localize
-                text: widget.wallet == null
-                    ? 'Generating Wallet...'
-                    : 'Download Wallet File',
-                icon:
-                    widget.wallet == null ? CircularProgressIndicator() : null,
-              ),
-              const SizedBox(height: 16),
-              ArDriveButton(
-                isDisabled: widget.wallet == null,
-                onPressed: () {
-                  context.read<LoginBloc>().add(
-                      VerifyWalletMnemonic(widget.mnemonic, widget.wallet!));
-                },
-                text: appLocalizationsOf(context).proceed,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+class _GenerateWalletViewState extends State<GenerateWalletView> {
+  late Timer _periodicTimer;
+  int _index = 0;
+  final _messages = [
+    'ArDrive helps you upload your data to the permaweb and keep it safe for generations to come!',
+    'With Turbo you can pay with a credit card and increase the reliability of your uploads!',
+    'You can download a copy of your keyfile from the Profile menu.',
+    'If you have large drives, you can take a Snapshot to speed up the syncing time.'
+  ];
+  late String _message;
 
-  void _onDownload() async {
-    if (widget.wallet != null) {
-      final jsonTxt = jsonEncode(widget.wallet!.toJwk());
-
-      final ArDriveIO io = ArDriveIO();
-      final bytes = Uint8List.fromList(utf8.encode(jsonTxt));
-
-      await io.saveFile(await IOFile.fromData(bytes,
-          name: "ardrive-wallet.json", lastModifiedDate: DateTime.now()));
-    }
-  }
-}
-
-class MemoryCheckView extends StatefulWidget {
-  MemoryCheckView({super.key, required this.mnemonic, required this.wallet});
-
-  final String mnemonic;
-  final Wallet wallet;
-  final List<MemoryCheckItem> memoryCheckItems = [];
-  final List<int> selectedWords = [-1, -1, -1, -1];
-  bool allWordsCorrect = false;
-
-  @override
-  State<MemoryCheckView> createState() => _MemoryCheckViewState();
-}
-
-class _MemoryCheckViewState extends State<MemoryCheckView> {
   @override
   void initState() {
     super.initState();
-    _resetMemoryCheckItems();
+    _message = 'Did you know?\n\n${_messages[0]}';
+
+    _periodicTimer = Timer.periodic(Duration(seconds: 7), (Timer t) {
+      setState(() {
+        _index = (_index + 1) % _messages.length;
+        _message = 'Did you know?\n\n${_messages[_index]}';
+      });
+    });
   }
 
+  @override
+  void dispose() {
+    _periodicTimer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var colors = ArDriveTheme.of(context).themeData.colors;
+
+    return MaxDeviceSizesConstrainedBox(
+      defaultMaxHeight: 798,
+      maxHeightPercent: 1,
+      child: _LoginCard(
+        showLattice: true,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Generating Wallet...',
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.headline
+                    .headline4Regular(color: colors.themeFgMuted)
+                    .copyWith(fontSize: 32),
+              ),
+              const SizedBox(height: 74),
+              // Did you Know box
+              Stack(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.only(right: 16),
+                    width: 227,
+                    height: 150,
+                    child: Text(
+                      _message,
+                      textAlign: TextAlign.right,
+                      style: ArDriveTypography.body
+                          .smallBold700(color: colors.themeFgMuted),
+                    ),
+                  ),
+                  Container(
+                      margin: const EdgeInsets.fromLTRB(239, 5, 0, 0),
+                      width: 5,
+                      height: 20,
+                      child: CustomPaint(
+                        painter: AccentPainter(lineHeight: 173),
+                      )),
+                ],
+              ),
+              const SizedBox(height: 79),
+              // Info Box
+              Container(
+                  decoration: BoxDecoration(
+                      border: Border.all(
+                          color: colors.themeBorderDefault, width: 1),
+                      color: colors.themeBgSurface,
+                      borderRadius: BorderRadius.circular(6)),
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      ArDriveIcons.info(size: 24, color: colors.themeFgSubtle),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                            'Nobody (including the ArDrive core team) can help you recover your wallet if the keyfile is lost. So, remember to keep it safe!',
+                            style: ArDriveTypography.body
+                                .buttonNormalBold(color: colors.themeFgSubtle)),
+                      ),
+                    ],
+                  ))
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class DownloadWalletView extends StatefulWidget {
+  const DownloadWalletView(
+      {super.key, required this.mnemonic, required this.wallet});
+
+  final String mnemonic;
+  final Wallet wallet;
+
+  @override
+  State<DownloadWalletView> createState() => _DownloadWalletViewState();
+}
+
+class _DownloadWalletViewState extends State<DownloadWalletView> {
   @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
@@ -1571,152 +1674,99 @@ class _MemoryCheckViewState extends State<MemoryCheckView> {
                   height: 50,
                 ),
               ),
+              ArDriveIcons.checkmark(
+                  size: 32,
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeSuccessDefault),
+              const SizedBox(height: 16),
               Text(
-                // appLocalizationsOf(context).createAndConfirmPassword,
-                'Select the correct words to verify your mnemonic seed phrase.',
+                'Wallet Created',
                 textAlign: TextAlign.center,
-                style: ArDriveTypography.headline.headline5Regular(),
+                style: ArDriveTypography.headline
+                    .headline4Regular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgMuted)
+                    .copyWith(fontSize: 32),
               ),
-              const SizedBox(height: 16),
-              ...widget.memoryCheckItems.asMap().entries.map((entry) {
-                final index = entry.key;
-                final selectedIndex = widget.selectedWords[index];
-                final memoryCheckItem = entry.value;
-                return Column(
-                  children: [
-                    Text(
-                      'Select Word ${memoryCheckItem.mnemonicWordIndex + 1}',
-                      textAlign: TextAlign.center,
-                      style: ArDriveTypography.headline.headline5Regular(),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: memoryCheckItem.wordOptions
-                          .asMap()
-                          .entries
-                          .map((entry) {
-                        final wordIndex = entry.key;
-                        final word = entry.value;
-                        return ArDriveButton(
-                          style: selectedIndex == wordIndex
-                              ? ArDriveButtonStyle.primary
-                              : ArDriveButtonStyle.secondary,
-                          onPressed: () {
-                            setState(() {
-                              widget.selectedWords[index] = wordIndex;
-                              _validate();
-                            });
-                          },
-                          text: word,
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-                );
-              }),
-              const SizedBox(height: 16),
-              ArDriveButton(
-                isDisabled: !widget.allWordsCorrect,
-                onPressed: () {
-                  showAnimatedDialog(context,
-                      content: ArDriveIconModal(
-                        icon: ArDriveIcons.triangle(
-                          size: 88,
+              const SizedBox(height: 8),
+              Text(
+                'Download your keyfile. You can also find it under the profile menu.',
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.body.smallBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgSubtle),
+              ),
+              const SizedBox(height: 56),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                    onTap: () {
+                      _onDownload();
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeBorderDefault,
+                              width: 1),
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
-                              .themeErrorMuted,
-                        ),
-                        title:
-                            "You've successfully verified your mnemonic seed phrase!",
-                        content:
-                            "If you lose my seed phrase it cannot be retrieved but you can always use your JSON file to login. If you have not downloaded your Wallet file, please do so below, or select OK to continue.",
-                        actions: [
-                          ModalAction(
-                            action: () {
-                              _onDownload();
-                            },
-                            title: "Download Wallet",
-                          ),
-                          ModalAction(
-                            action: () {
-                              Navigator.pop(context);
-                              context
-                                  .read<LoginBloc>()
-                                  .add(CompleteWalletGeneration(widget.wallet));
-                            },
-                            title: appLocalizationsOf(context).ok,
-                          )
-                        ],
-                      ));
-
-                  // context.read<LoginBloc>().add(
-                  //     VerifyWalletMnemonic(widget.mnemonic, widget.wallet));
-                },
-                text: appLocalizationsOf(context).proceed,
+                              .themeBgSurface),
+                      padding: const EdgeInsets.all(6),
+                      child: Container(
+                          width: double.maxFinite,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(3),
+                              // border: Border.all(color: ArDriveTheme.of(context).themeData.colors.themeBorderDefault, width: 1),
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeBgSubtle),
+                          padding: const EdgeInsets.all(44),
+                          child: Column(
+                            children: [
+                              ArDriveIcons.download(size: 40),
+                              const SizedBox(height: 4),
+                              Text('Download Keyfile',
+                                  style: ArDriveTypography.body.smallBold700(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault))
+                            ],
+                          )),
+                    )),
               ),
+              const SizedBox(height: 56),
+              SizedBox(
+                width: double.infinity,
+                child: ArDriveButton(
+                  onPressed: () {
+                    context
+                        .read<LoginBloc>()
+                        .add(CompleteWalletGeneration(widget.wallet));
+                  },
+                  // text: appLocalizationsOf(context).proceed,
+                  text: 'Continue',
+                  fontStyle:
+                      ArDriveTypography.body.smallBold700(color: Colors.white),
+                ),
+              )
             ],
           ),
         ),
       ),
     );
-  }
-
-  void _resetMemoryCheckItems() {
-    final words = widget.mnemonic.split(' ');
-    final indices = List<int>.generate(words.length, (i) => i);
-    indices.shuffle();
-
-    widget.memoryCheckItems.clear();
-
-    for (var i = 0; i < 4; i++) {
-      final index = indices[i];
-      final word = words[index];
-
-      final options = [word];
-      var optionsIndex = 1;
-      while (optionsIndex < 3) {
-        for (var randWord in bip39.generateMnemonic().split(' ')) {
-          if (randWord != word) {
-            options.add(randWord);
-            optionsIndex++;
-            if (optionsIndex >= 3) {
-              break;
-            }
-          }
-        }
-      }
-      options.shuffle();
-      final correctIndex = options.indexOf(word);
-
-      widget.memoryCheckItems.add(MemoryCheckItem(
-          mnemonicWordIndex: index,
-          wordOptions: options,
-          correctWordIndex: correctIndex));
-    }
-
-    widget.selectedWords.setRange(0, 4, List<int>.generate(4, (i) => -1));
-  }
-
-  void _validate() {
-    if (widget.selectedWords.every((element) => element >= 0)) {
-      for (var i = 0; i < widget.selectedWords.length; i++) {
-        if (widget.selectedWords[i] !=
-            widget.memoryCheckItems[i].correctWordIndex) {
-          setState(() {
-            widget.allWordsCorrect = false;
-            _resetMemoryCheckItems();
-          });
-          return;
-        }
-      }
-      setState(() {
-        widget.allWordsCorrect = true;
-      });
-    }
   }
 
   void _onDownload() async {
@@ -1727,5 +1777,810 @@ class _MemoryCheckViewState extends State<MemoryCheckView> {
 
     await io.saveFile(await IOFile.fromData(bytes,
         name: "ardrive-wallet.json", lastModifiedDate: DateTime.now()));
+  }
+}
+
+class AccentPainter extends CustomPainter {
+  double lineHeight;
+
+  AccentPainter({required this.lineHeight});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    var paint = Paint()
+      ..color = Colors.red.shade500
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(3, 8), 2.5, paint);
+    var rect = Rect.fromLTWH(2.5, 8, 1, lineHeight);
+    paint = Paint()
+      ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.red.shade500,
+            Colors.red.shade500,
+            Colors.red.shade500.withAlpha(0)
+          ]).createShader(rect);
+    canvas.drawRect(rect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
+  }
+}
+
+class CreateNewWalletView extends StatefulWidget {
+  const CreateNewWalletView({super.key, required this.mnemonic});
+
+  final String mnemonic;
+
+  @override
+  State<CreateNewWalletView> createState() => CreateNewWalletViewState();
+}
+
+class WordOption {
+  WordOption(this.word, this.index);
+
+  int index;
+  String word;
+}
+
+class CreateNewWalletViewState extends State<CreateNewWalletView> {
+  int _currentPage = 0;
+  bool _isBlurredSeedPhrase = true;
+  late final List<String> _mnemonicWords;
+
+  List<WordOption> _wordsToCheck = [];
+  List<WordOption> _wordOptions = [];
+  bool _wordsAreCorrect = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _mnemonicWords = widget.mnemonic.split(' ');
+    _resetMemoryCheckItems();
+  }
+
+  void advancePage() {
+    if (_currentPage == 2) {
+      context.read<LoginBloc>().add(AddWalletFromMnemonic(widget.mnemonic));
+    } else {
+      setState(() {
+        _isBlurredSeedPhrase = true;
+        _wordsAreCorrect = false;
+        _currentPage++;
+      });
+    }
+  }
+
+  void back() {
+    _isBlurredSeedPhrase = true;
+    _wordsAreCorrect = false;
+    if (_currentPage == 0) {
+      // Navigator.pop(context);
+      context.read<LoginBloc>().add(const ForgetWallet());
+    } else {
+      setState(() {
+        _currentPage--;
+      });
+    }
+  }
+
+  void _resetMemoryCheckItems() {
+    final indices = List<int>.generate(_mnemonicWords.length, (i) => i);
+    indices.shuffle();
+
+    _wordsToCheck = indices
+        .sublist(0, 4)
+        .map(
+          (e) => WordOption('', e),
+        )
+        .toList();
+
+    _wordOptions = _wordsToCheck
+        .map((e) => WordOption(_mnemonicWords[e.index], -1))
+        .toList();
+
+    var wordSet = _wordOptions.map((e) => e.word).toSet();
+
+    var optionsIndex = 4;
+    while (optionsIndex < 8) {
+      for (var randWord in bip39.generateMnemonic().split(' ')) {
+        if (!wordSet.contains(randWord)) {
+          _wordOptions.add(WordOption(randWord, -1));
+          wordSet.add(randWord);
+          optionsIndex++;
+          if (optionsIndex >= 8) {
+            break;
+          }
+        }
+      }
+    }
+
+    _wordOptions.shuffle();
+  }
+
+  List<Widget> createRows(
+      {required List<Widget> items,
+      required int rowCount,
+      required double hGap,
+      required double vGap}) {
+    List<Widget> rows = [];
+
+    int count = 0;
+
+    while (count < items.length) {
+      List<Widget> rowItems = [];
+      for (int i = 0; i < rowCount; i++) {
+        if (count < items.length) {
+          if (i % rowCount != 0) {
+            rowItems.add(SizedBox(width: hGap));
+          }
+          rowItems.add(items[count]);
+          count++;
+        }
+      }
+      if (count > rowCount) {
+        rows.add(SizedBox(height: vGap));
+      }
+      rows.add(Row(
+        children: rowItems,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+      ));
+    }
+    return rows;
+  }
+
+  Widget _buildContent(BuildContext context) {
+    Widget view;
+
+    switch (_currentPage) {
+      case 2:
+        view = _buildConfirmYourSeedPhrase();
+        break;
+      case 1:
+        view = _buildWriteDownSeedPhrase();
+        break;
+      default:
+        view = _buildGettingStarted();
+    }
+
+    return view;
+  }
+
+  Widget _backButton() {
+    var colors = ArDriveTheme.of(context).themeData.colors;
+    return Expanded(
+        child: Container(
+            decoration: BoxDecoration(
+                border: Border(
+                    top: BorderSide(
+                        color: colors.themeBorderDefault, width: 1))),
+            child: TextButton(
+              style: ButtonStyle(
+                overlayColor: MaterialStateProperty.resolveWith<Color?>(
+                    (Set<MaterialState> states) {
+                  return colors.themeFgDefault.withOpacity(0.1);
+                }),
+              ),
+              onPressed: back,
+              child: SizedBox(
+                  height: 56,
+                  child: Center(
+                      child: Text("Back",
+                          style: ArDriveTypography.body
+                              .smallBold700(color: colors.themeFgDefault)))),
+            )));
+  }
+
+  Widget _nextButton({required String text, required bool isDisabled}) {
+    return Expanded(
+        child: ArDriveButton(
+            isDisabled: isDisabled,
+            iconAlignment: IconButtonAlignment.right,
+            icon: Container(
+                padding: const EdgeInsets.only(top: 4),
+                child: Icon(Icons.arrow_forward,
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgOnAccent,
+                    size: 20)),
+            fontStyle: ArDriveTypography.body.smallBold700(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgOnAccent),
+            maxWidth: double.maxFinite,
+            borderRadius: 0,
+            text: text,
+            onPressed: advancePage));
+  }
+
+  Widget _buildCard(List<String> cardInfo) {
+    final screenSize = MediaQuery.of(context).size;
+
+    final wideScreen = screenSize.width > (374 * 2 + 24 * 3);
+    final containerWidth = wideScreen ? 374.0 : screenSize.width - 40.0;
+    final height = wideScreen ? 180.0 : null;
+
+    return Container(
+      child: Stack(
+        children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+                padding: const EdgeInsets.only(left: 35),
+                child: Text(
+                  cardInfo[0],
+                  style: ArDriveTypography.headline.headline5Regular(),
+                )),
+            const SizedBox(height: 16),
+            Container(
+              width: containerWidth,
+              height: height,
+              padding: const EdgeInsets.fromLTRB(30, 24, 30, 24),
+              decoration: BoxDecoration(
+                color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                cardInfo[1],
+                style: ArDriveTypography.body
+                    .bodyRegular()
+                    .copyWith(fontSize: 16, height: 1.4),
+              ),
+            )
+          ]),
+          Container(
+            margin: const EdgeInsets.fromLTRB(15, 5, 0, 0),
+            width: 5,
+            height: 20,
+            child: CustomPaint(
+              painter: AccentPainter(lineHeight: 83),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget blurred(double width, String word, bool isBlurred) {
+    var radius = const Radius.circular(4);
+
+    var text = Container(
+        width: width,
+        height: 45,
+        decoration: BoxDecoration(
+            color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+            borderRadius:
+                BorderRadius.only(topRight: radius, bottomRight: radius)),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 16),
+        child: Text(word));
+
+    return isBlurred
+        ? ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+            child: text,
+          )
+        : text;
+  }
+
+  Widget _buildSeedPhraseWord(int num, String word) {
+    final screenSize = MediaQuery.of(context).size;
+    final width = screenSize.width > (176 * 3 + 24 * 4)
+        ? 176.0
+        : (screenSize.width - 24 * 3) / 2;
+    var radius = const Radius.circular(4);
+    return Container(
+        width: width,
+        height: 45,
+        child: Row(
+          children: [
+            Container(
+                width: 22,
+                height: 45,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color:
+                        ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                    borderRadius:
+                        BorderRadius.only(topLeft: radius, bottomLeft: radius)),
+                child: Center(
+                    child: Text(
+                  '$num',
+                  style: ArDriveTypography.body.smallBold700(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault),
+                ))),
+            blurred(width - 22, word, _isBlurredSeedPhrase),
+          ],
+        ));
+  }
+
+  Widget _buildWordToCheck(double width, WordOption wordOption) {
+    var radius = const Radius.circular(4);
+    var colors = ArDriveTheme.of(context).themeData.colors;
+
+    var currentWordToCheckIndex =
+        _wordsToCheck.indexWhere((e) => e.word.isEmpty);
+    var showCursor = (currentWordToCheckIndex >= 0 &&
+        wordOption == _wordsToCheck[currentWordToCheckIndex]);
+
+    var borderColor = showCursor ? colors.themeFgDefault : colors.themeBgCanvas;
+    var numberColor =
+        showCursor ? colors.themeBgSurface : colors.themeFgDefault;
+
+    return Container(
+        width: width,
+        height: 45,
+        decoration: BoxDecoration(
+            color: borderColor, borderRadius: BorderRadius.circular(4)),
+        child: Row(
+          children: [
+            Container(
+                width: 22,
+                height: 45,
+                alignment: Alignment.center,
+                child: Center(
+                    child: Text('${wordOption.index + 1}',
+                        style: ArDriveTypography.body
+                            .smallBold700(color: numberColor)))),
+            Stack(
+                alignment:
+                    showCursor ? Alignment.centerLeft : Alignment.centerRight,
+                children: [
+                  Container(
+                      width: width - 24,
+                      height: 43,
+                      decoration: BoxDecoration(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeBgSurface,
+                          borderRadius: BorderRadius.only(
+                              topRight: radius, bottomRight: radius)),
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Text(showCursor ? "|" : wordOption.word,
+                          style: ArDriveTypography.body
+                              .smallBold700(color: colors.themeFgDefault))),
+                  if (wordOption.word.isNotEmpty)
+                    Container(
+                        child: IconButton.filled(
+                            onPressed: () {
+                              setState(() {
+                                _wordOptions.forEach((element) {
+                                  if (element.word == wordOption.word) {
+                                    element.index = -1;
+                                  }
+                                });
+                                wordOption.word = '';
+                              });
+                            },
+                            icon: Icon(
+                              Icons.highlight_off,
+                              size: 16,
+                              color: colors.themeFgDefault,
+                            ))),
+                ])
+          ],
+        ));
+  }
+
+  Widget _buildConfirmSeedPhraseWordOption(
+      double width, WordOption wordOption) {
+    var radius = const Radius.circular(4);
+    var selected = wordOption.index >= 0;
+    var colors = ArDriveTheme.of(context).themeData.colors;
+
+    var currentWordToCheckIndex =
+        _wordsToCheck.indexWhere((e) => e.word.isEmpty);
+
+    return selected
+        ? Container(
+            width: width,
+            height: 45,
+            child: Row(
+              children: [
+                Container(
+                    width: 22,
+                    height: 45,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                        color: colors.themeAccentBrand,
+                        borderRadius: BorderRadius.only(
+                            topLeft: radius, bottomLeft: radius)),
+                    child: Center(
+                        child: Text('${wordOption.index + 1}',
+                            style: ArDriveTypography.body
+                                .smallBold700(color: colors.themeFgOnAccent)))),
+                Container(
+                    width: width - 22,
+                    height: 45,
+                    decoration: BoxDecoration(
+                        color: colors.themeFgDefault,
+                        borderRadius: BorderRadius.only(
+                            topRight: radius, bottomRight: radius)),
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.only(left: 16),
+                    child: Text(wordOption.word,
+                        style: ArDriveTypography.body
+                            .smallBold700(color: colors.themeBgSurface)))
+              ],
+            ))
+        : MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+                onTap: () {
+                  if (currentWordToCheckIndex == 3) {
+                    var wordToCheck = _wordsToCheck[currentWordToCheckIndex];
+                    wordToCheck.word = wordOption.word;
+                    wordOption.index = wordToCheck.index;
+
+                    if (_wordsToCheck.every((element) =>
+                        _mnemonicWords[element.index] == element.word)) {
+                      setState(() {
+                        _wordsAreCorrect = true;
+                      });
+                    } else {
+                      setState(() {
+                        _resetMemoryCheckItems();
+                        var snackBar = SnackBar(
+                          width: 380,
+                          content: Row(children: [
+                            MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context)
+                                        .hideCurrentSnackBar();
+                                  },
+                                  child: Icon(Icons.close,
+                                      size: 20, color: colors.themeErrorMuted),
+                                )),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: Text(
+                                    'Order of phrases is not correct. Please try again.',
+                                    style: ArDriveTypography.body
+                                        .smallBold(
+                                          color: colors.themeErrorMuted,
+                                        )
+                                        .copyWith(fontSize: 14)))
+                          ]),
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                                color: colors.themeErrorMuted, width: 1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          showCloseIcon: false,
+                          backgroundColor: colors.themeErrorSubtle,
+                          closeIconColor: colors.themeErrorMuted,
+                          behavior: SnackBarBehavior.floating,
+                        );
+
+                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                      });
+                    }
+                  } else {
+                    setState(() {
+                      var wordToCheck = _wordsToCheck[currentWordToCheckIndex];
+                      wordToCheck.word = wordOption.word;
+                      wordOption.index = wordToCheck.index;
+                    });
+                  }
+                },
+                child: Container(
+                    width: width,
+                    height: 45,
+                    padding: const EdgeInsets.only(left: 16),
+                    decoration: BoxDecoration(
+                        color: colors.themeBgSurface,
+                        borderRadius: BorderRadius.circular(4)),
+                    alignment: Alignment.centerLeft,
+                    child: Text(wordOption.word,
+                        style: ArDriveTypography.body
+                            .smallBold700(color: colors.themeFgDefault)))));
+  }
+
+  Widget _buildWriteDownSeedPhrase() {
+    final screenSize = MediaQuery.of(context).size;
+
+    final rowCount = screenSize.width > (176 * 3 + 24 * 4) ? 3 : 2;
+    final topBottomPadding = rowCount == 2 ? 40.0 : 0.0;
+
+    var rows = Column(
+        children: createRows(
+            items: _mnemonicWords
+                .asMap()
+                .map((i, e) => MapEntry(i, _buildSeedPhraseWord(i + 1, e)))
+                .values
+                .toList(),
+            rowCount: rowCount,
+            hGap: 24,
+            vGap: 24));
+
+    return Scaffold(
+      body: Center(
+          child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                  top: topBottomPadding, bottom: topBottomPadding),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Write Down Seed Phrase',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.headline
+                        .headline4Regular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgMuted)
+                        .copyWith(fontSize: 32),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please carefully write down your seed phrase, in this order, and keep\nit somewhere safe.',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.body.smallBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgSubtle),
+                  ),
+                  const SizedBox(height: 72),
+                  rows,
+                  const SizedBox(height: 72),
+                  ...createRows(
+                    items: [
+                      TextButton.icon(
+                        icon: _isBlurredSeedPhrase
+                            ? ArDriveIcons.eyeClosed(
+                                size: 24,
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgMuted)
+                            : ArDriveIcons.eyeOpen(
+                                size: 24,
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgMuted),
+                        label: Container(
+                            width: 92,
+                            child: Text(
+                              _isBlurredSeedPhrase
+                                  ? 'Show Words'
+                                  : 'Hide Words',
+                              style: ArDriveTypography.body.smallBold(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgMuted),
+                            )),
+                        onPressed: () {
+                          setState(() {
+                            _isBlurredSeedPhrase = !_isBlurredSeedPhrase;
+                          });
+                        },
+                      ),
+                      TextButton.icon(
+                        icon: ArDriveIcons.copy(
+                            size: 24,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgMuted),
+                        label: Container(
+                            child: Text(
+                          'Copy to Clipboard',
+                          style: ArDriveTypography.body.smallBold(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted),
+                        )),
+                        onPressed: () async {
+                          await Clipboard.setData(
+                              ClipboardData(text: widget.mnemonic));
+                        },
+                      )
+                    ],
+                    rowCount: rowCount == 3 ? 2 : 1,
+                    hGap: 16,
+                    vGap: 16,
+                  ),
+                ],
+              ))),
+      bottomNavigationBar: IntrinsicHeight(
+          child: Row(children: [
+        _backButton(),
+        _nextButton(text: 'I wrote it down', isDisabled: false)
+      ])),
+    );
+  }
+
+  Widget _buildConfirmYourSeedPhrase() {
+    final screenSize = MediaQuery.of(context).size;
+
+    final rowCount = screenSize.width > (176 * 4 + 24 * 5) ? 4 : 2;
+    final width = rowCount == 4 ? 176.0 : (screenSize.width - 24 * 3) / 2;
+
+    var wordsToCheck = createRows(
+        items: _wordsToCheck.map((e) => _buildWordToCheck(width, e)).toList(),
+        rowCount: rowCount,
+        hGap: 24,
+        vGap: 24);
+
+    var wordOptions = createRows(
+        items: _wordOptions.map((e) {
+          return _buildConfirmSeedPhraseWordOption(width, e);
+        }).toList(),
+        rowCount: rowCount,
+        hGap: 24,
+        vGap: 24);
+
+    return Scaffold(
+      body: Center(
+          child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            'Confirm Your Seed Phrase',
+            textAlign: TextAlign.center,
+            style: ArDriveTypography.headline
+                .headline4Regular(
+                    color:
+                        ArDriveTheme.of(context).themeData.colors.themeFgMuted)
+                .copyWith(fontSize: 32),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Please select each phrase in order to make sure it’s correct.',
+            textAlign: TextAlign.center,
+            style: ArDriveTypography.body.smallBold(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle),
+          ),
+          const SizedBox(height: 72),
+          ...wordsToCheck,
+          const SizedBox(height: 72),
+          ...wordOptions,
+        ],
+      )),
+      bottomNavigationBar: IntrinsicHeight(
+          child: Row(children: [
+        _backButton(),
+        _nextButton(text: 'Continue', isDisabled: !_wordsAreCorrect)
+      ])),
+    );
+  }
+
+  Widget _buildGettingStarted() {
+    var cardInfos = [
+      [
+        'Keyfile',
+        'A keyfile is another way to access your wallet. It contains encrypted information that helps us authenticate your identity. Keep it secure alongside your seed phrase.'
+      ],
+      [
+        'Seed Phrase',
+        "A seed phrase is a unique set of words that acts as the master key to your wallet. It's important because it allows us to generate your wallet from the phrase whenever you log in, which may take a moment to complete."
+      ],
+      [
+        'Security',
+        "It's crucial to safeguard both your seed phrase and keyfile. We don't retain a copy of your wallet, so losing or forgetting them may result in permanent loss of access to your funds."
+      ],
+      [
+        'Extra Security',
+        'For enhanced protection, consider storing your seed phrase in a password manager or a secure offline location. This will help prevent unauthorized access to your wallet.'
+      ],
+    ];
+
+    final screenSize = MediaQuery.of(context).size;
+
+    final rowCount = screenSize.width > (374 * 2 + 24 * 3) ? 2 : 1;
+    final topBottomPadding = rowCount == 1 ? 40.0 : 0.0;
+
+    return Scaffold(
+      body: Center(
+          child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                  top: topBottomPadding, bottom: topBottomPadding),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Getting Started',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.headline
+                        .headline4Regular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgMuted)
+                        .copyWith(fontSize: 32),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Learn some important information about your wallet\nwhile we begin generating it.',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.body.smallBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgSubtle),
+                  ),
+                  const SizedBox(height: 72),
+                  ...createRows(
+                      items: cardInfos.map(_buildCard).toList(),
+                      rowCount: rowCount,
+                      hGap: 24,
+                      vGap: 40)
+                ],
+              ))),
+      bottomNavigationBar: IntrinsicHeight(
+          child: Row(children: [
+        _backButton(),
+        _nextButton(text: 'Continue', isDisabled: false)
+      ])),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+        color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+        child: _buildContent(context));
+
+    //     Row(
+    //       mainAxisAlignment: MainAxisAlignment.center,
+    //       children: [
+    //         Expanded(
+    //           child: Container(
+    //             color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+    //             child: Align(
+    //               child: MaxDeviceSizesConstrainedBox(
+    //                 child: _FadeThroughTransitionSwitcher(
+    //                   fillColor: ArDriveTheme.of(context)
+    //                       .themeData
+    //                       .colors
+    //                       .themeBgSurface,
+    //                   child: _buildOnBoardingContent(),
+    //                 ),
+    //               ),
+    //             ),
+    //           ),
+    //         ),
+    //         Expanded(
+    //           child: FractionallySizedBox(
+    //             heightFactor: 1,
+    //             child: _buildOnBoardingIllustration(_currentPage),
+    //           ),
+    //         ),
+    //       ],
+    //     ),
+    //   ),
+    //   mobile: Scaffold(
+    //     resizeToAvoidBottomInset: true,
+    //     body: Container(
+    //       color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+    //       child: Align(
+    //         child: MaxDeviceSizesConstrainedBox(
+    //           child: Padding(
+    //             padding: const EdgeInsets.all(16),
+    //             child: _buildOnBoardingContent(),
+    //           ),
+    //         ),
+    //       ),
+    //     ),
+    // ),
+    // );
   }
 }

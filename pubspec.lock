@@ -87,9 +87,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.3.1"
-      resolved-ref: f45178502c62f97a9d300495e0c5a14668aed896
-      url: "https://github.com/ar-io/ardrive_ui.git"
+      ref: seed-phrase-login
+      resolved-ref: "6b6084daf3b0ba54c1d76d6df10d026e9a012a24"
+      url: "https://github.com/kunstmusik/ardrive_ui.git"
     source: git
     version: "1.2.0"
   args:
@@ -696,10 +696,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_cache_manager
-      sha256: "32cd900555219333326a2d0653aaaf8671264c29befa65bbd9856d204a4c9fb3"
+      sha256: "8207f27539deb83732fdda03e259349046a39a4c767269285f449ade355d54ba"
       url: "https://pub.dev"
     source: hosted
-    version: "3.3.0"
+    version: "3.3.1"
   flutter_downloader:
     dependency: "direct overridden"
     description:
@@ -1408,14 +1408,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.6"
-  pedantic:
-    dependency: transitive
-    description:
-      name: pedantic
-      sha256: "67fc27ed9639506c856c840ccce7594d0bdcd91bc8d53d6e52359449a1d50602"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.11.1"
   percent_indicator:
     dependency: "direct main"
     description:
@@ -1737,10 +1729,10 @@ packages:
     dependency: transitive
     description:
       name: sqflite_common
-      sha256: e77abf6ff961d69dfef41daccbb66b51e9983cdd5cb35bf30733598057401555
+      sha256: "8f7603f3f8f126740bc55c4ca2d1027aab4b74a1267a3e31ce51fe40e3b65b8f"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.5"
+    version: "2.4.5+1"
   sqlite3:
     dependency: transitive
     description:

@@ -91,20 +91,12 @@ class AddWalletFromMnemonic extends LoginEvent {
   List<Object> get props => [mnemonic];
 }
 
-class CreateWallet extends LoginEvent {
-  const CreateWallet();
+class GenerateWallet extends LoginEvent {
+  const GenerateWallet();
 }
 
-class ConfirmWalletMnemonic extends LoginEvent {
-  const ConfirmWalletMnemonic();
-}
-
-class VerifyWalletMnemonic extends LoginEvent {
-  const VerifyWalletMnemonic(this.mnemonic, this.wallet);
-  final String mnemonic;
-  final Wallet wallet;
-  @override
-  List<Object> get props => [mnemonic, wallet];
+class CreateNewWallet extends LoginEvent {
+  const CreateNewWallet();
 }
 
 class CompleteWalletGeneration extends LoginEvent {
