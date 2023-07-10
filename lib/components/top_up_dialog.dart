@@ -524,7 +524,7 @@ class _BalanceViewState extends State<_BalanceView> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${convertCreditsToLiteralString(widget.balance)} ${appLocalizationsOf(context).creditsTurbo}',
+                '${convertCreditsToLiteralString(widget.balance)} ${appLocalizationsOf(context).credits}',
                 style: ArDriveTypography.body.buttonXLargeBold(
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
@@ -621,7 +621,7 @@ class PriceEstimateView extends StatelessWidget {
           children: [
             const Divider(height: 32),
             Text(
-              '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
+              '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).credits} = $estimatedStorage $storageUnit',
               style: ArDriveTypography.body.buttonNormalBold(),
             ),
             const SizedBox(height: 4),
