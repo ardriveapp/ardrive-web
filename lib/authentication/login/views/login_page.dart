@@ -27,6 +27,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class LoginPage extends StatefulWidget {
@@ -247,38 +248,38 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       builder: (context, state) {
         late Widget content;
 
-        if (state is PromptPassword) {
-          content = PromptPasswordView(
-            wallet: state.walletFile,
-          );
-        } else if (state is CreatingNewPassword) {
-          content = CreatePasswordView(
-            wallet: state.walletFile,
-          );
-        } else if (state is LoginLoading) {
-          content = const MaxDeviceSizesConstrainedBox(
-            child: _LoginCard(
-              content: Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-          );
-        } else if (enableSeedPhraseLogin && state is LoginEnterSeedPhrase) {
-          content = const EnterSeedPhraseView();
-        } else if (enableSeedPhraseLogin && state is LoginGenerateWallet) {
-          content = GenerateWalletView(mnemonic: state.mnemonic);
-        } else if (enableSeedPhraseLogin &&
-            state is LoginDownloadGeneratedWallet) {
-          content = DownloadWalletView(
-              mnemonic: state.mnemonic, wallet: state.walletFile);
-        } else {
-          content = PromptWalletView(
-            key: const Key('promptWalletView'),
-            isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
-          );
-        }
+        // if (state is PromptPassword) {
+        //   content = PromptPasswordView(
+        //     wallet: state.walletFile,
+        //   );
+        // } else if (state is CreatingNewPassword) {
+        //   content = CreatePasswordView(
+        //     wallet: state.walletFile,
+        //   );
+        // } else if (state is LoginLoading) {
+        //   content = const MaxDeviceSizesConstrainedBox(
+        //     child: _LoginCard(
+        //       content: Center(
+        //         child: CircularProgressIndicator(),
+        //       ),
+        //     ),
+        //   );
+        // } else if (enableSeedPhraseLogin && state is LoginEnterSeedPhrase) {
+        //   content = const EnterSeedPhraseView();
+        // } else if (enableSeedPhraseLogin && state is LoginGenerateWallet) {
+        //   content = GenerateWalletView(mnemonic: state.mnemonic);
+        // } else if (enableSeedPhraseLogin &&
+        //     state is LoginDownloadGeneratedWallet) {
+        //   content = DownloadWalletView(
+        //       mnemonic: state.mnemonic, wallet: state.walletFile);
+        // } else {
+        //   content = PromptWalletView(
+        //     key: const Key('promptWalletView'),
+        //     isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
+        //   );
+        // }
 
-        // content = GenerateWalletView(mnemonic: "test");
+        content = GenerateWalletView(mnemonic: "test");
 
         return SizedBox(
           height: MediaQuery.of(context).size.height,
@@ -586,9 +587,10 @@ class _PromptWalletViewState extends State<PromptWalletView> {
 }
 
 class _LoginCard extends StatelessWidget {
-  const _LoginCard({required this.content});
+  const _LoginCard({required this.content, this.showLattice = false});
 
   final Widget content;
+  final bool showLattice;
 
   @override
   Widget build(BuildContext context) {
@@ -618,18 +620,35 @@ class _LoginCard extends StatelessWidget {
       }
 
       return ArDriveCard(
-        backgroundColor:
-            ArDriveTheme.of(context).themeData.colors.themeBgSurface,
-        borderRadius: 24,
-        boxShadow: BoxShadowCard.shadow80,
-        contentPadding: EdgeInsets.fromLTRB(
-          horizontalPadding,
-          _topPadding(context),
-          horizontalPadding,
-          _bottomPadding(context),
-        ),
-        content: content,
-      );
+          backgroundColor:
+              ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+          borderRadius: 24,
+          boxShadow: BoxShadowCard.shadow80,
+          contentPadding: EdgeInsets.zero,
+          content: Stack(
+            children: [
+              if (showLattice)
+                Positioned(
+                  bottom: 30,
+                  right: 0,
+                  child: SvgPicture.asset(
+                    Resources.images.login.lattice,
+                    // fit: BoxFit.fitHeight,
+                  ),
+                ),
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  _topPadding(context),
+                  horizontalPadding,
+                  _bottomPadding(context),
+                ),
+                child: content,
+              )
+            ],
+          )
+          // content,
+          );
     });
   }
 
@@ -1558,6 +1577,7 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
       defaultMaxHeight: 798,
       maxHeightPercent: 1,
       child: _LoginCard(
+        showLattice: true,
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
