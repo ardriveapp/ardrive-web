@@ -2217,14 +2217,37 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                       setState(() {
                         _resetMemoryCheckItems();
                         var snackBar = SnackBar(
-                          content: Text(
-                              'Order of phrases is not correct. Please try again.',
-                              style: ArDriveTypography.body.smallBold700(
-                                color: colors.themeErrorMuted,
-                              )),
-                          showCloseIcon: true,
+                          width: 380,
+                          content: Row(children: [
+                            MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context)
+                                        .hideCurrentSnackBar();
+                                  },
+                                  child: Icon(Icons.close,
+                                      size: 20, color: colors.themeErrorMuted),
+                                )),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: Text(
+                                    'Order of phrases is not correct. Please try again.',
+                                    style: ArDriveTypography.body
+                                        .smallBold(
+                                          color: colors.themeErrorMuted,
+                                        )
+                                        .copyWith(fontSize: 14)))
+                          ]),
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                                color: colors.themeErrorMuted, width: 1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          showCloseIcon: false,
                           backgroundColor: colors.themeErrorSubtle,
                           closeIconColor: colors.themeErrorMuted,
+                          behavior: SnackBarBehavior.floating,
                         );
 
                         ScaffoldMessenger.of(context).showSnackBar(snackBar);
