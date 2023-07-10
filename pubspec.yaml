@@ -101,7 +101,7 @@ dependencies:
   chewie: ^1.4.0
   lottie: ^2.3.0
   visibility_detector: ^0.4.0+2
-  logger: ^1.3.0
+  logger: ^1.4.0
   flutter_stripe: ^9.1.1
   flutter_stripe_web: ^4.0.1
   stash_shared_preferences: ^4.6.2

@@ -59,7 +59,6 @@ class SnapshotEntity extends Entity {
         ..ownerAddress = transaction.owner.address
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
-      // ignore: avoid_print
       logger.e('Error parsing transaction: ${transaction.id}');
       throw EntityTransactionParseException(transactionId: transaction.id);
     }

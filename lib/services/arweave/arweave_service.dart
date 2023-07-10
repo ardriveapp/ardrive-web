@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_print
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -794,7 +792,8 @@ class ArweaveService {
             ),
           );
         } on EntityTransactionParseException catch (parseException) {
-          logger.e('Failed to parse transaction with id ${parseException.transactionId}');
+          logger.e(
+              'Failed to parse transaction with id ${parseException.transactionId}');
         }
       }
 

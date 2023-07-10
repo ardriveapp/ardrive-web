@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_print
-
 part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 
 Future<void> _updateTransactionStatuses({

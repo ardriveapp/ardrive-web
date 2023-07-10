@@ -37,7 +37,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
     return;
   }
 
-  logSync(
+  logger.d(
     'no. of entities in drive - ${drive.name} to be parsed are: $numberOfDriveEntitiesToParse\n',
   );
 
@@ -48,7 +48,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
         final isReadingFromSnapshot = snapshotDriveHistory.items.isNotEmpty;
 
         if (!isReadingFromSnapshot) {
-          logSync('Getting metadata from drive ${drive.name}');
+          logger.d('Getting metadata from drive ${drive.name}');
         }
 
         final entityHistory =
@@ -154,12 +154,9 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
         yield driveEntityParseProgress();
       });
 
-  logSync('''
-        ${'- - ' * 10}
-        drive: ${drive.name} sync completed.\n
-        no. of transactions to be parsed into entities:  $numberOfDriveEntitiesToParse
-        no. of parsed entities:  $numberOfDriveEntitiesParsed
-        ''');
+  logger.i('''drive: ${drive.name} sync completed.
+no. of transactions to be parsed into entities:  $numberOfDriveEntitiesToParse
+no. of parsed entities:  $numberOfDriveEntitiesParsed''');
 }
 
 Stream<double> _batchProcess<T>({
