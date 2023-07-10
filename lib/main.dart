@@ -54,7 +54,7 @@ final overlayKey = GlobalKey<OverlayState>();
 
 late ConfigService configService;
 late ArweaveService _arweave;
-late UploadService _turboUpload;
+late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -105,7 +105,7 @@ Future<void> _initialize() async {
     ArDriveCrypto(),
   );
   _turboUpload = config.useTurboUpload
-      ? UploadService(
+      ? TurboUploadService(
           turboUploadUri: Uri.parse(config.defaultTurboUploadUrl!),
           allowedDataItemSize: config.allowedDataItemSizeForTurbo!,
           httpClient: ArDriveHTTP(),
@@ -190,7 +190,7 @@ class AppState extends State<App> {
         RepositoryProvider<ConfigService>(
           create: (_) => configService,
         ),
-        RepositoryProvider<UploadService>(
+        RepositoryProvider<TurboUploadService>(
           create: (_) => _turboUpload,
         ),
         RepositoryProvider<PaymentService>(
@@ -260,7 +260,7 @@ class AppState extends State<App> {
               BlocProvider(
                 create: (context) => ProfileCubit(
                   arweave: context.read<ArweaveService>(),
-                  turboUploadService: context.read<UploadService>(),
+                  turboUploadService: context.read<TurboUploadService>(),
                   profileDao: context.read<ProfileDao>(),
                   db: context.read<Database>(),
                 ),

@@ -17,13 +17,13 @@ part 'profile_state.dart';
 /// and wallet balance.
 class ProfileCubit extends Cubit<ProfileState> {
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final ProfileDao _profileDao;
   final Database _db;
 
   ProfileCubit({
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required ProfileDao profileDao,
     required Database db,
   })  : _arweave = arweave,

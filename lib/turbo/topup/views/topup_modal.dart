@@ -18,7 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
-void showTurboModal(BuildContext context) {
+void showTurboModal(BuildContext context, {Function()? onSuccess}) {
   final sessionManager = TurboSessionManager();
 
   final costCalculator = TurboCostCalculator(
@@ -76,7 +76,12 @@ void showTurboModal(BuildContext context) {
     barrierColor:
         ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
   ).then((value) {
-    logger.d('Turbo modal closed');
+    logger.d('Turbo modal closed with value: ${turbo.paymentStatus}');
+
+    if (turbo.paymentStatus == PaymentStatus.success) {
+      onSuccess?.call();
+    }
+
     turbo.dispose();
   });
 }

@@ -16,7 +16,7 @@ class ConfigFetcher {
     if (flavor == Flavor.production) {
       return loadFromEnv('prod');
     } else {
-      return loadFromDevToolsPrefs();
+      return loadFromDevToolsPrefs(flavor);
     }
   }
 
@@ -39,7 +39,7 @@ class ConfigFetcher {
   }
 
   @visibleForTesting
-  Future<AppConfig> loadFromDevToolsPrefs() async {
+  Future<AppConfig> loadFromDevToolsPrefs(Flavor flavor) async {
     try {
       final config = localStore.getString('config');
 
@@ -50,11 +50,22 @@ class ConfigFetcher {
       logger.e('Error when loading config from dev tools prefs', e);
     }
 
-    final configFromEnv = await loadFromEnv('dev');
+    final configFromEnv = await loadFromEnv(_parseFlavorToEnv(flavor));
 
     saveConfigOnDevToolsPrefs(configFromEnv);
 
     return configFromEnv;
+  }
+
+  String _parseFlavorToEnv(Flavor flavor) {
+    switch (flavor) {
+      case Flavor.production:
+        return 'prod';
+      case Flavor.development:
+        return 'dev';
+      case Flavor.staging:
+        return 'staging';
+    }
   }
 
   void saveConfigOnDevToolsPrefs(AppConfig config) {

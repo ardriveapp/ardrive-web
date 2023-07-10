@@ -62,7 +62,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   @override
   Widget build(BuildContext context) {
-    if (context.read<ConfigService>().flavor == Flavor.development) {
+    if (context.read<ConfigService>().flavor != Flavor.production) {
       return ArDriveAppWithDevTools(widget: _app());
     }
 

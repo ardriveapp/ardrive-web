@@ -20,7 +20,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final List<ArDriveDataTableItem> selectedItems;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
@@ -30,7 +30,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required this.driveId,
     required this.selectedItems,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
@@ -254,7 +254,10 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     if (_turboUploadService.useTurboUpload) {
       for (var dataItem in moveTxDataItems) {
-        await _turboUploadService.postDataItem(dataItem: dataItem);
+        await _turboUploadService.postDataItem(
+          dataItem: dataItem,
+          wallet: profile.wallet,
+        );
       }
     } else {
       final moveTx = await _arweave.prepareDataBundleTx(

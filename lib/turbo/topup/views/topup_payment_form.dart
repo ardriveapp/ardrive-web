@@ -512,6 +512,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 FocusScope.of(context).unfocus();
               },
               context: context,
+              theme: theme,
               onChanged: (country) {
                 setState(() {
                   _selectedCountry = country;
@@ -696,6 +697,7 @@ class InputDropdownMenu<T extends InputDropdownItem> extends StatefulWidget {
     this.selectedItem,
     required this.buildSelectedItem,
     this.label,
+    this.backgroundColor,
     this.onChanged,
     this.anchor = const Aligned(
       follower: Alignment.topLeft,
@@ -713,6 +715,7 @@ class InputDropdownMenu<T extends InputDropdownItem> extends StatefulWidget {
   final Function()? onClick;
   final Anchor anchor;
   final TextStyle? itemsTextStyle;
+  final Color? backgroundColor;
 
   @override
   State<InputDropdownMenu> createState() => _InputDropdownMenuState<T>();
@@ -740,18 +743,25 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
         items: widget.items
             .map(
               (e) => ArDriveDropdownItem(
-                content: Center(
-                  child: Text(
-                    e.label,
-                    style: widget.itemsTextStyle ??
-                        ArDriveTypography.body.captionBold(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .textFieldTheme
-                              .inputTextStyle
-                              .color,
-                        ),
-                    textAlign: TextAlign.center,
+                content: Container(
+                  color: widget.backgroundColor ??
+                      ArDriveTheme.of(context)
+                          .themeData
+                          .textFieldTheme
+                          .inputBackgroundColor,
+                  child: Center(
+                    child: Text(
+                      e.label,
+                      style: widget.itemsTextStyle ??
+                          ArDriveTypography.body.captionBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .textFieldTheme
+                                .inputTextStyle
+                                .color,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
                 onClick: () {
@@ -807,6 +817,7 @@ class CountryInputDropdown extends InputDropdownMenu<CountryItem> {
     Key? key,
     required List<CountryItem> items,
     required Widget Function(CountryItem?) buildSelectedItem,
+    required ArDriveTextFieldTheme theme,
     CountryItem? selectedItem,
     required Function(CountryItem) onChanged,
     Function()? onClick,
@@ -819,6 +830,8 @@ class CountryInputDropdown extends InputDropdownMenu<CountryItem> {
           buildSelectedItem: buildSelectedItem,
           label: '${appLocalizationsOf(context).country} *',
           onChanged: onChanged,
+          itemsTextStyle: theme.inputTextStyle,
+          backgroundColor: theme.inputBackgroundColor,
         );
 }
 

@@ -20,7 +20,7 @@ void main() {
     late Database db;
 
     late ArweaveService arweave;
-    late UploadService turboUploadService;
+    late TurboUploadService turboUploadService;
     late ProfileCubit profileCubit;
     late FolderCreateCubit folderCreateCubit;
 
