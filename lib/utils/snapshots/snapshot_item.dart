@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
@@ -73,7 +74,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
           arweave: arweave,
         );
       } catch (e) {
-        print('Ignoring snapshot transaction with invalid block range - $e');
+        logger.e('Ignoring snapshot transaction with invalid block range - $e');
         continue;
       }
 
@@ -140,6 +141,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   final ArweaveService _arweave;
 
   static final Map<String, Cache<Uint8List>> _jsonMetadataCaches = {};
+  static final Set<TxID> allTxs = {};
 
   SnapshotItemOnChain({
     required this.blockEnd,
@@ -196,7 +198,7 @@ class SnapshotItemOnChain implements SnapshotItem {
       try {
         node = DriveHistoryTransaction.fromJson(item['gqlNode']);
       } catch (e, s) {
-        print(
+        logger.i(
           'Error while parsing GQLNode from snapshot item ($txId) - $e, $s',
         );
         continue;
@@ -231,6 +233,7 @@ class SnapshotItemOnChain implements SnapshotItem {
     final Cache<Uint8List> cache = await _lazilyInitCache(driveId);
 
     await cache.put(txId, data);
+    allTxs.add(txId);
     return data;
   }
 
@@ -242,6 +245,10 @@ class SnapshotItemOnChain implements SnapshotItem {
     final Uint8List? value = await cache.getAndRemove(txId);
 
     return value;
+  }
+
+  static Future<List<TxID>> getAllCachedTransactionIds() async {
+    return allTxs.toList();
   }
 
   static Future<Cache<Uint8List>> _lazilyInitCache(DriveID driveId) async {

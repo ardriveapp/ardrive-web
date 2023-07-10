@@ -47,7 +47,7 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
-    
+
     buildTypes {
         release {
             signingConfig signingConfigs.debug
@@ -58,6 +58,9 @@ android {
     productFlavors {
         development {
             dimension "app"
+        }
+        staging {
+          dimension "app"
         }
         production {
             dimension "app"

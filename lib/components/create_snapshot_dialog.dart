@@ -9,6 +9,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -413,13 +414,13 @@ Widget _confirmDialog(
         ModalAction(
           title: appLocalizationsOf(context).cancelEmphasized,
           action: () {
-            print('Cancel snapshot creation');
+            logger.i('Cancel snapshot creation');
             Navigator.of(context).pop();
           },
         ),
         ModalAction(
           action: () async => {
-            print('Confirm snapshot creation'),
+            logger.i('Confirm snapshot creation'),
             await createSnapshotCubit.confirmSnapshotCreation(),
           },
           title: appLocalizationsOf(context).uploadEmphasized,

@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
@@ -32,6 +33,7 @@ part 'utils/add_file_entity_revisions.dart';
 part 'utils/add_folder_entity_revisions.dart';
 part 'utils/create_ghosts.dart';
 part 'utils/generate_paths.dart';
+part 'utils/get_all_file_entities.dart';
 part 'utils/log_sync.dart';
 part 'utils/parse_drive_transactions.dart';
 part 'utils/sync_drive.dart';
@@ -58,6 +60,7 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
+  final ActivityTracker _activityTracker;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -77,6 +80,7 @@ class SyncCubit extends Cubit<SyncState> {
     required Database db,
     required TabVisibilitySingleton tabVisibility,
     required ConfigService configService,
+    required ActivityTracker activityTracker,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _arweave = arweave,
@@ -84,6 +88,7 @@ class SyncCubit extends Cubit<SyncState> {
         _db = db,
         _configService = configService,
         _tabVisibility = tabVisibility,
+        _activityTracker = activityTracker,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     logSync('Building Sync Cubit...');
@@ -159,7 +164,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> arconnectSync() async {
     final isTabFocused = _tabVisibility.isTabFocused();
-    print('[ArConnect SYNC] isTabFocused: $isTabFocused');
+    logger.i('[ArConnect SYNC] isTabFocused: $isTabFocused');
     if (isTabFocused && await _profileCubit.logoutIfWalletMismatch()) {
       emit(SyncWalletMismatch());
       return;
@@ -182,6 +187,11 @@ class SyncCubit extends Cubit<SyncState> {
   var ghostFolders = <FolderID, GhostFolder>{};
 
   Future<void> startSync({bool syncDeep = false}) async {
+    if (!_activityTracker.isSyncAllowed) {
+      logger.i('Activity tracker is not allowing sync');
+      return;
+    }
+
     logSync('Starting Sync');
     logSync('SyncCubit is currently active? ${!isClosed}');
 
@@ -336,13 +346,25 @@ class SyncCubit extends Cubit<SyncState> {
 
       logSync('Updating transaction statuses...');
 
-      await Future.wait([
-        if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
-        _updateTransactionStatuses(
-          driveDao: _driveDao,
-          arweave: _arweave,
-        ),
-      ]);
+      final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
+      final metadataTxsFromSnapshots =
+          await SnapshotItemOnChain.getAllCachedTransactionIds();
+
+      final confirmedFileTxIds = allFileRevisions
+          .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
+          .map((file) => file.dataTxId)
+          .toList();
+
+      await Future.wait(
+        [
+          if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
+          _updateTransactionStatuses(
+            driveDao: _driveDao,
+            arweave: _arweave,
+            txsIdsToSkip: confirmedFileTxIds,
+          ),
+        ],
+      );
 
       logSync('Transaction statuses updated');
 

@@ -46,7 +46,7 @@ class PaymentService {
     );
 
     if (!acceptedStatusCodes.contains(result.statusCode)) {
-      throw Exception(
+      throw PaymentServiceException(
         'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
@@ -73,9 +73,9 @@ class PaymentService {
         'x-public-key': publicKey,
       },
     ).onError((ArDriveHTTPException error, stackTrace) {
-      logger.e('Error getting balance', error, stackTrace);
-
+      logger.e('error getting balance', error, stackTrace);
       if (error.statusCode == 404) {
+        logger.e('user not found');
         throw TurboUserNotFound();
       }
 
@@ -112,6 +112,14 @@ class PaymentService {
 
     return PaymentModel.fromJson(jsonDecode(result.data));
   }
+
+  Future<List<String>> getSupportedCountries() async {
+    final result = await httpClient.get(
+      url: '$turboPaymentUri/v1/countries',
+    );
+
+    return List<String>.from(jsonDecode(result.data));
+  }
 }
 
 class DontUsePaymentService implements PaymentService {
@@ -147,8 +155,19 @@ class DontUsePaymentService implements PaymentService {
     required String currency,
   }) =>
       throw UnimplementedError();
+
+  @override
+  Future<List<String>> getSupportedCountries() {
+    throw UnimplementedError();
+  }
 }
 
 class TurboUserNotFound implements Exception {
   TurboUserNotFound();
+}
+
+class PaymentServiceException implements Exception {
+  final String message;
+
+  PaymentServiceException([this.message = '']);
 }

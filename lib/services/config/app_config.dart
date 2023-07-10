@@ -9,7 +9,7 @@ class AppConfig {
   final bool useTurboPayment;
   final String? defaultTurboUploadUrl;
   final String? defaultTurboPaymentUrl;
-  final int? allowedDataItemSizeForTurbo;
+  final int allowedDataItemSizeForTurbo;
   final bool enableQuickSyncAuthoring;
   final bool enableMultipleFileDownload;
   final bool enableVideoPreview;
@@ -24,7 +24,7 @@ class AppConfig {
     this.useTurboPayment = false,
     this.defaultTurboUploadUrl,
     this.defaultTurboPaymentUrl,
-    this.allowedDataItemSizeForTurbo,
+    required this.allowedDataItemSizeForTurbo,
     this.enableQuickSyncAuthoring = false,
     this.enableMultipleFileDownload = false,
     this.enableVideoPreview = false,

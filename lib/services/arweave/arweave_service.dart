@@ -8,7 +8,6 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
@@ -163,8 +162,8 @@ class ArweaveService {
           break;
         }
       } catch (e) {
-        print('Error fetching snapshots for drive $driveId - $e');
-        print('This drive and ones after will fall back to GQL');
+        logger.i('Error fetching snapshots for drive $driveId - $e');
+        logger.i('This drive and ones after will fall back to GQL');
         break;
       }
     }
@@ -795,8 +794,7 @@ class ArweaveService {
             ),
           );
         } on EntityTransactionParseException catch (parseException) {
-          'Failed to parse transaction with id ${parseException.transactionId}'
-              .logError();
+          logger.e('Failed to parse transaction with id ${parseException.transactionId}');
         }
       }
 
@@ -953,6 +951,10 @@ class ArweaveService {
       ..addBundleTags()
       ..setOwner(await wallet.getOwner());
     await item.sign(wallet);
+
+    logger.i('Prepared bundled data item with id ${item.id}\n'
+        ' with tags ${item.tags}\n'
+        ' and owner ${item.owner}');
 
     return item;
   }

@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -16,7 +17,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final String? fileId;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
@@ -29,7 +30,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     this.folderId,
     this.fileId,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
@@ -88,7 +89,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               key: driveKey,
             );
 
-            await _turboUploadService.postDataItem(dataItem: folderDataItem);
+            await _turboUploadService.postDataItem(
+              dataItem: folderDataItem,
+              wallet: profile.wallet,
+            );
             folderEntity.txId = folderDataItem.id;
           } else {
             final folderTx = await _arweave.prepareEntityTx(
@@ -130,7 +134,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               key: fileKey,
             );
 
-            await _turboUploadService.postDataItem(dataItem: fileDataItem);
+            await _turboUploadService.postDataItem(
+              dataItem: fileDataItem,
+              wallet: profile.wallet,
+            );
             fileEntity.txId = fileDataItem.id;
           } else {
             final fileTx = await _arweave.prepareEntityTx(
@@ -184,10 +191,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   void onError(Object error, StackTrace stackTrace) {
     if (_isRenamingFolder) {
       emit(const FolderEntryRenameFailure());
-      print('Failed to rename folder: $error $stackTrace');
+      logger.e('Failed to rename folder: $error $stackTrace');
     } else {
       emit(const FileEntryRenameFailure());
-      print('Failed to rename file: $error $stackTrace');
+      logger.e('Failed to rename file: $error $stackTrace');
     }
 
     super.onError(error, stackTrace);

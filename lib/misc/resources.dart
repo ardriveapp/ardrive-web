@@ -1,17 +1,17 @@
 class Resources {
   static const images = Images();
   static const arHelpLink =
-      'https://ar-io.zendesk.com/hc/en-us/articles/5258520347419-Fund-Your-Wallet';
+      'https://ardrive.zendesk.com/hc/en-us/articles/5258520347419-Fund-Your-Wallet';
   static const manifestLearnMoreLink =
-      'https://ar-io.zendesk.com/hc/en-us/articles/5300353421467-Arweave-Manifests';
+      'https://ardrive.zendesk.com/hc/en-us/articles/5300353421467-Arweave-Manifests';
   static const surveyFeedbackFormUrl = 'https://ar-io.typeform.com/UserSurvey';
 
-  static const helpLink = 'https://ar-io.zendesk.com/hc/en-us';
+  static const helpLink = 'https://ardrive.zendesk.com/hc/en-us';
   static const agreementLink = 'https://ardrive.io/tos-and-privacy/';
   static const getWalletLink = 'https://www.arconnect.io/';
 
   static const howDoesKeyFileLoginWork =
-      'https://ar-io.zendesk.com/hc/en-us/articles/15412384724251-How-Does-Keyfile-Login-Work-';
+      'https://ardrive.zendesk.com/hc/en-us/articles/15412384724251-How-Does-Keyfile-Login-Work-';
 }
 
 class Images {

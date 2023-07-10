@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,7 +16,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
 
   FolderCreateCubit({
@@ -23,7 +24,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     required this.parentFolderId,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
@@ -80,7 +81,10 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
             key: driveKey,
           );
 
-          await _turboUploadService.postDataItem(dataItem: folderDataItem);
+          await _turboUploadService.postDataItem(
+            dataItem: folderDataItem,
+            wallet: profile.wallet,
+          );
           folderEntity.txId = folderDataItem.id;
         } else {
           final folderTx = await _arweave.prepareEntityTx(
@@ -120,6 +124,6 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     emit(FolderCreateFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to create folder: $error $stackTrace');
+    logger.e('Failed to create folder: $error $stackTrace');
   }
 }

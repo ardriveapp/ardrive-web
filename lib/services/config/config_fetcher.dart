@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -15,7 +16,7 @@ class ConfigFetcher {
     if (flavor == Flavor.production) {
       return loadFromEnv('prod');
     } else {
-      return loadFromDevToolsPrefs();
+      return loadFromDevToolsPrefs(flavor);
     }
   }
 
@@ -38,18 +39,33 @@ class ConfigFetcher {
   }
 
   @visibleForTesting
-  Future<AppConfig> loadFromDevToolsPrefs() async {
-    final config = localStore.getString('config');
+  Future<AppConfig> loadFromDevToolsPrefs(Flavor flavor) async {
+    try {
+      final config = localStore.getString('config');
 
-    if (config != null) {
-      return AppConfig.fromJson(json.decode(config));
+      if (config != null) {
+        return AppConfig.fromJson(json.decode(config));
+      }
+    } catch (e) {
+      logger.e('Error when loading config from dev tools prefs', e);
     }
 
-    final configFromEnv = await loadFromEnv('dev');
+    final configFromEnv = await loadFromEnv(_parseFlavorToEnv(flavor));
 
     saveConfigOnDevToolsPrefs(configFromEnv);
 
     return configFromEnv;
+  }
+
+  String _parseFlavorToEnv(Flavor flavor) {
+    switch (flavor) {
+      case Flavor.production:
+        return 'prod';
+      case Flavor.development:
+        return 'dev';
+      case Flavor.staging:
+        return 'staging';
+    }
   }
 
   void saveConfigOnDevToolsPrefs(AppConfig config) {

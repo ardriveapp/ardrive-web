@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/models/payment_user_information.dart';
@@ -14,13 +15,6 @@ import 'package:arweave/arweave.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 class Turbo extends Disposable {
-  final TurboSessionManager _sessionManager;
-  final TurboCostCalculator _costCalculator;
-  final TurboBalanceRetriever _balanceRetriever;
-  final TurboPriceEstimator _priceEstimator;
-  final TurboPaymentProvider _paymentProvider;
-  final Wallet _wallet;
-
   Turbo({
     required TurboCostCalculator costCalculator,
     required TurboSessionManager sessionManager,
@@ -28,12 +22,14 @@ class Turbo extends Disposable {
     required TurboPriceEstimator priceEstimator,
     required TurboPaymentProvider paymentProvider,
     required Wallet wallet,
+    required TurboSupportedCountriesRetriever supportedCountriesRetriever,
   })  : _balanceRetriever = balanceRetriever,
         _costCalculator = costCalculator,
         _priceEstimator = priceEstimator,
         _paymentProvider = paymentProvider,
         _wallet = wallet,
-        _sessionManager = sessionManager;
+        _sessionManager = sessionManager,
+        _supportedCountriesRetriever = supportedCountriesRetriever;
 
   DateTime get maxQuoteExpirationDate {
     final maxQuoteExpirationTime = _priceEstimator.maxQuoteExpirationTime;
@@ -46,6 +42,23 @@ class Turbo extends Disposable {
     return maxQuoteExpirationTime;
   }
 
+  final TurboSessionManager _sessionManager;
+  final TurboCostCalculator _costCalculator;
+  final TurboBalanceRetriever _balanceRetriever;
+  final TurboPriceEstimator _priceEstimator;
+  final TurboPaymentProvider _paymentProvider;
+  final TurboSupportedCountriesRetriever _supportedCountriesRetriever;
+  final Wallet _wallet;
+
+  PriceEstimate _priceEstimate = PriceEstimate.zero();
+  int? _currentAmount;
+  String? _currentCurrency;
+  FileSizeUnit? _currentDataUnit;
+
+  PaymentUserInformation? _paymentUserInformation;
+
+  PriceEstimate get currentPriceEstimate => _priceEstimate;
+
   Stream<bool> get onSessionExpired => _sessionManager.onSessionExpired;
 
   Stream<PriceEstimate> get onPriceEstimateChanged =>
@@ -56,13 +69,22 @@ class Turbo extends Disposable {
   Future<BigInt> getCostOfOneGB({bool forceGet = false}) =>
       _costCalculator.getCostOfOneGB(forceGet: forceGet);
 
-  PriceEstimate _priceEstimate = PriceEstimate.zero();
+  set paymentUserInformation(PaymentUserInformation paymentUserInformation) {
+    _paymentUserInformation = paymentUserInformation;
+  }
 
-  int? _currentAmount;
-  String? _currentCurrency;
-  FileSizeUnit? _currentDataUnit;
+  PaymentStatus? _paymentStatus;
 
-  PriceEstimate get currentPriceEstimate => _priceEstimate;
+  PaymentStatus? get paymentStatus => _paymentStatus;
+
+  PaymentUserInformation get paymentUserInformation {
+    if (_paymentUserInformation == null) {
+      throw Exception(
+          'Payment user information is null. You should set it before calling this method.');
+    }
+
+    return _paymentUserInformation!;
+  }
 
   Future<PriceEstimate> computePriceEstimate({
     required int currentAmount,
@@ -133,14 +155,22 @@ class Turbo extends Disposable {
     return _currentPaymentIntent!;
   }
 
-  Future<PaymentStatus> confirmPayment({
-    required PaymentUserInformation userInformation,
-  }) {
+  Future<PaymentStatus> confirmPayment() {
+    if (_currentPaymentIntent == null) {
+      throw Exception(
+          'Current payment intent is null. You should create it before calling this method.');
+    }
+
+    logger.d('Confirming payment: ${paymentUserInformation.toString()}');
+
     return _paymentProvider.confirmPayment(
-      paymentUserInformation: userInformation,
+      paymentUserInformation: paymentUserInformation,
       paymentModel: _currentPaymentIntent!,
     );
   }
+
+  Future<List<String>> getSupportedCountries() =>
+      _supportedCountriesRetriever.getSupportedCountries();
 
   @override
   Future<void> dispose() async {
@@ -234,11 +264,20 @@ class TurboBalanceRetriever {
   });
 
   Future<BigInt> getBalance(Wallet wallet) async {
-    return paymentService.getBalance(wallet: wallet);
+    try {
+      final balance = await paymentService.getBalance(wallet: wallet);
+      return balance;
+    } catch (e) {
+      if (e is TurboUserNotFound) {
+        logger.e('Error getting balance: $e');
+        return BigInt.zero;
+      }
+      rethrow;
+    }
   }
 }
 
-class TurboPriceEstimator extends Disposable {
+class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
   TurboPriceEstimator({
     required this.paymentService,
     required this.costCalculator,
@@ -287,6 +326,19 @@ class TurboPriceEstimator extends Disposable {
       logger.e('Error computing price estimate: $e');
       rethrow;
     }
+  }
+
+  @override
+  Future<double?> convertForUSD(BigInt value) async {
+    // 1 dolar
+    final priceEstimate = await paymentService.getPriceForFiat(
+      currency: 'usd',
+      amount: 100,
+    );
+
+    logger.d('Price estimate for 1 dolar: $priceEstimate');
+
+    return value / priceEstimate;
   }
 
   Future<double> computeStorageEstimateForCredits({
@@ -382,13 +434,24 @@ class StripePaymentProvider implements TurboPaymentProvider {
       return PaymentStatus.quoteExpired;
     }
 
+    final billingDetails = BillingDetails(
+      email: paymentUserInformation.email,
+      address: Address(
+        city: '',
+        country: paymentUserInformation.country,
+        line1: '',
+        line2: '',
+        postalCode: '',
+        state: '',
+      ),
+      name: paymentUserInformation.name,
+    );
+
     final paymentIntent = await stripe.confirmPayment(
       paymentIntentClientSecret: paymentModel.paymentSession.clientSecret,
       data: PaymentMethodParams.card(
         paymentMethodData: PaymentMethodData(
-          billingDetails: BillingDetails(
-            email: paymentUserInformation.email,
-          ),
+          billingDetails: billingDetails,
         ),
       ),
     );
@@ -400,8 +463,20 @@ class StripePaymentProvider implements TurboPaymentProvider {
       return PaymentStatus.success;
     }
 
-    logger.e('Payment failed');
+    logger.e('Payment failed with status: ${paymentIntent.status}');
     return PaymentStatus.failed;
+  }
+}
+
+class TurboSupportedCountriesRetriever {
+  final PaymentService paymentService;
+
+  TurboSupportedCountriesRetriever({
+    required this.paymentService,
+  });
+
+  Future<List<String>> getSupportedCountries() async {
+    return paymentService.getSupportedCountries();
   }
 }
 
