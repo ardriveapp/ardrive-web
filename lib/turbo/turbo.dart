@@ -437,23 +437,25 @@ class StripePaymentProvider implements TurboPaymentProvider {
     final billingDetails = BillingDetails(
       email: paymentUserInformation.email,
       address: Address(
-        city: '',
+        city: null,
         country: paymentUserInformation.country,
-        line1: '',
-        line2: '',
-        postalCode: '',
-        state: '',
+        line1: null,
+        line2: null,
+        postalCode: null,
+        state: null,
       ),
       name: paymentUserInformation.name,
     );
 
+    final params = PaymentMethodParams.card(
+      paymentMethodData: PaymentMethodData(billingDetails: billingDetails),
+    );
+
+    await stripe.createPaymentMethod(params: params);
+
     final paymentIntent = await stripe.confirmPayment(
       paymentIntentClientSecret: paymentModel.paymentSession.clientSecret,
-      data: PaymentMethodParams.card(
-        paymentMethodData: PaymentMethodData(
-          billingDetails: billingDetails,
-        ),
-      ),
+      data: params,
     );
 
     logger.d(paymentIntent.toJson().toString());
