@@ -17,7 +17,6 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/size_utils.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';
-import 'package:flutter/foundation.dart';
 import 'package:tuple/tuple.dart';
 
 class ArDriveUploader {
@@ -57,6 +56,7 @@ class ArDriveUploader {
   Stream<double> uploadFromHandles({
     List<BundleUploadHandle> bundleHandles = const [],
     List<FileV2UploadHandle> fileV2Handles = const [],
+    bool enableLogs = true,
   }) async* {
     final List<double> progresses = List.filled(
       bundleHandles.length + fileV2Handles.length,
@@ -68,9 +68,8 @@ class ArDriveUploader {
     for (final bundleHandle in bundleHandles) {
       await _prepareBundle(bundleHandle);
 
-      final stopwatch = Stopwatch()..start();
-
-      final dataSize = bundleHandle.size;
+      Stopwatch stopwatch = Stopwatch()..start();
+      int dataSize = bundleHandle.size;
 
       await for (var progress in _uploadItem(
         index: index++,
@@ -86,11 +85,14 @@ class ArDriveUploader {
       }
 
       stopwatch.stop();
-      final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
-      final uploadSpeed = dataSize / elapsedSeconds;
 
-      debugPrint('Total time elapsed: $elapsedSeconds seconds');
-      debugPrint('Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
+      if (enableLogs) {
+        final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
+        final uploadSpeed = dataSize / elapsedSeconds;
+
+        logger.i('Total time elapsed: $elapsedSeconds seconds');
+        logger.i('Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
+      }
     }
 
     for (final fileV2Handle in fileV2Handles) {
@@ -114,11 +116,14 @@ class ArDriveUploader {
       }
 
       stopwatch.stop();
-      final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
-      final uploadSpeed = dataSize / elapsedSeconds;
 
-      debugPrint('Total time elapsed: $elapsedSeconds seconds');
-      debugPrint('Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
+      if (enableLogs) {
+        final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
+        final uploadSpeed = dataSize / elapsedSeconds;
+
+        logger.i('Total time elapsed: $elapsedSeconds seconds');
+        logger.i('Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
+      }
     }
   }
 
