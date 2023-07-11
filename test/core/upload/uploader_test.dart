@@ -89,6 +89,9 @@ void main() {
         var mockBundleHandle = MockBundleUploadHandle();
         var mockFileV2Handle = MockFileV2UploadHandle();
 
+        when(() => mockBundleHandle.size).thenReturn(100);
+        when(() => mockFileV2Handle.size).thenReturn(100);
+
         when(() => bundleUploader.upload(mockBundleHandle)).thenAnswer(
           (_) => Stream<double>.fromIterable([0.1, 0.5, 1.0]),
         );
@@ -102,6 +105,7 @@ void main() {
           uploader.uploadFromHandles(
             bundleHandles: [mockBundleHandle],
             fileV2Handles: [mockFileV2Handle],
+            enableLogs: false,
           ),
           emitsInOrder([
             // (0.1 / 2) (from bundle handle) 5%
@@ -125,6 +129,9 @@ void main() {
         var mockBundleHandle = MockBundleUploadHandle();
         var mockFileV2Handle = MockFileV2UploadHandle();
 
+        when(() => mockBundleHandle.size).thenReturn(100);
+        when(() => mockFileV2Handle.size).thenReturn(100);
+
         when(() => bundleUploader.upload(mockBundleHandle)).thenAnswer(
           (_) => Stream<double>.fromIterable([0.25, 0.5, 0.6, 1.0]),
         );
@@ -136,6 +143,7 @@ void main() {
           uploader.uploadFromHandles(
             bundleHandles: [mockBundleHandle],
             fileV2Handles: [mockFileV2Handle],
+            enableLogs: false,
           ),
           emitsInOrder([
             // (0.25 / 2) (from bundle handle) 12.5%

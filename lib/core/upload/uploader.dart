@@ -7,10 +7,12 @@ import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/turbo/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/size_utils.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -54,6 +56,7 @@ class ArDriveUploader {
   Stream<double> uploadFromHandles({
     List<BundleUploadHandle> bundleHandles = const [],
     List<FileV2UploadHandle> fileV2Handles = const [],
+    bool enableLogs = true,
   }) async* {
     final List<double> progresses = List.filled(
       bundleHandles.length + fileV2Handles.length,
@@ -63,10 +66,14 @@ class ArDriveUploader {
     int index = 0;
 
     for (final bundleHandle in bundleHandles) {
+      await _prepareBundle(bundleHandle);
+
+      Stopwatch stopwatch = Stopwatch()..start();
+      int dataSize = bundleHandle.size;
+
       await for (var progress in _uploadItem(
         index: index++,
         itemHandle: bundleHandle,
-        prepare: _prepareBundle,
         upload: _bundleUploader.upload,
         onFinishUpload: _onFinishBundleUpload,
         onUploadError: _onUploadBundleError,
@@ -76,13 +83,29 @@ class ArDriveUploader {
         progresses[progress.item1] = progress.item2;
         yield progresses.reduce((a, b) => a + b) / progresses.length;
       }
+
+      stopwatch.stop();
+
+      if (enableLogs) {
+        final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
+        final uploadSpeed = dataSize / elapsedSeconds;
+
+        logger.i('Total time elapsed: $elapsedSeconds seconds');
+        logger.i('Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
+      }
     }
 
     for (final fileV2Handle in fileV2Handles) {
+      logger.i('Uploading fileV2Handle: ${fileV2Handle.toString()}');
+      await _prepareFile(fileV2Handle);
+
+      final stopwatch = Stopwatch()..start();
+
+      final dataSize = fileV2Handle.size;
+
       await for (var progress in _uploadItem(
         index: index++,
         itemHandle: fileV2Handle,
-        prepare: _prepareFile,
         upload: _fileV2Uploader.upload,
         onFinishUpload: _onFinishFileUpload,
         onUploadError: _onUploadFileError,
@@ -91,46 +114,47 @@ class ArDriveUploader {
         progresses[progress.item1] = progress.item2;
         yield progresses.reduce((a, b) => a + b) / progresses.length;
       }
+
+      stopwatch.stop();
+
+      if (enableLogs) {
+        final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
+        final uploadSpeed = dataSize / elapsedSeconds;
+
+        logger.i('Total time elapsed: $elapsedSeconds seconds');
+        logger.i('Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
+      }
     }
   }
 
   Stream<Tuple2<int, double>> _uploadItem<T>({
     required T itemHandle,
     required int index,
-    required Future<void> Function(T handle) prepare,
     required Stream<double> Function(T handle) upload,
     required Future<void> Function(T handle) onFinishUpload,
     required Future<void> Function(T handle, Object error) onUploadError,
     required void Function(T handle) dispose,
   }) async* {
     try {
-      final itemString = itemHandle.toString();
-
-      logger.i('Preparing $itemString');
-
-      await prepare(itemHandle);
-
       bool hasError = false;
 
       await for (var progress in upload(itemHandle).handleError((e, s) {
-        logger.e('Handling error on ArDriveUploader with $itemString', e, s);
+        logger.e('Handling error on ArDriveUploader', e, s);
         hasError = true;
       })) {
         yield Tuple2(index, progress);
       }
 
       if (hasError) {
-        logger.d(
-            'Error in ${itemString.toString()} upload, breaking upload for $itemString');
-        logger.i('Disposing ${itemString.toString()}');
+        logger.d('Error uploading. Breaking upload');
 
         dispose(itemHandle);
 
         throw Exception();
       }
 
-      logger.i('Finished uploading $itemString');
-      logger.i('Disposing $itemString');
+      logger.i('Finished uploading item handle');
+      logger.i('Disposing item handle');
 
       onFinishUpload(itemHandle).then((value) => dispose(itemHandle));
     } catch (e, stacktrace) {
@@ -216,14 +240,20 @@ class ArweaveBundleUploader implements Uploader<BundleUploadHandle> {
 
 class FileV2Uploader implements Uploader<FileV2UploadHandle> {
   final Arweave _arweave;
+  final ArweaveService _arweaveService;
 
-  FileV2Uploader(this._arweave);
+  FileV2Uploader(this._arweave, this._arweaveService);
 
   @override
   Stream<double> upload(handle) async* {
+    await _arweaveService
+        .postTx(handle.entityTx)
+        .onError((error, stackTrace) => handle.hasError = true);
+
     yield* _arweave.transactions
-        .upload(handle.entityTx, maxConcurrentUploadCount: 1)
+        .upload(handle.dataTx, maxConcurrentUploadCount: 1)
         .map((upload) {
+      handle.uploadProgress = upload.progress;
       return upload.progress;
     });
   }

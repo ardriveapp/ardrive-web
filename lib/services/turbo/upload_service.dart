@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive/utils/data_item_utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -61,22 +60,18 @@ class TurboUploadService {
       wallet: wallet,
     );
 
-    final response = await httpClient.postBytesAsStream(
+    final data = (await dataItem.asBinary()).toBytes();
+
+    final response = await httpClient.postBytes(
       url: '$turboUploadUri/v1/tx',
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
         'x-public-key': publicKey,
       },
-      onSendProgress: (double progress) {
-        if (onSendProgress != null) {
-          onSendProgress(progress);
-        }
-      },
-      receiveTimeout: const Duration(days: 365),
-      sendTimeout: const Duration(days: 365),
-      data: await convertDataItemToStreamBytes(dataItem),
+      data: data,
     );
+
     if (!acceptedStatusCodes.contains(response.statusCode)) {
       logger.e(response.data);
       throw Exception(
