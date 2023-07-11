@@ -61,12 +61,6 @@ class TurboUploadService {
     );
 
     final data = (await dataItem.asBinary()).toBytes();
-    final dataSize = data.length;
-
-    logger.d('Uploading data item to turbo');
-    logger.d('Data item size: ${dataSize} bytes');
-
-    final stopwatch = Stopwatch()..start();
 
     final response = await httpClient.postBytes(
       url: '$turboUploadUri/v1/tx',
@@ -77,8 +71,6 @@ class TurboUploadService {
       },
       data: data,
     );
-
-    stopwatch.stop();
 
     if (!acceptedStatusCodes.contains(response.statusCode)) {
       logger.e(response.data);
