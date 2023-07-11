@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/feedback_survey.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
@@ -62,7 +63,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   @override
   Widget build(BuildContext context) {
-    if (context.read<ConfigService>().flavor == Flavor.development) {
+    if (context.read<ConfigService>().flavor != Flavor.production) {
       return ArDriveAppWithDevTools(widget: _app());
     }
 
@@ -257,6 +258,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               providers: [
                 BlocProvider(
                   create: (context) => SyncCubit(
+                    activityTracker: context.read<ActivityTracker>(),
                     configService: context.read<ConfigService>(),
                     profileCubit: context.read<ProfileCubit>(),
                     activityCubit: context.read<ActivityCubit>(),

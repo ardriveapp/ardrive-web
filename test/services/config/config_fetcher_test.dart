@@ -93,7 +93,8 @@ void main() {
     test('returns config from local storage if present', () async {
       when(() => localStore.getString('config')).thenReturn(configStringDev);
 
-      final result = await configFetcher.loadFromDevToolsPrefs();
+      final result =
+          await configFetcher.loadFromDevToolsPrefs(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
@@ -112,7 +113,8 @@ void main() {
       when(() => localStore.putString('config', any()))
           .thenAnswer((i) => Future.value(true));
 
-      final result = await configFetcher.loadFromDevToolsPrefs();
+      final result =
+          await configFetcher.loadFromDevToolsPrefs(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
@@ -133,7 +135,8 @@ void main() {
       when(() => localStore.putString('config', any()))
           .thenAnswer((i) => Future.value(true));
 
-      final result = await configFetcher.loadFromDevToolsPrefs();
+      final result =
+          await configFetcher.loadFromDevToolsPrefs(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));

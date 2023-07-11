@@ -69,8 +69,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: fix-timeout-on-turbo
-      resolved-ref: "5b259db31d51eb43ef0187d473bb3fb921601955"
+      ref: PE-4143-add-upload-progress-indicator-to-turbo-uploads
+      resolved-ref: f9dc3dae733eb10d3ad3b79f69d4738e9912a60a
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.2.5"
