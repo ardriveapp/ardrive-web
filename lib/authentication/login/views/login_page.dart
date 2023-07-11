@@ -2330,15 +2330,17 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                         .copyWith(fontSize: 32),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Please carefully write down your seed phrase, in this order, and keep\nit somewhere safe.',
-                    textAlign: TextAlign.center,
-                    style: ArDriveTypography.body.smallBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgSubtle),
-                  ),
+                  Container(
+                      constraints: BoxConstraints(maxWidth: 508),
+                      child: Text(
+                        'Please carefully write down your seed phrase, in this order, and keep it somewhere safe.',
+                        textAlign: TextAlign.center,
+                        style: ArDriveTypography.body.smallBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgSubtle),
+                      )),
                   const SizedBox(height: 72),
                   rows,
                   const SizedBox(height: 72),
@@ -2392,9 +2394,22 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                                   .colors
                                   .themeFgMuted),
                         )),
-                        onPressed: () async {
-                          await Clipboard.setData(
+                        onPressed: () {
+                          Clipboard.setData(
                               ClipboardData(text: widget.mnemonic));
+
+                          final overlayEntry = _createOverlayEntry(context);
+                          Overlay.of(context).insert(overlayEntry!);
+
+                          Future.delayed(const Duration(seconds: 2), () {
+                            if (!mounted) {
+                              return;
+                            }
+
+                            if (overlayEntry.mounted) {
+                              overlayEntry.remove();
+                            }
+                          });
                         },
                       )
                     ],
@@ -2412,11 +2427,38 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     );
   }
 
+  OverlayEntry _createOverlayEntry(BuildContext parentContext) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final Offset buttonPosition = button.localToGlobal(Offset.zero);
+
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        left: buttonPosition.dx,
+        top: buttonPosition.dy,
+        child: Material(
+          color: ArDriveTheme.of(context).themeData.backgroundColor,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Center(
+              child: Text(
+                'Copied!',
+                style: ArDriveTypography.body.smallRegular(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildConfirmYourSeedPhrase() {
     final screenSize = MediaQuery.of(context).size;
 
     final rowCount = screenSize.width > (176 * 4 + 24 * 5) ? 4 : 2;
     final width = rowCount == 4 ? 176.0 : (screenSize.width - 24 * 3) / 2;
+
+    final topBottomPadding = rowCount == 2 ? 40.0 : 0.0;
 
     var wordsToCheck = createRows(
         items: _wordsToCheck.map((e) => _buildWordToCheck(width, e)).toList(),
@@ -2434,32 +2476,40 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
 
     return Scaffold(
       body: Center(
-          child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'Confirm Your Seed Phrase',
-            textAlign: TextAlign.center,
-            style: ArDriveTypography.headline
-                .headline4Regular(
-                    color:
-                        ArDriveTheme.of(context).themeData.colors.themeFgMuted)
-                .copyWith(fontSize: 32),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Please select each phrase in order to make sure it’s correct.',
-            textAlign: TextAlign.center,
-            style: ArDriveTypography.body.smallBold(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle),
-          ),
-          const SizedBox(height: 72),
-          ...wordsToCheck,
-          const SizedBox(height: 72),
-          ...wordOptions,
-        ],
-      )),
+          child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                  top: topBottomPadding, bottom: topBottomPadding),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Confirm Your Seed Phrase',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.headline
+                        .headline4Regular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgMuted)
+                        .copyWith(fontSize: 32),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please select each phrase in order to make sure it’s correct.',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.body.smallBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgSubtle),
+                  ),
+                  const SizedBox(height: 72),
+                  ...wordsToCheck,
+                  const SizedBox(height: 72),
+                  ...wordOptions,
+                ],
+              ))),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
@@ -2514,15 +2564,17 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                         .copyWith(fontSize: 32),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Learn some important information about your wallet\nwhile we begin generating it.',
-                    textAlign: TextAlign.center,
-                    style: ArDriveTypography.body.smallBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgSubtle),
-                  ),
+                  Container(
+                      constraints: BoxConstraints(maxWidth: 420),
+                      child: Text(
+                        'Learn some important information about your wallet while we begin generating it.',
+                        textAlign: TextAlign.center,
+                        style: ArDriveTypography.body.smallBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgSubtle),
+                      )),
                   const SizedBox(height: 72),
                   ...createRows(
                       items: cardInfos.map(_buildCard).toList(),
@@ -2544,49 +2596,5 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     return Material(
         color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
         child: _buildContent(context));
-
-    //     Row(
-    //       mainAxisAlignment: MainAxisAlignment.center,
-    //       children: [
-    //         Expanded(
-    //           child: Container(
-    //             color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
-    //             child: Align(
-    //               child: MaxDeviceSizesConstrainedBox(
-    //                 child: _FadeThroughTransitionSwitcher(
-    //                   fillColor: ArDriveTheme.of(context)
-    //                       .themeData
-    //                       .colors
-    //                       .themeBgSurface,
-    //                   child: _buildOnBoardingContent(),
-    //                 ),
-    //               ),
-    //             ),
-    //           ),
-    //         ),
-    //         Expanded(
-    //           child: FractionallySizedBox(
-    //             heightFactor: 1,
-    //             child: _buildOnBoardingIllustration(_currentPage),
-    //           ),
-    //         ),
-    //       ],
-    //     ),
-    //   ),
-    //   mobile: Scaffold(
-    //     resizeToAvoidBottomInset: true,
-    //     body: Container(
-    //       color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-    //       child: Align(
-    //         child: MaxDeviceSizesConstrainedBox(
-    //           child: Padding(
-    //             padding: const EdgeInsets.all(16),
-    //             child: _buildOnBoardingContent(),
-    //           ),
-    //         ),
-    //       ),
-    //     ),
-    // ),
-    // );
   }
 }
