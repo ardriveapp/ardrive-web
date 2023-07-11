@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -16,9 +18,38 @@ class TurboUploadService {
     required this.httpClient,
   });
 
+  Stream<double> postDataItemWithProgress({
+    required DataItem dataItem,
+    required Wallet wallet,
+  }) {
+    final controller = StreamController<double>();
+
+    controller.add(0);
+
+    try {
+      postDataItem(
+        dataItem: dataItem,
+        wallet: wallet,
+        onSendProgress: (value) {
+          controller.add(value);
+          if (value == 1) {
+            controller.close();
+          }
+        },
+      );
+    } catch (e) {
+      logger.e(e);
+      controller.addError(e);
+      controller.close();
+    }
+
+    return controller.stream;
+  }
+
   Future<void> postDataItem({
     required DataItem dataItem,
     required Wallet wallet,
+    Function(double)? onSendProgress,
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
 
@@ -66,6 +97,7 @@ class DontUseUploadService implements TurboUploadService {
   Future<void> postDataItem({
     required DataItem dataItem,
     required Wallet wallet,
+    Function(double)? onSendProgress,
   }) {
     throw UnimplementedError();
   }
@@ -78,4 +110,11 @@ class DontUseUploadService implements TurboUploadService {
 
   @override
   late ArDriveHTTP httpClient;
+
+  @override
+  Stream<double> postDataItemWithProgress(
+      {required DataItem dataItem, required Wallet wallet}) {
+    // TODO: implement postDataItemWithProgress
+    throw UnimplementedError();
+  }
 }
