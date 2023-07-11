@@ -88,7 +88,7 @@ packages:
     description:
       path: "."
       ref: PE-4122-top-up-checkout-view-mobile-only-usd
-      resolved-ref: c860a24095df739060fa40d957902042a0cf372b
+      resolved-ref: "3f6718e240357796decb04569cc9f39bf260dfa0"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.2.0"
