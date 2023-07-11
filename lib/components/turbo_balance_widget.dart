@@ -5,7 +5,6 @@ import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
@@ -159,22 +158,12 @@ class _TurboBalanceState extends State<TurboBalance> {
   }
 
   Widget _turboLogo(BuildContext context) {
-    if (AppPlatform.isMobileWeb()) {
-      return SvgPicture.asset(
-        ArDriveTheme.of(context).themeData.name == 'dark'
-            ? Resources.images.brand.turboWhite
-            : Resources.images.brand.turboBlack,
-        height: 15,
-        width: 60,
-        colorBlendMode: BlendMode.dstIn,
-      );
-    }
+    // TODO: get rid of this conditional - PE-4161
     return SvgPicture.asset(
-      Resources.images.brand.turboWhite,
+      ArDriveTheme.of(context).themeData.name == 'dark'
+          ? Resources.images.brand.turboWhite
+          : Resources.images.brand.turboBlack,
       height: 15,
-      color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-      colorBlendMode: BlendMode.srcIn,
-      fit: BoxFit.contain,
     );
   }
 }
