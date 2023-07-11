@@ -336,6 +336,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
     return MaxDeviceSizesConstrainedBox(
       defaultMaxWidth: 512,
       defaultMaxHeight: 798,
@@ -369,19 +371,16 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     .enableSeedPhraseLogin) ...[
                   ArDriveButton(
                     icon: ArDriveIcons.keypad(
-                        size: 24,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault),
+                        size: 24, color: colors.themeFgDefault),
                     key: const Key('loginWithSeedPhraseButton'),
                     text: "Enter Seed Phrase",
                     onPressed: () {
                       context.read<LoginBloc>().add(EnterSeedPhrase());
                     },
                     style: ArDriveButtonStyle.secondary,
-                    fontStyle: ArDriveTypography.body
-                        .smallBold700(color: Colors.white),
+                    fontStyle: ArDriveTypography.body.smallBold700(
+                      color: colors.themeFgDefault,
+                    ),
                     maxWidth: double.maxFinite,
                   ),
                   const SizedBox(height: 16),
@@ -597,6 +596,8 @@ class _LoginCard extends StatelessWidget {
     return LayoutBuilder(builder: (context, constraints) {
       double horizontalPadding = 72;
 
+      final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
+
       final deviceType = getDeviceType(MediaQuery.of(context).size);
 
       switch (deviceType) {
@@ -632,7 +633,9 @@ class _LoginCard extends StatelessWidget {
                   bottom: 30,
                   right: 0,
                   child: SvgPicture.asset(
-                    Resources.images.login.lattice,
+                    isDarkMode
+                        ? Resources.images.login.lattice
+                        : Resources.images.login.latticeLight,
                     // fit: BoxFit.fitHeight,
                   ),
                 ),
@@ -2056,7 +2059,10 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                 BorderRadius.only(topRight: radius, bottomRight: radius)),
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 16),
-        child: Text(word));
+        child: Text(word,
+            style: ArDriveTypography.body.smallBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgMuted)));
 
     return isBlurred
         ? ImageFiltered(
