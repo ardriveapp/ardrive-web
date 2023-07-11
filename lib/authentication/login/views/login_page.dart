@@ -2375,40 +2375,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                           });
                         },
                       ),
-                      TextButton.icon(
-                        icon: ArDriveIcons.copy(
-                            size: 24,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgMuted),
-                        label: Container(
-                            child: Text(
-                          'Copy to Clipboard',
-                          style: ArDriveTypography.body.smallBold(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgMuted),
-                        )),
-                        onPressed: () {
-                          Clipboard.setData(
-                              ClipboardData(text: widget.mnemonic));
-
-                          final overlayEntry = _createOverlayEntry(context);
-                          Overlay.of(context).insert(overlayEntry!);
-
-                          Future.delayed(const Duration(seconds: 2), () {
-                            if (!mounted) {
-                              return;
-                            }
-
-                            if (overlayEntry.mounted) {
-                              overlayEntry.remove();
-                            }
-                          });
-                        },
-                      )
+                      LoginCopyButton(text: widget.mnemonic),
                     ],
                     rowCount: rowCount == 3 ? 2 : 1,
                     hGap: 16,
@@ -2421,31 +2388,6 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
         _backButton(),
         _nextButton(text: 'I wrote it down', isDisabled: false)
       ])),
-    );
-  }
-
-  OverlayEntry _createOverlayEntry(BuildContext parentContext) {
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final Offset buttonPosition = button.localToGlobal(Offset.zero);
-
-    return OverlayEntry(
-      builder: (context) => Positioned(
-        left: buttonPosition.dx,
-        top: buttonPosition.dy,
-        child: Material(
-          color: ArDriveTheme.of(context).themeData.backgroundColor,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Center(
-              child: Text(
-                'Copied!',
-                style: ArDriveTypography.body.smallRegular(),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -2593,5 +2535,83 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     return Material(
         color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
         child: _buildContent(context));
+  }
+}
+
+class LoginCopyButton extends StatefulWidget {
+  final String text;
+  final double size;
+  final bool showCopyText;
+  final Widget? child;
+  final int positionY;
+  final int positionX;
+  final Color? copyMessageColor;
+
+  const LoginCopyButton({
+    Key? key,
+    required this.text,
+    this.size = 20,
+    this.showCopyText = true,
+    this.child,
+    this.positionY = 40,
+    this.positionX = 20,
+    this.copyMessageColor,
+  }) : super(key: key);
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _LoginCopyButtonState createState() => _LoginCopyButtonState();
+}
+
+class _LoginCopyButtonState extends State<LoginCopyButton> {
+  bool _showCheck = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: TextButton.icon(
+          icon: _showCheck
+              ? ArDriveIcons.checkCirle(
+                  size: 24,
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeSuccessDefault,
+                )
+              : ArDriveIcons.copy(
+                  size: 24,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgMuted),
+          label: Text(
+            'Copy to Clipboard',
+            style: ArDriveTypography.body.smallBold(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgMuted),
+          ),
+          onPressed: _copy,
+        ));
+  }
+
+  void _copy() {
+    Clipboard.setData(ClipboardData(text: widget.text));
+    if (mounted) {
+      if (_showCheck) {
+        return;
+      }
+
+      setState(() {
+        _showCheck = true;
+
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            _showCheck = false;
+          });
+        });
+      });
+    }
   }
 }
