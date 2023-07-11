@@ -552,19 +552,16 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               TextSpan(
                 children: [
                   TextSpan(
-                      // text: appLocalizationsOf(context).dontHaveAWallet1Part,
-                      text: "New User? Get started ",
-                      style: ArDriveTypography.body.smallBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgMuted,
-                      )),
-                  TextSpan(
-                    text: appLocalizationsOf(context).dontHaveAWallet2Part,
-                    style: ArDriveTypography.body.smallBold().copyWith(
-                          decoration: TextDecoration.underline,
-                        ),
+                    // text: appLocalizationsOf(context).dontHaveAWallet1Part,
+                    text: "New user? Get started here!",
+                    style: ArDriveTypography.body
+                        .smallBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgMuted)
+                        .copyWith(decoration: TextDecoration.underline),
+
                     recognizer: TapGestureRecognizer()
                       ..onTap = () {
                         context.read<LoginBloc>().add(CreateNewWallet());
