@@ -5,6 +5,7 @@ import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
@@ -69,13 +70,7 @@ class _TurboBalanceState extends State<TurboBalance> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(
-            Resources.images.brand.turbo,
-            height: 15,
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            colorBlendMode: BlendMode.srcIn,
-            fit: BoxFit.contain,
-          ),
+          _turboLogo(context),
           const SizedBox(height: 8),
           BlocBuilder<TurboBalanceCubit, TurboBalanceState>(
             bloc: _turboBalanceCubit,
@@ -160,6 +155,26 @@ class _TurboBalanceState extends State<TurboBalance> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _turboLogo(BuildContext context) {
+    if (AppPlatform.isMobileWeb()) {
+      return SvgPicture.asset(
+        ArDriveTheme.of(context).themeData.name == 'dark'
+            ? Resources.images.brand.turboWhite
+            : Resources.images.brand.turboBlack,
+        height: 15,
+        width: 60,
+        colorBlendMode: BlendMode.dstIn,
+      );
+    }
+    return SvgPicture.asset(
+      Resources.images.brand.turboWhite,
+      height: 15,
+      color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+      colorBlendMode: BlendMode.srcIn,
+      fit: BoxFit.contain,
     );
   }
 }

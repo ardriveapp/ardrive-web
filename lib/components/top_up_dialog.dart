@@ -60,7 +60,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       SvgPicture.asset(
-                        Resources.images.brand.turbo,
+                        Resources.images.brand.turboWhite,
                         height: 30,
                         color: ArDriveTheme.of(context)
                             .themeData

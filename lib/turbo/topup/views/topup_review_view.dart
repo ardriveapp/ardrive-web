@@ -171,7 +171,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               Align(
                                 alignment: Alignment.centerLeft,
                                 child: SvgPicture.asset(
-                                  Resources.images.brand.turbo,
+                                  Resources.images.brand.turboWhite,
                                   height: 15,
                                   color: ArDriveTheme.of(context)
                                       .themeData
