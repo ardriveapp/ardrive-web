@@ -5,6 +5,8 @@ import 'dart:ui';
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub implementation
+    if (dart.library.html) 'package:ardrive/authentication/login/blocs/web_wallet.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -267,7 +269,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         } else if (enableSeedPhraseLogin && state is LoginEnterSeedPhrase) {
           content = const EnterSeedPhraseView();
         } else if (enableSeedPhraseLogin && state is LoginGenerateWallet) {
-          content = GenerateWalletView(mnemonic: state.mnemonic);
+          content = const GenerateWalletView();
         } else if (enableSeedPhraseLogin &&
             state is LoginDownloadGeneratedWallet) {
           content = DownloadWalletView(
@@ -278,8 +280,6 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
           );
         }
-
-        // content = GenerateWalletView(mnemonic: "test");
 
         return SizedBox(
           height: MediaQuery.of(context).size.height,
@@ -1529,10 +1529,7 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
 }
 
 class GenerateWalletView extends StatefulWidget {
-  const GenerateWalletView({super.key, required this.mnemonic, this.wallet});
-
-  final String mnemonic;
-  final Wallet? wallet;
+  const GenerateWalletView({super.key});
 
   @override
   State<GenerateWalletView> createState() => _GenerateWalletViewState();
@@ -1831,6 +1828,8 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   bool _isBlurredSeedPhrase = true;
   late final List<String> _mnemonicWords;
 
+  final Completer<Wallet> preGeneratedWallet = Completer();
+
   List<WordOption> _wordsToCheck = [];
   List<WordOption> _wordOptions = [];
   bool _wordsAreCorrect = false;
@@ -1840,11 +1839,16 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     super.initState();
     _mnemonicWords = widget.mnemonic.split(' ');
     _resetMemoryCheckItems();
+    generateWalletFromMnemonic(widget.mnemonic).then((w) {
+      preGeneratedWallet.complete(w);
+    });
   }
 
-  void advancePage() {
+  void advancePage() async {
     if (_currentPage == 2) {
-      context.read<LoginBloc>().add(AddWalletFromMnemonic(widget.mnemonic));
+      context
+          .read<LoginBloc>()
+          .add(AddWalletFromCompleter(widget.mnemonic, preGeneratedWallet));
     } else {
       setState(() {
         _isBlurredSeedPhrase = true;

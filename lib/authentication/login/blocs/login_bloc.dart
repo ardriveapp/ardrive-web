@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -64,6 +65,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleEnterSeedPhrase(event, emit);
     } else if (event is AddWalletFromMnemonic) {
       await _handleAddWalletFromMnemonicEvent(event, emit);
+    } else if (event is AddWalletFromCompleter) {
+      await _handleAddWalletFromCompleterEvent(event, emit);
     } else if (event is CreateNewWallet) {
       await _handleCreateNewWalletEvent(event, emit);
     } else if (event is CompleteWalletGeneration) {
@@ -330,9 +333,31 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       AddWalletFromMnemonic event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
 
-    emit(LoginGenerateWallet(event.mnemonic));
+    emit(const LoginGenerateWallet());
 
     final wallet = await generateWalletFromMnemonic(event.mnemonic);
+    emit(LoginDownloadGeneratedWallet(event.mnemonic, wallet));
+  }
+
+  Future<void> _handleAddWalletFromCompleterEvent(
+      AddWalletFromCompleter event, Emitter<LoginState> emit) async {
+    profileType = ProfileType.json;
+
+    Completer<Wallet> completer = event.walletCompleter;
+    Wallet wallet;
+
+    if (!completer.isCompleted) {
+      emit(const LoginGenerateWallet());
+
+      // wait for minimum 3 seconds
+      var results = await Future.wait(
+          [completer.future, Future.delayed(const Duration(seconds: 3))]);
+
+      wallet = results[0];
+    } else {
+      wallet = await completer.future;
+    }
+
     emit(LoginDownloadGeneratedWallet(event.mnemonic, wallet));
   }
 
