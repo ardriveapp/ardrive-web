@@ -1,4 +1,4 @@
-import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/components/turbo_logo.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
@@ -9,7 +9,6 @@ import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class TurboReviewView extends StatefulWidget {
   const TurboReviewView({super.key});
@@ -170,16 +169,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             children: [
                               Align(
                                 alignment: Alignment.centerLeft,
-                                child: SvgPicture.asset(
-                                  Resources.images.brand.turbo,
-                                  height: 15,
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeAccentDisabled,
-                                  colorBlendMode: BlendMode.srcIn,
-                                  fit: BoxFit.contain,
-                                ),
+                                child: turboLogo(context, height: 15),
                               ),
                               const SizedBox(
                                 height: 18,

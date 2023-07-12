@@ -270,7 +270,7 @@ class _ProfileCardState extends State<ProfileCard> {
           child: Row(
             children: [
               Text(
-                appLocalizationsOf(context).logout,
+                appLocalizationsOf(context).logOut,
                 style:
                     ArDriveTypography.body.captionBold().copyWith(fontSize: 15),
               ),

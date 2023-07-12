@@ -1,5 +1,5 @@
 import 'package:ardrive/blocs/turbo_balance/turbo_balance_cubit.dart';
-import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/components/turbo_logo.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
@@ -10,7 +10,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class TurboBalance extends StatefulWidget {
   const TurboBalance({
@@ -69,13 +68,7 @@ class _TurboBalanceState extends State<TurboBalance> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(
-            Resources.images.brand.turbo,
-            height: 15,
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            colorBlendMode: BlendMode.srcIn,
-            fit: BoxFit.contain,
-          ),
+          turboLogo(context, height: 15),
           const SizedBox(height: 8),
           BlocBuilder<TurboBalanceCubit, TurboBalanceState>(
             bloc: _turboBalanceCubit,
@@ -112,7 +105,7 @@ class _TurboBalanceState extends State<TurboBalance> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      '${convertCreditsToLiteralString(balance)} ${appLocalizationsOf(context).creditsTurbo}',
+                      '${convertCreditsToLiteralString(balance)} ${appLocalizationsOf(context).credits}',
                       style: ArDriveTypography.body.captionRegular().copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: 18,

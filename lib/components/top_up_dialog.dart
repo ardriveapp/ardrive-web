@@ -1,5 +1,5 @@
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/components/turbo_logo.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
@@ -14,7 +14,6 @@ import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class TopUpEstimationView extends StatefulWidget {
@@ -58,18 +57,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      SvgPicture.asset(
-                        Resources.images.brand.turbo,
-                        height: 30,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                        colorBlendMode: BlendMode.srcIn,
-                        fit: BoxFit.contain,
-                      ),
-                    ],
+                    children: [turboLogo(context, height: 30)],
                   ),
                   const SizedBox(height: 40),
                   _BalanceView(
@@ -524,7 +512,7 @@ class _BalanceViewState extends State<_BalanceView> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${convertCreditsToLiteralString(widget.balance)} ${appLocalizationsOf(context).creditsTurbo}',
+                '${convertCreditsToLiteralString(widget.balance)} ${appLocalizationsOf(context).credits}',
                 style: ArDriveTypography.body.buttonXLargeBold(
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
@@ -621,7 +609,7 @@ class PriceEstimateView extends StatelessWidget {
           children: [
             const Divider(height: 32),
             Text(
-              '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).creditsTurbo} = $estimatedStorage $storageUnit',
+              '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).credits} = $estimatedStorage $storageUnit',
               style: ArDriveTypography.body.buttonNormalBold(),
             ),
             const SizedBox(height: 4),
