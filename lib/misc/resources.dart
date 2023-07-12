@@ -73,4 +73,5 @@ class Login {
   final String ardriveLogoOnboarding = 'assets/images/brand/2x.png';
   final String arconnectLogo = 'assets/images/login/arconnect_logo.png';
   final String lattice = 'assets/images/login/lattice.svg';
+  final String latticeLight = 'assets/images/login/lattice_light.svg';
 }
