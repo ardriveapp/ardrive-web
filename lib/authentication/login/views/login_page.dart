@@ -1966,12 +1966,10 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                 }),
               ),
               onPressed: back,
-              child: SizedBox(
-                  height: 56,
-                  child: Center(
-                      child: Text("Back",
-                          style: ArDriveTypography.body
-                              .smallBold700(color: colors.themeFgDefault)))),
+              child: Center(
+                  child: Text("Back",
+                      style: ArDriveTypography.body
+                          .smallBold700(color: colors.themeFgDefault))),
             )));
   }
 
