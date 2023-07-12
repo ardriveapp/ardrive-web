@@ -2584,7 +2584,7 @@ class _LoginCopyButtonState extends State<LoginCopyButton> {
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgMuted),
           label: Text(
-            'Copy to Clipboard',
+            _showCheck ? 'Copied to Clipboard' : 'Copy to Clipboard',
             style: ArDriveTypography.body.smallBold(
                 color: ArDriveTheme.of(context).themeData.colors.themeFgMuted),
           ),
