@@ -12,6 +12,8 @@ class Resources {
 
   static const howDoesKeyFileLoginWork =
       'https://ardrive.zendesk.com/hc/en-us/articles/15412384724251-How-Does-Keyfile-Login-Work-';
+  static const howAreConversionsDetermined =
+      'https://help.ardrive.io/hc/en-us/articles/17043397992731';
 }
 
 class Images {

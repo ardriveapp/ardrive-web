@@ -9,8 +9,10 @@ import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -629,13 +631,20 @@ class PriceEstimateView extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    appLocalizationsOf(context).howAreConversionsDetermined,
-                    style: ArDriveTypography.body.buttonNormalBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgSubtle,
+                  Text.rich(
+                    TextSpan(
+                      text: appLocalizationsOf(context)
+                          .howAreConversionsDetermined,
+                      style: ArDriveTypography.body.buttonNormalBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgSubtle,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => openUrl(
+                              url: Resources.howAreConversionsDetermined,
+                            ),
                     ),
                   ),
                   const SizedBox(width: 4),
