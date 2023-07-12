@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/turbo_balance/turbo_balance_cubit.dart';
+import 'package:ardrive/cookie_policy_consent/views/cookie_policy_consent_modal.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
@@ -52,7 +53,9 @@ class _TurboBalanceState extends State<TurboBalance> {
           ),
           borderRadius: 20,
           onPressed: () {
-            showTurboModal(context);
+            showCookiePolicyConsentModal(context, (context) {
+              showTurboModal(context);
+            });
 
             widget.onTapAddButton?.call();
           },
