@@ -36,6 +36,8 @@
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
+  "amount": "Amount",
+  "@amount": {},
   "anyFilesWillOutliveYou": "Any files you upload here will outlive you!",
   "@anyFilesWillOutliveYou": {
     "description": "Files on the Weave will exist there forever"
@@ -74,6 +76,8 @@
   "@arConnectWalletDoestNotMatchArDriveWallet": {
     "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
   },
+  "arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance": "ArDrive Credits will be automatically added to your Turbo balance, and you can start using them right away.",
+  "@arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance": {},
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
@@ -156,6 +160,8 @@
   "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
   },
+  "buyCredits": "Buy Credits",
+  "@buyCredits": {},
   "camera": "Camera",
   "@camera": {
     "description": "Button label to select a file from camera"
@@ -290,6 +296,8 @@
   "@costUpload": {
     "description": "Cost"
   },
+  "country": "Country",
+  "@country": {},
   "create": "Create",
   "@create": {
     "description": "Create an drive"
@@ -348,10 +356,18 @@
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
   },
+  "creditCard": "Credit Card",
+  "@creditCard": {},
   "credits": "Credits",
-  "@credits": {
+  "@credits": {},
+  "creditsTurbo": "credits",
+  "@creditsTurbo": {
     "description": "suffix for turbo balance"
   },
+  "currency": "Currency",
+  "@currency": {},
+  "customAmount": "Custom Amount",
+  "@customAmount": {},
   "darkModeEmphasized": "DARK MODE",
   "@darkModeEmphasized": {
     "description": "Refers to the dark theme of the app. Emphasized with upper case"
@@ -603,6 +619,10 @@
   "@errorFetchingBalance": {
     "description": "Error fetching balance"
   },
+  "errorFetchingQuote": "Error fetching new quote, try again.",
+  "@errorFetchingQuote": {},
+  "estimatedStorage": "Estimated Storage",
+  "@estimatedStorage": {},
   "expandSideBar": "Expand sidebar",
   "@expandSideBar": {
     "description": "Expand side bar tooltip"
@@ -649,6 +669,8 @@
   "@feedbackTitle": {
     "description": "We thank the user"
   },
+  "fetchingNewQuote": "Fetching new quote...",
+  "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{no files} one{1 file} other{{fileCount} files}}",
   "@fileCount": {
     "description": "Plurals for the file count. First character in lower case",
@@ -905,6 +927,8 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
+  "howAreConversionsDetermined": "How are conversions determined?",
+  "@howAreConversionsDetermined": {},
   "howDoesKeyfileLoginWork": "How does keyfile log in work?",
   "@howDoesKeyfileLoginWork": {
     "description": "Title for explaining keyfile login"
@@ -1011,6 +1035,8 @@
   "@itemPreviewEmphasized": {
     "description": "Item preview"
   },
+  "keepMeUpToDateOnNewsAndPromotions": "Keep me up to date on news and promotions.",
+  "@keepMeUpToDateOnNewsAndPromotions": {},
   "lastModified": "Last modified",
   "@lastModified": {
     "description": "Last modified date of the file in the local disk"
@@ -1032,6 +1058,8 @@
   "@learnMore": {
     "description": "Link to a document explaining manifests in detail"
   },
+  "leaveAnEmailToReceiveAReceipt": "Please leave an email if you want a receipt.",
+  "@leaveAnEmailToReceiveAReceipt": {},
   "leaveFeedback": "Leave Feedback",
   "@leaveFeedback": {
     "description": "The action of leaving feedback"
@@ -1136,6 +1164,8 @@
   "@nameConflict": {
     "description": "A conflict of names between two entities"
   },
+  "nameOnCard": "Name on Card",
+  "@nameOnCard": {},
   "neverDeletedEmphasized": "NEVER DELETED",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
@@ -1252,6 +1282,12 @@
   "@passwordMismatch": {
     "description": "Error message for when the confirmation password doesn't match the actual pass"
   },
+  "pay": "Pay",
+  "@pay": {},
+  "paymentDetails": "Payment Details",
+  "@paymentDetails": {},
+  "paymentSuccessful": "Payment Successful!",
+  "@paymentSuccessful": {},
   "payPerFileEmphasized": "PAY PER FILE",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
@@ -1268,6 +1304,8 @@
   "@pleaseAcceptTheTermsToContinue": {
     "description": "terms and conditions cta"
   },
+  "pleaseEnterAValidEmail": "Please enter a valid email address",
+  "@pleaseEnterAValidEmail": {},
   "pleaseProvideSamePassword": "Please provide the same password as the one you used before.",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
@@ -1336,6 +1374,8 @@
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
+  "quoteUpdatesIn": "Quote updates in ",
+  "@quoteUpdatesIn": {},
   "recreateFolderEmphasized": "RECREATE FOLDER",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
@@ -1344,6 +1384,8 @@
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
   },
+  "refresh": "Refresh",
+  "@refresh": {},
   "refreshTurboBalanceTooltip": "Refresh balance",
   "@refreshTurboBalanceTooltip": {
     "description": "Tooltip on the icon to refresh the balance"
@@ -1396,6 +1438,8 @@
   "@resyncTooltip": {
     "description": "resync tooltip text"
   },
+  "review": "Review",
+  "@review": {},
   "rootFolderTxID": "Root Folder Tx ID",
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
@@ -1560,10 +1604,14 @@
   "@termsAndConditions": {
     "description": "terms and conditions"
   },
+  "theresBeenAProblem": "There's been a problem.",
+  "@theresBeenAProblem": {},
   "thinkTwiceBeforeUploading": "Think twice before uploading all your teenage love poetry...",
   "@thinkTwiceBeforeUploading": {
     "description": "Uploaded items cannot be deleted"
   },
+  "thisIsAOneTimePaymentPoweredByStripe": "This is a one-time payment, powered by Stripe.",
+  "@thisIsAOneTimePaymentPoweredByStripe": {},
   "thisMayTakeAWhile": "This may take a while...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
@@ -1572,10 +1620,14 @@
   "@tooLargeForUpload": {
     "description": "Files too large for upload"
   },
+  "total": "Total",
+  "@total": {},
   "totalPrivacyControlEmphasized": "TOTAL PRIVACY CONTROL",
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
+  "tryAgain": "Try Again",
+  "@tryAgain": {},
   "tryAgainDownloadingFile": "This can happen if the file was only uploaded recently. Please try again later.",
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
@@ -1596,6 +1648,24 @@
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
+  "turboErrorMessageEstimationInformationFailed": "Error loading information. Please try again.",
+  "@turboErrorMessageEstimationInformationFailed": {},
+  "turboErrorMessageFetchPaymentIntentFailed": "Payment processor is currently unavailable, please try again later",
+  "@turboErrorMessageFetchPaymentIntentFailed": {},
+  "turboErrorMessageNetwork": "We can't connect to the internet. Please check your connection and try again.",
+  "@turboErrorMessageNetwork": {},
+  "turboErrorMessageServer": "The payment was not successful. Please check your card information and try again.",
+  "@turboErrorMessageServer": {},
+  "turboErrorMessageSessionExpired": "Your session has expired. Please try again.",
+  "@turboErrorMessageSessionExpired": {},
+  "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
+  "@turboErrorMessageUnknown": {},
+  "unableToFetchEstimateAtThisTime": "Unable to fetch the estimate at this time.",
+  "@unableToFetchEstimateAtThisTime": {},
+  "unableToUpdateQuote": "Unable to update quote. Please try again.",
+  "@unableToUpdateQuote": {},
+  "unit": "Unit",
+  "@unit": {},
   "unlock": "Unlock",
   "@unlock": {
     "description": "Unlock a file or drive."
@@ -1818,6 +1888,8 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
+  "yourCreditsWillBeAddedToYourAccount": "Your credits will be added to your account soon. You can close this window.",
+  "@yourCreditsWillBeAddedToYourAccount": {},
   "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."

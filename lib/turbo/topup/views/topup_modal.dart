@@ -1,6 +1,7 @@
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
@@ -18,7 +19,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
-void showTurboModal(BuildContext context) {
+void showTurboModal(BuildContext context, {Function()? onSuccess}) {
+  final activityTracker = context.read<ActivityTracker>();
   final sessionManager = TurboSessionManager();
 
   final costCalculator = TurboCostCalculator(
@@ -39,6 +41,9 @@ void showTurboModal(BuildContext context) {
     stripe: Stripe.instance,
   );
 
+  final turboSupportedCountriesRetriever = TurboSupportedCountriesRetriever(
+      paymentService: context.read<PaymentService>());
+
   final turbo = Turbo(
     sessionManager: sessionManager,
     costCalculator: costCalculator,
@@ -46,9 +51,12 @@ void showTurboModal(BuildContext context) {
     priceEstimator: priceEstimator,
     paymentProvider: turboPaymentProvider,
     wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+    supportedCountriesRetriever: turboSupportedCountriesRetriever,
   );
 
   initializeStripe(context.read<ConfigService>().config);
+
+  activityTracker.setToppingUp(true);
 
   showAnimatedDialogWithBuilder(
     context,
@@ -72,7 +80,14 @@ void showTurboModal(BuildContext context) {
     barrierColor:
         ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
   ).then((value) {
-    logger.d('Turbo modal closed');
+    logger.d('Turbo modal closed with value: ${turbo.paymentStatus}');
+
+    activityTracker.setToppingUp(false);
+
+    if (turbo.paymentStatus == PaymentStatus.success) {
+      onSuccess?.call();
+    }
+
     turbo.dispose();
   });
 }
@@ -148,7 +163,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                 create: (context) => PaymentFormBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
-                ),
+                )..add(PaymentFormLoadSupportedCountries()),
                 child: Container(
                   key: const ValueKey('payment_form'),
                   color: Colors.transparent,
@@ -169,7 +184,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                 create: (context) => PaymentFormBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
-                ),
+                )..add(PaymentFormLoadSupportedCountries()),
                 child: Container(
                   key: const ValueKey('payment_form'),
                   color:
@@ -183,8 +198,9 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
               ),
               BlocProvider<PaymentReviewBloc>(
                 create: (context) => PaymentReviewBloc(
-                    context.read<Turbo>(), state.priceEstimate)
-                  ..add(PaymentReviewLoadPaymentModel()),
+                  context.read<Turbo>(),
+                  state.priceEstimate,
+                )..add(PaymentReviewLoadPaymentModel()),
                 child: Container(
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeBgCanvas,

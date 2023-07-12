@@ -6,7 +6,6 @@ import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/ar_cost_to_usd.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -15,6 +14,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
+
+import '../../core/upload/cost_calculator.dart';
 
 part 'create_manifest_state.dart';
 
@@ -25,7 +26,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   final Drive drive;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final PstService _pst;
 
@@ -35,7 +36,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required this.drive,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required PstService pst,
   })  : _profileCubit = profileCubit,
@@ -256,8 +257,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       final arUploadCost = winstonToAr(totalCost);
 
-      final double? usdUploadCost =
-          await arCostToUsdOrNull(_arweave, double.parse(arUploadCost));
+      final double? usdUploadCost = await ConvertArToUSD(arweave: _arweave)
+          .convertForUSD(double.parse(arUploadCost));
 
       // Sign bundle tx and preserve bundle tx ID on entity
       await bundleTx.sign(wallet);
@@ -292,7 +293,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       emit(CreateManifestUploadInProgress());
       try {
         for (var dataItem in params.manifestDataItems) {
-          await _turboUploadService.postDataItem(dataItem: dataItem);
+          await _turboUploadService.postDataItem(
+            dataItem: dataItem,
+            wallet: (_profileCubit.state as ProfileLoggedIn).wallet,
+          );
         }
 
         await params.addManifestToDatabase();

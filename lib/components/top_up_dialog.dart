@@ -90,6 +90,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                         child: Row(
                           children: [
                             CurrencyDropdownMenu(
+                              label: appLocalizationsOf(context).currency,
                               itemsTextStyle:
                                   ArDriveTypography.body.captionBold(),
                               items: [
@@ -111,6 +112,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                               width: 40,
                             ),
                             UnitDropdownMenu(
+                              label: appLocalizationsOf(context).unit,
                               itemsTextStyle:
                                   ArDriveTypography.body.captionBold(),
                               items: FileSizeUnit.values
@@ -154,7 +156,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                             onPressed: () {
                               context
                                   .read<TurboTopupFlowBloc>()
-                                  .add(TurboTopUpShowPaymentFormView(4));
+                                  .add(const TurboTopUpShowPaymentFormView(4));
                             },
                           );
                         },
@@ -359,22 +361,20 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            // TODO: Localize
-            'Buy Credits',
+            appLocalizationsOf(context).buyCredits,
             style: ArDriveTypography.body.smallBold(),
           ),
           const SizedBox(height: 8),
           Text(
-            // TODO: Localize
-            'ArDrive Credits will be automatically added to your Turbo balance, and you can start using them right away.',
+            appLocalizationsOf(context)
+                .arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance,
             style: ArDriveTypography.body.buttonNormalBold(
               color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
             ),
           ),
-          // TODO localize
           const SizedBox(height: 32),
           Text(
-            'Amount',
+            appLocalizationsOf(context).amount,
             style: ArDriveTypography.body.buttonNormalBold(
               color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
             ),
@@ -531,7 +531,7 @@ class _BalanceViewState extends State<_BalanceView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Estimated Storage',
+                appLocalizationsOf(context).estimatedStorage,
                 style: ArDriveTypography.body.smallBold(),
               ),
               const SizedBox(height: 4),
@@ -592,7 +592,7 @@ class PriceEstimateView extends StatelessWidget {
             children: [
               const Divider(height: 32),
               Text(
-                'Unable to fetch the estimate at this time.',
+                appLocalizationsOf(context).unableToFetchEstimateAtThisTime,
                 style: ArDriveTypography.body.buttonNormalBold(
                   color: ArDriveTheme.of(context)
                       .themeData
@@ -618,8 +618,7 @@ class PriceEstimateView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    // TODO: Localize
-                    'How are conversions determined?',
+                    appLocalizationsOf(context).howAreConversionsDetermined,
                     style: ArDriveTypography.body.buttonNormalBold(
                       color: ArDriveTheme.of(context)
                           .themeData
@@ -650,12 +649,11 @@ class PriceEstimateView extends StatelessWidget {
 }
 
 class CurrencyDropdownMenu extends InputDropdownMenu<CurrencyItem> {
-  const CurrencyDropdownMenu({
+  CurrencyDropdownMenu({
     super.key,
     required super.items,
     required super.buildSelectedItem,
-    // TODO: Localize
-    super.label = 'Currency',
+    required super.label,
     super.onChanged,
     super.anchor = const Aligned(
       follower: Alignment.bottomLeft,
@@ -678,8 +676,7 @@ class UnitDropdownMenu extends InputDropdownMenu<UnitItem> {
     super.key,
     required super.items,
     required super.buildSelectedItem,
-    // TODO: Localize
-    super.label = 'Unit',
+    required super.label,
     super.onChanged,
     super.anchor = const Aligned(
       follower: Alignment.bottomLeft,

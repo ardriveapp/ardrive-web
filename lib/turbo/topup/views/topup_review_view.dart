@@ -1,12 +1,15 @@
 import 'package:ardrive/components/turbo_logo.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/views/topup_payment_form.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,6 +25,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
   bool _emailChecked = false;
   bool _emailIsValid = true;
   bool _hasAutomaticChecked = false;
+  bool _isTermsChecked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -65,14 +69,14 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               width: 575,
               content: TurboErrorView(
                 errorType: state.errorType,
-                onDismiss: () {},
+                onDismiss: () {
+                  Navigator.pop(context);
+                },
                 onTryAgain: () {
                   Navigator.pop(context);
                   context.read<PaymentReviewBloc>().add(
                         PaymentReviewFinishPayment(
-                          paymentUserInformation: PaymentUserInformationFromUSA(
-                            email: _emailController.text,
-                          ),
+                          email: _emailController.text,
                         ),
                       );
                 },
@@ -92,7 +96,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               width: 575,
               content: TurboErrorView(
                 errorType: TurboErrorType.fetchPaymentIntentFailed,
-                onDismiss: () {},
+                onDismiss: () {
+                  Navigator.pop(context);
+                },
                 onTryAgain: () {
                   Navigator.pop(context);
                   context.read<PaymentReviewBloc>().add(
@@ -147,7 +153,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                   child: Padding(
                     padding: const EdgeInsets.only(left: 40.0),
                     child: Text(
-                      'Review',
+                      appLocalizationsOf(context).review,
                       style: ArDriveTypography.body
                           .leadBold()
                           .copyWith(fontWeight: FontWeight.w700),
@@ -211,7 +217,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                 },
                               ),
                               Text(
-                                'Credits',
+                                appLocalizationsOf(context).credits,
                                 style:
                                     ArDriveTypography.body.buttonLargeRegular(
                                   color: ArDriveTheme.of(context)
@@ -227,7 +233,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               Row(
                                 children: [
                                   Text(
-                                    'Total',
+                                    appLocalizationsOf(context).total,
                                     style: ArDriveTypography.body
                                         .buttonNormalBold(),
                                   ),
@@ -330,7 +336,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                         if (state
                                             is PaymentReviewLoadingQuote) {
                                           return Text(
-                                            'Fetching new quote...',
+                                            appLocalizationsOf(context)
+                                                .fetchingNewQuote,
                                             style: ArDriveTypography.body
                                                 .buttonNormalBold()
                                                 .copyWith(
@@ -341,7 +348,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                         } else if (state
                                             is PaymentReviewQuoteError) {
                                           return Text(
-                                            'Error fetching new quote, try again.',
+                                            appLocalizationsOf(context)
+                                                .errorFetchingQuote,
                                             style: ArDriveTypography.body
                                                 .buttonNormalBold(
                                                   color:
@@ -360,7 +368,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                           text: TextSpan(
                                             children: [
                                               TextSpan(
-                                                text: 'Quote updates in ',
+                                                text:
+                                                    appLocalizationsOf(context)
+                                                        .quoteUpdatesIn,
                                                 style: ArDriveTypography.body
                                                     .buttonNormalBold()
                                                     .copyWith(
@@ -406,7 +416,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Please leave an email if you want a receipt.',
+                        appLocalizationsOf(context)
+                            .leaveAnEmailToReceiveAReceipt,
                         style: ArDriveTypography.body.buttonNormalBold(
                           color: ArDriveTheme.of(context)
                               .themeData
@@ -430,8 +441,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             }
                             setState(() {
                               _emailIsValid = false;
+                              _emailChecked = false;
                             });
-                            return 'Please enter a valid email address';
+                            return appLocalizationsOf(context)
+                                .pleaseEnterAValidEmail;
                           },
                           controller: _emailController,
                           onChanged: (s) {
@@ -439,10 +452,12 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               return;
                             }
 
-                            setState(() {
-                              _emailChecked = true;
-                              _hasAutomaticChecked = true;
-                            });
+                            if (_emailIsValid) {
+                              setState(() {
+                                _emailChecked = true;
+                                _hasAutomaticChecked = true;
+                              });
+                            }
                           },
                         ),
                       ),
@@ -450,15 +465,77 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         height: 16,
                       ),
                       ArDriveCheckBox(
-                        key: ValueKey(_emailChecked),
-                        title: 'Keep me up to date on news and promotions.',
+                        isDisabled:
+                            !_emailIsValid || _emailController.text.isEmpty,
+                        key: ValueKey(
+                            '${_emailIsValid && _emailChecked}${_emailController.text}'),
+                        title: appLocalizationsOf(context)
+                            .keepMeUpToDateOnNewsAndPromotions,
                         titleStyle: ArDriveTypography.body.buttonNormalBold(
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
                               .themeAccentDisabled,
                         ),
-                        checked: _emailChecked,
+                        onChange: (value) => setState(() {
+                          _emailChecked = value;
+                        }),
+                        checked: _emailIsValid &&
+                            _emailChecked &&
+                            _emailController.text.isNotEmpty,
+                      ),
+                      Row(
+                        children: [
+                          ArDriveCheckBox(
+                            title: '',
+                            checked: _isTermsChecked,
+                            onChange: ((value) {
+                              setState(() => _isTermsChecked = value);
+                            }),
+                          ),
+                          Text.rich(
+                            TextSpan(
+                              children: splitTranslationsWithMultipleStyles<
+                                  InlineSpan>(
+                                originalText: appLocalizationsOf(context)
+                                    .aggreeToTerms_body,
+                                defaultMapper: (text) => TextSpan(
+                                  text: text,
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeAccentDisabled,
+                                  ),
+                                ),
+                                parts: {
+                                  appLocalizationsOf(context).aggreeToTerms_link:
+                                      (text) => TextSpan(
+                                            text: text,
+                                            style: ArDriveTypography.body
+                                                .buttonNormalBold(
+                                                  color:
+                                                      ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeAccentDisabled,
+                                                )
+                                                .copyWith(
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () => openUrl(
+                                                    url:
+                                                        Resources.agreementLink,
+                                                  ),
+                                          ),
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const Divider(
                         height: 80,
@@ -485,12 +562,11 @@ class _TurboReviewViewState extends State<TurboReviewView> {
             child: GestureDetector(
               onTap: () {
                 context.read<TurboTopupFlowBloc>().add(
-                      TurboTopUpShowPaymentFormView(4),
+                      const TurboTopUpShowPaymentFormView(4),
                     );
               },
               child: Text(
-                // TODO: localize
-                'Back',
+                appLocalizationsOf(context).back,
                 style: ArDriveTypography.body.buttonLargeBold(
                   color: ArDriveTheme.of(context)
                       .themeData
@@ -505,13 +581,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               return ArDriveButton(
                 maxHeight: 44,
                 maxWidth: 143,
-                // TODO: localize
-                text: 'Pay',
+                text: appLocalizationsOf(context).pay,
                 fontStyle: ArDriveTypography.body.buttonLargeBold(
                   color: Colors.white,
                 ),
-                isDisabled:
-                    state is PaymentReviewLoadingQuote || !_emailIsValid,
+                isDisabled: state is PaymentReviewLoadingQuote ||
+                    !_emailIsValid ||
+                    !_isTermsChecked,
                 customContent: state is PaymentReviewLoading
                     ? const SizedBox(
                         height: 24,
@@ -529,9 +605,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 
                   context.read<PaymentReviewBloc>().add(
                         PaymentReviewFinishPayment(
-                          paymentUserInformation: PaymentUserInformationFromUSA(
-                            email: _emailController.text,
-                          ),
+                          email: _emailController.text,
                         ),
                       );
                 },
@@ -547,13 +621,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 class RefreshButton extends StatefulWidget {
   final void Function() onPressed;
 
-  RefreshButton({super.key, required this.onPressed});
+  const RefreshButton({super.key, required this.onPressed});
 
   @override
-  _RefreshButtonState createState() => _RefreshButtonState();
+  RefreshButtonState createState() => RefreshButtonState();
 }
 
-class _RefreshButtonState extends State<RefreshButton>
+class RefreshButtonState extends State<RefreshButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _animation;
@@ -692,7 +766,7 @@ class RefreshQuoteButtonState extends State<RefreshQuoteButton>
                     axis: Axis.horizontal,
                     axisAlignment: -1,
                     child: Text(
-                      'Refresh',
+                      appLocalizationsOf(context).refresh,
                       style: ArDriveTypography.body.buttonNormalBold(
                         color: ArDriveTheme.of(context)
                             .themeData

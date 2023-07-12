@@ -26,7 +26,7 @@ Future<void> promptToMove(
             driveId: driveId,
             selectedItems: selectedItems,
             arweave: context.read<ArweaveService>(),
-            turboUploadService: context.read<UploadService>(),
+            turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),
@@ -295,7 +295,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                             context.read<ProfileCubit>(),
                                         arweave: context.read<ArweaveService>(),
                                         turboUploadService:
-                                            context.read<UploadService>(),
+                                            context.read<TurboUploadService>(),
                                         driveDao: context.read<DriveDao>(),
                                       ),
                                       child: const FolderCreateForm(),

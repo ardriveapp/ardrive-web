@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
@@ -54,7 +55,7 @@ final overlayKey = GlobalKey<OverlayState>();
 
 late ConfigService configService;
 late ArweaveService _arweave;
-late UploadService _turboUpload;
+late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -105,7 +106,7 @@ Future<void> _initialize() async {
     ArDriveCrypto(),
   );
   _turboUpload = config.useTurboUpload
-      ? UploadService(
+      ? TurboUploadService(
           turboUploadUri: Uri.parse(config.defaultTurboUploadUrl!),
           allowedDataItemSize: config.allowedDataItemSizeForTurbo!,
           httpClient: ArDriveHTTP(),
@@ -177,6 +178,7 @@ class AppState extends State<App> {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
+        RepositoryProvider<ActivityTracker>(create: (_) => ActivityTracker()),
         RepositoryProvider<ArweaveService>(create: (_) => _arweave),
         // repository provider for UploadFileChecker
         RepositoryProvider<UploadFileChecker>(
@@ -190,7 +192,7 @@ class AppState extends State<App> {
         RepositoryProvider<ConfigService>(
           create: (_) => configService,
         ),
-        RepositoryProvider<UploadService>(
+        RepositoryProvider<TurboUploadService>(
           create: (_) => _turboUpload,
         ),
         RepositoryProvider<PaymentService>(
@@ -260,7 +262,7 @@ class AppState extends State<App> {
               BlocProvider(
                 create: (context) => ProfileCubit(
                   arweave: context.read<ArweaveService>(),
-                  turboUploadService: context.read<UploadService>(),
+                  turboUploadService: context.read<TurboUploadService>(),
                   profileDao: context.read<ProfileDao>(),
                   db: context.read<Database>(),
                 ),

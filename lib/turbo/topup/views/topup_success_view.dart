@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -36,11 +37,12 @@ class TurboSuccessView extends StatelessWidget {
                       .colors
                       .themeSuccessDefault,
                 ),
-                Text('Payment Successful!',
+                Text(appLocalizationsOf(context).paymentSuccessful,
                     style: ArDriveTypography.body.leadBold()),
                 const SizedBox(height: 16),
                 Text(
-                  'Your credits will be added to your account soon. You can close this window.',
+                  appLocalizationsOf(context)
+                      .yourCreditsWillBeAddedToYourAccount,
                   style: ArDriveTypography.body.buttonNormalRegular(
                     color: ArDriveTheme.of(context)
                         .themeData
@@ -58,8 +60,7 @@ class TurboSuccessView extends StatelessWidget {
               child: ArDriveButton(
                 maxHeight: 44,
                 maxWidth: 143,
-                // TODO: localize
-                text: 'Close',
+                text: appLocalizationsOf(context).close,
                 fontStyle: ArDriveTypography.body.buttonLargeBold(
                   color: Colors.white,
                 ),
