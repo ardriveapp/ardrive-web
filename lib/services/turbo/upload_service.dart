@@ -68,11 +68,7 @@ class TurboUploadService {
         'x-signature': signature,
         'x-public-key': publicKey,
       },
-      onSendProgress: (double progress) {
-        if (onSendProgress != null) {
-          onSendProgress(progress);
-        }
-      },
+      onSendProgress: onSendProgress,
       receiveTimeout: const Duration(days: 365),
       sendTimeout: const Duration(days: 365),
       data: await convertDataItemToStreamBytes(dataItem),
