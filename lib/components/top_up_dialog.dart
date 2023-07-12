@@ -451,6 +451,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
               ],
             ),
             mobile: (_) => Stack(
+              clipBehavior: Clip.none,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -472,23 +473,20 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                     _textField(textTheme),
                   ],
                 ),
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  child: Column(
-                    children: [
-                      if (_customAmountValidationMessage != null &&
-                          _customAmountValidationMessage!.isNotEmpty) ...[
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          child: AnimatedFeedbackMessage(
-                            text: _customAmountValidationMessage!,
-                          ),
-                        ),
-                      ]
-                    ],
+                if (_customAmountValidationMessage != null &&
+                    _customAmountValidationMessage!.isNotEmpty) ...[
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: AnimatedSize(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.ease,
+                      child: AnimatedFeedbackMessage(
+                        text: _customAmountValidationMessage!,
+                      ),
+                    ),
                   ),
-                ),
+                ]
               ],
             ),
           )
