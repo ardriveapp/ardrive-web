@@ -76,8 +76,8 @@
   "@arConnectWalletDoestNotMatchArDriveWallet": {
     "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
   },
-  "arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance": "ArDrive Credits will be automatically added to your Turbo balance, and you can start using them right away.",
-  "@arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance": {},
+  "creditsWillBeAutomaticallyAddedToYourTurboBalance": "Credits will be automatically added to your Turbo balance, and you can start using them right away.",
+  "@creditsWillBeAutomaticallyAddedToYourTurboBalance": {},
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
@@ -1058,7 +1058,7 @@
   "@learnMore": {
     "description": "Link to a document explaining manifests in detail"
   },
-  "leaveAnEmailToReceiveAReceipt": "Please leave an email if you want a receipt.",
+  "leaveAnEmailToReceiveAReceipt": "To receive a receipt, please provide an email.",
   "@leaveAnEmailToReceiveAReceipt": {},
   "leaveFeedback": "Leave Feedback",
   "@leaveFeedback": {
@@ -1776,7 +1776,7 @@
   "@validationPasswordIncorrect": {
     "description": "Input validation error: the given password is wrong"
   },
-  "validationRequired": "This field is required.",
+  "validationRequired": "Field required.",
   "@validationRequired": {
     "description": "Input validation error: the field is empty, but it's required"
   },

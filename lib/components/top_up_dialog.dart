@@ -379,7 +379,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           const SizedBox(height: 8),
           Text(
             appLocalizationsOf(context)
-                .arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance,
+                .creditsWillBeAutomaticallyAddedToYourTurboBalance,
             style: ArDriveTypography.body.buttonNormalBold(
               color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
             ),
