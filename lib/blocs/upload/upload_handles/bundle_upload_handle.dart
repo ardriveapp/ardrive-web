@@ -1,6 +1,8 @@
 import 'package:ardrive/blocs/upload/upload_handles/file_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
+import 'package:ardrive/core/arconnect/safe_arconnect_action.dart';
+import 'package:ardrive/core/upload/bundle_signer.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
@@ -11,7 +13,6 @@ import 'package:flutter/foundation.dart';
 class BundleUploadHandle implements UploadHandle {
   final List<FileDataItemUploadHandle> fileDataItemUploadHandles;
   final List<FolderDataItemUploadHandle> folderDataItemUploadHandles;
-
   late Transaction bundleTx;
   late DataItem bundleDataItem;
   late String bundleId;
@@ -22,7 +23,7 @@ class BundleUploadHandle implements UploadHandle {
     this.folderDataItemUploadHandles = const [],
     this.size = 0,
     this.hasError = false,
-  }) {
+}) {
     fileEntities = fileDataItemUploadHandles.map((item) => item.entity);
   }
 
@@ -59,46 +60,72 @@ class BundleUploadHandle implements UploadHandle {
     bool isArConnect = false,
     bool useTurbo = false,
   }) async {
-    final bundle = await DataBundle.fromHandles(
-      parallelize: !isArConnect,
-      handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
-              fileDataItemUploadHandles) +
-          List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
-              folderDataItemUploadHandles),
-    );
+    logger.d('Preparing bundle');
+
+    late DataBundle bundle;
+    try {
+      bundle =
+          await safeArConnectAction<DataBundle>((_) => DataBundle.fromHandles(
+                parallelize: !isArConnect,
+                handles: List.castFrom<FileDataItemUploadHandle,
+                        DataItemHandle>(fileDataItemUploadHandles) +
+                    List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
+                        folderDataItemUploadHandles),
+              ));
+    } catch (e) {
+      logger.e('Error while preparing bundle: $e');
+      hasError = true;
+      return;
+    }
 
     logger.d('Bundle mounted');
 
     logger.d('Creating bundle transaction');
+    BundleSigner signer;
+
     if (useTurbo) {
-      logger.i('Using turbo upload');
-      bundleDataItem = await arweaveService.prepareBundledDataItem(
-        bundle,
-        wallet,
-      );
+      if (isArConnect) {
+        logger.d('Using ArConnect BDI signer');
+
+        signer = SafeArConnectBDISigner(
+          BDISigner(
+            arweaveService: arweaveService,
+            wallet: wallet,
+          ),
+        );
+      } else {
+        signer = BDISigner(
+          arweaveService: arweaveService,
+          wallet: wallet,
+        );
+      }
+
+      bundleDataItem = await signer.signBundle(unSignedBundle: bundle);
+
       bundleId = bundleDataItem.id;
     } else {
       // Create bundle tx
-      bundleTx = await arweaveService.prepareDataBundleTxFromBlob(
-        bundle.blob,
-        wallet,
-      );
+      if (isArConnect) {
+        signer = SafeArConnectTransactionSigner(
+          ArweaveBundleTransactionSigner(
+            arweaveService: arweaveService,
+            wallet: wallet,
+            pstService: pstService,
+          ),
+        );
+      } else {
+        signer = SafeArConnectArweaveBundleTransactionSigner(
+          ArweaveBundleTransactionSigner(
+            arweaveService: arweaveService,
+            wallet: wallet,
+            pstService: pstService,
+          ),
+        );
+      }
+
+      bundleTx = await signer.signBundle(unSignedBundle: bundle);
 
       bundleId = bundleTx.id;
-
-      logger.i('Bundle transaction created');
-
-      logger.i('Adding tip');
-
-      await pstService.addCommunityTipToTx(bundleTx);
-
-      logger.i('Tip added');
-
-      logger.i('Signing bundle');
-
-      await bundleTx.sign(wallet);
-
-      logger.i('Bundle signed');
     }
   }
 

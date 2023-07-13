@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/core/arconnect/safe_arconnect_action.dart';
 import 'package:ardrive/utils/data_item_utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
@@ -55,10 +56,14 @@ class TurboUploadService {
     final acceptedStatusCodes = [200, 202, 204];
 
     final nonce = const Uuid().v4();
-    final publicKey = await wallet.getOwner();
-    final signature = await signNonceAndData(
-      nonce: nonce,
-      wallet: wallet,
+    final publicKey = await safeArConnectAction<String>(
+      (_) => wallet.getOwner(),
+    );
+    final signature = await safeArConnectAction<String>(
+      (_) => signNonceAndData(
+        nonce: nonce,
+        wallet: wallet,
+      ),
     );
 
     final response = await httpClient.postBytesAsStream(

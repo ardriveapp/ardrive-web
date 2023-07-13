@@ -11,6 +11,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../utils/html/implementations/html_web.dart';
+
 part 'profile_state.dart';
 
 /// [ProfileCubit] includes logic for managing the user's profile login status
@@ -89,13 +91,31 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     if (profile.profileType == ProfileType.arConnect.index) {
-      if (!(await arconnect.checkPermissions())) {
-        return true;
-      }
-      final currentPublicKey = await arconnect.getPublicKey();
-      final savedPublicKey = profile.walletPublicKey;
-      if (currentPublicKey != savedPublicKey) {
-        return true;
+      try {
+        if (!(await arconnect.checkPermissions())) {
+          logger.i('ArConnect permissions changed');
+          throw Exception('ArConnect permissions changed');
+        }
+
+        final currentPublicKey = await arconnect.getPublicKey();
+        final savedPublicKey = profile.walletPublicKey;
+        if (currentPublicKey != savedPublicKey) {
+          return true;
+        }
+      } catch (e) {
+        if (isTabFocused()) {
+          return false;
+        }
+
+        logger.e('Error checking ArConnect permissions: $e');
+        
+        bool isWalletMismatch = false;
+
+        await onTabGetsFocusedFuture(() async {
+          isWalletMismatch = await checkIfWalletMismatch();
+        });
+
+        return isWalletMismatch;
       }
     }
 
