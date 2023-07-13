@@ -70,7 +70,7 @@ packages:
     description:
       path: "."
       ref: PE-4185-unable-to-create-folders-with-new-button
-      resolved-ref: "61bffa233d32afab5587f68019891f8e3b3a336c"
+      resolved-ref: "0ab50a25d535cecef532993c85bcc37e595abab7"
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.2.5"
