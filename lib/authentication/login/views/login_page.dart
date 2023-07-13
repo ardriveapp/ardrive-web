@@ -1582,7 +1582,7 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
                 'Generating Wallet...',
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.headline
-                    .headline4Regular(color: colors.themeFgMuted)
+                    .headline4Regular(color: colors.themeFgDefault)
                     .copyWith(fontSize: 32),
               ),
               const SizedBox(height: 74),
@@ -1683,7 +1683,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
-                            .themeFgMuted)
+                            .themeFgDefault)
                     .copyWith(fontSize: 32),
               ),
               const SizedBox(height: 8),
@@ -2323,7 +2323,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
-                                .themeFgMuted)
+                                .themeFgDefault)
                         .copyWith(fontSize: 32),
                   ),
                   const SizedBox(height: 8),
@@ -2430,7 +2430,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
-                                .themeFgMuted)
+                                .themeFgDefault)
                         .copyWith(fontSize: 32),
                   ),
                   const SizedBox(height: 8),
@@ -2499,7 +2499,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
-                                .themeFgMuted)
+                                .themeFgDefault)
                         .copyWith(fontSize: 32),
                   ),
                   const SizedBox(height: 8),
