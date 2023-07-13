@@ -214,7 +214,6 @@ class TurboUploader implements Uploader<BundleUploadHandle> {
       dataItem: handle.bundleDataItem,
       wallet: _wallet,
     )) {
-      logger.i('Progress on TurboUploader: $progress');
       handle.setUploadProgress(progress);
       yield progress;
     }
