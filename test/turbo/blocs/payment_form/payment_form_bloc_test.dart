@@ -10,28 +10,16 @@ class MockTurbo extends Mock implements Turbo {}
 void main() {
   late MockTurbo mockTurbo;
   late PaymentFormBloc paymentFormBloc;
+  late PriceEstimate initialPriceEstimate;
 
   group('PaymentFormBloc', () {
     setUp(() {
       mockTurbo = MockTurbo();
-      final initialPriceEstimate = PriceEstimate(
+      initialPriceEstimate = PriceEstimate(
           credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
       when(() => mockTurbo.maxQuoteExpirationDate).thenAnswer(
           (invocation) => DateTime.now().add(const Duration(days: 1)));
       paymentFormBloc = PaymentFormBloc(mockTurbo, initialPriceEstimate);
-    });
-
-    group('PaymentFormPrePopulateFields', () {
-      blocTest<PaymentFormBloc, PaymentFormState>(
-        'Emits [PaymentFormPopulatingFieldsForTesting] when PaymentFormPrePopulateFields is added',
-        build: () => paymentFormBloc,
-        act: (bloc) async {
-          bloc.add(PaymentFormPrePopulateFields());
-        },
-        expect: () => [
-          isA<PaymentFormPopulatingFieldsForTesting>(),
-        ],
-      );
     });
 
     group('PaymentFormUpdateQuote', () {
@@ -54,29 +42,82 @@ void main() {
               estimatedStorage: 1.5,
             ),
           );
+          when(() => mockTurbo.getSupportedCountries())
+              .thenAnswer((invocation) => Future.value([
+                    'US',
+                  ]));
+
           return paymentFormBloc;
         },
         act: (bloc) async {
+          bloc.add(PaymentFormLoadSupportedCountries());
+          await Future.delayed(const Duration(microseconds: 100));
           bloc.add(PaymentFormUpdateQuote());
         },
         expect: () => [
+          isA<PaymentFormLoading>(),
+          isA<PaymentFormLoaded>(),
           isA<PaymentFormLoadingQuote>(),
           isA<PaymentFormQuoteLoaded>(),
         ],
       );
 
       blocTest<PaymentFormBloc, PaymentFormState>(
-        'Emits [PaymentFormLoadingQuote], then remains unchanged when PaymentFormUpdateQuote is added and refreshPriceEstimate throws',
+        'Emits [PaymentFormQuoteLoadFailure], then remains unchanged when PaymentFormUpdateQuote is added and refreshPriceEstimate throws',
         build: () {
+          when(() => mockTurbo.getSupportedCountries())
+              .thenAnswer((invocation) => Future.value([
+                    'US',
+                  ]));
           when(() => mockTurbo.refreshPriceEstimate()).thenThrow(Exception());
           return paymentFormBloc;
         },
         act: (bloc) async {
+          bloc.add(PaymentFormLoadSupportedCountries());
+          await Future.delayed(const Duration(microseconds: 100));
           bloc.add(PaymentFormUpdateQuote());
         },
         expect: () => [
+          isA<PaymentFormLoading>(),
+          isA<PaymentFormLoaded>(),
           isA<PaymentFormLoadingQuote>(),
           isA<PaymentFormQuoteLoadFailure>(),
+        ],
+      );
+    });
+
+    group('PaymentFormLoadSupportedCountries', () {
+      blocTest<PaymentFormBloc, PaymentFormState>(
+        'emits [PaymentFormLoading, PaymentFormLoaded] when PaymentFormLoadSupportedCountries event is added',
+        build: () => paymentFormBloc,
+        act: (bloc) {
+          when(() => mockTurbo.getSupportedCountries())
+              .thenAnswer((_) => Future.value(['Country A', 'Country B']));
+          bloc.add(PaymentFormLoadSupportedCountries());
+        },
+        expect: () => [
+          isA<PaymentFormLoading>(),
+          PaymentFormLoaded(
+            initialPriceEstimate,
+            DateTime.now()
+                .add(const Duration(days: 1))
+                .difference(DateTime.now())
+                .inSeconds,
+            ['Country A', 'Country B'],
+          ),
+        ],
+      );
+      blocTest<PaymentFormBloc, PaymentFormState>(
+        'emits [PaymentFormLoading, PaymentFormError] when PaymentFormLoadSupportedCountries event is added but throws getting the list of countries',
+        build: () => paymentFormBloc,
+        act: (bloc) {
+          when(() => mockTurbo.getSupportedCountries())
+              .thenThrow((_) => Exception());
+          bloc.add(PaymentFormLoadSupportedCountries());
+        },
+        expect: () => [
+          isA<PaymentFormLoading>(),
+          isA<PaymentFormError>(),
         ],
       );
     });
