@@ -443,11 +443,10 @@ class StripePaymentProvider implements TurboPaymentProvider {
       paymentMethodData: PaymentMethodData(billingDetails: billingDetails),
     );
 
-    await stripe.createPaymentMethod(params: params);
-
     final paymentIntent = await stripe.confirmPayment(
       paymentIntentClientSecret: paymentModel.paymentSession.clientSecret,
-      data: PaymentMethodParams.fromJson(params.toJson()),
+      data: params,
+      receiptEmail: paymentUserInformation.email,
     );
 
     logger.d(paymentIntent.toJson().toString());

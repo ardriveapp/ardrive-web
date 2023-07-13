@@ -102,8 +102,18 @@ dependencies:
   lottie: ^2.3.0
   visibility_detector: ^0.4.0+2
   logger: ^1.3.0
-  flutter_stripe: 9.2.2
-  flutter_stripe_web: 4.2.0
+  flutter_stripe:
+    git:
+      url: https://github.com/jdaev/flutter_stripe/
+      path: packages/stripe
+      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+  flutter_stripe_web:
+    git:
+      url: https://github.com/jdaev/flutter_stripe/
+      path: packages/stripe_web
+      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+
+
   stash_shared_preferences: ^4.6.2
   flutter_portal: ^1.1.3
   alchemist: ^0.6.0
@@ -111,6 +121,18 @@ dependencies:
   flutter_multi_formatter: ^2.11.1
   credit_card_validator: ^2.1.0
   tuple: ^2.0.2
+
+dependency_overrides:
+  stripe_js:
+    git:
+      url: https://github.com/jdaev/flutter_stripe/
+      path: packages/stripe_js
+      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+  stripe_platform_interface:
+    git:
+      url: https://github.com/jdaev/flutter_stripe/
+      path: packages/stripe_platform_interface
+      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
 
 dev_dependencies:
   flutter_test:

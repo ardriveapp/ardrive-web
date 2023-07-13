@@ -844,18 +844,20 @@ packages:
   flutter_stripe:
     dependency: "direct main"
     description:
-      name: flutter_stripe
-      sha256: fb1a0647867a26b1fced98706ef96c664a5ae2579e29b67af5ddd054e01d83df
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/stripe"
+      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      url: "https://github.com/jdaev/flutter_stripe/"
+    source: git
     version: "9.2.2"
   flutter_stripe_web:
     dependency: "direct main"
     description:
-      name: flutter_stripe_web
-      sha256: e6ffc95641914706d5967922053be7c14647ed2b3f751cc0b2056654950c7a5b
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/stripe_web"
+      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      url: "https://github.com/jdaev/flutter_stripe/"
+    source: git
     version: "4.2.0"
   flutter_svg:
     dependency: "direct main"
@@ -1838,20 +1840,22 @@ packages:
     source: hosted
     version: "9.2.1"
   stripe_js:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: stripe_js
-      sha256: ea4e917ac81ab4590e4464975fdf5d7eb50a0eeb267d532ada0d8515c8790be9
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/stripe_js"
+      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      url: "https://github.com/jdaev/flutter_stripe/"
+    source: git
     version: "3.1.0"
   stripe_platform_interface:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: stripe_platform_interface
-      sha256: "321de409f41088e842140a8e8b334b1111cc6072dfb2fa9e6452155187e8ff2d"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/stripe_platform_interface"
+      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      url: "https://github.com/jdaev/flutter_stripe/"
+    source: git
     version: "9.2.2"
   sync_http:
     dependency: transitive
