@@ -69,8 +69,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-4143-add-upload-progress-indicator-to-turbo-uploads
-      resolved-ref: f9dc3dae733eb10d3ad3b79f69d4738e9912a60a
+      ref: PE-4185-unable-to-create-folders-with-new-button
+      resolved-ref: "0ab50a25d535cecef532993c85bcc37e595abab7"
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.2.5"
