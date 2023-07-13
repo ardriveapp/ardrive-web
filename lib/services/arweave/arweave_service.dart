@@ -952,6 +952,10 @@ class ArweaveService {
       ..setOwner(await wallet.getOwner());
     await item.sign(wallet);
 
+    logger.i('Prepared bundled data item with id ${item.id}\n'
+        ' with tags ${item.tags}\n'
+        ' and owner ${item.owner}');
+
     return item;
   }
 
@@ -962,7 +966,7 @@ class ArweaveService {
     final bundleTx = await client.transactions.prepare(
       Transaction.withDataBundle(bundleBlob: bundleBlob)
         ..addApplicationTags(version: packageInfo.version)
-        ..addBarTags(),
+        ..addUTags(),
       wallet,
     );
 

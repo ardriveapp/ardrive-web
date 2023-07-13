@@ -18,14 +18,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   });
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
 
   DriveCreateCubit({
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required DrivesCubit drivesCubit,
@@ -104,7 +104,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
           ),
           profile.wallet,
         );
-        await _turboUploadService.postDataItem(dataItem: createTx as DataItem);
+        await _turboUploadService.postDataItem(
+          dataItem: createTx as DataItem,
+          wallet: profile.wallet,
+        );
       } else {
         createTx = await _arweave.prepareDataBundleTx(
           await DataBundle.fromDataItems(

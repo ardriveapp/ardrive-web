@@ -1,3 +1,4 @@
+import 'package:ardrive/components/turbo_logo.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
@@ -9,9 +10,9 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class TurboReviewView extends StatefulWidget {
   const TurboReviewView({super.key});
@@ -175,16 +176,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             children: [
                               Align(
                                 alignment: Alignment.centerLeft,
-                                child: SvgPicture.asset(
-                                  Resources.images.brand.turbo,
-                                  height: 15,
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeAccentDisabled,
-                                  colorBlendMode: BlendMode.srcIn,
-                                  fit: BoxFit.contain,
-                                ),
+                                child: turboLogo(context, height: 15),
                               ),
                               const SizedBox(
                                 height: 18,
@@ -450,6 +442,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             }
                             setState(() {
                               _emailIsValid = false;
+                              _emailChecked = false;
                             });
                             return appLocalizationsOf(context)
                                 .pleaseEnterAValidEmail;
@@ -460,10 +453,12 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               return;
                             }
 
-                            setState(() {
-                              _emailChecked = true;
-                              _hasAutomaticChecked = true;
-                            });
+                            if (_emailIsValid) {
+                              setState(() {
+                                _emailChecked = true;
+                                _hasAutomaticChecked = true;
+                              });
+                            }
                           },
                         ),
                       ),
@@ -471,7 +466,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         height: 16,
                       ),
                       ArDriveCheckBox(
-                        key: ValueKey(_emailChecked),
+                        isDisabled:
+                            !_emailIsValid || _emailController.text.isEmpty,
+                        key: ValueKey(
+                            '${_emailIsValid && _emailChecked}${_emailController.text}'),
                         title: appLocalizationsOf(context)
                             .keepMeUpToDateOnNewsAndPromotions,
                         titleStyle: ArDriveTypography.body.buttonNormalBold(
@@ -480,7 +478,12 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               .colors
                               .themeAccentDisabled,
                         ),
-                        checked: _emailChecked,
+                        onChange: (value) => setState(() {
+                          _emailChecked = value;
+                        }),
+                        checked: _emailIsValid &&
+                            _emailChecked &&
+                            _emailController.text.isNotEmpty,
                       ),
                       Row(
                         children: [
@@ -491,48 +494,45 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               setState(() => _isTermsChecked = value);
                             }),
                           ),
-                          GestureDetector(
-                            onTap: () => openUrl(
-                              url: Resources.agreementLink,
-                            ),
-                            child: ArDriveClickArea(
-                              child: Text.rich(
-                                TextSpan(
-                                  children: splitTranslationsWithMultipleStyles<
-                                      InlineSpan>(
-                                    originalText: appLocalizationsOf(context)
-                                        .aggreeToTerms_body,
-                                    defaultMapper: (text) => TextSpan(
-                                      text: text,
-                                      style: ArDriveTypography.body
-                                          .buttonNormalBold(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeAccentDisabled,
-                                      ),
-                                    ),
-                                    parts: {
-                                      appLocalizationsOf(context)
-                                              .aggreeToTerms_link:
-                                          (text) => TextSpan(
-                                                text: text,
-                                                style: ArDriveTypography.body
-                                                    .buttonNormalBold(
-                                                      color: ArDriveTheme.of(
-                                                              context)
+                          Text.rich(
+                            TextSpan(
+                              children: splitTranslationsWithMultipleStyles<
+                                  InlineSpan>(
+                                originalText: appLocalizationsOf(context)
+                                    .aggreeToTerms_body,
+                                defaultMapper: (text) => TextSpan(
+                                  text: text,
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeAccentDisabled,
+                                  ),
+                                ),
+                                parts: {
+                                  appLocalizationsOf(context).aggreeToTerms_link:
+                                      (text) => TextSpan(
+                                            text: text,
+                                            style: ArDriveTypography.body
+                                                .buttonNormalBold(
+                                                  color:
+                                                      ArDriveTheme.of(context)
                                                           .themeData
                                                           .colors
                                                           .themeAccentDisabled,
-                                                    )
-                                                    .copyWith(
-                                                      decoration: TextDecoration
-                                                          .underline,
-                                                    ),
-                                              ),
-                                    },
-                                  ),
-                                ),
+                                                )
+                                                .copyWith(
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () => openUrl(
+                                                    url:
+                                                        Resources.agreementLink,
+                                                  ),
+                                          ),
+                                },
                               ),
                             ),
                           ),

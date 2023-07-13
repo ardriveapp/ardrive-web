@@ -1,3 +1,5 @@
+import 'package:ardrive/utils/logger/logger.dart';
+
 import 'bundle_packer.dart';
 import 'sized_item.dart';
 
@@ -11,6 +13,8 @@ class NextFitBundlePacker<T extends SizedItem> implements BundlePacker<T> {
 
   @override
   Future<List<List<T>>> packItems(List<T> items) async {
+    logger.i(
+        'Creating bundle handles from data item handles with a max number of files of $maxDataItemCount');
     final bundles = <List<T>>[];
     var bundleItems = <T>[];
     // Walk through all items
