@@ -27,7 +27,11 @@ void main() {
           .thenAnswer((_) async => true);
       return cookiePolicyConsentBloc;
     },
-    act: (bloc) => bloc.add(VerifyCookiePolicyConsent()),
+    act: (bloc) async {
+      bloc.add(VerifyCookiePolicyConsent());
+      // needs to wait the action ends
+      await Future.delayed(const Duration(seconds: 1));
+    },
     expect: () => [VerifyingCookieConsent(), CookiePolicyConsentAccepted()],
   );
 
@@ -38,7 +42,11 @@ void main() {
           .thenAnswer((_) async => false);
       return cookiePolicyConsentBloc;
     },
-    act: (bloc) => bloc.add(VerifyCookiePolicyConsent()),
+    act: (bloc) async {
+      bloc.add(VerifyCookiePolicyConsent());
+      // needs to wait the action ends
+      await Future.delayed(const Duration(seconds: 1));
+    },
     expect: () => [VerifyingCookieConsent(), CookiePolicyConsentRejected()],
   );
 
