@@ -523,14 +523,11 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             icon: Padding(
                                 padding: const EdgeInsets.only(right: 4),
                                 child: ArDriveIcons.arconnectIcon1(
-                                  color: Colors.white,
+                                  color: colors.themeFgDefault,
                                 )),
                             style: ArDriveButtonStyle.secondary,
-                            fontStyle: ArDriveTypography.body.smallBold700(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgDefault),
+                            fontStyle: ArDriveTypography.body
+                                .smallBold700(color: colors.themeFgDefault),
                             onPressed: () {
                               context
                                   .read<LoginBloc>()
@@ -2064,10 +2061,11 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                     ArDriveTheme.of(context).themeData.colors.themeFgMuted)));
 
     return isBlurred
-        ? ImageFiltered(
+        ? ClipRect(
+            child: ImageFiltered(
             imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
             child: text,
-          )
+          ))
         : text;
   }
 
@@ -2149,7 +2147,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                               topRight: radius, bottomRight: radius)),
                       alignment: Alignment.centerLeft,
                       padding: const EdgeInsets.only(left: 16),
-                      child: Text(showCursor ? "|" : wordOption.word,
+                      child: Text(wordOption.word,
                           style: ArDriveTypography.body
                               .smallBold700(color: colors.themeFgDefault))),
                   if (wordOption.word.isNotEmpty)
