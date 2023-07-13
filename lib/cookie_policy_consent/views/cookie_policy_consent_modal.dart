@@ -27,7 +27,10 @@ Future<void> showCookiePolicyConsentModal(
 }
 
 class CookieConsentModal extends StatelessWidget {
-  const CookieConsentModal({super.key, required this.onAccept});
+  const CookieConsentModal({
+    super.key,
+    required this.onAccept,
+  });
 
   final Function(BuildContext) onAccept;
 
