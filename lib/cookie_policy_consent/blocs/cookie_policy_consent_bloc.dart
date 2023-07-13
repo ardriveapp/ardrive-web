@@ -1,9 +1,5 @@
 import 'package:ardrive/cookie_policy_consent/cookie_policy_consent.dart';
-<<<<<<< Updated upstream
-import 'package:ardrive/utils/logger/logger.dart';
-=======
 import 'package:bloc_concurrency/bloc_concurrency.dart';
->>>>>>> Stashed changes
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
@@ -26,15 +22,6 @@ class CookiePolicyConsentBloc
           final hasAcceptedCookiePolicyConsent =
               await cookiePolicyConsent.hasAcceptedCookiePolicy();
 
-<<<<<<< Updated upstream
-        if (hasAcceptedCookiePolicyConsent) {
-          logger.i('User has accepted cookie policy consent');
-          await Future.delayed(const Duration(milliseconds: 100));
-          emit(CookiePolicyConsentAccepted());
-        } else {
-          logger.i('User has not accepted cookie policy consent');
-          emit(CookiePolicyConsentRejected());
-=======
           if (hasAcceptedCookiePolicyConsent) {
             emit(CookiePolicyConsentAccepted());
           } else {
@@ -43,7 +30,6 @@ class CookiePolicyConsentBloc
         } else if (event is AcceptCookiePolicyConsent) {
           cookiePolicyConsent.acceptCookiePolicy();
           emit(CookiePolicyConsentAccepted());
->>>>>>> Stashed changes
         }
       },
       transformer: debounceSequential(const Duration(milliseconds: 100)),
