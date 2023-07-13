@@ -202,7 +202,7 @@ class UnitSelector extends StatelessWidget {
           width: 40,
         ),
         UnitDropdownMenu(
-          label: appLocalizationsOf(context).unit,
+          label: appLocalizationsOf(context).units,
           itemsTextStyle: ArDriveTypography.body.captionBold(),
           items: FileSizeUnit.values
               .map(
@@ -424,46 +424,71 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           ),
           const SizedBox(height: 12),
           buildButtonBar(context),
-          const SizedBox(height: 16),
-          Text(
-            'Custom Amount (min \$10 - max \$10,000)',
-            style: ArDriveTypography.body.buttonNormalBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-            ),
-          ),
-          const SizedBox(height: 8),
           ScreenTypeLayout.builder(
-            desktop: (_) => Row(
+            desktop: (_) => Column(
               children: [
-                _textField(textTheme),
-                if (_customAmountValidationMessage != null &&
-                    _customAmountValidationMessage!.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  AnimatedFeedbackMessage(
-                    text: _customAmountValidationMessage!,
+                const SizedBox(height: 24),
+                Text(
+                  'Custom Amount (min \$10 - max \$10,000)',
+                  style: ArDriveTypography.body.buttonNormalBold(
+                    color:
+                        ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
                   ),
-                ]
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _textField(textTheme),
+                    if (_customAmountValidationMessage != null &&
+                        _customAmountValidationMessage!.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      AnimatedFeedbackMessage(
+                        text: _customAmountValidationMessage!,
+                      ),
+                    ]
+                  ],
+                ),
               ],
             ),
-            mobile: (_) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            mobile: (_) => Stack(
               children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    Text(
+                      _customAmountValidationMessage == null &&
+                              (_customAmountValidationMessage?.isEmpty ?? true)
+                          ? 'Custom Amount (min \$10 - max \$10,000)'
+                          : '',
+                      style: ArDriveTypography.body.buttonNormalBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgSubtle,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _textField(textTheme),
+                  ],
+                ),
                 AnimatedSize(
                   duration: const Duration(milliseconds: 200),
                   child: Column(
                     children: [
                       if (_customAmountValidationMessage != null &&
                           _customAmountValidationMessage!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        AnimatedFeedbackMessage(
-                          text: _customAmountValidationMessage!,
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          child: AnimatedFeedbackMessage(
+                            text: _customAmountValidationMessage!,
+                          ),
                         ),
-                        const SizedBox(height: 4),
                       ]
                     ],
                   ),
                 ),
-                _textField(textTheme),
               ],
             ),
           )
@@ -559,7 +584,7 @@ class _BalanceView extends StatefulWidget {
 }
 
 class _BalanceViewState extends State<_BalanceView> {
-  balanceContents() => [
+  balanceContents(bool isMobile) => [
         Flexible(
           flex: 1,
           child: Column(
@@ -581,8 +606,9 @@ class _BalanceViewState extends State<_BalanceView> {
             ],
           ),
         ),
-        const SizedBox(
-          width: 32,
+        SizedBox(
+          height: isMobile ? 24 : 0,
+          width: isMobile ? 0 : 32,
         ),
         Flexible(
           flex: 1,
@@ -612,13 +638,13 @@ class _BalanceViewState extends State<_BalanceView> {
     return ScreenTypeLayout.builder(
       desktop: (context) => Row(
         mainAxisAlignment: MainAxisAlignment.start,
-        children: balanceContents(),
+        children: balanceContents(false),
       ),
       mobile: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: balanceContents(),
+        children: balanceContents(true),
       ),
     );
   }
@@ -811,7 +837,7 @@ class AnimatedFeedbackMessageState extends State<AnimatedFeedbackMessage>
         child: FeedbackMessage(
           text: widget.text,
           arrowSide: ArrowSide.bottomLeft,
-          height: 65,
+          height: 50,
           borderColor:
               ArDriveTheme.of(context).themeData.colors.themeErrorSubtle,
           backgroundColor:
