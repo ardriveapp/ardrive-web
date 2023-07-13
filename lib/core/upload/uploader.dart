@@ -332,9 +332,11 @@ class UploadPaymentEvaluator {
 
     BigInt turboBalance;
 
-    bool isTurboAvailable = _appConfig.useTurboUpload;
+    /// Even if this feature flag is off, it will be possible to upload using turbo
+    /// for free files
+    bool isTurboAvailableToUploadAllFiles = _appConfig.useTurboUpload;
 
-    if (isTurboAvailable) {
+    if (isTurboAvailableToUploadAllFiles) {
       /// Check the balance of the user
       /// If we can't get the balance, turbo won't be available
       try {
@@ -342,7 +344,7 @@ class UploadPaymentEvaluator {
             await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
       } catch (e) {
         logger.e(e);
-        isTurboAvailable = false;
+        isTurboAvailableToUploadAllFiles = false;
         turboBalance = BigInt.zero;
       }
     } else {
@@ -363,7 +365,7 @@ class UploadPaymentEvaluator {
     int turboBundleSizes = 0;
 
     /// Calculate the upload with Turbo if possible
-    if (isTurboAvailable && isUploadEligibleToTurbo) {
+    if (isUploadEligibleToTurbo) {
       turboBundleSizes = await sizeUtils
           .getSizeOfAllBundles(uploadPlanForTurbo.bundleUploadHandles);
 
@@ -372,7 +374,7 @@ class UploadPaymentEvaluator {
           totalSize: turboBundleSizes,
         );
       } catch (e) {
-        isTurboAvailable = false;
+        isTurboAvailableToUploadAllFiles = false;
       }
     }
 
@@ -396,7 +398,7 @@ class UploadPaymentEvaluator {
       );
     }
 
-    if ((isTurboAvailable &&
+    if ((isTurboAvailableToUploadAllFiles &&
             isUploadEligibleToTurbo &&
             turboBalance >= turboCostEstimate.totalCost) ||
         isFreeUploadPossibleUsingTurbo) {
@@ -408,7 +410,7 @@ class UploadPaymentEvaluator {
     }
 
     return UploadPaymentInfo(
-      isTurboAvailable: isTurboAvailable,
+      isTurboAvailable: isTurboAvailableToUploadAllFiles,
       defaultPaymentMethod: uploadMethod,
       isUploadEligibleToTurbo: isUploadEligibleToTurbo,
       arCostEstimate: arCostEstimate,
