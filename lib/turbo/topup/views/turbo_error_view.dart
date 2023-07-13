@@ -80,7 +80,7 @@ class TurboErrorView extends StatelessWidget {
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
-                        .themeAccentDisabled,
+                        .themeFgDefault,
                   ),
                 ),
               ],

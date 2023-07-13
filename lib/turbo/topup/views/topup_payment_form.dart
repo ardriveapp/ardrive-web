@@ -41,8 +41,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           height: 1.5,
           fontSize: 16,
         ),
-        requiredLabelColor: theme.colors.themeAccentDisabled,
-        labelColor: theme.colors.themeAccentDisabled,
+        requiredLabelColor: theme.colors.themeFgDefault,
+        labelColor: theme.colors.themeFgDefault,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 13,
           vertical: 10,
@@ -243,8 +243,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           Text(
             appLocalizationsOf(context).thisIsAOneTimePaymentPoweredByStripe,
             style: ArDriveTypography.body.captionBold(
-              color:
-                  ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             ),
           ),
         ],
@@ -269,10 +268,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               child: Text(
                 appLocalizationsOf(context).back,
                 style: ArDriveTypography.body.buttonLargeBold(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentDisabled,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
                 ),
               ),
             ),
@@ -462,7 +459,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
-                            .themeAccentDisabled,
+                            .themeFgDefault,
                       ),
                     ],
                   ),
@@ -762,7 +759,7 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors
-                          .themeFgDisabled,
+                          .themeFgDefault,
                     ),
                   ),
                   TimerWidget(
@@ -773,7 +770,7 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors
-                          .themeFgDisabled,
+                          .themeFgDefault,
                     ),
                     durationInSeconds: state.quoteExpirationTimeInSeconds,
                     onFinished: () {
@@ -854,7 +851,7 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
-                              .themeFgDisabled,
+                              .themeFgDefault,
                           size: 16,
                         ),
                         const SizedBox(width: 4),
@@ -864,7 +861,7 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
-                                .themeFgDisabled,
+                                .themeFgDefault,
                           ),
                         ),
                       ],

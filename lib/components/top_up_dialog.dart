@@ -334,8 +334,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     final textTheme = theme.copyWith(
       textFieldTheme: theme.textFieldTheme.copyWith(
         inputBackgroundColor: theme.colors.themeBgCanvas,
-        labelColor: theme.colors.themeAccentDisabled,
-        requiredLabelColor: theme.colors.themeAccentDisabled,
+        labelColor: theme.colors.themeFgDefault,
+        requiredLabelColor: theme.colors.themeFgDefault,
         inputTextStyle: theme.textFieldTheme.inputTextStyle.copyWith(
           color: theme.colors.themeFgMuted,
           fontWeight: FontWeight.w600,
@@ -347,7 +347,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           vertical: 8,
         ),
         labelStyle: TextStyle(
-          color: theme.colors.themeAccentDisabled,
+          color: theme.colors.themeFgDefault,
           fontWeight: FontWeight.w600,
           height: 1.5,
           fontSize: 16,
@@ -369,14 +369,14 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
             appLocalizationsOf(context)
                 .arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance,
             style: ArDriveTypography.body.buttonNormalBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
             ),
           ),
           const SizedBox(height: 32),
           Text(
             appLocalizationsOf(context).amount,
             style: ArDriveTypography.body.buttonNormalBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
             ),
           ),
           const SizedBox(height: 12),
@@ -385,7 +385,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           Text(
             'Custom Amount (min \$10 - max \$10,000)',
             style: ArDriveTypography.body.buttonNormalBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
             ),
           ),
           const SizedBox(height: 8),
@@ -514,8 +514,7 @@ class _BalanceViewState extends State<_BalanceView> {
               Text(
                 '${convertCreditsToLiteralString(widget.balance)} ${appLocalizationsOf(context).credits}',
                 style: ArDriveTypography.body.buttonXLargeBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                  color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                 ),
               ),
             ],
@@ -538,8 +537,7 @@ class _BalanceViewState extends State<_BalanceView> {
               Text(
                 '${widget.estimatedStorage} ${widget.fileSizeUnit}',
                 style: ArDriveTypography.body.buttonXLargeBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                  color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                 ),
               ),
             ],
@@ -623,7 +621,7 @@ class PriceEstimateView extends StatelessWidget {
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors
-                          .themeFgSubtle,
+                          .themeFgMuted,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -633,7 +631,7 @@ class PriceEstimateView extends StatelessWidget {
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors
-                          .themeFgSubtle,
+                          .themeFgMuted,
                       size: 16,
                     ),
                   )

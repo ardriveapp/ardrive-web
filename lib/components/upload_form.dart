@@ -382,7 +382,7 @@ class _UploadFormState extends State<UploadForm> {
                                         color: ArDriveTheme.of(context)
                                             .themeData
                                             .colors
-                                            .themeFgSubtle,
+                                            .themeFgMuted,
                                       ),
                                     ),
                                   ),
@@ -392,7 +392,7 @@ class _UploadFormState extends State<UploadForm> {
                                       color: ArDriveTheme.of(context)
                                           .themeData
                                           .colors
-                                          .themeFgSubtle,
+                                          .themeFgMuted,
                                     ),
                                   ),
                                 ],
@@ -413,7 +413,7 @@ class _UploadFormState extends State<UploadForm> {
                                               color: ArDriveTheme.of(context)
                                                   .themeData
                                                   .colors
-                                                  .themeFgSubtle,
+                                                  .themeFgMuted,
                                             ),
                                           ),
                                         ),
@@ -424,7 +424,7 @@ class _UploadFormState extends State<UploadForm> {
                                             color: ArDriveTheme.of(context)
                                                 .themeData
                                                 .colors
-                                                .themeFgSubtle,
+                                                .themeFgMuted,
                                           ),
                                         ),
                                       ],
@@ -592,7 +592,7 @@ class _UploadFormState extends State<UploadForm> {
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
-                                    .themeGbMuted,
+                                    .themeFgMuted,
                               ),
                             ),
                           ),
