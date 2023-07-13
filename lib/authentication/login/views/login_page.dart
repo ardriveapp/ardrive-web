@@ -523,14 +523,11 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             icon: Padding(
                                 padding: const EdgeInsets.only(right: 4),
                                 child: ArDriveIcons.arconnectIcon1(
-                                  color: Colors.white,
+                                  color: colors.themeFgDefault,
                                 )),
                             style: ArDriveButtonStyle.secondary,
-                            fontStyle: ArDriveTypography.body.smallBold700(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgDefault),
+                            fontStyle: ArDriveTypography.body
+                                .smallBold700(color: colors.themeFgDefault),
                             onPressed: () {
                               context
                                   .read<LoginBloc>()
@@ -1585,7 +1582,7 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
                 'Generating Wallet...',
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.headline
-                    .headline4Regular(color: colors.themeFgMuted)
+                    .headline4Regular(color: colors.themeFgDefault)
                     .copyWith(fontSize: 32),
               ),
               const SizedBox(height: 74),
@@ -1686,7 +1683,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
-                            .themeFgMuted)
+                            .themeFgDefault)
                     .copyWith(fontSize: 32),
               ),
               const SizedBox(height: 8),
@@ -2049,25 +2046,29 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   Widget blurred(double width, String word, bool isBlurred) {
     var radius = const Radius.circular(4);
 
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
+
     var text = Container(
         width: width,
         height: 45,
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-            color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+            color: isDarkMode ? colors.themeBgSurface : colors.themeBgSubtle,
             borderRadius:
                 BorderRadius.only(topRight: radius, bottomRight: radius)),
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 16),
         child: Text(word,
-            style: ArDriveTypography.body.smallBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgMuted)));
+            style:
+                ArDriveTypography.body.smallBold(color: colors.themeFgMuted)));
 
     return isBlurred
-        ? ImageFiltered(
+        ? ClipRect(
+            child: ImageFiltered(
             imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
             child: text,
-          )
+          ))
         : text;
   }
 
@@ -2077,6 +2078,9 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
         ? 176.0
         : (screenSize.width - 24 * 3) / 2;
     var radius = const Radius.circular(4);
+    var colors = ArDriveTheme.of(context).themeData.colors;
+    final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
+
     return Container(
         width: width,
         height: 45,
@@ -2088,17 +2092,14 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                     color:
-                        ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                        isDarkMode ? colors.themeBgCanvas : colors.themeGbMuted,
                     borderRadius:
                         BorderRadius.only(topLeft: radius, bottomLeft: radius)),
                 child: Center(
                     child: Text(
                   '$num',
-                  style: ArDriveTypography.body.smallBold700(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault),
+                  style: ArDriveTypography.body
+                      .smallBold700(color: colors.themeFgDefault),
                 ))),
             blurred(width - 22, word, _isBlurredSeedPhrase),
           ],
@@ -2106,7 +2107,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildWordToCheck(double width, WordOption wordOption) {
-    var radius = const Radius.circular(4);
+    var radius = const Radius.circular(2);
     var colors = ArDriveTheme.of(context).themeData.colors;
 
     var currentWordToCheckIndex =
@@ -2114,7 +2115,13 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     var showCursor = (currentWordToCheckIndex >= 0 &&
         wordOption == _wordsToCheck[currentWordToCheckIndex]);
 
-    var borderColor = showCursor ? colors.themeFgDefault : colors.themeBgCanvas;
+    final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
+
+    var borderColor = showCursor
+        ? colors.themeFgDefault
+        : isDarkMode
+            ? colors.themeBgCanvas
+            : colors.themeBgSubtle;
     var numberColor =
         showCursor ? colors.themeBgSurface : colors.themeFgDefault;
 
@@ -2138,18 +2145,15 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                     showCursor ? Alignment.centerLeft : Alignment.centerRight,
                 children: [
                   Container(
-                      width: width - 24,
+                      width: width - 23,
                       height: 43,
                       decoration: BoxDecoration(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeBgSurface,
+                          color: colors.themeBgSurface,
                           borderRadius: BorderRadius.only(
                               topRight: radius, bottomRight: radius)),
                       alignment: Alignment.centerLeft,
                       padding: const EdgeInsets.only(left: 16),
-                      child: Text(showCursor ? "|" : wordOption.word,
+                      child: Text(wordOption.word,
                           style: ArDriveTypography.body
                               .smallBold700(color: colors.themeFgDefault))),
                   if (wordOption.word.isNotEmpty)
@@ -2180,6 +2184,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     var radius = const Radius.circular(4);
     var selected = wordOption.index >= 0;
     var colors = ArDriveTheme.of(context).themeData.colors;
+    final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
 
     var currentWordToCheckIndex =
         _wordsToCheck.indexWhere((e) => e.word.isEmpty);
@@ -2283,7 +2288,9 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                     height: 45,
                     padding: const EdgeInsets.only(left: 16),
                     decoration: BoxDecoration(
-                        color: colors.themeBgSurface,
+                        color: isDarkMode
+                            ? colors.themeBgSurface
+                            : colors.themeBgSubtle,
                         borderRadius: BorderRadius.circular(4)),
                     alignment: Alignment.centerLeft,
                     child: Text(wordOption.word,
@@ -2325,7 +2332,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
-                                .themeFgMuted)
+                                .themeFgDefault)
                         .copyWith(fontSize: 32),
                   ),
                   const SizedBox(height: 8),
@@ -2432,7 +2439,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
-                                .themeFgMuted)
+                                .themeFgDefault)
                         .copyWith(fontSize: 32),
                   ),
                   const SizedBox(height: 8),
@@ -2484,46 +2491,60 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     final rowCount = screenSize.width > (374 * 2 + 24 * 3) ? 2 : 1;
     final topBottomPadding = rowCount == 1 ? 40.0 : 0.0;
 
+    final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
+
     return Scaffold(
-      body: Center(
-          child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                  top: topBottomPadding, bottom: topBottomPadding),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Getting Started',
-                    textAlign: TextAlign.center,
-                    style: ArDriveTypography.headline
-                        .headline4Regular(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgMuted)
-                        .copyWith(fontSize: 32),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                      constraints: BoxConstraints(maxWidth: 420),
-                      child: Text(
-                        'Learn some important information about your wallet while we begin generating it.',
-                        textAlign: TextAlign.center,
-                        style: ArDriveTypography.body.smallBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgSubtle),
-                      )),
-                  const SizedBox(height: 72),
-                  ...createRows(
-                      items: cardInfos.map(_buildCard).toList(),
-                      rowCount: rowCount,
-                      hGap: 24,
-                      vGap: 40)
-                ],
-              ))),
+      body: Stack(children: [
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: SvgPicture.asset(
+            isDarkMode
+                ? Resources.images.login.latticeLarge
+                : Resources.images.login.latticeLargeLight,
+            // fit: BoxFit.fitHeight,
+          ),
+        ),
+        Center(
+            child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                    top: topBottomPadding, bottom: topBottomPadding),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Getting Started',
+                      textAlign: TextAlign.center,
+                      style: ArDriveTypography.headline
+                          .headline4Regular(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgDefault)
+                          .copyWith(fontSize: 32),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                        constraints: BoxConstraints(maxWidth: 420),
+                        child: Text(
+                          'Learn some important information about your wallet while we begin generating it.',
+                          textAlign: TextAlign.center,
+                          style: ArDriveTypography.body.smallBold(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgSubtle),
+                        )),
+                    const SizedBox(height: 72),
+                    ...createRows(
+                        items: cardInfos.map(_buildCard).toList(),
+                        rowCount: rowCount,
+                        hGap: 24,
+                        vGap: 40)
+                  ],
+                )))
+      ]),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
