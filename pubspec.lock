@@ -69,11 +69,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-4185-unable-to-create-folders-with-new-button
-      resolved-ref: "0ab50a25d535cecef532993c85bcc37e595abab7"
+      ref: "v1.3.0"
+      resolved-ref: ce7bb97872cf48e20761f1f31e48434816f853fb
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
-    version: "1.2.5"
+    version: "1.3.0"
   ardrive_io:
     dependency: "direct main"
     description:
@@ -87,8 +87,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-4122-top-up-checkout-view-mobile-only-usd
-      resolved-ref: "19b91929ebb8eb82247e9cb33aa5672900b7bcd1"
+      ref: "v1.4.0"
+      resolved-ref: "3165542c8fda43101282467be311d84e0897d36f"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.2.0"
