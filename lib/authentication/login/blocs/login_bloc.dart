@@ -363,7 +363,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   Future<void> _handleCreateNewWalletEvent(
       CreateNewWallet event, Emitter<LoginState> emit) async {
-    emit(LoginLoading());
     profileType = ProfileType.json;
     final mnemonic = bip39.generateMnemonic();
     emit(LoginCreateNewWallet(mnemonic));
