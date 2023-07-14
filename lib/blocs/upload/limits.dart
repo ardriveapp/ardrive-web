@@ -14,3 +14,4 @@ final webBundleSizeLimit = const MiB(480).size;
 final mobileBundleSizeLimit = const MiB(200).size;
 const maxBundleDataItemCount = 500;
 const maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
+const maxFilesSizePerBundleUsingTurbo = 1;
