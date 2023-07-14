@@ -27,6 +27,7 @@ import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -1826,8 +1827,9 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     super.initState();
     _mnemonicWords = widget.mnemonic.split(' ');
     _resetMemoryCheckItems();
-    generateWalletFromMnemonic(widget.mnemonic).then((w) {
-      preGeneratedWallet.complete(w);
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
+      var wallet = await generateWalletFromMnemonic(widget.mnemonic);
+      preGeneratedWallet.complete(wallet);
     });
   }
 
