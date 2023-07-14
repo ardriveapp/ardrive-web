@@ -486,6 +486,9 @@ class _UploadFormState extends State<UploadForm> {
                       ),
                       style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
+                    const SizedBox(
+                      height: 8,
+                    ),
                   },
                   if (!state.isFreeThanksToTurbo) ...[
                     Text(
@@ -493,7 +496,7 @@ class _UploadFormState extends State<UploadForm> {
                       style: ArDriveTypography.body.buttonLargeBold(),
                     ),
                     const SizedBox(
-                      height: 16,
+                      height: 8,
                     ),
                     ArDriveRadioButtonGroup(
                       size: 15,
