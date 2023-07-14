@@ -442,7 +442,9 @@ class StripePaymentProvider implements TurboPaymentProvider {
         'Payment user information: ${paymentUserInformation.userAcceptedToReceiveEmails}');
 
     final billingDetails = BillingDetails(
-      email: paymentUserInformation.email,
+      email: paymentUserInformation.userAcceptedToReceiveEmails
+          ? paymentUserInformation.email
+          : null,
       name: paymentUserInformation.name,
     );
 
