@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 
@@ -13,7 +15,7 @@ class ArDriveCookiePolicyConsent {
   }
 
   // verify if the user accepted the cookie policy
-  Future<bool> hasAcceptedCookiePolicy() async {
+  FutureOr<bool> hasAcceptedCookiePolicy() async {
     final hasAccepted = (await _store()).getBool(hasAcceptedCookiePolicyKey);
 
     return hasAccepted ?? false;
