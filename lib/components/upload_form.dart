@@ -519,6 +519,7 @@ class _UploadFormState extends State<UploadForm> {
                       options: [
                         RadioButtonOptions(
                           value: state.uploadMethod == UploadMethod.ar,
+                          // TODO: Localization
                           text:
                               'Cost: ${winstonToAr(state.costEstimateAr.totalCost)} AR',
                           textStyle: ArDriveTypography.body.buttonLargeBold(),
@@ -527,9 +528,10 @@ class _UploadFormState extends State<UploadForm> {
                             state.isTurboUploadPossible)
                           RadioButtonOptions(
                             value: state.uploadMethod == UploadMethod.turbo,
+                            // TODO: Localization
                             text: state.isZeroBalance
                                 ? ''
-                                : 'Cost ${winstonToAr(state.costEstimateTurbo!.totalCost)} Credits',
+                                : 'Cost: ${winstonToAr(state.costEstimateTurbo!.totalCost)} Credits',
                             textStyle: ArDriveTypography.body.buttonLargeBold(),
                             content: state.isZeroBalance
                                 ? GestureDetector(
