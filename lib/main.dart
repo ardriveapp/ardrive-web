@@ -265,6 +265,7 @@ class AppState extends State<App> {
                   turboUploadService: context.read<TurboUploadService>(),
                   profileDao: context.read<ProfileDao>(),
                   db: context.read<Database>(),
+                  tabVisibilitySingleton: TabVisibilitySingleton(),
                 ),
               ),
               BlocProvider(
