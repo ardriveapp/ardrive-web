@@ -41,28 +41,27 @@ class _TurboBalanceState extends State<TurboBalance> {
   }
 
   Widget addButton(BuildContext context) {
-    const isDisabled = !kIsWeb;
+    const isHidden = !kIsWeb;
 
     return SizedBox(
       height: 23,
-      child: ArDriveButton(
-        style: ArDriveButtonStyle.secondary,
-        text: appLocalizationsOf(context).addButtonTurbo,
-        isDisabled: isDisabled,
-        fontStyle: TextStyle(
-          fontSize: 13,
-          color: isDisabled
-              ? ArDriveTheme.of(context).themeData.colors.themeFgDisabled
-              : ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-          fontWeight: FontWeight.w700,
-        ),
-        borderRadius: 20,
-        onPressed: () {
-          showTurboModal(context);
+      child: isHidden
+          ? null
+          : ArDriveButton(
+              style: ArDriveButtonStyle.secondary,
+              text: appLocalizationsOf(context).addButtonTurbo,
+              fontStyle: TextStyle(
+                fontSize: 13,
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                fontWeight: FontWeight.w700,
+              ),
+              borderRadius: 20,
+              onPressed: () {
+                showTurboModal(context);
 
-          widget.onTapAddButton?.call();
-        },
-      ),
+                widget.onTapAddButton?.call();
+              },
+            ),
     );
   }
 
