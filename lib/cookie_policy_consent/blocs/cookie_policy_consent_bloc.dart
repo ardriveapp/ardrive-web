@@ -32,7 +32,7 @@ class CookiePolicyConsentBloc
           emit(CookiePolicyConsentAccepted());
         }
       },
-      transformer: debounceSequential(const Duration(milliseconds: 100)),
+      transformer: debounceSequential(const Duration(milliseconds: 50)),
     );
   }
 }
