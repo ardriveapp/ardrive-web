@@ -80,6 +80,7 @@ class UploadReady extends UploadState {
 
   final UploadPlan uploadPlanForAR;
   final UploadPlan? uploadPlanForTurbo;
+  final bool isTurboUploadEnabled;
   final bool isTurboUploadPossible;
   final bool isFreeThanksToTurbo;
 
@@ -105,9 +106,10 @@ class UploadReady extends UploadState {
     this.costEstimateTurbo,
     required this.isZeroBalance,
     this.uploadPlanForTurbo,
-    required this.isTurboUploadPossible,
+    required this.isTurboUploadEnabled,
     required this.uploadMethod,
     required this.isButtonToUploadEnabled,
+    required this.isTurboUploadPossible,
   });
 
 // copyWith
@@ -128,6 +130,7 @@ class UploadReady extends UploadState {
     String? turboCredits,
     UploadMethod? uploadMethod,
     bool? isButtonToUploadEnabled,
+    bool? isTurboUploadEnabled,
   }) {
     return UploadReady(
       costEstimateAr: costEstimateAr ?? this.costEstimateAr,
@@ -139,14 +142,15 @@ class UploadReady extends UploadState {
       uploadIsPublic: uploadIsPublic ?? this.uploadIsPublic,
       uploadPlanForAR: uploadPlanForAR ?? this.uploadPlanForAR,
       uploadPlanForTurbo: uploadPlanForTurbo ?? this.uploadPlanForTurbo,
-      isTurboUploadPossible:
-          isTurboUploadPossible ?? this.isTurboUploadPossible,
+      isTurboUploadEnabled: isTurboUploadPossible ?? this.isTurboUploadEnabled,
       isFreeThanksToTurbo: isFreeThanksToTurbo ?? this.isFreeThanksToTurbo,
       uploadSize: uploadSize ?? this.uploadSize,
       credits: credits ?? this.credits,
       arBalance: arBalance ?? this.arBalance,
       turboCredits: turboCredits ?? this.turboCredits,
       uploadMethod: uploadMethod ?? this.uploadMethod,
+      isTurboUploadPossible:
+          isTurboUploadPossible ?? this.isTurboUploadPossible,
       isButtonToUploadEnabled:
           isButtonToUploadEnabled ?? this.isButtonToUploadEnabled,
     );

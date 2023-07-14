@@ -525,14 +525,26 @@ class _UploadFormState extends State<UploadForm> {
                           textStyle: ArDriveTypography.body.buttonLargeBold(),
                         ),
                         if (state.costEstimateTurbo != null &&
-                            state.isTurboUploadPossible)
+                            state.isTurboUploadEnabled)
                           RadioButtonOptions(
+                            isEnabled: state.isTurboUploadPossible,
                             value: state.uploadMethod == UploadMethod.turbo,
-                            // TODO: Localization
                             text: state.isZeroBalance
                                 ? ''
                                 : 'Cost: ${winstonToAr(state.costEstimateTurbo!.totalCost)} Credits',
-                            textStyle: ArDriveTypography.body.buttonLargeBold(),
+                            textStyle: state.isTurboUploadPossible
+                                ? ArDriveTypography.body.buttonLargeBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgDefault,
+                                  )
+                                : ArDriveTypography.body.buttonLargeBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgDisabled,
+                                  ),
                             content: state.isZeroBalance
                                 ? GestureDetector(
                                     onTap: () {
@@ -608,6 +620,20 @@ class _UploadFormState extends State<UploadForm> {
                       sufficentCreditsBalance: state.sufficentCreditsBalance,
                       sufficientArBalance: state.sufficientArBalance,
                     ),
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    if (state.isTurboUploadEnabled &&
+                        !state.isTurboUploadPossible)
+                      Text(
+                        'Turbo currently only supports file uploads smaller than 500 MiB"',
+                        style: ArDriveTypography.body.captionBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeErrorDefault,
+                        ),
+                      ),
                   ]
                 ],
               ),

@@ -356,9 +356,14 @@ class UploadPaymentEvaluator {
     final arFileSizes = await sizeUtils
         .getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles);
 
-    bool isUploadEligibleToTurbo =
+    /// If we have at least one v2 upload, it means that we have a file that is
+    /// bigger than the bundle size threshold
+    bool isUploadInTheBundleSizeThreshold =
         uploadPlanForAR.fileV2UploadHandles.isEmpty &&
             uploadPlanForTurbo.bundleUploadHandles.isNotEmpty;
+
+    /// Currently, the turbo upload is only available for bundles
+    bool isUploadEligibleToTurbo = isUploadInTheBundleSizeThreshold;
 
     UploadCostEstimate turboCostEstimate = UploadCostEstimate.zero();
 

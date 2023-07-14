@@ -60,7 +60,7 @@ class UploadCubit extends Cubit<UploadState> {
         logger.d('Enabling button for AR payment method');
         isButtonEnabled = true;
       } else if (_uploadMethod == UploadMethod.turbo &&
-          uploadReady.isTurboUploadPossible &&
+          uploadReady.isTurboUploadEnabled &&
           uploadReady.sufficentCreditsBalance) {
         logger.d('Enabling button for Turbo payment method');
         isButtonEnabled = true;
@@ -71,8 +71,12 @@ class UploadCubit extends Cubit<UploadState> {
         logger.d('Disabling button');
       }
 
-      emit((state as UploadReady).copyWith(
-          uploadMethod: method, isButtonToUploadEnabled: isButtonEnabled));
+      emit(
+        (state as UploadReady).copyWith(
+          uploadMethod: method,
+          isButtonToUploadEnabled: isButtonEnabled,
+        ),
+      );
     }
   }
 
@@ -381,8 +385,8 @@ class UploadCubit extends Cubit<UploadState> {
 
       emit(
         UploadReady(
-          isTurboUploadPossible: paymentInfo.isUploadEligibleToTurbo &&
-              paymentInfo.isTurboAvailable,
+          isTurboUploadEnabled: paymentInfo.isTurboAvailable,
+          isTurboUploadPossible: paymentInfo.isUploadEligibleToTurbo,
           isZeroBalance: isTurboZeroBalance,
           turboCredits: literalBalance,
           uploadSize: paymentInfo.totalSize,
