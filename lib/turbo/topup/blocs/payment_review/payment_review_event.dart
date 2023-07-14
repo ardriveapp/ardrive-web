@@ -9,9 +9,11 @@ abstract class PaymentReviewEvent extends Equatable {
 
 class PaymentReviewFinishPayment extends PaymentReviewEvent {
   final String? email;
+  final bool userAcceptedToReceiveEmails;
 
   const PaymentReviewFinishPayment({
     this.email,
+    this.userAcceptedToReceiveEmails = false,
   });
 
   @override

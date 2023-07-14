@@ -616,6 +616,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                   context.read<PaymentReviewBloc>().add(
                         PaymentReviewFinishPayment(
                           email: _emailController.text,
+                          userAcceptedToReceiveEmails: _emailChecked,
                         ),
                       );
                 },

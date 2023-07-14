@@ -112,7 +112,6 @@ dependencies:
       url: https://github.com/ardriveapp/flutter_stripe/
       path: packages/stripe_web
       ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
-
   stash_shared_preferences: ^4.6.2
   flutter_portal: ^1.1.3
   alchemist: ^0.6.0
