@@ -1,0 +1,3 @@
+- New profile sidebar on mobile
+- Adds a progress indicator for uploads
+- Switch bAR for U

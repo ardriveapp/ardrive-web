@@ -12,6 +12,8 @@ class Resources {
 
   static const howDoesKeyFileLoginWork =
       'https://ardrive.zendesk.com/hc/en-us/articles/15412384724251-How-Does-Keyfile-Login-Work-';
+  static const howAreConversionsDetermined =
+      'https://help.ardrive.io/hc/en-us/articles/17043397992731';
 }
 
 class Images {
@@ -45,7 +47,8 @@ class Brand {
   final blackLogo2 = 'assets/images/brand/black_logo_2x.png';
   final blackLogo025 = 'assets/images/brand/black_logo_0.25x.png';
   final blackLogo05 = 'assets/images/brand/black_logo_0.5x.png';
-  final turbo = 'assets/images/brand/turbo.svg';
+  final turboWhite = 'assets/images/brand/turbo-white.svg';
+  final turboBlack = 'assets/images/brand/turbo-black.svg';
 }
 
 class Profile {

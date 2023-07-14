@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive/utils/data_item_utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -36,7 +38,10 @@ class TurboUploadService {
             controller.close();
           }
         },
-      );
+      ).then((value) {
+        controller.add(1.0);
+        controller.close();
+      });
     } catch (e) {
       logger.e(e);
       controller.addError(e);
@@ -60,17 +65,42 @@ class TurboUploadService {
       wallet: wallet,
     );
 
-    final data = (await dataItem.asBinary()).toBytes();
+    final headers = {
+      'x-nonce': nonce,
+      'x-signature': signature,
+      'x-public-key': publicKey,
+    };
 
-    final response = await httpClient.postBytes(
-      url: '$turboUploadUri/v1/tx',
-      headers: {
-        'x-nonce': nonce,
-        'x-signature': signature,
-        'x-public-key': publicKey,
-      },
-      data: data,
-    );
+    final url = '$turboUploadUri/v1/tx';
+    const receiveTimeout = Duration(days: 365);
+    const sendTimeout = Duration(days: 365);
+
+    if (AppPlatform.isMobile) {
+      final response = await httpClient.postBytes(
+        url: url,
+        onSendProgress: onSendProgress,
+        data: (await dataItem.asBinary()).toBytes(),
+        headers: headers,
+        receiveTimeout: receiveTimeout,
+        sendTimeout: sendTimeout,
+      );
+
+      if (!acceptedStatusCodes.contains(response.statusCode)) {
+        logger.e(response.data);
+        throw Exception(
+          'Turbo upload failed with status code ${response.statusCode}',
+        );
+      }
+      return;
+    }
+
+    final response = await httpClient.postBytesAsStream(
+        url: url,
+        onSendProgress: onSendProgress,
+        headers: headers,
+        receiveTimeout: receiveTimeout,
+        sendTimeout: sendTimeout,
+        data: await convertDataItemToStreamBytes(dataItem));
 
     if (!acceptedStatusCodes.contains(response.statusCode)) {
       logger.e(response.data);

@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.4.1
+version: 2.5.0
 
 environment:
   sdk: '>=2.18.5 <3.0.0'
@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ar-io/ardrive_http.git
-      ref: PE-4143-add-upload-progress-indicator-to-turbo-uploads
+      ref: v1.3.0
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3992-upload-with-credits
+      ref: v1.4.0
   artemis: ^7.0.0-beta.13
   arweave:
     git:
