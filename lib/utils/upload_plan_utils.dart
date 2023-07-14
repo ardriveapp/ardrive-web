@@ -128,7 +128,8 @@ class UploadPlanUtils {
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
       turboUploadService: turboUploadService,
-      maxDataItemCount: useTurbo ? 2 : maxFilesPerBundle,
+      maxDataItemCount:
+          useTurbo ? maxFilesSizePerBundleUsingTurbo : maxFilesPerBundle,
     );
   }
 
