@@ -373,6 +373,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     icon: ArDriveIcons.keypad(
                         size: 24, color: colors.themeFgDefault),
                     key: const Key('loginWithSeedPhraseButton'),
+                    // TODO: create/update localization key
                     text: "Enter Seed Phrase",
                     onPressed: () {
                       context.read<LoginBloc>().add(EnterSeedPhrase());
@@ -389,9 +390,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   controller: _dropAreaController,
                   keepButtonVisible: true,
                   width: double.maxFinite,
+                  // TODO: create/update localization key
                   dragAndDropDescription: "Select a KeyFile",
-                  // dragAndDropButtonTitle:
-                  //     appLocalizationsOf(context).dragAndDropButtonTitle,
                   dragAndDropButtonTitle: "Select a KeyFile",
                   errorDescription: appLocalizationsOf(context).invalidKeyFile,
                   validateFile: (file) async {
@@ -533,6 +533,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                   .read<LoginBloc>()
                                   .add(const AddWalletFromArConnect());
                             },
+                            // TODO: create/update localization key
                             text: 'Login with ArConnect',
                           ),
                         ),
@@ -549,7 +550,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               TextSpan(
                 children: [
                   TextSpan(
-                    // text: appLocalizationsOf(context).dontHaveAWallet1Part,
+                    // TODO: create/update localization key
                     text: "New user? Get started here!",
                     style: ArDriveTypography.body
                         .smallBold(
@@ -1390,13 +1391,14 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
               Align(
                 alignment: Alignment.topCenter,
                 child: Text(
+                  // TODO: create/update localization key
                   'Enter Seed Phrase',
                   style: ArDriveTypography.headline.headline4Regular(),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                // appLocalizationsOf(context).createAndConfirmPassword,
+                // TODO: create/update localization key
                 'Please enter your 12 word seed phrase and separate each word with a space.',
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.body.smallBold(),
@@ -1418,6 +1420,7 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
           Align(
               alignment: Alignment.topLeft,
               child: Text(
+                // TODO: create/update localization key
                 "Seed Phrase",
                 style:
                     ArDriveTypography.body.smallBold().copyWith(fontSize: 14),
@@ -1428,42 +1431,18 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
             controller: _seedPhraseController,
             showObfuscationToggle: true,
             obscureText: true,
-            // autofillHints: const [AutofillHints.password],
-            // hintText: appLocalizationsOf(context).enterPassword,
+            // TODO: create/update localization key
             hintText: 'Enter Seed Phrase',
-            // onChanged: (s) {
-            //   _formKey.currentState?.validate();
-            // },
             textInputAction: TextInputAction.next,
             minLines: 3,
             maxLines: 3,
-            //   validator: (value) {
-            //     if (value == null || value.isEmpty) {
-            //       setState(() {
-            //         _seedPhraseFormatIsValid = false;
-            //       });
-            //       return appLocalizationsOf(context).validationRequired;
-            //     } else if (!bip39.validateMnemonic(value)) {
-            //       setState(() {
-            //         _seedPhraseFormatIsValid = false;
-            //       });
-            //       // FIXME - localize
-            //       return 'Please enter a valid 12-word mnemonic.';
-            //       // return appLocalizationsOf(context).validationRequired;
-            //     }
-
-            //     setState(() {
-            //       _seedPhraseFormatIsValid = true;
-            //     });
-
-            //     return null;
-            //   },
           ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ArDriveButton(
               onPressed: _onSubmit,
+              // TODO: create/update localization key
               text: 'Continue',
               fontStyle:
                   ArDriveTypography.body.smallBold700(color: Colors.white),
@@ -1505,6 +1484,7 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
               color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
             ),
             title: appLocalizationsOf(context).error,
+            // TODO: create/update localization key
             content:
                 'The seed phrase you have provided is invalid. Please correct and retry.',
             actions: [
@@ -1535,6 +1515,8 @@ class GenerateWalletView extends StatefulWidget {
 class _GenerateWalletViewState extends State<GenerateWalletView> {
   late Timer _periodicTimer;
   int _index = 0;
+
+  // TODO: create/update localization keys
   final _messages = [
     'ArDrive helps you upload your data to the permaweb and keep it safe for generations to come!',
     'With Turbo you can pay with a credit card and increase the reliability of your uploads!',
@@ -1546,11 +1528,14 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
   @override
   void initState() {
     super.initState();
+
+    // TODO: create/update localization key
     _message = 'Did you know?\n\n${_messages[0]}';
 
     _periodicTimer = Timer.periodic(Duration(seconds: 7), (Timer t) {
       setState(() {
         _index = (_index + 1) % _messages.length;
+        // TODO: create/update localization key
         _message = 'Did you know?\n\n${_messages[_index]}';
       });
     });
@@ -1579,6 +1564,7 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
               Text(
+                // TODO: create/update localization key
                 'Generating Wallet...',
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.headline
@@ -1624,6 +1610,7 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: Text(
+                            // TODO: create/update localization key
                             'Nobody (including the ArDrive core team) can help you recover your wallet if the keyfile is lost. So, remember to keep it safe!',
                             style: ArDriveTypography.body
                                 .buttonNormalBold(color: colors.themeFgSubtle)),
@@ -1676,6 +1663,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                       .themeSuccessDefault),
               const SizedBox(height: 16),
               Text(
+                // TODO: create/update localization key
                 'Wallet Created',
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.headline
@@ -1688,6 +1676,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
               ),
               const SizedBox(height: 8),
               Text(
+                // TODO: create/update localization key
                 'Download your keyfile. You can also find it under the profile menu.',
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.body.smallBold(
@@ -1731,6 +1720,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                             children: [
                               ArDriveIcons.download(size: 40),
                               const SizedBox(height: 4),
+                              // TODO: create/update localization key
                               Text('Download Keyfile',
                                   style: ArDriveTypography.body.smallBold700(
                                       color: ArDriveTheme.of(context)
@@ -1750,7 +1740,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                         .read<LoginBloc>()
                         .add(CompleteWalletGeneration(widget.wallet));
                   },
-                  // text: appLocalizationsOf(context).proceed,
+                  // TODO: create/update localization key
                   text: 'Continue',
                   fontStyle:
                       ArDriveTypography.body.smallBold700(color: Colors.white),
@@ -1968,6 +1958,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
               ),
               onPressed: back,
               child: Center(
+                  // TODO: create/update localization key
                   child: Text("Back",
                       style: ArDriveTypography.body
                           .smallBold700(color: colors.themeFgDefault))),
@@ -2254,6 +2245,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                             const SizedBox(width: 8),
                             Expanded(
                                 child: Text(
+                                    // TODO: create/update localization key
                                     'Order of phrases is not correct. Please try again.',
                                     style: ArDriveTypography.body
                                         .smallBold(
@@ -2325,6 +2317,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
+                    // TODO: create/update localization key
                     'Write Down Seed Phrase',
                     textAlign: TextAlign.center,
                     style: ArDriveTypography.headline
@@ -2339,6 +2332,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                   Container(
                       constraints: BoxConstraints(maxWidth: 508),
                       child: Text(
+                        // TODO: create/update localization key
                         'Please carefully write down your seed phrase, in this order, and keep it somewhere safe.',
                         textAlign: TextAlign.center,
                         style: ArDriveTypography.body.smallBold(
@@ -2369,6 +2363,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                         label: Container(
                             width: 92,
                             child: Text(
+                              // TODO: create/update localization keys
                               _isBlurredSeedPhrase
                                   ? 'Show Words'
                                   : 'Hide Words',
@@ -2395,6 +2390,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
+        // TODO: create/update localization key
         _nextButton(text: 'I wrote it down', isDisabled: false)
       ])),
     );
@@ -2432,6 +2428,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
+                    // TODO: create/update localization key
                     'Confirm Your Seed Phrase',
                     textAlign: TextAlign.center,
                     style: ArDriveTypography.headline
@@ -2444,6 +2441,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                   ),
                   const SizedBox(height: 8),
                   Text(
+                    // TODO: create/update localization key
                     'Please select each phrase in order to make sure it’s correct.',
                     textAlign: TextAlign.center,
                     style: ArDriveTypography.body.smallBold(
@@ -2461,12 +2459,15 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
+
+        // TODO: create/update localization key
         _nextButton(text: 'Continue', isDisabled: !_wordsAreCorrect)
       ])),
     );
   }
 
   Widget _buildGettingStarted() {
+    // TODO: create/update localization keys
     var cardInfos = [
       [
         'Keyfile',
@@ -2514,6 +2515,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
+                      // TODO: create/update localization key
                       'Getting Started',
                       textAlign: TextAlign.center,
                       style: ArDriveTypography.headline
@@ -2528,6 +2530,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                     Container(
                         constraints: BoxConstraints(maxWidth: 420),
                         child: Text(
+                          // TODO: create/update localization key
                           'Learn some important information about your wallet while we begin generating it.',
                           textAlign: TextAlign.center,
                           style: ArDriveTypography.body.smallBold(
@@ -2548,6 +2551,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
+        // TODO: create/update localization key
         _nextButton(text: 'Continue', isDisabled: false)
       ])),
     );
@@ -2607,6 +2611,7 @@ class _LoginCopyButtonState extends State<LoginCopyButton> {
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgMuted),
           label: Text(
+            // TODO: create/update localization keys
             _showCheck ? 'Copied to Clipboard' : 'Copy to Clipboard',
             style: ArDriveTypography.body.smallBold(
                 color: ArDriveTheme.of(context).themeData.colors.themeFgMuted),
