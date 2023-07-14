@@ -1,5 +1,7 @@
 {
   "@@locale": "en",
+  "accept": "Accept",
+  "@accept": {},
   "addButtonTurbo": "Add",
   "@addButtonTurbo": {
     "description": "text for add button"
@@ -76,8 +78,6 @@
   "@arConnectWalletDoestNotMatchArDriveWallet": {
     "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
   },
-  "creditsWillBeAutomaticallyAddedToYourTurboBalance": "Credits will be automatically added to your Turbo balance, and you can start using them right away.",
-  "@creditsWillBeAutomaticallyAddedToYourTurboBalance": {},
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
@@ -238,6 +238,10 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
+  "cookieConsent": "Cookie Consent",
+  "@cookieConsent": {},
+  "cookieConsentBody": "Our payment provider, Stripe, uses cookies to enable users to purchase Credits. These cookies are required for the purchasing of Credits.\nBy clicking “Accept” you consent to this use of cookies.",
+  "@cookieConsentBody": {},
   "copyBundleTxID": "Copy Bundle Tx ID",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
@@ -364,6 +368,8 @@
   "@creditsTurbo": {
     "description": "suffix for turbo balance"
   },
+  "creditsWillBeAutomaticallyAddedToYourTurboBalance": "Credits will be automatically added to your Turbo balance, and you can start using them right away.",
+  "@creditsWillBeAutomaticallyAddedToYourTurboBalance": {},
   "currency": "Currency",
   "@currency": {},
   "customAmount": "Custom Amount",

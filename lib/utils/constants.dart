@@ -11,3 +11,5 @@ const List<String> videoContentTypes = [
 ];
 
 const profileQueryMaxRetries = 6;
+
+const String hasAcceptedCookiePolicyKey = 'hasAcceptedCookiePolicy';

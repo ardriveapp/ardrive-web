@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/turbo_balance/turbo_balance_cubit.dart';
 import 'package:ardrive/components/turbo_logo.dart';
+import 'package:ardrive/cookie_policy_consent/views/cookie_policy_consent_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
@@ -51,7 +52,9 @@ class _TurboBalanceState extends State<TurboBalance> {
           ),
           borderRadius: 20,
           onPressed: () {
-            showTurboModal(context);
+            showCookiePolicyConsentModal(context, (context) {
+              showTurboModal(context);
+            });
 
             widget.onTapAddButton?.call();
           },
@@ -60,8 +63,6 @@ class _TurboBalanceState extends State<TurboBalance> {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('Building turbo balance widget');
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
       child: Column(
