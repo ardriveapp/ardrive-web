@@ -69,11 +69,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-4143-add-upload-progress-indicator-to-turbo-uploads
-      resolved-ref: f9dc3dae733eb10d3ad3b79f69d4738e9912a60a
+      ref: "v1.3.0"
+      resolved-ref: ce7bb97872cf48e20761f1f31e48434816f853fb
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
-    version: "1.2.5"
+    version: "1.3.0"
   ardrive_io:
     dependency: "direct main"
     description:

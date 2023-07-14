@@ -1666,6 +1666,8 @@
   "@unableToUpdateQuote": {},
   "unit": "Unit",
   "@unit": {},
+  "units": "Units",
+  "@units": {},
   "unlock": "Unlock",
   "@unlock": {
     "description": "Unlock a file or drive."
