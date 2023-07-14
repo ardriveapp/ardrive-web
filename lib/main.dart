@@ -107,6 +107,7 @@ Future<void> _initialize() async {
   );
   _turboUpload = config.useTurboUpload
       ? TurboUploadService(
+          tabVisibilitySingleton: TabVisibilitySingleton(),
           turboUploadUri: Uri.parse(config.defaultTurboUploadUrl!),
           allowedDataItemSize: config.allowedDataItemSizeForTurbo!,
           httpClient: ArDriveHTTP(),

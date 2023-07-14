@@ -107,6 +107,7 @@ class SafeArConnectTransactionSigner extends ArweaveTransactionSigner {
     required FileEntity entity,
   }) async {
     final signedItem = await safeArConnectAction(
+      tabVisibilitySingleton,
       (_) => super.signTransaction(
         isPrivate: isPrivate,
         file: file,

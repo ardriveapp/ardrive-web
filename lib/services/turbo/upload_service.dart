@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/core/arconnect/safe_arconnect_action.dart';
 import 'package:ardrive/utils/data_item_utils.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -13,12 +14,14 @@ class TurboUploadService {
   final Uri turboUploadUri;
   final int allowedDataItemSize;
   ArDriveHTTP httpClient;
+  final TabVisibilitySingleton _tabVisibility;
 
   TurboUploadService({
     required this.turboUploadUri,
     required this.allowedDataItemSize,
     required this.httpClient,
-  });
+    required TabVisibilitySingleton tabVisibilitySingleton,
+  }) : _tabVisibility = tabVisibilitySingleton;
 
   Stream<double> postDataItemWithProgress({
     required DataItem dataItem,
@@ -57,9 +60,11 @@ class TurboUploadService {
 
     final nonce = const Uuid().v4();
     final publicKey = await safeArConnectAction<String>(
+      _tabVisibility,
       (_) => wallet.getOwner(),
     );
     final signature = await safeArConnectAction<String>(
+      _tabVisibility,
       (_) => signNonceAndData(
         nonce: nonce,
         wallet: wallet,
@@ -120,4 +125,7 @@ class DontUseUploadService implements TurboUploadService {
     // TODO: implement postDataItemWithProgress
     throw UnimplementedError();
   }
+
+  @override
+  TabVisibilitySingleton get _tabVisibility => throw UnimplementedError();
 }

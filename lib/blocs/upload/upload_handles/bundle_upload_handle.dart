@@ -6,6 +6,7 @@ import 'package:ardrive/core/upload/bundle_signer.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
@@ -23,7 +24,7 @@ class BundleUploadHandle implements UploadHandle {
     this.folderDataItemUploadHandles = const [],
     this.size = 0,
     this.hasError = false,
-}) {
+  }) {
     fileEntities = fileDataItemUploadHandles.map((item) => item.entity);
   }
 
@@ -57,6 +58,7 @@ class BundleUploadHandle implements UploadHandle {
     required TurboUploadService turboUploadService,
     required PstService pstService,
     required Wallet wallet,
+    required TabVisibilitySingleton tabVisibilitySingleton,
     bool isArConnect = false,
     bool useTurbo = false,
   }) async {
@@ -64,14 +66,16 @@ class BundleUploadHandle implements UploadHandle {
 
     late DataBundle bundle;
     try {
-      bundle =
-          await safeArConnectAction<DataBundle>((_) => DataBundle.fromHandles(
-                parallelize: !isArConnect,
-                handles: List.castFrom<FileDataItemUploadHandle,
-                        DataItemHandle>(fileDataItemUploadHandles) +
-                    List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
-                        folderDataItemUploadHandles),
-              ));
+      bundle = await safeArConnectAction<DataBundle>(
+        tabVisibilitySingleton,
+        (_) => DataBundle.fromHandles(
+          parallelize: !isArConnect,
+          handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
+                  fileDataItemUploadHandles) +
+              List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
+                  folderDataItemUploadHandles),
+        ),
+      );
     } catch (e) {
       logger.e('Error while preparing bundle: $e');
       hasError = true;

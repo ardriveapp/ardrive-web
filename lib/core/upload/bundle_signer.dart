@@ -75,17 +75,21 @@ class ArweaveBundleTransactionSigner implements BundleTransactionSigner {
 }
 
 class SafeArConnectSigner<T> extends BundleSigner<T> {
-  final TabVisibilitySingleton tabVisibilitySingleton =
-      TabVisibilitySingleton();
+  final TabVisibilitySingleton _tabVisibilitySingleton;
 
   final BundleSigner bundleSigner;
 
-  SafeArConnectSigner(this.bundleSigner);
+  SafeArConnectSigner(this.bundleSigner,
+      {TabVisibilitySingleton? tabVisibility})
+      : _tabVisibilitySingleton = tabVisibility ?? TabVisibilitySingleton();
 
   @override
   Future<T> signBundle({required DataBundle unSignedBundle}) async {
-    final T signedItem = await safeArConnectAction<T>((_) async =>
-        await bundleSigner.signBundle(unSignedBundle: unSignedBundle));
+    final T signedItem = await safeArConnectAction<T>(
+      _tabVisibilitySingleton,
+      (_) async =>
+          await bundleSigner.signBundle(unSignedBundle: unSignedBundle),
+    );
 
     return signedItem;
   }
