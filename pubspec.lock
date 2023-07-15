@@ -112,8 +112,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.6.1"
-      resolved-ref: e8e1c2e35d084a1d96ce976991fd07d463a2e2bf
+      ref: PE-3960
+      resolved-ref: "68692d8587ce16dff6e4640875536a319bb00060"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.5.1"
@@ -157,6 +157,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.2"
+  bip39:
+    dependency: "direct main"
+    description:
+      name: bip39
+      sha256: de1ee27ebe7d96b84bb3a04a4132a0a3007dcdd5ad27dd14aa87a29d97c45edc
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.6"
   bloc:
     dependency: transitive
     description:
@@ -701,13 +709,13 @@ packages:
     source: hosted
     version: "3.3.1"
   flutter_downloader:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: flutter_downloader
-      sha256: "3d7313746c5f376b2209a59888a1c2766d94e09c26dc93fa23a725426e3f341c"
+      sha256: ff5cb37482329018ba313f44cfa60aa68a779a70ecaa731a40d931d73b49acf2
       url: "https://pub.dev"
     source: hosted
-    version: "1.10.5"
+    version: "1.10.3"
   flutter_driver:
     dependency: "direct dev"
     description: flutter
@@ -978,6 +986,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.1"
+  hash:
+    dependency: transitive
+    description:
+      name: hash
+      sha256: f3af74537f74a050075baa027596bd6925d75573ce6c8073fa67e3920c1f0f68
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
+  hex:
+    dependency: transitive
+    description:
+      name: hex
+      sha256: "4e7cd54e4b59ba026432a6be2dd9d96e4c5205725194997193bf871703b82c4a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
   html:
     dependency: transitive
     description:
