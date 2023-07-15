@@ -587,7 +587,11 @@ void main() {
 
       test('sets the paymentUserInformation', () {
         final mockPaymentUserInformation = PaymentUserInformation.create(
-            email: 'email', country: 'US', name: 'name');
+          email: 'email',
+          country: 'US',
+          name: 'name',
+          userAcceptedToReceiveEmails: true,
+        );
 
         turbo.paymentUserInformation = mockPaymentUserInformation;
 
@@ -596,14 +600,22 @@ void main() {
 
       test('changes the paymentUserInformation', () {
         final mockPaymentUserInformation = PaymentUserInformation.create(
-            email: 'email', country: 'US', name: 'name');
+          email: 'email',
+          country: 'US',
+          name: 'name',
+          userAcceptedToReceiveEmails: true,
+        );
 
         turbo.paymentUserInformation = mockPaymentUserInformation;
 
         expect(turbo.paymentUserInformation, mockPaymentUserInformation);
 
         final mockPaymentUserInformation2 = PaymentUserInformation.create(
-            email: 'email2', country: 'US', name: 'name');
+          email: 'email2',
+          country: 'US',
+          name: 'name',
+          userAcceptedToReceiveEmails: true,
+        );
 
         turbo.paymentUserInformation = mockPaymentUserInformation2;
 
@@ -670,6 +682,7 @@ void main() {
           country: 'US',
           email: 'email',
           name: 'name',
+          userAcceptedToReceiveEmails: true,
         );
 
         paymentModel = PaymentModel(
@@ -805,12 +818,15 @@ void main() {
           country: 'US',
           email: 'email',
           name: 'name',
+          userAcceptedToReceiveEmails: true,
         );
 
         when(() => mockPaymentProvider.confirmPayment(
               paymentModel: paymentModel,
               paymentUserInformation: mockPaymentUserInformation,
-            )).thenAnswer((_) => Future.value(PaymentStatus.failed));
+            )).thenAnswer(
+          (_) => Future.value(PaymentStatus.failed),
+        );
 
         final turbo = Turbo(
           supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),
