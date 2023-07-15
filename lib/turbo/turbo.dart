@@ -148,9 +148,13 @@ class Turbo extends Disposable {
       wallet: _wallet,
     );
 
-    _quoteExpirationDate =
-        DateTime.parse(_currentPaymentIntent!.topUpQuote.quoteExpirationDate)
-            .subtract(const Duration(seconds: 5));
+    _quoteExpirationDate = DateTime.parse(
+      _currentPaymentIntent!.topUpQuote.quoteExpirationDate,
+    ).subtract(
+      const Duration(
+        seconds: 5,
+      ),
+    );
 
     return _currentPaymentIntent!;
   }
@@ -434,26 +438,26 @@ class StripePaymentProvider implements TurboPaymentProvider {
       return PaymentStatus.quoteExpired;
     }
 
+    logger.d(
+        'Payment user information: ${paymentUserInformation.userAcceptedToReceiveEmails}');
+
     final billingDetails = BillingDetails(
-      email: paymentUserInformation.email,
-      address: Address(
-        city: '',
-        country: paymentUserInformation.country,
-        line1: '',
-        line2: '',
-        postalCode: '',
-        state: '',
-      ),
+      email: paymentUserInformation.userAcceptedToReceiveEmails
+          ? paymentUserInformation.email
+          : null,
       name: paymentUserInformation.name,
+    );
+
+    final params = PaymentMethodParams.card(
+      paymentMethodData: PaymentMethodData(
+        billingDetails: billingDetails,
+      ),
     );
 
     final paymentIntent = await stripe.confirmPayment(
       paymentIntentClientSecret: paymentModel.paymentSession.clientSecret,
-      data: PaymentMethodParams.card(
-        paymentMethodData: PaymentMethodData(
-          billingDetails: billingDetails,
-        ),
-      ),
+      data: params,
+      receiptEmail: paymentUserInformation.email,
     );
 
     logger.d(paymentIntent.toJson().toString());

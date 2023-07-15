@@ -45,6 +45,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
 
       turbo.paymentUserInformation = turbo.paymentUserInformation.copyWith(
         email: event.email,
+        userAcceptedToReceiveEmails: event.userAcceptedToReceiveEmails,
       );
 
       final paymentStatus = await turbo.confirmPayment();
