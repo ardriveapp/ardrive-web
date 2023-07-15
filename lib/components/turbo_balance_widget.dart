@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/turbo_balance/turbo_balance_cubit.dart';
-import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/components/turbo_logo.dart';
+import 'package:ardrive/cookie_policy_consent/views/cookie_policy_consent_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
@@ -8,9 +9,9 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class TurboBalance extends StatefulWidget {
   const TurboBalance({
@@ -40,42 +41,42 @@ class _TurboBalanceState extends State<TurboBalance> {
     )..getBalance();
   }
 
-  Widget addButton(BuildContext context) => SizedBox(
-        height: 23,
-        child: ArDriveButton(
-          style: ArDriveButtonStyle.secondary,
-          text: appLocalizationsOf(context).addButtonTurbo,
-          fontStyle: TextStyle(
-            fontSize: 13,
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            fontWeight: FontWeight.w700,
-          ),
-          borderRadius: 20,
-          onPressed: () {
-            showTurboModal(context);
+  Widget addButton(BuildContext context) {
+    const isHidden = !kIsWeb;
 
-            widget.onTapAddButton?.call();
-          },
-        ),
-      );
+    return SizedBox(
+      height: 23,
+      child: isHidden
+          ? null
+          : ArDriveButton(
+              style: ArDriveButtonStyle.secondary,
+              text: appLocalizationsOf(context).addButtonTurbo,
+              fontStyle: TextStyle(
+                fontSize: 13,
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                fontWeight: FontWeight.w700,
+              ),
+              borderRadius: 20,
+              onPressed: () {
+                showCookiePolicyConsentModal(context, (context) {
+                  showTurboModal(context);
+                });
+
+                widget.onTapAddButton?.call();
+              },
+            ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    logger.d('Building turbo balance widget');
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(
-            Resources.images.brand.turbo,
-            height: 15,
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            colorBlendMode: BlendMode.srcIn,
-            fit: BoxFit.contain,
-          ),
+          turboLogo(context, height: 15),
           const SizedBox(height: 8),
           BlocBuilder<TurboBalanceCubit, TurboBalanceState>(
             bloc: _turboBalanceCubit,
@@ -112,7 +113,7 @@ class _TurboBalanceState extends State<TurboBalance> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      '${convertCreditsToLiteralString(balance)} ${appLocalizationsOf(context).creditsTurbo}',
+                      '${convertCreditsToLiteralString(balance)} ${appLocalizationsOf(context).credits}',
                       style: ArDriveTypography.body.captionRegular().copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: 18,

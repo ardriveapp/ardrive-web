@@ -83,7 +83,7 @@ class FileV2UploadHandle implements UploadHandle {
       wallet,
     )
       ..addApplicationTags(version: version)
-      ..addBarTags();
+      ..addUTags();
 
     await pstService.addCommunityTipToTx(dataTx);
 

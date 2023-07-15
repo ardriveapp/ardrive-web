@@ -535,7 +535,7 @@ class UploadCubit extends Cubit<UploadState> {
       _uploadMethod == UploadMethod.turbo,
     );
 
-    final v2Uploader = FileV2Uploader(_arweave.client);
+    final v2Uploader = FileV2Uploader(_arweave.client, _arweave);
 
     final uploader = ArDriveUploader(
       bundleUploader: bundleUploader,

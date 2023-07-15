@@ -11,8 +11,12 @@ import 'package:test/test.dart';
 class MockTurbo extends Mock implements Turbo {}
 
 void main() {
-  final mockPaymentUserInformation =
-      PaymentUserInformation.create(name: 'naem', country: 'country');
+  final mockPaymentUserInformation = PaymentUserInformation.create(
+    name: 'naem',
+    country: 'country',
+    userAcceptedToReceiveEmails: false,
+  );
+
   setUpAll(() {
     registerFallbackValue(mockPaymentUserInformation);
   });

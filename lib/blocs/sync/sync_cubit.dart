@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
@@ -59,6 +60,7 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
+  final ActivityTracker _activityTracker;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -78,6 +80,7 @@ class SyncCubit extends Cubit<SyncState> {
     required Database db,
     required TabVisibilitySingleton tabVisibility,
     required ConfigService configService,
+    required ActivityTracker activityTracker,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _arweave = arweave,
@@ -85,6 +88,7 @@ class SyncCubit extends Cubit<SyncState> {
         _db = db,
         _configService = configService,
         _tabVisibility = tabVisibility,
+        _activityTracker = activityTracker,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     logSync('Building Sync Cubit...');
@@ -183,6 +187,11 @@ class SyncCubit extends Cubit<SyncState> {
   var ghostFolders = <FolderID, GhostFolder>{};
 
   Future<void> startSync({bool syncDeep = false}) async {
+    if (!_activityTracker.isSyncAllowed) {
+      logger.i('Activity tracker is not allowing sync');
+      return;
+    }
+
     logSync('Starting Sync');
     logSync('SyncCubit is currently active? ${!isClosed}');
 
