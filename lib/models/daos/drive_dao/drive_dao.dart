@@ -301,18 +301,54 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     final subfolderQuery = (folderId != null
         ? foldersInFolder(
-            driveId: driveId, parentFolderId: folderId, order: subfolderOrder)
+            driveId: driveId,
+            parentFolderId: folderId,
+            order: (folderEntries) {
+              return enumToFolderOrderByClause(
+                folderEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          )
         : foldersInFolderAtPath(
-            driveId: driveId, path: folderPath!, order: subfolderOrder));
+            driveId: driveId,
+            path: folderPath!,
+            order: (folderEntries) {
+              return enumToFolderOrderByClause(
+                folderEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          ));
 
     final filesOrder =
         enumToFileOrderByClause(fileEntries, orderBy, orderingMode);
 
     final filesQuery = folderId != null
         ? filesInFolderWithRevisionTransactions(
-            driveId: driveId, parentFolderId: folderId, order: filesOrder)
+            driveId: driveId,
+            parentFolderId: folderId,
+            order: (fileEntries, _, __) {
+              return enumToFileOrderByClause(
+                fileEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          )
         : filesInFolderAtPathWithRevisionTransactions(
-            driveId: driveId, path: folderPath!, order: filesOrder);
+            driveId: driveId,
+            path: folderPath!,
+            order: (fileEntries, _, __) {
+              return enumToFileOrderByClause(
+                fileEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          );
 
     return Rx.combineLatest3(
         folderStream.where((folder) => folder != null).map((folder) => folder!),
