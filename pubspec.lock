@@ -88,7 +88,7 @@ packages:
     description:
       path: "."
       ref: PE-4176
-      resolved-ref: de4363021db22e347cf685fdf82dc518116b662f
+      resolved-ref: "575ec4707647c1fc37fb5ba7c977511d3f91a54a"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.4.0"
