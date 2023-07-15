@@ -112,9 +112,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: mnemonic_wallets
-      resolved-ref: "65ec1e0b25b79c2c3b2b2fd5b37046d4567396ed"
-      url: "https://github.com/kunstmusik/arweave-dart.git"
+      ref: PE-3960
+      resolved-ref: "68692d8587ce16dff6e4640875536a319bb00060"
+      url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.5.1"
   async:

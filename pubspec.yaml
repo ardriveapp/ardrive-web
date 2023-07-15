@@ -43,8 +43,8 @@ dependencies:
   artemis: ^7.0.0-beta.13
   arweave:
     git:
-      url: https://github.com/kunstmusik/arweave-dart.git
-      ref: mnemonic_wallets
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: PE-3960
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   file_selector: ^0.9.0
