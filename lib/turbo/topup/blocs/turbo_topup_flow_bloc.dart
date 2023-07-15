@@ -17,55 +17,64 @@ class TurboTopupFlowBloc
     this.turbo,
   ) : super(const TurboTopupFlowInitial()) {
     listenToSessionExpiration();
-    on<TurboTopupFlowEvent>((event, emit) async {
-      if (event is TurboTopUpShowEstimationView) {
-        emit(
-          TurboTopupFlowShowingEstimationView(
-            isMovingForward: _currentStep <= event.stepNumber,
-          ),
-        );
-      } else if (event is TurboTopUpShowPaymentFormView) {
-        emit(
-          TurboTopupFlowShowingPaymentFormView(
-            isMovingForward: _currentStep <= event.stepNumber,
-            priceEstimate: turbo.currentPriceEstimate,
-          ),
-        );
-      } else if (event is TurboTopUpShowSuccessView) {
-        emit(
-          TurboTopupFlowShowingSuccessView(
-            isMovingForward: _currentStep <= event.stepNumber,
-          ),
-        );
-      } else if (event is TurboTopUpShowPaymentReviewView) {
-        turbo.paymentUserInformation = PaymentUserInformation.create(
-          name: event.name,
-          country: event.country,
-        );
+    on<TurboTopupFlowEvent>(
+      (event, emit) async {
+        if (event is TurboTopUpShowEstimationView) {
+          emit(
+            TurboTopupFlowShowingEstimationView(
+              isMovingForward: _currentStep <= event.stepNumber,
+            ),
+          );
+        } else if (event is TurboTopUpShowPaymentFormView) {
+          emit(
+            TurboTopupFlowShowingPaymentFormView(
+              isMovingForward: _currentStep <= event.stepNumber,
+              priceEstimate: turbo.currentPriceEstimate,
+            ),
+          );
+        } else if (event is TurboTopUpShowSuccessView) {
+          emit(
+            TurboTopupFlowShowingSuccessView(
+              isMovingForward: _currentStep <= event.stepNumber,
+            ),
+          );
+        } else if (event is TurboTopUpShowPaymentReviewView) {
+          turbo.paymentUserInformation = PaymentUserInformation.create(
+            name: event.name,
+            country: event.country,
+            userAcceptedToReceiveEmails: false,
+          );
 
-        emit(
-          TurboTopupFlowShowingPaymentReviewView(
-            isMovingForward: _currentStep <= event.stepNumber,
-            priceEstimate: turbo.currentPriceEstimate,
-          ),
-        );
-      } else if (event is TurboTopUpShowSuccessView) {
-        emit(TurboTopupFlowShowingSuccessView(
-          isMovingForward: _currentStep <= event.stepNumber,
-        ));
-      } else if (event is TurboTopUpShowSessionExpiredView) {
-        emit(TurboTopupFlowShowingErrorView(
-          isMovingForward: _currentStep <= event.stepNumber,
-          errorType: TurboErrorType.sessionExpired,
-        ));
-      } else if (event is TurboTopUpShowErrorView) {
-        emit(TurboTopupFlowShowingErrorView(
-          isMovingForward: _currentStep <= event.stepNumber,
-          errorType: event.errorType,
-        ));
-      }
-      _currentStep = event.stepNumber;
-    });
+          emit(
+            TurboTopupFlowShowingPaymentReviewView(
+              isMovingForward: _currentStep <= event.stepNumber,
+              priceEstimate: turbo.currentPriceEstimate,
+            ),
+          );
+        } else if (event is TurboTopUpShowSuccessView) {
+          emit(
+            TurboTopupFlowShowingSuccessView(
+              isMovingForward: _currentStep <= event.stepNumber,
+            ),
+          );
+        } else if (event is TurboTopUpShowSessionExpiredView) {
+          emit(
+            TurboTopupFlowShowingErrorView(
+              isMovingForward: _currentStep <= event.stepNumber,
+              errorType: TurboErrorType.sessionExpired,
+            ),
+          );
+        } else if (event is TurboTopUpShowErrorView) {
+          emit(
+            TurboTopupFlowShowingErrorView(
+              isMovingForward: _currentStep <= event.stepNumber,
+              errorType: event.errorType,
+            ),
+          );
+        }
+        _currentStep = event.stepNumber;
+      },
+    );
   }
 
   void listenToSessionExpiration() {
