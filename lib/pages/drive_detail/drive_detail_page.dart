@@ -70,6 +70,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         builder: (context, state) {
           if (state is DriveDetailLoadInProgress) {
             return const Center(child: CircularProgressIndicator());
+          } else if (state is DriveInitialLoading) {
+            return Center(
+              child: Text(
+                'Your drive is doing the initial setup. Please wait a moment to take any actions. It may take some minutes.',
+                style: ArDriveTypography.headline.headline5Bold(),
+              ),
+            );
           } else if (state is DriveDetailLoadSuccess) {
             final hasSubfolders = state.folderInView.subfolders.isNotEmpty;
 
