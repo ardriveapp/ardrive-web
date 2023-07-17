@@ -549,6 +549,7 @@ class UploadCubit extends Cubit<UploadState> {
             'Preparing bundle.. using turbo: ${_uploadMethod == UploadMethod.turbo}');
 
         await handle.prepareAndSignBundleTransaction(
+          tabVisibilitySingleton: TabVisibilitySingleton(),
           arweaveService: _arweave,
           turboUploadService: _turbo,
           pstService: _pst,

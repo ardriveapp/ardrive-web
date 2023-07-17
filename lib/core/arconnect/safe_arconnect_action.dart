@@ -1,8 +1,11 @@
-import 'package:ardrive/utils/html/implementations/html_web.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 
-Future<R> safeArConnectAction<R>(Future<R> Function(dynamic) action,
-    [dynamic args]) async {
+Future<R> safeArConnectAction<R>(
+  TabVisibilitySingleton tabVisibility,
+  Future<R> Function(dynamic) action, [
+  dynamic args,
+]) async {
   try {
     logger.d('Calling action');
     R result = await action(args);
@@ -15,16 +18,16 @@ Future<R> safeArConnectAction<R>(Future<R> Function(dynamic) action,
 
     late R result;
 
-    if (!isTabFocused()) {
+    if (!tabVisibility.isTabFocused()) {
       logger.i(
         'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
       );
       logger.e('Error preparing bundle', e);
 
-      await onTabGetsFocusedFuture(() async {
+      await tabVisibility.onTabGetsFocusedFuture(() async {
         logger.i('Preparing bundle after get the focus...');
 
-        result = await safeArConnectAction(action, args);
+        result = await safeArConnectAction(tabVisibility, action, args);
       });
 
       logger.i('Preparing bundle after get the focus... Done');

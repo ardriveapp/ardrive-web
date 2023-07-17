@@ -4,14 +4,13 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../utils/html/implementations/html_web.dart';
 
 part 'profile_state.dart';
 
@@ -22,16 +21,19 @@ class ProfileCubit extends Cubit<ProfileState> {
   final TurboUploadService _turboUploadService;
   final ProfileDao _profileDao;
   final Database _db;
+  final TabVisibilitySingleton _tabVisibilitySingleton;
 
   ProfileCubit({
     required ArweaveService arweave,
     required TurboUploadService turboUploadService,
     required ProfileDao profileDao,
     required Database db,
+    required TabVisibilitySingleton tabVisibilitySingleton,
   })  : _arweave = arweave,
         _turboUploadService = turboUploadService,
         _profileDao = profileDao,
         _db = db,
+        _tabVisibilitySingleton = tabVisibilitySingleton,
         super(ProfileCheckingAvailability()) {
     promptToAuthenticate();
   }
@@ -103,15 +105,15 @@ class ProfileCubit extends Cubit<ProfileState> {
           return true;
         }
       } catch (e) {
-        if (isTabFocused()) {
+        if (_tabVisibilitySingleton.isTabFocused()) {
           return false;
         }
 
         logger.e('Error checking ArConnect permissions: $e');
-        
+
         bool isWalletMismatch = false;
 
-        await onTabGetsFocusedFuture(() async {
+        await _tabVisibilitySingleton.onTabGetsFocusedFuture(() async {
           isWalletMismatch = await checkIfWalletMismatch();
         });
 
