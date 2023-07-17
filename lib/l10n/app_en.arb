@@ -485,6 +485,8 @@
   "@dragAndDropDescription": {
     "description": "text of description drag and drop"
   },
+  "driveDoingInitialSetupMessage": "Your drive is doing it's initial setup. This may take a few minutes. Please wait before taking any action.",
+  "@driveDoingInitialSetupMessage": {},
   "driveID": "Drive ID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1662,7 +1664,7 @@
   "@turboErrorMessageNetwork": {},
   "turboErrorMessageServer": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageServer": {},
-  "turboErrorMessageSessionExpired": "Your session has expired. Please try again.",
+  "turboErrorMessageSessionExpired": "Your Turbo session has expired. Please try again.",
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageUnknown": {},
