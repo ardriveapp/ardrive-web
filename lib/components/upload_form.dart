@@ -787,6 +787,20 @@ class _UploadFormState extends State<UploadForm> {
               ),
             );
           } else if (state is UploadFailure) {
+            if (state.error == UploadErrors.turboTimeout) {
+              return ArDriveStandardModal(
+                title: appLocalizationsOf(context).uploadFailed,
+                description:
+                    appLocalizationsOf(context).yourUploadFailedTurboTimeout,
+                actions: [
+                  ModalAction(
+                    action: () => Navigator.of(context).pop(false),
+                    title: appLocalizationsOf(context).okEmphasized,
+                  ),
+                ],
+              );
+            }
+
             return ArDriveStandardModal(
               title: appLocalizationsOf(context).uploadFailed,
               description: appLocalizationsOf(context).yourUploadFailed,

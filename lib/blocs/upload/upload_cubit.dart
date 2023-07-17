@@ -516,7 +516,13 @@ class UploadCubit extends Cubit<UploadState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(UploadFailure());
+    if (error is TurboUploadTimeoutException) {
+      emit(UploadFailure(error: UploadErrors.turboTimeout));
+
+      return;
+    }
+
+    emit(UploadFailure(error: UploadErrors.unknown));
     logger.e('Failed to upload file: $error $stackTrace');
     super.onError(error, stackTrace);
   }

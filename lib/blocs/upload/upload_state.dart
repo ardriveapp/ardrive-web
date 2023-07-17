@@ -176,7 +176,11 @@ class UploadInProgress extends UploadState {
   List<Object?> get props => [uploadPlan, _equatableBust];
 }
 
-class UploadFailure extends UploadState {}
+class UploadFailure extends UploadState {
+  final UploadErrors error;
+
+  UploadFailure({required this.error});
+}
 
 class UploadComplete extends UploadState {}
 
@@ -194,4 +198,9 @@ class UploadShowingWarning extends UploadState {
 enum UploadWarningReason {
   /// The user is attempting to upload a file that is too large.
   fileTooLarge,
+}
+
+enum UploadErrors {
+  turboTimeout,
+  unknown,
 }
