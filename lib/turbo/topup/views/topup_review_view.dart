@@ -494,45 +494,47 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               setState(() => _isTermsChecked = value);
                             }),
                           ),
-                          Text.rich(
-                            TextSpan(
-                              children: splitTranslationsWithMultipleStyles<
-                                  InlineSpan>(
-                                originalText: appLocalizationsOf(context)
-                                    .aggreeToTerms_body,
-                                defaultMapper: (text) => TextSpan(
-                                  text: text,
-                                  style:
-                                      ArDriveTypography.body.buttonNormalBold(
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeAccentDisabled,
+                          Flexible(
+                            child: Text.rich(
+                              TextSpan(
+                                children: splitTranslationsWithMultipleStyles<
+                                    InlineSpan>(
+                                  originalText: appLocalizationsOf(context)
+                                      .aggreeToTerms_body,
+                                  defaultMapper: (text) => TextSpan(
+                                    text: text,
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeAccentDisabled,
+                                    ),
                                   ),
-                                ),
-                                parts: {
-                                  appLocalizationsOf(context).aggreeToTerms_link:
-                                      (text) => TextSpan(
-                                            text: text,
-                                            style: ArDriveTypography.body
-                                                .buttonNormalBold(
-                                                  color:
-                                                      ArDriveTheme.of(context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeAccentDisabled,
-                                                )
-                                                .copyWith(
-                                                  decoration:
-                                                      TextDecoration.underline,
-                                                ),
-                                            recognizer: TapGestureRecognizer()
-                                              ..onTap = () => openUrl(
-                                                    url:
-                                                        Resources.agreementLink,
+                                  parts: {
+                                    appLocalizationsOf(context).aggreeToTerms_link:
+                                        (text) => TextSpan(
+                                              text: text,
+                                              style: ArDriveTypography.body
+                                                  .buttonNormalBold(
+                                                    color: ArDriveTheme.of(
+                                                            context)
+                                                        .themeData
+                                                        .colors
+                                                        .themeAccentDisabled,
+                                                  )
+                                                  .copyWith(
+                                                    decoration: TextDecoration
+                                                        .underline,
                                                   ),
-                                          ),
-                                },
+                                              recognizer: TapGestureRecognizer()
+                                                ..onTap = () => openUrl(
+                                                      url: Resources
+                                                          .agreementLink,
+                                                    ),
+                                            ),
+                                  },
+                                ),
                               ),
                             ),
                           ),

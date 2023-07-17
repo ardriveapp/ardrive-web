@@ -54,20 +54,58 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
       key: const ValueKey('turbo_payment_form'),
       themeData: textTheme,
       child: ScreenTypeLayout.builder(
-        mobile: (context) => _mobileView(context),
+        mobile: (context) => _mobileView(context, textTheme.textFieldTheme),
         desktop: (context) => _desktopView(context, textTheme.textFieldTheme),
       ),
     );
   }
 
-  Widget _mobileView(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        _header(context),
-        const Divider(height: 16),
-        const SizedBox(height: 16),
-      ],
+  Widget _mobileView(BuildContext context, ArDriveTextFieldTheme theme) {
+    return Container(
+      color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 26, right: 26),
+                child: ArDriveClickArea(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: ArDriveIcons.x(),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 40,
+                right: 40,
+              ),
+              child: Column(
+                children: [
+                  _header(context),
+                  const Divider(height: 24),
+                  _credits(context),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: QuoteRefreshWidget(),
+                  ),
+                  const SizedBox(height: 16),
+                  _formDesktop(
+                    context,
+                    theme,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 16),
+            const SizedBox(height: 24),
+            _footer(context),
+          ],
+        ),
+      ),
     );
   }
 
@@ -147,7 +185,18 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                         children: [
                           _header(context),
                           const Divider(height: 24),
-                          _credits(context),
+                          Row(
+                            children: [
+                              Flexible(child: _credits(context)),
+                              const Flexible(
+                                flex: 1,
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 8.0),
+                                  child: QuoteRefreshWidget(),
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 16),
                           _formDesktop(
                             context,
@@ -210,13 +259,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                   },
                 ),
               ],
-            ),
-          ),
-          const Flexible(
-            flex: 1,
-            child: Padding(
-              padding: EdgeInsets.only(left: 8.0),
-              child: QuoteRefreshWidget(),
             ),
           ),
         ],
