@@ -25,6 +25,7 @@ Future<R> safeArConnectAction<R>(
 
       return result;
     } else {
+      logger.d('Error while running safe ArConnect action. Re-throwing...');
       rethrow;
     }
   }
