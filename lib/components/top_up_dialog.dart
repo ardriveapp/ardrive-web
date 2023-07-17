@@ -417,6 +417,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           buildButtonBar(context),
           ScreenTypeLayout.builder(
             desktop: (_) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 24),
                 Text(

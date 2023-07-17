@@ -88,7 +88,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                   _header(context),
                   const Divider(height: 24),
                   _credits(context),
-                  Padding(
+                  const Padding(
                     padding: EdgeInsets.only(top: 16),
                     child: QuoteRefreshWidget(),
                   ),
@@ -185,13 +185,17 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                         children: [
                           _header(context),
                           const Divider(height: 24),
-                          _credits(context),
-                          const Flexible(
-                            flex: 1,
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 8.0),
-                              child: QuoteRefreshWidget(),
-                            ),
+                          Row(
+                            children: [
+                              Flexible(child: _credits(context)),
+                              const Flexible(
+                                flex: 1,
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 8.0),
+                                  child: QuoteRefreshWidget(),
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
                           _formDesktop(
