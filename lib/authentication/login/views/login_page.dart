@@ -343,233 +343,236 @@ class _PromptWalletViewState extends State<PromptWalletView> {
       defaultMaxWidth: 512,
       defaultMaxHeight: 798,
       maxHeightPercent: 0.9,
-      child: _LoginCard(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ScreenTypeLayout.builder(
-              desktop: (context) => const SizedBox.shrink(),
-              mobile: (context) => ArDriveImage(
-                image: AssetImage(Resources.images.brand.logo1),
-                height: 50,
-              ),
-            ),
-            heightSpacing(),
-            Align(
-              alignment: Alignment.topCenter,
-              child: Text(
-                appLocalizationsOf(context).login,
-                style: ArDriveTypography.headline.headline4Regular(),
-              ),
-            ),
-            heightSpacing(),
-            Column(
-              children: [
-                if (context
-                    .read<ConfigService>()
-                    .config
-                    .enableSeedPhraseLogin) ...[
-                  ArDriveButton(
-                    icon: ArDriveIcons.keypad(
-                        size: 24, color: colors.themeFgDefault),
-                    key: const Key('loginWithSeedPhraseButton'),
-                    // TODO: create/update localization key
-                    text: "Enter Seed Phrase",
-                    onPressed: () {
-                      context.read<LoginBloc>().add(EnterSeedPhrase());
-                    },
-                    style: ArDriveButtonStyle.secondary,
-                    fontStyle: ArDriveTypography.body.smallBold700(
-                      color: colors.themeFgDefault,
-                    ),
-                    maxWidth: double.maxFinite,
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                ArDriveDropAreaSingleInput(
-                  controller: _dropAreaController,
-                  keepButtonVisible: true,
-                  width: double.maxFinite,
-                  // TODO: create/update localization key
-                  dragAndDropDescription: "Select a KeyFile",
-                  dragAndDropButtonTitle: "Select a KeyFile",
-                  errorDescription: appLocalizationsOf(context).invalidKeyFile,
-                  validateFile: (file) async {
-                    final wallet = await context
-                        .read<LoginBloc>()
-                        .validateAndReturnWalletFile(file);
-
-                    return wallet != null;
-                  },
-                  platformSupportsDragAndDrop: !AppPlatform.isMobile,
+      child: SingleChildScrollView(
+        child: _LoginCard(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ScreenTypeLayout.builder(
+                desktop: (context) => const SizedBox.shrink(),
+                mobile: (context) => ArDriveImage(
+                  image: AssetImage(Resources.images.brand.logo1),
+                  height: 50,
                 ),
-                const SizedBox(height: 24),
-                ArDriveOverlay(
-                  visible: _showSecurityOverlay,
-                  content: ArDriveCard(
-                    boxShadow: BoxShadowCard.shadow100,
-                    contentPadding: const EdgeInsets.all(16),
-                    width: 300,
-                    content: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: appLocalizationsOf(context)
-                                .securityWalletOverlay,
-                            style: ArDriveTypography.body.smallBold(),
+              ),
+              heightSpacing(),
+              Align(
+                alignment: Alignment.topCenter,
+                child: Text(
+                  appLocalizationsOf(context).login,
+                  style: ArDriveTypography.headline.headline4Regular(),
+                ),
+              ),
+              heightSpacing(),
+              Column(
+                children: [
+                  if (context
+                      .read<ConfigService>()
+                      .config
+                      .enableSeedPhraseLogin) ...[
+                    ArDriveButton(
+                      icon: ArDriveIcons.keypad(
+                          size: 24, color: colors.themeFgDefault),
+                      key: const Key('loginWithSeedPhraseButton'),
+                      // TODO: create/update localization key
+                      text: "Enter Seed Phrase",
+                      onPressed: () {
+                        context.read<LoginBloc>().add(EnterSeedPhrase());
+                      },
+                      style: ArDriveButtonStyle.secondary,
+                      fontStyle: ArDriveTypography.body.smallBold700(
+                        color: colors.themeFgDefault,
+                      ),
+                      maxWidth: double.maxFinite,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  ArDriveDropAreaSingleInput(
+                    controller: _dropAreaController,
+                    keepButtonVisible: true,
+                    width: double.maxFinite,
+                    // TODO: create/update localization key
+                    dragAndDropDescription: "Select a KeyFile",
+                    dragAndDropButtonTitle: "Select a KeyFile",
+                    errorDescription:
+                        appLocalizationsOf(context).invalidKeyFile,
+                    validateFile: (file) async {
+                      final wallet = await context
+                          .read<LoginBloc>()
+                          .validateAndReturnWalletFile(file);
+
+                      return wallet != null;
+                    },
+                    platformSupportsDragAndDrop: !AppPlatform.isMobile,
+                  ),
+                  const SizedBox(height: 24),
+                  ArDriveOverlay(
+                    visible: _showSecurityOverlay,
+                    content: ArDriveCard(
+                      boxShadow: BoxShadowCard.shadow100,
+                      contentPadding: const EdgeInsets.all(16),
+                      width: 300,
+                      content: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: appLocalizationsOf(context)
+                                  .securityWalletOverlay,
+                              style: ArDriveTypography.body.smallBold(),
+                            ),
+                            TextSpan(
+                              text: ' ',
+                              style: ArDriveTypography.body.buttonNormalRegular(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgOnAccent,
+                              ),
+                            ),
+                            TextSpan(
+                              text: appLocalizationsOf(context).learnMore,
+                              style: ArDriveTypography.body
+                                  .buttonNormalRegular(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgOnAccent,
+                                  )
+                                  .copyWith(
+                                    decoration: TextDecoration.underline,
+                                  ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => openUrl(
+                                      url: Resources.howDoesKeyFileLoginWork,
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    anchor: const Aligned(
+                      follower: Alignment.bottomCenter,
+                      target: Alignment.topCenter,
+                      offset: Offset(0, 4),
+                    ),
+                    onVisibleChange: (visible) {
+                      setState(() {
+                        _showSecurityOverlay = visible;
+                      });
+                    },
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _showSecurityOverlay = !_showSecurityOverlay;
+                        });
+                      },
+                      child: HoverWidget(
+                        hoverScale: 1,
+                        child: Text(
+                            appLocalizationsOf(context).howDoesKeyfileLoginWork,
+                            style: ArDriveTypography.body.smallBold().copyWith(
+                                  decoration: TextDecoration.underline,
+                                  fontSize: 14,
+                                  height: 1.5,
+                                )),
+                      ),
+                    ),
+                  ),
+                  if (widget.isArConnectAvailable) ...[
+                    const SizedBox(height: 40),
+                    Row(
+                      children: [
+                        Expanded(
+                            child: Container(
+                          decoration: const ShapeDecoration(
+                            shape: RoundedRectangleBorder(
+                              side: BorderSide(
+                                width: 0.50,
+                                strokeAlign: BorderSide.strokeAlignCenter,
+                                color: Color(0xFF333333),
+                              ),
+                            ),
                           ),
-                          TextSpan(
-                            text: ' ',
-                            style: ArDriveTypography.body.buttonNormalRegular(
+                        )),
+                        Padding(
+                            padding: const EdgeInsets.only(left: 25, right: 25),
+                            child: Text(
+                              'OR',
+                              textAlign: TextAlign.center,
+                              style: ArDriveTypography.body
+                                  .smallBold(color: Color(0xFF9E9E9E)),
+                            )),
+                        Expanded(
+                            child: Container(
+                          decoration: const ShapeDecoration(
+                            shape: RoundedRectangleBorder(
+                              side: BorderSide(
+                                width: 0.50,
+                                strokeAlign: BorderSide.strokeAlignCenter,
+                                color: Color(0xFF333333),
+                              ),
+                            ),
+                          ),
+                        )),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 40),
+                            child: ArDriveButton(
+                              icon: Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: ArDriveIcons.arconnectIcon1(
+                                    color: colors.themeFgDefault,
+                                  )),
+                              style: ArDriveButtonStyle.secondary,
+                              fontStyle: ArDriveTypography.body
+                                  .smallBold700(color: colors.themeFgDefault),
+                              onPressed: () {
+                                context
+                                    .read<LoginBloc>()
+                                    .add(const AddWalletFromArConnect());
+                              },
+                              // TODO: create/update localization key
+                              text: 'Login with ArConnect',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(
+                    height: 72,
+                  ),
+                ],
+              ),
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      // TODO: create/update localization key
+                      text: "New user? Get started here!",
+                      style: ArDriveTypography.body
+                          .smallBold(
                               color: ArDriveTheme.of(context)
                                   .themeData
                                   .colors
-                                  .themeFgOnAccent,
-                            ),
-                          ),
-                          TextSpan(
-                            text: appLocalizationsOf(context).learnMore,
-                            style: ArDriveTypography.body
-                                .buttonNormalRegular(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgOnAccent,
-                                )
-                                .copyWith(
-                                  decoration: TextDecoration.underline,
-                                ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () => openUrl(
-                                    url: Resources.howDoesKeyFileLoginWork,
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  anchor: const Aligned(
-                    follower: Alignment.bottomCenter,
-                    target: Alignment.topCenter,
-                    offset: Offset(0, 4),
-                  ),
-                  onVisibleChange: (visible) {
-                    setState(() {
-                      _showSecurityOverlay = visible;
-                    });
-                  },
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _showSecurityOverlay = !_showSecurityOverlay;
-                      });
-                    },
-                    child: HoverWidget(
-                      hoverScale: 1,
-                      child: Text(
-                          appLocalizationsOf(context).howDoesKeyfileLoginWork,
-                          style: ArDriveTypography.body.smallBold().copyWith(
-                                decoration: TextDecoration.underline,
-                                fontSize: 14,
-                                height: 1.5,
-                              )),
-                    ),
-                  ),
-                ),
-                if (widget.isArConnectAvailable) ...[
-                  const SizedBox(height: 40),
-                  Row(
-                    children: [
-                      Expanded(
-                          child: Container(
-                        decoration: const ShapeDecoration(
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(
-                              width: 0.50,
-                              strokeAlign: BorderSide.strokeAlignCenter,
-                              color: Color(0xFF333333),
-                            ),
-                          ),
-                        ),
-                      )),
-                      Padding(
-                          padding: const EdgeInsets.only(left: 25, right: 25),
-                          child: Text(
-                            'OR',
-                            textAlign: TextAlign.center,
-                            style: ArDriveTypography.body
-                                .smallBold(color: Color(0xFF9E9E9E)),
-                          )),
-                      Expanded(
-                          child: Container(
-                        decoration: const ShapeDecoration(
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(
-                              width: 0.50,
-                              strokeAlign: BorderSide.strokeAlignCenter,
-                              color: Color(0xFF333333),
-                            ),
-                          ),
-                        ),
-                      )),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 40),
-                          child: ArDriveButton(
-                            icon: Padding(
-                                padding: const EdgeInsets.only(right: 4),
-                                child: ArDriveIcons.arconnectIcon1(
-                                  color: colors.themeFgDefault,
-                                )),
-                            style: ArDriveButtonStyle.secondary,
-                            fontStyle: ArDriveTypography.body
-                                .smallBold700(color: colors.themeFgDefault),
-                            onPressed: () {
-                              context
-                                  .read<LoginBloc>()
-                                  .add(const AddWalletFromArConnect());
-                            },
-                            // TODO: create/update localization key
-                            text: 'Login with ArConnect',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(
-                  height: 72,
-                ),
-              ],
-            ),
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    // TODO: create/update localization key
-                    text: "New user? Get started here!",
-                    style: ArDriveTypography.body
-                        .smallBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgMuted)
-                        .copyWith(decoration: TextDecoration.underline),
+                                  .themeFgMuted)
+                          .copyWith(decoration: TextDecoration.underline),
 
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () {
-                        context.read<LoginBloc>().add(CreateNewWallet());
-                      },
-                  ),
-                ],
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {
+                          context.read<LoginBloc>().add(CreateNewWallet());
+                        },
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -597,7 +600,7 @@ class _LoginCard extends StatelessWidget {
       final deviceType = getDeviceType(MediaQuery.of(context).size);
 
       switch (deviceType) {
-        case DeviceScreenType.desktop: 
+        case DeviceScreenType.desktop:
           if (constraints.maxWidth >= 512) {
             horizontalPadding = 72;
           } else {
