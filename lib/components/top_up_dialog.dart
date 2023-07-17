@@ -529,8 +529,13 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           keyboardType: TextInputType.number,
           inputFormatters: [
             TextInputFormatter.withFunction((oldValue, newValue) {
-              // Remove any non-digit character
-              String newValueText = newValue.text.replaceAll(RegExp(r'\D'), '');
+              String newValueText = newValue.text
+                  // Remove any non-digit character
+                  .replaceAll(RegExp(r'\D'), '')
+                  // Replace multiple zeroes with a single one
+                  .replaceAll(RegExp(r'^0+$'), '0')
+                  // Remove any leading zeroes
+                  .replaceAll(RegExp(r'^0+(?=[^0])'), '');
 
               if (newValueText.isNotEmpty) {
                 int valueAsInt = int.parse(newValueText);
