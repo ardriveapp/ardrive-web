@@ -690,9 +690,24 @@ class PriceEstimateView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Divider(height: 32),
-            Text(
-              '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).credits} = $estimatedStorage $storageUnit',
-              style: ArDriveTypography.body.buttonNormalBold(),
+            Row(
+              children: [
+                Text(
+                  '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).credits}',
+                  style: ArDriveTypography.body.buttonNormalBold(),
+                ),
+                Transform.translate(
+                  offset: const Offset(0, 4),
+                  child: Text(
+                    ' ~ ',
+                    style: ArDriveTypography.body.buttonNormalBold(),
+                  ),
+                ),
+                Text(
+                  '$estimatedStorage $storageUnit',
+                  style: ArDriveTypography.body.buttonNormalBold(),
+                ),
+              ],
             ),
             const SizedBox(height: 4),
             ArDriveClickArea(
