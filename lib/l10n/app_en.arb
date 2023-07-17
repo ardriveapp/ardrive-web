@@ -485,6 +485,8 @@
   "@dragAndDropDescription": {
     "description": "text of description drag and drop"
   },
+  "driveDoingInitialSetupMessage": "Your drive is doing it's initial setup. This may take a few minutes. Please wait before taking any action.",
+  "@driveDoingInitialSetupMessage": {},
   "driveID": "Drive ID",
   "@driveID": {
     "description": "The Drive-ID tag"
