@@ -13,6 +13,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 class TurboReviewView extends StatefulWidget {
   const TurboReviewView({super.key});
@@ -162,7 +163,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(40.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: ArDriveCard(
                     contentPadding: const EdgeInsets.all(0),
                     backgroundColor:
@@ -556,67 +557,201 @@ class _TurboReviewViewState extends State<TurboReviewView> {
   }
 
   Widget _footer(BuildContext context) {
-    return SizedBox(
-      width: double.maxFinite,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          ArDriveClickArea(
-            child: GestureDetector(
-              onTap: () {
-                context.read<TurboTopupFlowBloc>().add(
-                      const TurboTopUpShowPaymentFormView(4),
-                    );
+    return ScreenTypeLayout.builder(
+      mobile: (context) => SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
+              builder: (context, state) {
+                return ScreenTypeLayout.builder(
+                  desktop: (context) => ArDriveButton(
+                    maxHeight: 44,
+                    maxWidth: 143,
+                    text: appLocalizationsOf(context).pay,
+                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                      color: Colors.white,
+                    ),
+                    isDisabled: state is PaymentReviewLoadingQuote ||
+                        !_emailIsValid ||
+                        !_isTermsChecked,
+                    customContent: state is PaymentReviewLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
+                    onPressed: () async {
+                      if (state is PaymentReviewLoading) {
+                        return;
+                      }
+
+                      context.read<PaymentReviewBloc>().add(
+                            PaymentReviewFinishPayment(
+                              email: _emailController.text,
+                            ),
+                          );
+                    },
+                  ),
+                  mobile: (context) => ArDriveButton(
+                    maxHeight: 44,
+                    maxWidth: double.maxFinite,
+                    text: appLocalizationsOf(context).pay,
+                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                      color: Colors.white,
+                    ),
+                    isDisabled: state is PaymentReviewLoadingQuote ||
+                        !_emailIsValid ||
+                        !_isTermsChecked,
+                    customContent: state is PaymentReviewLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
+                    onPressed: () async {
+                      if (state is PaymentReviewLoading) {
+                        return;
+                      }
+
+                      context.read<PaymentReviewBloc>().add(
+                            PaymentReviewFinishPayment(
+                              email: _emailController.text,
+                            ),
+                          );
+                    },
+                  ),
+                );
               },
-              child: Text(
-                appLocalizationsOf(context).back,
-                style: ArDriveTypography.body.buttonLargeBold(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentDisabled,
+            ),
+            const SizedBox(
+              height: 16,
+            ),
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  context.read<TurboTopupFlowBloc>().add(
+                        const TurboTopUpShowPaymentFormView(4),
+                      );
+                },
+                child: Text(
+                  appLocalizationsOf(context).back,
+                  style: ArDriveTypography.body.buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
+                  ),
                 ),
               ),
             ),
-          ),
-          BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
-            builder: (context, state) {
-              return ArDriveButton(
-                maxHeight: 44,
-                maxWidth: 143,
-                text: appLocalizationsOf(context).pay,
-                fontStyle: ArDriveTypography.body.buttonLargeBold(
-                  color: Colors.white,
-                ),
-                isDisabled: state is PaymentReviewLoadingQuote ||
-                    !_emailIsValid ||
-                    !_isTermsChecked,
-                customContent: state is PaymentReviewLoading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : null,
-                onPressed: () async {
-                  if (state is PaymentReviewLoading) {
-                    return;
-                  }
-
-                  context.read<PaymentReviewBloc>().add(
-                        PaymentReviewFinishPayment(
-                          email: _emailController.text,
-                          userAcceptedToReceiveEmails: _emailChecked,
-                        ),
+          ],
+        ),
+      ),
+      desktop: (context) => SizedBox(
+        width: double.maxFinite,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  context.read<TurboTopupFlowBloc>().add(
+                        const TurboTopUpShowPaymentFormView(4),
                       );
                 },
-              );
-            },
-          ),
-        ],
+                child: Text(
+                  appLocalizationsOf(context).back,
+                  style: ArDriveTypography.body.buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
+                  ),
+                ),
+              ),
+            ),
+            BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
+              builder: (context, state) {
+                return ScreenTypeLayout.builder(
+                  desktop: (context) => ArDriveButton(
+                    maxHeight: 44,
+                    maxWidth: 143,
+                    text: appLocalizationsOf(context).pay,
+                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                      color: Colors.white,
+                    ),
+                    isDisabled: state is PaymentReviewLoadingQuote ||
+                        !_emailIsValid ||
+                        !_isTermsChecked,
+                    customContent: state is PaymentReviewLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
+                    onPressed: () async {
+                      if (state is PaymentReviewLoading) {
+                        return;
+                      }
+
+                      context.read<PaymentReviewBloc>().add(
+                            PaymentReviewFinishPayment(
+                              email: _emailController.text,
+                            ),
+                          );
+                    },
+                  ),
+                  mobile: (context) => ArDriveButton(
+                    maxHeight: 44,
+                    maxWidth: double.maxFinite,
+                    text: appLocalizationsOf(context).pay,
+                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                      color: Colors.white,
+                    ),
+                    isDisabled: state is PaymentReviewLoadingQuote ||
+                        !_emailIsValid ||
+                        !_isTermsChecked,
+                    customContent: state is PaymentReviewLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
+                    onPressed: () async {
+                      if (state is PaymentReviewLoading) {
+                        return;
+                      }
+
+                      context.read<PaymentReviewBloc>().add(
+                            PaymentReviewFinishPayment(
+                              email: _emailController.text,
+                            ),
+                          );
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
