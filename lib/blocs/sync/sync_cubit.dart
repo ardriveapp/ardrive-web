@@ -256,8 +256,8 @@ class SyncCubit extends Cubit<SyncState> {
 
       if (drives.isEmpty) {
         _syncProgress = SyncProgress.emptySyncCompleted();
-
         syncProgressController.add(_syncProgress);
+        _lastSync = DateTime.now();
 
         emit(SyncIdle());
 
