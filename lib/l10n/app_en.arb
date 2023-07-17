@@ -364,7 +364,7 @@
   "@creditCard": {},
   "credits": "Credits",
   "@credits": {},
-  "creditsTurbo": "credits",
+  "creditsTurbo": "Credits",
   "@creditsTurbo": {
     "description": "suffix for turbo balance"
   },
@@ -1650,7 +1650,7 @@
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
-  "turboAddCreditsBlurb": "Add credits using your card for faster uploads.",
+  "turboAddCreditsBlurb": "Add Credits using your card for faster uploads.",
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
@@ -1896,7 +1896,7 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
-  "yourCreditsWillBeAddedToYourAccount": "Your credits will be added to your account soon. You can close this window.",
+  "yourCreditsWillBeAddedToYourAccount": "Your Credits will be added to your account soon. You can close this window.",
   "@yourCreditsWillBeAddedToYourAccount": {},
   "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
   "@yourPrivateSecureAndPermanentDrive": {
