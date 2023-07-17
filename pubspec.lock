@@ -87,8 +87,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: main
-      resolved-ref: "60b650483561eb764b821a72aceca440443fe82b"
+      ref: PE-3960-fix-droparea-behavior
+      resolved-ref: "22c1089eeab4c0846271f05db77e018beca0b67c"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.4.0"
