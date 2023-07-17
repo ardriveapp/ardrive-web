@@ -61,14 +61,20 @@ class TurboUploadService {
     final nonce = const Uuid().v4();
     final publicKey = await safeArConnectAction<String>(
       _tabVisibility,
-      (_) => wallet.getOwner(),
+      (_) async {
+        logger.d('Getting public key with safe ArConnect action');
+        return wallet.getOwner();
+      },
     );
     final signature = await safeArConnectAction<String>(
       _tabVisibility,
-      (_) => signNonceAndData(
-        nonce: nonce,
-        wallet: wallet,
-      ),
+      (_) async {
+        logger.d('Signing with safe ArConnect action');
+        return signNonceAndData(
+          nonce: nonce,
+          wallet: wallet,
+        );
+      },
     );
 
     final response = await httpClient.postBytesAsStream(

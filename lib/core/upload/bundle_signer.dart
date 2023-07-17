@@ -87,8 +87,10 @@ class SafeArConnectSigner<T> extends BundleSigner<T> {
   Future<T> signBundle({required DataBundle unSignedBundle}) async {
     final T signedItem = await safeArConnectAction<T>(
       _tabVisibilitySingleton,
-      (_) async =>
-          await bundleSigner.signBundle(unSignedBundle: unSignedBundle),
+      (_) async {
+        logger.d('Signing bundle with safe ArConnect action');
+        return await bundleSigner.signBundle(unSignedBundle: unSignedBundle);
+      },
     );
 
     return signedItem;

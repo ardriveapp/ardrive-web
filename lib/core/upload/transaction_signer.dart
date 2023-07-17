@@ -4,6 +4,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -108,12 +109,15 @@ class SafeArConnectTransactionSigner extends ArweaveTransactionSigner {
   }) async {
     final signedItem = await safeArConnectAction(
       tabVisibilitySingleton,
-      (_) => super.signTransaction(
-        isPrivate: isPrivate,
-        file: file,
-        fileKey: fileKey,
-        entity: entity,
-      ),
+      (_) async {
+        logger.d('Signing transaction with safe ArConnect action');
+        return super.signTransaction(
+          isPrivate: isPrivate,
+          file: file,
+          fileKey: fileKey,
+          entity: entity,
+        );
+      },
     );
 
     return signedItem;
