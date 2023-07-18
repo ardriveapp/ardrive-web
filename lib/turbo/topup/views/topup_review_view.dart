@@ -37,8 +37,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
     final textTheme = theme.copyWith(
       textFieldTheme: theme.textFieldTheme.copyWith(
         inputBackgroundColor: theme.colors.themeBgCanvas,
-        labelColor: theme.colors.themeAccentDisabled,
-        requiredLabelColor: theme.colors.themeAccentDisabled,
+        labelColor: theme.colors.themeFgDefault,
+        requiredLabelColor: theme.colors.themeFgDefault,
         inputTextStyle: theme.textFieldTheme.inputTextStyle.copyWith(
           color: theme.colors.themeFgMuted,
           fontWeight: FontWeight.w600,
@@ -50,7 +50,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
           vertical: 8,
         ),
         labelStyle: TextStyle(
-          color: theme.colors.themeAccentDisabled,
+          color: theme.colors.themeFgDefault,
           fontWeight: FontWeight.w600,
           height: 1.5,
           fontSize: 16,
@@ -220,7 +220,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                   color: ArDriveTheme.of(context)
                                       .themeData
                                       .colors
-                                      .themeAccentDisabled,
+                                      .themeFgDefault,
                                 ),
                               ),
                               const SizedBox(
@@ -315,7 +315,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                           textColor = ArDriveTheme.of(context)
                                               .themeData
                                               .colors
-                                              .themeAccentDisabled;
+                                              .themeFgDefault;
                                         }
 
                                         String formatDuration(int seconds) {
@@ -375,7 +375,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                                               context)
                                                           .themeData
                                                           .colors
-                                                          .themeAccentDisabled,
+                                                          .themeFgDefault,
                                                     ),
                                               ),
                                               TextSpan(
@@ -419,7 +419,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
-                              .themeAccentDisabled,
+                              .themeFgDefault,
                         ),
                       ),
                       const SizedBox(
@@ -472,7 +472,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
-                              .themeAccentDisabled,
+                              .themeFgDefault,
                         ),
                         onChange: (value) => setState(() {
                           _emailChecked = value;
@@ -504,7 +504,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                       color: ArDriveTheme.of(context)
                                           .themeData
                                           .colors
-                                          .themeAccentDisabled,
+                                          .themeFgDefault,
                                     ),
                                   ),
                                   parts: {
@@ -513,11 +513,11 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                               text: text,
                                               style: ArDriveTypography.body
                                                   .buttonNormalBold(
-                                                    color: ArDriveTheme.of(
-                                                            context)
-                                                        .themeData
-                                                        .colors
-                                                        .themeAccentDisabled,
+                                                    color:
+                                                        ArDriveTheme.of(context)
+                                                            .themeData
+                                                            .colors
+                                                            .themeFgDefault,
                                                   )
                                                   .copyWith(
                                                     decoration: TextDecoration
@@ -644,7 +644,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
-                        .themeAccentDisabled,
+                        .themeFgDefault,
                   ),
                 ),
               ),
@@ -806,8 +806,7 @@ class RefreshButtonState extends State<RefreshButton>
             },
             size: 14,
             icon: ArDriveIcons.refresh(
-              color:
-                  ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             ),
           ),
         ),
@@ -816,8 +815,7 @@ class RefreshButtonState extends State<RefreshButton>
           child: Text(
             'Refresh',
             style: ArDriveTypography.body.buttonNormalBold(
-              color:
-                  ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             ),
           ),
         ),
@@ -888,7 +886,7 @@ class RefreshQuoteButtonState extends State<RefreshQuoteButton>
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors
-                          .themeAccentDisabled,
+                          .themeFgDefault,
                       size: 16,
                     ),
                   ),
@@ -905,7 +903,7 @@ class RefreshQuoteButtonState extends State<RefreshQuoteButton>
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
-                            .themeAccentDisabled,
+                            .themeFgDefault,
                       ),
                     ),
                   ),
