@@ -71,16 +71,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               width: 575,
               content: TurboErrorView(
                 errorType: state.errorType,
-                onDismiss: () {
-                  Navigator.pop(context);
-                },
+                onDismiss: () {},
                 onTryAgain: () {
                   Navigator.pop(context);
-                  context.read<PaymentReviewBloc>().add(
-                        PaymentReviewFinishPayment(
-                          email: _emailController.text,
-                        ),
-                      );
                 },
               ),
             ),
@@ -99,7 +92,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               content: TurboErrorView(
                 errorType: TurboErrorType.fetchPaymentIntentFailed,
                 onDismiss: () {
-                  Navigator.pop(context);
+                  context
+                      .read<TurboTopupFlowBloc>()
+                      .add(const TurboTopUpShowPaymentFormView(4));
                 },
                 onTryAgain: () {
                   Navigator.pop(context);
