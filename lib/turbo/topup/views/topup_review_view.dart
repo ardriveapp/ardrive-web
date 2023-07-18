@@ -71,9 +71,16 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               width: 575,
               content: TurboErrorView(
                 errorType: state.errorType,
-                onDismiss: () {},
+                onDismiss: () {
+                  context
+                      .read<TurboTopupFlowBloc>()
+                      .add(const TurboTopUpShowPaymentFormView(4));
+                },
                 onTryAgain: () {
                   Navigator.pop(context);
+                  context
+                      .read<TurboTopupFlowBloc>()
+                      .add(const TurboTopUpShowPaymentFormView(4));
                 },
               ),
             ),
