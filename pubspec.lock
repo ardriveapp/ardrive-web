@@ -853,7 +853,7 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/stripe"
-      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      ref: main
       resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
       url: "https://github.com/ardriveapp/flutter_stripe/"
     source: git
@@ -862,7 +862,7 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/stripe_web"
-      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      ref: main
       resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
       url: "https://github.com/ardriveapp/flutter_stripe/"
     source: git
@@ -1867,7 +1867,7 @@ packages:
     dependency: "direct overridden"
     description:
       path: "packages/stripe_js"
-      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      ref: main
       resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
       url: "https://github.com/ardriveapp/flutter_stripe/"
     source: git
@@ -1876,7 +1876,7 @@ packages:
     dependency: "direct overridden"
     description:
       path: "packages/stripe_platform_interface"
-      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      ref: main
       resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
       url: "https://github.com/ardriveapp/flutter_stripe/"
     source: git
