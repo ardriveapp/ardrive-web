@@ -63,7 +63,7 @@ class ArweaveTransactionSigner implements TransactionSigner {
       wallet,
     )
       ..addApplicationTags(version: version)
-      ..addBarTags();
+      ..addUTags();
 
     await pstService.addCommunityTipToTx(dataTx);
 
