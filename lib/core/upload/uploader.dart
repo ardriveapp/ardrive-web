@@ -168,11 +168,14 @@ class ArDriveUploader {
       onFinishUpload(itemHandle).then((value) => dispose(itemHandle));
     } catch (e, stacktrace) {
       logger.e(
-          '[UPLOADER]: Disposing item handleError in ${itemHandle.toString()} upload',
-          e,
-          stacktrace);
+        '[UPLOADER]: Disposing item handleError in ${itemHandle.toString()} upload',
+        e,
+        stacktrace,
+      );
 
       onUploadError(itemHandle, e);
+
+      rethrow;
     }
   }
 }

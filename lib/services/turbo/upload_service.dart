@@ -135,10 +135,22 @@ class TurboUploadService {
   }
 
   Exception _handleException(Object error) {
+    logger.e('Handling exception in UploadService', error);
+
     if (error is ArDriveHTTPResponse && error.statusCode == 408) {
+      logger.e(
+        'Handling exception in UploadService with status code: ${error.statusCode}',
+        error,
+      );
+
       return TurboUploadTimeoutException();
     }
     if (error is ArDriveHTTPException && error.statusCode == 408) {
+      logger.e(
+        'Handling exception in UploadService with status code: ${error.statusCode}',
+        error,
+      );
+      
       return TurboUploadTimeoutException();
     }
 
