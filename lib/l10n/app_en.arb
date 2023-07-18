@@ -1908,6 +1908,8 @@
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
+  "yourUploadFailedTurboTimeout": "This upload has failed. You will not be charged for this attempt.",
+  "@yourUploadFailedTurboTimeout": {},
   "zippingYourFiles": "Zipping your file(s)...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
