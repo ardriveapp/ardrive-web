@@ -420,6 +420,8 @@ class ArweaveService {
     String userAddress, {
     int maxRetries = defaultMaxRetries,
   }) async {
+    logger.d('Getting unique user drive entity transactions for $userAddress');
+
     final userDriveEntitiesQuery = await _graphQLRetry.execute(
       UserDriveEntitiesQuery(
         variables: UserDriveEntitiesArguments(owner: userAddress),
@@ -452,6 +454,8 @@ class ArweaveService {
       maxRetries: maxRetries,
     );
 
+    logger.d('Found ${driveTxs.length} drive transactions');
+
     final privateDriveTxs = driveTxs.where(
         (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
 
@@ -466,6 +470,8 @@ class ArweaveService {
     String password,
   ) async {
     try {
+      logger.i('Getting unique user drive entities');
+
       final userDriveEntitiesQuery = await _graphQLRetry.execute(
           UserDriveEntitiesQuery(
               variables: UserDriveEntitiesArguments(
@@ -543,36 +549,80 @@ class ArweaveService {
     String driveId, [
     SecretKey? driveKey,
     int maxRetries = defaultMaxRetries,
+    bool rethrowException = false,
   ]) async {
-    final firstOwnerQuery = await _graphQLRetry.execute(
-      FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
-      ),
-      maxAttempts: maxRetries,
-    );
+    GraphQLResponse<FirstDriveEntityWithIdOwner$Query> firstOwnerQuery;
+
+    try {
+      firstOwnerQuery = await _graphQLRetry.execute(
+        FirstDriveEntityWithIdOwnerQuery(
+          variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
+        ),
+        maxAttempts: maxRetries,
+      );
+    } catch (e) {
+      logger.e('Failed to get first drive entity with id owner', e);
+
+      if (rethrowException) {
+        rethrow;
+      }
+
+      return null;
+    }
+
+    logger.d('Got first drive entity with id owner');
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+      logger.d('No drive entity with id owner found');
       return null;
     }
 
     final driveOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestDriveQuery = await _graphQLRetry.execute(
-      LatestDriveEntityWithIdQuery(
-        variables: LatestDriveEntityWithIdArguments(
-            driveId: driveId, owner: driveOwner),
-      ),
-      maxAttempts: maxRetries,
-    );
+    GraphQLResponse<LatestDriveEntityWithId$Query> latestDriveQuery;
+    LatestDriveEntityWithId$Query$TransactionConnection$TransactionEdge$Transaction
+        fileTx;
 
-    final queryEdges = latestDriveQuery.data!.transactions.edges;
-    if (queryEdges.isEmpty) {
+    Response fileDataRes;
+
+    try {
+      latestDriveQuery = await _graphQLRetry.execute(
+        LatestDriveEntityWithIdQuery(
+          variables: LatestDriveEntityWithIdArguments(
+              driveId: driveId, owner: driveOwner),
+        ),
+        maxAttempts: maxRetries,
+      );
+
+      logger.d('Got latest drive entity with id');
+
+      final queryEdges = latestDriveQuery.data!.transactions.edges;
+
+      if (queryEdges.isEmpty) {
+        return null;
+      }
+
+      fileTx = queryEdges.first.node;
+
+      fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+
+      if (fileDataRes.statusCode != 200) {
+        throw TransactionNotFoundException(
+            'Failed to get latest drive entity with id data: ${fileDataRes.body}');
+      }
+
+      logger.d(
+          'Got latest drive entity with id data: ${fileTx.id} and ${fileDataRes.bodyBytes.length} bytes}');
+    } catch (e) {
+      logger.e('Failed to get latest drive entity with id', e);
+
+      if (rethrowException) {
+        rethrow;
+      }
+
       return null;
     }
-
-    final fileTx = queryEdges.first.node;
-    final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
 
     try {
       return await DriveEntity.fromTransaction(
@@ -582,6 +632,7 @@ class ArweaveService {
         'Failed to parse transaction '
         'with id ${parseException.transactionId}',
       );
+
       return null;
     }
   }
@@ -794,7 +845,8 @@ class ArweaveService {
             ),
           );
         } on EntityTransactionParseException catch (parseException) {
-          logger.e('Failed to parse transaction with id ${parseException.transactionId}');
+          logger.e(
+              'Failed to parse transaction with id ${parseException.transactionId}');
         }
       }
 
@@ -1039,4 +1091,13 @@ class UploadTransactions {
   Transaction dataTx;
 
   UploadTransactions(this.entityTx, this.dataTx);
+}
+
+class TransactionNotFoundException implements Exception {
+  final String message;
+
+  TransactionNotFoundException(this.message);
+
+  @override
+  String toString() => message;
 }

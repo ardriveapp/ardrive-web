@@ -210,7 +210,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         if (state is LoginFailure) {
           // TODO: Verify if the error is `NoConnectionException` and show an appropriate message after validating with UI/UX
 
-          if (state.error is WalletMismatchException) {
+          if (state.error == LoginFailures.walletMismatch) {
             showAnimatedDialog(
               context,
               content: ArDriveIconModal(
@@ -225,24 +225,79 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               ),
             );
             return;
-          } else if (state.error is BiometricException) {
+          } else if (state.error == LoginFailures.biometricsError) {
             showBiometricExceptionDialogForException(
                 context, state.error as BiometricException, () {});
             return;
-          }
-
-          showAnimatedDialog(
-            context,
-            content: ArDriveIconModal(
-              title: appLocalizationsOf(context).loginFailed,
-              content: appLocalizationsOf(context).pleaseTryAgain,
-              icon: ArDriveIcons.triangle(
-                size: 88,
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+          } else if (state.error == LoginFailures.connectionUnlockingUser) {
+            showAnimatedDialog(
+              context,
+              content: ArDriveIconModal(
+                title: appLocalizationsOf(context).loginFailed,
+                content:
+                    'We can\'t connect to the network to validate your password. Please try again.',
+                icon: ArDriveIcons.triangle(
+                  size: 88,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+                ),
               ),
-            ),
-          );
+            );
+          } else if (state.error == LoginFailures.connectionCreatingPassword) {
+            showAnimatedDialog(
+              context,
+              content: ArDriveIconModal(
+                title: appLocalizationsOf(context).loginFailed,
+                content:
+                    'We can\'t connect to the network to setup your account. Please try again.',
+                icon: ArDriveIcons.triangle(
+                  size: 88,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+                ),
+              ),
+            );
+          } else if (state.error == LoginFailures.wrongPassword) {
+            showAnimatedDialog(
+              context,
+              content: ArDriveIconModal(
+                title: appLocalizationsOf(context).loginFailed,
+                content: 'Your password is incorrect. Please try again.',
+                icon: ArDriveIcons.triangle(
+                  size: 88,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+                ),
+              ),
+            );
+          } else if (state.error == LoginFailures.accountIsNotReady) {
+            showAnimatedDialog(
+              context,
+              content: ArDriveIconModal(
+                title: appLocalizationsOf(context).loginFailed,
+                content:
+                    'Your account is not ready. Please try again in a few minutes.',
+                icon: ArDriveIcons.triangle(
+                  size: 88,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+                ),
+              ),
+            );
+          } else {
+            showAnimatedDialog(
+              context,
+              content: ArDriveIconModal(
+                title: appLocalizationsOf(context).loginFailed,
+                content: appLocalizationsOf(context).pleaseTryAgain,
+                icon: ArDriveIcons.triangle(
+                  size: 88,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+                ),
+              ),
+            );
+          }
         } else if (state is LoginSuccess) {
           context.read<ProfileCubit>().unlockDefaultProfile(
               state.user.password, state.user.profileType);

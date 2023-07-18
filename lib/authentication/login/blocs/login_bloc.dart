@@ -5,6 +5,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -80,12 +81,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     try {
       if (await _arDriveAuth.isUserLoggedIn()) {
-        await _loginWithBiometrics(emit: emit);
+        await _loginWithBiometrics(emit: emit, event: event);
       }
     } catch (e) {
-      logger.e('Failed to unlock user with biometrics: $e');
-
-      emit(LoginFailure(e));
+      _handleException(e, emit, event);
 
       emit(previousState);
     }
@@ -122,7 +121,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit(LoginOnBoarding(wallet));
       }
     } catch (e) {
-      emit(LoginFailure(e));
+      _handleException(e, emit, event);
+
       emit(previousState);
     }
   }
@@ -131,20 +131,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       LoginWithPassword event, Emitter<LoginState> emit) async {
     final previousState = state;
 
-    try {
-      emit(LoginLoading());
+    emit(LoginLoading());
 
-      await _verifyArConnectWalletAddressAndLogin(
-        wallet: event.wallet,
-        password: event.password,
-        emit: emit,
-        previousState: previousState,
-        profileType: profileType!,
-      );
-    } catch (e) {
-      emit(LoginFailure(e));
-      emit(previousState);
-    }
+    await _verifyArConnectWalletAddressAndLogin(
+      wallet: event.wallet,
+      password: event.password,
+      emit: emit,
+      previousState: previousState,
+      profileType: profileType!,
+      event: event,
+    );
   }
 
   Future<void> _handleCheckIfUserIsLoggedInEvent(
@@ -154,7 +150,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (await _arDriveAuth.isUserLoggedIn()) {
       if (await _arDriveAuth.isBiometricsEnabled()) {
         try {
-          await _loginWithBiometrics(emit: emit);
+          await _loginWithBiometrics(emit: emit, event: event);
           return;
         } catch (e) {
           logger.e('Failed to unlock user with biometrics: $e');
@@ -182,7 +178,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     } catch (e) {
       logger.e('Failed to unlock user with password: $e');
 
-      emit(LoginFailure(e));
+      _handleException(e, emit, event);
+
       emit(previousState);
 
       return;
@@ -202,9 +199,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit: emit,
         previousState: previousState,
         profileType: profileType!,
+        event: event,
       );
     } catch (e) {
-      emit(LoginFailure(e));
+      _handleException(e, emit, event);
+
       emit(previousState);
     }
   }
@@ -234,7 +233,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit(LoginOnBoarding(wallet));
       }
     } catch (e) {
-      emit(LoginFailure(e));
+      _handleException(e, emit, event);
+
       emit(previousState);
     }
   }
@@ -269,25 +269,50 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required ProfileType profileType,
     required LoginState previousState,
     required Emitter<LoginState> emit,
+    required LoginEvent event,
   }) async {
-    if (_isArConnectWallet()) {
-      final isArConnectAddressValid = await _verifyArConnectWalletAddress();
+    try {
+      if (_isArConnectWallet()) {
+        final isArConnectAddressValid = await _verifyArConnectWalletAddress();
 
-      if (!isArConnectAddressValid) {
-        emit(const LoginFailure(WalletMismatchException()));
-        emit(previousState);
+        if (!isArConnectAddressValid) {
+          emit(const LoginFailure(LoginFailures.walletMismatch));
+          emit(previousState);
 
-        return;
+          return;
+        }
       }
+
+      final user = await _arDriveAuth.login(
+        wallet,
+        password,
+        profileType,
+      );
+
+      emit(LoginSuccess(user));
+    } catch (e) {
+      _handleException(e, emit, event);
+
+      emit(previousState);
     }
+  }
 
-    final user = await _arDriveAuth.login(
-      wallet,
-      password,
-      profileType,
-    );
-
-    emit(LoginSuccess(user));
+  _handleException(Object e, Emitter emit, LoginEvent event) {
+    if (e is AuthenticationNetworkException) {
+      if (event is CreatePassword) {
+        emit(const LoginFailure(LoginFailures.connectionCreatingPassword));
+      } else {
+        emit(const LoginFailure(LoginFailures.connectionUnlockingUser));
+      }
+    } else if (e is WrongPasswordException) {
+      emit(const LoginFailure(LoginFailures.wrongPassword));
+    } else if (e is BiometricException) {
+      emit(const LoginFailure(LoginFailures.biometricsError));
+    } else if (e is AuthenticationAccountIsNotReadyException) {
+      emit(const LoginFailure(LoginFailures.accountIsNotReady));
+    } else {
+      emit(const LoginFailure(LoginFailures.unknown));
+    }
   }
 
   bool _isArConnectWallet() {
@@ -302,7 +327,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     onArConnectWalletSwitch(() {
       logger.i('ArConnect wallet switched');
       // ignore: invalid_use_of_visible_for_testing_member
-      emit(const LoginFailure(WalletMismatchException()));
+      emit(const LoginFailure(LoginFailures.walletMismatch));
 
       _arDriveAuth.logout();
 
@@ -313,15 +338,25 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   Future<void> _loginWithBiometrics({
     required Emitter<LoginState> emit,
+    required LoginEvent event,
   }) async {
-    emit(LoginLoading());
+    final previousState = state;
+    try {
+      emit(LoginLoading());
 
-    final user = await _arDriveAuth.unlockWithBiometrics(
-        localizedReason: 'Login using credentials stored on this device');
+      final user = await _arDriveAuth.unlockWithBiometrics(
+          localizedReason: 'Login using credentials stored on this device');
 
-    emit(LoginSuccess(user));
+      emit(LoginSuccess(user));
 
-    return;
+      return;
+    } catch (e) {
+      logger.e('Failed to unlock user with biometrics: $e');
+
+      _handleException(e, emit, event);
+
+      emit(previousState);
+    }
   }
 
   Future<void> _handleEnterSeedPhrase(
@@ -382,7 +417,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit(LoginOnBoarding(wallet));
       }
     } catch (e) {
-      emit(LoginFailure(e));
+      emit(const LoginFailure(LoginFailures.unknown));
       emit(previousState);
     }
   }

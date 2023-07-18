@@ -36,7 +36,7 @@ class CreatingNewPassword extends LoginState {
 class LoginFailure extends LoginState {
   const LoginFailure(this.error);
 
-  final Object error;
+  final LoginFailures error;
 }
 
 class LoginSuccess extends LoginState {
@@ -65,4 +65,15 @@ class LoginConfirmMnemonic extends LoginState {
   const LoginConfirmMnemonic(this.mnemonic, this.walletFile);
   final String mnemonic;
   final Wallet walletFile;
+}
+
+enum LoginFailures {
+  wrongPassword,
+  connectionUnlockingUser,
+  connectionCreatingPassword,
+  walletMismatch,
+  qglError,
+  biometricsError,
+  accountIsNotReady,
+  unknown,
 }

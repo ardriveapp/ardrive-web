@@ -111,24 +111,51 @@ class _ArDriveAuth implements ArDriveAuth {
 
   @override
   Future<bool> isExistingUser(Wallet wallet) async {
-    final driveTxs = await _arweave.getUniqueUserDriveEntityTxs(
-      await wallet.getAddress(),
-      maxRetries: profileQueryMaxRetries,
-    );
+    try {
+      logger.i('Checking if user exists');
 
-    return driveTxs.isNotEmpty;
+      final driveTxs = await _arweave.getUniqueUserDriveEntityTxs(
+        await wallet.getAddress(),
+        maxRetries: profileQueryMaxRetries,
+      );
+
+      bool userExists = driveTxs.isNotEmpty;
+
+      logger.d('User exists: $userExists');
+
+      return userExists;
+    } catch (e) {
+      logger.e('Failed to check if user exists', e);
+      throw const AuthenticationNetworkException();
+    }
   }
 
   @override
   Future<User> login(
       Wallet wallet, String password, ProfileType profileType) async {
-    final isValidPassword = await _validateUser(
-      wallet,
-      password,
-    );
+    bool isValidPassword;
 
-    if (!isValidPassword) {
-      throw AuthenticationFailedException('Incorrect password');
+    try {
+      isValidPassword = await _validateUser(
+        wallet,
+        password,
+      );
+
+      logger.i('Validating user: $isValidPassword');
+
+      if (!isValidPassword) {
+        throw const WrongPasswordException();
+      }
+    } catch (e) {
+      logger.e(e.toString());
+
+      if (e is TransactionNotFoundException) {
+        logger.e('EntityTransactionException validating the user', e);
+        throw const AuthenticationAccountIsNotReadyException();
+      }
+
+      logger.e('Failed to validate user', e);
+      throw const AuthenticationNetworkException();
     }
 
     if (await _biometricAuthentication.isEnabled()) {
@@ -172,7 +199,7 @@ class _ArDriveAuth implements ArDriveAuth {
       return currentUser;
     } catch (e) {
       logger.e('Failed to unlock user with password', e);
-      throw AuthenticationFailedException('Incorrect password.');
+      throw const WrongPasswordException();
     }
   }
 
@@ -219,6 +246,8 @@ class _ArDriveAuth implements ArDriveAuth {
       maxRetries: profileQueryMaxRetries,
     );
 
+    logger.d('First drive private drive tx id: $firstDrivePrivateDriveTxId');
+
     // Try and decrypt one of the user's private drive entities to check if they are entering the
     // right password.
     if (firstDrivePrivateDriveTxId != null) {
@@ -230,6 +259,8 @@ class _ArDriveAuth implements ArDriveAuth {
           password,
         );
       } catch (e) {
+        logger.e('Failed to derive drive key', e);
+
         throw AuthenticationFailedException('Wrong password');
       }
 
@@ -237,7 +268,10 @@ class _ArDriveAuth implements ArDriveAuth {
         firstDrivePrivateDriveTxId,
         checkDriveKey,
         profileQueryMaxRetries,
+        true,
       );
+
+      logger.d('Private drive: $privateDrive');
 
       return privateDrive != null;
     }
@@ -314,6 +348,18 @@ class AuthenticationFailedException implements Exception {
 
   @override
   String toString() => message;
+}
+
+class WrongPasswordException implements Exception {
+  const WrongPasswordException();
+}
+
+class AuthenticationNetworkException implements Exception {
+  const AuthenticationNetworkException();
+}
+
+class AuthenticationAccountIsNotReadyException implements Exception {
+  const AuthenticationAccountIsNotReadyException();
 }
 
 class WalletMismatchException implements Exception {
