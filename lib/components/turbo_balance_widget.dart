@@ -120,7 +120,7 @@ class _TurboBalanceState extends State<TurboBalance> {
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
-                                .themeFgSubtle,
+                                .themeFgMuted,
                           ),
                     ),
                     addButton(context),

@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:ardrive/core/arconnect/safe_arconnect_action.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/data_item_utils.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -13,12 +15,14 @@ class TurboUploadService {
   final Uri turboUploadUri;
   final int allowedDataItemSize;
   ArDriveHTTP httpClient;
+  final TabVisibilitySingleton _tabVisibility;
 
   TurboUploadService({
     required this.turboUploadUri,
     required this.allowedDataItemSize,
     required this.httpClient,
-  });
+    required TabVisibilitySingleton tabVisibilitySingleton,
+  }) : _tabVisibility = tabVisibilitySingleton;
 
   Stream<double> postDataItemWithProgress({
     required DataItem dataItem,
@@ -67,10 +71,22 @@ class TurboUploadService {
       final acceptedStatusCodes = [200, 202, 204];
 
       final nonce = const Uuid().v4();
-      final publicKey = await wallet.getOwner();
-      final signature = await signNonceAndData(
-        nonce: nonce,
-        wallet: wallet,
+      final publicKey = await safeArConnectAction<String>(
+        _tabVisibility,
+        (_) async {
+          logger.d('Getting public key with safe ArConnect action');
+          return wallet.getOwner();
+        },
+      );
+      final signature = await safeArConnectAction<String>(
+        _tabVisibility,
+        (_) async {
+          logger.d('Signing with safe ArConnect action');
+          return signNonceAndData(
+            nonce: nonce,
+            wallet: wallet,
+          );
+        },
       );
 
       final headers = {
@@ -160,7 +176,11 @@ class DontUseUploadService implements TurboUploadService {
   }
 
   @override
+  TabVisibilitySingleton get _tabVisibility => throw UnimplementedError();
+
+  @override
   Exception _handleException(Object error) {
+    // TODO: implement _handleException
     throw UnimplementedError();
   }
 }

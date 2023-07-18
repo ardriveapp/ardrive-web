@@ -47,7 +47,7 @@ class TurboSuccessView extends StatelessWidget {
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
-                        .themeAccentDisabled,
+                        .themeFgDefault,
                   ),
                 ),
               ],

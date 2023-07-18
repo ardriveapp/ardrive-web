@@ -87,11 +87,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: main
-      resolved-ref: "0973818cd57847f7f9dd7b0b477ac9f86ea51264"
+      ref: "v1.5.0"
+      resolved-ref: "4e709cc9375c10ae64f6863545e8778816a262a3"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.4.0"
+    version: "1.5.0"
   args:
     dependency: transitive
     description:
@@ -112,11 +112,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3960
-      resolved-ref: "68692d8587ce16dff6e4640875536a319bb00060"
+      ref: "v3.7.0"
+      resolved-ref: "6b85fcb4612cf95dc5331e1698a0c58699b2ece4"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "3.5.1"
+    version: "3.7.0"
   async:
     dependency: "direct main"
     description:
@@ -853,7 +853,7 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/stripe"
-      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      ref: main
       resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
       url: "https://github.com/ardriveapp/flutter_stripe/"
     source: git
@@ -862,7 +862,7 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/stripe_web"
-      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      ref: main
       resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
       url: "https://github.com/ardriveapp/flutter_stripe/"
     source: git
@@ -1867,7 +1867,7 @@ packages:
     dependency: "direct overridden"
     description:
       path: "packages/stripe_js"
-      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      ref: main
       resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
       url: "https://github.com/ardriveapp/flutter_stripe/"
     source: git
@@ -1876,7 +1876,7 @@ packages:
     dependency: "direct overridden"
     description:
       path: "packages/stripe_platform_interface"
-      ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
+      ref: main
       resolved-ref: b1ce2f79a60abeb50eada8a3b742a66784b1600d
       url: "https://github.com/ardriveapp/flutter_stripe/"
     source: git

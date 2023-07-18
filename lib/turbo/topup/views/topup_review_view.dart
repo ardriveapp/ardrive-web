@@ -13,6 +13,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 class TurboReviewView extends StatefulWidget {
   const TurboReviewView({super.key});
@@ -36,8 +37,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
     final textTheme = theme.copyWith(
       textFieldTheme: theme.textFieldTheme.copyWith(
         inputBackgroundColor: theme.colors.themeBgCanvas,
-        labelColor: theme.colors.themeAccentDisabled,
-        requiredLabelColor: theme.colors.themeAccentDisabled,
+        labelColor: theme.colors.themeFgDefault,
+        requiredLabelColor: theme.colors.themeFgDefault,
         inputTextStyle: theme.textFieldTheme.inputTextStyle.copyWith(
           color: theme.colors.themeFgMuted,
           fontWeight: FontWeight.w600,
@@ -49,7 +50,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
           vertical: 8,
         ),
         labelStyle: TextStyle(
-          color: theme.colors.themeAccentDisabled,
+          color: theme.colors.themeFgDefault,
           fontWeight: FontWeight.w600,
           height: 1.5,
           fontSize: 16,
@@ -71,15 +72,15 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               content: TurboErrorView(
                 errorType: state.errorType,
                 onDismiss: () {
-                  Navigator.pop(context);
+                  context
+                      .read<TurboTopupFlowBloc>()
+                      .add(const TurboTopUpShowPaymentFormView(4));
                 },
                 onTryAgain: () {
                   Navigator.pop(context);
-                  context.read<PaymentReviewBloc>().add(
-                        PaymentReviewFinishPayment(
-                          email: _emailController.text,
-                        ),
-                      );
+                  context
+                      .read<TurboTopupFlowBloc>()
+                      .add(const TurboTopUpShowPaymentFormView(4));
                 },
               ),
             ),
@@ -98,7 +99,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               content: TurboErrorView(
                 errorType: TurboErrorType.fetchPaymentIntentFailed,
                 onDismiss: () {
-                  Navigator.pop(context);
+                  context
+                      .read<TurboTopupFlowBloc>()
+                      .add(const TurboTopUpShowPaymentFormView(4));
                 },
                 onTryAgain: () {
                   Navigator.pop(context);
@@ -162,7 +165,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(40.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: ArDriveCard(
                     contentPadding: const EdgeInsets.all(0),
                     backgroundColor:
@@ -224,7 +227,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                   color: ArDriveTheme.of(context)
                                       .themeData
                                       .colors
-                                      .themeAccentDisabled,
+                                      .themeFgDefault,
                                 ),
                               ),
                               const SizedBox(
@@ -319,7 +322,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                           textColor = ArDriveTheme.of(context)
                                               .themeData
                                               .colors
-                                              .themeAccentDisabled;
+                                              .themeFgDefault;
                                         }
 
                                         String formatDuration(int seconds) {
@@ -379,7 +382,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                                               context)
                                                           .themeData
                                                           .colors
-                                                          .themeAccentDisabled,
+                                                          .themeFgDefault,
                                                     ),
                                               ),
                                               TextSpan(
@@ -423,7 +426,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
-                              .themeAccentDisabled,
+                              .themeFgDefault,
                         ),
                       ),
                       const SizedBox(
@@ -476,7 +479,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
-                              .themeAccentDisabled,
+                              .themeFgDefault,
                         ),
                         onChange: (value) => setState(() {
                           _emailChecked = value;
@@ -494,45 +497,47 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               setState(() => _isTermsChecked = value);
                             }),
                           ),
-                          Text.rich(
-                            TextSpan(
-                              children: splitTranslationsWithMultipleStyles<
-                                  InlineSpan>(
-                                originalText: appLocalizationsOf(context)
-                                    .aggreeToTerms_body,
-                                defaultMapper: (text) => TextSpan(
-                                  text: text,
-                                  style:
-                                      ArDriveTypography.body.buttonNormalBold(
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeAccentDisabled,
+                          Flexible(
+                            child: Text.rich(
+                              TextSpan(
+                                children: splitTranslationsWithMultipleStyles<
+                                    InlineSpan>(
+                                  originalText: appLocalizationsOf(context)
+                                      .aggreeToTerms_body,
+                                  defaultMapper: (text) => TextSpan(
+                                    text: text,
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault,
+                                    ),
                                   ),
-                                ),
-                                parts: {
-                                  appLocalizationsOf(context).aggreeToTerms_link:
-                                      (text) => TextSpan(
-                                            text: text,
-                                            style: ArDriveTypography.body
-                                                .buttonNormalBold(
-                                                  color:
-                                                      ArDriveTheme.of(context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeAccentDisabled,
-                                                )
-                                                .copyWith(
-                                                  decoration:
-                                                      TextDecoration.underline,
-                                                ),
-                                            recognizer: TapGestureRecognizer()
-                                              ..onTap = () => openUrl(
-                                                    url:
-                                                        Resources.agreementLink,
+                                  parts: {
+                                    appLocalizationsOf(context).aggreeToTerms_link:
+                                        (text) => TextSpan(
+                                              text: text,
+                                              style: ArDriveTypography.body
+                                                  .buttonNormalBold(
+                                                    color:
+                                                        ArDriveTheme.of(context)
+                                                            .themeData
+                                                            .colors
+                                                            .themeFgDefault,
+                                                  )
+                                                  .copyWith(
+                                                    decoration: TextDecoration
+                                                        .underline,
                                                   ),
-                                          ),
-                                },
+                                              recognizer: TapGestureRecognizer()
+                                                ..onTap = () => openUrl(
+                                                      url: Resources
+                                                          .agreementLink,
+                                                    ),
+                                            ),
+                                  },
+                                ),
                               ),
                             ),
                           ),
@@ -554,67 +559,201 @@ class _TurboReviewViewState extends State<TurboReviewView> {
   }
 
   Widget _footer(BuildContext context) {
-    return SizedBox(
-      width: double.maxFinite,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          ArDriveClickArea(
-            child: GestureDetector(
-              onTap: () {
-                context.read<TurboTopupFlowBloc>().add(
-                      const TurboTopUpShowPaymentFormView(4),
-                    );
+    return ScreenTypeLayout.builder(
+      mobile: (context) => SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
+              builder: (context, state) {
+                return ScreenTypeLayout.builder(
+                  desktop: (context) => ArDriveButton(
+                    maxHeight: 44,
+                    maxWidth: 143,
+                    text: appLocalizationsOf(context).pay,
+                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                      color: Colors.white,
+                    ),
+                    isDisabled: state is PaymentReviewLoadingQuote ||
+                        !_emailIsValid ||
+                        !_isTermsChecked,
+                    customContent: state is PaymentReviewLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
+                    onPressed: () async {
+                      if (state is PaymentReviewLoading) {
+                        return;
+                      }
+
+                      context.read<PaymentReviewBloc>().add(
+                            PaymentReviewFinishPayment(
+                              email: _emailController.text,
+                            ),
+                          );
+                    },
+                  ),
+                  mobile: (context) => ArDriveButton(
+                    maxHeight: 44,
+                    maxWidth: double.maxFinite,
+                    text: appLocalizationsOf(context).pay,
+                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                      color: Colors.white,
+                    ),
+                    isDisabled: state is PaymentReviewLoadingQuote ||
+                        !_emailIsValid ||
+                        !_isTermsChecked,
+                    customContent: state is PaymentReviewLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
+                    onPressed: () async {
+                      if (state is PaymentReviewLoading) {
+                        return;
+                      }
+
+                      context.read<PaymentReviewBloc>().add(
+                            PaymentReviewFinishPayment(
+                              email: _emailController.text,
+                            ),
+                          );
+                    },
+                  ),
+                );
               },
-              child: Text(
-                appLocalizationsOf(context).back,
-                style: ArDriveTypography.body.buttonLargeBold(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentDisabled,
+            ),
+            const SizedBox(
+              height: 16,
+            ),
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  context.read<TurboTopupFlowBloc>().add(
+                        const TurboTopUpShowPaymentFormView(4),
+                      );
+                },
+                child: Text(
+                  appLocalizationsOf(context).back,
+                  style: ArDriveTypography.body.buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
                 ),
               ),
             ),
-          ),
-          BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
-            builder: (context, state) {
-              return ArDriveButton(
-                maxHeight: 44,
-                maxWidth: 143,
-                text: appLocalizationsOf(context).pay,
-                fontStyle: ArDriveTypography.body.buttonLargeBold(
-                  color: Colors.white,
-                ),
-                isDisabled: state is PaymentReviewLoadingQuote ||
-                    !_emailIsValid ||
-                    !_isTermsChecked,
-                customContent: state is PaymentReviewLoading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : null,
-                onPressed: () async {
-                  if (state is PaymentReviewLoading) {
-                    return;
-                  }
-
-                  context.read<PaymentReviewBloc>().add(
-                        PaymentReviewFinishPayment(
-                          email: _emailController.text,
-                          userAcceptedToReceiveEmails: _emailChecked,
-                        ),
+          ],
+        ),
+      ),
+      desktop: (context) => SizedBox(
+        width: double.maxFinite,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  context.read<TurboTopupFlowBloc>().add(
+                        const TurboTopUpShowPaymentFormView(4),
                       );
                 },
-              );
-            },
-          ),
-        ],
+                child: Text(
+                  appLocalizationsOf(context).back,
+                  style: ArDriveTypography.body.buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
+                  ),
+                ),
+              ),
+            ),
+            BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
+              builder: (context, state) {
+                return ScreenTypeLayout.builder(
+                  desktop: (context) => ArDriveButton(
+                    maxHeight: 44,
+                    maxWidth: 143,
+                    text: appLocalizationsOf(context).pay,
+                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                      color: Colors.white,
+                    ),
+                    isDisabled: state is PaymentReviewLoadingQuote ||
+                        !_emailIsValid ||
+                        !_isTermsChecked,
+                    customContent: state is PaymentReviewLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
+                    onPressed: () async {
+                      if (state is PaymentReviewLoading) {
+                        return;
+                      }
+
+                      context.read<PaymentReviewBloc>().add(
+                            PaymentReviewFinishPayment(
+                              email: _emailController.text,
+                            ),
+                          );
+                    },
+                  ),
+                  mobile: (context) => ArDriveButton(
+                    maxHeight: 44,
+                    maxWidth: double.maxFinite,
+                    text: appLocalizationsOf(context).pay,
+                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                      color: Colors.white,
+                    ),
+                    isDisabled: state is PaymentReviewLoadingQuote ||
+                        !_emailIsValid ||
+                        !_isTermsChecked,
+                    customContent: state is PaymentReviewLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
+                    onPressed: () async {
+                      if (state is PaymentReviewLoading) {
+                        return;
+                      }
+
+                      context.read<PaymentReviewBloc>().add(
+                            PaymentReviewFinishPayment(
+                              email: _emailController.text,
+                            ),
+                          );
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -674,8 +813,7 @@ class RefreshButtonState extends State<RefreshButton>
             },
             size: 14,
             icon: ArDriveIcons.refresh(
-              color:
-                  ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             ),
           ),
         ),
@@ -684,8 +822,7 @@ class RefreshButtonState extends State<RefreshButton>
           child: Text(
             'Refresh',
             style: ArDriveTypography.body.buttonNormalBold(
-              color:
-                  ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             ),
           ),
         ),
@@ -756,7 +893,7 @@ class RefreshQuoteButtonState extends State<RefreshQuoteButton>
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors
-                          .themeAccentDisabled,
+                          .themeFgDefault,
                       size: 16,
                     ),
                   ),
@@ -773,7 +910,7 @@ class RefreshQuoteButtonState extends State<RefreshQuoteButton>
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
-                            .themeAccentDisabled,
+                            .themeFgDefault,
                       ),
                     ),
                   ),
