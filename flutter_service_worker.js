@@ -3,8 +3,8 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"index.html": "43f983e5b5b7277f930c0e5bf8046a1f",
-"/": "43f983e5b5b7277f930c0e5bf8046a1f",
+const RESOURCES = {"index.html": "33f8a1d4cde06d270d2a2777d1ef9ce1",
+"/": "33f8a1d4cde06d270d2a2777d1ef9ce1",
 "flutter.js": "6fef97aeca90b426343ba6c5c9dc5d4a",
 "worker.js": "f916974921b8b3d98f9fdfc4b68e5432",
 "favicon.png": "167c77d2168cfdb31c240d2d3d5e9601",
@@ -359,7 +359,7 @@ const RESOURCES = {"index.html": "43f983e5b5b7277f930c0e5bf8046a1f",
 "assets/assets/fonts/Montserrat-Light.ttf": "409c7f79a42e56c785f50ed37535f0be",
 "assets/assets/fonts/OpenSans-Bold.ttf": "1025a6e0fb0fa86f17f57cc82a6b9756",
 "assets/assets/animations/lottie.json": "191a5283adba0ee925152e6bb1c36cce",
-"assets/assets/config/prod.json": "28dc31fa50ab3cdcbdc4ce7d20563e6a",
+"assets/assets/config/prod.json": "7d8302946922fb32c15bb010846eafe8",
 "assets/assets/config/staging.json": "9cb04ef484a96e4b767d6db1fb763531",
 "assets/assets/config/dev.json": "6f4994b7a79bd115f21e993d447263e1",
 "assets/assets/images/brand/white_logo_2x.png": "cc36f2423d33e0e3e1095fbd4678f9b1",
