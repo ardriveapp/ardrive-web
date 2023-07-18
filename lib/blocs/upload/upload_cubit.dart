@@ -110,12 +110,23 @@ class UploadCubit extends Cubit<UploadState> {
         _arDriveUploadManager = arDriveUploadManager,
         super(UploadPreparationInProgress());
 
-  Future<void> startUploadPreparation() async {
+  Future<void> startUploadPreparation({
+    bool isRetryingToPayWithTurbo = false,
+  }) async {
     files.removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
     _targetFolder = await _driveDao
         .folderById(driveId: driveId, folderId: parentFolderId)
         .getSingle();
+
+    // TODO: check if the backend refreshed the balance instead of a timer
+    if (isRetryingToPayWithTurbo) {
+      emit(UploadPreparationInProgress());
+
+      /// necessary to wait for backend update the balance
+      await Future.delayed(const Duration(seconds: 2));
+    }
+
     emit(UploadPreparationInitialized());
   }
 

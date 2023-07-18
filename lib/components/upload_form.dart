@@ -548,7 +548,9 @@ class _UploadFormState extends State<UploadForm> {
                                       showTurboModal(context, onSuccess: () {
                                         context
                                             .read<UploadCubit>()
-                                            .startUploadPreparation();
+                                            .startUploadPreparation(
+                                              isRetryingToPayWithTurbo: true,
+                                            );
                                       });
                                     },
                                     child: ArDriveClickArea(
@@ -843,7 +845,9 @@ class _UploadFormState extends State<UploadForm> {
       return GestureDetector(
         onTap: () {
           showTurboModal(context, onSuccess: () {
-            context.read<UploadCubit>().startUploadPreparation();
+            context.read<UploadCubit>().startUploadPreparation(
+                  isRetryingToPayWithTurbo: true,
+                );
           });
         },
         child: ArDriveClickArea(
@@ -891,7 +895,9 @@ class _UploadFormState extends State<UploadForm> {
       return GestureDetector(
         onTap: () {
           showTurboModal(context, onSuccess: () {
-            context.read<UploadCubit>().startUploadPreparation();
+            context.read<UploadCubit>().startUploadPreparation(
+                  isRetryingToPayWithTurbo: true,
+                );
           });
         },
         child: ArDriveClickArea(
