@@ -11,6 +11,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -39,6 +40,7 @@ class UploadCubit extends Cubit<UploadState> {
   final TurboBalanceRetriever _turboBalanceRetriever;
   final ArDriveAuth _auth;
   final ArDriveUploadPreparationManager _arDriveUploadManager;
+  final TabVisibilitySingleton _tabVisibility;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -98,6 +100,7 @@ class UploadCubit extends Cubit<UploadState> {
     required TurboBalanceRetriever turboBalanceRetriever,
     required ArDriveAuth auth,
     required ArDriveUploadPreparationManager arDriveUploadManager,
+    required TabVisibilitySingleton tabVisibility,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
         _uploadFileChecker = uploadFileChecker,
@@ -108,6 +111,7 @@ class UploadCubit extends Cubit<UploadState> {
         _turboBalanceRetriever = turboBalanceRetriever,
         _auth = auth,
         _arDriveUploadManager = arDriveUploadManager,
+        _tabVisibility = tabVisibility,
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation() async {
@@ -516,7 +520,13 @@ class UploadCubit extends Cubit<UploadState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(UploadFailure());
+    if (error is TurboUploadTimeoutException) {
+      emit(UploadFailure(error: UploadErrors.turboTimeout));
+
+      return;
+    }
+
+    emit(UploadFailure(error: UploadErrors.unknown));
     logger.e('Failed to upload file: $error $stackTrace');
     super.onError(error, stackTrace);
   }
@@ -545,6 +555,7 @@ class UploadCubit extends Cubit<UploadState> {
             'Preparing bundle.. using turbo: ${_uploadMethod == UploadMethod.turbo}');
 
         await handle.prepareAndSignBundleTransaction(
+          tabVisibilitySingleton: TabVisibilitySingleton(),
           arweaveService: _arweave,
           turboUploadService: _turbo,
           pstService: _pst,

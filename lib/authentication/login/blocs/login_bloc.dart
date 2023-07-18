@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -9,9 +10,14 @@ import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
+import 'package:bip39/bip39.dart' as bip39;
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'stub_web_wallet.dart' // stub implementation
+    if (dart.library.html) 'web_wallet.dart';
 
 part 'login_event.dart';
 part 'login_state.dart';
@@ -55,6 +61,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleFinishOnboardingEvent(event, emit);
     } else if (event is UnLockWithBiometrics) {
       await _handleUnlockUserWithBiometricsEvent(event, emit);
+    } else if (event is EnterSeedPhrase) {
+      await _handleEnterSeedPhrase(event, emit);
+    } else if (event is AddWalletFromMnemonic) {
+      await _handleAddWalletFromMnemonicEvent(event, emit);
+    } else if (event is AddWalletFromCompleter) {
+      await _handleAddWalletFromCompleterEvent(event, emit);
+    } else if (event is CreateNewWallet) {
+      await _handleCreateNewWalletEvent(event, emit);
+    } else if (event is CompleteWalletGeneration) {
+      await _handleCompleteWalletGenerationEvent(event, emit);
     }
   }
 
@@ -306,5 +322,68 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(LoginSuccess(user));
 
     return;
+  }
+
+  Future<void> _handleEnterSeedPhrase(
+      EnterSeedPhrase event, Emitter<LoginState> emit) async {
+    emit(LoginEnterSeedPhrase());
+  }
+
+  Future<void> _handleAddWalletFromMnemonicEvent(
+      AddWalletFromMnemonic event, Emitter<LoginState> emit) async {
+    profileType = ProfileType.json;
+
+    emit(const LoginGenerateWallet());
+
+    final wallet = await generateWalletFromMnemonic(event.mnemonic);
+    emit(LoginDownloadGeneratedWallet(event.mnemonic, wallet));
+  }
+
+  Future<void> _handleAddWalletFromCompleterEvent(
+      AddWalletFromCompleter event, Emitter<LoginState> emit) async {
+    profileType = ProfileType.json;
+
+    Completer<Wallet> completer = event.walletCompleter;
+    Wallet wallet;
+
+    if (!completer.isCompleted) {
+      emit(const LoginGenerateWallet());
+
+      // wait for minimum 3 seconds
+      var results = await Future.wait(
+          [completer.future, Future.delayed(const Duration(seconds: 3))]);
+
+      wallet = results[0];
+    } else {
+      wallet = await completer.future;
+    }
+
+    emit(LoginDownloadGeneratedWallet(event.mnemonic, wallet));
+  }
+
+  Future<void> _handleCreateNewWalletEvent(
+      CreateNewWallet event, Emitter<LoginState> emit) async {
+    profileType = ProfileType.json;
+    final mnemonic = bip39.generateMnemonic();
+    emit(LoginCreateNewWallet(mnemonic));
+  }
+
+  Future<void> _handleCompleteWalletGenerationEvent(
+      CompleteWalletGeneration event, Emitter<LoginState> emit) async {
+    final previousState = state;
+    final wallet = event.wallet;
+
+    profileType = ProfileType.json;
+
+    try {
+      if (await _arDriveAuth.isExistingUser(wallet)) {
+        emit(PromptPassword(walletFile: wallet));
+      } else {
+        emit(LoginOnBoarding(wallet));
+      }
+    } catch (e) {
+      emit(LoginFailure(e));
+      emit(previousState);
+    }
   }
 }

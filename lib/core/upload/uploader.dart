@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
@@ -66,7 +68,13 @@ class ArDriveUploader {
     int index = 0;
 
     for (final bundleHandle in bundleHandles) {
-      await _prepareBundle(bundleHandle);
+      try {
+        await _prepareBundle(bundleHandle);
+      } catch (e) {
+        logger.e('Error preparing bundle: ${e.toString()}');
+        _onUploadBundleError(bundleHandle, e);
+        return;
+      }
 
       Stopwatch stopwatch = Stopwatch()..start();
       int dataSize = bundleHandle.size;
@@ -97,7 +105,14 @@ class ArDriveUploader {
 
     for (final fileV2Handle in fileV2Handles) {
       logger.i('Uploading fileV2Handle: ${fileV2Handle.toString()}');
-      await _prepareFile(fileV2Handle);
+
+      try {
+        await _prepareFile(fileV2Handle);
+      } catch (e) {
+        logger.e('Error preparing file: ${e.toString()}');
+        _onUploadFileError(fileV2Handle, e);
+        return;
+      }
 
       final stopwatch = Stopwatch()..start();
 
@@ -136,30 +151,31 @@ class ArDriveUploader {
     required void Function(T handle) dispose,
   }) async* {
     try {
-      bool hasError = false;
-
       await for (var progress in upload(itemHandle).handleError((e, s) {
-        logger.e('Handling error on ArDriveUploader', e, s);
-        hasError = true;
+        logger.e('[UPLOADER]: Handling error on ArDriveUploader', e, s);
+
+        onUploadError(itemHandle, e).then((value) => dispose(itemHandle));
+
+        // Breaks the upload
+        throw e;
       })) {
         yield Tuple2(index, progress);
       }
 
-      if (hasError) {
-        logger.d('Error uploading. Breaking upload');
-
-        dispose(itemHandle);
-
-        throw Exception();
-      }
-
-      logger.i('Finished uploading item handle');
-      logger.i('Disposing item handle');
+      logger.i('[UPLOADER]: Finished uploading item handle'
+          '\n[UPLOADER]: Disposing item handle');
 
       onFinishUpload(itemHandle).then((value) => dispose(itemHandle));
     } catch (e, stacktrace) {
-      logger.e('Error in ${itemHandle.toString()} upload', e, stacktrace);
+      logger.e(
+        '[UPLOADER]: Disposing item handleError in ${itemHandle.toString()} upload',
+        e,
+        stacktrace,
+      );
+
       onUploadError(itemHandle, e);
+
+      rethrow;
     }
   }
 }
@@ -210,13 +226,13 @@ class TurboUploader implements Uploader<BundleUploadHandle> {
 
   @override
   Stream<double> upload(handle) async* {
-    await for (var progress in _turbo.postDataItemWithProgress(
-      dataItem: handle.bundleDataItem,
-      wallet: _wallet,
-    )) {
+    yield* _turbo
+        .postDataItemWithProgress(
+            dataItem: handle.bundleDataItem, wallet: _wallet)
+        .map((progress) {
       handle.setUploadProgress(progress);
-      yield progress;
-    }
+      return progress;
+    });
   }
 }
 

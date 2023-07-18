@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/turbo_logo.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
@@ -8,8 +9,10 @@ import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_size_units.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -365,8 +368,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     final textTheme = theme.copyWith(
       textFieldTheme: theme.textFieldTheme.copyWith(
         inputBackgroundColor: theme.colors.themeBgCanvas,
-        labelColor: theme.colors.themeAccentDisabled,
-        requiredLabelColor: theme.colors.themeAccentDisabled,
+        labelColor: theme.colors.themeFgDefault,
+        requiredLabelColor: theme.colors.themeFgDefault,
         inputTextStyle: theme.textFieldTheme.inputTextStyle.copyWith(
           color: theme.colors.themeFgMuted,
           fontWeight: FontWeight.w600,
@@ -378,7 +381,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           vertical: 8,
         ),
         labelStyle: TextStyle(
-          color: theme.colors.themeAccentDisabled,
+          color: theme.colors.themeFgDefault,
           fontWeight: FontWeight.w600,
           height: 1.5,
           fontSize: 16,
@@ -398,29 +401,30 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           const SizedBox(height: 8),
           Text(
             appLocalizationsOf(context)
-                .arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance,
+                .creditsWillBeAutomaticallyAddedToYourTurboBalance,
             style: ArDriveTypography.body.buttonNormalBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
             ),
           ),
           const SizedBox(height: 32),
           Text(
             appLocalizationsOf(context).amount,
             style: ArDriveTypography.body.buttonNormalBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
             ),
           ),
           const SizedBox(height: 12),
           buildButtonBar(context),
           ScreenTypeLayout.builder(
             desktop: (_) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 24),
                 Text(
                   'Custom Amount (min \$10 - max \$10,000)',
                   style: ArDriveTypography.body.buttonNormalBold(
                     color:
-                        ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                        ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -454,7 +458,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
-                            .themeFgSubtle,
+                            .themeFgMuted,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -526,8 +530,13 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           keyboardType: TextInputType.number,
           inputFormatters: [
             TextInputFormatter.withFunction((oldValue, newValue) {
-              // Remove any non-digit character
-              String newValueText = newValue.text.replaceAll(RegExp(r'\D'), '');
+              String newValueText = newValue.text
+                  // Remove any non-digit character
+                  .replaceAll(RegExp(r'\D'), '')
+                  // Replace multiple zeroes with a single one
+                  .replaceAll(RegExp(r'^0+$'), '0')
+                  // Remove any leading zeroes
+                  .replaceAll(RegExp(r'^0+(?=[^0])'), '');
 
               if (newValueText.isNotEmpty) {
                 int valueAsInt = int.parse(newValueText);
@@ -585,8 +594,7 @@ class _BalanceViewState extends State<_BalanceView> {
               Text(
                 '${convertCreditsToLiteralString(widget.balance)} ${appLocalizationsOf(context).credits}',
                 style: ArDriveTypography.body.buttonXLargeBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                  color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                 ),
               ),
             ],
@@ -610,8 +618,7 @@ class _BalanceViewState extends State<_BalanceView> {
               Text(
                 '${widget.estimatedStorage} ${widget.fileSizeUnit}',
                 style: ArDriveTypography.body.buttonXLargeBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                  color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                 ),
               ),
             ],
@@ -681,22 +688,44 @@ class PriceEstimateView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Divider(height: 32),
-            Text(
-              '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).credits} = $estimatedStorage $storageUnit',
-              style: ArDriveTypography.body.buttonNormalBold(),
+            Row(
+              children: [
+                Text(
+                  '$fiatCurrency $fiatAmount = ${convertCreditsToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).credits}',
+                  style: ArDriveTypography.body.buttonNormalBold(),
+                ),
+                Transform.translate(
+                  offset: const Offset(0, 4),
+                  child: Text(
+                    ' ~ ',
+                    style: ArDriveTypography.body.buttonNormalBold(),
+                  ),
+                ),
+                Text(
+                  '$estimatedStorage $storageUnit',
+                  style: ArDriveTypography.body.buttonNormalBold(),
+                ),
+              ],
             ),
             const SizedBox(height: 4),
             ArDriveClickArea(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    appLocalizationsOf(context).howAreConversionsDetermined,
-                    style: ArDriveTypography.body.buttonNormalBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgSubtle,
+                  Text.rich(
+                    TextSpan(
+                      text: appLocalizationsOf(context)
+                          .howAreConversionsDetermined,
+                      style: ArDriveTypography.body.buttonNormalBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgMuted,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => openUrl(
+                              url: Resources.howAreConversionsDetermined,
+                            ),
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -706,7 +735,7 @@ class PriceEstimateView extends StatelessWidget {
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors
-                          .themeFgSubtle,
+                          .themeFgMuted,
                       size: 16,
                     ),
                   )
