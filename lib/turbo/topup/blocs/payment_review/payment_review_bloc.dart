@@ -183,7 +183,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
 
   void _emitPaymentReviewErrorLoadingPaymentModel(Emitter emit) {
     emit(
-      PaymentReviewErrorLoadingPaymentModel(
+      const PaymentReviewErrorLoadingPaymentModel(
         errorType: TurboErrorType.unknown,
       ),
     );
@@ -191,7 +191,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
 
   void _emitPaymentReviewLoadingPaymentModel(Emitter emit) {
     emit(
-      PaymentReviewLoadingPaymentModel(),
+      const PaymentReviewLoadingPaymentModel(),
     );
   }
 
