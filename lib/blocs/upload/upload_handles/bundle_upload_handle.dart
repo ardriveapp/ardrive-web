@@ -66,19 +66,29 @@ class BundleUploadHandle implements UploadHandle {
 
     late DataBundle bundle;
     try {
-      bundle = await safeArConnectAction<DataBundle>(
-        tabVisibilitySingleton,
-        (_) async {
-          logger.d('Preparing bundle in safe ArConnect action');
-          return DataBundle.fromHandles(
-            parallelize: !isArConnect,
-            handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
-                    fileDataItemUploadHandles) +
-                List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
-                    folderDataItemUploadHandles),
-          );
-        },
-      );
+      if (isArConnect) {
+        bundle = await safeArConnectAction<DataBundle>(
+          tabVisibilitySingleton,
+          (_) async {
+            logger.d('Preparing bundle in safe ArConnect action');
+            return DataBundle.fromHandles(
+              parallelize: !isArConnect,
+              handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
+                      fileDataItemUploadHandles) +
+                  List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
+                      folderDataItemUploadHandles),
+            );
+          },
+        );
+      } else {
+        bundle = await DataBundle.fromHandles(
+          parallelize: !isArConnect,
+          handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
+                  fileDataItemUploadHandles) +
+              List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
+                  folderDataItemUploadHandles),
+        );
+      }
     } catch (e) {
       logger.e('Error while preparing bundle: $e');
       hasError = true;
