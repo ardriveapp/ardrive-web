@@ -8,6 +8,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:platform/platform.dart';
@@ -225,7 +226,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             .folderById(driveId: driveId, folderId: folderToMove.id)
             .getSingle();
         folder = folder.copyWith(
-          parentFolderId: parentFolder.id,
+          parentFolderId: Value(parentFolder.id),
           path: '${parentFolder.path}/${folder.name}',
           lastUpdated: DateTime.now(),
         );

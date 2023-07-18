@@ -54,20 +54,58 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
       key: const ValueKey('turbo_payment_form'),
       themeData: textTheme,
       child: ScreenTypeLayout.builder(
-        mobile: (context) => _mobileView(context),
+        mobile: (context) => _mobileView(context, textTheme.textFieldTheme),
         desktop: (context) => _desktopView(context, textTheme.textFieldTheme),
       ),
     );
   }
 
-  Widget _mobileView(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        _header(context),
-        const Divider(height: 16),
-        const SizedBox(height: 16),
-      ],
+  Widget _mobileView(BuildContext context, ArDriveTextFieldTheme theme) {
+    return Container(
+      color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 26, right: 26),
+                child: ArDriveClickArea(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: ArDriveIcons.x(),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 40,
+                right: 40,
+              ),
+              child: Column(
+                children: [
+                  _header(context),
+                  const Divider(height: 24),
+                  _credits(context),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: QuoteRefreshWidget(),
+                  ),
+                  const SizedBox(height: 16),
+                  _formDesktop(
+                    context,
+                    theme,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 16),
+            const SizedBox(height: 24),
+            _footer(context),
+          ],
+        ),
+      ),
     );
   }
 
@@ -147,7 +185,18 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                         children: [
                           _header(context),
                           const Divider(height: 24),
-                          _credits(context),
+                          Row(
+                            children: [
+                              Flexible(child: _credits(context)),
+                              const Flexible(
+                                flex: 1,
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 8.0),
+                                  child: QuoteRefreshWidget(),
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 16),
                           _formDesktop(
                             context,
@@ -212,13 +261,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               ],
             ),
           ),
-          const Flexible(
-            flex: 1,
-            child: Padding(
-              padding: EdgeInsets.only(left: 8.0),
-              child: QuoteRefreshWidget(),
-            ),
-          ),
         ],
       ),
     );
@@ -253,50 +295,101 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget _footer(BuildContext context) {
-    return Container(
-      width: double.maxFinite,
-      padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          ArDriveClickArea(
-            child: GestureDetector(
-              onTap: () {
-                context
-                    .read<TurboTopupFlowBloc>()
-                    .add(const TurboTopUpShowEstimationView());
+    return ScreenTypeLayout.builder(
+      mobile: (context) => Container(
+        width: double.maxFinite,
+        padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ArDriveButton(
+              maxWidth: double.maxFinite,
+              maxHeight: 44,
+              text: appLocalizationsOf(context).review,
+              fontStyle: ArDriveTypography.body.buttonLargeBold(
+                color: Colors.white,
+              ),
+              isDisabled: _selectedCountry == null ||
+                  _nameController.text.isEmpty ||
+                  !(card?.complete ?? false),
+              onPressed: () {
+                context.read<TurboTopupFlowBloc>().add(
+                      TurboTopUpShowPaymentReviewView(
+                        name: _nameController.text,
+                        country: _selectedCountry!.label,
+                      ),
+                    );
               },
-              child: Text(
-                appLocalizationsOf(context).back,
-                style: ArDriveTypography.body.buttonLargeBold(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentDisabled,
+            ),
+            SizedBox(
+              height: 24,
+            ),
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  context
+                      .read<TurboTopupFlowBloc>()
+                      .add(const TurboTopUpShowEstimationView());
+                },
+                child: Text(
+                  appLocalizationsOf(context).back,
+                  style: ArDriveTypography.body.buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
+                  ),
                 ),
               ),
             ),
-          ),
-          ArDriveButton(
-            maxHeight: 44,
-            maxWidth: 143,
-            text: appLocalizationsOf(context).review,
-            fontStyle: ArDriveTypography.body.buttonLargeBold(
-              color: Colors.white,
+          ],
+        ),
+      ),
+      desktop: (context) => Container(
+        width: double.maxFinite,
+        padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  context
+                      .read<TurboTopupFlowBloc>()
+                      .add(const TurboTopUpShowEstimationView());
+                },
+                child: Text(
+                  appLocalizationsOf(context).back,
+                  style: ArDriveTypography.body.buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
+                  ),
+                ),
+              ),
             ),
-            isDisabled: _selectedCountry == null ||
-                _nameController.text.isEmpty ||
-                !(card?.complete ?? false),
-            onPressed: () {
-              context.read<TurboTopupFlowBloc>().add(
-                    TurboTopUpShowPaymentReviewView(
-                      name: _nameController.text,
-                      country: _selectedCountry!.label,
-                    ),
-                  );
-            },
-          ),
-        ],
+            ArDriveButton(
+              maxHeight: 44,
+              maxWidth: 143,
+              text: appLocalizationsOf(context).review,
+              fontStyle: ArDriveTypography.body.buttonLargeBold(
+                color: Colors.white,
+              ),
+              isDisabled: _selectedCountry == null ||
+                  _nameController.text.isEmpty ||
+                  !(card?.complete ?? false),
+              onPressed: () {
+                context.read<TurboTopupFlowBloc>().add(
+                      TurboTopUpShowPaymentReviewView(
+                        name: _nameController.text,
+                        country: _selectedCountry!.label,
+                      ),
+                    );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -418,6 +511,10 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         if (state is PaymentFormLoaded) {
           return Expanded(
             child: CountryInputDropdown(
+              onClick: () {
+                logger.d('CountryInputDropdown onClick');
+                FocusScope.of(context).unfocus();
+              },
               context: context,
               theme: theme,
               onChanged: (country) {
@@ -572,11 +669,20 @@ class TimerWidgetState extends State<TimerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    Color textColor;
+    if (_secondsLeft < 30) {
+      textColor = ArDriveTheme.of(context).themeData.colors.themeErrorDefault;
+    } else if (_secondsLeft < 60) {
+      textColor = ArDriveTheme.of(context).themeData.colors.themeWarningMuted;
+    } else {
+      textColor = ArDriveTheme.of(context).themeData.colors.themeFgDefault;
+    }
+
     return widget.builder != null
         ? widget.builder!(context, _secondsLeft)
         : Text(
             _formatDuration(_secondsLeft),
-            style: widget.textStyle,
+            style: widget.textStyle?.copyWith(color: textColor),
           );
   }
 }
@@ -591,6 +697,7 @@ class InputDropdownMenu<T extends InputDropdownItem> extends StatefulWidget {
   const InputDropdownMenu({
     super.key,
     required this.items,
+    this.onClick,
     this.selectedItem,
     required this.buildSelectedItem,
     this.label,
@@ -609,6 +716,7 @@ class InputDropdownMenu<T extends InputDropdownItem> extends StatefulWidget {
   final Widget Function(T?) buildSelectedItem;
   final String? label;
   final Function(T)? onChanged;
+  final Function()? onClick;
   final Anchor anchor;
   final TextStyle? itemsTextStyle;
   final Color? backgroundColor;
@@ -632,6 +740,7 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
     return ArDriveClickArea(
       child: ArDriveDropdown(
         showScrollbars: true,
+        onClick: widget.onClick,
         maxHeight: 275,
         anchor: widget.anchor,
         width: 200,
@@ -715,10 +824,12 @@ class CountryInputDropdown extends InputDropdownMenu<CountryItem> {
     required ArDriveTextFieldTheme theme,
     CountryItem? selectedItem,
     required Function(CountryItem) onChanged,
+    Function()? onClick,
     required BuildContext context,
   }) : super(
           key: key,
           items: items,
+          onClick: onClick,
           selectedItem: selectedItem,
           buildSelectedItem: buildSelectedItem,
           label: '${appLocalizationsOf(context).country} *',
@@ -738,58 +849,55 @@ class QuoteRefreshWidget extends StatefulWidget {
 class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
   @override
   Widget build(BuildContext context) {
-    return ArDriveCard(
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: 13,
-      ),
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          BlocBuilder<PaymentFormBloc, PaymentFormState>(
-            builder: (context, state) {
-              if (state is PaymentFormQuoteLoadFailure) {
-                return const SizedBox();
-              }
+    return ScreenTypeLayout.builder(
+      mobile: (context) => ArDriveCard(
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 13,
+        ),
+        content: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            BlocBuilder<PaymentFormBloc, PaymentFormState>(
+              builder: (context, state) {
+                if (state is PaymentFormQuoteLoadFailure) {
+                  return const SizedBox();
+                }
 
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    appLocalizationsOf(context).quoteUpdatesIn,
-                    style: ArDriveTypography.body.captionBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDisabled,
+                return Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Text(
+                        appLocalizationsOf(context).quoteUpdatesIn,
+                        style: ArDriveTypography.body.captionBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDisabled,
+                        ),
+                      ),
                     ),
-                  ),
-                  TimerWidget(
-                    key: state is PaymentFormQuoteLoaded
-                        ? const ValueKey('reset_timer')
-                        : null,
-                    textStyle: ArDriveTypography.body.captionBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDisabled,
+                    TimerWidget(
+                      textStyle: ArDriveTypography.body.captionBold(),
+                      key: state is PaymentFormQuoteLoaded
+                          ? const ValueKey('reset_timer')
+                          : null,
+                      durationInSeconds: state.quoteExpirationTimeInSeconds,
+                      onFinished: () {
+                        logger.d('fetching quote');
+                        context
+                            .read<PaymentFormBloc>()
+                            .add(PaymentFormUpdateQuote());
+                      },
                     ),
-                    durationInSeconds: state.quoteExpirationTimeInSeconds,
-                    onFinished: () {
-                      logger.d('fetching quote');
-                      context
-                          .read<PaymentFormBloc>()
-                          .add(PaymentFormUpdateQuote());
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 4),
-          Flexible(
-            child: BlocBuilder<PaymentFormBloc, PaymentFormState>(
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 4),
+            BlocBuilder<PaymentFormBloc, PaymentFormState>(
               builder: (context, state) {
                 if (state is PaymentFormLoadingQuote) {
                   return const SizedBox(
@@ -872,9 +980,143 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                   ),
                 );
               },
+            )
+          ],
+        ),
+      ),
+      desktop: (context) => ArDriveCard(
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 13,
+        ),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            BlocBuilder<PaymentFormBloc, PaymentFormState>(
+              builder: (context, state) {
+                if (state is PaymentFormQuoteLoadFailure) {
+                  return const SizedBox();
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context).quoteUpdatesIn,
+                      style: ArDriveTypography.body.captionBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDisabled,
+                      ),
+                    ),
+                    TimerWidget(
+                      key: state is PaymentFormQuoteLoaded
+                          ? const ValueKey('reset_timer')
+                          : null,
+                      durationInSeconds: state.quoteExpirationTimeInSeconds,
+                      onFinished: () {
+                        logger.d('fetching quote');
+                        context
+                            .read<PaymentFormBloc>()
+                            .add(PaymentFormUpdateQuote());
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
-          )
-        ],
+            const SizedBox(height: 4),
+            Flexible(
+              child: BlocBuilder<PaymentFormBloc, PaymentFormState>(
+                builder: (context, state) {
+                  if (state is PaymentFormLoadingQuote) {
+                    return const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    );
+                  }
+
+                  if (state is PaymentFormQuoteLoadFailure) {
+                    return ArDriveClickArea(
+                      child: GestureDetector(
+                        onTap: () {
+                          context
+                              .read<PaymentFormBloc>()
+                              .add(PaymentFormUpdateQuote());
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  appLocalizationsOf(context)
+                                      .unableToUpdateQuote,
+                                  style: ArDriveTypography.body.captionBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeErrorDefault,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              ArDriveIcons.refresh(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeErrorDefault,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ArDriveClickArea(
+                    child: GestureDetector(
+                      onTap: () {
+                        context
+                            .read<PaymentFormBloc>()
+                            .add(PaymentFormUpdateQuote());
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ArDriveIcons.refresh(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDisabled,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            appLocalizationsOf(context).refresh,
+                            style: ArDriveTypography.body.captionBold(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgDisabled,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

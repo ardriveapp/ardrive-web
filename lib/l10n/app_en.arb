@@ -1,5 +1,7 @@
 {
   "@@locale": "en",
+  "accept": "Accept",
+  "@accept": {},
   "addButtonTurbo": "Add",
   "@addButtonTurbo": {
     "description": "text for add button"
@@ -76,8 +78,6 @@
   "@arConnectWalletDoestNotMatchArDriveWallet": {
     "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
   },
-  "arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance": "ArDrive Credits will be automatically added to your Turbo balance, and you can start using them right away.",
-  "@arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance": {},
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
@@ -238,6 +238,10 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
+  "cookieConsent": "Cookie Consent",
+  "@cookieConsent": {},
+  "cookieConsentBody": "Our payment provider, Stripe, uses cookies to enable users to purchase Credits. These cookies are required for the purchasing of Credits.\nBy clicking “Accept” you consent to this use of cookies.",
+  "@cookieConsentBody": {},
   "copyBundleTxID": "Copy Bundle Tx ID",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
@@ -360,10 +364,12 @@
   "@creditCard": {},
   "credits": "Credits",
   "@credits": {},
-  "creditsTurbo": "credits",
+  "creditsTurbo": "Credits",
   "@creditsTurbo": {
     "description": "suffix for turbo balance"
   },
+  "creditsWillBeAutomaticallyAddedToYourTurboBalance": "Credits will be automatically added to your Turbo balance, and you can start using them right away.",
+  "@creditsWillBeAutomaticallyAddedToYourTurboBalance": {},
   "currency": "Currency",
   "@currency": {},
   "customAmount": "Custom Amount",
@@ -479,6 +485,8 @@
   "@dragAndDropDescription": {
     "description": "text of description drag and drop"
   },
+  "driveDoingInitialSetupMessage": "Your drive is doing it's initial setup. This may take a few minutes. Please wait before taking any action.",
+  "@driveDoingInitialSetupMessage": {},
   "driveID": "Drive ID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1058,7 +1066,7 @@
   "@learnMore": {
     "description": "Link to a document explaining manifests in detail"
   },
-  "leaveAnEmailToReceiveAReceipt": "Please leave an email if you want a receipt.",
+  "leaveAnEmailToReceiveAReceipt": "To receive a receipt, please provide an email.",
   "@leaveAnEmailToReceiveAReceipt": {},
   "leaveFeedback": "Leave Feedback",
   "@leaveFeedback": {
@@ -1644,7 +1652,7 @@
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
-  "turboAddCreditsBlurb": "Add credits using your card for faster uploads.",
+  "turboAddCreditsBlurb": "Add Credits using your card for faster uploads.",
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
@@ -1656,7 +1664,7 @@
   "@turboErrorMessageNetwork": {},
   "turboErrorMessageServer": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageServer": {},
-  "turboErrorMessageSessionExpired": "Your session has expired. Please try again.",
+  "turboErrorMessageSessionExpired": "Your Turbo session has expired. Please try again.",
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageUnknown": {},
@@ -1666,6 +1674,8 @@
   "@unableToUpdateQuote": {},
   "unit": "Unit",
   "@unit": {},
+  "units": "Units",
+  "@units": {},
   "unlock": "Unlock",
   "@unlock": {
     "description": "Unlock a file or drive."
@@ -1776,7 +1786,7 @@
   "@validationPasswordIncorrect": {
     "description": "Input validation error: the given password is wrong"
   },
-  "validationRequired": "This field is required.",
+  "validationRequired": "Field required.",
   "@validationRequired": {
     "description": "Input validation error: the field is empty, but it's required"
   },
@@ -1888,7 +1898,7 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
-  "yourCreditsWillBeAddedToYourAccount": "Your credits will be added to your account soon. You can close this window.",
+  "yourCreditsWillBeAddedToYourAccount": "Your Credits will be added to your account soon. You can close this window.",
   "@yourCreditsWillBeAddedToYourAccount": {},
   "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
   "@yourPrivateSecureAndPermanentDrive": {

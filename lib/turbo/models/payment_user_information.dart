@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 abstract class PaymentUserInformation extends Equatable {
   final String? email;
+  final bool userAcceptedToReceiveEmails;
   final String name;
   final String country;
 
@@ -9,17 +10,20 @@ abstract class PaymentUserInformation extends Equatable {
     this.email,
     required this.name,
     required this.country,
+    required this.userAcceptedToReceiveEmails,
   });
 
   factory PaymentUserInformation.create({
     String? email,
     required String name,
     required String country,
+    required bool userAcceptedToReceiveEmails,
   }) {
     return _PaymentUserInformation(
       email: email,
       name: name,
       country: country,
+      userAcceptedToReceiveEmails: userAcceptedToReceiveEmails,
     );
   }
 
@@ -27,6 +31,7 @@ abstract class PaymentUserInformation extends Equatable {
     String? email,
     String? name,
     String? country,
+    bool? userAcceptedToReceiveEmails,
   });
 }
 
@@ -35,10 +40,12 @@ class _PaymentUserInformation extends PaymentUserInformation {
     String? email,
     required String country,
     required String name,
+    required bool userAcceptedToReceiveEmails,
   }) : super(
           email: email,
           name: name,
           country: country,
+          userAcceptedToReceiveEmails: userAcceptedToReceiveEmails,
         );
 
   @override
@@ -53,11 +60,19 @@ class _PaymentUserInformation extends PaymentUserInformation {
     String? email,
     String? name,
     String? country,
+    bool? userAcceptedToReceiveEmails,
   }) {
     return _PaymentUserInformation(
       email: email ?? this.email,
       name: name ?? this.name,
       country: country ?? this.country,
+      userAcceptedToReceiveEmails:
+          userAcceptedToReceiveEmails ?? this.userAcceptedToReceiveEmails,
     );
+  }
+
+  @override
+  String toString() {
+    return 'PaymentUserInformation(email: $email, name: $name, country: $country, userAcceptedToReceiveEmails: $userAcceptedToReceiveEmails)';
   }
 }
