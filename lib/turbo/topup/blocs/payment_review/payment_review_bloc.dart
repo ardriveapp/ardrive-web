@@ -42,6 +42,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
       _emitPaymentReviewLoading(emit);
 
       logger.d(event.email.toString());
+      logger.d(event.userAcceptedToReceiveEmails.toString());
 
       turbo.paymentUserInformation = turbo.paymentUserInformation.copyWith(
         email: event.email,
