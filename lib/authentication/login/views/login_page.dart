@@ -1558,10 +1558,10 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
     return MaxDeviceSizesConstrainedBox(
       defaultMaxHeight: 798,
       maxHeightPercent: 1,
-      child: _LoginCard(
-        showLattice: true,
-        content: SingleChildScrollView(
-          child: Column(
+      child: SingleChildScrollView(
+        child: _LoginCard(
+          showLattice: true,
+          content: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
