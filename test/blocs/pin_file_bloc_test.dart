@@ -12,11 +12,14 @@ void main() {
   group('PinFileBloc', () {
     final FileIdRessolver fileIdRessolver = MockFileIdRessolver();
 
-    const String validName = 'Ñoquis con tuco';
+    const String validName = 'Ñoquis con tuco 🍝😋';
     const String validTxId_1 = 'HelloHelloHelloHelloHelloHelloHelloH-+_ABCD';
     const String validTxId_2 = '+_-1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcd';
     const String validFileId_1 = '01234567-89ab-cdef-0123-456789abcdef';
     const String validFileId_2 = '00000000-0000-0000-0000-000000000000';
+
+    const String invalidName = ' Buseca.mp3 🍛🤢 ';
+    const String invalidId = 'not a tx id neither a file id';
 
     final DateTime mockDate = DateTime(1234567);
 
@@ -72,7 +75,7 @@ void main() {
     });
 
     blocTest<PinFileBloc, PinFileState>(
-      'initial state  ',
+      'initial state',
       build: () => PinFileBloc(fileIdRessolver: fileIdRessolver)
         ..add(
           const FiledsChanged(name: '', id: ''),
@@ -165,6 +168,49 @@ void main() {
           ),
         ],
       );
+
+      blocTest('invalid synchronous validation', build: () {
+        return PinFileBloc(fileIdRessolver: fileIdRessolver)
+          ..add(
+            const FiledsChanged(name: invalidName, id: validTxId_1),
+          )
+          ..add(
+            const FiledsChanged(name: invalidName, id: validFileId_1),
+          )
+          ..add(
+            const FiledsChanged(name: validName, id: invalidId),
+          )
+          ..add(
+            const FiledsChanged(name: invalidName, id: invalidId),
+          );
+      }, expect: () {
+        return [
+          const PinFileFieldsValidationError(
+            id: validTxId_1,
+            name: invalidName,
+            nameValidation: NameValidationResult.invalid,
+            idValidation: IdValidationResult.validTransactionId,
+          ),
+          const PinFileFieldsValidationError(
+            id: validFileId_1,
+            name: invalidName,
+            nameValidation: NameValidationResult.invalid,
+            idValidation: IdValidationResult.validFileId,
+          ),
+          const PinFileFieldsValidationError(
+            id: invalidId,
+            name: validName,
+            nameValidation: NameValidationResult.valid,
+            idValidation: IdValidationResult.invalid,
+          ),
+          const PinFileFieldsValidationError(
+            id: invalidId,
+            name: invalidName,
+            nameValidation: NameValidationResult.invalid,
+            idValidation: IdValidationResult.invalid,
+          ),
+        ];
+      });
     });
   });
 }
