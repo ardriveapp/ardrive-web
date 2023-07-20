@@ -25,10 +25,10 @@ void main() {
     setUp(() {
       when(() => fileIdRessolver.requestForTransactionId(validTxId_1))
           .thenAnswer(
-        (_) async => FileData(
+        (_) async => FileInfo(
           isPrivate: false,
           maybeName: null,
-          contentType: 'application/json',
+          dataContentType: 'application/json',
           maybeLastUpdated: mockDate,
           maybeLastModified: mockDate,
           dateCreated: mockDate,
@@ -38,10 +38,10 @@ void main() {
       );
       when(() => fileIdRessolver.requestForTransactionId(validTxId_2))
           .thenAnswer(
-        (_) async => FileData(
+        (_) async => FileInfo(
           isPrivate: false,
           maybeName: null,
-          contentType: 'application/json',
+          dataContentType: 'application/json',
           maybeLastUpdated: mockDate,
           maybeLastModified: mockDate,
           dateCreated: mockDate,
@@ -50,10 +50,10 @@ void main() {
         ),
       );
       when(() => fileIdRessolver.requestForFileId(validFileId_1)).thenAnswer(
-        (_) async => FileData(
+        (_) async => FileInfo(
           isPrivate: false,
           maybeName: validName,
-          contentType: 'application/json',
+          dataContentType: 'application/json',
           maybeLastUpdated: mockDate,
           maybeLastModified: mockDate,
           dateCreated: mockDate,
@@ -62,10 +62,10 @@ void main() {
         ),
       );
       when(() => fileIdRessolver.requestForFileId(validFileId_2)).thenAnswer(
-        (_) async => FileData(
+        (_) async => FileInfo(
           isPrivate: false,
           maybeName: validName,
-          contentType: 'application/json',
+          dataContentType: 'application/json',
           maybeLastUpdated: mockDate,
           maybeLastModified: mockDate,
           dateCreated: mockDate,
