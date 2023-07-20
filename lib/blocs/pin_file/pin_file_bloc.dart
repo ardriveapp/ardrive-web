@@ -40,55 +40,70 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           idValidation: idValidation,
         ));
       } else {
-        emit(PinFileNetworkCheckRunning(
-          id: id,
-          name: name,
-        ));
+        await _handleValidSynchronousValidation(emit, id, name, idValidation);
+      }
+    });
+  }
 
-        late final Future<FileData> resolveFuture;
-        if (idValidation == IdValidationResult.validTransactionId) {
-          resolveFuture = _fileIdRessolver.requestForTransactionId(id);
+  Future<void> _handleValidSynchronousValidation(
+    Emitter<PinFileState> emit,
+    String id,
+    String name,
+    IdValidationResult idValidation,
+  ) async {
+    emit(PinFileNetworkCheckRunning(
+      id: id,
+      name: name,
+    ));
+
+    late final Future<FileData> ressolveFuture;
+    if (idValidation == IdValidationResult.validTransactionId) {
+      ressolveFuture = _fileIdRessolver.requestForTransactionId(id);
+    } else {
+      ressolveFuture = _fileIdRessolver.requestForFileId(id);
+    }
+    await _handleRessolveIdFuture(ressolveFuture, emit, id, name);
+  }
+
+  Future<void> _handleRessolveIdFuture(
+    Future<FileData> ressolveFuture,
+    Emitter<PinFileState> emit,
+    String id,
+    String name,
+  ) {
+    return ressolveFuture
+        .then((fileDataFromNetwork) => emit(PinFileFieldsValid(
+              id: id,
+              name: name,
+              isPrivate: fileDataFromNetwork.isPrivate,
+              maybeName: fileDataFromNetwork.maybeName,
+              contentType: fileDataFromNetwork.contentType,
+              maybeLastUpdated: fileDataFromNetwork.maybeLastUpdated,
+              maybeLastModified: fileDataFromNetwork.maybeLastModified,
+              dateCreated: fileDataFromNetwork.dateCreated,
+              size: fileDataFromNetwork.size,
+              dataTxId: fileDataFromNetwork.dataTxId,
+            )))
+        .catchError((err) {
+      if (err is FileIdRessolverException) {
+        final cancelled = err.cancelled;
+
+        if (!cancelled) {
+          emit(
+            PinFileNetworkValidationError(
+              id: id,
+              name: name,
+              doesDataTransactionExist: err.doesDataTransactionExist,
+              isArFsEntityPublic: err.isArFsEntityPublic,
+              isArFsEntityValid: err.isArFsEntityValid,
+            ),
+          );
         } else {
-          resolveFuture = _fileIdRessolver.requestForFileId(id);
+          logger.d('PinFileNetworkCheck cancelled');
         }
-
-        await resolveFuture
-            .then((fileDataFromNetwork) => emit(PinFileFieldsValid(
-                  id: id,
-                  name: name,
-                  isPrivate: fileDataFromNetwork.isPrivate,
-                  maybeName: fileDataFromNetwork.maybeName,
-                  contentType: fileDataFromNetwork.contentType,
-                  maybeLastUpdated: fileDataFromNetwork.maybeLastUpdated,
-                  maybeLastModified: fileDataFromNetwork.maybeLastModified,
-                  dateCreated: fileDataFromNetwork.dateCreated,
-                  size: fileDataFromNetwork.size,
-                  dataTxId: fileDataFromNetwork.dataTxId,
-                )))
-            .catchError(
-          (err) {
-            if (err is FileIdRessolverException) {
-              final cancelled = err.cancelled;
-
-              if (!cancelled) {
-                emit(
-                  PinFileNetworkValidationError(
-                    id: id,
-                    name: name,
-                    doesDataTransactionExist: err.doesDataTransactionExist,
-                    isArFsEntityPublic: err.isArFsEntityPublic,
-                    isArFsEntityValid: err.isArFsEntityValid,
-                  ),
-                );
-              } else {
-                logger.d('PinFileNetworkCheck cancelled');
-              }
-            } else {
-              logger.e('unknown error in PinFileNetworkCheck');
-              throw err;
-            }
-          },
-        );
+      } else {
+        logger.e('unknown error in PinFileNetworkCheck');
+        throw err;
       }
     });
   }
