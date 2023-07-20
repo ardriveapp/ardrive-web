@@ -364,7 +364,7 @@
   "@creditCard": {},
   "credits": "Credits",
   "@credits": {},
-  "creditsTurbo": "credits",
+  "creditsTurbo": "Credits",
   "@creditsTurbo": {
     "description": "suffix for turbo balance"
   },
@@ -485,6 +485,8 @@
   "@dragAndDropDescription": {
     "description": "text of description drag and drop"
   },
+  "driveDoingInitialSetupMessage": "Your drive is doing it's initial setup. This may take a few minutes. Please wait before taking any action.",
+  "@driveDoingInitialSetupMessage": {},
   "driveID": "Drive ID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1650,7 +1652,7 @@
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
-  "turboAddCreditsBlurb": "Add credits using your card for faster uploads.",
+  "turboAddCreditsBlurb": "Add Credits using your card for faster uploads.",
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
@@ -1662,7 +1664,7 @@
   "@turboErrorMessageNetwork": {},
   "turboErrorMessageServer": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageServer": {},
-  "turboErrorMessageSessionExpired": "Your session has expired. Please try again.",
+  "turboErrorMessageSessionExpired": "Your Turbo session has expired. Please try again.",
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageUnknown": {},
@@ -1896,7 +1898,7 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
-  "yourCreditsWillBeAddedToYourAccount": "Your credits will be added to your account soon. You can close this window.",
+  "yourCreditsWillBeAddedToYourAccount": "Your Credits will be added to your account soon. You can close this window.",
   "@yourCreditsWillBeAddedToYourAccount": {},
   "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
   "@yourPrivateSecureAndPermanentDrive": {
@@ -1906,6 +1908,8 @@
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
+  "yourUploadFailedTurboTimeout": "This upload has failed. You will not be charged for this attempt.",
+  "@yourUploadFailedTurboTimeout": {},
   "zippingYourFiles": "Zipping your file(s)...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"

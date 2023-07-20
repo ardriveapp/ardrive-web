@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:ardrive/core/arconnect/safe_arconnect_action.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/data_item_utils.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -13,12 +15,14 @@ class TurboUploadService {
   final Uri turboUploadUri;
   final int allowedDataItemSize;
   ArDriveHTTP httpClient;
+  final TabVisibilitySingleton _tabVisibility;
 
   TurboUploadService({
     required this.turboUploadUri,
     required this.allowedDataItemSize,
     required this.httpClient,
-  });
+    required TabVisibilitySingleton tabVisibilitySingleton,
+  }) : _tabVisibility = tabVisibilitySingleton;
 
   Stream<double> postDataItemWithProgress({
     required DataItem dataItem,
@@ -39,12 +43,19 @@ class TurboUploadService {
           }
         },
       ).then((value) {
-        controller.add(1.0);
+        logger.i('Closing upload stream on UploadService for Turbo');
+        controller.close();
+      }).onError((error, stackTrace) {
+        logger.e(
+            'Catching error in postDataItemWithProgress', error, stackTrace);
+        controller.addError(error ?? Exception('Error'));
+        logger.e('Closing stream');
         controller.close();
       });
     } catch (e) {
-      logger.e(e);
+      logger.e('Catching an uncaught error on UploadService', e);
       controller.addError(e);
+      logger.e('Closing stream');
       controller.close();
     }
 
@@ -56,58 +67,94 @@ class TurboUploadService {
     required Wallet wallet,
     Function(double)? onSendProgress,
   }) async {
-    final acceptedStatusCodes = [200, 202, 204];
+    try {
+      final acceptedStatusCodes = [200, 202, 204];
 
-    final nonce = const Uuid().v4();
-    final publicKey = await wallet.getOwner();
-    final signature = await signNonceAndData(
-      nonce: nonce,
-      wallet: wallet,
-    );
-
-    final headers = {
-      'x-nonce': nonce,
-      'x-signature': signature,
-      'x-public-key': publicKey,
-    };
-
-    final url = '$turboUploadUri/v1/tx';
-    const receiveTimeout = Duration(days: 365);
-    const sendTimeout = Duration(days: 365);
-
-    if (AppPlatform.isMobile) {
-      final response = await httpClient.postBytes(
-        url: url,
-        onSendProgress: onSendProgress,
-        data: (await dataItem.asBinary()).toBytes(),
-        headers: headers,
-        receiveTimeout: receiveTimeout,
-        sendTimeout: sendTimeout,
+      final nonce = const Uuid().v4();
+      final publicKey = await safeArConnectAction<String>(
+        _tabVisibility,
+        (_) async {
+          logger.d('Getting public key with safe ArConnect action');
+          return wallet.getOwner();
+        },
       );
+      final signature = await safeArConnectAction<String>(
+        _tabVisibility,
+        (_) async {
+          logger.d('Signing with safe ArConnect action');
+          return signNonceAndData(
+            nonce: nonce,
+            wallet: wallet,
+          );
+        },
+      );
+
+      final headers = {
+        'x-nonce': nonce,
+        'x-signature': signature,
+        'x-public-key': publicKey,
+      };
+
+      final url = '$turboUploadUri/v1/tx';
+      const receiveTimeout = Duration(days: 365);
+      const sendTimeout = Duration(days: 365);
+
+      if (AppPlatform.isMobile) {
+        final response = await httpClient.postBytes(
+          url: url,
+          onSendProgress: onSendProgress,
+          data: (await dataItem.asBinary()).toBytes(),
+          headers: headers,
+          receiveTimeout: receiveTimeout,
+          sendTimeout: sendTimeout,
+        );
+
+        if (!acceptedStatusCodes.contains(response.statusCode)) {
+          logger.e(response.data);
+          throw _handleException(response);
+        }
+        return;
+      }
+
+      final response = await httpClient.postBytesAsStream(
+          url: url,
+          onSendProgress: onSendProgress,
+          headers: headers,
+          receiveTimeout: receiveTimeout,
+          sendTimeout: sendTimeout,
+          data: await convertDataItemToStreamBytes(dataItem));
 
       if (!acceptedStatusCodes.contains(response.statusCode)) {
         logger.e(response.data);
-        throw Exception(
-          'Turbo upload failed with status code ${response.statusCode}',
-        );
+        throw _handleException(response);
       }
-      return;
+    } catch (e) {
+      logger.e('Catching error in postDataItem', e);
+      throw _handleException(e);
     }
+  }
 
-    final response = await httpClient.postBytesAsStream(
-        url: url,
-        onSendProgress: onSendProgress,
-        headers: headers,
-        receiveTimeout: receiveTimeout,
-        sendTimeout: sendTimeout,
-        data: await convertDataItemToStreamBytes(dataItem));
+  Exception _handleException(Object error) {
+    logger.e('Handling exception in UploadService', error);
 
-    if (!acceptedStatusCodes.contains(response.statusCode)) {
-      logger.e(response.data);
-      throw Exception(
-        'Turbo upload failed with status code ${response.statusCode}',
+    if (error is ArDriveHTTPResponse && error.statusCode == 408) {
+      logger.e(
+        'Handling exception in UploadService with status code: ${error.statusCode}',
+        error,
       );
+
+      return TurboUploadTimeoutException();
     }
+    if (error is ArDriveHTTPException && error.statusCode == 408) {
+      logger.e(
+        'Handling exception in UploadService with status code: ${error.statusCode}',
+        error,
+      );
+      
+      return TurboUploadTimeoutException();
+    }
+
+    return Exception(error);
   }
 }
 
@@ -139,4 +186,17 @@ class DontUseUploadService implements TurboUploadService {
     // TODO: implement postDataItemWithProgress
     throw UnimplementedError();
   }
+
+  @override
+  TabVisibilitySingleton get _tabVisibility => throw UnimplementedError();
+
+  @override
+  Exception _handleException(Object error) {
+    // TODO: implement _handleException
+    throw UnimplementedError();
+  }
 }
+
+class TurboUploadExceptions implements Exception {}
+
+class TurboUploadTimeoutException implements TurboUploadExceptions {}

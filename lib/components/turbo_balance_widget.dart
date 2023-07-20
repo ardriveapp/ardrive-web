@@ -9,6 +9,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -40,26 +41,32 @@ class _TurboBalanceState extends State<TurboBalance> {
     )..getBalance();
   }
 
-  Widget addButton(BuildContext context) => SizedBox(
-        height: 23,
-        child: ArDriveButton(
-          style: ArDriveButtonStyle.secondary,
-          text: appLocalizationsOf(context).addButtonTurbo,
-          fontStyle: TextStyle(
-            fontSize: 13,
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            fontWeight: FontWeight.w700,
-          ),
-          borderRadius: 20,
-          onPressed: () {
-            showCookiePolicyConsentModal(context, (context) {
-              showTurboModal(context);
-            });
+  Widget addButton(BuildContext context) {
+    const isHidden = !kIsWeb;
 
-            widget.onTapAddButton?.call();
-          },
-        ),
-      );
+    return SizedBox(
+      height: 23,
+      child: isHidden
+          ? null
+          : ArDriveButton(
+              style: ArDriveButtonStyle.secondary,
+              text: appLocalizationsOf(context).addButtonTurbo,
+              fontStyle: TextStyle(
+                fontSize: 13,
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                fontWeight: FontWeight.w700,
+              ),
+              borderRadius: 20,
+              onPressed: () {
+                showCookiePolicyConsentModal(context, (context) {
+                  showTurboModal(context);
+                });
+
+                widget.onTapAddButton?.call();
+              },
+            ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +120,7 @@ class _TurboBalanceState extends State<TurboBalance> {
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
-                                .themeFgSubtle,
+                                .themeFgMuted,
                           ),
                     ),
                     addButton(context),

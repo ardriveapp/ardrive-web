@@ -247,8 +247,7 @@ class _ProfileCardState extends State<ProfileCard> {
             style: ArDriveTypography.body.captionRegular().copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 18,
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                  color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                 ),
           ),
         ],

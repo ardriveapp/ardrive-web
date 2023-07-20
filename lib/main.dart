@@ -107,6 +107,7 @@ Future<void> _initialize() async {
   );
   _turboUpload = config.useTurboUpload
       ? TurboUploadService(
+          tabVisibilitySingleton: TabVisibilitySingleton(),
           turboUploadUri: Uri.parse(config.defaultTurboUploadUrl!),
           allowedDataItemSize: config.allowedDataItemSizeForTurbo!,
           httpClient: ArDriveHTTP(),
@@ -265,6 +266,7 @@ class AppState extends State<App> {
                   turboUploadService: context.read<TurboUploadService>(),
                   profileDao: context.read<ProfileDao>(),
                   db: context.read<Database>(),
+                  tabVisibilitySingleton: TabVisibilitySingleton(),
                 ),
               ),
               BlocProvider(
