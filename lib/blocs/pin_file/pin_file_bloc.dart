@@ -1,9 +1,11 @@
+import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-part 'file_to_pin_ressolver.dart';
+part 'file_id_resolver.dart';
 part 'pin_file_event.dart';
 part 'pin_file_state.dart';
 part 'types.dart';
@@ -56,17 +58,17 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       name: name,
     ));
 
-    late final Future<FileData> ressolveFuture;
+    late final Future<FileInfo> ressolveFuture;
     if (idValidation == IdValidationResult.validTransactionId) {
       ressolveFuture = _fileIdRessolver.requestForTransactionId(id);
     } else {
       ressolveFuture = _fileIdRessolver.requestForFileId(id);
     }
-    await _handleRessolveIdFuture(ressolveFuture, emit, id, name);
+    await _handleResolveIdFuture(ressolveFuture, emit, id, name);
   }
 
-  Future<void> _handleRessolveIdFuture(
-    Future<FileData> ressolveFuture,
+  Future<void> _handleResolveIdFuture(
+    Future<FileInfo> ressolveFuture,
     Emitter<PinFileState> emit,
     String id,
     String name,
@@ -77,7 +79,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
               name: name,
               isPrivate: fileDataFromNetwork.isPrivate,
               maybeName: fileDataFromNetwork.maybeName,
-              contentType: fileDataFromNetwork.contentType,
+              contentType: fileDataFromNetwork.dataContentType,
               maybeLastUpdated: fileDataFromNetwork.maybeLastUpdated,
               maybeLastModified: fileDataFromNetwork.maybeLastModified,
               dateCreated: fileDataFromNetwork.dateCreated,
@@ -85,7 +87,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
               dataTxId: fileDataFromNetwork.dataTxId,
             )))
         .catchError((err) {
-      if (err is FileIdRessolverException) {
+      if (err is FileIdResolverException) {
         final cancelled = err.cancelled;
 
         if (!cancelled) {

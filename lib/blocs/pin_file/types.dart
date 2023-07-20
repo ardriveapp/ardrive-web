@@ -13,20 +13,20 @@ enum IdValidationResult {
   validTransactionId,
 }
 
-class FileData {
+class FileInfo {
   final bool isPrivate; // TODO: use an enum
   final String? maybeName;
-  final String contentType; // TODO: use an enum
+  final String dataContentType; // TODO: use an enum
   final DateTime? maybeLastUpdated;
   final DateTime? maybeLastModified;
   final DateTime dateCreated;
   final int size;
   final String dataTxId;
 
-  const FileData({
+  const FileInfo({
     required this.isPrivate,
     this.maybeName,
-    required this.contentType,
+    required this.dataContentType,
     this.maybeLastUpdated,
     this.maybeLastModified,
     required this.dateCreated,
