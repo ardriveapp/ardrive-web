@@ -18,7 +18,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       final String name = event.name;
       final String id = event.id;
 
-      if (name.isEmpty || id.isEmpty) {
+      if (name.isEmpty && id.isEmpty) {
         emit(const PinFileInitial());
         return;
       }

@@ -182,6 +182,12 @@ void main() {
           )
           ..add(
             const FiledsChanged(name: invalidName, id: invalidId),
+          )
+          ..add(
+            const FiledsChanged(name: '', id: invalidId),
+          )
+          ..add(
+            const FiledsChanged(name: invalidName, id: ''),
           );
       }, expect: () {
         return [
@@ -208,6 +214,18 @@ void main() {
             name: invalidName,
             nameValidation: NameValidationResult.invalid,
             idValidation: IdValidationResult.invalid,
+          ),
+          const PinFileFieldsValidationError(
+            id: invalidId,
+            name: '',
+            nameValidation: NameValidationResult.required,
+            idValidation: IdValidationResult.invalid,
+          ),
+          const PinFileFieldsValidationError(
+            id: '',
+            name: invalidName,
+            nameValidation: NameValidationResult.invalid,
+            idValidation: IdValidationResult.required,
           ),
         ];
       });
