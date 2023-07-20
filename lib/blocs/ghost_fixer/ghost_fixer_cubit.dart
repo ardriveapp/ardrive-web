@@ -16,7 +16,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final SyncCubit _syncCubit;
 
@@ -26,7 +26,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     required this.ghostFolder,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required SyncCubit syncCubit,
   })  : _profileCubit = profileCubit,
@@ -138,7 +138,10 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
             key: driveKey,
           );
 
-          await _turboUploadService.postDataItem(dataItem: folderDataItem);
+          await _turboUploadService.postDataItem(
+            dataItem: folderDataItem,
+            wallet: profile.wallet,
+          );
           folderEntity.txId = folderDataItem.id;
         } else {
           final folderTx = await _arweave.prepareEntityTx(

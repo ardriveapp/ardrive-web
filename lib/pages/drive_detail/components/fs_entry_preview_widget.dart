@@ -62,7 +62,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void initState() {
     logger.d('Initializing video player: ${widget.videoUrl}');
     super.initState();
-    _videoPlayerController = VideoPlayerController.network(widget.videoUrl);
+    _videoPlayerController =
+        VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
     _chewieController = ChewieController(
       videoPlayerController: _videoPlayerController,
       autoPlay: false,

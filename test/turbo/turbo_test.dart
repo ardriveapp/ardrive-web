@@ -55,7 +55,10 @@ void main() {
   group('initializeStripe', () {
     test('should use the stripePublishableKey from config', () {
       // arrange
-      initializeStripe(AppConfig(stripePublishableKey: 'stripePublishableKey'));
+      initializeStripe(AppConfig(
+        stripePublishableKey: 'stripePublishableKey',
+        allowedDataItemSizeForTurbo: 100,
+      ));
 
       // assert
       expect(Stripe.publishableKey, equals('stripePublishableKey'));
@@ -64,11 +67,18 @@ void main() {
 
     test('should initialize only once', () {
       // arrange
-      initializeStripe(AppConfig(stripePublishableKey: 'stripePublishableKey'));
-      initializeStripe(
-          AppConfig(stripePublishableKey: 'stripePublishableKey1'));
-      initializeStripe(
-          AppConfig(stripePublishableKey: 'stripePublishableKey2'));
+      initializeStripe(AppConfig(
+        stripePublishableKey: 'stripePublishableKey',
+        allowedDataItemSizeForTurbo: 100,
+      ));
+      initializeStripe(AppConfig(
+        stripePublishableKey: 'stripePublishableKey1',
+        allowedDataItemSizeForTurbo: 100,
+      ));
+      initializeStripe(AppConfig(
+        stripePublishableKey: 'stripePublishableKey2',
+        allowedDataItemSizeForTurbo: 100,
+      ));
 
       // assert
       expect(Stripe.publishableKey, equals('stripePublishableKey'));
@@ -578,7 +588,11 @@ void main() {
 
       test('sets the paymentUserInformation', () {
         final mockPaymentUserInformation = PaymentUserInformation.create(
-            email: 'email', country: 'US', name: 'name');
+          email: 'email',
+          country: 'US',
+          name: 'name',
+          userAcceptedToReceiveEmails: true,
+        );
 
         turbo.paymentUserInformation = mockPaymentUserInformation;
 
@@ -587,14 +601,22 @@ void main() {
 
       test('changes the paymentUserInformation', () {
         final mockPaymentUserInformation = PaymentUserInformation.create(
-            email: 'email', country: 'US', name: 'name');
+          email: 'email',
+          country: 'US',
+          name: 'name',
+          userAcceptedToReceiveEmails: true,
+        );
 
         turbo.paymentUserInformation = mockPaymentUserInformation;
 
         expect(turbo.paymentUserInformation, mockPaymentUserInformation);
 
         final mockPaymentUserInformation2 = PaymentUserInformation.create(
-            email: 'email2', country: 'US', name: 'name');
+          email: 'email2',
+          country: 'US',
+          name: 'name',
+          userAcceptedToReceiveEmails: true,
+        );
 
         turbo.paymentUserInformation = mockPaymentUserInformation2;
 
@@ -661,6 +683,7 @@ void main() {
           country: 'US',
           email: 'email',
           name: 'name',
+          userAcceptedToReceiveEmails: true,
         );
 
         paymentModel = PaymentModel(
@@ -796,12 +819,15 @@ void main() {
           country: 'US',
           email: 'email',
           name: 'name',
+          userAcceptedToReceiveEmails: true,
         );
 
         when(() => mockPaymentProvider.confirmPayment(
               paymentModel: paymentModel,
               paymentUserInformation: mockPaymentUserInformation,
-            )).thenAnswer((_) => Future.value(PaymentStatus.failed));
+            )).thenAnswer(
+          (_) => Future.value(PaymentStatus.failed),
+        );
 
         final turbo = Turbo(
           supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),

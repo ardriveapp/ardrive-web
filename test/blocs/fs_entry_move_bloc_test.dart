@@ -25,7 +25,7 @@ void main() {
     late Database db;
     late DriveDao driveDao;
     late ArweaveService arweave;
-    late UploadService turboUploadService;
+    late TurboUploadService turboUploadService;
 
     late ProfileCubit profileCubit;
     late SyncCubit syncBloc;

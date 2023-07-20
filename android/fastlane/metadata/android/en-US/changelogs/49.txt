@@ -1,0 +1,2 @@
+- Update Zendesk/Help link
+- Optimized the TransactionStatuses GQL query to only run for items not captured by snapshots, reducing unnecessary network requests and improving performance.

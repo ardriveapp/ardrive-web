@@ -46,7 +46,7 @@ class PaymentService {
     );
 
     if (!acceptedStatusCodes.contains(result.statusCode)) {
-      throw Exception(
+      throw PaymentServiceException(
         'Turbo price fetch failed with status code ${result.statusCode}',
       );
     }
@@ -118,9 +118,7 @@ class PaymentService {
       url: '$turboPaymentUri/v1/countries',
     );
 
-    final countries = jsonDecode(result.data) as List<dynamic>;
-
-    return countries.map((e) => e as String).toList();
+    return List<String>.from(jsonDecode(result.data));
   }
 }
 
@@ -166,4 +164,10 @@ class DontUsePaymentService implements PaymentService {
 
 class TurboUserNotFound implements Exception {
   TurboUserNotFound();
+}
+
+class PaymentServiceException implements Exception {
+  final String message;
+
+  PaymentServiceException([this.message = '']);
 }

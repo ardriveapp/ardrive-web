@@ -70,6 +70,43 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         builder: (context, state) {
           if (state is DriveDetailLoadInProgress) {
             return const Center(child: CircularProgressIndicator());
+          } else if (state is DriveInitialLoading) {
+            return ScreenTypeLayout.builder(
+              mobile: (context) {
+                return Scaffold(
+                  drawerScrimColor: Colors.transparent,
+                  drawer: const AppSideBar(),
+                  appBar: const MobileAppBar(),
+                  body: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Center(
+                      child: Text(
+                        appLocalizationsOf(context)
+                            .driveDoingInitialSetupMessage,
+                        style: ArDriveTypography.body.buttonLargeBold(),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              desktop: (context) => Scaffold(
+                drawerScrimColor: Colors.transparent,
+                body: Column(
+                  children: [
+                    const AppTopBar(),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          appLocalizationsOf(context)
+                              .driveDoingInitialSetupMessage,
+                          style: ArDriveTypography.body.buttonLargeBold(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           } else if (state is DriveDetailLoadSuccess) {
             final hasSubfolders = state.folderInView.subfolders.isNotEmpty;
 

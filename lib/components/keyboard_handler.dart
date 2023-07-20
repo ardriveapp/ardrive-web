@@ -108,8 +108,7 @@ class ArDriveDevToolsShortcuts extends StatelessWidget {
         modifier: LogicalKeyboardKey.shiftLeft,
         key: LogicalKeyboardKey.keyQ,
         action: () {
-          if (context.read<ConfigService>().flavor == Flavor.development) {
-            logger.i('Opening dev tools');
+          if (context.read<ConfigService>().flavor != Flavor.production) {
             ArDriveDevTools.instance.showDevTools();
           }
         },
@@ -118,7 +117,7 @@ class ArDriveDevToolsShortcuts extends StatelessWidget {
         modifier: LogicalKeyboardKey.shiftLeft,
         key: LogicalKeyboardKey.keyW,
         action: () {
-          if (context.read<ConfigService>().flavor == Flavor.development) {
+          if (context.read<ConfigService>().flavor != Flavor.production) {
             logger.i('Closing dev tools');
             ArDriveDevTools.instance.closeDevTools();
           }

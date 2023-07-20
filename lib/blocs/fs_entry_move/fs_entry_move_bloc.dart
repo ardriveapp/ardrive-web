@@ -8,6 +8,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // ignore: depend_on_referenced_packages
@@ -21,7 +22,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final List<ArDriveDataTableItem> selectedItems;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
@@ -31,7 +32,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required this.driveId,
     required this.selectedItems,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
@@ -226,7 +227,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             .folderById(driveId: driveId, folderId: folderToMove.id)
             .getSingle();
         folder = folder.copyWith(
-          parentFolderId: parentFolder.id,
+          parentFolderId: Value(parentFolder.id),
           path: '${parentFolder.path}/${folder.name}',
           lastUpdated: DateTime.now(),
         );
@@ -255,7 +256,10 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     if (_turboUploadService.useTurboUpload) {
       for (var dataItem in moveTxDataItems) {
-        await _turboUploadService.postDataItem(dataItem: dataItem);
+        await _turboUploadService.postDataItem(
+          dataItem: dataItem,
+          wallet: profile.wallet,
+        );
       }
     } else {
       final moveTx = await _arweave.prepareDataBundleTx(

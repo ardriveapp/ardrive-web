@@ -284,6 +284,19 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    ArDriveDevToolOption enableSeedPhreaseLogin = ArDriveDevToolOption(
+      name: 'enableSeedPhreaseLogin',
+      value: settings.enableSeedPhraseLogin,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(enableSeedPhraseLogin: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
     // reload option
     ArDriveDevToolOption turboSetDefaultData = ArDriveDevToolOption(
       name: 'setDefaultDataOnPaymentForm',
@@ -310,6 +323,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       enableQuickSyncAuthoringOption,
       enableMultipleFileDownloadOption,
       enableVideoPreviewOption,
+      enableSeedPhreaseLogin,
       allowedDataItemSizeForTurboOption,
       defaultArweaveGatewayUrlOption,
       defaultTurboUrlOption,

@@ -24,7 +24,7 @@ void main() {
     late DriveDao driveDao;
 
     late ArweaveService arweave;
-    late UploadService turboUploadService;
+    late TurboUploadService turboUploadService;
     late DrivesCubit drivesCubit;
     late ProfileCubit profileCubit;
     late DriveCreateCubit driveCreateCubit;

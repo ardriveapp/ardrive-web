@@ -13,11 +13,11 @@ part 'folder_entity.g.dart';
 
 @JsonSerializable()
 class FolderEntity extends Entity {
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? id;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? driveId;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? parentFolderId;
 
   String? name;

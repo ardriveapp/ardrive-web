@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/models/payment_user_information.dart';
@@ -71,6 +72,10 @@ class Turbo extends Disposable {
   set paymentUserInformation(PaymentUserInformation paymentUserInformation) {
     _paymentUserInformation = paymentUserInformation;
   }
+
+  PaymentStatus? _paymentStatus;
+
+  PaymentStatus? get paymentStatus => _paymentStatus;
 
   PaymentUserInformation get paymentUserInformation {
     if (_paymentUserInformation == null) {
@@ -143,9 +148,13 @@ class Turbo extends Disposable {
       wallet: _wallet,
     );
 
-    _quoteExpirationDate =
-        DateTime.parse(_currentPaymentIntent!.topUpQuote.quoteExpirationDate)
-            .subtract(const Duration(seconds: 5));
+    _quoteExpirationDate = DateTime.parse(
+      _currentPaymentIntent!.topUpQuote.quoteExpirationDate,
+    ).subtract(
+      const Duration(
+        seconds: 5,
+      ),
+    );
 
     return _currentPaymentIntent!;
   }
@@ -272,7 +281,7 @@ class TurboBalanceRetriever {
   }
 }
 
-class TurboPriceEstimator extends Disposable {
+class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
   TurboPriceEstimator({
     required this.paymentService,
     required this.costCalculator,
@@ -321,6 +330,19 @@ class TurboPriceEstimator extends Disposable {
       logger.e('Error computing price estimate: $e');
       rethrow;
     }
+  }
+
+  @override
+  Future<double?> convertForUSD(BigInt value) async {
+    // 1 dolar
+    final priceEstimate = await paymentService.getPriceForFiat(
+      currency: 'usd',
+      amount: 100,
+    );
+
+    logger.d('Price estimate for 1 dolar: $priceEstimate');
+
+    return value / priceEstimate;
   }
 
   Future<double> computeStorageEstimateForCredits({
@@ -416,26 +438,26 @@ class StripePaymentProvider implements TurboPaymentProvider {
       return PaymentStatus.quoteExpired;
     }
 
+    logger.d(
+        'Payment user information: ${paymentUserInformation.userAcceptedToReceiveEmails}');
+
     final billingDetails = BillingDetails(
-      email: paymentUserInformation.email,
-      address: Address(
-        city: '',
-        country: paymentUserInformation.country,
-        line1: '',
-        line2: '',
-        postalCode: '',
-        state: '',
-      ),
+      email: paymentUserInformation.userAcceptedToReceiveEmails
+          ? paymentUserInformation.email
+          : null,
       name: paymentUserInformation.name,
+    );
+
+    final params = PaymentMethodParams.card(
+      paymentMethodData: PaymentMethodData(
+        billingDetails: billingDetails,
+      ),
     );
 
     final paymentIntent = await stripe.confirmPayment(
       paymentIntentClientSecret: paymentModel.paymentSession.clientSecret,
-      data: PaymentMethodParams.card(
-        paymentMethodData: PaymentMethodData(
-          billingDetails: billingDetails,
-        ),
-      ),
+      data: params,
+      receiptEmail: paymentUserInformation.email,
     );
 
     logger.d(paymentIntent.toJson().toString());

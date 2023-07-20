@@ -13,11 +13,11 @@ part 'drive_entity.g.dart';
 
 @JsonSerializable()
 class DriveEntity extends Entity {
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? id;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? privacy;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? authMode;
 
   String? name;
