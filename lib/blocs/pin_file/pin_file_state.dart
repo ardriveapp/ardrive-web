@@ -18,22 +18,22 @@ class PinFileInitial extends PinFileState {
 }
 
 class PinFileFieldsValidationError extends PinFileState {
-  final bool isNameValid;
-  final bool isIdValid;
+  final NameValidationResult nameValidation;
+  final IdValidationResult idValidation;
 
   const PinFileFieldsValidationError({
     required super.id,
     required super.name,
-    required this.isNameValid,
-    required this.isIdValid,
+    required this.nameValidation,
+    required this.idValidation,
   });
 
   @override
   List<Object> get props => [
         id,
         name,
-        isNameValid,
-        isIdValid,
+        nameValidation,
+        idValidation,
       ];
 }
 
@@ -127,4 +127,17 @@ class PinFileError extends PinFileState {
 
   @override
   List<Object> get props => [];
+}
+
+enum NameValidationResult {
+  required,
+  invalid,
+  valid,
+}
+
+enum IdValidationResult {
+  required,
+  invalid,
+  validFileId,
+  validTransactionId,
 }

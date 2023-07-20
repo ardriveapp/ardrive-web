@@ -23,12 +23,21 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         return;
       }
 
-      final NameValidationResult nameValidationMessage = _validateName(name);
-      final bool isValid = nameValidationMessage == NameValidationResult.valid;
-      // ignore: dead_code
+      final NameValidationResult nameValidation = _validateName(name);
+      final IdValidationResult idValidation = _validateId(id);
+
+      final isNameValid = nameValidation == NameValidationResult.valid;
+      final isIdValid = idValidation == IdValidationResult.validFileId ||
+          idValidation == IdValidationResult.validTransactionId;
+
+      final bool isValid = isNameValid && isIdValid;
       if (!isValid) {
-        // TODO: do an actual validation
-        // emit(const PinFileFieldsInvalid());
+        emit(PinFileFieldsValidationError(
+          id: id,
+          name: name,
+          nameValidation: nameValidation,
+          idValidation: idValidation,
+        ));
       } else {
         emit(PinFileNetworkCheckRunning(
           id: id,
@@ -84,10 +93,26 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
 
     return NameValidationResult.valid;
   }
-}
 
-enum NameValidationResult {
-  required,
-  invalid,
-  valid,
+  IdValidationResult _validateId(String value) {
+    const kFileIdRegex =
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+    const kTransactionIdRegex = r'^[\w-+]{43}$';
+
+    final fileIdRegex = RegExp(kFileIdRegex);
+    final transactionIdRegex = RegExp(kTransactionIdRegex);
+
+    final fileIdHasMatch = fileIdRegex.hasMatch(value);
+    final transactionIdHasMatch = transactionIdRegex.hasMatch(value);
+
+    if (value.isEmpty) {
+      return IdValidationResult.required;
+    } else if (fileIdHasMatch) {
+      return IdValidationResult.validFileId;
+    } else if (transactionIdHasMatch) {
+      return IdValidationResult.validTransactionId;
+    } else {
+      return IdValidationResult.invalid;
+    }
+  }
 }

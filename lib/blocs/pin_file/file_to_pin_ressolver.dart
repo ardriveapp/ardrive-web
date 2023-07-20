@@ -51,6 +51,11 @@ class FileIdRessolver {
   }
 }
 
+abstract class FileRequester {
+  Future<FileData> requestForTransactionId(String id);
+  Future<FileData> requestForFileId(String id);
+}
+
 class FileData {
   final bool isPrivate; // TODO: use an enum
   final String? maybeName;
