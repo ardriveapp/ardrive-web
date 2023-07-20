@@ -1,11 +1,12 @@
-import 'package:ardrive/blocs/pin_file/file_to_pin_ressolver.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+part 'file_to_pin_ressolver.dart';
 part 'pin_file_event.dart';
 part 'pin_file_state.dart';
+part 'types.dart';
 
 class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
   final FileIdRessolver _fileIdRessolver;
@@ -44,8 +45,14 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           name: name,
         ));
 
-        await _fileIdRessolver
-            .resolve(id)
+        late final Future<FileData> resolveFuture;
+        if (idValidation == IdValidationResult.validTransactionId) {
+          resolveFuture = _fileIdRessolver.requestForTransactionId(id);
+        } else {
+          resolveFuture = _fileIdRessolver.requestForFileId(id);
+        }
+
+        await resolveFuture
             .then((fileDataFromNetwork) => emit(PinFileFieldsValid(
                   id: id,
                   name: name,
@@ -61,15 +68,21 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
             .catchError(
           (err) {
             if (err is FileIdRessolverException) {
-              emit(
-                PinFileNetworkValidationError(
-                  id: id,
-                  name: name,
-                  doesDataTransactionExist: err.doesDataTransactionExist,
-                  isArFsEntityPublic: err.isArFsEntityPublic,
-                  isArFsEntityValid: err.isArFsEntityValid,
-                ),
-              );
+              final cancelled = err.cancelled;
+
+              if (!cancelled) {
+                emit(
+                  PinFileNetworkValidationError(
+                    id: id,
+                    name: name,
+                    doesDataTransactionExist: err.doesDataTransactionExist,
+                    isArFsEntityPublic: err.isArFsEntityPublic,
+                    isArFsEntityValid: err.isArFsEntityValid,
+                  ),
+                );
+              } else {
+                logger.d('PinFileNetworkCheck cancelled');
+              }
             } else {
               logger.e('unknown error in PinFileNetworkCheck');
               throw err;

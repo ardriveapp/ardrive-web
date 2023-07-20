@@ -1,6 +1,5 @@
 // Unit tests for the PinFileBloc class.
 
-import 'package:ardrive/blocs/pin_file/file_to_pin_ressolver.dart';
 import 'package:ardrive/blocs/pin_file/pin_file_bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,7 +23,8 @@ void main() {
     final DateTime mockDate = DateTime(1234567);
 
     setUp(() {
-      when(() => fileIdRessolver.resolve(validTxId_1)).thenAnswer(
+      when(() => fileIdRessolver.requestForTransactionId(validTxId_1))
+          .thenAnswer(
         (_) async => FileData(
           isPrivate: false,
           maybeName: null,
@@ -36,7 +36,8 @@ void main() {
           dataTxId: validTxId_1,
         ),
       );
-      when(() => fileIdRessolver.resolve(validTxId_2)).thenAnswer(
+      when(() => fileIdRessolver.requestForTransactionId(validTxId_2))
+          .thenAnswer(
         (_) async => FileData(
           isPrivate: false,
           maybeName: null,
@@ -48,7 +49,7 @@ void main() {
           dataTxId: validTxId_2,
         ),
       );
-      when(() => fileIdRessolver.resolve(validFileId_1)).thenAnswer(
+      when(() => fileIdRessolver.requestForFileId(validFileId_1)).thenAnswer(
         (_) async => FileData(
           isPrivate: false,
           maybeName: validName,
@@ -60,7 +61,7 @@ void main() {
           dataTxId: validTxId_1,
         ),
       );
-      when(() => fileIdRessolver.resolve(validFileId_2)).thenAnswer(
+      when(() => fileIdRessolver.requestForFileId(validFileId_2)).thenAnswer(
         (_) async => FileData(
           isPrivate: false,
           maybeName: validName,

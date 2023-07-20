@@ -128,16 +128,3 @@ class PinFileError extends PinFileState {
   @override
   List<Object> get props => [];
 }
-
-enum NameValidationResult {
-  required,
-  invalid,
-  valid,
-}
-
-enum IdValidationResult {
-  required,
-  invalid,
-  validFileId,
-  validTransactionId,
-}
