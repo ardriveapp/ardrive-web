@@ -1,0 +1,4 @@
+- Choose between Turbo and Direct-to-Network uploads.
+- Generate a seed phrase and wallet in app.
+- Download wallet files during seed phrase generation.
+- Decrease the number of syncs for new users.

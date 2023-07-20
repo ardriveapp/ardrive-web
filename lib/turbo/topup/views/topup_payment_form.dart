@@ -312,12 +312,12 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                   _nameController.text.isEmpty ||
                   !(card?.complete ?? false),
               onPressed: () {
-                context.read<TurboTopupFlowBloc>().add(
-                      TurboTopUpShowPaymentReviewView(
-                        name: _nameController.text,
-                        country: _selectedCountry!.label,
-                      ),
-                    );
+                context
+                    .read<TurboTopupFlowBloc>()
+                    .add(TurboTopUpShowPaymentReviewView(
+                      name: _nameController.text,
+                      country: _selectedCountry!.label,
+                    ));
               },
             ),
             const SizedBox(
