@@ -22,7 +22,7 @@ void main() {
 
     setUp(() {
       when(
-        () => arweave.getSegmentedTransactionsFromDrive(
+        () => arweave.getSegmentedTransactionsFromDrive_two(
           'DRIVE_ID',
           minBlockHeight: captureAny(named: 'minBlockHeight'),
           maxBlockHeight: captureAny(named: 'maxBlockHeight'),
