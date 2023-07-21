@@ -8,6 +8,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/block_batches.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
@@ -169,17 +170,40 @@ class ArweaveService {
     }
   }
 
+  // Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
+  //     getAllTransactionsFromDrive(
+  //   String driveId, {
+  //   required String ownerAddress,
+  //   int? lastBlockHeight,
+  // }) {
+  //   return getSegmentedTransactionsFromDrive(
+  //     driveId,
+  //     minBlockHeight: lastBlockHeight,
+  //     ownerAddress: ownerAddress,
+  //   );
+  // }
+
   Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
-      getAllTransactionsFromDrive(
+      getSegmentedTransactionsFromDrive_two(
     String driveId, {
     required String ownerAddress,
-    int? lastBlockHeight,
-  }) {
-    return getSegmentedTransactionsFromDrive(
-      driveId,
-      minBlockHeight: lastBlockHeight,
-      ownerAddress: ownerAddress,
-    );
+    required int minBlockHeight,
+    required int maxBlockHeight,
+    int blockBatch = 180, // about 6hs
+  }) async* {
+    final batches = blockBatches(minBlockHeight, maxBlockHeight, blockBatch);
+
+    for (final batch in batches) {
+      final minBlock = batch[0];
+      final maxBlock = batch[1];
+
+      yield* getSegmentedTransactionsFromDrive(
+        driveId,
+        minBlockHeight: minBlock,
+        maxBlockHeight: maxBlock,
+        ownerAddress: ownerAddress,
+      );
+    }
   }
 
   Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
@@ -794,7 +818,8 @@ class ArweaveService {
             ),
           );
         } on EntityTransactionParseException catch (parseException) {
-          logger.e('Failed to parse transaction with id ${parseException.transactionId}');
+          logger.e(
+              'Failed to parse transaction with id ${parseException.transactionId}');
         }
       }
 

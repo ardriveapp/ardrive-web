@@ -53,23 +53,23 @@ void main() {
       );
     });
 
-    group('getAllTransactionsFromDrive method', () {
-      test('calls getAllTransactionsFromDrive once', () async {
-        arweave.getAllTransactionsFromDrive(
-          'DRIVE_ID',
-          lastBlockHeight: 10,
-          ownerAddress: '',
-        );
-        verify(
-          () => arweave.getSegmentedTransactionsFromDrive(
-            'DRIVE_ID',
-            ownerAddress: '',
-          ),
-        ).called(1);
-      },
-          skip:
-              'Cannot stub a single method to verify that the actual method gets called once');
-    });
+    // group('getAllTransactionsFromDrive method', () {
+    //   test('calls getAllTransactionsFromDrive once', () async {
+    //     arweave.getAllTransactionsFromDrive(
+    //       'DRIVE_ID',
+    //       lastBlockHeight: 10,
+    //       ownerAddress: '',
+    //     );
+    //     verify(
+    //       () => arweave.getSegmentedTransactionsFromDrive(
+    //         'DRIVE_ID',
+    //         ownerAddress: '',
+    //       ),
+    //     ).called(1);
+    //   },
+    //       skip:
+    //           'Cannot stub a single method to verify that the actual method gets called once');
+    // });
 
     group('getAllFileEntitiesWithId method', () {
       test('returns all the file entities for a known file id', () async {

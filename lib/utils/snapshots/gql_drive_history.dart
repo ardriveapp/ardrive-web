@@ -40,7 +40,7 @@ class GQLDriveHistory implements SegmentedGQLData {
       _getNextStream() async* {
     Range subRangeForIndex = subRanges.rangeSegments[currentIndex];
 
-    final txsStream = _arweave.getSegmentedTransactionsFromDrive(
+    final txsStream = _arweave.getSegmentedTransactionsFromDrive_two(
       driveId,
       minBlockHeight: subRangeForIndex.start,
       maxBlockHeight: subRangeForIndex.end,
