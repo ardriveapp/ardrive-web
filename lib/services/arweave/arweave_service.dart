@@ -184,12 +184,12 @@ class ArweaveService {
   // }
 
   Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
-      getSegmentedTransactionsFromDrive_two(
+      getSegmentedTransactionsFromDrive2(
     String driveId, {
     required String ownerAddress,
     required int minBlockHeight,
     required int maxBlockHeight,
-    int blockBatch = 180, // about 6hs
+    int blockBatch = 21600, // about a month
   }) async* {
     final batches = blockBatches(minBlockHeight, maxBlockHeight, blockBatch);
 
