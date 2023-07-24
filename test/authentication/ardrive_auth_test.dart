@@ -105,6 +105,33 @@ void main() {
       expect(isExisting, false);
     });
   });
+  group('ArDriveAuth testing userHasPassword method', () {
+    // test
+    test('Should return true when user has a private drive', () async {
+      // arrange
+      when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
+              maxRetries: any(named: 'maxRetries')))
+          .thenAnswer((_) async => 'some_id');
+      // act
+      final hasPassword = await arDriveAuth.userHasPassword(wallet);
+
+      // assert
+      expect(hasPassword, true);
+    });
+
+    test(
+        'Should return false when user does not created a password yet when they dont have any ',
+        () async {
+      // arrange
+      when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
+          maxRetries: any(named: 'maxRetries'))).thenAnswer((_) async => null);
+      // act
+      final hasPassword = await arDriveAuth.userHasPassword(wallet);
+
+      // assert
+      expect(hasPassword, false);
+    });
+  });
 
   group('ArDriveAuth testing login method without biometrics', () {
     final loggedUser = User(

@@ -20,6 +20,7 @@ import '../core/crypto/crypto.dart';
 abstract class ArDriveAuth {
   Future<bool> isUserLoggedIn();
   Future<bool> isExistingUser(Wallet wallet);
+  Future<bool> userHasPassword(Wallet wallet);
   Future<User> login(Wallet wallet, String password, ProfileType profileType);
   Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
@@ -304,6 +305,17 @@ class _ArDriveAuth implements ArDriveAuth {
   @override
   Future<bool> isBiometricsEnabled() {
     return _biometricAuthentication.isEnabled();
+  }
+
+  /// To have at least a single private drive means the user has set a password.
+  @override
+  Future<bool> userHasPassword(Wallet wallet) async {
+    final firstDrivePrivateDriveTxId = await _arweave.getFirstPrivateDriveTxId(
+      wallet,
+      maxRetries: profileQueryMaxRetries,
+    );
+
+    return firstDrivePrivateDriveTxId != null;
   }
 }
 
