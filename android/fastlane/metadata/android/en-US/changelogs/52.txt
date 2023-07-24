@@ -1,0 +1,2 @@
+- After adding Turbo balance, the upload modal automatically updates to reflect the new balance and enables Turbo selection.
+- Fixes an issue on Create Manifest using Light Mode
