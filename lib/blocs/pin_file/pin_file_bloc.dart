@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/utils/debouncer.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,12 +41,18 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           idValidation: syncValidationResult.idValidation,
         ));
       } else {
-        await _runNetworkValidation(
-          emit,
-          id,
-          name,
-          syncValidationResult.idValidation,
-        );
+        final stateId = state.id;
+        final hasIdChanged = stateId != id;
+
+        // run network check only if the id has changed
+        if (hasIdChanged) {
+          await _runNetworkValidation(
+            emit,
+            id,
+            name,
+            syncValidationResult.idValidation,
+          );
+        }
       }
     });
   }
@@ -90,7 +99,8 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     return ressolveFuture
         .then((fileDataFromNetwork) => emit(PinFileFieldsValid(
               id: id,
-              name: name,
+              // do not override the name if it's already set
+              name: name.isEmpty ? (fileDataFromNetwork.maybeName ?? '') : name,
               isPrivate: fileDataFromNetwork.isPrivate,
               maybeName: fileDataFromNetwork.maybeName,
               contentType: fileDataFromNetwork.dataContentType,

@@ -17,19 +17,6 @@ class FiledsChanged extends PinFileEvent {
   String toString() => 'FiledChanged { name :$name, id :$id }';
 }
 
-// class PinFileNetworkCheck extends PinFileEvent {
-//   final String name;
-//   final String id;
-
-//   const PinFileNetworkCheck({required this.name, required this.id});
-
-//   @override
-//   List<Object> get props => [name, id];
-
-//   @override
-//   String toString() => 'PinFileNetworkCheck { name :$name, id :$id }';
-// }
-
 class PinFileSubmitted extends PinFileEvent {
   final String name;
   final String id;
