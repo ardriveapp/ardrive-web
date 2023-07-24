@@ -72,7 +72,6 @@ class PinFileNetworkValidationError extends PinFileState {
 
 class PinFileFieldsValid extends PinFileState {
   final bool isPrivate; // TODO: use an enum
-  final String? maybeName;
   final String contentType; // TODO: use an enum
   final DateTime? maybeLastUpdated;
   final DateTime? maybeLastModified;
@@ -84,7 +83,6 @@ class PinFileFieldsValid extends PinFileState {
     required super.id,
     required super.name,
     required this.isPrivate,
-    this.maybeName,
     required this.contentType,
     this.maybeLastUpdated,
     this.maybeLastModified,
@@ -98,7 +96,6 @@ class PinFileFieldsValid extends PinFileState {
         id,
         name,
         isPrivate,
-        maybeName,
         contentType,
         maybeLastUpdated,
         maybeLastModified,

@@ -41,6 +41,8 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           idValidation: syncValidationResult.idValidation,
         ));
       } else {
+        // by this point the name and id are valid
+
         final stateId = state.id;
         final hasIdChanged = stateId != id;
 
@@ -52,6 +54,42 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
             name,
             syncValidationResult.idValidation,
           );
+
+          // by this point, the state is either PinFileFieldsValid, or
+          /// PinFileNetworkValidationError
+        } else {
+          // by this point only the name has changed, simply update the state
+          /// with no network check
+
+          final stateIsPinFileFieldsValid = state is PinFileFieldsValid;
+          final stateIsNetworkCheckRunning =
+              state is PinFileNetworkCheckRunning;
+
+          if (stateIsPinFileFieldsValid) {
+            final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
+            emit(
+              PinFileFieldsValid(
+                id: id,
+                name: name,
+                isPrivate: stateAsPinFileFieldsValid.isPrivate,
+                contentType: stateAsPinFileFieldsValid.contentType,
+                dateCreated: stateAsPinFileFieldsValid.dateCreated,
+                size: stateAsPinFileFieldsValid.size,
+                dataTxId: stateAsPinFileFieldsValid.dataTxId,
+                maybeLastUpdated: stateAsPinFileFieldsValid.maybeLastUpdated,
+                maybeLastModified: stateAsPinFileFieldsValid.maybeLastModified,
+              ),
+            );
+          } else if (stateIsNetworkCheckRunning) {
+            emit(
+              PinFileNetworkCheckRunning(
+                id: id,
+                name: name,
+              ),
+            );
+          } else {
+            // state is PinFileNetworkValidationError
+          }
         }
       }
     });
@@ -102,7 +140,6 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
               // do not override the name if it's already set
               name: name.isEmpty ? (fileDataFromNetwork.maybeName ?? '') : name,
               isPrivate: fileDataFromNetwork.isPrivate,
-              maybeName: fileDataFromNetwork.maybeName,
               contentType: fileDataFromNetwork.dataContentType,
               maybeLastUpdated: fileDataFromNetwork.maybeLastUpdated,
               maybeLastModified: fileDataFromNetwork.maybeLastModified,
