@@ -159,7 +159,7 @@ class Turbo extends Disposable {
     return _currentPaymentIntent!;
   }
 
-  Future<PaymentStatus> confirmPayment() {
+  Future<PaymentStatus> confirmPayment() async {
     if (_currentPaymentIntent == null) {
       throw Exception(
           'Current payment intent is null. You should create it before calling this method.');
@@ -167,10 +167,12 @@ class Turbo extends Disposable {
 
     logger.d('Confirming payment: ${paymentUserInformation.toString()}');
 
-    return _paymentProvider.confirmPayment(
+    _paymentStatus = await _paymentProvider.confirmPayment(
       paymentUserInformation: paymentUserInformation,
       paymentModel: _currentPaymentIntent!,
     );
+
+    return _paymentStatus!;
   }
 
   Future<List<String>> getSupportedCountries() =>
