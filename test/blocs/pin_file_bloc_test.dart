@@ -77,7 +77,8 @@ void main() {
 
     blocTest<PinFileBloc, PinFileState>(
       'initial state',
-      build: () => PinFileBloc(fileIdRessolver: fileIdRessolver)
+      build: () => PinFileBloc(fileIdRessolver: fileIdRessolver),
+      act: (bloc) => bloc
         ..add(
           const FiledsChanged(name: '', id: ''),
         ),
@@ -85,23 +86,22 @@ void main() {
     );
 
     group('fields synchronous validation', () {
-      blocTest(
+      blocTest<PinFileBloc, PinFileState>(
         'valid fields',
-        build: () {
-          return PinFileBloc(fileIdRessolver: fileIdRessolver)
-            ..add(
-              const FiledsChanged(name: validName, id: validTxId_1),
-            )
-            ..add(
-              const FiledsChanged(name: validName, id: validTxId_2),
-            )
-            ..add(
-              const FiledsChanged(name: validName, id: validFileId_1),
-            )
-            ..add(
-              const FiledsChanged(name: validName, id: validFileId_2),
-            );
-        },
+        build: () => PinFileBloc(fileIdRessolver: fileIdRessolver),
+        act: (bloc) => bloc
+          ..add(
+            const FiledsChanged(name: validName, id: validTxId_1),
+          )
+          ..add(
+            const FiledsChanged(name: validName, id: validTxId_2),
+          )
+          ..add(
+            const FiledsChanged(name: validName, id: validFileId_1),
+          )
+          ..add(
+            const FiledsChanged(name: validName, id: validFileId_2),
+          ),
         expect: () => [
           const PinFileNetworkCheckRunning(
             id: validTxId_1,
@@ -111,7 +111,6 @@ void main() {
             id: validTxId_1,
             name: validName,
             isPrivate: false,
-            maybeName: null,
             contentType: 'application/json',
             maybeLastUpdated: mockDate,
             maybeLastModified: mockDate,
@@ -127,7 +126,6 @@ void main() {
             id: validTxId_2,
             name: validName,
             isPrivate: false,
-            maybeName: null,
             contentType: 'application/json',
             maybeLastUpdated: mockDate,
             maybeLastModified: mockDate,
@@ -143,7 +141,6 @@ void main() {
             id: validFileId_1,
             name: validName,
             isPrivate: false,
-            maybeName: validName,
             contentType: 'application/json',
             maybeLastUpdated: mockDate,
             maybeLastModified: mockDate,
@@ -159,7 +156,6 @@ void main() {
             id: validFileId_2,
             name: validName,
             isPrivate: false,
-            maybeName: validName,
             contentType: 'application/json',
             maybeLastUpdated: mockDate,
             maybeLastModified: mockDate,
@@ -170,8 +166,10 @@ void main() {
         ],
       );
 
-      blocTest('invalid synchronous validation', build: () {
-        return PinFileBloc(fileIdRessolver: fileIdRessolver)
+      blocTest<PinFileBloc, PinFileState>(
+        'invalid synchronous validation',
+        build: () => PinFileBloc(fileIdRessolver: fileIdRessolver),
+        act: (bloc) => bloc
           ..add(
             const FiledsChanged(name: invalidName, id: validTxId_1),
           )
@@ -189,9 +187,8 @@ void main() {
           )
           ..add(
             const FiledsChanged(name: invalidName, id: ''),
-          );
-      }, expect: () {
-        return [
+          ),
+        expect: () => [
           const PinFileFieldsValidationError(
             id: validTxId_1,
             name: invalidName,
@@ -228,8 +225,83 @@ void main() {
             nameValidation: NameValidationResult.invalid,
             idValidation: IdValidationResult.required,
           ),
-        ];
-      });
+        ],
+      );
+
+      blocTest<PinFileBloc, PinFileState>(
+        'network check won\'t run when id doesn\'t change while fields are '
+        'valid',
+        build: () => PinFileBloc(fileIdRessolver: fileIdRessolver),
+        seed: () => PinFileFieldsValid(
+          id: validFileId_1,
+          name: validName,
+          isPrivate: false,
+          contentType: 'application/json',
+          dateCreated: mockDate,
+          size: 1,
+          dataTxId: validTxId_1,
+          maybeLastUpdated: mockDate,
+          maybeLastModified: mockDate,
+        ),
+        act: (bloc) => bloc
+          ..add(
+            const FiledsChanged(name: 'otro nombre', id: validFileId_1),
+          )
+          ..add(
+            const FiledsChanged(name: 'pew! pew! pew!', id: validFileId_1),
+          ),
+        expect: () => [
+          PinFileFieldsValid(
+            id: validFileId_1,
+            name: 'otro nombre',
+            isPrivate: false,
+            contentType: 'application/json',
+            maybeLastUpdated: mockDate,
+            maybeLastModified: mockDate,
+            dateCreated: mockDate,
+            size: 1,
+            dataTxId: validTxId_1,
+          ),
+          PinFileFieldsValid(
+            id: validFileId_1,
+            name: 'pew! pew! pew!',
+            isPrivate: false,
+            contentType: 'application/json',
+            maybeLastUpdated: mockDate,
+            maybeLastModified: mockDate,
+            dateCreated: mockDate,
+            size: 1,
+            dataTxId: validTxId_1,
+          ),
+        ],
+      );
+
+      blocTest<PinFileBloc, PinFileState>(
+        'network check won\'t run when id doesn\'t change while network check '
+        'is running',
+        build: () => PinFileBloc(fileIdRessolver: fileIdRessolver),
+        seed: () => const PinFileNetworkCheckRunning(
+          id: validFileId_1,
+          name: validName,
+        ),
+        act: (bloc) => bloc
+          ..add(
+            const FiledsChanged(name: 'otro nombre', id: validFileId_1),
+          )
+          ..add(
+            const FiledsChanged(name: 'pew! pew! pew!', id: validFileId_1),
+          ),
+        expect: () => [
+          const PinFileNetworkCheckRunning(
+            id: validFileId_1,
+            name: 'otro nombre',
+          ),
+          const PinFileNetworkCheckRunning(
+            id: validFileId_1,
+            name: 'pew! pew! pew!',
+          ),
+        ],
+      );
     });
   });
 }
