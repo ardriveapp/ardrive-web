@@ -26,28 +26,42 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         return;
       }
 
-      final NameValidationResult nameValidation = _validateName(name);
-      final IdValidationResult idValidation = _validateId(id);
+      final SynchronousValidationResult syncValidationResult =
+          await _runSynchronousValidation(name, id);
 
-      final isNameValid = nameValidation == NameValidationResult.valid;
-      final isIdValid = idValidation == IdValidationResult.validFileId ||
-          idValidation == IdValidationResult.validTransactionId;
-
-      final bool isValid = isNameValid && isIdValid;
-      if (!isValid) {
+      // FIXME: make none of the following methods to take `emit` as an argument
+      if (!syncValidationResult.isValid) {
         emit(PinFileFieldsValidationError(
           id: id,
           name: name,
-          nameValidation: nameValidation,
-          idValidation: idValidation,
+          nameValidation: syncValidationResult.nameValidation,
+          idValidation: syncValidationResult.idValidation,
         ));
       } else {
-        await _handleValidSynchronousValidation(emit, id, name, idValidation);
+        await _runNetworkValidation(
+          emit,
+          id,
+          name,
+          syncValidationResult.idValidation,
+        );
       }
     });
   }
 
-  Future<void> _handleValidSynchronousValidation(
+  Future<SynchronousValidationResult> _runSynchronousValidation(
+    String name,
+    String id,
+  ) {
+    final NameValidationResult nameValidation = _validateName(name);
+    final IdValidationResult idValidation = _validateId(id);
+
+    return Future.value(SynchronousValidationResult(
+      nameValidation: nameValidation,
+      idValidation: idValidation,
+    ));
+  }
+
+  Future<void> _runNetworkValidation(
     Emitter<PinFileState> emit,
     String id,
     String name,
@@ -145,4 +159,21 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       return IdValidationResult.invalid;
     }
   }
+}
+
+class SynchronousValidationResult {
+  final NameValidationResult nameValidation;
+  final IdValidationResult idValidation;
+
+  const SynchronousValidationResult({
+    required this.nameValidation,
+    required this.idValidation,
+  });
+
+  bool get isNameValid => nameValidation == NameValidationResult.valid;
+  bool get isIdValid =>
+      idValidation == IdValidationResult.validFileId ||
+      idValidation == IdValidationResult.validTransactionId;
+
+  bool get isValid => isNameValid && isIdValid;
 }
