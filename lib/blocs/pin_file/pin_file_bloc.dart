@@ -207,6 +207,13 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       return IdValidationResult.invalid;
     }
   }
+
+  @override
+  Future<void> close() {
+    // idTextController.dispose();
+    nameTextController.dispose();
+    return super.close();
+  }
 }
 
 class SynchronousValidationResult {
