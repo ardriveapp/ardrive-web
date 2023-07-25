@@ -4,6 +4,7 @@ import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/drive_attach_form.dart';
 import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/folder_create_form.dart';
+import 'package:ardrive/components/pin_file_dialog.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -341,6 +342,13 @@ class NewButton extends StatelessWidget {
                 ),
             name: appLocalizations.createSnapshot,
             icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
+          ),
+        if (driveDetailState is DriveDetailLoadSuccess)
+          _buildDriveDropdownItem(
+            name: 'Pin a file',
+            icon: ArDriveIcons.arconnectIcon1(size: defaultIconSize),
+            onClick: () => showPinFileDialog(context: context),
+            isDisabled: drive == null,
           ),
       ];
     } else {
