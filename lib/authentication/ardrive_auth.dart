@@ -13,6 +13,7 @@ import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart';
 import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 
 import '../core/crypto/crypto.dart';
@@ -39,7 +40,7 @@ abstract class ArDriveAuth {
     required DatabaseHelpers databaseHelpers,
     MetadataCache? metadataCache,
   }) =>
-      _ArDriveAuth(
+      ArDriveAuthImpl(
         arweave: arweave,
         userRepository: userRepository,
         crypto: crypto,
@@ -51,8 +52,8 @@ abstract class ArDriveAuth {
       );
 }
 
-class _ArDriveAuth implements ArDriveAuth {
-  _ArDriveAuth({
+class ArDriveAuthImpl implements ArDriveAuth {
+  ArDriveAuthImpl({
     required ArweaveService arweave,
     required UserRepository userRepository,
     required ArDriveCrypto crypto,
@@ -81,6 +82,9 @@ class _ArDriveAuth implements ArDriveAuth {
 
   User? _currentUser;
 
+  @visibleForTesting
+  String? firstPrivateDriveTxId;
+
   // getters and setters
   @override
   User get currentUser {
@@ -94,6 +98,9 @@ class _ArDriveAuth implements ArDriveAuth {
   set currentUser(User? user) {
     _currentUser = user;
   }
+
+  @override
+  Stream<User?> onAuthStateChanged() => _userStreamController.stream;
 
   Future<MetadataCache> get _metadataCache async {
     _maybeMetadataCache ??= await MetadataCache.fromCacheStore(
@@ -118,6 +125,14 @@ class _ArDriveAuth implements ArDriveAuth {
     );
 
     return driveTxs.isNotEmpty;
+  }
+
+  /// To have at least a single private drive means the user has set a password.
+  @override
+  Future<bool> userHasPassword(Wallet wallet) async {
+    final firstDrivePrivateDriveTxId = await _getFirstPrivateDriveTxId(wallet);
+
+    return firstDrivePrivateDriveTxId != null;
   }
 
   @override
@@ -145,20 +160,6 @@ class _ArDriveAuth implements ArDriveAuth {
     return currentUser;
   }
 
-  Future<User> _addUser(
-    Wallet wallet,
-    String password,
-    ProfileType profileType,
-  ) async {
-    await _saveUser(password, profileType, wallet);
-
-    currentUser = await _userRepository.getUser(password);
-
-    _userStreamController.add(_currentUser);
-
-    return currentUser;
-  }
-
   @override
   Future<User> unlockUser({required String password}) async {
     try {
@@ -175,94 +176,6 @@ class _ArDriveAuth implements ArDriveAuth {
       logger.e('Failed to unlock user with password', e);
       throw AuthenticationFailedException('Incorrect password.');
     }
-  }
-
-  @override
-  Future<void> logout() async {
-    logger.i('Logging out user');
-
-    try {
-      if (_currentUser != null) {
-        if (currentUser.profileType == ProfileType.arConnect) {
-          try {
-            await _arConnectService.disconnect();
-          } catch (e) {
-            logger.e('Failed to disconnect from ArConnect', e);
-          }
-        }
-
-        _secureKeyValueStore.remove('password');
-        _secureKeyValueStore.remove('biometricEnabled');
-
-        currentUser = null;
-
-        _userStreamController.add(null);
-      }
-
-      await _databaseHelpers.deleteAllTables();
-
-      (await _metadataCache).clear();
-    } catch (e) {
-      logger.e('Failed to logout user', e);
-      throw AuthenticationFailedException('Failed to logout user');
-    }
-  }
-
-  @override
-  Stream<User?> onAuthStateChanged() => _userStreamController.stream;
-
-  Future<bool> _validateUser(
-    Wallet wallet,
-    String password,
-  ) async {
-    final firstDrivePrivateDriveTxId = await _arweave.getFirstPrivateDriveTxId(
-      wallet,
-      maxRetries: profileQueryMaxRetries,
-    );
-
-    // Try and decrypt one of the user's private drive entities to check if they are entering the
-    // right password.
-    if (firstDrivePrivateDriveTxId != null) {
-      late SecretKey checkDriveKey;
-      try {
-        checkDriveKey = await _crypto.deriveDriveKey(
-          wallet,
-          firstDrivePrivateDriveTxId,
-          password,
-        );
-      } catch (e) {
-        throw AuthenticationFailedException('Wrong password');
-      }
-
-      final privateDrive = await _arweave.getLatestDriveEntityWithId(
-        firstDrivePrivateDriveTxId,
-        checkDriveKey,
-        profileQueryMaxRetries,
-      );
-
-      return privateDrive != null;
-    }
-
-    return true;
-  }
-
-  Future<void> _saveUser(
-    String password,
-    ProfileType profileType,
-    Wallet wallet,
-  ) async {
-    // delete previous user
-    // verify if it is necessary, the user only will add a new user if he is not logged in
-    if (await _userRepository.hasUser()) {
-      await _userRepository.deleteUser();
-    }
-
-    // save user
-    await _userRepository.saveUser(
-      password,
-      profileType,
-      wallet,
-    );
   }
 
   @override
@@ -297,9 +210,36 @@ class _ArDriveAuth implements ArDriveAuth {
     throw AuthenticationFailedException('Biometric authentication failed');
   }
 
-  Future<void> _savePasswordInSecureStorage(String password) async {
-    // save password
-    await _secureKeyValueStore.putString('password', password);
+  @override
+  Future<void> logout() async {
+    logger.i('Logging out user');
+
+    try {
+      if (_currentUser != null) {
+        if (currentUser.profileType == ProfileType.arConnect) {
+          try {
+            await _arConnectService.disconnect();
+          } catch (e) {
+            logger.e('Failed to disconnect from ArConnect', e);
+          }
+        }
+
+        _secureKeyValueStore.remove('password');
+        _secureKeyValueStore.remove('biometricEnabled');
+
+        currentUser = null;
+        firstPrivateDriveTxId = null;
+
+        _userStreamController.add(null);
+      }
+
+      await _databaseHelpers.deleteAllTables();
+
+      (await _metadataCache).clear();
+    } catch (e) {
+      logger.e('Failed to logout user', e);
+      throw AuthenticationFailedException('Failed to logout user');
+    }
   }
 
   @override
@@ -307,15 +247,83 @@ class _ArDriveAuth implements ArDriveAuth {
     return _biometricAuthentication.isEnabled();
   }
 
-  /// To have at least a single private drive means the user has set a password.
-  @override
-  Future<bool> userHasPassword(Wallet wallet) async {
-    final firstDrivePrivateDriveTxId = await _arweave.getFirstPrivateDriveTxId(
+  Future<bool> _validateUser(
+    Wallet wallet,
+    String password,
+  ) async {
+    final firstDrivePrivateDriveTxId = await _getFirstPrivateDriveTxId(wallet);
+
+    // Try and decrypt one of the user's private drive entities to check if they are entering the
+    // right password.
+    if (firstDrivePrivateDriveTxId != null) {
+      late SecretKey checkDriveKey;
+      try {
+        checkDriveKey = await _crypto.deriveDriveKey(
+          wallet,
+          firstDrivePrivateDriveTxId,
+          password,
+        );
+      } catch (e) {
+        throw AuthenticationFailedException('Wrong password');
+      }
+
+      final privateDrive = await _arweave.getLatestDriveEntityWithId(
+        firstDrivePrivateDriveTxId,
+        checkDriveKey,
+        profileQueryMaxRetries,
+      );
+
+      return privateDrive != null;
+    }
+
+    return true;
+  }
+
+  Future<User> _addUser(
+    Wallet wallet,
+    String password,
+    ProfileType profileType,
+  ) async {
+    await _saveUser(password, profileType, wallet);
+
+    currentUser = await _userRepository.getUser(password);
+
+    _userStreamController.add(_currentUser);
+
+    return currentUser;
+  }
+
+  Future<void> _saveUser(
+    String password,
+    ProfileType profileType,
+    Wallet wallet,
+  ) async {
+    // delete previous user
+    // verify if it is necessary, the user only will add a new user if he is not logged in
+    if (await _userRepository.hasUser()) {
+      await _userRepository.deleteUser();
+    }
+
+    // save user
+    await _userRepository.saveUser(
+      password,
+      profileType,
+      wallet,
+    );
+  }
+
+  Future<void> _savePasswordInSecureStorage(String password) async {
+    // save password
+    await _secureKeyValueStore.putString('password', password);
+  }
+
+  Future<String?> _getFirstPrivateDriveTxId(Wallet wallet) async {
+    firstPrivateDriveTxId ??= await _arweave.getFirstPrivateDriveTxId(
       wallet,
       maxRetries: profileQueryMaxRetries,
     );
 
-    return firstDrivePrivateDriveTxId != null;
+    return firstPrivateDriveTxId;
   }
 }
 
