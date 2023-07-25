@@ -306,7 +306,7 @@
   "@create": {
     "description": "Create an drive"
   },
-  "createAndConfirmPassword": "Please create and confirm your password. You will use this password to log in.",
+  "createAndConfirmPassword": "Please create and confirm your password. Your password cannot be changed or retrieved, so please keep this safe.",
   "@createAndConfirmPassword": {
     "description": "Asks the user to create a password"
   },
@@ -1238,7 +1238,7 @@
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
-  "onboarding1Description": "ArDrive isn’t just another cloud sync app. It’s your personal permanent hard drive. Files stored on ArDrive can't be deleted or altered by any single entity and anything you upload will outlast you!",
+  "onboarding1Description": "ArDrive isn’t just another cloud storage app, it’s your personal permanent hard drive. Store your data securely for at least 200 years, without the fear of deletion. Anything you upload will be there for generations to come!",
   "@onboarding1Description": {
     "description": "Description of 1st page of onboarding"
   },
@@ -1246,7 +1246,7 @@
   "@onboarding1Title": {
     "description": "Title of 1st page of onboarding"
   },
-  "onboarding2Description": "Say goodbye to cloud storage subscriptions. Instead of paying for space you don’t use, just pay once to store your data forever.",
+  "onboarding2Description": "Say goodbye to storage subscriptions! Instead of paying for space you don’t use, just pay once to store your data forever.",
   "@onboarding2Description": {
     "description": "Description of 2nd page of onboarding"
   },
