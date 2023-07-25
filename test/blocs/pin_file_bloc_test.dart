@@ -80,7 +80,7 @@ void main() {
       build: () => PinFileBloc(fileIdResolver: fileIdResolver),
       act: (bloc) => bloc
         ..add(
-          const FiledsChanged(name: '', id: ''),
+          const FieldsChanged(name: '', id: ''),
         ),
       expect: () => [const PinFileInitial()],
     );
@@ -91,16 +91,16 @@ void main() {
         build: () => PinFileBloc(fileIdResolver: fileIdResolver),
         act: (bloc) => bloc
           ..add(
-            const FiledsChanged(name: validName, id: validTxId_1),
+            const FieldsChanged(name: validName, id: validTxId_1),
           )
           ..add(
-            const FiledsChanged(name: validName, id: validTxId_2),
+            const FieldsChanged(name: validName, id: validTxId_2),
           )
           ..add(
-            const FiledsChanged(name: validName, id: validFileId_1),
+            const FieldsChanged(name: validName, id: validFileId_1),
           )
           ..add(
-            const FiledsChanged(name: validName, id: validFileId_2),
+            const FieldsChanged(name: validName, id: validFileId_2),
           ),
         expect: () => [
           const PinFileNetworkCheckRunning(
@@ -171,22 +171,22 @@ void main() {
         build: () => PinFileBloc(fileIdResolver: fileIdResolver),
         act: (bloc) => bloc
           ..add(
-            const FiledsChanged(name: invalidName, id: validTxId_1),
+            const FieldsChanged(name: invalidName, id: validTxId_1),
           )
           ..add(
-            const FiledsChanged(name: invalidName, id: validFileId_1),
+            const FieldsChanged(name: invalidName, id: validFileId_1),
           )
           ..add(
-            const FiledsChanged(name: validName, id: invalidId),
+            const FieldsChanged(name: validName, id: invalidId),
           )
           ..add(
-            const FiledsChanged(name: invalidName, id: invalidId),
+            const FieldsChanged(name: invalidName, id: invalidId),
           )
           ..add(
-            const FiledsChanged(name: '', id: invalidId),
+            const FieldsChanged(name: '', id: invalidId),
           )
           ..add(
-            const FiledsChanged(name: invalidName, id: ''),
+            const FieldsChanged(name: invalidName, id: ''),
           ),
         expect: () => [
           const PinFileFieldsValidationError(
@@ -245,10 +245,10 @@ void main() {
         ),
         act: (bloc) => bloc
           ..add(
-            const FiledsChanged(name: 'otro nombre', id: validFileId_1),
+            const FieldsChanged(name: 'otro nombre', id: validFileId_1),
           )
           ..add(
-            const FiledsChanged(name: 'pew! pew! pew!', id: validFileId_1),
+            const FieldsChanged(name: 'pew! pew! pew!', id: validFileId_1),
           ),
         expect: () => [
           PinFileFieldsValid(
@@ -286,10 +286,10 @@ void main() {
         ),
         act: (bloc) => bloc
           ..add(
-            const FiledsChanged(name: 'otro nombre', id: validFileId_1),
+            const FieldsChanged(name: 'otro nombre', id: validFileId_1),
           )
           ..add(
-            const FiledsChanged(name: 'pew! pew! pew!', id: validFileId_1),
+            const FieldsChanged(name: 'pew! pew! pew!', id: validFileId_1),
           ),
         expect: () => [
           const PinFileNetworkCheckRunning(
