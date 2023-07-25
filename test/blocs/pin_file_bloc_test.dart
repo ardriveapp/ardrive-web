@@ -171,10 +171,7 @@ void main() {
         build: () => PinFileBloc(fileIdResolver: fileIdResolver),
         act: (bloc) => bloc
           ..add(
-            const FieldsChanged(name: invalidName, id: validTxId_1),
-          )
-          ..add(
-            const FieldsChanged(name: invalidName, id: validFileId_1),
+            const FieldsChanged(name: invalidName, id: invalidId),
           )
           ..add(
             const FieldsChanged(name: validName, id: invalidId),
@@ -190,16 +187,10 @@ void main() {
           ),
         expect: () => [
           const PinFileFieldsValidationError(
-            id: validTxId_1,
+            id: invalidId,
             name: invalidName,
             nameValidation: NameValidationResult.invalid,
-            idValidation: IdValidationResult.validTransactionId,
-          ),
-          const PinFileFieldsValidationError(
-            id: validFileId_1,
-            name: invalidName,
-            nameValidation: NameValidationResult.invalid,
-            idValidation: IdValidationResult.validFileId,
+            idValidation: IdValidationResult.invalid,
           ),
           const PinFileFieldsValidationError(
             id: invalidId,
