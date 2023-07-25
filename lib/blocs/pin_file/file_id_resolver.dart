@@ -1,6 +1,6 @@
 part of 'pin_file_bloc.dart';
 
-class NetworkFileIdResolver implements FileIdRessolver {
+class NetworkFileIdResolver implements FileIdResolver {
   // TODO: add a debouncer and a completer
 
   final ArweaveService arweave;
@@ -59,7 +59,7 @@ class NetworkFileIdResolver implements FileIdRessolver {
   }
 }
 
-abstract class FileIdRessolver {
+abstract class FileIdResolver {
   Future<FileInfo> requestForTransactionId(String id);
   Future<FileInfo> requestForFileId(String id);
 }

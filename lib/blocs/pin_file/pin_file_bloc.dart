@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
-import 'package:ardrive/utils/debouncer.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,11 +13,11 @@ part 'pin_file_state.dart';
 part 'types.dart';
 
 class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
-  final FileIdRessolver _fileIdRessolver;
+  final FileIdResolver _fileIdResolver;
 
   PinFileBloc({
-    required FileIdRessolver fileIdRessolver,
-  })  : _fileIdRessolver = fileIdRessolver,
+    required FileIdResolver fileIdResolver,
+  })  : _fileIdResolver = fileIdResolver,
         super(const PinFileInitial()) {
     on<FiledsChanged>((event, emit) async {
       final String name = event.name;
@@ -152,14 +151,14 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     String name,
     IdValidationResult idValidation,
   ) async {
-    late final Future<FileInfo> ressolveFuture;
+    late final Future<FileInfo> resolveFuture;
     if (idValidation == IdValidationResult.validTransactionId) {
-      ressolveFuture = _fileIdRessolver.requestForTransactionId(id);
+      resolveFuture = _fileIdResolver.requestForTransactionId(id);
     } else {
-      ressolveFuture = _fileIdRessolver.requestForFileId(id);
+      resolveFuture = _fileIdResolver.requestForFileId(id);
     }
 
-    return ressolveFuture;
+    return resolveFuture;
   }
 
   NameValidationResult _validateName(String value) {

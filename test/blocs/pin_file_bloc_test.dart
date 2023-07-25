@@ -5,11 +5,11 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockFileIdRessolver extends Mock implements FileIdRessolver {}
+class MockFileIdResolver extends Mock implements FileIdResolver {}
 
 void main() {
   group('PinFileBloc', () {
-    final FileIdRessolver fileIdRessolver = MockFileIdRessolver();
+    final FileIdResolver fileIdResolver = MockFileIdResolver();
 
     const String validName = 'Ñoquis con tuco 🍝😋';
     const String validTxId_1 = 'HelloHelloHelloHelloHelloHelloHelloH-+_ABCD';
@@ -23,7 +23,7 @@ void main() {
     final DateTime mockDate = DateTime(1234567);
 
     setUp(() {
-      when(() => fileIdRessolver.requestForTransactionId(validTxId_1))
+      when(() => fileIdResolver.requestForTransactionId(validTxId_1))
           .thenAnswer(
         (_) async => FileInfo(
           isPrivate: false,
@@ -36,7 +36,7 @@ void main() {
           dataTxId: validTxId_1,
         ),
       );
-      when(() => fileIdRessolver.requestForTransactionId(validTxId_2))
+      when(() => fileIdResolver.requestForTransactionId(validTxId_2))
           .thenAnswer(
         (_) async => FileInfo(
           isPrivate: false,
@@ -49,7 +49,7 @@ void main() {
           dataTxId: validTxId_2,
         ),
       );
-      when(() => fileIdRessolver.requestForFileId(validFileId_1)).thenAnswer(
+      when(() => fileIdResolver.requestForFileId(validFileId_1)).thenAnswer(
         (_) async => FileInfo(
           isPrivate: false,
           maybeName: validName,
@@ -61,7 +61,7 @@ void main() {
           dataTxId: validTxId_1,
         ),
       );
-      when(() => fileIdRessolver.requestForFileId(validFileId_2)).thenAnswer(
+      when(() => fileIdResolver.requestForFileId(validFileId_2)).thenAnswer(
         (_) async => FileInfo(
           isPrivate: false,
           maybeName: validName,
@@ -77,7 +77,7 @@ void main() {
 
     blocTest<PinFileBloc, PinFileState>(
       'initial state',
-      build: () => PinFileBloc(fileIdRessolver: fileIdRessolver),
+      build: () => PinFileBloc(fileIdResolver: fileIdResolver),
       act: (bloc) => bloc
         ..add(
           const FiledsChanged(name: '', id: ''),
@@ -88,7 +88,7 @@ void main() {
     group('fields synchronous validation', () {
       blocTest<PinFileBloc, PinFileState>(
         'valid fields',
-        build: () => PinFileBloc(fileIdRessolver: fileIdRessolver),
+        build: () => PinFileBloc(fileIdResolver: fileIdResolver),
         act: (bloc) => bloc
           ..add(
             const FiledsChanged(name: validName, id: validTxId_1),
@@ -168,7 +168,7 @@ void main() {
 
       blocTest<PinFileBloc, PinFileState>(
         'invalid synchronous validation',
-        build: () => PinFileBloc(fileIdRessolver: fileIdRessolver),
+        build: () => PinFileBloc(fileIdResolver: fileIdResolver),
         act: (bloc) => bloc
           ..add(
             const FiledsChanged(name: invalidName, id: validTxId_1),
@@ -231,7 +231,7 @@ void main() {
       blocTest<PinFileBloc, PinFileState>(
         'network check won\'t run when id doesn\'t change while fields are '
         'valid',
-        build: () => PinFileBloc(fileIdRessolver: fileIdRessolver),
+        build: () => PinFileBloc(fileIdResolver: fileIdResolver),
         seed: () => PinFileFieldsValid(
           id: validFileId_1,
           name: validName,
@@ -279,7 +279,7 @@ void main() {
       blocTest<PinFileBloc, PinFileState>(
         'network check won\'t run when id doesn\'t change while network check '
         'is running',
-        build: () => PinFileBloc(fileIdRessolver: fileIdRessolver),
+        build: () => PinFileBloc(fileIdResolver: fileIdResolver),
         seed: () => const PinFileNetworkCheckRunning(
           id: validFileId_1,
           name: validName,
