@@ -19,7 +19,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     required FileIdResolver fileIdResolver,
   })  : _fileIdResolver = fileIdResolver,
         super(const PinFileInitial()) {
-    on<FiledsChanged>((event, emit) async {
+    on<FieldsChanged>((event, emit) async {
       final String name = event.name;
       final String id = event.id;
 
@@ -29,7 +29,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       }
 
       final SynchronousValidationResult syncValidationResult =
-          await _runSynchronousValidation(name, id);
+          _runSynchronousValidation(name, id);
 
       // FIXME: make none of the following methods to take `emit` as an argument
       if (!syncValidationResult.isValid) {
@@ -46,7 +46,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         final hasIdChanged = stateId != id;
 
         // run network check only if the id has changed
-        if (hasIdChanged) {
+        if (hasIdChanged || state is PinFileFieldsValidationError) {
           emit(PinFileNetworkCheckRunning(
             id: id,
             name: name,
@@ -99,11 +99,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           // by this point only the name has changed, simply update the state
           /// with no network check
 
-          final stateIsPinFileFieldsValid = state is PinFileFieldsValid;
-          final stateIsNetworkCheckRunning =
-              state is PinFileNetworkCheckRunning;
-
-          if (stateIsPinFileFieldsValid) {
+          if (state is PinFileFieldsValid) {
             final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
             emit(
               PinFileFieldsValid(
@@ -118,7 +114,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
                 maybeLastModified: stateAsPinFileFieldsValid.maybeLastModified,
               ),
             );
-          } else if (stateIsNetworkCheckRunning) {
+          } else if (state is PinFileNetworkCheckRunning) {
             emit(
               PinFileNetworkCheckRunning(
                 id: id,
@@ -127,23 +123,29 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
             );
           } else {
             // state is PinFileNetworkValidationError
+            logger.d('State is $state');
           }
         }
       }
     });
+
+    on<PinFileCancel>((event, emit) {
+      // TODO: tell the "file id resolver" to stop any ongoing requests
+      emit(PinFileAbort(id: state.id, name: state.name));
+    });
   }
 
-  Future<SynchronousValidationResult> _runSynchronousValidation(
+  SynchronousValidationResult _runSynchronousValidation(
     String name,
     String id,
   ) {
-    final NameValidationResult nameValidation = _validateName(name);
-    final IdValidationResult idValidation = _validateId(id);
+    final NameValidationResult nameValidation = validateName(name);
+    final IdValidationResult idValidation = validateId(id);
 
-    return Future.value(SynchronousValidationResult(
+    return SynchronousValidationResult(
       nameValidation: nameValidation,
       idValidation: idValidation,
-    ));
+    );
   }
 
   Future<FileInfo> _runNetworkValidation(
@@ -161,7 +163,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     return resolveFuture;
   }
 
-  NameValidationResult _validateName(String value) {
+  NameValidationResult validateName(String value) {
     final nameRegex = RegExp(kFileNameRegex);
     final trimTrailingRegex = RegExp(kTrimTrailingRegex);
 
@@ -175,7 +177,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     return NameValidationResult.valid;
   }
 
-  IdValidationResult _validateId(String value) {
+  IdValidationResult validateId(String value) {
     const kFileIdRegex =
         r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
     const kTransactionIdRegex = r'^[\w-+]{43}$';
@@ -213,4 +215,10 @@ class SynchronousValidationResult {
       idValidation == IdValidationResult.validTransactionId;
 
   bool get isValid => isNameValid && isIdValid;
+
+  @override
+  String toString() {
+    return 'SynchronousValidationResult { nameValidation: $nameValidation, '
+        'idValidation: $idValidation, isValid: $isValid }';
+  }
 }
