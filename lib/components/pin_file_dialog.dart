@@ -69,6 +69,7 @@ class PinFileDialog extends StatelessWidget {
                     }
                     return null;
                   },
+                  // controller: pinFileBloc.idTextController,
                 ),
                 ArDriveTextField(
                   isEnabled: true,
@@ -89,6 +90,7 @@ class PinFileDialog extends StatelessWidget {
                     }
                     return null;
                   },
+                  controller: pinFileBloc.nameTextController,
                 ),
                 if (state is PinFileNetworkValidationError)
                   SizedBox(

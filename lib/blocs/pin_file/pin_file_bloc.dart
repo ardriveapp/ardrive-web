@@ -5,6 +5,7 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'file_id_resolver.dart';
@@ -14,13 +15,18 @@ part 'types.dart';
 
 class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
   final FileIdResolver _fileIdResolver;
+  // final idTextController = TextEditingController();
+  final nameTextController = TextEditingController();
 
   PinFileBloc({
     required FileIdResolver fileIdResolver,
   })  : _fileIdResolver = fileIdResolver,
         super(const PinFileInitial()) {
+    // idTextController.text = '';
+    nameTextController.text = '';
+
     on<FieldsChanged>((event, emit) async {
-      final String name = event.name;
+      String name = event.name;
       final String id = event.id;
 
       if (name.isEmpty && id.isEmpty) {
@@ -28,10 +34,69 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         return;
       }
 
-      final SynchronousValidationResult syncValidationResult =
+      final stateId = state.id;
+      final hasIdChanged = stateId != id;
+
+      SynchronousValidationResult syncValidationResult =
           _runSynchronousValidation(name, id);
 
-      // FIXME: make none of the following methods to take `emit` as an argument
+      if (hasIdChanged && syncValidationResult.isIdValid) {
+        emit(PinFileNetworkCheckRunning(
+          id: id,
+          name: name,
+        ));
+
+        try {
+          final fileInfo = await _runNetworkValidation(
+            id,
+            name,
+            syncValidationResult.idValidation,
+          );
+
+          // do not override the name if it's already set
+          final newName = name.isEmpty ? (fileInfo.maybeName ?? '') : name;
+          if (newName != name) {
+            nameTextController.text = newName;
+            name = newName;
+          }
+
+          emit(PinFileFieldsValid(
+            id: id,
+            name: name,
+            isPrivate: fileInfo.isPrivate,
+            contentType: fileInfo.dataContentType,
+            maybeLastUpdated: fileInfo.maybeLastUpdated,
+            maybeLastModified: fileInfo.maybeLastModified,
+            dateCreated: fileInfo.dateCreated,
+            size: fileInfo.size,
+            dataTxId: fileInfo.dataTxId,
+          ));
+        } catch (err) {
+          if (err is FileIdResolverException) {
+            final cancelled = err.cancelled;
+
+            if (!cancelled) {
+              emit(
+                PinFileNetworkValidationError(
+                  id: id,
+                  name: name,
+                  doesDataTransactionExist: err.doesDataTransactionExist,
+                  isArFsEntityPublic: err.isArFsEntityPublic,
+                  isArFsEntityValid: err.isArFsEntityValid,
+                ),
+              );
+            } else {
+              logger.d('PinFileNetworkCheck cancelled');
+            }
+          } else {
+            logger.e('unknown error in PinFileNetworkCheck');
+            rethrow;
+          }
+        }
+      }
+
+      syncValidationResult = _runSynchronousValidation(name, id);
+
       if (!syncValidationResult.isValid) {
         emit(PinFileFieldsValidationError(
           id: id,
@@ -40,91 +105,31 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           idValidation: syncValidationResult.idValidation,
         ));
       } else {
-        // by this point the name and id are valid
-
-        final stateId = state.id;
-        final hasIdChanged = stateId != id;
-
-        // run network check only if the id has changed
-        if (hasIdChanged || state is PinFileFieldsValidationError) {
-          emit(PinFileNetworkCheckRunning(
-            id: id,
-            name: name,
-          ));
-
-          try {
-            final fileInfo = await _runNetworkValidation(
-              id,
-              name,
-              syncValidationResult.idValidation,
-            );
-            emit(PinFileFieldsValid(
+        if (state is PinFileFieldsValid) {
+          final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
+          emit(
+            PinFileFieldsValid(
               id: id,
-              // do not override the name if it's already set
-              name: name.isEmpty ? (fileInfo.maybeName ?? '') : name,
-              isPrivate: fileInfo.isPrivate,
-              contentType: fileInfo.dataContentType,
-              maybeLastUpdated: fileInfo.maybeLastUpdated,
-              maybeLastModified: fileInfo.maybeLastModified,
-              dateCreated: fileInfo.dateCreated,
-              size: fileInfo.size,
-              dataTxId: fileInfo.dataTxId,
-            ));
-          } catch (err) {
-            if (err is FileIdResolverException) {
-              final cancelled = err.cancelled;
-
-              if (!cancelled) {
-                emit(
-                  PinFileNetworkValidationError(
-                    id: id,
-                    name: name,
-                    doesDataTransactionExist: err.doesDataTransactionExist,
-                    isArFsEntityPublic: err.isArFsEntityPublic,
-                    isArFsEntityValid: err.isArFsEntityValid,
-                  ),
-                );
-              } else {
-                logger.d('PinFileNetworkCheck cancelled');
-              }
-            } else {
-              logger.e('unknown error in PinFileNetworkCheck');
-              rethrow;
-            }
-          }
-
-          // by this point, the state is either PinFileFieldsValid, or
-          /// PinFileNetworkValidationError
+              name: name,
+              isPrivate: stateAsPinFileFieldsValid.isPrivate,
+              contentType: stateAsPinFileFieldsValid.contentType,
+              dateCreated: stateAsPinFileFieldsValid.dateCreated,
+              size: stateAsPinFileFieldsValid.size,
+              dataTxId: stateAsPinFileFieldsValid.dataTxId,
+              maybeLastUpdated: stateAsPinFileFieldsValid.maybeLastUpdated,
+              maybeLastModified: stateAsPinFileFieldsValid.maybeLastModified,
+            ),
+          );
+        } else if (state is PinFileNetworkCheckRunning) {
+          emit(
+            PinFileNetworkCheckRunning(
+              id: id,
+              name: name,
+            ),
+          );
         } else {
-          // by this point only the name has changed, simply update the state
-          /// with no network check
-
-          if (state is PinFileFieldsValid) {
-            final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
-            emit(
-              PinFileFieldsValid(
-                id: id,
-                name: name,
-                isPrivate: stateAsPinFileFieldsValid.isPrivate,
-                contentType: stateAsPinFileFieldsValid.contentType,
-                dateCreated: stateAsPinFileFieldsValid.dateCreated,
-                size: stateAsPinFileFieldsValid.size,
-                dataTxId: stateAsPinFileFieldsValid.dataTxId,
-                maybeLastUpdated: stateAsPinFileFieldsValid.maybeLastUpdated,
-                maybeLastModified: stateAsPinFileFieldsValid.maybeLastModified,
-              ),
-            );
-          } else if (state is PinFileNetworkCheckRunning) {
-            emit(
-              PinFileNetworkCheckRunning(
-                id: id,
-                name: name,
-              ),
-            );
-          } else {
-            // state is PinFileNetworkValidationError
-            logger.d('State is $state');
-          }
+          // state is PinFileNetworkValidationError
+          logger.d('State is $state');
         }
       }
     });
@@ -132,6 +137,10 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     on<PinFileCancel>((event, emit) {
       // TODO: tell the "file id resolver" to stop any ongoing requests
       emit(PinFileAbort(id: state.id, name: state.name));
+    });
+
+    on<PinFileSubmit>((event, emit) {
+      throw UnimplementedError();
     });
   }
 
