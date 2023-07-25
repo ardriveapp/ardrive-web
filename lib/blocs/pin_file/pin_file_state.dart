@@ -112,6 +112,13 @@ class PinFileCreating extends PinFileState {
   List<Object> get props => [];
 }
 
+class PinFileAbort extends PinFileState {
+  const PinFileAbort({required super.id, required super.name});
+
+  @override
+  List<Object> get props => [];
+}
+
 class PinFileSucess extends PinFileState {
   const PinFileSucess({required super.id, required super.name});
 

@@ -4,11 +4,11 @@ abstract class PinFileEvent extends Equatable {
   const PinFileEvent();
 }
 
-class FiledsChanged extends PinFileEvent {
+class FieldsChanged extends PinFileEvent {
   final String name;
   final String id;
 
-  const FiledsChanged({required this.name, required this.id});
+  const FieldsChanged({required this.name, required this.id});
 
   @override
   List<Object> get props => [name, id];
@@ -17,15 +17,22 @@ class FiledsChanged extends PinFileEvent {
   String toString() => 'FiledChanged { name :$name, id :$id }';
 }
 
-class PinFileSubmitted extends PinFileEvent {
-  final String name;
-  final String id;
-
-  const PinFileSubmitted({required this.name, required this.id});
+class PinFileCancel extends PinFileEvent {
+  const PinFileCancel();
 
   @override
-  List<Object> get props => [name, id];
+  List<Object> get props => [];
 
   @override
-  String toString() => 'PinFileSubmitted { name :$name, id :$id }';
+  String toString() => 'PinFileCancel';
+}
+
+class PinFileSubmit extends PinFileEvent {
+  const PinFileSubmit();
+
+  @override
+  List<Object> get props => [];
+
+  @override
+  String toString() => 'PinFileSubmitted';
 }
