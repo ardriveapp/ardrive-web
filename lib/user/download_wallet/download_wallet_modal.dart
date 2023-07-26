@@ -26,20 +26,45 @@ class DownloadWalletModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveStandardModal(
-      title: appLocalizationsOf(context).downloadWalletKeyfile,
-      content: BlocListener<DownloadWalletBloc, DownloadWalletState>(
-        listener: (context, state) {
-          if (state is DownloadWalletSuccess) {
-            Navigator.of(context).pop();
-          } else if (state is DownloadWalletFailure) {
-            showAnimatedDialog(
-              context,
-              content: ArDriveStandardModal(
-                title: appLocalizationsOf(context).error,
-                content: Text(
-                  appLocalizationsOf(context)
-                      .anErrorOccuredWhileDownloadingYourKeyfile,
+    return BlocConsumer<DownloadWalletBloc, DownloadWalletState>(
+      listener: (context, state) {
+        if (state is DownloadWalletSuccess) {
+          Navigator.of(context).pop();
+        } else if (state is DownloadWalletFailure) {
+          showAnimatedDialog(
+            context,
+            content: ArDriveStandardModal(
+              title: appLocalizationsOf(context).error,
+              content: Text(
+                appLocalizationsOf(context)
+                    .anErrorOccuredWhileDownloadingYourKeyfile,
+                style: ArDriveTypography.body.buttonLargeBold(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeErrorDefault,
+                ),
+              ),
+              actions: [
+                ModalAction(
+                  title: appLocalizationsOf(context).ok,
+                  action: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        return ArDriveStandardModal(
+          title: appLocalizationsOf(context).downloadWalletKeyfile,
+          content: Column(
+            children: [
+              if (state is DownloadWalletWrongPassword) ...[
+                Text(
+                  appLocalizationsOf(context).validationPasswordIncorrect,
                   style: ArDriveTypography.body.buttonLargeBold(
                     color: ArDriveTheme.of(context)
                         .themeData
@@ -47,67 +72,41 @@ class DownloadWalletModal extends StatelessWidget {
                         .themeErrorDefault,
                   ),
                 ),
-                actions: [
-                  ModalAction(
-                    title: appLocalizationsOf(context).ok,
-                    action: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              ),
-            );
-          }
-        },
-        child: BlocBuilder<DownloadWalletBloc, DownloadWalletState>(
-          builder: (context, state) {
-            return Column(
-              children: [
-                if (state is DownloadWalletWrongPassword) ...[
-                  Text(
-                    appLocalizationsOf(context).validationPasswordIncorrect,
-                    style: ArDriveTypography.body.buttonLargeBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeErrorDefault,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-                ArDriveTextField(
-                  autofocus: true,
-                  controller: _passwordController,
-                  label: appLocalizationsOf(context).pleaseEnterYourPassword,
-                  obscureText: true,
-                  showObfuscationToggle: true,
-                  onFieldSubmitted: (_) {
-                    context
-                        .read<DownloadWalletBloc>()
-                        .add(DownloadWallet(_passwordController.text));
-                  },
-                ),
+                const SizedBox(height: 10),
               ],
-            );
-          },
-        ),
-      ),
-      actions: [
-        ModalAction(
-          title: appLocalizationsOf(context).cancel,
-          action: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        ModalAction(
-          title: appLocalizationsOf(context).enter,
-          action: () {
-            context
-                .read<DownloadWalletBloc>()
-                .add(DownloadWallet(_passwordController.text));
-          },
-        ),
-      ],
+              ArDriveTextField(
+                autofocus: true,
+                controller: _passwordController,
+                label: appLocalizationsOf(context).pleaseEnterYourPassword,
+                obscureText: true,
+                showObfuscationToggle: true,
+                onFieldSubmitted: (_) {
+                  context
+                      .read<DownloadWalletBloc>()
+                      .add(DownloadWallet(_passwordController.text));
+                },
+              ),
+            ],
+          ),
+          actions: [
+            ModalAction(
+              title: appLocalizationsOf(context).cancel,
+              action: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ModalAction(
+              title: appLocalizationsOf(context).enter,
+              isEnable: state is! DownloadWalletLoading,
+              action: () {
+                context
+                    .read<DownloadWalletBloc>()
+                    .add(DownloadWallet(_passwordController.text));
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
