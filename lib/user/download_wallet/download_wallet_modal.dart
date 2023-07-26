@@ -1,7 +1,9 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/user/download_wallet/bloc/download_wallet_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/io_utils.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -86,6 +88,22 @@ class DownloadWalletModal extends StatelessWidget {
                       .add(DownloadWallet(_passwordController.text));
                 },
               ),
+              const SizedBox(height: 16),
+              ArDriveClickArea(
+                child: GestureDetector(
+                  onTap: () {
+                    openUrl(
+                      url: Resources.howDoesKeyFileLoginWork,
+                    );
+                  },
+                  child: Text(
+                    appLocalizationsOf(context).whatIsAKeyFile,
+                    style: ArDriveTypography.body
+                        .buttonNormalRegular()
+                        .copyWith(decoration: TextDecoration.underline),
+                  ),
+                ),
+              )
             ],
           ),
           actions: [

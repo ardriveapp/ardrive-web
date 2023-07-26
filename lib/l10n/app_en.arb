@@ -1898,6 +1898,8 @@
   "@weWontRemindYouDescription": {
     "description": "We let the user know where to find the 'Leave Feedback' button"
   },
+  "whatIsAKeyFile": "What is a keyfile and how does it work?",
+  "@whatIsAKeyFile": {},
   "whatIsArDrive": "What is ArDrive?",
   "@whatIsArDrive": {
     "description": "What is ArDrive? link on shared file page"
