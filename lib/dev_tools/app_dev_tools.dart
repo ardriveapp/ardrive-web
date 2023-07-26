@@ -233,6 +233,19 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    ArDriveDevToolOption enablePins = ArDriveDevToolOption(
+      name: 'enablePins',
+      value: settings.enablePins,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(enablePins: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
     ArDriveDevToolOption autoSyncIntervalInSecondsOption = ArDriveDevToolOption(
       name: 'autoSyncIntervalInSeconds',
       value: settings.autoSyncIntervalInSeconds,
@@ -324,6 +337,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       enableMultipleFileDownloadOption,
       enableVideoPreviewOption,
       enableSeedPhreaseLogin,
+      enablePins,
       allowedDataItemSizeForTurboOption,
       defaultArweaveGatewayUrlOption,
       defaultTurboUrlOption,

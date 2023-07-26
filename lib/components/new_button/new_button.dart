@@ -343,7 +343,8 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.createSnapshot,
             icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
           ),
-        if (driveDetailState is DriveDetailLoadSuccess &&
+        if (context.read<ConfigService>().config.enablePins &&
+            driveDetailState is DriveDetailLoadSuccess &&
             drive != null &&
             drive?.privacy == 'public')
           _buildDriveDropdownItem(

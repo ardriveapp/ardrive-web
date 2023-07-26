@@ -5,12 +5,13 @@ import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arweave/arweave_service.dart';
-import 'package:ardrive/services/turbo/upload_service.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart';
 import 'package:uuid/uuid.dart';
 
 part 'file_id_resolver.dart';

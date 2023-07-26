@@ -9,6 +9,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart';
 
 Future<void> showPinFileDialog({
   required BuildContext context,
@@ -18,6 +19,7 @@ Future<void> showPinFileDialog({
   final turboService = context.read<TurboUploadService>();
   final profileCubit = context.read<ProfileCubit>();
   final driveDetailCubit = context.read<DriveDetailCubit>();
+  final ConfigService configService = context.read<ConfigService>();
 
   final stateAsLoggedIn = driveDetailCubit.state as DriveDetailLoadSuccess;
   final currentDrive = stateAsLoggedIn.currentDrive;
@@ -31,6 +33,8 @@ Future<void> showPinFileDialog({
         create: (context) {
           final FileIdResolver fileIdResolver = NetworkFileIdResolver(
             arweave: arweave,
+            httpClient: Client(),
+            configService: configService,
           );
           return PinFileBloc(
             fileIdResolver: fileIdResolver,

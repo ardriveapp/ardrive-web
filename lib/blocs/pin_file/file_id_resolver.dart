@@ -4,19 +4,23 @@ class NetworkFileIdResolver implements FileIdResolver {
   // TODO: add a debouncer and a completer
 
   final ArweaveService arweave;
+  final ConfigService configService;
+  final Client httpClient;
 
   const NetworkFileIdResolver({
     required this.arweave,
+    required this.httpClient,
+    required this.configService,
   });
 
   @override
-  Future<FileInfo> requestForFileId(String id) async {
+  Future<FileInfo> requestForFileId(String fileId) async {
     late FileEntity? fileEntity;
     try {
-      fileEntity = await arweave.getLatestFileEntityWithId(id);
+      fileEntity = await arweave.getLatestFileEntityWithId(fileId);
     } catch (_) {
       throw FileIdResolverException(
-        id: id,
+        id: fileId,
         cancelled: false,
         networkError: true,
         isArFsEntityValid: false,
@@ -29,7 +33,7 @@ class NetworkFileIdResolver implements FileIdResolver {
       // It either doesn't exist, is invalid, or private.
 
       throw FileIdResolverException(
-        id: id,
+        id: fileId,
         cancelled: false,
         networkError: false,
         isArFsEntityValid: false,
@@ -54,9 +58,69 @@ class NetworkFileIdResolver implements FileIdResolver {
   }
 
   @override
-  Future<FileInfo> requestForTransactionId(String id) {
-    // TODO: implement requestForTransactionId
+  Future<FileInfo> requestForTransactionId(String dataTxId) async {
     throw UnimplementedError();
+
+    logger.d(
+      'Attempting to build URI: '
+      '${configService.config.defaultArweaveGatewayUrl}'
+      '/$dataTxId',
+    );
+
+    final uri = Uri.https(
+      '${configService.config.defaultArweaveGatewayUrl}',
+      '/$dataTxId',
+    );
+    final response = await httpClient.head(uri);
+
+    final Map headers = response.headers;
+    final String? contentTypeHeader = headers['content-type'];
+    final int? sizeHeader = int.tryParse(headers['content-length'] ?? '');
+
+    if (response.statusCode != 200 ||
+        sizeHeader == null ||
+        contentTypeHeader == null) {
+      throw FileIdResolverException(
+        id: dataTxId,
+        cancelled: false,
+        networkError: false,
+        isArFsEntityValid: false,
+        isArFsEntityPublic: false,
+        doesDataTransactionExist: false,
+      );
+    }
+
+    final transactionDetails = await arweave.getTransactionDetails(dataTxId);
+
+    if (transactionDetails == null) {
+      throw FileIdResolverException(
+        id: dataTxId,
+        cancelled: false,
+        networkError: false,
+        isArFsEntityValid: false,
+        isArFsEntityPublic: false,
+        doesDataTransactionExist: false,
+      );
+    }
+
+    final tags = transactionDetails.tags;
+    final cipherIvTag = tags.firstWhereOrNull(
+      (tag) => tag.name == 'Cipher-Iv' && tag.value.isNotEmpty,
+    );
+
+    final FileInfo fileInfo = FileInfo(
+      isPrivate: cipherIvTag == null ? false : true,
+      maybeName: null,
+      dataContentType: contentTypeHeader,
+      maybeLastUpdated: null,
+      maybeLastModified: null,
+      dateCreated: DateTime.now(),
+      size: sizeHeader,
+      dataTxId: dataTxId,
+      pinnedDataOwnerAddress: transactionDetails.owner.address,
+    );
+
+    return fileInfo;
   }
 }
 
