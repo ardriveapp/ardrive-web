@@ -146,9 +146,25 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
               networkError: false,
               isArFsEntityValid: true,
               isArFsEntityPublic: true,
-              doesDataTransactionExist: false,
+              doesDataTransactionExist: true,
             ),
           );
+        } else if (state is PinFileInitial) {
+          emit(
+            PinFileFieldsValidationError(
+              id: id,
+              name: name,
+              nameValidation: syncValidationResult.nameValidation,
+              idValidation: syncValidationResult.idValidation,
+              cancelled: false,
+              networkError: false,
+              isArFsEntityValid: true,
+              isArFsEntityPublic: true,
+              doesDataTransactionExist: true,
+            ),
+          );
+        } else {
+          logger.d('Unexpected state $state');
         }
       } else {
         if (state is PinFileFieldsValid) {

@@ -101,15 +101,21 @@ void main() {
           )
           ..add(
             const FieldsChanged(name: validName, id: validFileId_2),
+          )
+          ..add(
+            const FieldsChanged(name: invalidName, id: validFileId_2),
           ),
         expect: () => [
           const PinFileNetworkCheckRunning(
             id: validTxId_1,
             name: validName,
+            idValidation: IdValidationResult.validTransactionId,
+            nameValidation: NameValidationResult.valid,
           ),
           PinFileFieldsValid(
             id: validTxId_1,
             name: validName,
+            nameValidation: NameValidationResult.valid,
             isPrivate: false,
             contentType: 'application/json',
             maybeLastUpdated: mockDate,
@@ -121,10 +127,13 @@ void main() {
           const PinFileNetworkCheckRunning(
             id: validTxId_2,
             name: validName,
+            idValidation: IdValidationResult.validTransactionId,
+            nameValidation: NameValidationResult.valid,
           ),
           PinFileFieldsValid(
             id: validTxId_2,
             name: validName,
+            nameValidation: NameValidationResult.valid,
             isPrivate: false,
             contentType: 'application/json',
             maybeLastUpdated: mockDate,
@@ -136,10 +145,13 @@ void main() {
           const PinFileNetworkCheckRunning(
             id: validFileId_1,
             name: validName,
+            idValidation: IdValidationResult.validEntityId,
+            nameValidation: NameValidationResult.valid,
           ),
           PinFileFieldsValid(
             id: validFileId_1,
             name: validName,
+            nameValidation: NameValidationResult.valid,
             isPrivate: false,
             contentType: 'application/json',
             maybeLastUpdated: mockDate,
@@ -151,10 +163,25 @@ void main() {
           const PinFileNetworkCheckRunning(
             id: validFileId_2,
             name: validName,
+            idValidation: IdValidationResult.validEntityId,
+            nameValidation: NameValidationResult.valid,
           ),
           PinFileFieldsValid(
             id: validFileId_2,
             name: validName,
+            nameValidation: NameValidationResult.valid,
+            isPrivate: false,
+            contentType: 'application/json',
+            maybeLastUpdated: mockDate,
+            maybeLastModified: mockDate,
+            dateCreated: mockDate,
+            size: 1,
+            dataTxId: validTxId_2,
+          ),
+          PinFileFieldsValid(
+            id: validFileId_2,
+            name: invalidName,
+            nameValidation: NameValidationResult.invalid,
             isPrivate: false,
             contentType: 'application/json',
             maybeLastUpdated: mockDate,
@@ -167,7 +194,7 @@ void main() {
       );
 
       blocTest<PinFileBloc, PinFileState>(
-        'invalid synchronous validation',
+        'invalid fields',
         build: () => PinFileBloc(fileIdResolver: fileIdResolver),
         act: (bloc) => bloc
           ..add(
@@ -191,30 +218,55 @@ void main() {
             name: invalidName,
             nameValidation: NameValidationResult.invalid,
             idValidation: IdValidationResult.invalid,
+            cancelled: false,
+            networkError: false,
+            isArFsEntityValid: true,
+            isArFsEntityPublic: true,
+            doesDataTransactionExist: true,
           ),
           const PinFileFieldsValidationError(
             id: invalidId,
             name: validName,
             nameValidation: NameValidationResult.valid,
             idValidation: IdValidationResult.invalid,
+            cancelled: false,
+            networkError: false,
+            isArFsEntityValid: true,
+            isArFsEntityPublic: true,
+            doesDataTransactionExist: true,
           ),
           const PinFileFieldsValidationError(
             id: invalidId,
             name: invalidName,
             nameValidation: NameValidationResult.invalid,
             idValidation: IdValidationResult.invalid,
+            cancelled: false,
+            networkError: false,
+            isArFsEntityValid: true,
+            isArFsEntityPublic: true,
+            doesDataTransactionExist: true,
           ),
           const PinFileFieldsValidationError(
             id: invalidId,
             name: '',
             nameValidation: NameValidationResult.required,
             idValidation: IdValidationResult.invalid,
+            cancelled: false,
+            networkError: false,
+            isArFsEntityValid: true,
+            isArFsEntityPublic: true,
+            doesDataTransactionExist: true,
           ),
           const PinFileFieldsValidationError(
             id: '',
             name: invalidName,
             nameValidation: NameValidationResult.invalid,
             idValidation: IdValidationResult.required,
+            cancelled: false,
+            networkError: false,
+            isArFsEntityValid: true,
+            isArFsEntityPublic: true,
+            doesDataTransactionExist: true,
           ),
         ],
       );
@@ -226,6 +278,7 @@ void main() {
         seed: () => PinFileFieldsValid(
           id: validFileId_1,
           name: validName,
+          nameValidation: NameValidationResult.valid,
           isPrivate: false,
           contentType: 'application/json',
           dateCreated: mockDate,
@@ -245,6 +298,7 @@ void main() {
           PinFileFieldsValid(
             id: validFileId_1,
             name: 'otro nombre',
+            nameValidation: NameValidationResult.valid,
             isPrivate: false,
             contentType: 'application/json',
             maybeLastUpdated: mockDate,
@@ -256,6 +310,7 @@ void main() {
           PinFileFieldsValid(
             id: validFileId_1,
             name: 'pew! pew! pew!',
+            nameValidation: NameValidationResult.valid,
             isPrivate: false,
             contentType: 'application/json',
             maybeLastUpdated: mockDate,
@@ -274,6 +329,8 @@ void main() {
         seed: () => const PinFileNetworkCheckRunning(
           id: validFileId_1,
           name: validName,
+          nameValidation: NameValidationResult.valid,
+          idValidation: IdValidationResult.validEntityId,
         ),
         act: (bloc) => bloc
           ..add(
@@ -286,10 +343,14 @@ void main() {
           const PinFileNetworkCheckRunning(
             id: validFileId_1,
             name: 'otro nombre',
+            nameValidation: NameValidationResult.valid,
+            idValidation: IdValidationResult.validEntityId,
           ),
           const PinFileNetworkCheckRunning(
             id: validFileId_1,
             name: 'pew! pew! pew!',
+            nameValidation: NameValidationResult.valid,
+            idValidation: IdValidationResult.validEntityId,
           ),
         ],
       );
