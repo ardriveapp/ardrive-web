@@ -3,6 +3,7 @@ part of 'pin_file_bloc.dart';
 enum NameValidationResult {
   required,
   invalid,
+  conflicting,
   valid,
 }
 
@@ -22,6 +23,7 @@ class FileInfo {
   final DateTime dateCreated;
   final int size;
   final String dataTxId;
+  final String pinnedDataOwnerAddress;
 
   const FileInfo({
     required this.isPrivate,
@@ -32,5 +34,6 @@ class FileInfo {
     required this.dateCreated,
     required this.size,
     required this.dataTxId,
+    required this.pinnedDataOwnerAddress,
   });
 }

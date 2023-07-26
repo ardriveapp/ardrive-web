@@ -68,49 +68,28 @@ class PinFileNetworkCheckRunning extends PinFileState {
   List<Object> get props => [id, name, nameValidation, idValidation];
 }
 
-// class PinFileNetworkValidationError extends PinFileState {
-//   final bool doesDataTransactionExist;
-//   final bool isArFsEntityValid;
-//   final bool isArFsEntityPublic;
-
-//   const PinFileNetworkValidationError({
-//     required super.id,
-//     required super.name,
-//     required this.isArFsEntityValid,
-//     required this.isArFsEntityPublic,
-//     required this.doesDataTransactionExist,
-//   });
-
-//   @override
-//   List<Object?> get props => [
-//         id,
-//         name,
-//         isArFsEntityValid,
-//         isArFsEntityPublic,
-//         doesDataTransactionExist,
-//       ];
-// }
-
 class PinFileFieldsValid extends PinFileState {
   final bool isPrivate; // TODO: use an enum
-  final String contentType; // TODO: use an enum
+  final String dataContentType; // TODO: use an enum
   final DateTime? maybeLastUpdated;
   final DateTime? maybeLastModified;
   final DateTime dateCreated;
   final int size;
   final String dataTxId;
+  final String pinnedDataOwnerAddress;
 
   const PinFileFieldsValid({
     required String id,
     required String name,
     required NameValidationResult nameValidation,
     required this.isPrivate,
-    required this.contentType,
+    required this.dataContentType,
     this.maybeLastUpdated,
     this.maybeLastModified,
     required this.dateCreated,
     required this.size,
     required this.dataTxId,
+    required this.pinnedDataOwnerAddress,
   }) : super(
           id: id,
           name: name,
@@ -123,22 +102,27 @@ class PinFileFieldsValid extends PinFileState {
         id,
         name,
         isPrivate,
-        contentType,
+        dataContentType,
         maybeLastUpdated,
         maybeLastModified,
         dateCreated,
         size,
         dataTxId,
+        pinnedDataOwnerAddress,
       ];
 }
 
 class PinFileCreating extends PinFileState {
   const PinFileCreating({
-    required super.id,
-    required super.name,
-    required super.nameValidation,
-    required super.idValidation,
-  });
+    required String id,
+    required String name,
+    required IdValidationResult idValidation,
+  }) : super(
+          id: id,
+          name: name,
+          nameValidation: NameValidationResult.valid,
+          idValidation: idValidation,
+        );
 
   @override
   List<Object> get props => [];
@@ -156,8 +140,8 @@ class PinFileAbort extends PinFileState {
   List<Object> get props => [];
 }
 
-class PinFileSucess extends PinFileState {
-  const PinFileSucess({
+class PinFileSuccess extends PinFileState {
+  const PinFileSuccess({
     required super.id,
     required super.name,
     required super.nameValidation,

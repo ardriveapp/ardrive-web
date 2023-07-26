@@ -47,6 +47,7 @@ class NetworkFileIdResolver implements FileIdResolver {
       dateCreated: fileEntity.lastModifiedDate!,
       size: fileEntity.size!,
       dataTxId: fileEntity.dataTxId!,
+      pinnedDataOwnerAddress: fileEntity.ownerAddress,
     );
 
     return fileInfo;

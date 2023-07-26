@@ -32,6 +32,9 @@ class FileEntity extends Entity {
   String? dataTxId;
   String? dataContentType;
 
+  @JsonKey()
+  String? pinnedDataOwnerAddress;
+
   FileEntity({
     this.id,
     this.driveId,
@@ -41,6 +44,7 @@ class FileEntity extends Entity {
     this.lastModifiedDate,
     this.dataTxId,
     this.dataContentType,
+    this.pinnedDataOwnerAddress,
   }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({

@@ -1,12 +1,17 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/file_entity.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/services/turbo/upload_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
 
 part 'file_id_resolver.dart';
 part 'pin_file_event.dart';
@@ -14,15 +19,31 @@ part 'pin_file_state.dart';
 part 'types.dart';
 
 class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
+  final ArweaveService _arweave;
+  final DriveDao _driveDao;
+  final TurboUploadService _turboUploadService;
+  final ProfileCubit _profileCubit;
   final FileIdResolver _fileIdResolver;
-  // final idTextController = TextEditingController();
   final nameTextController = TextEditingController();
+  final DriveID _driveId;
+  final FolderID _parentFolderId;
 
   PinFileBloc({
+    required ArweaveService arweave,
+    required DriveDao driveDao,
+    required TurboUploadService turboUploadService,
+    required ProfileCubit profileCubit,
     required FileIdResolver fileIdResolver,
+    required DriveID driveID,
+    required FolderID parentFolderId,
   })  : _fileIdResolver = fileIdResolver,
+        _arweave = arweave,
+        _driveDao = driveDao,
+        _turboUploadService = turboUploadService,
+        _profileCubit = profileCubit,
+        _driveId = driveID,
+        _parentFolderId = parentFolderId,
         super(const PinFileInitial()) {
-    // idTextController.text = '';
     nameTextController.text = '';
 
     on<FieldsChanged>((event, emit) async {
@@ -40,7 +61,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       final hasIdChanged = stateId != id;
 
       SynchronousValidationResult syncValidationResult =
-          _runSynchronousValidation(name, id);
+          await _runSynchronousValidation(name, id);
 
       if (hasIdChanged && syncValidationResult.isIdValid) {
         emit(PinFileNetworkCheckRunning(
@@ -68,19 +89,20 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
             name = newName;
           }
 
-          syncValidationResult = _runSynchronousValidation(name, id);
+          syncValidationResult = await _runSynchronousValidation(name, id);
 
           emit(PinFileFieldsValid(
             id: id,
             name: name,
             nameValidation: syncValidationResult.nameValidation,
             isPrivate: fileInfo.isPrivate,
-            contentType: fileInfo.dataContentType,
+            dataContentType: fileInfo.dataContentType,
             maybeLastUpdated: fileInfo.maybeLastUpdated,
             maybeLastModified: fileInfo.maybeLastModified,
             dateCreated: fileInfo.dateCreated,
             size: fileInfo.size,
             dataTxId: fileInfo.dataTxId,
+            pinnedDataOwnerAddress: fileInfo.pinnedDataOwnerAddress,
           ));
         } catch (err) {
           if (err is FileIdResolverException) {
@@ -175,12 +197,14 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
               name: name,
               nameValidation: syncValidationResult.nameValidation,
               isPrivate: stateAsPinFileFieldsValid.isPrivate,
-              contentType: stateAsPinFileFieldsValid.contentType,
+              dataContentType: stateAsPinFileFieldsValid.dataContentType,
               dateCreated: stateAsPinFileFieldsValid.dateCreated,
               size: stateAsPinFileFieldsValid.size,
               dataTxId: stateAsPinFileFieldsValid.dataTxId,
               maybeLastUpdated: stateAsPinFileFieldsValid.maybeLastUpdated,
               maybeLastModified: stateAsPinFileFieldsValid.maybeLastModified,
+              pinnedDataOwnerAddress:
+                  stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
             ),
           );
         } else if (state is PinFileNetworkCheckRunning) {
@@ -227,17 +251,113 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       ));
     });
 
-    on<PinFileSubmit>((event, emit) {
-      throw UnimplementedError();
+    on<PinFileSubmit>((event, emit) async {
+      final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
+      final profileState = _profileCubit.state as ProfileLoggedIn;
+
+      emit(PinFileCreating(
+        id: stateAsPinFileFieldsValid.id,
+        name: stateAsPinFileFieldsValid.name,
+        idValidation: stateAsPinFileFieldsValid.idValidation,
+      ));
+
+      final newFileEntity = FileEntity.fromJson(
+        {
+          'name': stateAsPinFileFieldsValid.name,
+          'size': stateAsPinFileFieldsValid.size,
+          'lastModifiedDate': stateAsPinFileFieldsValid
+              .maybeLastModified?.millisecondsSinceEpoch,
+          'dataTxId': stateAsPinFileFieldsValid.dataTxId,
+          'dataContentType': stateAsPinFileFieldsValid.dataContentType,
+          'pinnedDataOwnerAddress':
+              stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
+        },
+      );
+
+      newFileEntity.id = const Uuid().v4();
+      newFileEntity.driveId = _driveId;
+      newFileEntity.parentFolderId = _parentFolderId;
+
+      await _driveDao.transaction(() async {
+        final parentFolder = await _driveDao
+            .folderById(driveId: _driveId, folderId: _parentFolderId)
+            .getSingle();
+
+        if (_turboUploadService.useTurboUpload) {
+          final fileDataItem = await _arweave.prepareEntityDataItem(
+            newFileEntity,
+            profileState.wallet,
+            // TODO: key
+          );
+
+          await _turboUploadService.postDataItem(
+            dataItem: fileDataItem,
+            wallet: profileState.wallet,
+          );
+          newFileEntity.txId = fileDataItem.id;
+        } else {
+          final fileDataItem = await _arweave.prepareEntityTx(
+            newFileEntity,
+            profileState.wallet,
+            null, // TODO: key
+          );
+
+          await _arweave.postTx(fileDataItem);
+          newFileEntity.txId = fileDataItem.id;
+        }
+
+        final parentFolderPath = parentFolder.path;
+        final filePath = '$parentFolderPath/${newFileEntity.name}';
+
+        await _driveDao.writeFileEntity(newFileEntity, filePath);
+        await _driveDao.insertFileRevision(newFileEntity.toRevisionCompanion(
+          // FIXME: this is gonna change when we allow to ovewrite an existing file
+          performedAction: RevisionAction.create,
+        ));
+      });
+
+      emit(PinFileSuccess(
+        id: state.id,
+        name: state.name,
+        nameValidation: state.nameValidation,
+        idValidation: state.idValidation,
+      ));
     });
   }
 
-  SynchronousValidationResult _runSynchronousValidation(
+  Future<bool> doesNameConflicts(String name) async {
+    try {
+      logger.d(
+        'About to check if entity with same name ($name) exists',
+      );
+      final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
+        name: name,
+        driveId: _driveId,
+        parentFolderId: _parentFolderId,
+      );
+
+      logger.d('entityWithSameNameExists: $entityWithSameNameExists');
+
+      return entityWithSameNameExists;
+    } catch (err) {
+      // TODO: do somethin'
+      rethrow;
+    }
+  }
+
+  Future<SynchronousValidationResult> _runSynchronousValidation(
     String name,
     String id,
-  ) {
-    final NameValidationResult nameValidation = validateName(name);
+  ) async {
+    NameValidationResult nameValidation = validateName(name);
     final IdValidationResult idValidation = validateId(id);
+
+    if (nameValidation == NameValidationResult.valid) {
+      final doesItConflict = await doesNameConflicts(name);
+      if (doesItConflict) {
+        nameValidation = NameValidationResult.conflicting;
+      }
+    }
 
     return SynchronousValidationResult(
       nameValidation: nameValidation,

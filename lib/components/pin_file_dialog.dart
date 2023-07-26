@@ -1,6 +1,9 @@
+import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/pin_file/pin_file_bloc.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
-import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -11,6 +14,15 @@ Future<void> showPinFileDialog({
   required BuildContext context,
 }) {
   final arweave = context.read<ArweaveService>();
+  final driveDao = context.read<DriveDao>();
+  final turboService = context.read<TurboUploadService>();
+  final profileCubit = context.read<ProfileCubit>();
+  final driveDetailCubit = context.read<DriveDetailCubit>();
+
+  final stateAsLoggedIn = driveDetailCubit.state as DriveDetailLoadSuccess;
+  final currentDrive = stateAsLoggedIn.currentDrive;
+  final currentFolder = stateAsLoggedIn.folderInView;
+
   return showModalDialog(
     context,
     () => showAnimatedDialog(
@@ -20,7 +32,15 @@ Future<void> showPinFileDialog({
           final FileIdResolver fileIdResolver = NetworkFileIdResolver(
             arweave: arweave,
           );
-          return PinFileBloc(fileIdResolver: fileIdResolver);
+          return PinFileBloc(
+            fileIdResolver: fileIdResolver,
+            arweave: arweave,
+            driveDao: driveDao,
+            turboUploadService: turboService,
+            profileCubit: profileCubit,
+            driveID: currentDrive.id,
+            parentFolderId: currentFolder.folder.id,
+          );
         },
         child: const PinFileDialog(),
       ),
@@ -38,7 +58,9 @@ class PinFileDialog extends StatelessWidget {
     return BlocConsumer<PinFileBloc, PinFileState>(
       listener: (context, state) {
         logger.d('PinFileBloc state: $state');
-        if (state is PinFileAbort) {
+        if (state is PinFileAbort ||
+            state is PinFileSuccess ||
+            state is PinFileError) {
           Navigator.of(context).pop();
         }
       },
@@ -53,8 +75,12 @@ class PinFileDialog extends StatelessWidget {
           } else if (!state.isArFsEntityValid) {
             customErrorMessage = 'File is not valid';
           }
+        }
 
-          logger.d('PinFileNetworkValidationError: $customErrorMessage');
+        if (customErrorMessage == null) {
+          if (state.nameValidation == NameValidationResult.conflicting) {
+            customErrorMessage = 'That name already exists';
+          }
         }
 
         return ArDriveStandardModal(
