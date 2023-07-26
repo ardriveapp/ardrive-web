@@ -29,6 +29,8 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       String name = event.name;
       final String id = event.id;
 
+      logger.d('FieldsChanged: name: $name, id: $id');
+
       if (name.isEmpty && id.isEmpty) {
         emit(const PinFileInitial());
         return;
@@ -44,6 +46,8 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         emit(PinFileNetworkCheckRunning(
           id: id,
           name: name,
+          idValidation: syncValidationResult.idValidation,
+          nameValidation: syncValidationResult.nameValidation,
         ));
 
         try {
@@ -56,13 +60,20 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           // do not override the name if it's already set
           final newName = name.isEmpty ? (fileInfo.maybeName ?? '') : name;
           if (newName != name) {
+            logger.d(
+              'name changed from $name to $newName - name in state: '
+              '${state.name}',
+            );
             nameTextController.text = newName;
             name = newName;
           }
 
+          syncValidationResult = _runSynchronousValidation(name, id);
+
           emit(PinFileFieldsValid(
             id: id,
             name: name,
+            nameValidation: syncValidationResult.nameValidation,
             isPrivate: fileInfo.isPrivate,
             contentType: fileInfo.dataContentType,
             maybeLastUpdated: fileInfo.maybeLastUpdated,
@@ -77,12 +88,16 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
 
             if (!cancelled) {
               emit(
-                PinFileNetworkValidationError(
+                PinFileFieldsValidationError(
                   id: id,
                   name: name,
-                  doesDataTransactionExist: err.doesDataTransactionExist,
-                  isArFsEntityPublic: err.isArFsEntityPublic,
+                  nameValidation: syncValidationResult.nameValidation,
+                  idValidation: syncValidationResult.idValidation,
+                  cancelled: cancelled,
+                  networkError: err.networkError,
                   isArFsEntityValid: err.isArFsEntityValid,
+                  isArFsEntityPublic: err.isArFsEntityPublic,
+                  doesDataTransactionExist: err.doesDataTransactionExist,
                 ),
               );
             } else {
@@ -95,15 +110,46 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         }
       }
 
-      syncValidationResult = _runSynchronousValidation(name, id);
-
-      if (!syncValidationResult.isValid) {
-        emit(PinFileFieldsValidationError(
-          id: id,
-          name: name,
-          nameValidation: syncValidationResult.nameValidation,
-          idValidation: syncValidationResult.idValidation,
-        ));
+      if (!syncValidationResult.isIdValid) {
+        if (state is PinFileFieldsValidationError) {
+          final stateAsPinFileFieldsValidationError =
+              state as PinFileFieldsValidationError;
+          emit(PinFileFieldsValidationError(
+            id: id,
+            name: name,
+            nameValidation: syncValidationResult.nameValidation,
+            idValidation: syncValidationResult.idValidation,
+            cancelled: stateAsPinFileFieldsValidationError.cancelled,
+            networkError: stateAsPinFileFieldsValidationError.networkError,
+            isArFsEntityValid:
+                stateAsPinFileFieldsValidationError.isArFsEntityValid,
+            isArFsEntityPublic:
+                stateAsPinFileFieldsValidationError.isArFsEntityPublic,
+            doesDataTransactionExist:
+                stateAsPinFileFieldsValidationError.doesDataTransactionExist,
+          ));
+        } else if (state is PinFileNetworkCheckRunning) {
+          emit(PinFileNetworkCheckRunning(
+            id: id,
+            name: name,
+            nameValidation: syncValidationResult.nameValidation,
+            idValidation: syncValidationResult.idValidation,
+          ));
+        } else if (state is PinFileFieldsValid) {
+          emit(
+            PinFileFieldsValidationError(
+              id: id,
+              name: name,
+              nameValidation: syncValidationResult.nameValidation,
+              idValidation: syncValidationResult.idValidation,
+              cancelled: false,
+              networkError: false,
+              isArFsEntityValid: true,
+              isArFsEntityPublic: true,
+              doesDataTransactionExist: false,
+            ),
+          );
+        }
       } else {
         if (state is PinFileFieldsValid) {
           final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
@@ -111,6 +157,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
             PinFileFieldsValid(
               id: id,
               name: name,
+              nameValidation: syncValidationResult.nameValidation,
               isPrivate: stateAsPinFileFieldsValid.isPrivate,
               contentType: stateAsPinFileFieldsValid.contentType,
               dateCreated: stateAsPinFileFieldsValid.dateCreated,
@@ -125,18 +172,43 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
             PinFileNetworkCheckRunning(
               id: id,
               name: name,
+              nameValidation: syncValidationResult.nameValidation,
+              idValidation: syncValidationResult.idValidation,
+            ),
+          );
+        } else if (state is PinFileFieldsValidationError) {
+          final stateAsPinFileFieldsValidationError =
+              state as PinFileFieldsValidationError;
+          emit(
+            PinFileFieldsValidationError(
+              id: id,
+              name: name,
+              nameValidation: syncValidationResult.nameValidation,
+              idValidation: syncValidationResult.idValidation,
+              cancelled: stateAsPinFileFieldsValidationError.cancelled,
+              networkError: stateAsPinFileFieldsValidationError.networkError,
+              isArFsEntityValid:
+                  stateAsPinFileFieldsValidationError.isArFsEntityValid,
+              isArFsEntityPublic:
+                  stateAsPinFileFieldsValidationError.isArFsEntityPublic,
+              doesDataTransactionExist:
+                  stateAsPinFileFieldsValidationError.doesDataTransactionExist,
             ),
           );
         } else {
-          // state is PinFileNetworkValidationError
-          logger.d('State is $state');
+          logger.d('Unexpected state $state');
         }
       }
     });
 
     on<PinFileCancel>((event, emit) {
       // TODO: tell the "file id resolver" to stop any ongoing requests
-      emit(PinFileAbort(id: state.id, name: state.name));
+      emit(PinFileAbort(
+        id: state.id,
+        name: state.name,
+        nameValidation: NameValidationResult.required,
+        idValidation: IdValidationResult.required,
+      ));
     });
 
     on<PinFileSubmit>((event, emit) {
@@ -200,7 +272,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     if (value.isEmpty) {
       return IdValidationResult.required;
     } else if (fileIdHasMatch) {
-      return IdValidationResult.validFileId;
+      return IdValidationResult.validEntityId;
     } else if (transactionIdHasMatch) {
       return IdValidationResult.validTransactionId;
     } else {
@@ -227,7 +299,7 @@ class SynchronousValidationResult {
 
   bool get isNameValid => nameValidation == NameValidationResult.valid;
   bool get isIdValid =>
-      idValidation == IdValidationResult.validFileId ||
+      idValidation == IdValidationResult.validEntityId ||
       idValidation == IdValidationResult.validTransactionId;
 
   bool get isValid => isNameValid && isIdValid;

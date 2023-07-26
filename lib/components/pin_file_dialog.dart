@@ -43,6 +43,20 @@ class PinFileDialog extends StatelessWidget {
         }
       },
       builder: (context, state) {
+        String? customErrorMessage;
+
+        if (state is PinFileFieldsValidationError) {
+          if (!state.doesDataTransactionExist) {
+            customErrorMessage = 'File data transaction does not exist';
+          } else if (!state.isArFsEntityPublic) {
+            customErrorMessage = 'File is not public';
+          } else if (!state.isArFsEntityValid) {
+            customErrorMessage = 'File is not valid';
+          }
+
+          logger.d('PinFileNetworkValidationError: $customErrorMessage');
+        }
+
         return ArDriveStandardModal(
           title: 'Testing title',
           content: SizedBox(
@@ -92,7 +106,7 @@ class PinFileDialog extends StatelessWidget {
                   },
                   controller: pinFileBloc.nameTextController,
                 ),
-                if (state is PinFileNetworkValidationError)
+                if (customErrorMessage != null)
                   SizedBox(
                     width: kMediumDialogWidth,
                     child: Align(
@@ -100,11 +114,7 @@ class PinFileDialog extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: Text(
-                          !state.doesDataTransactionExist
-                              ? 'Data transaction does not exist'
-                              : !state.isArFsEntityPublic
-                                  ? 'File is not public'
-                                  : 'File is not valid',
+                          customErrorMessage,
                         ),
                       ),
                     ),
@@ -121,7 +131,8 @@ class PinFileDialog extends StatelessWidget {
               action: () => pinFileBloc.add(const PinFileSubmit()),
               title: 'Create',
               // FIXME: "isEnabled"
-              isEnable: state is PinFileFieldsValid,
+              isEnable: state is PinFileFieldsValid &&
+                  state.nameValidation == NameValidationResult.valid,
             ),
           ],
         );

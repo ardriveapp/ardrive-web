@@ -9,7 +9,7 @@ enum NameValidationResult {
 enum IdValidationResult {
   required,
   invalid,
-  validFileId,
+  validEntityId,
   validTransactionId,
 }
 
