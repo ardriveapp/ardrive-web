@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ui';
 
 import 'package:animations/animations.dart';
@@ -17,14 +16,13 @@ import 'package:ardrive/services/authentication/biometric_permission_dialog.dart
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/split_localizations.dart';
-import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -1758,13 +1756,11 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
   }
 
   void _onDownload() async {
-    final jsonTxt = jsonEncode(widget.wallet!.toJwk());
+    final ioUtils = ArDriveIOUtils();
 
-    final ArDriveIO io = ArDriveIO();
-    final bytes = Uint8List.fromList(utf8.encode(jsonTxt));
-
-    await io.saveFile(await IOFile.fromData(bytes,
-        name: "ardrive-wallet.json", lastModifiedDate: DateTime.now()));
+    await ioUtils.downloadWalletAsJsonFile(
+      wallet: widget.wallet,
+    );
   }
 }
 
