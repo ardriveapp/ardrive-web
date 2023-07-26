@@ -87,8 +87,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.5.0"
-      resolved-ref: "4e709cc9375c10ae64f6863545e8778816a262a3"
+      ref: PE-4295-update-label-color-of-ar-drive-text-field
+      resolved-ref: "61aaf39814ed11f678173f4fc9d54595475e1724"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.5.0"
