@@ -937,7 +937,7 @@
   },
   "howAreConversionsDetermined": "How are conversions determined?",
   "@howAreConversionsDetermined": {},
-  "howDoesKeyfileLoginWork": "How does keyfile log in work?",
+  "howDoesKeyfileLoginWork": "How do keyfile and seed phrase login work?",
   "@howDoesKeyfileLoginWork": {
     "description": "Title for explaining keyfile login"
   },
