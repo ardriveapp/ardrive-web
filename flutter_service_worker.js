@@ -3,8 +3,8 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"index.html": "80ba8dd020bb5657f12458294bd66948",
-"/": "80ba8dd020bb5657f12458294bd66948",
+const RESOURCES = {"index.html": "187cff1e1fc2eb7cc5afe8bf71abb7e7",
+"/": "187cff1e1fc2eb7cc5afe8bf71abb7e7",
 "flutter.js": "6fef97aeca90b426343ba6c5c9dc5d4a",
 "worker.js": "f916974921b8b3d98f9fdfc4b68e5432",
 "favicon.png": "167c77d2168cfdb31c240d2d3d5e9601",
@@ -13,7 +13,7 @@ const RESOURCES = {"index.html": "80ba8dd020bb5657f12458294bd66948",
 "js/arweave-wallet.js": "a40d9528a4fd067426c4bf6b1837f312",
 "js/arconnect.js": "319aaf4ece35e24861e488a1e292c5d7",
 "js/is_document_focused.js": "50c9b2315780823c9234b1115a50d564",
-"main.dart.js": "f8c222b7b002e4184fb7fe437fd1dec2",
+"main.dart.js": "513b358e9e245ff8e1ee5e16d10365eb",
 "version.json": "febc8074bdc1e151c84cbdbcfd24f5a8",
 "canvaskit/chromium/canvaskit.js": "8c8392ce4a4364cbb240aa09b5652e05",
 "canvaskit/chromium/canvaskit.wasm": "fc18c3010856029414b70cae1afc5cd9",
