@@ -6,6 +6,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/open_url_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
@@ -164,6 +165,28 @@ class _ProfileCardState extends State<ProfileCard> {
               ),
             ),
           ],
+          Padding(
+            padding: const EdgeInsets.only(top: 20.0, left: 16, right: 16),
+            child: GestureDetector(
+              onTap: () {
+                openFeedbackSurveyUrl();
+              },
+              child: HoverWidget(
+                hoverScale: 1,
+                child: Text(
+                  appLocalizationsOf(context).leaveFeedback,
+                  style: ArDriveTypography.body.captionRegular().copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgMuted,
+                      ),
+                ),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(top: 20.0),
             child: _buildLogoutButton(context),
