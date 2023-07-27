@@ -40,6 +40,8 @@
   },
   "amount": "Amount",
   "@amount": {},
+  "anErrorOccuredWhileDownloadingYourKeyfile": "An error occurred while downloading your wallet keyfile. Please try again.",
+  "@anErrorOccuredWhileDownloadingYourKeyfile": {},
   "anyFilesWillOutliveYou": "Any files you upload here will outlive you!",
   "@anyFilesWillOutliveYou": {
     "description": "Files on the Weave will exist there forever"
@@ -306,7 +308,7 @@
   "@create": {
     "description": "Create an drive"
   },
-  "createAndConfirmPassword": "Please create and confirm your password. You will use this password to log in.",
+  "createAndConfirmPassword": "Please create and confirm your password.",
   "@createAndConfirmPassword": {
     "description": "Asks the user to create a password"
   },
@@ -477,6 +479,8 @@
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
+  "downloadWalletKeyfile": "Download Wallet Keyfile",
+  "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Browse Json",
   "@dragAndDropButtonTitle": {
     "description": "text of title drag and drop"
@@ -597,6 +601,8 @@
   "@enableStorageAccessTitle": {
     "description": "enable camera access"
   },
+  "enter": "Enter",
+  "@enter": {},
   "enterFileKey": "Enter file Key",
   "@enterFileKey": {
     "description": "File Key form field label"
@@ -937,7 +943,7 @@
   },
   "howAreConversionsDetermined": "How are conversions determined?",
   "@howAreConversionsDetermined": {},
-  "howDoesKeyfileLoginWork": "How does keyfile log in work?",
+  "howDoesKeyfileLoginWork": "How do keyfile and seed phrase login work?",
   "@howDoesKeyfileLoginWork": {
     "description": "Title for explaining keyfile login"
   },
@@ -1238,7 +1244,7 @@
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
-  "onboarding1Description": "ArDrive isn’t just another cloud sync app. It’s your personal permanent hard drive. Files stored on ArDrive can't be deleted or altered by any single entity and anything you upload will outlast you!",
+  "onboarding1Description": "ArDrive isn’t just another cloud storage app, it’s your personal permanent hard drive. Store your data securely for at least 200 years, without the fear of deletion. Anything you upload will be there for generations to come!",
   "@onboarding1Description": {
     "description": "Description of 1st page of onboarding"
   },
@@ -1246,7 +1252,7 @@
   "@onboarding1Title": {
     "description": "Title of 1st page of onboarding"
   },
-  "onboarding2Description": "Say goodbye to cloud storage subscriptions. Instead of paying for space you don’t use, just pay once to store your data forever.",
+  "onboarding2Description": "Say goodbye to storage subscriptions! Instead of paying for space you don’t use, just pay once to store your data forever.",
   "@onboarding2Description": {
     "description": "Description of 2nd page of onboarding"
   },
@@ -1314,6 +1320,8 @@
   },
   "pleaseEnterAValidEmail": "Please enter a valid email address",
   "@pleaseEnterAValidEmail": {},
+  "pleaseEnterYourPassword": "Please enter your password",
+  "@pleaseEnterYourPassword": {},
   "pleaseProvideSamePassword": "Please provide the same password as the one you used before.",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
@@ -1890,6 +1898,8 @@
   "@weWontRemindYouDescription": {
     "description": "We let the user know where to find the 'Leave Feedback' button"
   },
+  "whatIsAKeyFile": "What is a keyfile and how does it work?",
+  "@whatIsAKeyFile": {},
   "whatIsArDrive": "What is ArDrive?",
   "@whatIsArDrive": {
     "description": "What is ArDrive? link on shared file page"
@@ -1900,6 +1910,8 @@
   },
   "yourCreditsWillBeAddedToYourAccount": "Your Credits will be added to your account soon. You can close this window.",
   "@yourCreditsWillBeAddedToYourAccount": {},
+  "yourPasswordCannotBeCahngedOrRetrivied": "Your password cannot be changed or retrieved, so please keep this safe.",
+  "@yourPasswordCannotBeCahngedOrRetrivied": {},
   "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
