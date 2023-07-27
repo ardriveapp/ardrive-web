@@ -775,6 +775,13 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
                 style: ArDriveTypography.headline.headline5Regular(),
               ),
               const SizedBox(height: 16),
+              Text(
+                appLocalizationsOf(context)
+                    .yourPasswordCannotBeCahngedOrRetrivied,
+                style: ArDriveTypography.body.captionBold(),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
               _createPasswordForm(),
             ],
           ),
