@@ -14,6 +14,7 @@ class Resources {
       'https://ardrive.zendesk.com/hc/en-us/articles/15412384724251-How-Does-Keyfile-Login-Work-';
   static const howAreConversionsDetermined =
       'https://help.ardrive.io/hc/en-us/articles/17043397992731';
+  static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
 }
 
 class Images {
