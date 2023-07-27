@@ -751,7 +751,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     super.initState();
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
       defaultMaxHeight: 798,
