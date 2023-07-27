@@ -16,7 +16,7 @@ class TransactionCommonMixinFake extends Fake
     implements TransactionCommonMixin {}
 
 void main() {
-  late ArDriveAuth arDriveAuth;
+  late ArDriveAuthImpl arDriveAuth;
   late MockArweaveService mockArweaveService;
   late MockUserRepository mockUserRepository;
   late MockArDriveCrypto mockArDriveCrypto;
@@ -40,7 +40,7 @@ void main() {
       await newMemoryCacheStore(),
     );
 
-    arDriveAuth = ArDriveAuth(
+    arDriveAuth = ArDriveAuthImpl(
       arweave: mockArweaveService,
       userRepository: mockUserRepository,
       crypto: mockArDriveCrypto,
@@ -103,6 +103,112 @@ void main() {
 
       // assert
       expect(isExisting, false);
+    });
+  });
+  group('ArDriveAuth testing userHasPassword method', () {
+    // test
+    test('Should return true when user has a private drive', () async {
+      // arrange
+      when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
+              maxRetries: any(named: 'maxRetries')))
+          .thenAnswer((_) async => 'some_id');
+      // act
+      final hasPassword = await arDriveAuth.userHasPassword(wallet);
+
+      // assert
+      expect(hasPassword, true);
+    });
+
+    test(
+        'Should return false when user does not created a password yet when they dont have any ',
+        () async {
+      // arrange
+      when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
+          maxRetries: any(named: 'maxRetries'))).thenAnswer((_) async => null);
+      // act
+      final hasPassword = await arDriveAuth.userHasPassword(wallet);
+
+      // assert
+      expect(hasPassword, false);
+    });
+  });
+
+  group('testing if getFirstPrivateDriveTxId is called only once', () {
+    final loggedUser = User(
+      password: 'password',
+      wallet: wallet,
+      walletAddress: 'walletAddress',
+      walletBalance: BigInt.one,
+      cipherKey: SecretKey([]),
+      profileType: ProfileType.json,
+    );
+
+    /// For this test we'll call the same method twice to validate if the
+    /// getFirstPrivateDriveTxId is called only once
+
+    test(
+        'should call getFirstPrivateDriveTxId only once when has private drives and login with sucess. ',
+        () async {
+      // arrange
+      when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
+              maxRetries: any(named: 'maxRetries')))
+          .thenAnswer((_) async => 'some_id');
+
+      // biometrics is not enabled
+      when(() => mockBiometricAuthentication.isEnabled())
+          .thenAnswer((_) async => false);
+
+      // mock cripto derive drive key
+      when(
+        () => mockArDriveCrypto.deriveDriveKey(
+          wallet,
+          any(),
+          any(),
+        ),
+      ).thenAnswer((invocation) => Future.value(SecretKey([])));
+
+      when(() => mockUserRepository.hasUser())
+          .thenAnswer((invocation) => Future.value(true));
+
+      when(() => mockArweaveService.getLatestDriveEntityWithId(
+              any(), any(), any()))
+          .thenAnswer((invocation) => Future.value(DriveEntity(
+                id: 'some_id',
+                rootFolderId: 'some_id',
+              )));
+
+      when(() => mockUserRepository.deleteUser())
+          .thenAnswer((invocation) async {});
+
+      when(() =>
+              mockUserRepository.saveUser('password', ProfileType.json, wallet))
+          .thenAnswer((invocation) => Future.value(null));
+
+      when(() => mockUserRepository.getUser('password'))
+          .thenAnswer((invocation) async => loggedUser);
+
+      // act
+      await arDriveAuth.login(wallet, 'password', ProfileType.json);
+      await arDriveAuth.login(wallet, 'password', ProfileType.json);
+
+      // assert
+      verify(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
+          maxRetries: any(named: 'maxRetries'))).called(1);
+    });
+
+    test(
+        'should call getFirstPrivateDriveTxId only once when has private drives and login with sucess. ',
+        () async {
+      when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
+              maxRetries: any(named: 'maxRetries')))
+          .thenAnswer((_) async => 'some_id');
+      // act
+      await arDriveAuth.userHasPassword(wallet);
+      await arDriveAuth.userHasPassword(wallet);
+
+      // assert
+      verify(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
+          maxRetries: any(named: 'maxRetries'))).called(1);
     });
   });
 
@@ -381,6 +487,8 @@ void main() {
     });
   });
 
+  group('testing if getFirstPrivateDriveTxId is called only once', () {});
+
   group('testing ArDriveAuth logout method', () {
     final unlockedUser = User(
       password: 'password',
@@ -415,12 +523,13 @@ void main() {
       await arDriveAuth.logout();
 
       // assert
+      expect(() => arDriveAuth.currentUser,
+          throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
+      expect(arDriveAuth.firstPrivateDriveTxId, isNull);
       verify(() => mockSecureKeyValueStore.remove('password')).called(1);
       verify(() => mockSecureKeyValueStore.remove('biometricEnabled'))
           .called(1);
       verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
-      expect(() => arDriveAuth.currentUser,
-          throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
     });
 
     /// This is for the case when has user is true but the user is not logged in
@@ -443,6 +552,78 @@ void main() {
       verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
       expect(() => arDriveAuth.currentUser,
           throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
+    });
+
+    test('testing login + logout', () async {
+      final loggedUser = User(
+        password: 'password',
+        wallet: wallet,
+        walletAddress: 'walletAddress',
+        walletBalance: BigInt.one,
+        cipherKey: SecretKey([]),
+        profileType: ProfileType.json,
+      );
+      // arrange login
+      when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
+              maxRetries: any(named: 'maxRetries')))
+          .thenAnswer((_) async => 'some_id');
+
+      // biometrics is not enabled
+      when(() => mockBiometricAuthentication.isEnabled())
+          .thenAnswer((_) async => false);
+
+      // mock cripto derive drive key
+      when(
+        () => mockArDriveCrypto.deriveDriveKey(
+          wallet,
+          any(),
+          any(),
+        ),
+      ).thenAnswer((invocation) => Future.value(SecretKey([])));
+
+      when(() => mockUserRepository.hasUser())
+          .thenAnswer((invocation) => Future.value(true));
+
+      when(() => mockArweaveService.getLatestDriveEntityWithId(
+              any(), any(), any()))
+          .thenAnswer((invocation) => Future.value(DriveEntity(
+                id: 'some_id',
+                rootFolderId: 'some_id',
+              )));
+
+      when(() => mockUserRepository.deleteUser())
+          .thenAnswer((invocation) async {});
+
+      when(() =>
+              mockUserRepository.saveUser('password', ProfileType.json, wallet))
+          .thenAnswer((invocation) => Future.value(null));
+
+      when(() => mockUserRepository.getUser('password'))
+          .thenAnswer((invocation) async => loggedUser);
+
+      /// arrange logout
+      when(() => mockUserRepository.deleteUser())
+          .thenAnswer((invocation) async {});
+      when(() => mockSecureKeyValueStore.remove('password'))
+          .thenAnswer((invocation) => Future.value(true));
+      when(() => mockSecureKeyValueStore.remove('biometricEnabled'))
+          .thenAnswer((invocation) => Future.value(true));
+      when(() => mockDatabaseHelpers.deleteAllTables())
+          .thenAnswer((invocation) async {});
+
+      await arDriveAuth.login(wallet, 'password', ProfileType.json);
+
+      await arDriveAuth.logout();
+
+      /// verifies that we cleaned up the user
+      expect(arDriveAuth.firstPrivateDriveTxId, isNull);
+      expect(() => arDriveAuth.currentUser,
+          throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
+      verify(() => mockSecureKeyValueStore.remove('password')).called(1);
+      verify(() => mockSecureKeyValueStore.remove('biometricEnabled'))
+          .called(1);
+      verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+      verify(() => mockUserRepository.deleteUser()).called(1);
     });
   });
 

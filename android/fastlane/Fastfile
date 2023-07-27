@@ -74,6 +74,9 @@ platform :android do
         version_code: build_number,
         aab: "#{root_path}/build/app/outputs/bundle/#{flavor}Release/app-#{flavor}-release.aab",
         skip_upload_apk: true,
+        skip_upload_metadata: true,
+        skip_upload_images: true,
+        skip_upload_screenshots: true,
         timeout: 600
       )
     end

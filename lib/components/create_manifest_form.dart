@@ -73,7 +73,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         }
       }, builder: (context, state) {
         final textStyle = ArDriveTypography.body.buttonNormalRegular(
-          color: ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
+          color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
         );
 
         final readCubitContext = context.read<CreateManifestCubit>();

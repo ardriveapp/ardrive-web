@@ -333,8 +333,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
     super.initState();
   }
 
-  bool _showSecurityOverlay = false;
-
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
@@ -407,76 +405,21 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     platformSupportsDragAndDrop: !AppPlatform.isMobile,
                   ),
                   const SizedBox(height: 24),
-                  ArDriveOverlay(
-                    visible: _showSecurityOverlay,
-                    content: ArDriveCard(
-                      boxShadow: BoxShadowCard.shadow100,
-                      contentPadding: const EdgeInsets.all(16),
-                      width: 300,
-                      content: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: appLocalizationsOf(context)
-                                  .securityWalletOverlay,
-                              style: ArDriveTypography.body.smallBold(),
-                            ),
-                            TextSpan(
-                              text: ' ',
-                              style: ArDriveTypography.body.buttonNormalRegular(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgOnAccent,
-                              ),
-                            ),
-                            TextSpan(
-                              text: appLocalizationsOf(context).learnMore,
-                              style: ArDriveTypography.body
-                                  .buttonNormalRegular(
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeFgOnAccent,
-                                  )
-                                  .copyWith(
-                                    decoration: TextDecoration.underline,
-                                  ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => openUrl(
-                                      url: Resources.howDoesKeyFileLoginWork,
-                                    ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    anchor: const Aligned(
-                      follower: Alignment.bottomCenter,
-                      target: Alignment.topCenter,
-                      offset: Offset(0, 4),
-                    ),
-                    onVisibleChange: (visible) {
-                      setState(() {
-                        _showSecurityOverlay = visible;
-                      });
+                  GestureDetector(
+                    onTap: () {
+                      openUrl(
+                        url: Resources.howDoesKeyFileLoginWork,
+                      );
                     },
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _showSecurityOverlay = !_showSecurityOverlay;
-                        });
-                      },
-                      child: HoverWidget(
-                        hoverScale: 1,
-                        child: Text(
-                            appLocalizationsOf(context).howDoesKeyfileLoginWork,
-                            style: ArDriveTypography.body.smallBold().copyWith(
-                                  decoration: TextDecoration.underline,
-                                  fontSize: 14,
-                                  height: 1.5,
-                                )),
-                      ),
+                    child: HoverWidget(
+                      hoverScale: 1,
+                      child: Text(
+                          appLocalizationsOf(context).howDoesKeyfileLoginWork,
+                          style: ArDriveTypography.body.smallBold().copyWith(
+                                decoration: TextDecoration.underline,
+                                fontSize: 14,
+                                height: 1.5,
+                              )),
                     ),
                   ),
                   if (widget.isArConnectAvailable) ...[
@@ -832,6 +775,13 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
                 appLocalizationsOf(context).createAndConfirmPassword,
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.headline.headline5Regular(),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                appLocalizationsOf(context)
+                    .yourPasswordCannotBeCahngedOrRetrivied,
+                style: ArDriveTypography.body.captionBold(),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               _createPasswordForm(),

@@ -55,9 +55,11 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
-          expires: 14d
+          expires: 7d
 
   build-ios:
+    # skipped on PRs for now
+    if: false
     needs: pre-build
     runs-on: macos-latest
     steps:

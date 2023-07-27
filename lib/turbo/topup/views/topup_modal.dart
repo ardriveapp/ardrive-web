@@ -85,6 +85,8 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
     activityTracker.setToppingUp(false);
 
     if (turbo.paymentStatus == PaymentStatus.success) {
+      logger.d('Turbo payment success');
+
       onSuccess?.call();
     }
 
