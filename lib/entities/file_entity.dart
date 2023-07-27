@@ -32,7 +32,6 @@ class FileEntity extends Entity {
   String? dataTxId;
   String? dataContentType;
 
-  @JsonKey()
   String? pinnedDataOwnerAddress;
 
   FileEntity({

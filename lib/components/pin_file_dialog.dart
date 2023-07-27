@@ -65,6 +65,7 @@ class PinFileDialog extends StatelessWidget {
         if (state is PinFileAbort ||
             state is PinFileSuccess ||
             state is PinFileError) {
+          // FIXME: give some feedback on error
           Navigator.of(context).pop();
         }
       },
@@ -113,7 +114,6 @@ class PinFileDialog extends StatelessWidget {
                     }
                     return null;
                   },
-                  // controller: pinFileBloc.idTextController,
                 ),
                 ArDriveTextField(
                   isEnabled: true,

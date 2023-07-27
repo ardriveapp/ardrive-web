@@ -59,16 +59,11 @@ class NetworkFileIdResolver implements FileIdResolver {
 
   @override
   Future<FileInfo> requestForTransactionId(String dataTxId) async {
-    throw UnimplementedError();
-
-    logger.d(
-      'Attempting to build URI: '
-      '${configService.config.defaultArweaveGatewayUrl}'
-      '/$dataTxId',
-    );
+    final hostname =
+        (configService.config.defaultArweaveGatewayUrl!).split('://')[1];
 
     final uri = Uri.https(
-      '${configService.config.defaultArweaveGatewayUrl}',
+      hostname,
       '/$dataTxId',
     );
     final response = await httpClient.head(uri);

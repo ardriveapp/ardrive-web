@@ -233,7 +233,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
-    ArDriveDevToolOption enablePins = ArDriveDevToolOption(
+    ArDriveDevToolOption enablePinsOption = ArDriveDevToolOption(
       name: 'enablePins',
       value: settings.enablePins,
       onChange: (value) {
@@ -337,7 +337,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       enableMultipleFileDownloadOption,
       enableVideoPreviewOption,
       enableSeedPhreaseLogin,
-      enablePins,
+      enablePinsOption,
       allowedDataItemSizeForTurboOption,
       defaultArweaveGatewayUrlOption,
       defaultTurboUrlOption,

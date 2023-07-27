@@ -262,29 +262,29 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         idValidation: stateAsPinFileFieldsValid.idValidation,
       ));
 
-      final newFileEntity = FileEntity.fromJson(
-        {
-          'name': stateAsPinFileFieldsValid.name,
-          'size': stateAsPinFileFieldsValid.size,
-          'lastModifiedDate': stateAsPinFileFieldsValid
-              .maybeLastModified?.millisecondsSinceEpoch,
-          'dataTxId': stateAsPinFileFieldsValid.dataTxId,
-          'dataContentType': stateAsPinFileFieldsValid.dataContentType,
-          'pinnedDataOwnerAddress':
-              stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
-        },
+      final newFileEntity = FileEntity(
+        size: stateAsPinFileFieldsValid.size,
+        parentFolderId: _parentFolderId,
+        name: stateAsPinFileFieldsValid.name,
+        lastModifiedDate: DateTime.now(),
+        id: const Uuid().v4(),
+        driveId: _driveId,
+        dataTxId: stateAsPinFileFieldsValid.dataTxId,
+        dataContentType: stateAsPinFileFieldsValid.dataContentType,
+        pinnedDataOwnerAddress:
+            stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
       );
-
-      newFileEntity.id = const Uuid().v4();
-      newFileEntity.driveId = _driveId;
-      newFileEntity.parentFolderId = _parentFolderId;
 
       await _driveDao.transaction(() async {
         final parentFolder = await _driveDao
             .folderById(driveId: _driveId, folderId: _parentFolderId)
             .getSingle();
 
-        if (_turboUploadService.useTurboUpload) {
+        // TODO: re-enable
+        /// It's disabled becaues the uploads are suceeding, but then it doesn't
+        /// appear on chain
+        const forceDisableTurbo = true;
+        if (_turboUploadService.useTurboUpload && !forceDisableTurbo) {
           final fileDataItem = await _arweave.prepareEntityDataItem(
             newFileEntity,
             profileState.wallet,
@@ -315,14 +315,22 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           // FIXME: this is gonna change when we allow to ovewrite an existing file
           performedAction: RevisionAction.create,
         ));
+      }).then((value) {
+        emit(PinFileSuccess(
+          id: state.id,
+          name: state.name,
+          nameValidation: state.nameValidation,
+          idValidation: state.idValidation,
+        ));
+      }).catchError((err, stacktrace) {
+        logger.d('PinFileSubmit error: $err - $stacktrace');
+        emit(PinFileError(
+          id: state.id,
+          name: state.name,
+          nameValidation: state.nameValidation,
+          idValidation: state.idValidation,
+        ));
       });
-
-      emit(PinFileSuccess(
-        id: state.id,
-        name: state.name,
-        nameValidation: state.nameValidation,
-        idValidation: state.idValidation,
-      ));
     });
   }
 
