@@ -15,7 +15,7 @@ class NetworkFileIdResolver implements FileIdResolver {
 
   @override
   Future<FileInfo> requestForFileId(FileID fileId) async {
-    late FileEntity? fileEntity;
+    FileEntity? fileEntity;
     try {
       fileEntity = await arweave.getLatestFileEntityWithId(fileId);
     } catch (_) {
