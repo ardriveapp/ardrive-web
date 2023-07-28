@@ -285,11 +285,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
             .folderById(driveId: _driveId, folderId: _parentFolderId)
             .getSingle();
 
-        // TODO: re-enable
-        /// It's disabled becaues the uploads are suceeding, but then it doesn't
-        /// appear on chain
-        const forceDisableTurbo = true;
-        if (_turboUploadService.useTurboUpload && !forceDisableTurbo) {
+        if (_turboUploadService.useTurboUpload) {
           final fileDataItem = await _arweave.prepareEntityDataItem(
             newFileEntity,
             profileState.wallet,
