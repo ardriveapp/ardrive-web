@@ -61,6 +61,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       final stateId = state.id;
       final hasIdChanged = stateId != id;
 
+      // FIXME: may throw, catch error
       SynchronousValidationResult syncValidationResult =
           await _runSynchronousValidation(name, id);
 
@@ -90,6 +91,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
             name = newName;
           }
 
+          // FIXME: may throw, catch error
           syncValidationResult = await _runSynchronousValidation(name, id);
 
           emit(PinFileFieldsValid(
@@ -334,26 +336,6 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     });
   }
 
-  Future<bool> doesNameConflicts(String name) async {
-    try {
-      logger.d(
-        'About to check if entity with same name ($name) exists',
-      );
-      final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
-        name: name,
-        driveId: _driveId,
-        parentFolderId: _parentFolderId,
-      );
-
-      logger.d('entityWithSameNameExists: $entityWithSameNameExists');
-
-      return entityWithSameNameExists;
-    } catch (err) {
-      // TODO: do somethin'
-      rethrow;
-    }
-  }
-
   Future<SynchronousValidationResult> _runSynchronousValidation(
     String name,
     String id,
@@ -362,7 +344,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     final IdValidationResult idValidation = validateId(id);
 
     if (nameValidation == NameValidationResult.valid) {
-      final doesItConflict = await doesNameConflicts(name);
+      final doesItConflict = await _doesNameConflicts(name);
       if (doesItConflict) {
         nameValidation = NameValidationResult.conflicting;
       }
@@ -372,6 +354,21 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       nameValidation: nameValidation,
       idValidation: idValidation,
     );
+  }
+
+  Future<bool> _doesNameConflicts(String name) async {
+    logger.d(
+      'About to check if entity with same name ($name) exists',
+    );
+    final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
+      name: name,
+      driveId: _driveId,
+      parentFolderId: _parentFolderId,
+    );
+
+    logger.d('entityWithSameNameExists: $entityWithSameNameExists');
+
+    return entityWithSameNameExists;
   }
 
   Future<FileInfo> _runNetworkValidation(
