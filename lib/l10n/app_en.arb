@@ -310,7 +310,7 @@
   "@create": {
     "description": "Create an drive"
   },
-  "createAndConfirmPassword": "Please create and confirm your password.",
+  "createAndConfirmPassword": "Please create and confirm your password. Your password cannot be changed or retrieved, so please keep this safe.",
   "@createAndConfirmPassword": {
     "description": "Asks the user to create a password"
   },
