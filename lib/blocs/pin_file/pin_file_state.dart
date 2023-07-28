@@ -83,6 +83,7 @@ class PinFileFieldsValid extends PinFileState {
     required String id,
     required String name,
     required NameValidationResult nameValidation,
+    required IdValidationResult idValidation,
     required this.privacy,
     required this.dataContentType,
     this.maybeLastUpdated,
@@ -95,7 +96,7 @@ class PinFileFieldsValid extends PinFileState {
           id: id,
           name: name,
           nameValidation: nameValidation,
-          idValidation: IdValidationResult.validEntityId,
+          idValidation: idValidation,
         );
 
   @override
