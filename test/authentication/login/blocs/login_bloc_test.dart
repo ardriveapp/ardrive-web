@@ -41,7 +41,7 @@ void main() {
         );
       },
       setUp: () {
-        when(() => mockArDriveAuth.isExistingUser(any()))
+        when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((_) async => true);
       },
       act: (bloc) async {
@@ -66,7 +66,7 @@ void main() {
       },
       setUp: () {
         // user doesn't exist
-        when(() => mockArDriveAuth.isExistingUser(any()))
+        when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((_) async => false);
       },
       act: (bloc) async {
@@ -566,7 +566,7 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('walletAddress'));
-        when(() => mockArDriveAuth.isExistingUser(any()))
+        when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((invocation) => Future.value(true));
       },
       act: (bloc) async {
@@ -591,7 +591,7 @@ void main() {
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('walletAddress'));
         // new user
-        when(() => mockArDriveAuth.isExistingUser(any()))
+        when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((invocation) => Future.value(false));
       },
       act: (bloc) async {

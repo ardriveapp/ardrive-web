@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ui';
 
 import 'package:animations/animations.dart';
@@ -17,14 +16,13 @@ import 'package:ardrive/services/authentication/biometric_permission_dialog.dart
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/split_localizations.dart';
-import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -333,8 +331,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
     super.initState();
   }
 
-  bool _showSecurityOverlay = false;
-
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
@@ -407,76 +403,21 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     platformSupportsDragAndDrop: !AppPlatform.isMobile,
                   ),
                   const SizedBox(height: 24),
-                  ArDriveOverlay(
-                    visible: _showSecurityOverlay,
-                    content: ArDriveCard(
-                      boxShadow: BoxShadowCard.shadow100,
-                      contentPadding: const EdgeInsets.all(16),
-                      width: 300,
-                      content: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: appLocalizationsOf(context)
-                                  .securityWalletOverlay,
-                              style: ArDriveTypography.body.smallBold(),
-                            ),
-                            TextSpan(
-                              text: ' ',
-                              style: ArDriveTypography.body.buttonNormalRegular(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgOnAccent,
-                              ),
-                            ),
-                            TextSpan(
-                              text: appLocalizationsOf(context).learnMore,
-                              style: ArDriveTypography.body
-                                  .buttonNormalRegular(
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeFgOnAccent,
-                                  )
-                                  .copyWith(
-                                    decoration: TextDecoration.underline,
-                                  ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => openUrl(
-                                      url: Resources.howDoesKeyFileLoginWork,
-                                    ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    anchor: const Aligned(
-                      follower: Alignment.bottomCenter,
-                      target: Alignment.topCenter,
-                      offset: Offset(0, 4),
-                    ),
-                    onVisibleChange: (visible) {
-                      setState(() {
-                        _showSecurityOverlay = visible;
-                      });
+                  GestureDetector(
+                    onTap: () {
+                      openUrl(
+                        url: Resources.howDoesKeyFileLoginWork,
+                      );
                     },
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _showSecurityOverlay = !_showSecurityOverlay;
-                        });
-                      },
-                      child: HoverWidget(
-                        hoverScale: 1,
-                        child: Text(
-                            appLocalizationsOf(context).howDoesKeyfileLoginWork,
-                            style: ArDriveTypography.body.smallBold().copyWith(
-                                  decoration: TextDecoration.underline,
-                                  fontSize: 14,
-                                  height: 1.5,
-                                )),
-                      ),
+                    child: HoverWidget(
+                      hoverScale: 1,
+                      child: Text(
+                          appLocalizationsOf(context).howDoesKeyfileLoginWork,
+                          style: ArDriveTypography.body.smallBold().copyWith(
+                                decoration: TextDecoration.underline,
+                                fontSize: 14,
+                                height: 1.5,
+                              )),
                     ),
                   ),
                   if (widget.isArConnectAvailable) ...[
@@ -830,6 +771,13 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
                 appLocalizationsOf(context).createAndConfirmPassword,
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.headline.headline5Regular(),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                appLocalizationsOf(context)
+                    .yourPasswordCannotBeCahngedOrRetrivied,
+                style: ArDriveTypography.body.captionBold(),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               _createPasswordForm(),
@@ -1758,13 +1706,11 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
   }
 
   void _onDownload() async {
-    final jsonTxt = jsonEncode(widget.wallet!.toJwk());
+    final ioUtils = ArDriveIOUtils();
 
-    final ArDriveIO io = ArDriveIO();
-    final bytes = Uint8List.fromList(utf8.encode(jsonTxt));
-
-    await io.saveFile(await IOFile.fromData(bytes,
-        name: "ardrive-wallet.json", lastModifiedDate: DateTime.now()));
+    await ioUtils.downloadWalletAsJsonFile(
+      wallet: widget.wallet,
+    );
   }
 }
 
