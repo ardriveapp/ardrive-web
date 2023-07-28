@@ -424,7 +424,6 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
 
   @override
   Future<void> close() {
-    // idTextController.dispose();
     nameTextController.dispose();
     return super.close();
   }
@@ -445,10 +444,4 @@ class SynchronousValidationResult {
       idValidation == IdValidationResult.validTransactionId;
 
   bool get isValid => isNameValid && isIdValid;
-
-  @override
-  String toString() {
-    return 'SynchronousValidationResult { nameValidation: $nameValidation, '
-        'idValidation: $idValidation, isValid: $isValid }';
-  }
 }
