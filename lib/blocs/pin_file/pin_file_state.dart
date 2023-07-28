@@ -28,7 +28,6 @@ class PinFileInitial extends PinFileState {
 }
 
 class PinFileFieldsValidationError extends PinFileState {
-  // network check
   final bool cancelled;
   final bool networkError;
   final bool isArFsEntityValid;
