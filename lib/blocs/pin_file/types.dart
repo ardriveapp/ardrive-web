@@ -14,7 +14,7 @@ enum IdValidationResult {
   validTransactionId,
 }
 
-class FileInfo {
+class ResolveIdResult {
   final DrivePrivacy privacy;
   final String? maybeName;
   final String dataContentType; // TODO: use an enum
@@ -25,7 +25,7 @@ class FileInfo {
   final String dataTxId;
   final String pinnedDataOwnerAddress;
 
-  const FileInfo({
+  const ResolveIdResult({
     required this.privacy,
     this.maybeName,
     required this.dataContentType,

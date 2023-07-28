@@ -374,12 +374,12 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     return entityWithSameNameExists;
   }
 
-  Future<FileInfo> _runNetworkValidation(
+  Future<ResolveIdResult> _runNetworkValidation(
     String id,
     String name,
     IdValidationResult idValidation,
   ) async {
-    late final Future<FileInfo> resolveFuture;
+    late final Future<ResolveIdResult> resolveFuture;
     if (idValidation == IdValidationResult.validTransactionId) {
       resolveFuture = _fileIdResolver.requestForTransactionId(id);
     } else {

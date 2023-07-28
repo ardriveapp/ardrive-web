@@ -41,7 +41,7 @@ void main() {
     setUp(() {
       when(() => fileIdResolver.requestForTransactionId(validTxId_1))
           .thenAnswer(
-        (_) async => FileInfo(
+        (_) async => ResolveIdResult(
           privacy: DrivePrivacy.public,
           maybeName: null,
           dataContentType: 'application/json',
@@ -55,7 +55,7 @@ void main() {
       );
       when(() => fileIdResolver.requestForTransactionId(validTxId_2))
           .thenAnswer(
-        (_) async => FileInfo(
+        (_) async => ResolveIdResult(
           privacy: DrivePrivacy.public,
           maybeName: null,
           dataContentType: 'application/json',
@@ -68,7 +68,7 @@ void main() {
         ),
       );
       when(() => fileIdResolver.requestForFileId(validFileId_1)).thenAnswer(
-        (_) async => FileInfo(
+        (_) async => ResolveIdResult(
           privacy: DrivePrivacy.public,
           maybeName: validName,
           dataContentType: 'application/json',
@@ -81,7 +81,7 @@ void main() {
         ),
       );
       when(() => fileIdResolver.requestForFileId(validFileId_2)).thenAnswer(
-        (_) async => FileInfo(
+        (_) async => ResolveIdResult(
           privacy: DrivePrivacy.public,
           maybeName: validName,
           dataContentType: 'application/json',

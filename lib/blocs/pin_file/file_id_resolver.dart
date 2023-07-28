@@ -14,7 +14,7 @@ class NetworkFileIdResolver implements FileIdResolver {
   });
 
   @override
-  Future<FileInfo> requestForFileId(FileID fileId) async {
+  Future<ResolveIdResult> requestForFileId(FileID fileId) async {
     FileEntity? fileEntity;
     try {
       fileEntity = await arweave.getLatestFileEntityWithId(fileId);
@@ -42,7 +42,7 @@ class NetworkFileIdResolver implements FileIdResolver {
       );
     }
 
-    final FileInfo fileInfo = FileInfo(
+    final ResolveIdResult fileInfo = ResolveIdResult(
       privacy: DrivePrivacy.public,
       maybeName: fileEntity.name,
       dataContentType: fileEntity.dataContentType!,
@@ -58,7 +58,7 @@ class NetworkFileIdResolver implements FileIdResolver {
   }
 
   @override
-  Future<FileInfo> requestForTransactionId(TxID dataTxId) async {
+  Future<ResolveIdResult> requestForTransactionId(TxID dataTxId) async {
     final uri = Uri.parse(
       '${configService.config.defaultArweaveGatewayUrl}/$dataTxId',
     );
@@ -99,7 +99,7 @@ class NetworkFileIdResolver implements FileIdResolver {
       (tag) => tag.name == 'Cipher-Iv' && tag.value.isNotEmpty,
     );
 
-    final FileInfo fileInfo = FileInfo(
+    final ResolveIdResult fileInfo = ResolveIdResult(
       privacy: cipherIvTag == null ? DrivePrivacy.public : DrivePrivacy.private,
       maybeName: null,
       dataContentType: contentTypeHeader,
@@ -116,8 +116,8 @@ class NetworkFileIdResolver implements FileIdResolver {
 }
 
 abstract class FileIdResolver {
-  Future<FileInfo> requestForTransactionId(TxID id);
-  Future<FileInfo> requestForFileId(FileID id);
+  Future<ResolveIdResult> requestForTransactionId(TxID id);
+  Future<ResolveIdResult> requestForFileId(FileID id);
 }
 
 class FileIdResolverException implements Exception {
