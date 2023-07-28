@@ -5,6 +5,7 @@ import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -74,22 +75,27 @@ class PinFileDialog extends StatelessWidget {
 
         if (state is PinFileFieldsValidationError) {
           if (!state.doesDataTransactionExist) {
-            customErrorMessage = 'File data transaction does not exist';
-          } else if (!state.isArFsEntityPublic) {
-            customErrorMessage = 'File is not public';
-          } else if (!state.isArFsEntityValid) {
-            customErrorMessage = 'File is not valid';
+            customErrorMessage =
+                appLocalizationsOf(context).theIdProvidedDoesntExist;
           }
+          // TODO: refactor the arweave method to let it distinguish between
+          /// these other cases
+          // else if (!state.isArFsEntityPublic) {
+          //   customErrorMessage = 'File is not public';
+          // } else if (!state.isArFsEntityValid) {
+          //   customErrorMessage = 'File is not valid';
+          // }
         }
 
         if (customErrorMessage == null) {
           if (state.nameValidation == NameValidationResult.conflicting) {
-            customErrorMessage = 'That name already exists';
+            customErrorMessage =
+                appLocalizationsOf(context).conflictingNameFound;
           }
         }
 
         return ArDriveStandardModal(
-          title: 'Testing title',
+          title: appLocalizationsOf(context).newFilePin,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: Column(
@@ -97,8 +103,7 @@ class PinFileDialog extends StatelessWidget {
               children: [
                 ArDriveTextField(
                   isEnabled: state is! PinFileNetworkCheckRunning,
-                  label: 'Tx ID or File ID',
-                  hintText: 'Enter id',
+                  label: appLocalizationsOf(context).enterTxIdOrFileId,
                   isFieldRequired: true,
                   onChanged: (value) {
                     pinFileBloc.add(
@@ -109,9 +114,10 @@ class PinFileDialog extends StatelessWidget {
                     if (p0 != null) {
                       final validation = pinFileBloc.validateId(p0);
                       if (validation == IdValidationResult.invalid) {
-                        return 'Id is invalid';
+                        return appLocalizationsOf(context)
+                            .theIdProvidedIsNotValid;
                       } else if (validation == IdValidationResult.required) {
-                        return 'Id is required';
+                        return appLocalizationsOf(context).validationRequired;
                       }
                     }
                     return null;
@@ -119,8 +125,7 @@ class PinFileDialog extends StatelessWidget {
                 ),
                 ArDriveTextField(
                   isEnabled: true,
-                  label: 'Pin name',
-                  hintText: 'Enter name',
+                  label: appLocalizationsOf(context).enterFileName,
                   isFieldRequired: true,
                   onChanged: (value) {
                     pinFileBloc.add(
@@ -131,9 +136,9 @@ class PinFileDialog extends StatelessWidget {
                     if (p0 != null) {
                       final validation = pinFileBloc.validateName(p0);
                       if (validation == NameValidationResult.invalid) {
-                        return 'Name is invalid';
+                        return appLocalizationsOf(context).validationInvalid;
                       } else if (validation == NameValidationResult.required) {
-                        return 'Name is required';
+                        return appLocalizationsOf(context).validationRequired;
                       }
                     }
                     return null;
@@ -159,11 +164,11 @@ class PinFileDialog extends StatelessWidget {
           actions: [
             ModalAction(
               action: () => pinFileBloc.add(const PinFileCancel()),
-              title: 'Cancel',
+              title: appLocalizationsOf(context).cancel,
             ),
             ModalAction(
               action: () => pinFileBloc.add(const PinFileSubmit()),
-              title: 'Create',
+              title: appLocalizationsOf(context).create,
               // FIXME: "isEnabled"
               isEnable: state is PinFileFieldsValid &&
                   state.nameValidation == NameValidationResult.valid,

@@ -310,7 +310,7 @@
   "@create": {
     "description": "Create an drive"
   },
-  "createAndConfirmPassword": "Please create and confirm your password. Your password cannot be changed or retrieved, so please keep this safe.",
+  "createAndConfirmPassword": "Please create and confirm your password.",
   "@createAndConfirmPassword": {
     "description": "Asks the user to create a password"
   },
@@ -337,6 +337,10 @@
   "createManifestEmphasized": "CREATE MANIFEST",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
+  },
+  "createNewFilePin": "Create a New File Pin",
+  "@createNewFilePin": {
+    "description": "E.g.: I want to \"Create a New File Pin\""
   },
   "createNewSnapshot": "Create New Snapshot",
   "@createNewSnapshot": {
@@ -609,9 +613,17 @@
   "@enterFileKey": {
     "description": "File Key form field label"
   },
+  "enterFileName": "Enter file name",
+  "@enterFileName": {
+    "description": "To type the name of the file"
+  },
   "enterPassword": "Enter password",
   "@enterPassword": {
     "description": "Please enter password"
+  },
+  "enterTxIdOrFileId": "Enter Transaction ID or File ID",
+  "@enterTxIdOrFileId": {
+    "description": "Indicates that you must enter a Transaction ID or a File ID"
   },
   "entityAlreadyExists": "Entity with name {entityName} already exists at move destination! Please rename the file or folder you are moving and try again.",
   "@entityAlreadyExists": {
@@ -1182,6 +1194,10 @@
   },
   "nameOnCard": "Name on Card",
   "@nameOnCard": {},
+  "networkUnreachable": "We are unable to connect to the network. Please try again later.",
+  "@networkUnreachable": {
+    "description": "Indicates that there were some issues while connecting to the internet"
+  },
   "neverDeletedEmphasized": "NEVER DELETED",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
@@ -1189,6 +1205,10 @@
   "newDrive": "New drive",
   "@newDrive": {
     "description": "Create a new drive entity"
+  },
+  "newFilePin": "New File Pin",
+  "@newFilePin": {
+    "description": "E.g.: I want to create a \"New File Pin\""
   },
   "newFolder": "New folder",
   "@newFolder": {
@@ -1621,6 +1641,14 @@
   "termsAndConditions": "Terms and Conditions",
   "@termsAndConditions": {
     "description": "terms and conditions"
+  },
+  "theIdProvidedDoesntExist": "The ID provided doesn't exist",
+  "@theIdProvidedDoesntExist": {
+    "description": "Indicates that the valid ID you provided doesn't exist"
+  },
+  "theIdProvidedIsNotValid": "The ID provided is not valid",
+  "@theIdProvidedIsNotValid": {
+    "description": "Indicates that the ID you typed doesn't follow the ID pattern"
   },
   "theresBeenAProblem": "There's been a problem.",
   "@theresBeenAProblem": {},
