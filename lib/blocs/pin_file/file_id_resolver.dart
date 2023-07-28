@@ -14,7 +14,7 @@ class NetworkFileIdResolver implements FileIdResolver {
   });
 
   @override
-  Future<FileInfo> requestForFileId(String fileId) async {
+  Future<FileInfo> requestForFileId(FileID fileId) async {
     late FileEntity? fileEntity;
     try {
       fileEntity = await arweave.getLatestFileEntityWithId(fileId);
@@ -58,7 +58,7 @@ class NetworkFileIdResolver implements FileIdResolver {
   }
 
   @override
-  Future<FileInfo> requestForTransactionId(String dataTxId) async {
+  Future<FileInfo> requestForTransactionId(TxID dataTxId) async {
     final hostname =
         (configService.config.defaultArweaveGatewayUrl!).split('://')[1];
 
@@ -120,8 +120,8 @@ class NetworkFileIdResolver implements FileIdResolver {
 }
 
 abstract class FileIdResolver {
-  Future<FileInfo> requestForTransactionId(String id);
-  Future<FileInfo> requestForFileId(String id);
+  Future<FileInfo> requestForTransactionId(TxID id);
+  Future<FileInfo> requestForFileId(FileID id);
 }
 
 class FileIdResolverException implements Exception {
