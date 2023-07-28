@@ -42,8 +42,11 @@ class NetworkFileIdResolver implements FileIdResolver {
       );
     }
 
+    final OwnerAndPrivacy ownerAndPrivacyOfData =
+        await _getOwnerAndPrivacyOfDataTransaction(fileEntity.dataTxId!);
+
     final ResolveIdResult fileInfo = ResolveIdResult(
-      privacy: DrivePrivacy.public,
+      privacy: ownerAndPrivacyOfData.privacy,
       maybeName: fileEntity.name,
       dataContentType: fileEntity.dataContentType!,
       maybeLastUpdated: fileEntity.lastModifiedDate,
@@ -51,7 +54,7 @@ class NetworkFileIdResolver implements FileIdResolver {
       dateCreated: fileEntity.lastModifiedDate!,
       size: fileEntity.size!,
       dataTxId: fileEntity.dataTxId!,
-      pinnedDataOwnerAddress: fileEntity.ownerAddress,
+      pinnedDataOwnerAddress: ownerAndPrivacyOfData.ownerAddress,
     );
 
     return fileInfo;
@@ -81,6 +84,27 @@ class NetworkFileIdResolver implements FileIdResolver {
       );
     }
 
+    final OwnerAndPrivacy ownerAndPrivacyOfData =
+        await _getOwnerAndPrivacyOfDataTransaction(dataTxId);
+
+    final ResolveIdResult fileInfo = ResolveIdResult(
+      privacy: ownerAndPrivacyOfData.privacy,
+      maybeName: null,
+      dataContentType: contentTypeHeader,
+      maybeLastUpdated: null,
+      maybeLastModified: null,
+      dateCreated: DateTime.now(),
+      size: sizeHeader,
+      dataTxId: dataTxId,
+      pinnedDataOwnerAddress: ownerAndPrivacyOfData.ownerAddress,
+    );
+
+    return fileInfo;
+  }
+
+  Future<OwnerAndPrivacy> _getOwnerAndPrivacyOfDataTransaction(
+    TxID dataTxId,
+  ) async {
     final transactionDetails = await arweave.getTransactionDetails(dataTxId);
 
     if (transactionDetails == null) {
@@ -99,19 +123,10 @@ class NetworkFileIdResolver implements FileIdResolver {
       (tag) => tag.name == 'Cipher-Iv' && tag.value.isNotEmpty,
     );
 
-    final ResolveIdResult fileInfo = ResolveIdResult(
+    return OwnerAndPrivacy(
+      ownerAddress: transactionDetails.owner.address,
       privacy: cipherIvTag == null ? DrivePrivacy.public : DrivePrivacy.private,
-      maybeName: null,
-      dataContentType: contentTypeHeader,
-      maybeLastUpdated: null,
-      maybeLastModified: null,
-      dateCreated: DateTime.now(),
-      size: sizeHeader,
-      dataTxId: dataTxId,
-      pinnedDataOwnerAddress: transactionDetails.owner.address,
     );
-
-    return fileInfo;
   }
 }
 
@@ -135,5 +150,15 @@ class FileIdResolverException implements Exception {
     required this.isArFsEntityValid,
     required this.isArFsEntityPublic,
     required this.doesDataTransactionExist,
+  });
+}
+
+class OwnerAndPrivacy {
+  final String ownerAddress;
+  final DrivePrivacy privacy;
+
+  const OwnerAndPrivacy({
+    required this.ownerAddress,
+    required this.privacy,
   });
 }
