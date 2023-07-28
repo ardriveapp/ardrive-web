@@ -110,6 +110,8 @@ class PinFileDialog extends StatelessWidget {
                       final validation = pinFileBloc.validateId(p0);
                       if (validation == IdValidationResult.invalid) {
                         return 'Id is invalid';
+                      } else if (validation == IdValidationResult.required) {
+                        return 'Id is required';
                       }
                     }
                     return null;
@@ -130,6 +132,8 @@ class PinFileDialog extends StatelessWidget {
                       final validation = pinFileBloc.validateName(p0);
                       if (validation == NameValidationResult.invalid) {
                         return 'Name is invalid';
+                      } else if (validation == NameValidationResult.required) {
+                        return 'Name is required';
                       }
                     }
                     return null;
