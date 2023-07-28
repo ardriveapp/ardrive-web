@@ -1,5 +1,3 @@
-// Unit tests for the PinFileBloc class.
-
 import 'package:ardrive/blocs/pin_file/pin_file_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
