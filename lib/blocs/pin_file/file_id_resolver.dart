@@ -43,7 +43,7 @@ class NetworkFileIdResolver implements FileIdResolver {
     }
 
     final FileInfo fileInfo = FileInfo(
-      isPrivate: false,
+      privacy: DrivePrivacy.public,
       maybeName: fileEntity.name,
       dataContentType: fileEntity.dataContentType!,
       maybeLastUpdated: fileEntity.lastModifiedDate,
@@ -104,7 +104,7 @@ class NetworkFileIdResolver implements FileIdResolver {
     );
 
     final FileInfo fileInfo = FileInfo(
-      isPrivate: cipherIvTag == null ? false : true,
+      privacy: cipherIvTag == null ? DrivePrivacy.public : DrivePrivacy.private,
       maybeName: null,
       dataContentType: contentTypeHeader,
       maybeLastUpdated: null,

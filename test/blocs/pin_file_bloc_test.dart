@@ -2,6 +2,7 @@
 
 import 'package:ardrive/blocs/pin_file/pin_file_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -43,7 +44,7 @@ void main() {
       when(() => fileIdResolver.requestForTransactionId(validTxId_1))
           .thenAnswer(
         (_) async => FileInfo(
-          isPrivate: false,
+          privacy: DrivePrivacy.public,
           maybeName: null,
           dataContentType: 'application/json',
           maybeLastUpdated: mockDate,
@@ -57,7 +58,7 @@ void main() {
       when(() => fileIdResolver.requestForTransactionId(validTxId_2))
           .thenAnswer(
         (_) async => FileInfo(
-          isPrivate: false,
+          privacy: DrivePrivacy.public,
           maybeName: null,
           dataContentType: 'application/json',
           maybeLastUpdated: mockDate,
@@ -70,7 +71,7 @@ void main() {
       );
       when(() => fileIdResolver.requestForFileId(validFileId_1)).thenAnswer(
         (_) async => FileInfo(
-          isPrivate: false,
+          privacy: DrivePrivacy.public,
           maybeName: validName,
           dataContentType: 'application/json',
           maybeLastUpdated: mockDate,
@@ -83,7 +84,7 @@ void main() {
       );
       when(() => fileIdResolver.requestForFileId(validFileId_2)).thenAnswer(
         (_) async => FileInfo(
-          isPrivate: false,
+          privacy: DrivePrivacy.public,
           maybeName: validName,
           dataContentType: 'application/json',
           maybeLastUpdated: mockDate,
@@ -156,7 +157,7 @@ void main() {
             id: validTxId_1,
             name: validName,
             nameValidation: NameValidationResult.valid,
-            isPrivate: false,
+            privacy: DrivePrivacy.public,
             dataContentType: 'application/json',
             maybeLastUpdated: mockDate,
             maybeLastModified: mockDate,
@@ -194,7 +195,7 @@ void main() {
             id: validFileId_1,
             name: validName,
             nameValidation: NameValidationResult.valid,
-            isPrivate: false,
+            privacy: DrivePrivacy.public,
             dataContentType: 'application/json',
             maybeLastUpdated: mockDate,
             maybeLastModified: mockDate,
@@ -232,7 +233,7 @@ void main() {
             id: validTxId_1,
             name: invalidName,
             nameValidation: NameValidationResult.invalid,
-            isPrivate: false,
+            privacy: DrivePrivacy.public,
             dataContentType: 'application/json',
             maybeLastUpdated: mockDate,
             maybeLastModified: mockDate,
@@ -270,7 +271,7 @@ void main() {
             id: validFileId_1,
             name: validName,
             nameValidation: NameValidationResult.invalid,
-            isPrivate: false,
+            privacy: DrivePrivacy.public,
             dataContentType: 'application/json',
             maybeLastUpdated: mockDate,
             maybeLastModified: mockDate,
@@ -328,7 +329,7 @@ void main() {
           id: validFileId_1,
           name: validName,
           nameValidation: NameValidationResult.valid,
-          isPrivate: false,
+          privacy: DrivePrivacy.public,
           dataContentType: 'application/json',
           dateCreated: mockDate,
           size: 1,
@@ -349,7 +350,7 @@ void main() {
             id: validFileId_1,
             name: 'otro nombre',
             nameValidation: NameValidationResult.valid,
-            isPrivate: false,
+            privacy: DrivePrivacy.public,
             dataContentType: 'application/json',
             maybeLastUpdated: mockDate,
             maybeLastModified: mockDate,
@@ -362,7 +363,7 @@ void main() {
             id: validFileId_1,
             name: 'pew! pew! pew!',
             nameValidation: NameValidationResult.valid,
-            isPrivate: false,
+            privacy: DrivePrivacy.public,
             dataContentType: 'application/json',
             maybeLastUpdated: mockDate,
             maybeLastModified: mockDate,

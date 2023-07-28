@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
@@ -98,7 +99,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
             id: id,
             name: name,
             nameValidation: syncValidationResult.nameValidation,
-            isPrivate: fileInfo.isPrivate,
+            privacy: fileInfo.privacy,
             dataContentType: fileInfo.dataContentType,
             maybeLastUpdated: fileInfo.maybeLastUpdated,
             maybeLastModified: fileInfo.maybeLastModified,
@@ -199,7 +200,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
               id: id,
               name: name,
               nameValidation: syncValidationResult.nameValidation,
-              isPrivate: stateAsPinFileFieldsValid.isPrivate,
+              privacy: stateAsPinFileFieldsValid.privacy,
               dataContentType: stateAsPinFileFieldsValid.dataContentType,
               dateCreated: stateAsPinFileFieldsValid.dateCreated,
               size: stateAsPinFileFieldsValid.size,

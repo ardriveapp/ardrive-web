@@ -15,7 +15,7 @@ enum IdValidationResult {
 }
 
 class FileInfo {
-  final bool isPrivate; // TODO: use an enum
+  final DrivePrivacy privacy;
   final String? maybeName;
   final String dataContentType; // TODO: use an enum
   final DateTime? maybeLastUpdated;
@@ -26,7 +26,7 @@ class FileInfo {
   final String pinnedDataOwnerAddress;
 
   const FileInfo({
-    required this.isPrivate,
+    required this.privacy,
     this.maybeName,
     required this.dataContentType,
     this.maybeLastUpdated,

@@ -68,7 +68,7 @@ class PinFileNetworkCheckRunning extends PinFileState {
 }
 
 class PinFileFieldsValid extends PinFileState {
-  final bool isPrivate; // TODO: use an enum
+  final DrivePrivacy privacy;
   final String dataContentType; // TODO: use an enum
   final DateTime? maybeLastUpdated;
   final DateTime? maybeLastModified;
@@ -77,11 +77,13 @@ class PinFileFieldsValid extends PinFileState {
   final String dataTxId;
   final String pinnedDataOwnerAddress;
 
+  bool get isPrivate => privacy == DrivePrivacy.private;
+
   const PinFileFieldsValid({
     required String id,
     required String name,
     required NameValidationResult nameValidation,
-    required this.isPrivate,
+    required this.privacy,
     required this.dataContentType,
     this.maybeLastUpdated,
     this.maybeLastModified,
