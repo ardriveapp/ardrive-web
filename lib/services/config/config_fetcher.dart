@@ -31,12 +31,10 @@ class ConfigFetcher {
     final gatewayUrl = localStore.getString('arweaveGatewayUrl');
     final enableQuickSyncAuthoring =
         localStore.getBool('enableQuickSyncAuthoring');
-    final enablePins = localStore.getBool('enablePins');
 
     return configFromEnv.copyWith(
       defaultArweaveGatewayUrl: gatewayUrl,
       enableQuickSyncAuthoring: enableQuickSyncAuthoring,
-      enablePins: enablePins,
     );
   }
 
