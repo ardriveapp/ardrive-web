@@ -166,7 +166,7 @@ class _ProfileCardState extends State<ProfileCard> {
             ),
           ],
           Padding(
-            padding: const EdgeInsets.only(top: 20.0, left: 16, right: 16),
+            padding: const EdgeInsets.only(top: 20.0, left: 11, right: 16),
             child: GestureDetector(
               onTap: () {
                 openFeedbackSurveyUrl();
