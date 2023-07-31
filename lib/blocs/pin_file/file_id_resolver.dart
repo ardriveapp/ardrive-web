@@ -42,7 +42,7 @@ class NetworkFileIdResolver implements FileIdResolver {
       );
     }
 
-    final OwnerAndPrivacy ownerAndPrivacyOfData =
+    final _OwnerAndPrivacy ownerAndPrivacyOfData =
         await _getOwnerAndPrivacyOfDataTransaction(fileEntity.dataTxId!);
 
     final ResolveIdResult fileInfo = ResolveIdResult(
@@ -84,7 +84,7 @@ class NetworkFileIdResolver implements FileIdResolver {
       );
     }
 
-    final OwnerAndPrivacy ownerAndPrivacyOfData =
+    final _OwnerAndPrivacy ownerAndPrivacyOfData =
         await _getOwnerAndPrivacyOfDataTransaction(dataTxId);
 
     final ResolveIdResult fileInfo = ResolveIdResult(
@@ -102,7 +102,7 @@ class NetworkFileIdResolver implements FileIdResolver {
     return fileInfo;
   }
 
-  Future<OwnerAndPrivacy> _getOwnerAndPrivacyOfDataTransaction(
+  Future<_OwnerAndPrivacy> _getOwnerAndPrivacyOfDataTransaction(
     TxID dataTxId,
   ) async {
     final transactionDetails = await arweave.getTransactionDetails(dataTxId);
@@ -123,7 +123,7 @@ class NetworkFileIdResolver implements FileIdResolver {
       (tag) => tag.name == 'Cipher-Iv' && tag.value.isNotEmpty,
     );
 
-    return OwnerAndPrivacy(
+    return _OwnerAndPrivacy(
       ownerAddress: transactionDetails.owner.address,
       privacy: cipherIvTag == null ? DrivePrivacy.public : DrivePrivacy.private,
     );
@@ -153,11 +153,11 @@ class FileIdResolverException implements Exception {
   });
 }
 
-class OwnerAndPrivacy {
+class _OwnerAndPrivacy {
   final String ownerAddress;
   final DrivePrivacy privacy;
 
-  const OwnerAndPrivacy({
+  const _OwnerAndPrivacy({
     required this.ownerAddress,
     required this.privacy,
   });
