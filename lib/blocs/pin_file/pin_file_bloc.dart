@@ -48,100 +48,193 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         super(const PinFileInitial()) {
     nameTextController.text = '';
 
-    on<FieldsChanged>((event, emit) async {
-      String name = event.name;
-      final String id = event.id;
+    on<FieldsChanged>(_handleFieldsChanged);
+    on<PinFileCancel>(_handlePinFileCancel);
+    on<PinFileSubmit>(_handlePinFileSubmit);
+  }
 
-      logger.d('FieldsChanged: name: $name, id: $id');
+  Future<void> _handleFieldsChanged(
+    FieldsChanged event,
+    Emitter<PinFileState> emit,
+  ) async {
+    String name = event.name;
+    final String id = event.id;
 
-      if (name.isEmpty && id.isEmpty) {
-        emit(const PinFileInitial());
-        return;
+    logger.d('FieldsChanged: name: $name, id: $id');
+
+    if (name.isEmpty && id.isEmpty) {
+      emit(const PinFileInitial());
+      return;
+    }
+
+    final stateId = state.id;
+    final hasIdChanged = stateId != id;
+
+    // FIXME: may throw, catch error
+    SynchronousValidationResult syncValidationResult =
+        await _runSynchronousValidation(name, id);
+
+    if (hasIdChanged && syncValidationResult.isIdValid) {
+      emit(PinFileNetworkCheckRunning(
+        id: id,
+        name: name,
+        idValidation: syncValidationResult.idValidation,
+        nameValidation: syncValidationResult.nameValidation,
+      ));
+
+      try {
+        final fileInfo = await _runNetworkValidation(
+          id,
+          name,
+          syncValidationResult.idValidation,
+        );
+
+        // do not override the name if it's already set
+        final newName = name.isEmpty ? (fileInfo.maybeName ?? '') : name;
+        if (newName != name) {
+          logger.d(
+            'name changed from $name to $newName - name in state: '
+            '${state.name}',
+          );
+          nameTextController.text = newName;
+          name = newName;
+        }
+
+        // FIXME: may throw, catch error
+        syncValidationResult = await _runSynchronousValidation(name, id);
+
+        emit(PinFileFieldsValid(
+          id: id,
+          name: name,
+          nameValidation: syncValidationResult.nameValidation,
+          idValidation: syncValidationResult.idValidation,
+          privacy: fileInfo.privacy,
+          dataContentType: fileInfo.dataContentType,
+          maybeLastUpdated: fileInfo.maybeLastUpdated,
+          maybeLastModified: fileInfo.maybeLastModified,
+          dateCreated: fileInfo.dateCreated,
+          size: fileInfo.size,
+          dataTxId: fileInfo.dataTxId,
+          pinnedDataOwnerAddress: fileInfo.pinnedDataOwnerAddress,
+        ));
+      } catch (err) {
+        if (err is FileIdResolverException) {
+          final cancelled = err.cancelled;
+
+          if (!cancelled) {
+            emit(
+              PinFileFieldsValidationError(
+                id: id,
+                name: name,
+                nameValidation: syncValidationResult.nameValidation,
+                idValidation: syncValidationResult.idValidation,
+                cancelled: cancelled,
+                networkError: err.networkError,
+                isArFsEntityValid: err.isArFsEntityValid,
+                isArFsEntityPublic: err.isArFsEntityPublic,
+                doesDataTransactionExist: err.doesDataTransactionExist,
+              ),
+            );
+          } else {
+            logger.d('PinFileNetworkCheck cancelled');
+          }
+        } else {
+          logger.e('unknown error in PinFileNetworkCheck');
+          rethrow;
+        }
       }
+    }
 
-      final stateId = state.id;
-      final hasIdChanged = stateId != id;
-
-      // FIXME: may throw, catch error
-      SynchronousValidationResult syncValidationResult =
-          await _runSynchronousValidation(name, id);
-
-      if (hasIdChanged && syncValidationResult.isIdValid) {
+    if (!syncValidationResult.isIdValid) {
+      if (state is PinFileFieldsValidationError) {
+        final stateAsPinFileFieldsValidationError =
+            state as PinFileFieldsValidationError;
+        emit(PinFileFieldsValidationError(
+          id: id,
+          name: name,
+          nameValidation: syncValidationResult.nameValidation,
+          idValidation: syncValidationResult.idValidation,
+          cancelled: stateAsPinFileFieldsValidationError.cancelled,
+          networkError: stateAsPinFileFieldsValidationError.networkError,
+          isArFsEntityValid:
+              stateAsPinFileFieldsValidationError.isArFsEntityValid,
+          isArFsEntityPublic:
+              stateAsPinFileFieldsValidationError.isArFsEntityPublic,
+          doesDataTransactionExist:
+              stateAsPinFileFieldsValidationError.doesDataTransactionExist,
+        ));
+      } else if (state is PinFileNetworkCheckRunning) {
         emit(PinFileNetworkCheckRunning(
           id: id,
           name: name,
-          idValidation: syncValidationResult.idValidation,
           nameValidation: syncValidationResult.nameValidation,
+          idValidation: syncValidationResult.idValidation,
         ));
-
-        try {
-          final fileInfo = await _runNetworkValidation(
-            id,
-            name,
-            syncValidationResult.idValidation,
-          );
-
-          // do not override the name if it's already set
-          final newName = name.isEmpty ? (fileInfo.maybeName ?? '') : name;
-          if (newName != name) {
-            logger.d(
-              'name changed from $name to $newName - name in state: '
-              '${state.name}',
-            );
-            nameTextController.text = newName;
-            name = newName;
-          }
-
-          // FIXME: may throw, catch error
-          syncValidationResult = await _runSynchronousValidation(name, id);
-
-          emit(PinFileFieldsValid(
+      } else if (state is PinFileFieldsValid) {
+        emit(
+          PinFileFieldsValidationError(
             id: id,
             name: name,
             nameValidation: syncValidationResult.nameValidation,
             idValidation: syncValidationResult.idValidation,
-            privacy: fileInfo.privacy,
-            dataContentType: fileInfo.dataContentType,
-            maybeLastUpdated: fileInfo.maybeLastUpdated,
-            maybeLastModified: fileInfo.maybeLastModified,
-            dateCreated: fileInfo.dateCreated,
-            size: fileInfo.size,
-            dataTxId: fileInfo.dataTxId,
-            pinnedDataOwnerAddress: fileInfo.pinnedDataOwnerAddress,
-          ));
-        } catch (err) {
-          if (err is FileIdResolverException) {
-            final cancelled = err.cancelled;
-
-            if (!cancelled) {
-              emit(
-                PinFileFieldsValidationError(
-                  id: id,
-                  name: name,
-                  nameValidation: syncValidationResult.nameValidation,
-                  idValidation: syncValidationResult.idValidation,
-                  cancelled: cancelled,
-                  networkError: err.networkError,
-                  isArFsEntityValid: err.isArFsEntityValid,
-                  isArFsEntityPublic: err.isArFsEntityPublic,
-                  doesDataTransactionExist: err.doesDataTransactionExist,
-                ),
-              );
-            } else {
-              logger.d('PinFileNetworkCheck cancelled');
-            }
-          } else {
-            logger.e('unknown error in PinFileNetworkCheck');
-            rethrow;
-          }
-        }
+            cancelled: false,
+            networkError: false,
+            isArFsEntityValid: true,
+            isArFsEntityPublic: true,
+            doesDataTransactionExist: true,
+          ),
+        );
+      } else if (state is PinFileInitial) {
+        emit(
+          PinFileFieldsValidationError(
+            id: id,
+            name: name,
+            nameValidation: syncValidationResult.nameValidation,
+            idValidation: syncValidationResult.idValidation,
+            cancelled: false,
+            networkError: false,
+            isArFsEntityValid: true,
+            isArFsEntityPublic: true,
+            doesDataTransactionExist: true,
+          ),
+        );
+      } else {
+        logger.d('Unexpected state $state');
       }
-
-      if (!syncValidationResult.isIdValid) {
-        if (state is PinFileFieldsValidationError) {
-          final stateAsPinFileFieldsValidationError =
-              state as PinFileFieldsValidationError;
-          emit(PinFileFieldsValidationError(
+    } else {
+      if (state is PinFileFieldsValid) {
+        final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
+        emit(
+          PinFileFieldsValid(
+            id: id,
+            name: name,
+            nameValidation: syncValidationResult.nameValidation,
+            idValidation: stateAsPinFileFieldsValid.idValidation,
+            privacy: stateAsPinFileFieldsValid.privacy,
+            dataContentType: stateAsPinFileFieldsValid.dataContentType,
+            dateCreated: stateAsPinFileFieldsValid.dateCreated,
+            size: stateAsPinFileFieldsValid.size,
+            dataTxId: stateAsPinFileFieldsValid.dataTxId,
+            maybeLastUpdated: stateAsPinFileFieldsValid.maybeLastUpdated,
+            maybeLastModified: stateAsPinFileFieldsValid.maybeLastModified,
+            pinnedDataOwnerAddress:
+                stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
+          ),
+        );
+      } else if (state is PinFileNetworkCheckRunning) {
+        emit(
+          PinFileNetworkCheckRunning(
+            id: id,
+            name: name,
+            nameValidation: syncValidationResult.nameValidation,
+            idValidation: syncValidationResult.idValidation,
+          ),
+        );
+      } else if (state is PinFileFieldsValidationError) {
+        final stateAsPinFileFieldsValidationError =
+            state as PinFileFieldsValidationError;
+        emit(
+          PinFileFieldsValidationError(
             id: id,
             name: name,
             nameValidation: syncValidationResult.nameValidation,
@@ -154,184 +247,103 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
                 stateAsPinFileFieldsValidationError.isArFsEntityPublic,
             doesDataTransactionExist:
                 stateAsPinFileFieldsValidationError.doesDataTransactionExist,
-          ));
-        } else if (state is PinFileNetworkCheckRunning) {
-          emit(PinFileNetworkCheckRunning(
-            id: id,
-            name: name,
-            nameValidation: syncValidationResult.nameValidation,
-            idValidation: syncValidationResult.idValidation,
-          ));
-        } else if (state is PinFileFieldsValid) {
-          emit(
-            PinFileFieldsValidationError(
-              id: id,
-              name: name,
-              nameValidation: syncValidationResult.nameValidation,
-              idValidation: syncValidationResult.idValidation,
-              cancelled: false,
-              networkError: false,
-              isArFsEntityValid: true,
-              isArFsEntityPublic: true,
-              doesDataTransactionExist: true,
-            ),
-          );
-        } else if (state is PinFileInitial) {
-          emit(
-            PinFileFieldsValidationError(
-              id: id,
-              name: name,
-              nameValidation: syncValidationResult.nameValidation,
-              idValidation: syncValidationResult.idValidation,
-              cancelled: false,
-              networkError: false,
-              isArFsEntityValid: true,
-              isArFsEntityPublic: true,
-              doesDataTransactionExist: true,
-            ),
-          );
-        } else {
-          logger.d('Unexpected state $state');
-        }
+          ),
+        );
       } else {
-        if (state is PinFileFieldsValid) {
-          final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
-          emit(
-            PinFileFieldsValid(
-              id: id,
-              name: name,
-              nameValidation: syncValidationResult.nameValidation,
-              idValidation: stateAsPinFileFieldsValid.idValidation,
-              privacy: stateAsPinFileFieldsValid.privacy,
-              dataContentType: stateAsPinFileFieldsValid.dataContentType,
-              dateCreated: stateAsPinFileFieldsValid.dateCreated,
-              size: stateAsPinFileFieldsValid.size,
-              dataTxId: stateAsPinFileFieldsValid.dataTxId,
-              maybeLastUpdated: stateAsPinFileFieldsValid.maybeLastUpdated,
-              maybeLastModified: stateAsPinFileFieldsValid.maybeLastModified,
-              pinnedDataOwnerAddress:
-                  stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
-            ),
-          );
-        } else if (state is PinFileNetworkCheckRunning) {
-          emit(
-            PinFileNetworkCheckRunning(
-              id: id,
-              name: name,
-              nameValidation: syncValidationResult.nameValidation,
-              idValidation: syncValidationResult.idValidation,
-            ),
-          );
-        } else if (state is PinFileFieldsValidationError) {
-          final stateAsPinFileFieldsValidationError =
-              state as PinFileFieldsValidationError;
-          emit(
-            PinFileFieldsValidationError(
-              id: id,
-              name: name,
-              nameValidation: syncValidationResult.nameValidation,
-              idValidation: syncValidationResult.idValidation,
-              cancelled: stateAsPinFileFieldsValidationError.cancelled,
-              networkError: stateAsPinFileFieldsValidationError.networkError,
-              isArFsEntityValid:
-                  stateAsPinFileFieldsValidationError.isArFsEntityValid,
-              isArFsEntityPublic:
-                  stateAsPinFileFieldsValidationError.isArFsEntityPublic,
-              doesDataTransactionExist:
-                  stateAsPinFileFieldsValidationError.doesDataTransactionExist,
-            ),
-          );
-        } else {
-          logger.d('Unexpected state $state');
-        }
+        logger.d('Unexpected state $state');
       }
-    });
+    }
+  }
 
-    on<PinFileCancel>((event, emit) {
-      // TODO: tell the "file id resolver" to stop any ongoing requests
-      emit(PinFileAbort(
+  void _handlePinFileCancel(
+    PinFileCancel event,
+    Emitter<PinFileState> emit,
+  ) {
+    // TODO: tell the "file id resolver" to stop any ongoing requests
+    emit(PinFileAbort(
+      id: state.id,
+      name: state.name,
+      nameValidation: NameValidationResult.required,
+      idValidation: IdValidationResult.required,
+    ));
+  }
+
+  Future<void> _handlePinFileSubmit(
+    PinFileSubmit event,
+    Emitter<PinFileState> emit,
+  ) async {
+    final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
+    final profileState = _profileCubit.state as ProfileLoggedIn;
+
+    emit(PinFileCreating(
+      id: stateAsPinFileFieldsValid.id,
+      name: stateAsPinFileFieldsValid.name,
+      idValidation: stateAsPinFileFieldsValid.idValidation,
+    ));
+
+    final newFileEntity = FileEntity(
+      size: stateAsPinFileFieldsValid.size,
+      parentFolderId: _parentFolderId,
+      name: stateAsPinFileFieldsValid.name,
+      lastModifiedDate: DateTime.now(),
+      id: const Uuid().v4(),
+      driveId: _driveId,
+      dataTxId: stateAsPinFileFieldsValid.dataTxId,
+      dataContentType: stateAsPinFileFieldsValid.dataContentType,
+      pinnedDataOwnerAddress: stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
+    );
+
+    await _driveDao.transaction(() async {
+      final parentFolder = await _driveDao
+          .folderById(driveId: _driveId, folderId: _parentFolderId)
+          .getSingle();
+
+      if (_turboUploadService.useTurboUpload) {
+        final fileDataItem = await _arweave.prepareEntityDataItem(
+          newFileEntity,
+          profileState.wallet,
+          // TODO: key
+        );
+
+        await _turboUploadService.postDataItem(
+          dataItem: fileDataItem,
+          wallet: profileState.wallet,
+        );
+        newFileEntity.txId = fileDataItem.id;
+      } else {
+        final fileDataItem = await _arweave.prepareEntityTx(
+          newFileEntity,
+          profileState.wallet,
+          null, // TODO: key
+        );
+
+        await _arweave.postTx(fileDataItem);
+        newFileEntity.txId = fileDataItem.id;
+      }
+
+      final parentFolderPath = parentFolder.path;
+      final filePath = '$parentFolderPath/${newFileEntity.name}';
+
+      await _driveDao.writeFileEntity(newFileEntity, filePath);
+      await _driveDao.insertFileRevision(newFileEntity.toRevisionCompanion(
+        // FIXME: this is gonna change when we allow to ovewrite an existing file
+        performedAction: RevisionAction.create,
+      ));
+    }).then((value) {
+      emit(PinFileSuccess(
         id: state.id,
         name: state.name,
-        nameValidation: NameValidationResult.required,
-        idValidation: IdValidationResult.required,
+        nameValidation: state.nameValidation,
+        idValidation: state.idValidation,
       ));
-    });
-
-    on<PinFileSubmit>((event, emit) async {
-      final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
-      final profileState = _profileCubit.state as ProfileLoggedIn;
-
-      emit(PinFileCreating(
-        id: stateAsPinFileFieldsValid.id,
-        name: stateAsPinFileFieldsValid.name,
-        idValidation: stateAsPinFileFieldsValid.idValidation,
+    }).catchError((err, stacktrace) {
+      logger.d('PinFileSubmit error: $err - $stacktrace');
+      emit(PinFileError(
+        id: state.id,
+        name: state.name,
+        nameValidation: state.nameValidation,
+        idValidation: state.idValidation,
       ));
-
-      final newFileEntity = FileEntity(
-        size: stateAsPinFileFieldsValid.size,
-        parentFolderId: _parentFolderId,
-        name: stateAsPinFileFieldsValid.name,
-        lastModifiedDate: DateTime.now(),
-        id: const Uuid().v4(),
-        driveId: _driveId,
-        dataTxId: stateAsPinFileFieldsValid.dataTxId,
-        dataContentType: stateAsPinFileFieldsValid.dataContentType,
-        pinnedDataOwnerAddress:
-            stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
-      );
-
-      await _driveDao.transaction(() async {
-        final parentFolder = await _driveDao
-            .folderById(driveId: _driveId, folderId: _parentFolderId)
-            .getSingle();
-
-        if (_turboUploadService.useTurboUpload) {
-          final fileDataItem = await _arweave.prepareEntityDataItem(
-            newFileEntity,
-            profileState.wallet,
-            // TODO: key
-          );
-
-          await _turboUploadService.postDataItem(
-            dataItem: fileDataItem,
-            wallet: profileState.wallet,
-          );
-          newFileEntity.txId = fileDataItem.id;
-        } else {
-          final fileDataItem = await _arweave.prepareEntityTx(
-            newFileEntity,
-            profileState.wallet,
-            null, // TODO: key
-          );
-
-          await _arweave.postTx(fileDataItem);
-          newFileEntity.txId = fileDataItem.id;
-        }
-
-        final parentFolderPath = parentFolder.path;
-        final filePath = '$parentFolderPath/${newFileEntity.name}';
-
-        await _driveDao.writeFileEntity(newFileEntity, filePath);
-        await _driveDao.insertFileRevision(newFileEntity.toRevisionCompanion(
-          // FIXME: this is gonna change when we allow to ovewrite an existing file
-          performedAction: RevisionAction.create,
-        ));
-      }).then((value) {
-        emit(PinFileSuccess(
-          id: state.id,
-          name: state.name,
-          nameValidation: state.nameValidation,
-          idValidation: state.idValidation,
-        ));
-      }).catchError((err, stacktrace) {
-        logger.d('PinFileSubmit error: $err - $stacktrace');
-        emit(PinFileError(
-          id: state.id,
-          name: state.name,
-          nameValidation: state.nameValidation,
-          idValidation: state.idValidation,
-        ));
-      });
     });
   }
 
