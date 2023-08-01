@@ -526,7 +526,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
     switch (action) {
       case RevisionAction.create:
-        title = 'File added to the drive';
+        if (file.pinnedDataOwnerAddress != null) {
+          title = 'File pinned to the drive';
+        } else {
+          title = 'File added to the drive';
+        }
         leading = _DownloadOrPreview(
           isSharedFile: widget.isSharePage,
           privacy: widget.drivePrivacy,
