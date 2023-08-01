@@ -8,6 +8,7 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
   required Map<String, FileEntriesCompanion> filesByIdMap,
   required Map<FolderID, GhostFolder> ghostFolders,
 }) async {
+  var startTime = DateTime.now();
   final staleFolderTree = <FolderNode>[];
   for (final folder in foldersByIdMap.values) {
     // Get trees of the updated folders and files for path generation.
@@ -110,5 +111,8 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
       }
     }
   }
+  var endTime = DateTime.now();
+  var timeItTook = endTime.millisecond - startTime.millisecond;
+  logger.d('_generateFsEntryPaths for $driveId: took $timeItTook ms');
   return ghostFolders;
 }

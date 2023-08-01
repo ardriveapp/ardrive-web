@@ -140,13 +140,13 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
                 database.fileEntries, updatedFilesById.values.toList());
           });
 
-          // await _generateFsEntryPaths(
-          //   ghostFolders: ghostFolders,
-          //   driveDao: driveDao,
-          //   driveId: drive.id,
-          //   foldersByIdMap: updatedFoldersById,
-          //   filesByIdMap: updatedFilesById,
-          // );
+          await _generateFsEntryPaths(
+            ghostFolders: ghostFolders,
+            driveDao: driveDao,
+            driveId: drive.id,
+            foldersByIdMap: updatedFoldersById,
+            filesByIdMap: updatedFilesById,
+          );
 
           numberOfDriveEntitiesParsed +=
               updatedFoldersById.length + updatedFilesById.length;
