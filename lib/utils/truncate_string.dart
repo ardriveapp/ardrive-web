@@ -1,5 +1,9 @@
 // Truncate a string by adding ... in the middle
-String truncateString(String text, int offsetStart, int offsetEnd) {
+String truncateString(
+  String text, {
+  required int offsetStart,
+  required int offsetEnd,
+}) {
   final textLength = text.length;
   if (textLength <= offsetStart + offsetEnd) {
     throw Exception(

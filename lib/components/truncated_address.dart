@@ -28,7 +28,11 @@ class TruncatedAddress extends StatelessWidget {
           );
         },
         child: Text(
-          truncateString(walletAddress, offsetStart, offsetEnd),
+          truncateString(
+            walletAddress,
+            offsetStart: offsetStart,
+            offsetEnd: offsetEnd,
+          ),
           style: ArDriveTypography.body.captionRegular().copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize: fontSize,

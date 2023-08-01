@@ -324,7 +324,7 @@ class _ProfileCardState extends State<ProfileCard> {
             ArDriveIcons.user(size: 14),
             if (walletAddress.isNotEmpty)
               Text(
-                truncateString(walletAddress, 2, 2),
+                truncateString(walletAddress, offsetStart: 2, offsetEnd: 2),
                 style: ArDriveTypography.body.buttonNormalBold().copyWith(
                       fontWeight: FontWeight.w800,
                     ),
