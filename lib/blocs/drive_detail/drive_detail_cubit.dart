@@ -137,7 +137,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
           logger.d('Root folder node $rootFolderNode');
 
-          logger.d('Folder contents $folderContents');
+          // logger.d('Folder contents $folderContents');
 
           if (_selectedItem != null && _refreshSelectedItem) {
             if (_selectedItem is FileDataTableItem) {
