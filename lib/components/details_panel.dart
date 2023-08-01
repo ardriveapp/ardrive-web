@@ -421,7 +421,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         sizedBoxHeight16px,
         DetailsPanelItem(
           leading: TruncatedAddress(walletAddress: pinnedDataOwnerAddress),
-          itemTitle: 'Uploaded by',
+          itemTitle: appLocalizationsOf(context).uploadedBy,
         ),
       ]
     ];

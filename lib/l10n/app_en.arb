@@ -1730,6 +1730,10 @@
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
   },
+  "uploadedBy": "Uploaded by",
+  "@uploadedBy": {
+    "description": "Refers to the one that uploaded the data of a pinned file"
+  },
   "uploadEmphasized": "UPLOAD",
   "@uploadEmphasized": {
     "description": "The action of uploading certain item"
