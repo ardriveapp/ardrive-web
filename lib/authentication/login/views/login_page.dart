@@ -2260,84 +2260,85 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
 
     return Scaffold(
       body: Center(
-          child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                  top: topBottomPadding, bottom: topBottomPadding),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    // TODO: create/update localization key
-                    'Write Down Seed Phrase',
-                    textAlign: TextAlign.center,
-                    style: ArDriveTypography.headline
-                        .headline4Regular(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault)
-                        .copyWith(fontSize: 32),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                      constraints: BoxConstraints(maxWidth: 508),
-                      child: Text(
-                        // TODO: create/update localization key
-                        'Please carefully write down your seed phrase, in this order, and keep it somewhere safe.',
-                        textAlign: TextAlign.center,
-                        style: ArDriveTypography.body.smallBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgSubtle),
-                      )),
-                  const SizedBox(height: 72),
-                  rows,
-                  const SizedBox(height: 72),
-                  ...createRows(
-                    items: [
-                      TextButton.icon(
-                        icon: _isBlurredSeedPhrase
-                            ? ArDriveIcons.eyeClosed(
-                                size: 24,
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgMuted)
-                            : ArDriveIcons.eyeOpen(
-                                size: 24,
+          child: ArDriveScrollBar(
+        alwaysVisible: true,
+        child: SingleChildScrollView(
+            padding: EdgeInsets.only(
+                top: topBottomPadding, bottom: topBottomPadding),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  // TODO: create/update localization key
+                  'Write Down Seed Phrase',
+                  textAlign: TextAlign.center,
+                  style: ArDriveTypography.headline
+                      .headline4Regular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault)
+                      .copyWith(fontSize: 32),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                    constraints: BoxConstraints(maxWidth: 508),
+                    child: Text(
+                      // TODO: create/update localization key
+                      'Please carefully write down your seed phrase, in this order, and keep it somewhere safe.',
+                      textAlign: TextAlign.center,
+                      style: ArDriveTypography.body.smallBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgSubtle),
+                    )),
+                const SizedBox(height: 72),
+                rows,
+                const SizedBox(height: 72),
+                ...createRows(
+                  items: [
+                    TextButton.icon(
+                      icon: _isBlurredSeedPhrase
+                          ? ArDriveIcons.eyeClosed(
+                              size: 24,
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted)
+                          : ArDriveIcons.eyeOpen(
+                              size: 24,
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted),
+                      label: Container(
+                          width: 92,
+                          child: Text(
+                            // TODO: create/update localization keys
+                            _isBlurredSeedPhrase ? 'Show Words' : 'Hide Words',
+                            style: ArDriveTypography.body.smallBold(
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
                                     .themeFgMuted),
-                        label: Container(
-                            width: 92,
-                            child: Text(
-                              // TODO: create/update localization keys
-                              _isBlurredSeedPhrase
-                                  ? 'Show Words'
-                                  : 'Hide Words',
-                              style: ArDriveTypography.body.smallBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgMuted),
-                            )),
-                        onPressed: () {
-                          setState(() {
-                            _isBlurredSeedPhrase = !_isBlurredSeedPhrase;
-                          });
-                        },
-                      ),
-                      LoginCopyButton(text: widget.mnemonic),
-                    ],
-                    rowCount: rowCount == 3 ? 2 : 1,
-                    hGap: 16,
-                    vGap: 16,
-                  ),
-                ],
-              ))),
+                          )),
+                      onPressed: () {
+                        setState(() {
+                          _isBlurredSeedPhrase = !_isBlurredSeedPhrase;
+                        });
+                      },
+                    ),
+                    LoginCopyButton(text: widget.mnemonic),
+                  ],
+                  rowCount: rowCount == 3 ? 2 : 1,
+                  hGap: 16,
+                  vGap: 16,
+                ),
+              ],
+            )),
+      )),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
