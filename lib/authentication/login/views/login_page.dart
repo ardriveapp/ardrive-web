@@ -2260,9 +2260,9 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
 
     return Scaffold(
       body: Center(
-          child: ArDriveScrollBar(
-        alwaysVisible: true,
-        child: SingleChildScrollView(
+        child: ArDriveScrollBar(
+          alwaysVisible: true,
+          child: SingleChildScrollView(
             padding: EdgeInsets.only(
                 top: topBottomPadding, bottom: topBottomPadding),
             child: Column(
@@ -2337,8 +2337,10 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                   vGap: 16,
                 ),
               ],
-            )),
-      )),
+            ),
+          ),
+        ),
+      ),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
