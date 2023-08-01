@@ -1,5 +1,5 @@
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/truncated_string.dart';
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
