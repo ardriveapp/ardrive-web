@@ -488,60 +488,55 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             _emailChecked &&
                             _emailController.text.isNotEmpty,
                       ),
-                      Row(
-                        children: [
-                          ArDriveCheckBox(
-                            title: '',
-                            checked: _isTermsChecked,
-                            onChange: ((value) {
-                              setState(() => _isTermsChecked = value);
-                            }),
-                          ),
-                          Flexible(
-                            child: Text.rich(
-                              TextSpan(
-                                children: splitTranslationsWithMultipleStyles<
-                                    InlineSpan>(
-                                  originalText: appLocalizationsOf(context)
-                                      .aggreeToTerms_body,
-                                  defaultMapper: (text) => TextSpan(
-                                    text: text,
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgDefault,
-                                    ),
+                      ArDriveCheckBox(
+                        titleWidget: Flexible(
+                          child: Text.rich(
+                            TextSpan(
+                              children: splitTranslationsWithMultipleStyles<
+                                  InlineSpan>(
+                                originalText: appLocalizationsOf(context)
+                                    .aggreeToTerms_body,
+                                defaultMapper: (text) => TextSpan(
+                                  text: text,
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgDefault,
                                   ),
-                                  parts: {
-                                    appLocalizationsOf(context).aggreeToTerms_link:
-                                        (text) => TextSpan(
-                                              text: text,
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
-                                                    color:
-                                                        ArDriveTheme.of(context)
-                                                            .themeData
-                                                            .colors
-                                                            .themeFgDefault,
-                                                  )
-                                                  .copyWith(
-                                                    decoration: TextDecoration
-                                                        .underline,
-                                                  ),
-                                              recognizer: TapGestureRecognizer()
-                                                ..onTap = () => openUrl(
-                                                      url: Resources
-                                                          .agreementLink,
-                                                    ),
-                                            ),
-                                  },
                                 ),
+                                parts: {
+                                  appLocalizationsOf(context).aggreeToTerms_link:
+                                      (text) => TextSpan(
+                                            text: text,
+                                            style: ArDriveTypography.body
+                                                .buttonNormalBold(
+                                                  color:
+                                                      ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeFgDefault,
+                                                )
+                                                .copyWith(
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () => openUrl(
+                                                    url:
+                                                        Resources.agreementLink,
+                                                  ),
+                                          ),
+                                },
                               ),
                             ),
                           ),
-                        ],
+                        ),
+                        checked: _isTermsChecked,
+                        onChange: ((value) {
+                          setState(() => _isTermsChecked = value);
+                        }),
                       ),
                       const Divider(
                         height: 80,
