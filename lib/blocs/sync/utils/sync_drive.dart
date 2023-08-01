@@ -23,7 +23,7 @@ Stream<double> _syncDrive(
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
   final startSyncDT = DateTime.now();
 
-  logSync('Syncing drive - ${drive.name}');
+  logger.d('Syncing drive - ${drive.name}');
 
   SecretKey? driveKey;
 
@@ -40,7 +40,7 @@ Stream<double> _syncDrive(
   }
   final fetchPhaseStartDT = DateTime.now();
 
-  logSync('Fetching all transactions for drive ${drive.name}\n');
+  logger.d('Fetching all transactions for drive ${drive.name}\n');
 
   final transactions = <DriveHistoryTransaction>[];
 
@@ -122,7 +122,7 @@ Stream<double> _syncDrive(
         return (1 -
             ((currentBlockHeight - block.height) / totalBlockHeightDifference));
       }
-      logSync(
+      logger.d(
         'The transaction block is null. \nTransaction node id: ${t.id}',
       );
 
@@ -143,7 +143,7 @@ Stream<double> _syncDrive(
           'First height: $firstBlockHeight, totalHeightDiff: $totalBlockHeightDifference',
         );
       } else {
-        logSync(
+        logger.d(
           'The transaction block is null. \nTransaction node id: ${t.id}',
         );
       }
@@ -173,7 +173,7 @@ Stream<double> _syncDrive(
   final fetchPhaseTotalTime =
       DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
 
-  logSync(
+  logger.d(
     '''
       Duration of fetch phase for ${drive.name} : $fetchPhaseTotalTime ms \n
       Progress by block height: $fetchPhasePercentage% \n
@@ -210,7 +210,7 @@ Stream<double> _syncDrive(
 
   final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
 
-  logSync(
+  logger.d(
     '''
       Drive ${drive.name} completed parse phase\n
       Progress by block height: $fetchPhasePercentage% \n
