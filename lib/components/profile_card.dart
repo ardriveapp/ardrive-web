@@ -8,6 +8,7 @@ import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
@@ -323,7 +324,7 @@ class _ProfileCardState extends State<ProfileCard> {
             ArDriveIcons.user(size: 14),
             if (walletAddress.isNotEmpty)
               Text(
-                '${walletAddress.substring(0, 2)}...${walletAddress.substring(walletAddress.length - 2)}',
+                truncateString(walletAddress, 2, 2),
                 style: ArDriveTypography.body.buttonNormalBold().copyWith(
                       fontWeight: FontWeight.w800,
                     ),
