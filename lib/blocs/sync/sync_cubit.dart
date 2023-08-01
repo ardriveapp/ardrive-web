@@ -343,29 +343,29 @@ class SyncCubit extends Cubit<SyncState> {
 
       // logger.d('Ghosts created...');
 
-      logger.d('Updating transaction statuses...');
+      // logger.d('Updating transaction statuses...');
 
-      final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
-      final metadataTxsFromSnapshots =
-          await SnapshotItemOnChain.getAllCachedTransactionIds();
+      // final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
+      // final metadataTxsFromSnapshots =
+      //     await SnapshotItemOnChain.getAllCachedTransactionIds();
 
-      final confirmedFileTxIds = allFileRevisions
-          .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
-          .map((file) => file.dataTxId)
-          .toList();
+      // final confirmedFileTxIds = allFileRevisions
+      //     .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
+      //     .map((file) => file.dataTxId)
+      //     .toList();
 
-      await Future.wait(
-        [
-          if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
-          _updateTransactionStatuses(
-            driveDao: _driveDao,
-            arweave: _arweave,
-            txsIdsToSkip: confirmedFileTxIds,
-          ),
-        ],
-      );
+      // await Future.wait(
+      //   [
+      //     if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
+      //     _updateTransactionStatuses(
+      //       driveDao: _driveDao,
+      //       arweave: _arweave,
+      //       txsIdsToSkip: confirmedFileTxIds,
+      //     ),
+      //   ],
+      // );
 
-      logger.d('Transaction statuses updated');
+      // logger.d('Transaction statuses updated');
 
       logger.d(
           'Syncing drives finished.\nDrives quantity: ${_syncProgress.drivesCount}\n'
