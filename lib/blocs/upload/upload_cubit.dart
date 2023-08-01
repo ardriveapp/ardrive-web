@@ -418,7 +418,7 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
     } catch (error, stacktrace) {
-      logger.e('error mounting the upload', error, stacktrace);
+      logger.e('error mounting the upload: $error, $stacktrace');
       addError(error);
     }
   }

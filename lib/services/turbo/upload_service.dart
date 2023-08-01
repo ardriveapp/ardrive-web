@@ -47,13 +47,13 @@ class TurboUploadService {
         controller.close();
       }).onError((error, stackTrace) {
         logger.e(
-            'Catching error in postDataItemWithProgress', error, stackTrace);
+            'Catching error in postDataItemWithProgress: $error, $stackTrace');
         controller.addError(error ?? Exception('Error'));
         logger.e('Closing stream');
         controller.close();
       });
     } catch (e) {
-      logger.e('Catching an uncaught error on UploadService', e);
+      logger.e('Catching an uncaught error on UploadService: $e');
       controller.addError(e);
       logger.e('Closing stream');
       controller.close();
@@ -129,28 +129,24 @@ class TurboUploadService {
         throw _handleException(response);
       }
     } catch (e) {
-      logger.e('Catching error in postDataItem', e);
+      logger.e('Catching error in postDataItem: $e');
       throw _handleException(e);
     }
   }
 
   Exception _handleException(Object error) {
-    logger.e('Handling exception in UploadService', error);
+    logger.e('Handling exception in UploadService: $error');
 
     if (error is ArDriveHTTPResponse && error.statusCode == 408) {
       logger.e(
-        'Handling exception in UploadService with status code: ${error.statusCode}',
-        error,
-      );
+          'Handling exception in UploadService with status code: ${error.statusCode}: $error');
 
       return TurboUploadTimeoutException();
     }
     if (error is ArDriveHTTPException && error.statusCode == 408) {
       logger.e(
-        'Handling exception in UploadService with status code: ${error.statusCode}',
-        error,
-      );
-      
+          'Handling exception in UploadService with status code: ${error.statusCode}: $error');
+
       return TurboUploadTimeoutException();
     }
 

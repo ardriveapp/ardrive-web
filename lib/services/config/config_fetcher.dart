@@ -47,7 +47,7 @@ class ConfigFetcher {
         return AppConfig.fromJson(json.decode(config));
       }
     } catch (e) {
-      logger.e('Error when loading config from dev tools prefs', e);
+      logger.e('Error when loading config from dev tools prefs: $e');
     }
 
     final configFromEnv = await loadFromEnv(_parseFlavorToEnv(flavor));

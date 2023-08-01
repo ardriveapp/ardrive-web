@@ -52,7 +52,7 @@ class TurboTopUpEstimationBloc
               shouldRethrow: true,
             );
           } catch (e, s) {
-            logger.e('error initializing the estimation view', e, s);
+            logger.e('error initializing the estimation view: $e, $s');
 
             emit(FetchEstimationError());
           }
@@ -145,7 +145,7 @@ class TurboTopUpEstimationBloc
         ),
       );
     } catch (e, s) {
-      logger.e('Error calculating the estimation', e, s);
+      logger.e('Error calculating the estimation: $e, $s');
 
       if (shouldRethrow) {
         rethrow;
@@ -159,7 +159,7 @@ class TurboTopUpEstimationBloc
     try {
       _balance = await turbo.getBalance();
     } catch (e) {
-      logger.e(e);
+      logger.e(e.toString());
       rethrow;
     }
   }

@@ -402,7 +402,7 @@ class ArweaveService {
         }
       }
     } catch (e) {
-      logger.e('Failed to get cached entity data from snapshot', e);
+      logger.e('Failed to get cached entity data from snapshot: $e');
     }
 
     return null;
@@ -794,7 +794,8 @@ class ArweaveService {
             ),
           );
         } on EntityTransactionParseException catch (parseException) {
-          logger.e('Failed to parse transaction with id ${parseException.transactionId}');
+          logger.e(
+              'Failed to parse transaction with id ${parseException.transactionId}');
         }
       }
 

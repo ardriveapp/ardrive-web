@@ -49,7 +49,7 @@ class ConfigService {
 
       return flavor;
     } catch (e, stacktrace) {
-      logger.e('An issue occured when loading flavors.', e, stacktrace);
+      logger.e('An issue occured when loading flavors: $e, $stacktrace');
 
       return Flavor.production;
     }

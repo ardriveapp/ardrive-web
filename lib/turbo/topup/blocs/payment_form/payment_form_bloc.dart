@@ -32,7 +32,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
               ),
             );
           } catch (e) {
-            logger.e('Error loading the supported countries.', e);
+            logger.e('Error loading the supported countries: $e');
 
             emit(
               PaymentFormError(
@@ -63,7 +63,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
               ),
             );
           } catch (e, s) {
-            logger.e('Error upading the quote.', e, s);
+            logger.e('Error upading the quote: $e, $s');
 
             emit(
               PaymentFormQuoteLoadFailure(

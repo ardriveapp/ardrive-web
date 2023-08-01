@@ -152,7 +152,7 @@ class ArDriveUploader {
   }) async* {
     try {
       await for (var progress in upload(itemHandle).handleError((e, s) {
-        logger.e('[UPLOADER]: Handling error on ArDriveUploader', e, s);
+        logger.e('[UPLOADER]: Handling error on ArDriveUploader: $e, $s');
 
         onUploadError(itemHandle, e).then((value) => dispose(itemHandle));
 
@@ -168,10 +168,7 @@ class ArDriveUploader {
       onFinishUpload(itemHandle).then((value) => dispose(itemHandle));
     } catch (e, stacktrace) {
       logger.e(
-        '[UPLOADER]: Disposing item handleError in ${itemHandle.toString()} upload',
-        e,
-        stacktrace,
-      );
+          '[UPLOADER]: Disposing item handleError in ${itemHandle.toString()} upload: $e, $stacktrace');
 
       onUploadError(itemHandle, e);
 
@@ -361,7 +358,7 @@ class UploadPaymentEvaluator {
 
         logger.i('Turbo balance: $turboBalance');
       } catch (e) {
-        logger.e(e);
+        logger.e(e.toString());
         isTurboAvailableToUploadAllFiles = false;
         turboBalance = BigInt.zero;
       }

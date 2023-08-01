@@ -87,7 +87,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
 
       _emitStatePaymentReviewPaymentModelLoaded(emit);
     } catch (e, s) {
-      logger.e('Error loading payment model', e, s);
+      logger.e('Error loading payment model: $e, $s');
 
       _emitPaymentReviewErrorLoadingPaymentModel(emit);
     }

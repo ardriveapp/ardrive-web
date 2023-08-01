@@ -308,7 +308,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
               ?.read<PaymentFormBloc>()
               .add(PaymentFormPrePopulateFields());
         } catch (e) {
-          logger.e(e);
+          logger.e(e.toString());
         }
       },
       type: ArDriveDevToolOptionType.button,

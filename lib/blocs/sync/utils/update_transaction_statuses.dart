@@ -96,6 +96,7 @@ Future<void> _updateTransactionStatuses({
 
     await Future.delayed(const Duration(milliseconds: 200));
   }
+
   await driveDao.transaction(() async {
     for (final txId in txsIdsToSkip) {
       await driveDao.writeToTransaction(

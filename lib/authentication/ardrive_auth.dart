@@ -173,7 +173,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       return currentUser;
     } catch (e) {
-      logger.e('Failed to unlock user with password', e);
+      logger.e('Failed to unlock user with password: $e');
       throw AuthenticationFailedException('Incorrect password.');
     }
   }
@@ -220,7 +220,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
           try {
             await _arConnectService.disconnect();
           } catch (e) {
-            logger.e('Failed to disconnect from ArConnect', e);
+            logger.e('Failed to disconnect from ArConnect: $e');
           }
         }
 
@@ -237,7 +237,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       (await _metadataCache).clear();
     } catch (e) {
-      logger.e('Failed to logout user', e);
+      logger.e('Failed to logout user: $e');
       throw AuthenticationFailedException('Failed to logout user');
     }
   }

@@ -31,7 +31,7 @@ class MetadataCache {
       logger.d('Putting $key in metadata cache');
       await _cache.putIfAbsent(key, data);
     } catch (e, s) {
-      logger.e('Failed to put $key in metadata cache', e, s);
+      logger.e('Failed to put $key in metadata cache: $e, $s');
       return false;
     }
 
@@ -52,7 +52,7 @@ class MetadataCache {
       }
       return value;
     } catch (e, s) {
-      logger.e('Failed to get $key from metadata cache', e, s);
+      logger.e('Failed to get $key from metadata cache: $e, $s');
       return null;
     }
   }
