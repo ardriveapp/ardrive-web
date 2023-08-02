@@ -51,14 +51,26 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           logSync('Getting metadata from drive ${drive.name}');
         }
 
-        final entityHistory =
-            await arweave.createDriveEntityHistoryFromTransactions(
+        DriveEntityHistory entityHistory;
+
+        entityHistory = await arweave.getOnlyForFolders(
           items,
           driveKey,
           lastBlockHeight,
           driveId: drive.id,
           ownerAddress: ownerAddress,
         );
+
+        if (entityHistory.blockHistory.isEmpty) {
+          entityHistory =
+              await arweave.createDriveEntityHistoryFromTransactions(
+            items,
+            driveKey,
+            lastBlockHeight,
+            driveId: drive.id,
+            ownerAddress: ownerAddress,
+          );
+        }
 
         // Create entries for all the new revisions of file and folders in this drive.
         final newEntities = entityHistory.blockHistory
