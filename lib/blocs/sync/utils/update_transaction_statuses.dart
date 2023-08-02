@@ -13,7 +13,7 @@ Future<void> _updateTransactionStatuses({
 
   // Thats was discovered by tests at profile mode.
   // TODO(@thiagocarvalhodev): Revisit
-  const page = 5000;
+  const page = 200;
 
   for (var i = 0; i < length / page; i++) {
     final confirmations = <String?, int>{};
@@ -80,7 +80,7 @@ Future<void> _updateTransactionStatuses({
         }
       }
     });
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 }
 
