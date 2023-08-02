@@ -2,11 +2,11 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
 class PinIndicator extends StatelessWidget {
-  final double? size;
+  final double size;
 
   const PinIndicator({
     Key? key,
-    this.size,
+    required this.size,
   }) : super(key: key);
 
   @override
@@ -16,11 +16,17 @@ class PinIndicator extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+        // color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+        border: Border.all(
+          // color: ArDriveTheme.of(context).themeData.colors.themeGbMuted,
+
+          color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+          width: 1,
+        ),
       ),
       child: Center(
         child: ArDriveIcons.pinNoCircle(
-          size: size,
+          size: size * .8,
           color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
         ),
       ),
