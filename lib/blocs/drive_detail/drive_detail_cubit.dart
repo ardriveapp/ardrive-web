@@ -132,10 +132,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             folderContents.files.length + folderContents.subfolders.length,
           );
 
-          final rootFolderNode =
-              await _driveDao.getFolderTree(driveId, drive.rootFolderId);
+          logger.e('details getFolderTree');
+          // final rootFolderNode =
+          //     await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
-          logger.d('Root folder node $rootFolderNode');
+          // logger.d('Root folder node ${rootFolderNode.toString()}');
 
           // logger.d('Folder contents $folderContents');
 
@@ -207,7 +208,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 contentOrderingMode: contentOrderingMode,
                 rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
-                driveIsEmpty: rootFolderNode.isEmpty(),
+                driveIsEmpty: false,
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
               ),

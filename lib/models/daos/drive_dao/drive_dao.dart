@@ -4,6 +4,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -410,10 +411,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Constructs a tree of folders and files that are children of the specified folder.
   Future<FolderNode> getFolderTree(String driveId, String rootFolderId) async {
+    logger.e('getFolderTree - $rootFolderId');
     final rootFolder =
         await folderById(driveId: driveId, folderId: rootFolderId).getSingle();
 
     Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
+      logger.e('getFolderChildren - ${parentFolder.id}');
       final subfolders = await foldersInFolder(
               driveId: driveId, parentFolderId: parentFolder.id)
           .get();

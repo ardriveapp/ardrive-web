@@ -12,6 +12,7 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
   final staleFolderTree = <FolderNode>[];
   for (final folder in foldersByIdMap.values) {
     // Get trees of the updated folders and files for path generation.
+    logger.e('generateFsEntryPaths getFolderTree - ${folder.id.value}');
     final tree = await driveDao.getFolderTree(driveId, folder.id.value);
 
     // Remove any trees that are a subset of another.
