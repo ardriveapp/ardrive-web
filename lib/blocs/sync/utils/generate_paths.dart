@@ -32,6 +32,8 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
   }
 
   Future<void> addMissingFolder(String folderId) async {
+    logger.d('Adding missing folder: $folderId');
+
     ghostFolders.putIfAbsent(
         folderId, () => GhostFolder(folderId: folderId, driveId: driveId));
   }
