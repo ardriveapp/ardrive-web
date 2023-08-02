@@ -349,7 +349,10 @@ class NewButton extends StatelessWidget {
             drive?.privacy == 'public')
           _buildDriveDropdownItem(
             name: appLocalizationsOf(context).newFilePin,
-            icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
+            icon: ArDriveIcons.pinWithCircle(
+              size: defaultIconSize,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
+            ),
             onClick: () => showPinFileDialog(context: context),
             isDisabled: drive == null,
           ),
