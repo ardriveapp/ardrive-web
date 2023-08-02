@@ -38,7 +38,6 @@ jobs:
         run: scr test
 
   web:
-    needs: test
     runs-on: ubuntu-latest
     steps:
       # Checkout
