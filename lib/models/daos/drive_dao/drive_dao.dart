@@ -306,7 +306,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             driveId: driveId, path: folderPath!, order: subfolderOrder));
 
     final filesOrder =
-        enumToFileOrderByClause(fileEntries, orderBy, orderingMode);
+      enumToFileOrderByClause(fileEntries, orderBy, orderingMode);
 
     final filesQuery = folderId != null
         ? filesInFolderWithRevisionTransactions(

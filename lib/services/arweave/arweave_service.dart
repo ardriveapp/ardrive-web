@@ -332,6 +332,124 @@ class ArweaveService {
     );
   }
 
+  Future<DriveEntityHistory> getOnlyForFolders(
+    List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+        entityTxs,
+    SecretKey? driveKey,
+    int lastBlockHeight, {
+    required String ownerAddress,
+    required SnapshotDriveHistory snapshotDriveHistory,
+    required DriveID driveId,
+  }) async {
+    // FIXME - PE-3440
+    /// Make use of `eagerError: true` to make it fail on first error
+    /// Also, when there's no internet connection and when we're getting
+    /// rate-limited (TODO: check the latter), many requests will be retrying.
+    /// We shall find another way to fail faster.
+
+    // MAYBE FIX: set a narrow concurrency limit
+
+    final List<Uint8List> responses = await Future.wait(
+      entityTxs.map(
+        (entity) async {
+          final tags = entity.tags;
+          final isSnapshot = tags.any(
+            (tag) =>
+                tag.name == EntityTag.entityType &&
+                tag.value == EntityType.snapshot.toString(),
+          );
+
+          // don't fetch data for snapshots
+          if (isSnapshot) {
+            print('skipping unnecessary request for snapshot data');
+            return Uint8List(0);
+          }
+
+          return _getEntityData(
+            entityId: entity.id,
+            driveId: driveId,
+            isPrivate: driveKey != null,
+          );
+        },
+      ),
+    );
+
+    final blockHistory = <BlockEntities>[];
+
+    for (var i = 0; i < entityTxs.length; i++) {
+      final transaction = entityTxs[i];
+      // If we encounter a transaction that has yet to be mined, we stop moving through history.
+      // We can continue once the transaction is mined.
+      if (transaction.block == null) {
+        // TODO: Revisit
+        break;
+      }
+
+      if (blockHistory.isEmpty ||
+          transaction.block!.height != blockHistory.last.blockHeight) {
+        blockHistory.add(BlockEntities(transaction.block!.height));
+      }
+
+      try {
+        final entityType = transaction.getTag(EntityTag.entityType);
+        final entityResponse = responses[i];
+        final rawEntityData = entityResponse;
+
+        Entity? entity;
+        if (entityType == EntityType.folder) {
+          entity = await FolderEntity.fromTransaction(
+              transaction, _crypto, rawEntityData, driveKey);
+          // } else if (entityType == EntityType.file) {
+          //   entity = await FileEntity.fromTransaction(
+          //     transaction,
+          //     rawEntityData,
+          //     driveKey: driveKey,
+          //     crypto: _crypto,
+          //   );
+        } else if (entityType == EntityType.snapshot) {
+          // TODO: instantiate entity and add to blockHistory
+        }
+
+        if (entity != null) {
+          // TODO: Revisit
+          if (blockHistory.isEmpty ||
+              transaction.block!.height != blockHistory.last.blockHeight) {
+            blockHistory.add(BlockEntities(transaction.block!.height));
+          }
+
+          blockHistory.last.entities.add(entity);
+        }
+
+        // If there are errors in parsing the entity, ignore it.
+      } on EntityTransactionParseException catch (parseException) {
+        print(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+        );
+      } on GatewayError catch (fetchException) {
+        print(
+          'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
+          'for transaction ${transaction.id}, '
+          'with status ${fetchException.statusCode} '
+          'and reason ${fetchException.reasonPhrase}',
+        );
+      }
+    }
+
+    // Sort the entities in each block by ascending commit time.
+    for (final block in blockHistory) {
+      block.entities.removeWhere((e) => e == null);
+      block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
+      //Remove entities with spoofed owners
+      block.entities.removeWhere((e) => e!.ownerAddress != ownerAddress);
+    }
+
+    return DriveEntityHistory(
+      blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
+      blockHistory,
+    );
+  }
+
   Future<bool> hasUserPrivateDrives(
     Wallet wallet, {
     int maxRetries = defaultMaxRetries,
@@ -441,6 +559,33 @@ class ArweaveService {
         ? privateDriveTxs.first.getTag(EntityTag.driveId)!
         : null;
   }
+
+  // Future<Map<FolderEntity, SecretKey?>> getAllFolders(
+  //   Wallet wallet,
+  //   String password,
+  // ) async {
+  //   final userFolderEntitiesQuery = await _graphQLRetry.execute(
+  //     UserFolderEntitiesQuery(
+  //       variables: UserFolderEntitiesArguments(owner: await wallet.getOwner()),
+  //     ),
+  //   );
+
+  //   final folderTxs = userFolderEntitiesQuery.data!.transactions.edges
+  //       .map((e) => e.node)
+  //       .toList();
+
+  //   final folderResponses = await retry(
+  //       () async => await Future.wait(
+  //             folderTxs.map((e) => client.api.getSandboxedTx(e.id)),
+  //           ), onRetry: (Exception err) {
+  //     print(
+  //         'Retrying for get all folders on Exception: ${err.toString()}');
+  //   });
+
+  //   final foldersById = <String?, FolderEntity>{};
+
+  //   for
+  // }
 
   /// Gets the unique drive entities for a particular user.
   Future<Map<DriveEntity, SecretKey?>> getUniqueUserDriveEntities(

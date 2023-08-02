@@ -1,0 +1,17 @@
+query UserFolderEntities($owner: String!) {
+  transactions(
+    first: 100
+    sort: HEIGHT_DESC
+    tags: [
+      { name: "ArFS", values: ["0.10", "0.11", "0.12"] }
+      { name: "Entity-Type", values: ["folder"] }
+    ]
+    owners: [$owner]
+  ) {
+    edges {
+      node {
+        ...TransactionCommon
+      }
+    }
+  }
+}

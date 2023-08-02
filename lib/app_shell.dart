@@ -171,6 +171,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    
     return SafeArea(
       child: Container(
         height: 80,

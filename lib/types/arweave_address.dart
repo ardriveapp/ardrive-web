@@ -16,7 +16,7 @@ class ArweaveAddress extends Equatable {
   @override
   List<Object?> get props => [_addr];
 
-  @override
+@override
   String toString() {
     return _addr;
   }
