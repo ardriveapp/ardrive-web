@@ -16,12 +16,18 @@ class PinIndicator extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        // color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+        color: ArDriveTheme.of(context)
+            .themeData
+            .colors
+            .themeFgMuted
+            .withAlpha(25),
         border: Border.all(
-          // color: ArDriveTheme.of(context).themeData.colors.themeGbMuted,
-
-          color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
-          width: 1,
+          color: ArDriveTheme.of(context)
+              .themeData
+              .colors
+              .themeGbMuted
+              .withAlpha(25),
+          width: 2,
         ),
       ),
       child: Center(
