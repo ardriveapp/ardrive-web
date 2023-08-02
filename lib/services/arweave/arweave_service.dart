@@ -219,7 +219,6 @@ class ArweaveService {
     SecretKey? driveKey,
     int lastBlockHeight, {
     required String ownerAddress,
-    required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
     // FIXME - PE-3440

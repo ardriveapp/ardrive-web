@@ -41,6 +41,125 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
     'no. of entities in drive - ${drive.name} to be parsed are: $numberOfDriveEntitiesToParse\n',
   );
 
+  final onlyFolders = transactions.where((element) {
+    final entityType = element.getTag(EntityTag.entityType);
+
+    return entityType == EntityType.folder;
+  }).toList();
+
+  await for (var process in _batchProcess<DriveHistoryTransaction>(
+      list: onlyFolders,
+      batchSize: batchSize,
+      endOfBatchCallback: (items) async* {
+        final isReadingFromSnapshot = snapshotDriveHistory.items.isNotEmpty;
+
+        if (!isReadingFromSnapshot) {
+          logSync('Getting metadata from drive ${drive.name}');
+        }
+
+        DriveEntityHistory entityHistory;
+        entityHistory = await arweave.createDriveEntityHistoryFromTransactions(
+          items,
+          driveKey,
+          lastBlockHeight,
+          driveId: drive.id,
+          ownerAddress: ownerAddress,
+        );
+
+        // Create entries for all the new revisions of file and folders in this drive.
+        final newEntities = entityHistory.blockHistory
+            .map((b) => b.entities)
+            .expand((entities) => entities);
+
+        numberOfDriveEntitiesParsed += items.length - newEntities.length;
+
+        yield driveEntityParseProgress();
+
+        // Handle the last page of newEntities, i.e; There's nothing more to sync
+        if (newEntities.length < batchSize) {
+          // Reset the sync cursor after every sync to pick up files from other instances of the app.
+          // (Different tab, different window, mobile, desktop etc)
+          await driveDao.writeToDrive(DrivesCompanion(
+            id: Value(drive.id),
+            lastBlockHeight: Value(currentBlockHeight),
+            syncCursor: const Value(null),
+          ));
+        }
+
+        await database.transaction(() async {
+          final latestDriveRevision = await _addNewDriveEntityRevisions(
+            driveDao: driveDao,
+            database: database,
+            newEntities: newEntities.whereType<DriveEntity>(),
+          );
+          final latestFolderRevisions = await _addNewFolderEntityRevisions(
+            driveDao: driveDao,
+            database: database,
+            driveId: drive.id,
+            newEntities: newEntities.whereType<FolderEntity>(),
+          );
+          final latestFileRevisions = await _addNewFileEntityRevisions(
+            driveDao: driveDao,
+            database: database,
+            driveId: drive.id,
+            newEntities: newEntities.whereType<FileEntity>(),
+          );
+
+          // Check and handle cases where there's no more revisions
+          final updatedDrive = latestDriveRevision != null
+              ? await _computeRefreshedDriveFromRevision(
+                  driveDao: driveDao,
+                  latestRevision: latestDriveRevision,
+                )
+              : null;
+
+          final updatedFoldersById =
+              await _computeRefreshedFolderEntriesFromRevisions(
+            driveDao: driveDao,
+            driveId: drive.id,
+            revisionsByFolderId: latestFolderRevisions,
+          );
+          final updatedFilesById =
+              await _computeRefreshedFileEntriesFromRevisions(
+            driveDao: driveDao,
+            driveId: drive.id,
+            revisionsByFileId: latestFileRevisions,
+          );
+
+          numberOfDriveEntitiesParsed += newEntities.length;
+
+          numberOfDriveEntitiesParsed -=
+              updatedFoldersById.length + updatedFilesById.length;
+
+          // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
+          if (updatedDrive != null) {
+            await (database.update(database.drives)
+                  ..whereSamePrimaryKey(updatedDrive))
+                .write(updatedDrive);
+          }
+
+          // Update the folder and file entries before generating their new paths.
+          await database.batch((b) {
+            b.insertAllOnConflictUpdate(
+                database.folderEntries, updatedFoldersById.values.toList());
+            b.insertAllOnConflictUpdate(
+                database.fileEntries, updatedFilesById.values.toList());
+          });
+
+          await _generateFsEntryPaths(
+            ghostFolders: ghostFolders,
+            driveDao: driveDao,
+            driveId: drive.id,
+            foldersByIdMap: updatedFoldersById,
+            filesByIdMap: updatedFilesById,
+          );
+
+          numberOfDriveEntitiesParsed +=
+              updatedFoldersById.length + updatedFilesById.length;
+        });
+        yield driveEntityParseProgress();
+      })) {}
+
   yield* _batchProcess<DriveHistoryTransaction>(
       list: transactions,
       batchSize: batchSize,
@@ -68,7 +187,6 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
             items,
             driveKey,
             lastBlockHeight,
-            snapshotDriveHistory: snapshotDriveHistory,
             driveId: drive.id,
             ownerAddress: ownerAddress,
           );
