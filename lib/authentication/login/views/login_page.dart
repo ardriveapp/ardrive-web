@@ -2490,7 +2490,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                                   .colors
                                   .themeFgSubtle),
                         )),
-                    const SizedBox(height: 72),
+                    const SizedBox(height: 32),
                     ...createRows(
                         items: cardInfos.map(_buildCard).toList(),
                         rowCount: rowCount,
