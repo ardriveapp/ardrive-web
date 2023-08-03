@@ -333,11 +333,11 @@ class SyncCubit extends Cubit<SyncState> {
 
       logger.d('Creating ghosts...');
 
-      await createGhosts(
-        driveDao: _driveDao,
-        ownerAddress: ownerAddress,
-        ghostFolders: ghostFolders,
-      );
+      // await createGhosts(
+      //   driveDao: _driveDao,
+      //   ownerAddress: ownerAddress,
+      //   ghostFolders: ghostFolders,
+      // );
 
       ghostFolders.clear();
 
