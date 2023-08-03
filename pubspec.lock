@@ -88,10 +88,10 @@ packages:
     description:
       path: "."
       ref: PE-3988
-      resolved-ref: "9175bd2b97bb5ee3cf861cd140e5e3d7944e460a"
+      resolved-ref: "47e2c4a9c981f471fea42d21e4705ef2752fb185"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.5.0"
+    version: "1.5.1"
   args:
     dependency: transitive
     description:
