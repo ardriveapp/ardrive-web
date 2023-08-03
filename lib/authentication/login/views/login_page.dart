@@ -2441,7 +2441,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     final screenSize = MediaQuery.of(context).size;
 
     final rowCount = screenSize.width > (374 * 2 + 24 * 3) ? 2 : 1;
-    final topBottomPadding = rowCount == 1 ? 40.0 : 0.0;
+    final topBottomPadding = rowCount == 1 ? 40.0 : 16.0;
 
     final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
 
@@ -2490,7 +2490,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                                   .colors
                                   .themeFgSubtle),
                         )),
-                    const SizedBox(height: 72),
+                    const SizedBox(height: 32),
                     ...createRows(
                         items: cardInfos.map(_buildCard).toList(),
                         rowCount: rowCount,
