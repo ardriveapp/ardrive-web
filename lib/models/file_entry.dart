@@ -12,5 +12,6 @@ extension FileEntryExtensions on FileEntry {
         size: size,
         lastModifiedDate: lastModifiedDate,
         dataContentType: dataContentType,
+        pinnedDataOwnerAddress: pinnedDataOwnerAddress,
       );
 }
