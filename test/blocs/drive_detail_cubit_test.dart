@@ -15,6 +15,7 @@ void main() {
     late DriveDao driveDao;
 
     late ProfileCubit profileCubit;
+    late SyncCubit syncCubit;
     late DriveDetailCubit driveDetailCubit;
     late ConfigService config;
     const mockDriveId = 'mock-drive-id';
@@ -24,6 +25,7 @@ void main() {
       driveDao = db.driveDao;
       config = MockConfigService();
       profileCubit = MockProfileCubit();
+      syncCubit = MockSyncBloc();
 
       final keyBytes = Uint8List(32);
       fillBytesWithSecureRandom(keyBytes);
@@ -46,6 +48,7 @@ void main() {
         driveDao: driveDao,
         configService: config,
         auth: MockArDriveAuth(),
+        syncCubit: syncCubit,
       );
     });
 
