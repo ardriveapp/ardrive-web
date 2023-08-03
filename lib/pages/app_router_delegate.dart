@@ -170,6 +170,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     driveDao: context.read<DriveDao>(),
                     configService: context.read<ConfigService>(),
                     auth: context.read<ArDriveAuth>(),
+                    syncCubit: context.read<SyncCubit>(),
                   ),
                   child: MultiBlocListener(
                     listeners: [

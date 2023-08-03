@@ -24,6 +24,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final DriveDao _driveDao;
   final ConfigService _configService;
   final ArDriveAuth _auth;
+  final SyncCubit _syncCubit;
 
   StreamSubscription? _folderSubscription;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
@@ -42,7 +43,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required DriveDao driveDao,
     required ConfigService configService,
     required ArDriveAuth auth,
+    required SyncCubit syncCubit,
   })  : _profileCubit = profileCubit,
+        _syncCubit = syncCubit,
         _driveDao = driveDao,
         _auth = auth,
         _configService = configService,
@@ -115,6 +118,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
+          final syncState = _syncCubit.state;
+
+          if (syncState is SyncInProgress) {
+            logger.d("Don't refresh drive detail: Sync is in progress");
+            return;
+          }
+
           logger.d('Drive Explorer listener for the $drive');
 
           final state = this.state is DriveDetailLoadSuccess
