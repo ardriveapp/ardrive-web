@@ -133,7 +133,7 @@ class ArweaveService {
   ) async {
     final query = await _gql.execute(InfoOfTransactionToBePinnedQuery(
         variables: InfoOfTransactionToBePinnedArguments(txId: txId)));
-    return query.data!.transaction;
+    return query.data?.transaction;
   }
 
   Stream<SnapshotEntityTransaction> getAllSnapshotsOfDrive(
