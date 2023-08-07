@@ -235,6 +235,16 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.createSnapshot,
             icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
           ),
+        if (context.read<ConfigService>().config.enablePins &&
+            driveDetailState is DriveDetailLoadSuccess &&
+            drive != null &&
+            drive?.privacy == 'public')
+          ArDriveNewButtonItem(
+            name: appLocalizationsOf(context).newFilePin,
+            icon: ArDriveIcons.arconnectIcon1(size: defaultIconSize),
+            onClick: () => showPinFileDialog(context: context),
+            isDisabled: drive == null,
+          ),
       ];
     } else {
       return [
@@ -348,7 +358,7 @@ class NewButton extends StatelessWidget {
             drive != null &&
             drive?.privacy == 'public')
           _buildDriveDropdownItem(
-            name: 'Pin a file',
+            name: appLocalizationsOf(context).newFilePin,
             // TODO: put the actial icon
             icon: ArDriveIcons.arconnectIcon1(size: defaultIconSize),
             onClick: () => showPinFileDialog(context: context),
