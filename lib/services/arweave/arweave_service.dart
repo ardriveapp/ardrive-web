@@ -128,6 +128,14 @@ class ArweaveService {
     return query.data?.transaction;
   }
 
+  Future<InfoOfTransactionToBePinned$Query$Transaction?> getInfoOfTxToBePinned(
+    String txId,
+  ) async {
+    final query = await _gql.execute(InfoOfTransactionToBePinnedQuery(
+        variables: InfoOfTransactionToBePinnedArguments(txId: txId)));
+    return query.data!.transaction;
+  }
+
   Stream<SnapshotEntityTransaction> getAllSnapshotsOfDrive(
     String driveId,
     int? lastBlockHeight, {
@@ -794,7 +802,8 @@ class ArweaveService {
             ),
           );
         } on EntityTransactionParseException catch (parseException) {
-          logger.e('Failed to parse transaction with id ${parseException.transactionId}');
+          logger.e(
+              'Failed to parse transaction with id ${parseException.transactionId}');
         }
       }
 
