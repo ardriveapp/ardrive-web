@@ -65,8 +65,8 @@ class UploadPlan {
       maxBundleSize: maxBundleSize,
       maxDataItemCount: maxDataItemCount,
     ).packItems([
+      ...folderDataItemUploadHandles.values,
       ...fileDataItemUploadHandles.values,
-      ...folderDataItemUploadHandles.values
     ]);
     for (var uploadHandles in bundleItems) {
       final bundleToUpload = await BundleUploadHandle.create(
