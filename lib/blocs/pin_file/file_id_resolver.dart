@@ -32,6 +32,8 @@ class NetworkFileIdResolver implements FileIdResolver {
     if (fileEntity == null) {
       // It either doesn't exist, is invalid, or private.
 
+      logger.d('Failed to get file entity for $fileId');
+
       throw FileIdResolverException(
         id: fileId,
         cancelled: false,
@@ -69,11 +71,17 @@ class NetworkFileIdResolver implements FileIdResolver {
 
     final Map headers = response.headers;
     final String? contentTypeHeader = headers['content-type'];
-    final int? sizeHeader = int.tryParse(headers['content-length'] ?? '');
+    final int? contentLengthHeader =
+        int.tryParse(headers['content-length'] ?? '');
 
-    if (response.statusCode != 200 ||
-        sizeHeader == null ||
-        contentTypeHeader == null) {
+    final isSucessStatusCode = response.statusCode == 200;
+    final hasContentLengthHeader = contentLengthHeader != null;
+    final hasContentTypeHeader = contentTypeHeader != null;
+
+    if (!isSucessStatusCode) {
+      logger.d('Failed to get data transaction details for $dataTxId'
+          ' - isSucessStatusCode: $isSucessStatusCode,');
+
       throw FileIdResolverException(
         id: dataTxId,
         cancelled: false,
@@ -81,6 +89,21 @@ class NetworkFileIdResolver implements FileIdResolver {
         isArFsEntityValid: false,
         isArFsEntityPublic: false,
         doesDataTransactionExist: false,
+      );
+    } else if (!hasContentLengthHeader || !hasContentTypeHeader) {
+      logger.d(
+        'Failed to get data transaction details for $dataTxId'
+        ' hasSizeHeader: $hasContentLengthHeader,'
+        ' hasContentTypeHeader: $hasContentTypeHeader',
+      );
+
+      throw FileIdResolverException(
+        id: dataTxId,
+        cancelled: false,
+        networkError: false,
+        isArFsEntityValid: false,
+        isArFsEntityPublic: true,
+        doesDataTransactionExist: true,
       );
     }
 
@@ -94,7 +117,7 @@ class NetworkFileIdResolver implements FileIdResolver {
       maybeLastUpdated: null,
       maybeLastModified: null,
       dateCreated: DateTime.now(),
-      size: sizeHeader,
+      size: contentLengthHeader,
       dataTxId: dataTxId,
       pinnedDataOwnerAddress: ownerAndPrivacyOfData.ownerAddress,
     );

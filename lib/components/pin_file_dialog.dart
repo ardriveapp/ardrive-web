@@ -80,10 +80,11 @@ class PinFileDialog extends StatelessWidget {
           }
           // TODO: refactor the arweave method to let it distinguish between
           /// these other cases
+          else if (!state.isArFsEntityValid) {
+            customErrorMessage = 'The file does exist but is invalid';
+          }
           // else if (!state.isArFsEntityPublic) {
           //   customErrorMessage = 'File is not public';
-          // } else if (!state.isArFsEntityValid) {
-          //   customErrorMessage = 'File is not valid';
           // }
         }
 
@@ -178,4 +179,28 @@ class PinFileDialog extends StatelessWidget {
       },
     );
   }
+
+  ArDriveStandardModal _errorDialog({
+    required BuildContext context,
+    required String errorText,
+  }) =>
+      ArDriveStandardModal(
+        width: kMediumDialogWidth,
+        title: appLocalizationsOf(context).failedToCreateManifestEmphasized,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            Text(errorText),
+            const SizedBox(height: 16),
+          ],
+        ),
+        actions: [
+          ModalAction(
+            action: () => Navigator.pop(context),
+            title: appLocalizationsOf(context).continueEmphasized,
+          ),
+        ],
+      );
 }
