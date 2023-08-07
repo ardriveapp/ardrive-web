@@ -179,28 +179,4 @@ class PinFileDialog extends StatelessWidget {
       },
     );
   }
-
-  ArDriveStandardModal _errorDialog({
-    required BuildContext context,
-    required String errorText,
-  }) =>
-      ArDriveStandardModal(
-        width: kMediumDialogWidth,
-        title: appLocalizationsOf(context).failedToCreateManifestEmphasized,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            Text(errorText),
-            const SizedBox(height: 16),
-          ],
-        ),
-        actions: [
-          ModalAction(
-            action: () => Navigator.pop(context),
-            title: appLocalizationsOf(context).continueEmphasized,
-          ),
-        ],
-      );
 }
