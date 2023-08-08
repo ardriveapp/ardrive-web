@@ -58,7 +58,13 @@ class ARFSUploadMetadataGenerator
         dataContentType: file.contentType,
         driveId: arguments.driveId!,
         parentFolderId: arguments.parentFolderId!,
-        tags: _tagsGenerator.generateTags(arguments),
+        tags: _tagsGenerator.generateTags(
+          ARFSTagsArgs(
+            driveId: arguments.driveId!,
+            parentFolderId: arguments.parentFolderId!,
+            entityId: id,
+          ),
+        ),
         name: file.name,
         id: id,
       );
@@ -71,7 +77,13 @@ class ARFSUploadMetadataGenerator
       return ARFSFolderUploadMetatadata(
         driveId: arguments.driveId!,
         parentFolderId: arguments.parentFolderId,
-        tags: _tagsGenerator.generateTags(arguments),
+        tags: _tagsGenerator.generateTags(
+          ARFSTagsArgs(
+            driveId: arguments.driveId!,
+            parentFolderId: arguments.parentFolderId,
+            entityId: id,
+          ),
+        ),
         name: folder.name,
         id: id,
       );
@@ -93,7 +105,10 @@ class ARFSUploadMetadataGenerator
     return ARFSDriveUploadMetadata(
       name: name,
       tags: _tagsGenerator.generateTags(
-        ARFSUploadMetadataArgs(privacy: privacy),
+        ARFSTagsArgs(
+          privacy: privacy,
+          entityId: id,
+        ),
       ),
       id: id,
     );
@@ -102,21 +117,17 @@ class ARFSUploadMetadataGenerator
 
 class ARFSUploadMetadataArgs {
   final String? driveId;
-  final String? fileId;
-  final String? folderId;
   final String? parentFolderId;
   final String? privacy;
 
   ARFSUploadMetadataArgs({
     this.driveId,
-    this.fileId,
-    this.folderId,
     this.parentFolderId,
     this.privacy,
   });
 }
 
-class ARFSTagsGenetator implements TagsGenerator<ARFSUploadMetadataArgs> {
+class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
   final arfs.EntityType _entity;
   final AppInfoServices _appInfoServices;
 
@@ -129,14 +140,14 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSUploadMetadataArgs> {
 
   // TODO: Review entity.dart file
   @override
-  List<Tag> generateTags(ARFSUploadMetadataArgs arguments) {
-    ARFSUploadMetadataArgsValidator.validate(arguments, _entity);
-
+  List<Tag> generateTags(ARFSTagsArgs arguments) {
     return _appTags + _entityTags(_entity, arguments) + _uTags;
   }
 
   List<Tag> _entityTags(
-      arfs.EntityType entity, ARFSUploadMetadataArgs arguments) {
+    arfs.EntityType entity,
+    ARFSTagsArgs arguments,
+  ) {
     List<Tag> tags = [];
 
     final driveId = Tag(EntityTag.driveId, arguments.driveId!);
@@ -145,15 +156,14 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSUploadMetadataArgs> {
 
     switch (_entity) {
       case arfs.EntityType.file:
-        tags.add(Tag(EntityTag.fileId, arguments.fileId!));
-
-        if (arguments.parentFolderId != null) {
-          tags.add(Tag(EntityTag.parentFolderId, arguments.parentFolderId!));
-        }
+        tags.add(Tag(EntityTag.fileId, arguments.entityId!));
+        tags.add(Tag(EntityTag.entityType, arfs.EntityType.file.name));
+        tags.add(Tag(EntityTag.parentFolderId, arguments.parentFolderId!));
 
         break;
       case arfs.EntityType.folder:
-        tags.add(Tag(EntityTag.folderId, arguments.folderId!));
+        tags.add(Tag(EntityTag.folderId, arguments.entityId!));
+        tags.add(Tag(EntityTag.entityType, arfs.EntityType.folder.name));
 
         if (arguments.parentFolderId != null) {
           tags.add(Tag(EntityTag.parentFolderId, arguments.parentFolderId!));
@@ -164,6 +174,8 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSUploadMetadataArgs> {
         if (arguments.privacy == DrivePrivacy.private) {
           tags.add(Tag(EntityTag.driveAuthMode, arguments.privacy!));
         }
+
+        tags.add(Tag(EntityTag.entityType, arfs.EntityType.drive.name));
 
         break;
     }
@@ -209,9 +221,6 @@ class ARFSUploadMetadataArgsValidator {
         if (args.driveId == null) {
           throw ArgumentError('driveId must not be null');
         }
-        if (args.fileId == null) {
-          throw ArgumentError('fileId must not be null');
-        }
         if (args.parentFolderId == null) {
           throw ArgumentError('parentFolderId must not be null');
         }
@@ -220,9 +229,6 @@ class ARFSUploadMetadataArgsValidator {
       case arfs.EntityType.folder:
         if (args.driveId == null) {
           throw ArgumentError('driveId must not be null');
-        }
-        if (args.folderId == null) {
-          throw ArgumentError('folderId must not be null');
         }
         break;
 
@@ -236,4 +242,18 @@ class ARFSUploadMetadataArgsValidator {
         throw ArgumentError('Invalid EntityType');
     }
   }
+}
+
+class ARFSTagsArgs {
+  final String? driveId;
+  final String? parentFolderId;
+  final String? entityId;
+  final String? privacy;
+
+  ARFSTagsArgs({
+    this.driveId,
+    this.parentFolderId,
+    this.privacy,
+    this.entityId,
+  });
 }
