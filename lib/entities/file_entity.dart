@@ -45,7 +45,7 @@ class FileEntity extends EntityWithCustomMetadata {
   List<String> reservedJsonMetadataKeys = [
     ...EntityWithCustomMetadata.sharedReservedJsonMetadataKeys,
     'size',
-    'lastModified',
+    'lastModifiedDate',
     'dataTxId',
     'dataContentType',
   ];
