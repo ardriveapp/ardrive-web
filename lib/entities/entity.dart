@@ -104,15 +104,16 @@ abstract class EntityWithCustomMetadata extends Entity {
     EntityTag.unixTime,
     EntityTag.cipher,
     EntityTag.cipherIv,
+    EntityTag.appName,
+    EntityTag.appVersion,
+    EntityTag.appPlatform,
+    EntityTag.input,
+    EntityTag.contract,
+    'Bundle-Format',
+    'Bundle-Version',
   ];
 
-  EntityWithCustomMetadata(
-    ArDriveCrypto crypto,
-    // {
-    // this.reservedJsonMetadataKeys = const [],
-    // this.reservedGqlTags = const [],
-    // }
-  ) : super(crypto);
+  EntityWithCustomMetadata(ArDriveCrypto crypto) : super(crypto);
 
   @override
   Future<Transaction> asTransaction({
