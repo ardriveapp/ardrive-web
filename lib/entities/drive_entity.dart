@@ -12,7 +12,7 @@ import 'entities.dart';
 part 'drive_entity.g.dart';
 
 @JsonSerializable()
-class DriveEntity extends Entity {
+class DriveEntity extends EntityWithCustomMetadata {
   @JsonKey(ignore: true)
   String? id;
   @JsonKey(ignore: true)
@@ -22,6 +22,22 @@ class DriveEntity extends Entity {
 
   String? name;
   String? rootFolderId;
+
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String> reservedGqlTags = [
+    ...EntityWithCustomMetadata.sharedReservedGqlTags,
+    EntityTag.drivePrivacy,
+    EntityTag.driveAuthMode,
+  ];
+
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String> reservedJsonMetadataKeys = [
+    ...EntityWithCustomMetadata.sharedReservedJsonMetadataKeys,
+    'rootFolderId',
+  ];
+
   DriveEntity({
     this.id,
     this.name,
@@ -76,7 +92,18 @@ class DriveEntity extends Entity {
     }
   }
 
-  factory DriveEntity.fromJson(Map<String, dynamic> json) =>
-      _$DriveEntityFromJson(json);
-  Map<String, dynamic> toJson() => _$DriveEntityToJson(this);
+  factory DriveEntity.fromJson(Map<String, dynamic> json) {
+    final entity = _$DriveEntityFromJson(json);
+    entity.customJsonMetadata = EntityWithCustomMetadata.getCustomJsonMetadata(
+      entity,
+      json,
+    );
+    return entity;
+  }
+  Map<String, dynamic> toJson() {
+    final thisJson = _$DriveEntityToJson(this);
+    final custom = customJsonMetadata ?? {};
+    final merged = {...thisJson, ...custom};
+    return merged;
+  }
 }
