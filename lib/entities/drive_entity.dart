@@ -79,7 +79,7 @@ class DriveEntity extends EntityWithCustomMetadata {
 
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
-    assert(id != null && rootFolderId != null);
+    assert(id != null && rootFolderId != null && privacy != null);
 
     tx
       ..addArFsTag()
