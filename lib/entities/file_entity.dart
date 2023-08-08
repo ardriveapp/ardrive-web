@@ -16,7 +16,7 @@ DateTime? _msToDateTime(int? v) =>
 int _dateTimeToMs(DateTime? v) => v!.millisecondsSinceEpoch;
 
 @JsonSerializable()
-class FileEntity extends Entity {
+class FileEntity extends EntityWithCustomMetadata {
   @JsonKey(ignore: true)
   String? id;
   @JsonKey(ignore: true)
@@ -31,6 +31,22 @@ class FileEntity extends Entity {
 
   String? dataTxId;
   String? dataContentType;
+
+  @override
+  List<String> reservedGqlTags = [
+    ...EntityWithCustomMetadata.sharedReservedGqlTags,
+    EntityTag.fileId,
+    EntityTag.parentFolderId,
+  ];
+
+  @override
+  List<String> reservedJsonMetadataKeys = [
+    ...EntityWithCustomMetadata.sharedReservedJsonMetadataKeys,
+    'size',
+    'lastModified',
+    'dataTxId',
+    'dataContentType',
+  ];
 
   FileEntity({
     this.id,
@@ -103,7 +119,21 @@ class FileEntity extends Entity {
       ..addTag(EntityTag.fileId, id!);
   }
 
-  factory FileEntity.fromJson(Map<String, dynamic> json) =>
-      _$FileEntityFromJson(json);
-  Map<String, dynamic> toJson() => _$FileEntityToJson(this);
+  factory FileEntity.fromJson(Map<String, dynamic> json) {
+    final entity = _$FileEntityFromJson(json);
+    entity.customJsonMetadata = EntityWithCustomMetadata.getCustomJsonMetadata(
+      entity,
+      json,
+    );
+    return entity;
+  }
+  Map<String, dynamic> toJson() {
+    final thisJson = _$FileEntityToJson(this);
+    final customJsonMetadata = EntityWithCustomMetadata.getCustomJsonMetadata(
+      this,
+      thisJson,
+    );
+    final merged = {...thisJson, ...customJsonMetadata};
+    return merged;
+  }
 }
