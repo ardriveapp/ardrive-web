@@ -91,7 +91,7 @@ class FileEntity extends EntityWithCustomMetadata {
 
       final commitTime = transaction.getCommitTime();
 
-      return FileEntity.fromJson(entityJson!)
+      final file = FileEntity.fromJson(entityJson!)
         ..id = transaction.getTag(EntityTag.fileId)
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
@@ -100,6 +100,18 @@ class FileEntity extends EntityWithCustomMetadata {
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
         ..createdAt = commitTime;
+
+      final tags = transaction.tags
+          .map(
+            (t) => Tag.fromJson(t.toJson()),
+          )
+          .toList();
+      file.customGqlTags = EntityWithCustomMetadata.getCustomGqlTags(
+        file,
+        tags,
+      );
+
+      return file;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
