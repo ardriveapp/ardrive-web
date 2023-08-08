@@ -33,6 +33,7 @@ class FileEntity extends EntityWithCustomMetadata {
   String? dataContentType;
 
   @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedGqlTags = [
     ...EntityWithCustomMetadata.sharedReservedGqlTags,
     EntityTag.fileId,
@@ -40,6 +41,7 @@ class FileEntity extends EntityWithCustomMetadata {
   ];
 
   @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedJsonMetadataKeys = [
     ...EntityWithCustomMetadata.sharedReservedJsonMetadataKeys,
     'size',
@@ -129,11 +131,8 @@ class FileEntity extends EntityWithCustomMetadata {
   }
   Map<String, dynamic> toJson() {
     final thisJson = _$FileEntityToJson(this);
-    final customJsonMetadata = EntityWithCustomMetadata.getCustomJsonMetadata(
-      this,
-      thisJson,
-    );
-    final merged = {...thisJson, ...customJsonMetadata};
+    final custom = customJsonMetadata ?? {};
+    final merged = {...thisJson, ...custom};
     return merged;
   }
 }
