@@ -23,6 +23,12 @@ void main() {
       expect(customFields['customKey'], 'customValue');
       expect(customFields['foo'], 'bar');
 
+      expect(customFields['name'], null);
+      expect(customFields['size'], null);
+      expect(customFields['lastModifiedDate'], null);
+      expect(customFields['dataTxId'], null);
+      expect(customFields['dataContentType'], null);
+
       final serializedEntity = parsedEntity.toJson();
       expect(serializedEntity['name'], 'El archivo');
       expect(serializedEntity['size'], 123);
