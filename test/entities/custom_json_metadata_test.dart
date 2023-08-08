@@ -92,7 +92,7 @@ void main() {
       expect(customFields['rootFolderId'], null);
 
       final serializedEntity = parsedEntity.toJson();
-      expect(serializedEntity['name'], 'El drive');
+      expect(serializedEntity['name'], 'El disko');
       expect(serializedEntity['rootFolderId'], 'rootFolderId');
       expect(serializedEntity['customKey'], ['customValue']);
       expect(serializedEntity['anotherOne'], {'papá': 'papa'});
