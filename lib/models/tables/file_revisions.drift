@@ -17,7 +17,10 @@ CREATE TABLE file_revisions (
     bundledIn TEXT,
 
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
-    
+
+    customJsonMetadata TEXT,
+    customGQLTags TEXT,
+
     [action] TEXT NOT NULL,
 
     PRIMARY KEY (fileId, driveId, dateCreated),

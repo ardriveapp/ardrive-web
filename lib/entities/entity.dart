@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
@@ -95,6 +97,22 @@ abstract class EntityWithCustomMetadata extends Entity {
   // The reserved GQL Tags.
   @JsonKey(includeFromJson: false, includeToJson: false)
   abstract final List<String> reservedGqlTags;
+
+  String? get customJsonMetadataAsString {
+    if (customJsonMetadata == null) {
+      return null;
+    }
+
+    return jsonEncode(customJsonMetadata);
+  }
+
+  String? get customGqlTagsAsString {
+    if (customGqlTags == null) {
+      return null;
+    }
+
+    return jsonEncode(customGqlTags);
+  }
 
   static List<String> sharedReservedGqlTags = [
     EntityTag.arFs,

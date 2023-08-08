@@ -19,6 +19,8 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         lastModifiedDate: lastModifiedDate.value,
         dataContentType: dataContentType,
         bundledIn: bundledIn,
+        customGQLTags: customGQLTags,
+        customJsonMetadata: customJsonMetadata,
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -51,6 +53,8 @@ extension FileEntityExtensions on FileEntity {
         dataContentType: Value(dataContentType),
         action: performedAction,
         bundledIn: Value(bundledIn),
+        customGQLTags: Value(customGqlTagsAsString),
+        customJsonMetadata: Value(customJsonMetadataAsString),
       );
 
   FileRevision toRevision({
@@ -69,6 +73,8 @@ extension FileEntityExtensions on FileEntity {
         dataContentType: dataContentType,
         action: performedAction,
         bundledIn: bundledIn,
+        customGQLTags: customGqlTagsAsString,
+        customJsonMetadata: customJsonMetadataAsString,
       );
 
   /// Returns the action performed on the file that lead to the new revision.
