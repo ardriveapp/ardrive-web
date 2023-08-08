@@ -1,16 +1,22 @@
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart' as arfs;
+import 'package:ardrive/core/upload/upload_metadata.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/services/app/app_info_services.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
-import 'package:json_annotation/json_annotation.dart';
 import 'package:uuid/uuid.dart';
 
-abstract class UploadMetadata {}
-
 /// this class will get an `IOFile` and mounts the metadata for it
+///
+/// `A` is the type of the arguments that will be passed to the generator
+///
+/// `T` is the type of the metadata that will be generated
 abstract class UploadMetadataGenerator<T extends UploadMetadata, A> {
   Future<T> generateMetadata(IOEntity entity, [A arguments]);
+}
+
+abstract class TagsGenerator<T> {
+  List<Tag> generateTags(T arguments);
 }
 
 /// This abstract class acts as an interface for all upload metadata generators
@@ -87,9 +93,7 @@ class ARFSUploadMetadataGenerator
     return ARFSDriveUploadMetadata(
       name: name,
       tags: _tagsGenerator.generateTags(
-        ARFSUploadMetadataArgs(
-          privacy: privacy,
-        ),
+        ARFSUploadMetadataArgs(privacy: privacy),
       ),
       id: id,
     );
@@ -110,10 +114,6 @@ class ARFSUploadMetadataArgs {
     this.parentFolderId,
     this.privacy,
   });
-}
-
-abstract class TagsGenerator<T> {
-  List<Tag> generateTags(T arguments);
 }
 
 class ARFSTagsGenetator implements TagsGenerator<ARFSUploadMetadataArgs> {
@@ -199,97 +199,6 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSUploadMetadataArgs> {
       Tag(EntityTag.input, '{"function":"mint"}'),
       Tag(EntityTag.contract, 'KTzTXT_ANmF84fWEKHzWURD1LWd9QaFR9yfYUwH2Lxw'),
     ];
-  }
-}
-
-abstract class ARFSUploadMetadata extends UploadMetadata {
-  final String name;
-  final List<Tag> tags;
-  final String id;
-
-  ARFSUploadMetadata({
-    required this.name,
-    required this.tags,
-    required this.id,
-  });
-
-  Map<String, dynamic> toJson();
-}
-
-@JsonSerializable()
-class ARFSFileUploadMetadata extends ARFSUploadMetadata {
-  final int size;
-  final DateTime lastModifiedDate;
-  final String dataContentType;
-  final String driveId;
-  final String parentFolderId;
-
-  ARFSFileUploadMetadata({
-    required this.size,
-    required this.lastModifiedDate,
-    required this.dataContentType,
-    required this.driveId,
-    required this.parentFolderId,
-    required super.tags,
-    required super.name,
-    required super.id,
-  });
-
-  @override
-  Map<String, dynamic> toJson() {
-    return {
-      'size': size,
-      'lastModifiedDate': lastModifiedDate.toIso8601String(),
-      'dataContentType': dataContentType,
-      'driveId': driveId,
-      'parentFolderId': parentFolderId,
-      'tags': tags.map((e) => e.toJson()).toList(),
-      'name': name,
-      'id': id,
-    };
-  }
-}
-
-@JsonSerializable()
-class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
-  final String driveId;
-  final String? parentFolderId;
-
-  ARFSFolderUploadMetatadata({
-    required this.driveId,
-    this.parentFolderId,
-    required super.tags,
-    required super.name,
-    required super.id,
-  });
-
-  @override
-  Map<String, dynamic> toJson() {
-    return {
-      'driveId': driveId,
-      'parentFolderId': parentFolderId,
-      'tags': tags.map((e) => e.toJson()).toList(),
-      'name': name,
-      'id': id,
-    };
-  }
-}
-
-@JsonSerializable()
-class ARFSDriveUploadMetadata extends ARFSUploadMetadata {
-  ARFSDriveUploadMetadata({
-    required super.tags,
-    required super.name,
-    required super.id,
-  });
-
-  @override
-  Map<String, dynamic> toJson() {
-    return {
-      'tags': tags.map((e) => e.toJson()).toList(),
-      'name': name,
-      'id': id,
-    };
   }
 }
 
