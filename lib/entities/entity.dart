@@ -171,31 +171,6 @@ abstract class EntityWithCustomMetadata extends Entity {
     }
     return customGqlTags;
   }
-
-  // factory EntityWithCustomMetadata.fromJson(
-  //   Map<String, dynamic> json, {
-  //   ArDriveCrypto? crypto,
-  //   reservedJsonMetadataKeys = const [],
-  //   reservedGqlTags = const [],
-  // }) {
-  //   final ArDriveCrypto arDriveCrypto = crypto ?? ArDriveCrypto();
-  //   final newEntity = EntityWithCustomMetadata(
-  //     arDriveCrypto,
-  //     reservedJsonMetadataKeys: reservedJsonMetadataKeys,
-  //     reservedGqlTags: reservedGqlTags,
-  //   );
-  //   newEntity.customJsonMetadata = newEntity.getCustomJsonMetadata(json);
-  //   return newEntity;
-  // }
-
-  // Map<String, dynamic>? toJson() {
-  //   return customJsonMetadata;
-  // }
-
-  // @override
-  // void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
-  //   throw UnimplementedError();
-  // }
 }
 
 class EntityTransactionParseException implements Exception {
