@@ -140,18 +140,12 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
                 database.fileEntries, updatedFilesById.values.toList());
           });
 
-          if (updatedFoldersById.containsKey(drive.rootFolderId)) {
-            var rootFolder = updatedFoldersById[drive.rootFolderId];
-            updatedFoldersById.clear();
-            updatedFoldersById.putIfAbsent(
-                drive.rootFolderId, () => rootFolder!);
-          }
-
           logger.e('generateFsEntryPaths - parse drive');
           await _generateFsEntryPaths(
             ghostFolders: ghostFolders,
             driveDao: driveDao,
             driveId: drive.id,
+            rootFolderId: drive.rootFolderId,
             foldersByIdMap: updatedFoldersById,
             filesByIdMap: updatedFilesById,
           );

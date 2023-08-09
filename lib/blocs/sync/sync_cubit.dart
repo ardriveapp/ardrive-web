@@ -395,6 +395,7 @@ class SyncCubit extends Cubit<SyncState> {
   // folder tree
   Future<void> generateFsEntryPaths(
     String driveId,
+    String? rootFolderId,
     Map<String, FolderEntriesCompanion> foldersByIdMap,
     Map<String, FileEntriesCompanion> filesByIdMap,
   ) async {
@@ -403,6 +404,7 @@ class SyncCubit extends Cubit<SyncState> {
       ghostFolders: ghostFolders,
       driveDao: _driveDao,
       driveId: driveId,
+      rootFolderId: rootFolderId,
       foldersByIdMap: foldersByIdMap,
       filesByIdMap: filesByIdMap,
     );

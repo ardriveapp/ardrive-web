@@ -109,7 +109,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         });
 
         final folderMap = {folder.id: folder.toCompanion(false)};
-        await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
+        await _syncCubit.generateFsEntryPaths(driveId, null, folderMap, {});
 
         emit(const FolderEntryRenameSuccess());
       } else {

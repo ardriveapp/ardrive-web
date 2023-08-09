@@ -270,6 +270,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
       await _arweave.postTx(moveTx);
     }
 
-    await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
+    await _syncCubit.generateFsEntryPaths(driveId, null, folderMap, {});
   }
 }

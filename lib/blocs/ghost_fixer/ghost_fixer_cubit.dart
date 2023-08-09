@@ -161,7 +161,8 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
             performedAction: RevisionAction.create));
         final folderMap = {folder.id: folder.toCompanion(false)};
-        await _syncCubit.generateFsEntryPaths(folder.driveId, folderMap, {});
+        await _syncCubit
+            .generateFsEntryPaths(folder.driveId, null, folderMap, {});
       });
       emit(GhostFixerSuccess());
     } catch (err) {

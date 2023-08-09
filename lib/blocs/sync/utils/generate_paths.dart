@@ -4,13 +4,21 @@ part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
   required DriveDao driveDao,
   required String driveId,
+  String? rootFolderId,
   required Map<String, FolderEntriesCompanion> foldersByIdMap,
   required Map<String, FileEntriesCompanion> filesByIdMap,
   required Map<FolderID, GhostFolder> ghostFolders,
 }) async {
   var startTime = DateTime.now();
+  Map<String, FolderEntriesCompanion> folders = {};
+  if (rootFolderId != null && foldersByIdMap.containsKey(rootFolderId)) {
+    var rootFolder = foldersByIdMap[rootFolderId];
+    folders.putIfAbsent(rootFolderId, () => rootFolder!);
+  }
+
   final staleFolderTree = <FolderNode>[];
-  for (final folder in foldersByIdMap.values) {
+  for (final folder
+      in folders.isNotEmpty ? folders.values : foldersByIdMap.values) {
     // Get trees of the updated folders and files for path generation.
     logger.e('generateFsEntryPaths getFolderTree - ${folder.id.value}');
     final tree = await driveDao.getFolderTree(driveId, folder.id.value);
