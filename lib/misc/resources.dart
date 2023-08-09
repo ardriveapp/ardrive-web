@@ -73,7 +73,7 @@ class Profile {
 class Login {
   const Login();
 
-  final String gridImage = 'assets/images/login/grid_images.png';
+  final String gridImage = 'assets/images/login/grid_images.jpg';
   final String ardriveLogoOnboarding = 'assets/images/brand/2x.png';
   final String arconnectLogo = 'assets/images/login/arconnect_logo.png';
   final String lattice = 'assets/images/login/lattice.svg';
