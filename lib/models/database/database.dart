@@ -25,7 +25,101 @@ class Database extends _$Database {
         },
         onUpgrade: (Migrator m, int from, int to) async {
           logger.i('schema changed from $from to $to ');
-          if (from >= 1 && from < schemaVersion) {
+
+          if (from == 16 && to == 17) {
+            // Then we're adding the pin and custom fields columns
+            logger.i('Migrating schema from v16 to v17');
+
+            final driveRevisionsTable = allTables.firstWhere(
+              (element) => element.actualTableName == 'drive_revisions',
+            );
+            final folderRevisionsTable = allTables.firstWhere(
+              (element) => element.actualTableName == 'folder_revisions',
+            );
+            final fileRevisionsTable = allTables.firstWhere(
+              (element) => element.actualTableName == 'file_revisions',
+            );
+
+            await m.alterTable(
+              TableMigration(
+                driveRevisionsTable,
+                newColumns: [
+                  GeneratedColumn(
+                    'customJsonMetadata',
+                    'drive_revisions',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                  GeneratedColumn(
+                    'customGQLTags',
+                    'drive_revisions',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                ],
+              ),
+            );
+
+            await m.alterTable(
+              TableMigration(
+                folderRevisionsTable,
+                newColumns: [
+                  GeneratedColumn(
+                    'customJsonMetadata',
+                    'folder_revisions',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                  GeneratedColumn(
+                    'customGQLTags',
+                    'folder_revisions',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                ],
+              ),
+            );
+
+            await m.alterTable(
+              TableMigration(
+                fileRevisionsTable,
+                newColumns: [
+                  GeneratedColumn(
+                    'customJsonMetadata',
+                    'file_revisions',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                  GeneratedColumn(
+                    'customGQLTags',
+                    'file_revisions',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                  GeneratedColumn(
+                    'pinnedDataOwnerAddress',
+                    'file_revisions',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                ],
+              ),
+            );
+          } else if (from >= 1 && from < schemaVersion) {
             // Reset the database.
             for (final table in allTables) {
               await m.deleteTable(table.actualTableName);
