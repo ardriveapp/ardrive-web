@@ -224,6 +224,7 @@ class _DriveExplorerItemTileTrailingState
           items: _getItems(widget.item, context),
           // ignore: sized_box_for_whitespace
           child: HoverWidget(
+            
             tooltip: appLocalizationsOf(context).showMenu,
             child: ArDriveIcons.kebabMenu(),
           ),
