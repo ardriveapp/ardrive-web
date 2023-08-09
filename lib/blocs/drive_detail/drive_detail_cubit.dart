@@ -118,12 +118,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
-          final syncState = _syncCubit.state;
+          // final syncState = _syncCubit.state;
 
-          if (syncState is SyncInProgress) {
-            logger.d("Don't refresh drive detail: Sync is in progress");
-            return;
-          }
+          // if (syncState is SyncInProgress) {
+          //   logger.d("Don't refresh drive detail: Sync is in progress");
+          //   return;
+          // }
 
           logger.d('Drive Explorer listener for the $drive');
 
