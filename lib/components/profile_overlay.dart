@@ -1,11 +1,11 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/copy_icon_button.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/open_url_utils.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -148,7 +148,7 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                onPressed: () => openUrl(url: Resources.surveyFeedbackFormUrl),
+                onPressed: () => openFeedbackSurveyUrl(),
                 child: Text(
                   appLocalizationsOf(context).leaveFeedback,
                 ),
@@ -182,7 +182,7 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            onPressed: () => openUrl(url: Resources.surveyFeedbackFormUrl),
+            onPressed: () => openFeedbackSurveyUrl(),
             child: Text(
               appLocalizationsOf(context).leaveFeedback,
             ),
