@@ -16,6 +16,7 @@ extension FileEntryExtensions on FileEntry {
       size: size,
       lastModifiedDate: lastModifiedDate,
       dataContentType: dataContentType,
+      pinnedDataOwnerAddress: pinnedDataOwnerAddress,
     );
     file.customJsonMetadata =
         customJsonMetadata != null ? jsonDecode(customJsonMetadata!) : null;
