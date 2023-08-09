@@ -32,6 +32,8 @@ class NetworkFileIdResolver implements FileIdResolver {
     if (fileEntity == null) {
       // It either doesn't exist, is invalid, or private.
 
+      logger.d('Failed to get file entity for $fileId');
+
       throw FileIdResolverException(
         id: fileId,
         cancelled: false,
@@ -42,7 +44,7 @@ class NetworkFileIdResolver implements FileIdResolver {
       );
     }
 
-    final _OwnerAndPrivacy ownerAndPrivacyOfData =
+    final _OwnerPrivacySizeAndType ownerAndPrivacyOfData =
         await _getOwnerAndPrivacyOfDataTransaction(fileEntity.dataTxId!);
 
     final ResolveIdResult fileInfo = ResolveIdResult(
@@ -62,50 +64,28 @@ class NetworkFileIdResolver implements FileIdResolver {
 
   @override
   Future<ResolveIdResult> requestForTransactionId(TxID dataTxId) async {
-    final uri = Uri.parse(
-      '${configService.config.defaultArweaveGatewayUrl}/$dataTxId',
-    );
-    final response = await httpClient.head(uri);
-
-    final Map headers = response.headers;
-    final String? contentTypeHeader = headers['content-type'];
-    final int? sizeHeader = int.tryParse(headers['content-length'] ?? '');
-
-    if (response.statusCode != 200 ||
-        sizeHeader == null ||
-        contentTypeHeader == null) {
-      throw FileIdResolverException(
-        id: dataTxId,
-        cancelled: false,
-        networkError: false,
-        isArFsEntityValid: false,
-        isArFsEntityPublic: false,
-        doesDataTransactionExist: false,
-      );
-    }
-
-    final _OwnerAndPrivacy ownerAndPrivacyOfData =
+    final _OwnerPrivacySizeAndType metadataTxInfo =
         await _getOwnerAndPrivacyOfDataTransaction(dataTxId);
 
     final ResolveIdResult fileInfo = ResolveIdResult(
-      privacy: ownerAndPrivacyOfData.privacy,
+      privacy: metadataTxInfo.privacy,
       maybeName: null,
-      dataContentType: contentTypeHeader,
+      dataContentType: metadataTxInfo.type,
       maybeLastUpdated: null,
       maybeLastModified: null,
       dateCreated: DateTime.now(),
-      size: sizeHeader,
+      size: metadataTxInfo.size,
       dataTxId: dataTxId,
-      pinnedDataOwnerAddress: ownerAndPrivacyOfData.ownerAddress,
+      pinnedDataOwnerAddress: metadataTxInfo.ownerAddress,
     );
 
     return fileInfo;
   }
 
-  Future<_OwnerAndPrivacy> _getOwnerAndPrivacyOfDataTransaction(
+  Future<_OwnerPrivacySizeAndType> _getOwnerAndPrivacyOfDataTransaction(
     TxID dataTxId,
   ) async {
-    final transactionDetails = await arweave.getTransactionDetails(dataTxId);
+    final transactionDetails = await arweave.getInfoOfTxToBePinned(dataTxId);
 
     if (transactionDetails == null) {
       throw FileIdResolverException(
@@ -118,14 +98,30 @@ class NetworkFileIdResolver implements FileIdResolver {
       );
     }
 
+    final size = int.tryParse(transactionDetails.data.size);
+    final type = transactionDetails.data.type;
+
+    if (size == null || type == null) {
+      throw FileIdResolverException(
+        id: dataTxId,
+        cancelled: false,
+        networkError: false,
+        isArFsEntityValid: false,
+        isArFsEntityPublic: false,
+        doesDataTransactionExist: true,
+      );
+    }
+
     final tags = transactionDetails.tags;
     final cipherIvTag = tags.firstWhereOrNull(
       (tag) => tag.name == 'Cipher-Iv' && tag.value.isNotEmpty,
     );
 
-    return _OwnerAndPrivacy(
+    return _OwnerPrivacySizeAndType(
       ownerAddress: transactionDetails.owner.address,
       privacy: cipherIvTag == null ? DrivePrivacy.public : DrivePrivacy.private,
+      size: size,
+      type: type,
     );
   }
 }
@@ -153,12 +149,16 @@ class FileIdResolverException implements Exception {
   });
 }
 
-class _OwnerAndPrivacy {
+class _OwnerPrivacySizeAndType {
   final String ownerAddress;
   final DrivePrivacy privacy;
+  final int size;
+  final String type;
 
-  const _OwnerAndPrivacy({
+  const _OwnerPrivacySizeAndType({
     required this.ownerAddress,
     required this.privacy,
+    required this.size,
+    required this.type,
   });
 }

@@ -80,10 +80,11 @@ class PinFileDialog extends StatelessWidget {
           }
           // TODO: refactor the arweave method to let it distinguish between
           /// these other cases
+          else if (!state.isArFsEntityValid) {
+            customErrorMessage = 'The file does exist but is invalid';
+          }
           // else if (!state.isArFsEntityPublic) {
           //   customErrorMessage = 'File is not public';
-          // } else if (!state.isArFsEntityValid) {
-          //   customErrorMessage = 'File is not valid';
           // }
         }
 
