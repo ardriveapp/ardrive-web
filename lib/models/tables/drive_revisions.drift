@@ -10,12 +10,15 @@ CREATE TABLE drive_revisions (
     privacy TEXT NOT NULL,
 
     metadataTxId TEXT NOT NULL,
-    
+
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
 
     [action] TEXT NOT NULL,
 
     bundledIn TEXT,
+
+    customJsonMetadata TEXT,
+    customGQLTags TEXT,
 
     PRIMARY KEY (driveId, dateCreated),
     FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id)

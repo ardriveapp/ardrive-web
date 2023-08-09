@@ -16,6 +16,9 @@ CREATE TABLE drives (
 
     bundledIn TEXT,
 
+    customJsonMetadata TEXT,
+    customGQLTags TEXT,
+
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now'))
 ) As Drive;
