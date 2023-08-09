@@ -244,7 +244,7 @@ class NewButton extends StatelessWidget {
             drive?.privacy == 'public')
           ArDriveNewButtonItem(
             name: appLocalizationsOf(context).newFilePin,
-            icon: ArDriveIcons.arconnectIcon1(size: defaultIconSize),
+            icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
             onClick: () => showPinFileDialog(context: context),
             isDisabled: !driveDetailState.hasWritePermissions || drive == null,
           ),
