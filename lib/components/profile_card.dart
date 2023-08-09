@@ -234,7 +234,7 @@ class _ProfileCardState extends State<ProfileCard> {
     BuildContext context,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+      padding: const EdgeInsets.only(left: 10.0, right: 15),
       child: HoverWidget(
         hoverScale: 1,
         child: ArDriveClickArea(
