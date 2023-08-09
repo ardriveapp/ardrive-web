@@ -19,6 +19,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         lastModifiedDate: lastModifiedDate.value,
         dataContentType: dataContentType,
         bundledIn: bundledIn,
+        pinnedDataOwnerAddress: pinnedDataOwnerAddress,
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -51,6 +52,7 @@ extension FileEntityExtensions on FileEntity {
         dataContentType: Value(dataContentType),
         action: performedAction,
         bundledIn: Value(bundledIn),
+        pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
       );
 
   FileRevision toRevision({
@@ -69,6 +71,7 @@ extension FileEntityExtensions on FileEntity {
         dataContentType: dataContentType,
         action: performedAction,
         bundledIn: bundledIn,
+        pinnedDataOwnerAddress: pinnedDataOwnerAddress,
       );
 
   /// Returns the action performed on the file that lead to the new revision.
