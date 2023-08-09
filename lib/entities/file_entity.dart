@@ -32,6 +32,8 @@ class FileEntity extends EntityWithCustomMetadata {
   String? dataTxId;
   String? dataContentType;
 
+  String? pinnedDataOwnerAddress;
+
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedGqlTags = [
@@ -59,6 +61,7 @@ class FileEntity extends EntityWithCustomMetadata {
     this.lastModifiedDate,
     this.dataTxId,
     this.dataContentType,
+    this.pinnedDataOwnerAddress,
   }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({

@@ -87,11 +87,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-4243-replicate-checkbox-line-functionality
-      resolved-ref: b32da9c1397de7f5b58563df58165c416cee9058
+      ref: PE-3988
+      resolved-ref: "3a520d4a42daf17eeaf455e83a3b4af46e552deb"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.5.0"
+    version: "1.5.1"
   args:
     dependency: transitive
     description:

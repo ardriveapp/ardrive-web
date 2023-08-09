@@ -34,6 +34,7 @@ class _ARFSFactory implements ARFSFactory {
       size: file.size,
       id: file.id,
       dataTxId: file.dataTxId,
+      pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
     );
   }
 
@@ -54,6 +55,7 @@ class _ARFSFactory implements ARFSFactory {
       parentFolderId: file.parentFolderId,
       size: file.size,
       id: file.fileId,
+      pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
     );
   }
 
@@ -91,6 +93,7 @@ class _ARFSFactory implements ARFSFactory {
       parentFolderId: file.parentFolderId,
       size: file.size ?? 0,
       id: file.id,
+      pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
     );
   }
 
@@ -111,6 +114,7 @@ class _ARFSFactory implements ARFSFactory {
       parentFolderId: fileRevision.parentFolderId,
       contentType: fileRevision.dataContentType,
       dataTxId: fileRevision.dataTxId,
+      pinnedDataOwnerAddress: fileRevision.pinnedDataOwnerAddress,
     );
   }
 }
