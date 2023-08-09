@@ -21,6 +21,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         bundledIn: bundledIn,
         customGQLTags: customGQLTags,
         customJsonMetadata: customJsonMetadata,
+        pinnedDataOwnerAddress: pinnedDataOwnerAddress,
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -55,6 +56,7 @@ extension FileEntityExtensions on FileEntity {
         bundledIn: Value(bundledIn),
         customGQLTags: Value(customGqlTagsAsString),
         customJsonMetadata: Value(customJsonMetadataAsString),
+        pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
       );
 
   FileRevision toRevision({
@@ -75,6 +77,7 @@ extension FileEntityExtensions on FileEntity {
         bundledIn: bundledIn,
         customGQLTags: customGqlTagsAsString,
         customJsonMetadata: customJsonMetadataAsString,
+        pinnedDataOwnerAddress: pinnedDataOwnerAddress,
       );
 
   /// Returns the action performed on the file that lead to the new revision.

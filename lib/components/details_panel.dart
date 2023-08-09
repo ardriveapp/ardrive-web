@@ -3,7 +3,9 @@ import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/components/sizes.dart';
+import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -172,6 +174,14 @@ class _DetailsPanelState extends State<DetailsPanel> {
                               style: ArDriveTypography.body.buttonLargeBold(),
                             ),
                           ),
+                          if (widget.item is FileDataTableItem &&
+                              (widget.item as FileDataTableItem)
+                                      .pinnedDataOwnerAddress !=
+                                  null) ...{
+                            const PinIndicator(
+                              size: 32,
+                            ),
+                          },
                           if (widget.currentDrive != null &&
                               !widget.isSharePage)
                             ScreenTypeLayout.builder(
@@ -344,6 +354,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
       metadataTxId = (widget.item as FileDataTableItem).metadataTx?.id;
     }
 
+    String? pinnedDataOwnerAddress =
+        (widget.item as FileDataTableItem).pinnedDataOwnerAddress;
+
     return [
       DetailsPanelItem(
         leading: CopyButton(text: widget.item.id),
@@ -413,6 +426,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).dataTxID,
       ),
+      if (pinnedDataOwnerAddress != null) ...[
+        sizedBoxHeight16px,
+        DetailsPanelItem(
+          leading: TruncatedAddress(walletAddress: pinnedDataOwnerAddress),
+          itemTitle: appLocalizationsOf(context).uploadedBy,
+        ),
+      ]
     ];
   }
 
@@ -515,7 +535,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
     switch (action) {
       case RevisionAction.create:
-        title = 'File added to the drive';
+        if (file.pinnedDataOwnerAddress != null) {
+          title = 'File pinned to the drive';
+        } else {
+          title = 'File added to the drive';
+        }
         leading = _DownloadOrPreview(
           isSharedFile: widget.isSharePage,
           privacy: widget.drivePrivacy,

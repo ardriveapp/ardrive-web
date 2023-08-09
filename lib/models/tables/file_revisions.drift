@@ -23,6 +23,8 @@ CREATE TABLE file_revisions (
 
     [action] TEXT NOT NULL,
 
+    pinnedDataOwnerAddress TEXT,
+
     PRIMARY KEY (fileId, driveId, dateCreated),
     FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id),
     FOREIGN KEY (dataTxId) REFERENCES network_transactions(id)
