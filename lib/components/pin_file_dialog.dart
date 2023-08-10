@@ -67,7 +67,6 @@ class PinFileDialog extends StatelessWidget {
         if (state is PinFileAbort || state is PinFileSuccess) {
           Navigator.of(context).pop();
         } else if (state is PinFileError) {
-          Navigator.of(context).pop();
           // TODO: Localize
           const errorText = 'Your pin failed to upload';
           showAnimatedDialog(
@@ -93,6 +92,10 @@ class PinFileDialog extends StatelessWidget {
       },
       builder: (context, state) {
         String? customErrorMessage;
+
+        if (state is PinFileError) {
+          return const SizedBox();
+        }
 
         if (state is PinFileFieldsValidationError) {
           if (!state.doesDataTransactionExist) {
