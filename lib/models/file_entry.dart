@@ -22,7 +22,7 @@ extension FileEntryExtensions on FileEntry {
         customJsonMetadata != null ? jsonDecode(customJsonMetadata!) : null;
     file.customGqlTags = customGQLTags != null
         ? (jsonDecode(customGQLTags!) as List<dynamic>)
-            .map((maybeTag) => Tag.fromJson(maybeTag))
+            .map((tagAsJson) => Tag.fromJson(tagAsJson))
             .toList()
         : null;
     return file;
