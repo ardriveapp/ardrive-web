@@ -34,7 +34,7 @@ class Database extends _$Database {
               (element) => element.actualTableName == 'drive_revisions',
             );
             final driveEntriesTable = allTables.firstWhere(
-              (element) => element.actualTableName == 'drive',
+              (element) => element.actualTableName == 'drives',
             );
 
             await m.alterTable(
@@ -67,7 +67,7 @@ class Database extends _$Database {
                 newColumns: [
                   GeneratedColumn(
                     'customJsonMetadata',
-                    'drive',
+                    'drives',
                     true,
                     type: DriftSqlType.string,
                     defaultValue: null,
