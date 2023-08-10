@@ -16,8 +16,6 @@ void main() {
   );
 
   group('fakeApplicationTags method', () {
-    setUp(() async {});
-
     test('contains the expected tags', () async {
       AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
 

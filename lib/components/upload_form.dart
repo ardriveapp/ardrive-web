@@ -19,7 +19,6 @@ import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -71,7 +70,6 @@ Future<void> promptToUpload(
       context,
       content: BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
-          tabVisibility: TabVisibilitySingleton(),
           arDriveUploadManager: ArDriveUploadPreparationManager(
             uploadPreparePaymentOptions: UploadPaymentEvaluator(
               appConfig: context.read<ConfigService>().config,
@@ -119,9 +117,6 @@ Future<void> promptToUpload(
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
           auth: context.read<ArDriveAuth>(),
-          turboBalanceRetriever: TurboBalanceRetriever(
-            paymentService: context.read<PaymentService>(),
-          ),
         )..startUploadPreparation(),
         child: const UploadForm(),
       ),

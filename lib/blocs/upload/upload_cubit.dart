@@ -9,7 +9,6 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -95,10 +94,8 @@ class UploadCubit extends Cubit<UploadState> {
     required TurboUploadService turbo,
     required PstService pst,
     required UploadFileChecker uploadFileChecker,
-    required TurboBalanceRetriever turboBalanceRetriever,
     required ArDriveAuth auth,
     required ArDriveUploadPreparationManager arDriveUploadManager,
-    required TabVisibilitySingleton tabVisibility,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
         _uploadFileChecker = uploadFileChecker,

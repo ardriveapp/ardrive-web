@@ -283,7 +283,6 @@ void main() {
     );
     blocTest(
       'successfully moves files into folders when there are no conflicts',
-      setUp: (() async {}),
       build: () => FsEntryMoveBloc(
         crypto: ArDriveCrypto(),
         arweave: arweave,
