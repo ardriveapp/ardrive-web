@@ -3,9 +3,12 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/turbo_balance_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/open_url_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
@@ -144,6 +147,11 @@ class _ProfileCardState extends State<ProfileCard> {
             ),
           const SizedBox(height: 8),
           _buildWalletAddressRow(context, state),
+          if (state.wallet is! ArConnectWallet) ...[
+            const SizedBox(height: 8),
+            _buildDownloadWalletRow(context),
+            const SizedBox(height: 8),
+          ],
           const Divider(
             height: 21,
             indent: 16,
@@ -164,6 +172,28 @@ class _ProfileCardState extends State<ProfileCard> {
               ),
             ),
           ],
+          Padding(
+            padding: const EdgeInsets.only(top: 20.0, left: 16, right: 16),
+            child: ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  openFeedbackSurveyUrl();
+                },
+                child: Text(
+                  appLocalizationsOf(context).leaveFeedback,
+                  style: ArDriveTypography.body.captionRegular().copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgMuted,
+                        decoration: TextDecoration.underline,
+                      ),
+                ),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(top: 20.0),
             child: _buildLogoutButton(context),
@@ -223,6 +253,35 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
+  Widget _buildDownloadWalletRow(
+    BuildContext context,
+  ) {
+    return ArDriveClickArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: GestureDetector(
+          onTap: () {
+            _showProfileCard = false;
+            setState(() {});
+            showDownloadWalletModal(context);
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                appLocalizationsOf(context).downloadWalletKeyfile,
+                style: ArDriveTypography.body.captionRegular().copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              ArDriveIcons.download()
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBalanceRow(BuildContext context, ProfileLoggedIn state) {
     final walletBalance =
         double.tryParse(utils.winstonToAr(state.walletBalance))
@@ -256,28 +315,7 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildLogoutButton(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        context.read<ArDriveAuth>().logout().then(
-              (value) => context.read<ProfileCubit>().logoutProfile(),
-            );
-      },
-      child: Container(
-        color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
-          child: Row(
-            children: [
-              Text(
-                appLocalizationsOf(context).logOut,
-                style:
-                    ArDriveTypography.body.captionBold().copyWith(fontSize: 15),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return const _LogoutButton();
   }
 
   Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {
@@ -310,6 +348,58 @@ class _ProfileCardState extends State<ProfileCard> {
                     ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoutButton extends StatefulWidget {
+  const _LogoutButton();
+
+  @override
+  State<_LogoutButton> createState() => __LogoutButtonState();
+}
+
+class __LogoutButtonState extends State<_LogoutButton> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return HoverDetector(
+      onExit: () {
+        setState(() {
+          _isHovering = false;
+        });
+      },
+      onHover: () {
+        setState(() {
+          _isHovering = true;
+        });
+      },
+      child: InkWell(
+        onTap: () {
+          context.read<ArDriveAuth>().logout().then(
+                (value) => context.read<ProfileCubit>().logoutProfile(),
+              );
+        },
+        child: Container(
+          color: _isHovering
+              ? ArDriveTheme.of(context).themeData.colors.themeGbMuted
+              : ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
+            child: Row(
+              children: [
+                Text(
+                  appLocalizationsOf(context).logOut,
+                  style: ArDriveTypography.body
+                      .captionBold()
+                      .copyWith(fontSize: 15),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

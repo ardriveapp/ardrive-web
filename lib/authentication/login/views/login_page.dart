@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ui';
 
 import 'package:animations/animations.dart';
@@ -17,14 +16,13 @@ import 'package:ardrive/services/authentication/biometric_permission_dialog.dart
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/split_localizations.dart';
-import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -1710,13 +1708,11 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
   }
 
   void _onDownload() async {
-    final jsonTxt = jsonEncode(widget.wallet.toJwk());
+    final ioUtils = ArDriveIOUtils();
 
-    final ArDriveIO io = ArDriveIO();
-    final bytes = Uint8List.fromList(utf8.encode(jsonTxt));
-
-    await io.saveFile(await IOFile.fromData(bytes,
-        name: 'ardrive-wallet.json', lastModifiedDate: DateTime.now()));
+    await ioUtils.downloadWalletAsJsonFile(
+      wallet: widget.wallet,
+    );
   }
 }
 
@@ -2263,84 +2259,87 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
 
     return Scaffold(
       body: Center(
+        child: ArDriveScrollBar(
+          alwaysVisible: true,
           child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                  top: topBottomPadding, bottom: topBottomPadding),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    // TODO: create/update localization key
-                    'Write Down Seed Phrase',
-                    textAlign: TextAlign.center,
-                    style: ArDriveTypography.headline
-                        .headline4Regular(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault)
-                        .copyWith(fontSize: 32),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                      constraints: const BoxConstraints(maxWidth: 508),
-                      child: Text(
-                        // TODO: create/update localization key
-                        'Please carefully write down your seed phrase, in this order, and keep it somewhere safe.',
-                        textAlign: TextAlign.center,
-                        style: ArDriveTypography.body.smallBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgSubtle),
-                      )),
-                  const SizedBox(height: 72),
-                  rows,
-                  const SizedBox(height: 72),
-                  ...createRows(
-                    items: [
-                      TextButton.icon(
-                        icon: _isBlurredSeedPhrase
-                            ? ArDriveIcons.eyeClosed(
-                                size: 24,
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgMuted)
-                            : ArDriveIcons.eyeOpen(
-                                size: 24,
+            padding: EdgeInsets.only(
+                top: topBottomPadding, bottom: topBottomPadding),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  // TODO: create/update localization key
+                  'Write Down Seed Phrase',
+                  textAlign: TextAlign.center,
+                  style: ArDriveTypography.headline
+                      .headline4Regular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault)
+                      .copyWith(fontSize: 32),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                    constraints: BoxConstraints(maxWidth: 508),
+                    child: Text(
+                      // TODO: create/update localization key
+                      'Please carefully write down your seed phrase, in this order, and keep it somewhere safe.',
+                      textAlign: TextAlign.center,
+                      style: ArDriveTypography.body.smallBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgSubtle),
+                    )),
+                const SizedBox(height: 72),
+                rows,
+                const SizedBox(height: 72),
+                ...createRows(
+                  items: [
+                    TextButton.icon(
+                      icon: _isBlurredSeedPhrase
+                          ? ArDriveIcons.eyeClosed(
+                              size: 24,
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted)
+                          : ArDriveIcons.eyeOpen(
+                              size: 24,
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted),
+                      label: SizedBox(
+                          width: 92,
+                          child: Text(
+                            // TODO: create/update localization keys
+                            _isBlurredSeedPhrase ? 'Show Words' : 'Hide Words',
+                            style: ArDriveTypography.body.smallBold(
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
                                     .themeFgMuted),
-                        label: SizedBox(
-                            width: 92,
-                            child: Text(
-                              // TODO: create/update localization keys
-                              _isBlurredSeedPhrase
-                                  ? 'Show Words'
-                                  : 'Hide Words',
-                              style: ArDriveTypography.body.smallBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgMuted),
-                            )),
-                        onPressed: () {
-                          setState(() {
-                            _isBlurredSeedPhrase = !_isBlurredSeedPhrase;
-                          });
-                        },
-                      ),
-                      LoginCopyButton(text: widget.mnemonic),
-                    ],
-                    rowCount: rowCount == 3 ? 2 : 1,
-                    hGap: 16,
-                    vGap: 16,
-                  ),
-                ],
-              ))),
+                          )),
+                      onPressed: () {
+                        setState(() {
+                          _isBlurredSeedPhrase = !_isBlurredSeedPhrase;
+                        });
+                      },
+                    ),
+                    LoginCopyButton(text: widget.mnemonic),
+                  ],
+                  rowCount: rowCount == 3 ? 2 : 1,
+                  hGap: 16,
+                  vGap: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
@@ -2444,7 +2443,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     final screenSize = MediaQuery.of(context).size;
 
     final rowCount = screenSize.width > (374 * 2 + 24 * 3) ? 2 : 1;
-    final topBottomPadding = rowCount == 1 ? 40.0 : 0.0;
+    final topBottomPadding = rowCount == 1 ? 40.0 : 16.0;
 
     final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
 
@@ -2493,7 +2492,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                                   .colors
                                   .themeFgSubtle),
                         )),
-                    const SizedBox(height: 72),
+                    const SizedBox(height: 32),
                     ...createRows(
                         items: cardInfos.map(_buildCard).toList(),
                         rowCount: rowCount,
