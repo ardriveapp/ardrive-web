@@ -64,7 +64,7 @@ class DriveEntity extends EntityWithCustomMetadata {
             await crypto.decryptEntityJson(transaction, data, driveKey!);
       }
 
-      return DriveEntity.fromJson(entityJson!)
+      final drive = DriveEntity.fromJson(entityJson!)
         ..id = transaction.getTag(EntityTag.driveId)
         ..privacy = drivePrivacy
         ..authMode = transaction.getTag(EntityTag.driveAuthMode)
@@ -72,6 +72,18 @@ class DriveEntity extends EntityWithCustomMetadata {
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
         ..createdAt = transaction.getCommitTime();
+
+      final tags = transaction.tags
+          .map(
+            (t) => Tag.fromJson(t.toJson()),
+          )
+          .toList();
+      drive.customGqlTags = EntityWithCustomMetadata.getCustomGqlTags(
+        drive,
+        tags,
+      );
+
+      return drive;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
@@ -85,6 +97,7 @@ class DriveEntity extends EntityWithCustomMetadata {
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.drive)
       ..addTag(EntityTag.driveId, id!)
+      // ..addTag('New custom tag', 'New custom value')
       ..addTag(EntityTag.drivePrivacy, privacy!);
 
     if (privacy == DrivePrivacy.private) {
