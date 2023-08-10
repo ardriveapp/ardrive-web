@@ -97,7 +97,6 @@ class DriveEntity extends EntityWithCustomMetadata {
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.drive)
       ..addTag(EntityTag.driveId, id!)
-      // ..addTag('New custom tag', 'New custom value')
       ..addTag(EntityTag.drivePrivacy, privacy!);
 
     if (privacy == DrivePrivacy.private) {
