@@ -74,6 +74,7 @@ class PinFileDialog extends StatelessWidget {
             content: _errorDialog(
               context,
               errorText: errorText,
+              doublePop: true,
             ),
           );
         } else if (state is PinFileFieldsValidationError) {
@@ -211,6 +212,7 @@ class PinFileDialog extends StatelessWidget {
   ArDriveStandardModal _errorDialog(
     BuildContext context, {
     required String errorText,
+    bool doublePop = false,
   }) =>
       ArDriveStandardModal(
         width: kMediumDialogWidth,
@@ -226,7 +228,12 @@ class PinFileDialog extends StatelessWidget {
         ),
         actions: [
           ModalAction(
-            action: () => Navigator.pop(context),
+            action: () {
+              Navigator.pop(context);
+              if (doublePop) {
+                Navigator.pop(context);
+              }
+            },
             title: appLocalizationsOf(context).okEmphasized,
           ),
         ],
