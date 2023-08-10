@@ -33,11 +33,8 @@ class Database extends _$Database {
             final driveRevisionsTable = allTables.firstWhere(
               (element) => element.actualTableName == 'drive_revisions',
             );
-            final folderRevisionsTable = allTables.firstWhere(
-              (element) => element.actualTableName == 'folder_revisions',
-            );
-            final fileRevisionsTable = allTables.firstWhere(
-              (element) => element.actualTableName == 'file_revisions',
+            final driveEntriesTable = allTables.firstWhere(
+              (element) => element.actualTableName == 'drive',
             );
 
             await m.alterTable(
@@ -66,6 +63,37 @@ class Database extends _$Database {
 
             await m.alterTable(
               TableMigration(
+                driveEntriesTable,
+                newColumns: [
+                  GeneratedColumn(
+                    'customJsonMetadata',
+                    'drive',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                  GeneratedColumn(
+                    'customGQLTags',
+                    'drive',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                ],
+              ),
+            );
+
+            final folderRevisionsTable = allTables.firstWhere(
+              (element) => element.actualTableName == 'folder_revisions',
+            );
+            final folderEntriesTable = allTables.firstWhere(
+              (element) => element.actualTableName == 'folder_entries',
+            );
+
+            await m.alterTable(
+              TableMigration(
                 folderRevisionsTable,
                 newColumns: [
                   GeneratedColumn(
@@ -86,6 +114,37 @@ class Database extends _$Database {
                   ),
                 ],
               ),
+            );
+
+            await m.alterTable(
+              TableMigration(
+                folderEntriesTable,
+                newColumns: [
+                  GeneratedColumn(
+                    'customJsonMetadata',
+                    'folder_entries',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                  GeneratedColumn(
+                    'customGQLTags',
+                    'folder_entries',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                ],
+              ),
+            );
+
+            final fileRevisionsTable = allTables.firstWhere(
+              (element) => element.actualTableName == 'file_revisions',
+            );
+            final fileEntriesTable = allTables.firstWhere(
+              (element) => element.actualTableName == 'file_entries',
             );
 
             await m.alterTable(
@@ -111,6 +170,38 @@ class Database extends _$Database {
                   GeneratedColumn(
                     'pinnedDataOwnerAddress',
                     'file_revisions',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                ],
+              ),
+            );
+
+            await m.alterTable(
+              TableMigration(
+                fileEntriesTable,
+                newColumns: [
+                  GeneratedColumn(
+                    'customJsonMetadata',
+                    'file_entries',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                  GeneratedColumn(
+                    'customGQLTags',
+                    'file_entries',
+                    true,
+                    type: DriftSqlType.string,
+                    defaultValue: null,
+                    clientDefault: null,
+                  ),
+                  GeneratedColumn(
+                    'pinnedDataOwnerAddress',
+                    'file_entries',
                     true,
                     type: DriftSqlType.string,
                     defaultValue: null,
