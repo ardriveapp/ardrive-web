@@ -242,8 +242,10 @@
   },
   "cookieConsent": "Cookie Consent",
   "@cookieConsent": {},
-  "cookieConsentBody": "Our payment provider, Stripe, uses cookies to enable users to purchase Credits. These cookies are required for the purchasing of Credits.\nBy clicking “Accept” you consent to this use of cookies.",
-  "@cookieConsentBody": {},
+  "cookieConsentBodyPart1": "Our payment provider, Stripe, uses cookies to enable users to purchase Credits. These cookies are required for the purchasing of Credits.",
+  "@cookieConsentBodyPart1": {},
+  "cookieConsentBodyPart2": "By clicking “Accept” you consent to this use of cookies.",
+  "@cookieConsentBodyPart2": {},
   "copyBundleTxID": "Copy Bundle Tx ID",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
