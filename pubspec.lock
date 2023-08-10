@@ -80,7 +80,7 @@ packages:
     description:
       path: "."
       ref: PE-4247-download-keyfile-from-profile
-      resolved-ref: "0b9eb56929959362cb5107bac7b6e184b2c1ebfb"
+      resolved-ref: "0075cf5ffa84817f17b74cd027cb037f3c968ad6"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.5.1"
