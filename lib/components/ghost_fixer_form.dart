@@ -26,7 +26,7 @@ Future<void> promptToReCreateFolder(BuildContext context,
             turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             syncCubit: context.read<SyncCubit>()),
-        child: GhostFixerForm(),
+        child: const GhostFixerForm(),
       ),
     );
   } else {
@@ -36,7 +36,7 @@ Future<void> promptToReCreateFolder(BuildContext context,
 }
 
 class GhostFixerForm extends StatefulWidget {
-  GhostFixerForm({Key? key}) : super(key: key);
+  const GhostFixerForm({Key? key}) : super(key: key);
 
   @override
   State<GhostFixerForm> createState() => _GhostFixerFormState();

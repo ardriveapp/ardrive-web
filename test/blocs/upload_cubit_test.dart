@@ -18,7 +18,6 @@ import 'package:ardrive/services/turbo/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/types/winston.dart';
 import 'package:ardrive/user/user.dart';
-import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
@@ -88,7 +87,7 @@ void main() {
   late List<UploadFile> tNoConflictingFiles;
 
   // limits
-  final tPrivateFileSizeLimit = 100;
+  const tPrivateFileSizeLimit = 100;
 
   final tWallet = getTestWallet();
   String? tWalletAddress;
@@ -244,7 +243,6 @@ void main() {
 
   UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
     return UploadCubit(
-        tabVisibility: TabVisibilitySingleton(),
         arDriveUploadManager: mockArDriveUploadPreparationManager,
         uploadFileChecker: mockUploadFileChecker,
         driveId: tDriveId,
@@ -255,7 +253,6 @@ void main() {
         arweave: mockArweave,
         turbo: DontUseUploadService(),
         auth: mockArDriveAuth,
-        turboBalanceRetriever: mockTurboBalanceRetriever,
         pst: mockPst);
   }
 

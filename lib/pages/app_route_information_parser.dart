@@ -73,29 +73,32 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   }
 
   @override
-  RouteInformation restoreRouteInformation(AppRoutePath path) {
-    if (path.signingIn) {
+  RouteInformation restoreRouteInformation(AppRoutePath configuration) {
+    if (configuration.signingIn) {
       return const RouteInformation(location: '/sign-in');
-    } else if (path.driveId != null) {
-      if (path.driveName != null && path.sharedRawDriveKey != null) {
+    } else if (configuration.driveId != null) {
+      if (configuration.driveName != null &&
+          configuration.sharedRawDriveKey != null) {
         return RouteInformation(
-          location: '/drives/${path.driveId}?name=${path.driveName}'
-              '&$driveKeyQueryParamName=${path.sharedRawDriveKey}',
+          location:
+              '/drives/${configuration.driveId}?name=${configuration.driveName}'
+              '&$driveKeyQueryParamName=${configuration.sharedRawDriveKey}',
         );
       }
 
-      return path.driveFolderId == null
-          ? RouteInformation(location: '/drives/${path.driveId}')
+      return configuration.driveFolderId == null
+          ? RouteInformation(location: '/drives/${configuration.driveId}')
           : RouteInformation(
-              location: '/drives/${path.driveId}/folders/${path.driveFolderId}',
+              location:
+                  '/drives/${configuration.driveId}/folders/${configuration.driveFolderId}',
             );
-    } else if (path.sharedFileId != null) {
-      final sharedFilePath = '/file/${path.sharedFileId}/view';
+    } else if (configuration.sharedFileId != null) {
+      final sharedFilePath = '/file/${configuration.sharedFileId}/view';
 
-      if (path.sharedRawFileKey != null) {
+      if (configuration.sharedRawFileKey != null) {
         return RouteInformation(
           location:
-              '$sharedFilePath?$fileKeyQueryParamName=${path.sharedRawFileKey}',
+              '$sharedFilePath?$fileKeyQueryParamName=${configuration.sharedRawFileKey}',
         );
       } else {
         return RouteInformation(location: sharedFilePath);

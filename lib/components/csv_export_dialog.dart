@@ -41,19 +41,19 @@ class FileDownloadDialog extends StatelessWidget {
           if (state is DataExportSuccess) {
             final ArDriveIO io = ArDriveIO();
 
-            await io.saveFile(await IOFile.fromData(state.bytes,
+            final saveFile = io.saveFile(await IOFile.fromData(state.bytes,
                 name: state.fileName, lastModifiedDate: state.lastModified));
 
-            Navigator.pop(context);
+            saveFile.then((value) => Navigator.pop(context));
           }
         },
         builder: (context, state) {
           if (state is FileDownloadStarting) {
             return ArDriveStandardModal(
               title: appLocalizationsOf(context).downloadingCSV,
-              content: Column(
+              content: const Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Center(child: CircularProgressIndicator()),
                 ],
               ),

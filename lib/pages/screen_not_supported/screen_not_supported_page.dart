@@ -9,7 +9,7 @@ class ScreenNotSupportedPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
         child: DefaultTextStyle(
-          style: Theme.of(context).textTheme.bodyText2!,
+          style: Theme.of(context).textTheme.bodyMedium!,
           textAlign: TextAlign.center,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -25,7 +25,7 @@ class ScreenNotSupportedPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 Text(appLocalizationsOf(context).weReSorryEmphasized,
-                    style: Theme.of(context).textTheme.headline5),
+                    style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 16),
                 Text(appLocalizationsOf(context)
                     .ardriveIsOptimizedForLargeScreens),

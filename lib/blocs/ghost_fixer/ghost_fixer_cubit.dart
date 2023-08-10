@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
@@ -9,7 +8,6 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:reactive_forms/reactive_forms.dart';
 
 part 'ghost_fixer_state.dart';
 
@@ -173,25 +171,6 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
   Future<void> close() async {
     await _selectedFolderSubscription?.cancel();
     await super.close();
-  }
-
-  Future<Map<String, dynamic>?> _uniqueFolderName(
-      AbstractControl<dynamic> control) async {
-    final state = this.state as GhostFixerFolderLoadSuccess;
-
-    final String folderName = control.value;
-    final parentFolder = state.viewingFolder.folder;
-
-    // Check that the parent folder does not already have a folder with the input name.
-    final nameAlreadyExists = await entityNameExists(
-        name: folderName, parentFolderId: parentFolder.id);
-
-    if (nameAlreadyExists) {
-      control.markAsTouched();
-      return {AppValidationMessage.fsEntryNameAlreadyPresent: true};
-    }
-
-    return null;
   }
 
   @override

@@ -100,13 +100,11 @@ void main() {
   group('TurboUploadCostCalculator', () {
     late TurboCostCalculator turboCostCalculator;
     late TurboPriceEstimator priceEstimator;
-    late PstService pstService;
     late TurboUploadCostCalculator turboUploadCostCalculator;
 
     setUp(() {
       turboCostCalculator = MockTurboCostCalculator();
       priceEstimator = MockTurboPriceEstimator();
-      pstService = MockPstService();
       turboUploadCostCalculator = TurboUploadCostCalculator(
         turboCostCalculator: turboCostCalculator,
         priceEstimator: priceEstimator,

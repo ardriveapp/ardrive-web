@@ -33,6 +33,8 @@ void main() {
       biometricAuthentication = MockBiometricAuthentication();
 
       when(() => profileDao.loadDefaultProfile(rightPassword))
+          // TODO: check why we are not using the real profile here
+          // ignore: null_argument_to_non_null_type
           .thenAnswer((_) => Future.value());
       when(() => profileDao.loadDefaultProfile(wrongPassword))
           .thenThrow(ProfilePasswordIncorrectException());

@@ -14,13 +14,8 @@ void main() {
     buildNumber: buildNumber,
     buildSignature: buildSignature,
   );
-  late PackageInfo packageInfo;
 
   group('fakeApplicationTags method', () {
-    setUp(() async {
-      packageInfo = await PackageInfo.fromPlatform();
-    });
-
     test('contains the expected tags', () async {
       AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
 

@@ -138,7 +138,7 @@ DataRow _buildFolderRow({
           ? DataCell(
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  primary: LightColors.kOnLightSurfaceMediumEmphasis,
+                  backgroundColor: LightColors.kOnLightSurfaceMediumEmphasis,
                   textStyle: const TextStyle(
                       color: LightColors.kOnDarkSurfaceHighEmphasis),
                 ),

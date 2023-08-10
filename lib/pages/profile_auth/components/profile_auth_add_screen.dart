@@ -52,7 +52,8 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                       : appLocalizationsOf(context)
                                           .letsGetStartedEmphasized,
                                   textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.headline5,
+                                  style:
+                                      Theme.of(context).textTheme.headlineSmall,
                                 ),
                                 const SizedBox(height: 32),
                                 if (state.isExistingUser)
@@ -282,6 +283,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
                     setState(() {
                       _isEnabled = true;
                     });
+                    // ignore: use_build_context_synchronously
                     context.read<BiometricAuthentication>().enable();
                     widget.onEnableBiometric?.call();
                     return;

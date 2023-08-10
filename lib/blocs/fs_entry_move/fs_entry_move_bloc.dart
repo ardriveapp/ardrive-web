@@ -11,6 +11,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+// ignore: depend_on_referenced_packages
 import 'package:platform/platform.dart';
 
 part 'fs_entry_move_event.dart';

@@ -1,13 +1,11 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/blocs/sync/sync_cubit.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/theme_switcher.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/size_constants.dart';
@@ -348,9 +346,9 @@ class _AppSideBarState extends State<AppSideBar> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
+                    const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         ThemeSwitcher(),
                         SizedBox(
                           height: 8,
@@ -406,48 +404,6 @@ class _AppSideBarState extends State<AppSideBar> {
               ),
             ],
           );
-  }
-
-  Widget _buildSyncButton() {
-    return BlocBuilder<SyncCubit, SyncState>(
-      builder: (context, syncState) {
-        return PopupMenuButton(
-          color: kDarkSurfaceColor,
-          tooltip: appLocalizationsOf(context).resync,
-          onSelected: ((value) {
-            context
-                .read<SyncCubit>()
-                .startSync(syncDeep: value == SyncType.deep);
-          }),
-          itemBuilder: (context) {
-            return [
-              PopupMenuItem<SyncType>(
-                value: SyncType.normal,
-                child: Tooltip(
-                  message: appLocalizationsOf(context).resyncTooltip,
-                  child: ListTile(
-                    leading: const Icon(Icons.sync),
-                    title: Text(appLocalizationsOf(context).resync),
-                  ),
-                ),
-              ),
-              PopupMenuItem<SyncType>(
-                value: SyncType.deep,
-                child: Tooltip(
-                  message: appLocalizationsOf(context).deepResyncTooltip,
-                  child: ListTile(
-                    leading: const Icon(Icons.cloud_sync),
-                    title: Text(appLocalizationsOf(context).deepResync),
-                  ),
-                ),
-              ),
-            ];
-          },
-          icon: const Icon(Icons.sync),
-          position: PopupMenuPosition.under,
-        );
-      },
-    );
   }
 
   Widget _buildDriveActionsButton(
