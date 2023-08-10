@@ -63,11 +63,32 @@ class PinFileDialog extends StatelessWidget {
     return BlocConsumer<PinFileBloc, PinFileState>(
       listener: (context, state) {
         logger.d('PinFileBloc state: $state');
-        if (state is PinFileAbort ||
-            state is PinFileSuccess ||
-            state is PinFileError) {
-          // FIXME: give some feedback on error
+
+        if (state is PinFileAbort || state is PinFileSuccess) {
           Navigator.of(context).pop();
+        } else if (state is PinFileError) {
+          Navigator.of(context).pop();
+          // TODO: Localize
+          const errorText = 'Your pin failed to upload';
+          showAnimatedDialog(
+            context,
+            content: _errorDialog(
+              context,
+              errorText: errorText,
+            ),
+          );
+        } else if (state is PinFileFieldsValidationError) {
+          if (state.networkError) {
+            // TODO: Localize
+            const errorText = 'Failed to retrieve file information';
+            showAnimatedDialog(
+              context,
+              content: _errorDialog(
+                context,
+                errorText: errorText,
+              ),
+            );
+          }
         }
       },
       builder: (context, state) {
@@ -152,9 +173,13 @@ class PinFileDialog extends StatelessWidget {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
+                        padding: const EdgeInsets.all(8.0),
                         child: Text(
                           customErrorMessage,
+                          style:
+                              Theme.of(context).textTheme.labelLarge!.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
                         ),
                       ),
                     ),
@@ -179,4 +204,28 @@ class PinFileDialog extends StatelessWidget {
       },
     );
   }
+
+  ArDriveStandardModal _errorDialog(
+    BuildContext context, {
+    required String errorText,
+  }) =>
+      ArDriveStandardModal(
+        width: kMediumDialogWidth,
+        title: appLocalizationsOf(context).error,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            Text(errorText),
+            const SizedBox(height: 16),
+          ],
+        ),
+        actions: [
+          ModalAction(
+            action: () => Navigator.pop(context),
+            title: appLocalizationsOf(context).okEmphasized,
+          ),
+        ],
+      );
 }
