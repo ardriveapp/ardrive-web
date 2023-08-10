@@ -111,7 +111,7 @@ extension TransactionUtils on TransactionBase {
 
   /// Tags this transaction with the ArFS version currently in use.
   void addArFsTag() {
-    addTag(EntityTag.arFs, '0.12');
+    addTag(EntityTag.arFs, '0.13');
   }
 
   void addBundleTags() {
@@ -119,7 +119,7 @@ extension TransactionUtils on TransactionBase {
     addTag('Bundle-Version', '2.0.0');
   }
 
-void addUTags() {
+  void addUTags() {
     addTag(EntityTag.appName, 'SmartWeaveAction');
     addTag(EntityTag.appVersion, '0.3.0');
     addTag(EntityTag.input, '{"function":"mint"}');
