@@ -2282,7 +2282,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                    constraints: BoxConstraints(maxWidth: 508),
+                    constraints: const BoxConstraints(maxWidth: 508),
                     child: Text(
                       // TODO: create/update localization key
                       'Please carefully write down your seed phrase, in this order, and keep it somewhere safe.',
