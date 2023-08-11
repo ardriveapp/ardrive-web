@@ -454,29 +454,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).metadataTxID,
       ),
-      // DetailsPanelItem(
-      //   itemTitle: appLocalizationsOf(context).metadataTxID,
-      //   leading: Row(
-      //     mainAxisSize: MainAxisSize.min,
-      //     children: [
-      // ArDriveIconButton(
-      //   tooltip: appLocalizationsOf(context).viewOnViewBlock,
-      //   icon: ArDriveIcons.newWindow(size: 20),
-      //   onPressed: () {
-      //     openUrl(
-      //       url: 'https://viewblock.io/arweave/tx/${state.metadataTxId}',
-      //     );
-      //   },
-      // ),
-      //       DetailsPanelItem(
-      //         leading: CopyButton(
-      //           text: state.metadataTxId,
-      //         ),
-      //         itemTitle: appLocalizationsOf(context).metadataTxID,
-      //       ),
-      //     ],
-      //   ),
-      // ),
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Row(
