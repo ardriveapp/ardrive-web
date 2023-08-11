@@ -685,6 +685,14 @@
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
+  "failedToCreatePin": "Failed to create pin. Please try again later.",
+  "@failedToCreatePin": {
+    "description": "The pin could not be created"
+  },
+  "failedToRetrieveFileInfromation": "Failed to retrieve file information",
+  "@failedToRetrieveFileInfromation": {
+    "description": "Explains that there was an error while retrieving the file infromation"
+  },
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
@@ -1347,6 +1355,10 @@
   "personalDrivesEmphasized": "PERSONAL DRIVES",
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
+  },
+  "pinFailedToUpload": "Your pin failed to upload",
+  "@pinFailedToUpload": {
+    "description": "Explains that pin creation has failed"
   },
   "pleaseAcceptTheTermsToContinue": "Please accept the terms and conditions to continue.",
   "@pleaseAcceptTheTermsToContinue": {

@@ -67,25 +67,25 @@ class PinFileDialog extends StatelessWidget {
         if (state is PinFileAbort || state is PinFileSuccess) {
           Navigator.of(context).pop();
         } else if (state is PinFileError) {
-          // TODO: Localize
-          const errorText = 'Your pin failed to upload';
           showAnimatedDialog(
             context,
             content: _errorDialog(
               context,
-              errorText: errorText,
+              errorText: appLocalizationsOf(context).pinFailedToUpload,
               doublePop: true,
             ),
           );
         } else if (state is PinFileFieldsValidationError) {
           if (state.networkError) {
-            // TODO: Localize
-            const errorText = 'Failed to retrieve file information';
             showAnimatedDialog(
               context,
               content: _errorDialog(
                 context,
-                errorText: errorText,
+                errorText:
+                    appLocalizationsOf(context).failedToRetrieveFileInfromation,
+                // FIXME: We've decided to force the user start over again
+                /// In the future there's gonna be a retry button
+                doublePop: true,
               ),
             );
           }
@@ -216,7 +216,7 @@ class PinFileDialog extends StatelessWidget {
   }) =>
       ArDriveStandardModal(
         width: kMediumDialogWidth,
-        title: appLocalizationsOf(context).error,
+        title: appLocalizationsOf(context).failedToCreatePin,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
