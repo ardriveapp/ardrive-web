@@ -537,9 +537,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
     switch (action) {
       case RevisionAction.create:
         if (file.pinnedDataOwnerAddress != null) {
-          title = 'File pinned to the drive';
+          title = appLocalizationsOf(context).fileWasPinnedToTheDrive;
         } else {
-          title = 'File added to the drive';
+          title = appLocalizationsOf(context).fileWasCreatedWithName(file.name);
         }
         leading = _DownloadOrPreview(
           isSharedFile: widget.isSharePage,
