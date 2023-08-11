@@ -1,7 +1,5 @@
-import 'dart:convert';
-
 import 'package:ardrive/entities/entities.dart';
-import 'package:arweave/arweave.dart';
+import 'package:ardrive/utils/custom_metadata.dart';
 
 import './database/database.dart';
 
@@ -20,13 +18,9 @@ extension DriveExtensions on Drive {
           : DriveAuthMode.none,
     );
 
-    drive.customJsonMetadata =
-        customJsonMetadata != null ? jsonDecode(customJsonMetadata!) : null;
-    drive.customGqlTags = customGQLTags != null
-        ? (jsonDecode(customGQLTags!) as List<dynamic>)
-            .map((maybeTag) => Tag.fromJson(maybeTag))
-            .toList()
-        : null;
+    drive.customJsonMetadata = parseCustomJsonMetadata(customJsonMetadata);
+    drive.customGqlTags = parseCustomGqlTags(customGQLTags);
+
     return drive;
   }
 }

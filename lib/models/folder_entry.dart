@@ -1,7 +1,5 @@
-import 'dart:convert';
-
 import 'package:ardrive/entities/entities.dart';
-import 'package:arweave/arweave.dart';
+import 'package:ardrive/utils/custom_metadata.dart';
 
 import './database/database.dart';
 
@@ -13,13 +11,10 @@ extension FolderEntryExtensions on FolderEntry {
       parentFolderId: parentFolderId,
       name: name,
     );
-    folder.customJsonMetadata =
-        customJsonMetadata != null ? jsonDecode(customJsonMetadata!) : null;
-    folder.customGqlTags = customGQLTags != null
-        ? (jsonDecode(customGQLTags!) as List<dynamic>)
-            .map((maybeTag) => Tag.fromJson(maybeTag))
-            .toList()
-        : null;
+
+    folder.customJsonMetadata = parseCustomJsonMetadata(customJsonMetadata);
+    folder.customGqlTags = parseCustomGqlTags(customGQLTags);
+
     return folder;
   }
 }

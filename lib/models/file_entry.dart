@@ -1,7 +1,5 @@
-import 'dart:convert';
-
 import 'package:ardrive/entities/entities.dart';
-import 'package:arweave/arweave.dart';
+import 'package:ardrive/utils/custom_metadata.dart';
 
 import './database/database.dart';
 
@@ -18,13 +16,10 @@ extension FileEntryExtensions on FileEntry {
       dataContentType: dataContentType,
       pinnedDataOwnerAddress: pinnedDataOwnerAddress,
     );
-    file.customJsonMetadata =
-        customJsonMetadata != null ? jsonDecode(customJsonMetadata!) : null;
-    file.customGqlTags = customGQLTags != null
-        ? (jsonDecode(customGQLTags!) as List<dynamic>)
-            .map((maybeTag) => Tag.fromJson(maybeTag))
-            .toList()
-        : null;
+
+    file.customJsonMetadata = parseCustomJsonMetadata(customJsonMetadata);
+    file.customGqlTags = parseCustomGqlTags(customGQLTags);
+
     return file;
   }
 }
