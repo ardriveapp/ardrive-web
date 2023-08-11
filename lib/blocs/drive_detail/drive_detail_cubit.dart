@@ -115,14 +115,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
-          logger.d('Drive Explorer listener for the $drive');
-
           final state = this.state is DriveDetailLoadSuccess
               ? this.state as DriveDetailLoadSuccess
               : null;
-
-          logger.d(
-              'Folder contents changed. Updating state. $path $driveId $state');
 
           final profile = _profileCubit.state;
 
@@ -134,10 +129,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
           final rootFolderNode =
               await _driveDao.getFolderTree(driveId, drive.rootFolderId);
-
-          logger.d('Root folder node $rootFolderNode');
-
-          logger.d('Folder contents $folderContents');
 
           if (_selectedItem != null && _refreshSelectedItem) {
             if (_selectedItem is FileDataTableItem) {
@@ -214,9 +205,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             );
           }
         },
-      ).listen((_) {
-        logger.d('Folder contents updated');
-      });
+      ).listen((_) {});
     } catch (e) {
       logger.e('An error occured mouting the drive explorer', e);
     }
