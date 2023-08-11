@@ -3,13 +3,13 @@ import 'dart:ui';
 
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/authentication/components/biometric_toggle.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub implementation
     if (dart.library.html) 'package:ardrive/authentication/login/blocs/web_wallet.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
@@ -684,7 +684,6 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                   const SizedBox(height: 16),
                   BiometricToggle(
                     onEnableBiometric: () {
-                      /// Biometrics was enabled
                       context
                           .read<LoginBloc>()
                           .add(const UnLockWithBiometrics());
