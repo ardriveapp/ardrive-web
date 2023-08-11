@@ -131,6 +131,7 @@ class FileEntity extends EntityWithCustomMetadata {
     tx
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.file)
+      ..addTag('Custom-Tag', 'Custom-Value')
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.parentFolderId, parentFolderId!)
       ..addTag(EntityTag.fileId, id!);

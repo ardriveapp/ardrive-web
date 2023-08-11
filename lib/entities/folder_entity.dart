@@ -93,6 +93,7 @@ class FolderEntity extends EntityWithCustomMetadata {
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.folder)
       ..addTag(EntityTag.driveId, driveId!)
+      ..addTag('Custom-Tag', 'Custom-Value')
       ..addTag(EntityTag.folderId, id!);
 
     if (parentFolderId != null) {
