@@ -710,6 +710,10 @@
       }
     }
   },
+  "fileDoesExistButIsInvalid": "The file does exist but is invalid",
+  "@fileDoesExistButIsInvalid": {
+    "description": "Explains that the file does exist, but some of its properties make it invalid"
+  },
   "fileDownloadFailed": "File download failed",
   "@fileDownloadFailed": {
     "description": "Could not export the CSV data"
@@ -733,6 +737,10 @@
   "fileID": "File ID",
   "@fileID": {
     "description": "The Entity-ID tag of files"
+  },
+  "fileIsNotPublic": "The file is not public",
+  "@fileIsNotPublic": {
+    "description": "Warning explaining that the file is not public"
   },
   "fileName": "File name",
   "@fileName": {
@@ -812,6 +820,10 @@
   "fileWasMoved": "This file was moved.",
   "@fileWasMoved": {
     "description": "File activity (journal): moved"
+  },
+  "fileWasPinnedToTheDrive": "File pinned to the drive.",
+  "@fileWasPinnedToTheDrive": {
+    "description": "File activity (journal): was pinned"
   },
   "fileWasRenamed": "This file was renamed to {fileName}.",
   "@fileWasRenamed": {
