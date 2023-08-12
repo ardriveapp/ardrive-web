@@ -19,6 +19,8 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         lastModifiedDate: lastModifiedDate.value,
         dataContentType: dataContentType,
         bundledIn: bundledIn,
+        customGQLTags: customGQLTags,
+        customJsonMetadata: customJsonMetadata,
         pinnedDataOwnerAddress: pinnedDataOwnerAddress,
       );
 
@@ -52,6 +54,8 @@ extension FileEntityExtensions on FileEntity {
         dataContentType: Value(dataContentType),
         action: performedAction,
         bundledIn: Value(bundledIn),
+        customGQLTags: Value(customGqlTagsAsString),
+        customJsonMetadata: Value(customJsonMetadataAsString),
         pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
       );
 
@@ -71,6 +75,8 @@ extension FileEntityExtensions on FileEntity {
         dataContentType: dataContentType,
         action: performedAction,
         bundledIn: bundledIn,
+        customGQLTags: customGqlTagsAsString,
+        customJsonMetadata: customJsonMetadataAsString,
         pinnedDataOwnerAddress: pinnedDataOwnerAddress,
       );
 
