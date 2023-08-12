@@ -235,7 +235,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       children = _folderDetails(state);
     } else if (state is FsEntryInfoSuccess<FileEntry> ||
         widget.revisions != null) {
-      children = _fileDetails();
+      children = _fileDetails(state as FsEntryInfoSuccess);
     } else if (state is FsEntryInfoSuccess<Drive>) {
       children = _driveDetails(state);
     } else {
@@ -296,6 +296,28 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).driveID,
       ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArDriveIconButton(
+              tooltip: appLocalizationsOf(context).viewOnViewBlock,
+              icon: ArDriveIcons.newWindow(size: 20),
+              onPressed: () {
+                openUrl(
+                  url: 'https://viewblock.io/arweave/tx/${folder.metadataTxId}',
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            CopyButton(
+              text: folder.metadataTxId,
+            ),
+          ],
+        ),
+        itemTitle: appLocalizationsOf(context).metadataTxID,
+      ),
     ];
   }
 
@@ -344,16 +366,32 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArDriveIconButton(
+              tooltip: appLocalizationsOf(context).viewOnViewBlock,
+              icon: ArDriveIcons.newWindow(size: 20),
+              onPressed: () {
+                openUrl(
+                  url: 'https://viewblock.io/arweave/tx/${state.metadataTxId}',
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            CopyButton(
+              text: state.metadataTxId,
+            ),
+          ],
+        ),
+        itemTitle: appLocalizationsOf(context).metadataTxID,
+      ),
     ];
   }
 
-  List<Widget> _fileDetails() {
-    String? metadataTxId;
-
-    if (widget.item is FileDataTableItem) {
-      metadataTxId = (widget.item as FileDataTableItem).metadataTx?.id;
-    }
-
+  List<Widget> _fileDetails(FsEntryInfoSuccess state) {
     String? pinnedDataOwnerAddress =
         (widget.item as FileDataTableItem).pinnedDataOwnerAddress;
 
@@ -394,15 +432,28 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: 'File type',
       ),
-      if (metadataTxId != null) ...[
-        sizedBoxHeight16px,
-        DetailsPanelItem(
-          leading: CopyButton(
-            text: metadataTxId,
-          ),
-          itemTitle: appLocalizationsOf(context).metadataTxID,
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArDriveIconButton(
+              tooltip: appLocalizationsOf(context).viewOnViewBlock,
+              icon: ArDriveIcons.newWindow(size: 20),
+              onPressed: () {
+                openUrl(
+                  url: 'https://viewblock.io/arweave/tx/${state.metadataTxId}',
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            CopyButton(
+              text: state.metadataTxId,
+            ),
+          ],
         ),
-      ],
+        itemTitle: appLocalizationsOf(context).metadataTxID,
+      ),
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Row(
