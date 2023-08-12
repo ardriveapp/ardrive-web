@@ -18,6 +18,9 @@ CREATE TABLE file_revisions (
 
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
 
+    customJsonMetadata TEXT,
+    customGQLTags TEXT,
+
     [action] TEXT NOT NULL,
 
     pinnedDataOwnerAddress TEXT,

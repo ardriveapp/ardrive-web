@@ -16,7 +16,7 @@ DateTime? _msToDateTime(int? v) =>
 int _dateTimeToMs(DateTime? v) => v!.millisecondsSinceEpoch;
 
 @JsonSerializable()
-class FileEntity extends Entity {
+class FileEntity extends EntityWithCustomMetadata {
   @JsonKey(ignore: true)
   String? id;
   @JsonKey(ignore: true)
@@ -33,6 +33,24 @@ class FileEntity extends Entity {
   String? dataContentType;
 
   String? pinnedDataOwnerAddress;
+
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String> reservedGqlTags = [
+    ...EntityWithCustomMetadata.sharedReservedGqlTags,
+    EntityTag.fileId,
+    EntityTag.parentFolderId,
+  ];
+
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String> reservedJsonMetadataKeys = [
+    ...EntityWithCustomMetadata.sharedReservedJsonMetadataKeys,
+    'size',
+    'lastModifiedDate',
+    'dataTxId',
+    'dataContentType',
+  ];
 
   FileEntity({
     this.id,
@@ -76,7 +94,7 @@ class FileEntity extends Entity {
 
       final commitTime = transaction.getCommitTime();
 
-      return FileEntity.fromJson(entityJson!)
+      final file = FileEntity.fromJson(entityJson!)
         ..id = transaction.getTag(EntityTag.fileId)
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
@@ -85,6 +103,18 @@ class FileEntity extends Entity {
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
         ..createdAt = commitTime;
+
+      final tags = transaction.tags
+          .map(
+            (t) => Tag.fromJson(t.toJson()),
+          )
+          .toList();
+      file.customGqlTags = EntityWithCustomMetadata.getCustomGqlTags(
+        file,
+        tags,
+      );
+
+      return file;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
@@ -106,7 +136,18 @@ class FileEntity extends Entity {
       ..addTag(EntityTag.fileId, id!);
   }
 
-  factory FileEntity.fromJson(Map<String, dynamic> json) =>
-      _$FileEntityFromJson(json);
-  Map<String, dynamic> toJson() => _$FileEntityToJson(this);
+  factory FileEntity.fromJson(Map<String, dynamic> json) {
+    final entity = _$FileEntityFromJson(json);
+    entity.customJsonMetadata = EntityWithCustomMetadata.getCustomJsonMetadata(
+      entity,
+      json,
+    );
+    return entity;
+  }
+  Map<String, dynamic> toJson() {
+    final thisJson = _$FileEntityToJson(this);
+    final custom = customJsonMetadata ?? {};
+    final merged = {...thisJson, ...custom};
+    return merged;
+  }
 }
