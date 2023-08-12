@@ -459,6 +459,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       size: entity.size!,
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
       dataContentType: Value(entity.dataContentType),
+      pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
     );
 
     return into(fileEntries).insert(
