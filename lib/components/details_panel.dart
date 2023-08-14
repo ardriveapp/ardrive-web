@@ -522,16 +522,18 @@ class _DetailsPanelState extends State<DetailsPanel> {
             if (revision is FolderRevisionWithTransaction) {
               switch (revision.action) {
                 case RevisionAction.create:
-                  title = 'Folder added to the drive';
+                  title = appLocalizationsOf(context)
+                      .folderWasCreatedWithName(revision.name);
                   break;
                 case RevisionAction.rename:
-                  title = 'Folder renamed to ${revision.name}';
+                  title = appLocalizationsOf(context)
+                      .folderWasRenamed(revision.name);
                   break;
                 case RevisionAction.move:
-                  title = 'Folder moved';
+                  title = appLocalizationsOf(context).folderWasMoved;
                   break;
                 default:
-                  title = 'Folder was modified';
+                  title = appLocalizationsOf(context).folderWasModified;
               }
               subtitle = yMMdDateFormatter.format(revision.dateCreated);
 
@@ -547,16 +549,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
             } else if (revision is DriveRevisionWithTransaction) {
               switch (revision.action) {
                 case RevisionAction.create:
-                  title = 'Drive created';
+                  title = appLocalizationsOf(context)
+                      .driveWasCreatedWithName(revision.name);
                   break;
                 case RevisionAction.rename:
-                  title = 'Drive renamed to ${revision.name}';
-                  break;
-                case RevisionAction.move:
-                  title = 'Drive moved';
+                  title = appLocalizationsOf(context)
+                      .driveWasRenamed(revision.name);
                   break;
                 default:
-                  title = 'Drive was modified';
+                  title = appLocalizationsOf(context).driveWasModified;
               }
 
               subtitle = yMMdDateFormatter.format(revision.dateCreated);
@@ -587,9 +588,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
     switch (action) {
       case RevisionAction.create:
         if (file.pinnedDataOwnerAddress != null) {
-          title = 'File pinned to the drive';
+          title = appLocalizationsOf(context).fileWasPinnedToTheDrive;
         } else {
-          title = 'File added to the drive';
+          title = appLocalizationsOf(context).fileWasCreatedWithName(file.name);
         }
         leading = _DownloadOrPreview(
           isSharedFile: widget.isSharePage,
@@ -599,13 +600,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
         );
         break;
       case RevisionAction.rename:
-        title = 'File renamed to ${file.name}';
+        title = appLocalizationsOf(context).fileWasRenamed(file.name);
         break;
       case RevisionAction.move:
-        title = 'File was moved';
+        title = appLocalizationsOf(context).fileWasMoved;
         break;
       case RevisionAction.uploadNewVersion:
-        title = 'File was updated';
+        title = appLocalizationsOf(context).fileHadANewRevision;
         leading = leading = _DownloadOrPreview(
           isSharedFile: widget.isSharePage,
           privacy: widget.drivePrivacy,
