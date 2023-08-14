@@ -7,6 +7,7 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';

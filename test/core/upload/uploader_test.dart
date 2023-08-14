@@ -8,6 +8,7 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/size_utils.dart';

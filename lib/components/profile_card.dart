@@ -2,10 +2,10 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/truncated_address.dart';
-import 'package:ardrive/components/turbo_balance_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
@@ -240,26 +240,30 @@ class _ProfileCardState extends State<ProfileCard> {
   Widget _buildDownloadWalletRow(
     BuildContext context,
   ) {
-    return ArDriveClickArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: GestureDetector(
-          onTap: () {
-            _showProfileCard = false;
-            setState(() {});
-            showDownloadWalletModal(context);
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                appLocalizationsOf(context).downloadWalletKeyfile,
-                style: ArDriveTypography.body.captionRegular().copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              ArDriveIcons.download()
-            ],
+    return Padding(
+      padding: const EdgeInsets.only(left: 10.0, right: 15),
+      child: HoverWidget(
+        hoverScale: 1,
+        child: ArDriveClickArea(
+          child: GestureDetector(
+            onTap: () {
+              _showProfileCard = false;
+              setState(() {});
+              showDownloadWalletModal(context);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  appLocalizationsOf(context).downloadWalletKeyfile,
+                  style: ArDriveTypography.body.captionRegular().copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                ),
+                ArDriveIcons.arrowDownload(),
+              ],
+            ),
           ),
         ),
       ),

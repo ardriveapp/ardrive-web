@@ -12,14 +12,14 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return const SizedBox(
       height: 110,
       width: double.maxFinite,
       child: Padding(
-        padding: const EdgeInsets.only(right: 24.0),
+        padding: EdgeInsets.only(right: 24.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
-          children: const [
+          children: [
             SyncButton(),
             SizedBox(width: 24),
             ProfileCard(),

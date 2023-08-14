@@ -5,6 +5,7 @@ import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+// TODO: Add the new modal PE-4381
 class WalletSwitchDialog extends StatelessWidget {
   final bool fromAuthPage;
 

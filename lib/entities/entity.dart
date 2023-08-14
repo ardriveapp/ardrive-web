@@ -14,19 +14,19 @@ abstract class Entity {
   final ArDriveCrypto _crypto;
 
   /// The id of the transaction that represents this entity.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   late String txId;
 
   /// The address of the owner of this entity.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   late String ownerAddress;
 
   /// The bundle this entity is a part of.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? bundledIn;
 
   /// The time this entity was created at ie. its `Unix-Time`.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   DateTime createdAt = DateTime.now();
 
   Entity(this._crypto);

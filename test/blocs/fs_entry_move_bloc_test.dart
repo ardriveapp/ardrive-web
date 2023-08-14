@@ -3,6 +3,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -12,6 +13,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+// ignore: depend_on_referenced_packages
 import 'package:platform/platform.dart';
 import 'package:uuid/uuid.dart';
 
@@ -280,20 +282,8 @@ void main() {
       ),
       errors: () => [isA<Exception>()],
     );
-    late List<SelectedItem> selectedItems;
     blocTest(
       'successfully moves files into folders when there are no conflicts',
-      setUp: (() async {
-        final fileRevisions = await driveDao
-            .filesInFolderAtPathWithRevisionTransactions(
-              driveId: driveId,
-              path: '',
-            )
-            .get();
-        selectedItems = [
-          ...fileRevisions.map((f) => SelectedFile(file: f)),
-        ];
-      }),
       build: () => FsEntryMoveBloc(
         crypto: ArDriveCrypto(),
         arweave: arweave,

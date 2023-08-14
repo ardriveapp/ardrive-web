@@ -1,8 +1,8 @@
-import 'package:ardrive/blocs/turbo_balance/turbo_balance_cubit.dart';
 import 'package:ardrive/components/turbo_logo.dart';
 import 'package:ardrive/cookie_policy_consent/views/cookie_policy_consent_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/topup/blocs/turbo_balance/turbo_balance_cubit.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';

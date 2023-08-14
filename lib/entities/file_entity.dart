@@ -17,11 +17,11 @@ int _dateTimeToMs(DateTime? v) => v!.millisecondsSinceEpoch;
 
 @JsonSerializable()
 class FileEntity extends EntityWithCustomMetadata {
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? id;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? driveId;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? parentFolderId;
 
   String? name;

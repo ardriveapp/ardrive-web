@@ -206,9 +206,9 @@ class FileDownloadDialog extends StatelessWidget {
   ArDriveStandardModal _downloadStartingDialog(BuildContext context) {
     return _modalWrapper(
         title: appLocalizationsOf(context).downloadingFile,
-        child: Column(
+        child: const Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Center(child: CircularProgressIndicator()),
           ],
         ),

@@ -98,9 +98,6 @@ void main() {
         verify(() => myBrokenContractReader.readContract(pstTransactionId))
             .called(3);
 
-        // TODO: is there a way to use the same mock instead of instantiating a brand new one?
-        // the reset method would also un-do the mock calls
-
         verify(() => myContractReader.readContract(pstTransactionId)).called(1);
 
         expect(contract, isA<CommunityContractData>());
