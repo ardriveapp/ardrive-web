@@ -63,15 +63,40 @@ class PinFileDialog extends StatelessWidget {
     return BlocConsumer<PinFileBloc, PinFileState>(
       listener: (context, state) {
         logger.d('PinFileBloc state: $state');
-        if (state is PinFileAbort ||
-            state is PinFileSuccess ||
-            state is PinFileError) {
-          // FIXME: give some feedback on error
+
+        if (state is PinFileAbort || state is PinFileSuccess) {
           Navigator.of(context).pop();
+        } else if (state is PinFileError) {
+          showAnimatedDialog(
+            context,
+            content: _errorDialog(
+              context,
+              errorText: appLocalizationsOf(context).pinFailedToUpload,
+              doublePop: true,
+            ),
+          );
+        } else if (state is PinFileFieldsValidationError) {
+          if (state.networkError) {
+            showAnimatedDialog(
+              context,
+              content: _errorDialog(
+                context,
+                errorText:
+                    appLocalizationsOf(context).failedToRetrieveFileInfromation,
+                // FIXME: We've decided to force the user start over again
+                /// In the future there's gonna be a retry button
+                doublePop: true,
+              ),
+            );
+          }
         }
       },
       builder: (context, state) {
         String? customErrorMessage;
+
+        if (state is PinFileError) {
+          return const SizedBox();
+        }
 
         if (state is PinFileFieldsValidationError) {
           if (!state.doesDataTransactionExist) {
@@ -152,9 +177,15 @@ class PinFileDialog extends StatelessWidget {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
+                        padding: const EdgeInsets.all(8.0),
                         child: Text(
                           customErrorMessage,
+                          style: ArDriveTypography.body.smallRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeErrorDefault,
+                          ),
                         ),
                       ),
                     ),
@@ -179,4 +210,34 @@ class PinFileDialog extends StatelessWidget {
       },
     );
   }
+
+  ArDriveStandardModal _errorDialog(
+    BuildContext context, {
+    required String errorText,
+    bool doublePop = false,
+  }) =>
+      ArDriveStandardModal(
+        width: kMediumDialogWidth,
+        title: appLocalizationsOf(context).failedToCreatePin,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            Text(errorText),
+            const SizedBox(height: 16),
+          ],
+        ),
+        actions: [
+          ModalAction(
+            action: () {
+              Navigator.pop(context);
+              if (doublePop) {
+                Navigator.pop(context);
+              }
+            },
+            title: appLocalizationsOf(context).okEmphasized,
+          ),
+        ],
+      );
 }
