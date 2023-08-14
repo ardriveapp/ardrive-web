@@ -78,12 +78,17 @@ class NewButton extends StatelessWidget {
                         child: ListView(
                             controller: scrollController,
                             children: List.generate(items.length, (index) {
+                              final item = items[index];
+                              final isLastItem = index == items.length - 1;
                               return Column(
                                 children: [
                                   GestureDetector(
+                                    behavior: HitTestBehavior.translucent,
                                     onTap: () {
-                                      Navigator.pop(context);
-                                      items[index].onClick();
+                                      if (!item.isDisabled) {
+                                        Navigator.pop(context);
+                                        item.onClick();
+                                      }
                                     },
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -91,17 +96,15 @@ class NewButton extends StatelessWidget {
                                         horizontal: 16,
                                       ),
                                       child: ArDriveDropdownItemTile(
-                                        icon: items[index]
-                                            .icon
-                                            .copyWith(size: 24),
-                                        name: items[index].name,
-                                        isDisabled: items[index].isDisabled,
+                                        icon: item.icon.copyWith(size: 24),
+                                        name: item.name,
+                                        isDisabled: item.isDisabled,
                                         fontStyle: ArDriveTypography.body
                                             .buttonLargeBold(),
                                       ),
                                     ),
                                   ),
-                                  if (index != items.length - 1)
+                                  if (!isLastItem)
                                     const Padding(
                                       padding: EdgeInsets.symmetric(
                                           horizontal: 24.0),
