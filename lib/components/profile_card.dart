@@ -256,26 +256,30 @@ class _ProfileCardState extends State<ProfileCard> {
   Widget _buildDownloadWalletRow(
     BuildContext context,
   ) {
-    return ArDriveClickArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: GestureDetector(
-          onTap: () {
-            _showProfileCard = false;
-            setState(() {});
-            showDownloadWalletModal(context);
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                appLocalizationsOf(context).downloadWalletKeyfile,
-                style: ArDriveTypography.body.captionRegular().copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              ArDriveIcons.download()
-            ],
+    return Padding(
+      padding: const EdgeInsets.only(left: 10.0, right: 15),
+      child: HoverWidget(
+        hoverScale: 1,
+        child: ArDriveClickArea(
+          child: GestureDetector(
+            onTap: () {
+              _showProfileCard = false;
+              setState(() {});
+              showDownloadWalletModal(context);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  appLocalizationsOf(context).downloadWalletKeyfile,
+                  style: ArDriveTypography.body.captionRegular().copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                ),
+                ArDriveIcons.arrowDownload(),
+              ],
+            ),
           ),
         ),
       ),
