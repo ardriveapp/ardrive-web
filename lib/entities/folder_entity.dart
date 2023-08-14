@@ -61,13 +61,25 @@ class FolderEntity extends EntityWithCustomMetadata {
         );
       }
 
-      return FolderEntity.fromJson(entityJson!)
+      final folder = FolderEntity.fromJson(entityJson!)
         ..id = transaction.getTag(EntityTag.folderId)
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..createdAt = transaction.getCommitTime();
+
+      final tags = transaction.tags
+          .map(
+            (t) => Tag.fromJson(t.toJson()),
+          )
+          .toList();
+      folder.customGqlTags = EntityWithCustomMetadata.getCustomGqlTags(
+        folder,
+        tags,
+      );
+
+      return folder;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
