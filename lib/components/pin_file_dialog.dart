@@ -180,10 +180,12 @@ class PinFileDialog extends StatelessWidget {
                         padding: const EdgeInsets.all(8.0),
                         child: Text(
                           customErrorMessage,
-                          style:
-                              Theme.of(context).textTheme.labelLarge!.copyWith(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
+                          style: ArDriveTypography.body.smallRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeErrorDefault,
+                          ),
                         ),
                       ),
                     ),
