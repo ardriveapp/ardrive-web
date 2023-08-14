@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:ardrive/entities/entities.dart';
 import 'package:arweave/arweave.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -114,9 +111,9 @@ void main() {
     late DataItem folderDataItem;
     late DataItem driveDataItem;
 
-    late Uint8List fileData;
-    late Uint8List folderData;
-    late Uint8List driveData;
+    // late Uint8List fileData;
+    // late Uint8List folderData;
+    // late Uint8List driveData;
 
     setUp(() async {
       PackageInfo.setMockInitialValues(
@@ -156,9 +153,9 @@ void main() {
       folderDataItem.addTag('banana', 'manzana');
       driveDataItem.addTag('banana', 'manzana');
 
-      fileData = Uint8List.fromList(utf8.encode(jsonEncode(fakeFileJson)));
-      folderData = Uint8List.fromList(utf8.encode(jsonEncode(fakeFolderJson)));
-      driveData = Uint8List.fromList(utf8.encode(jsonEncode(fakeDriveJson)));
+      // fileData = Uint8List.fromList(utf8.encode(jsonEncode(fakeFileJson)));
+      // folderData = Uint8List.fromList(utf8.encode(jsonEncode(fakeFolderJson)));
+      // driveData = Uint8List.fromList(utf8.encode(jsonEncode(fakeDriveJson)));
     });
 
     // test('for FileEntity', () async {
