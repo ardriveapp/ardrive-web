@@ -32,6 +32,7 @@ class FileEntity extends EntityWithCustomMetadata {
   String? dataTxId;
   String? dataContentType;
 
+  @JsonKey(name: 'pinnedDataOwner')
   String? pinnedDataOwnerAddress;
 
   @override
