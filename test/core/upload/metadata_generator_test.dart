@@ -25,10 +25,18 @@ void main() {
     entityId: 'entityId',
   );
 
-  final metadataArgs = ARFSUploadMetadataArgs(
+  final metadataArgsPublic = ARFSUploadMetadataArgs(
     driveId: 'driveId',
     parentFolderId: 'parentFolderId',
     privacy: 'public',
+    isPrivate: false,
+  );
+
+  final metadataArgsPrivate = ARFSUploadMetadataArgs(
+    driveId: 'driveId',
+    parentFolderId: 'parentFolderId',
+    privacy: 'private',
+    isPrivate: true,
   );
 
   setUpAll(() {
@@ -60,7 +68,7 @@ void main() {
         expect(
           () async => await generator.generateMetadata(
             await mockFile(),
-            metadataArgs,
+            metadataArgsPublic,
           ),
           throwsException,
         );
@@ -79,7 +87,7 @@ void main() {
         expect(
           () async => await generator.generateMetadata(
             folder,
-            metadataArgs,
+            metadataArgsPublic,
           ),
           throwsException,
         );
@@ -93,6 +101,7 @@ void main() {
               driveId: null,
               parentFolderId: null,
               privacy: null,
+              isPrivate: false,
             ),
           ),
           throwsArgumentError,
@@ -105,13 +114,24 @@ void main() {
         when(() => mockARFSTagsGenetator.generateTags(any()))
             .thenReturn([Tag('tag', 'value')]);
 
-        final metadata = await generator.generateMetadata(file, metadataArgs);
+        final metadataPublic =
+            await generator.generateMetadata(file, metadataArgsPublic);
+        final metadataPrivate =
+            await generator.generateMetadata(file, metadataArgsPrivate);
 
-        expect(metadata, isA<ARFSFileUploadMetadata>());
-        expect(metadata.tags[0].name, 'tag');
-        expect(metadata.tags[0].value, 'value');
-        expect(metadata.name, file.name);
-        expect(metadata.id, isNotEmpty);
+        expect(metadataPublic, isA<ARFSFileUploadMetadata>());
+        expect(metadataPublic.tags[0].name, 'tag');
+        expect(metadataPublic.tags[0].value, 'value');
+        expect(metadataPublic.name, file.name);
+        expect(metadataPublic.id, isNotEmpty);
+        expect(metadataPublic.isPrivate, false);
+
+        expect(metadataPrivate, isA<ARFSFileUploadMetadata>());
+        expect(metadataPrivate.tags[0].name, 'tag');
+        expect(metadataPrivate.tags[0].value, 'value');
+        expect(metadataPrivate.name, file.name);
+        expect(metadataPrivate.id, isNotEmpty);
+        expect(metadataPrivate.isPrivate, true);
       });
 
       test('returns ARFSFolderUploadMetatadata when entity is IOFolder',
@@ -124,13 +144,24 @@ void main() {
         when(() => mockARFSTagsGenetator.generateTags(any()))
             .thenReturn([Tag('entity', 'folder')]);
 
-        final metadata = await generator.generateMetadata(folder, metadataArgs);
+        final metadataPublic =
+            await generator.generateMetadata(folder, metadataArgsPublic);
+        final metadataPrivate =
+            await generator.generateMetadata(folder, metadataArgsPrivate);
 
-        expect(metadata, isA<ARFSFolderUploadMetatadata>());
-        expect(metadata.tags[0].name, 'entity');
-        expect(metadata.tags[0].value, 'folder');
-        expect(metadata.name, folder.name);
-        expect(metadata.id, isNotEmpty);
+        expect(metadataPublic, isA<ARFSFolderUploadMetatadata>());
+        expect(metadataPublic.tags[0].name, 'entity');
+        expect(metadataPublic.tags[0].value, 'folder');
+        expect(metadataPublic.name, folder.name);
+        expect(metadataPublic.id, isNotEmpty);
+        expect(metadataPublic.isPrivate, false);
+
+        expect(metadataPrivate, isA<ARFSFolderUploadMetatadata>());
+        expect(metadataPrivate.tags[0].name, 'entity');
+        expect(metadataPrivate.tags[0].value, 'folder');
+        expect(metadataPrivate.name, folder.name);
+        expect(metadataPrivate.id, isNotEmpty);
+        expect(metadataPrivate.isPrivate, true);
       });
     });
     group('generateDrive', () {
@@ -139,16 +170,29 @@ void main() {
         when(() => mockARFSTagsGenetator.generateTags(any()))
             .thenReturn([Tag('entity', 'drive')]);
 
-        final drive = await generator.generateDrive(
+        final drivePublic = await generator.generateDrive(
           name: 'name',
           privacy: 'public',
         );
 
-        expect(drive, isA<ARFSDriveUploadMetadata>());
-        expect(drive.tags[0].name, 'entity');
-        expect(drive.tags[0].value, 'drive');
-        expect(drive.name, 'name');
-        expect(drive.id, isNotEmpty);
+        final drivePrivate = await generator.generateDrive(
+          name: 'name',
+          privacy: 'private',
+        );
+
+        expect(drivePublic, isA<ARFSDriveUploadMetadata>());
+        expect(drivePublic.tags[0].name, 'entity');
+        expect(drivePublic.tags[0].value, 'drive');
+        expect(drivePublic.name, 'name');
+        expect(drivePublic.id, isNotEmpty);
+        expect(drivePublic.isPrivate, false);
+
+        expect(drivePrivate, isA<ARFSDriveUploadMetadata>());
+        expect(drivePrivate.tags[0].name, 'entity');
+        expect(drivePrivate.tags[0].value, 'drive');
+        expect(drivePrivate.name, 'name');
+        expect(drivePrivate.id, isNotEmpty);
+        expect(drivePrivate.isPrivate, true);
       });
     });
   });

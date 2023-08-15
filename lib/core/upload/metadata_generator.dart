@@ -53,6 +53,7 @@ class ARFSUploadMetadataGenerator
       final file = entity;
 
       return ARFSFileUploadMetadata(
+        isPrivate: arguments.isPrivate,
         size: await file.length,
         lastModifiedDate: file.lastModifiedDate,
         dataContentType: file.contentType,
@@ -75,6 +76,7 @@ class ARFSUploadMetadataGenerator
       final folder = entity;
 
       return ARFSFolderUploadMetatadata(
+        isPrivate: arguments.isPrivate,
         driveId: arguments.driveId!,
         parentFolderId: arguments.parentFolderId,
         tags: _tagsGenerator.generateTags(
@@ -103,6 +105,7 @@ class ARFSUploadMetadataGenerator
     final id = const Uuid().v4();
 
     return ARFSDriveUploadMetadata(
+      isPrivate: privacy == DrivePrivacy.private,
       name: name,
       tags: _tagsGenerator.generateTags(
         ARFSTagsArgs(
@@ -119,8 +122,10 @@ class ARFSUploadMetadataArgs {
   final String? driveId;
   final String? parentFolderId;
   final String? privacy;
+  final bool isPrivate;
 
   ARFSUploadMetadataArgs({
+    required this.isPrivate,
     this.driveId,
     this.parentFolderId,
     this.privacy,

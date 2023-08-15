@@ -11,6 +11,7 @@ class ARFSDriveUploadMetadata extends ARFSUploadMetadata {
     required super.tags,
     required super.name,
     required super.id,
+    required super.isPrivate,
   });
 
   @override
@@ -28,6 +29,7 @@ class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
     required super.tags,
     required super.name,
     required super.id,
+    required super.isPrivate,
   });
 
   @override
@@ -51,6 +53,7 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
     required super.tags,
     required super.name,
     required super.id,
+    required super.isPrivate,
   });
 
   @override
@@ -61,11 +64,13 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
   final String name;
   final List<Tag> tags;
   final String id;
+  final bool isPrivate;
 
   ARFSUploadMetadata({
     required this.name,
     required this.tags,
     required this.id,
+    required this.isPrivate,
   });
 
   Map<String, dynamic> toJson();
