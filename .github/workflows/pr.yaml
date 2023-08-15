@@ -14,14 +14,13 @@ env:
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
 
 jobs:
-  pre-build:
-    uses: ./.github/workflows/test.yml
-
   pr-title-check:
-    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       - uses: ./.github/workflows/pr-title-check.yml
+
+  pre-build:
+    uses: ./.github/workflows/test.yml
 
   build-web:
     needs: pre-build
