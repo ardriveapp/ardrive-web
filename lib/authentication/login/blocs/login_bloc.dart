@@ -116,7 +116,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final wallet =
           Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
 
-      if (await _arDriveAuth.isExistingUser(wallet)) {
+      if (await _arDriveAuth.userHasPassword(wallet)) {
         emit(PromptPassword(walletFile: wallet));
       } else {
         emit(LoginOnBoarding(wallet));
@@ -228,7 +228,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       lastKnownWalletAddress = await wallet.getAddress();
 
-      if (await _arDriveAuth.isExistingUser(wallet)) {
+      if (await _arDriveAuth.userHasPassword(wallet)) {
         emit(PromptPassword(walletFile: wallet));
       } else {
         emit(LoginOnBoarding(wallet));
@@ -376,7 +376,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     profileType = ProfileType.json;
 
     try {
-      if (await _arDriveAuth.isExistingUser(wallet)) {
+      if (await _arDriveAuth.userHasPassword(wallet)) {
         emit(PromptPassword(walletFile: wallet));
       } else {
         emit(LoginOnBoarding(wallet));

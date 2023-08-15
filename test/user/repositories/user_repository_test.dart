@@ -1,5 +1,4 @@
 import 'package:ardrive/entities/profile_types.dart';
-import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';

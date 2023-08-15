@@ -14,34 +14,16 @@ env:
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
 
 jobs:
-  test:
+  pr-title-check:
     runs-on: ubuntu-latest
     steps:
-      # Checkout
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
+      - uses: ./.github/workflows/pr-title-check.yml
 
-      # Set Flutter version from fvm
-      - uses: kuhnroyal/flutter-fvm-config-action@v1
+  pre-build:
+    uses: ./.github/workflows/test.yml
 
-      # Install Flutter
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: ${{ env.FLUTTER_CHANNEL }}
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-
-      - name: Install script_runner
-        run: flutter pub global activate script_runner
-
-      - name: Build app
-        run: scr setup
-
-      - name: Test app
-        run: scr test
-
-  web:
-    needs: test
+  build-web:
+    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -65,7 +47,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --dart-define=environment=development --release --pwa-strategy none
+          flutter build web --dart-define=environment=development --release
 
       # JS files cache invalidation
       - name: main.dart.js and service worker cache invalidation
@@ -78,10 +60,12 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
-          expires: 14d
+          expires: 7d
 
-  ios:
-    needs: test
+  build-ios:
+    # skipped on PRs for now
+    if: false
+    needs: pre-build
     runs-on: macos-latest
     steps:
       # Checkout
@@ -129,8 +113,8 @@ jobs:
         working-directory: ./ios
         run: bundle exec fastlane update_release_url
 
-  android:
-    needs: test
+  build-android:
+    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout

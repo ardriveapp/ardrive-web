@@ -11,7 +11,7 @@ import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/app_config.dart';
-import 'package:ardrive/services/turbo/upload_service.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/filesize.dart';

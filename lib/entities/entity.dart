@@ -12,19 +12,19 @@ abstract class Entity {
   final ArDriveCrypto _crypto;
 
   /// The id of the transaction that represents this entity.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   late String txId;
 
   /// The address of the owner of this entity.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   late String ownerAddress;
 
   /// The bundle this entity is a part of.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? bundledIn;
 
   /// The time this entity was created at ie. its `Unix-Time`.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   DateTime createdAt = DateTime.now();
 
   Entity(this._crypto);
@@ -119,7 +119,7 @@ extension TransactionUtils on TransactionBase {
     addTag('Bundle-Version', '2.0.0');
   }
 
-void addUTags() {
+  void addUTags() {
     addTag(EntityTag.appName, 'SmartWeaveAction');
     addTag(EntityTag.appVersion, '0.3.0');
     addTag(EntityTag.input, '{"function":"mint"}');

@@ -1,20 +1,22 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+// TODO: move this to ardrive_ui
 class HoverWidget extends StatefulWidget {
   final Widget child;
   final double hoverScale;
-  final Color hoverColor;
-  final Color? backgroundColor;
+  final Color? hoverColor;
   final String? tooltip;
+  final EdgeInsets? padding;
 
   const HoverWidget({
     super.key,
     required this.child,
     this.hoverScale = 1.1,
-    this.hoverColor = Colors.transparent,
-    this.backgroundColor,
+    this.hoverColor,
     this.tooltip,
+    this.padding,
   });
 
   @override
@@ -29,10 +31,10 @@ class _HoverWidgetState extends State<HoverWidget> {
   Widget build(BuildContext context) {
     return Tooltip(
       message: widget.tooltip ?? '',
-      child: MouseRegion(
+      child: HoverDetector(
         cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _isHovering = true),
-        onExit: (_) => setState(() => _isHovering = false),
+        onHover: () => setState(() => _isHovering = true),
+        onExit: () => setState(() => _isHovering = false),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           transform: Matrix4.identity()
@@ -41,10 +43,10 @@ class _HoverWidgetState extends State<HoverWidget> {
             borderRadius: BorderRadius.circular(5.0),
           ),
           child: Container(
-            padding: const EdgeInsets.all(5.0),
+            padding: widget.padding ?? const EdgeInsets.all(5.0),
             decoration: BoxDecoration(
               color: _isHovering
-                  ? widget.backgroundColor ??
+                  ? widget.hoverColor ??
                       ArDriveTheme.of(context)
                           .themeData
                           .colors
@@ -56,6 +58,36 @@ class _HoverWidgetState extends State<HoverWidget> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class HoverDetector extends StatefulWidget {
+  const HoverDetector({
+    super.key,
+    required this.onHover,
+    required this.onExit,
+    required this.child,
+    this.cursor = SystemMouseCursors.click,
+  });
+
+  final Function() onHover;
+  final Function() onExit;
+  final Widget child;
+  final SystemMouseCursor cursor;
+
+  @override
+  State<HoverDetector> createState() => _HoverDetectorState();
+}
+
+class _HoverDetectorState extends State<HoverDetector> {
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: widget.cursor,
+      onEnter: (_) => widget.onHover(),
+      onExit: (_) => widget.onExit(),
+      child: widget.child,
     );
   }
 }

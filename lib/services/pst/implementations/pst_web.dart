@@ -2,10 +2,10 @@
 library pst;
 
 import 'dart:convert';
-import 'dart:js_util';
 
 import 'package:ardrive/types/transaction_id.dart';
 import 'package:js/js.dart';
+import 'package:universal_html/js_util.dart';
 
 @JS('readContractAsStringPromise')
 external Object _readContractAsStringPromise(String contractTxId);
