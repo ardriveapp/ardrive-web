@@ -17,6 +17,12 @@ jobs:
   pre-build:
     uses: ./.github/workflows/test.yml
 
+  pr-title-check:
+    needs: pre-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/workflows/pr-title-check.yml
+
   build-web:
     needs: pre-build
     runs-on: ubuntu-latest
