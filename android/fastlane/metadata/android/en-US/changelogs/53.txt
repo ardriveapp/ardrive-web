@@ -1,0 +1,6 @@
+- Now all the folders are uploaded first when uploading folders
+- Users now can download the keyfile from the profile card
+- Add Stripe privacy policy link to cookie modal
+- Adds the feedback survey button to the profile card
+- Updates the link for how key file login works
+- Adds scroll to the wallet creation page on mobile

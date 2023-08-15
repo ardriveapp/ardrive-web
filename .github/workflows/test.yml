@@ -2,11 +2,7 @@ on:
   workflow_call:
 
 jobs:
-  pr-title-check:
-    uses: ./.github/workflows/pr_title_check.yaml
-
   test-and-lint:
-    needs: pr-title-check
     runs-on: ubuntu-latest
     steps:
       # Checkout
