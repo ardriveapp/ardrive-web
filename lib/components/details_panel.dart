@@ -430,7 +430,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           widget.item.contentType,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
-        itemTitle: 'File type',
+        itemTitle: appLocalizationsOf(context).fileType,
       ),
       sizedBoxHeight16px,
       DetailsPanelItem(

@@ -811,6 +811,10 @@
   "@fileSystem": {
     "description": "Button label to select a file from file system"
   },
+  "fileType": "File type",
+  "@fileType": {
+    "description": "The MIME type of the file"
+  },
   "fileWasCreatedWithName": "This file was created with the name {fileName}.",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
