@@ -6,7 +6,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:uuid/uuid.dart';
 
-/// this class will get an `IOFile` and mounts the metadata for it
+/// this class will get an `IOFile` and generate the metadata for it
 ///
 /// `A` is the type of the arguments that will be passed to the generator
 ///
@@ -189,7 +189,6 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
     final appVersion = Tag(EntityTag.appVersion, appInfo.version);
     final appPlatform = Tag(EntityTag.appPlatform, appInfo.platform);
     final arfsTag = Tag(EntityTag.arFs, appInfo.arfsVersion);
-    final entityTag = Tag(EntityTag.entityType, _entity.name);
     final unixTime = Tag(
       EntityTag.unixTime,
       (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
@@ -199,7 +198,6 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
       appVersion,
       appPlatform,
       arfsTag,
-      entityTag,
       unixTime,
     ];
   }
