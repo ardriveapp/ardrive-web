@@ -1,4 +1,4 @@
-import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';

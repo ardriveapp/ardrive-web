@@ -296,8 +296,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ? folderById(driveId: driveId, folderId: folderId)
             : folderWithPath(driveId: driveId, path: folderPath!))
         .watchSingleOrNull();
-    final subfolderOrder =
-        enumToFolderOrderByClause(folderEntries, orderBy, orderingMode);
 
     final subfolderQuery = (folderId != null
         ? foldersInFolder(
@@ -322,9 +320,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               );
             },
           ));
-
-    final filesOrder =
-        enumToFileOrderByClause(fileEntries, orderBy, orderingMode);
 
     final filesQuery = folderId != null
         ? filesInFolderWithRevisionTransactions(

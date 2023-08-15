@@ -3,13 +3,13 @@ import 'dart:ui';
 
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/authentication/components/biometric_toggle.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub implementation
     if (dart.library.html) 'package:ardrive/authentication/login/blocs/web_wallet.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
@@ -372,9 +372,9 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                           size: 24, color: colors.themeFgDefault),
                       key: const Key('loginWithSeedPhraseButton'),
                       // TODO: create/update localization key
-                      text: "Enter Seed Phrase",
+                      text: 'Enter Seed Phrase',
                       onPressed: () {
-                        context.read<LoginBloc>().add(EnterSeedPhrase());
+                        context.read<LoginBloc>().add(const EnterSeedPhrase());
                       },
                       style: ArDriveButtonStyle.secondary,
                       fontStyle: ArDriveTypography.body.smallBold700(
@@ -389,8 +389,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     keepButtonVisible: true,
                     width: double.maxFinite,
                     // TODO: create/update localization key
-                    dragAndDropDescription: "Select a KeyFile",
-                    dragAndDropButtonTitle: "Select a KeyFile",
+                    dragAndDropDescription: 'Select a KeyFile',
+                    dragAndDropButtonTitle: 'Select a KeyFile',
                     errorDescription:
                         appLocalizationsOf(context).invalidKeyFile,
                     validateFile: (file) async {
@@ -442,7 +442,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                               'OR',
                               textAlign: TextAlign.center,
                               style: ArDriveTypography.body
-                                  .smallBold(color: Color(0xFF9E9E9E)),
+                                  .smallBold(color: const Color(0xFF9E9E9E)),
                             )),
                         Expanded(
                             child: Container(
@@ -495,7 +495,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   children: [
                     TextSpan(
                       // TODO: create/update localization key
-                      text: "New user? Get started here!",
+                      text: 'New user? Get started here!',
                       style: ArDriveTypography.body
                           .smallBold(
                               color: ArDriveTheme.of(context)
@@ -506,7 +506,9 @@ class _PromptWalletViewState extends State<PromptWalletView> {
 
                       recognizer: TapGestureRecognizer()
                         ..onTap = () {
-                          context.read<LoginBloc>().add(CreateNewWallet());
+                          context
+                              .read<LoginBloc>()
+                              .add(const CreateNewWallet());
                         },
                     ),
                   ],
@@ -682,7 +684,6 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                   const SizedBox(height: 16),
                   BiometricToggle(
                     onEnableBiometric: () {
-                      /// Biometrics was enabled
                       context
                           .read<LoginBloc>()
                           .add(const UnLockWithBiometrics());
@@ -1304,7 +1305,7 @@ const double _defaultLoginCardMaxWidth = 512;
 const double _defaultLoginCardMaxHeight = 489;
 
 class EnterSeedPhraseView extends StatefulWidget {
-  const EnterSeedPhraseView();
+  const EnterSeedPhraseView({super.key});
 
   // final Wallet wallet;
 
@@ -1333,9 +1334,9 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ScreenTypeLayout(
-                desktop: const SizedBox.shrink(),
-                mobile: ArDriveImage(
+              ScreenTypeLayout.builder(
+                desktop: (context) => const SizedBox.shrink(),
+                mobile: (context) => ArDriveImage(
                   image: AssetImage(Resources.images.brand.logo1),
                   height: 50,
                 ),
@@ -1373,7 +1374,7 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
               alignment: Alignment.topLeft,
               child: Text(
                 // TODO: create/update localization key
-                "Seed Phrase",
+                'Seed Phrase',
                 style:
                     ArDriveTypography.body.smallBold().copyWith(fontSize: 14),
               )),
@@ -1484,7 +1485,7 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
     // TODO: create/update localization key
     _message = 'Did you know?\n\n${_messages[0]}';
 
-    _periodicTimer = Timer.periodic(Duration(seconds: 7), (Timer t) {
+    _periodicTimer = Timer.periodic(const Duration(seconds: 7), (Timer t) {
       setState(() {
         _index = (_index + 1) % _messages.length;
         // TODO: create/update localization key
@@ -1600,9 +1601,9 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ScreenTypeLayout(
-                desktop: const SizedBox.shrink(),
-                mobile: ArDriveImage(
+              ScreenTypeLayout.builder(
+                desktop: (context) => const SizedBox.shrink(),
+                mobile: (context) => ArDriveImage(
                   image: AssetImage(Resources.images.brand.logo1),
                   height: 50,
                 ),
@@ -1867,9 +1868,9 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
         rows.add(SizedBox(height: vGap));
       }
       rows.add(Row(
-        children: rowItems,
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
+        children: rowItems,
       ));
     }
     return rows;
@@ -1910,7 +1911,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
               onPressed: back,
               child: Center(
                   // TODO: create/update localization key
-                  child: Text("Back",
+                  child: Text('Back',
                       style: ArDriveTypography.body
                           .smallBold700(color: colors.themeFgDefault))),
             )));
@@ -1945,43 +1946,41 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     final containerWidth = wideScreen ? 374.0 : screenSize.width - 40.0;
     final height = wideScreen ? 180.0 : null;
 
-    return Container(
-      child: Stack(
-        children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-                padding: const EdgeInsets.only(left: 35),
-                child: Text(
-                  cardInfo[0],
-                  style: ArDriveTypography.headline.headline5Regular(),
-                )),
-            const SizedBox(height: 16),
-            Container(
-              width: containerWidth,
-              height: height,
-              padding: const EdgeInsets.fromLTRB(30, 24, 30, 24),
-              decoration: BoxDecoration(
-                color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                cardInfo[1],
-                style: ArDriveTypography.body
-                    .bodyRegular()
-                    .copyWith(fontSize: 16, height: 1.4),
-              ),
-            )
-          ]),
+    return Stack(
+      children: [
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
-            margin: const EdgeInsets.fromLTRB(15, 5, 0, 0),
-            width: 5,
-            height: 20,
-            child: CustomPaint(
-              painter: AccentPainter(lineHeight: 83),
+              padding: const EdgeInsets.only(left: 35),
+              child: Text(
+                cardInfo[0],
+                style: ArDriveTypography.headline.headline5Regular(),
+              )),
+          const SizedBox(height: 16),
+          Container(
+            width: containerWidth,
+            height: height,
+            padding: const EdgeInsets.fromLTRB(30, 24, 30, 24),
+            decoration: BoxDecoration(
+              color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+              borderRadius: BorderRadius.circular(6),
             ),
+            child: Text(
+              cardInfo[1],
+              style: ArDriveTypography.body
+                  .bodyRegular()
+                  .copyWith(fontSize: 16, height: 1.4),
+            ),
+          )
+        ]),
+        Container(
+          margin: const EdgeInsets.fromLTRB(15, 5, 0, 0),
+          width: 5,
+          height: 20,
+          child: CustomPaint(
+            painter: AccentPainter(lineHeight: 83),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -2023,7 +2022,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     var colors = ArDriveTheme.of(context).themeData.colors;
     final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
 
-    return Container(
+    return SizedBox(
         width: width,
         height: 45,
         child: Row(
@@ -2099,23 +2098,22 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                           style: ArDriveTypography.body
                               .smallBold700(color: colors.themeFgDefault))),
                   if (wordOption.word.isNotEmpty)
-                    Container(
-                        child: IconButton.filled(
-                            onPressed: () {
-                              setState(() {
-                                _wordOptions.forEach((element) {
-                                  if (element.word == wordOption.word) {
-                                    element.index = -1;
-                                  }
-                                });
-                                wordOption.word = '';
-                              });
-                            },
-                            icon: Icon(
-                              Icons.highlight_off,
-                              size: 16,
-                              color: colors.themeFgDefault,
-                            ))),
+                    IconButton.filled(
+                        onPressed: () {
+                          setState(() {
+                            for (var element in _wordOptions) {
+                              if (element.word == wordOption.word) {
+                                element.index = -1;
+                              }
+                            }
+                            wordOption.word = '';
+                          });
+                        },
+                        icon: Icon(
+                          Icons.highlight_off,
+                          size: 16,
+                          color: colors.themeFgDefault,
+                        )),
                 ])
           ],
         ));
@@ -2132,7 +2130,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
         _wordsToCheck.indexWhere((e) => e.word.isEmpty);
 
     return selected
-        ? Container(
+        ? SizedBox(
             width: width,
             height: 45,
             child: Row(
@@ -2260,84 +2258,87 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
 
     return Scaffold(
       body: Center(
+        child: ArDriveScrollBar(
+          alwaysVisible: true,
           child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                  top: topBottomPadding, bottom: topBottomPadding),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    // TODO: create/update localization key
-                    'Write Down Seed Phrase',
-                    textAlign: TextAlign.center,
-                    style: ArDriveTypography.headline
-                        .headline4Regular(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault)
-                        .copyWith(fontSize: 32),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                      constraints: BoxConstraints(maxWidth: 508),
-                      child: Text(
-                        // TODO: create/update localization key
-                        'Please carefully write down your seed phrase, in this order, and keep it somewhere safe.',
-                        textAlign: TextAlign.center,
-                        style: ArDriveTypography.body.smallBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgSubtle),
-                      )),
-                  const SizedBox(height: 72),
-                  rows,
-                  const SizedBox(height: 72),
-                  ...createRows(
-                    items: [
-                      TextButton.icon(
-                        icon: _isBlurredSeedPhrase
-                            ? ArDriveIcons.eyeClosed(
-                                size: 24,
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgMuted)
-                            : ArDriveIcons.eyeOpen(
-                                size: 24,
+            padding: EdgeInsets.only(
+                top: topBottomPadding, bottom: topBottomPadding),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  // TODO: create/update localization key
+                  'Write Down Seed Phrase',
+                  textAlign: TextAlign.center,
+                  style: ArDriveTypography.headline
+                      .headline4Regular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault)
+                      .copyWith(fontSize: 32),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                    constraints: const BoxConstraints(maxWidth: 508),
+                    child: Text(
+                      // TODO: create/update localization key
+                      'Please carefully write down your seed phrase, in this order, and keep it somewhere safe.',
+                      textAlign: TextAlign.center,
+                      style: ArDriveTypography.body.smallBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgSubtle),
+                    )),
+                const SizedBox(height: 72),
+                rows,
+                const SizedBox(height: 72),
+                ...createRows(
+                  items: [
+                    TextButton.icon(
+                      icon: _isBlurredSeedPhrase
+                          ? ArDriveIcons.eyeClosed(
+                              size: 24,
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted)
+                          : ArDriveIcons.eyeOpen(
+                              size: 24,
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted),
+                      label: SizedBox(
+                          width: 92,
+                          child: Text(
+                            // TODO: create/update localization keys
+                            _isBlurredSeedPhrase ? 'Show Words' : 'Hide Words',
+                            style: ArDriveTypography.body.smallBold(
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
                                     .themeFgMuted),
-                        label: Container(
-                            width: 92,
-                            child: Text(
-                              // TODO: create/update localization keys
-                              _isBlurredSeedPhrase
-                                  ? 'Show Words'
-                                  : 'Hide Words',
-                              style: ArDriveTypography.body.smallBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgMuted),
-                            )),
-                        onPressed: () {
-                          setState(() {
-                            _isBlurredSeedPhrase = !_isBlurredSeedPhrase;
-                          });
-                        },
-                      ),
-                      LoginCopyButton(text: widget.mnemonic),
-                    ],
-                    rowCount: rowCount == 3 ? 2 : 1,
-                    hGap: 16,
-                    vGap: 16,
-                  ),
-                ],
-              ))),
+                          )),
+                      onPressed: () {
+                        setState(() {
+                          _isBlurredSeedPhrase = !_isBlurredSeedPhrase;
+                        });
+                      },
+                    ),
+                    LoginCopyButton(text: widget.mnemonic),
+                  ],
+                  rowCount: rowCount == 3 ? 2 : 1,
+                  hGap: 16,
+                  vGap: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       bottomNavigationBar: IntrinsicHeight(
           child: Row(children: [
         _backButton(),
@@ -2479,7 +2480,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                        constraints: BoxConstraints(maxWidth: 420),
+                        constraints: const BoxConstraints(maxWidth: 420),
                         child: Text(
                           // TODO: create/update localization key
                           'Learn some important information about your wallet while we begin generating it.',

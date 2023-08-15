@@ -7,6 +7,7 @@ void main() {
     Widget defaultFactory(String text) => Text(text);
     Widget anchorFactory(String text) => TextButton(
           child: Text(text),
+          // ignore: avoid_print
           onPressed: () => print('PRESS'),
         );
 

@@ -9,7 +9,7 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -37,10 +37,8 @@ class UploadCubit extends Cubit<UploadState> {
   final TurboUploadService _turbo;
   final PstService _pst;
   final UploadFileChecker _uploadFileChecker;
-  final TurboBalanceRetriever _turboBalanceRetriever;
   final ArDriveAuth _auth;
   final ArDriveUploadPreparationManager _arDriveUploadManager;
-  final TabVisibilitySingleton _tabVisibility;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -97,10 +95,8 @@ class UploadCubit extends Cubit<UploadState> {
     required TurboUploadService turbo,
     required PstService pst,
     required UploadFileChecker uploadFileChecker,
-    required TurboBalanceRetriever turboBalanceRetriever,
     required ArDriveAuth auth,
     required ArDriveUploadPreparationManager arDriveUploadManager,
-    required TabVisibilitySingleton tabVisibility,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
         _uploadFileChecker = uploadFileChecker,
@@ -108,10 +104,8 @@ class UploadCubit extends Cubit<UploadState> {
         _arweave = arweave,
         _turbo = turbo,
         _pst = pst,
-        _turboBalanceRetriever = turboBalanceRetriever,
         _auth = auth,
         _arDriveUploadManager = arDriveUploadManager,
-        _tabVisibility = tabVisibility,
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation({

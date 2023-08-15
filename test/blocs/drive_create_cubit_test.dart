@@ -5,6 +5,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';

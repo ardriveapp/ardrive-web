@@ -3,7 +3,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/services/config/config_service.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';

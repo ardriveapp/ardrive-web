@@ -78,10 +78,10 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
       color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
       height: 240,
       child: _isLoading
-          ? Center(
+          ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
+                children: [
                   CircularProgressIndicator(),
                   Padding(
                     padding: EdgeInsets.only(top: 16.0),
@@ -100,6 +100,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                       setState(() {
                         _isLoading = true;
                       });
+
                       try {
                         final content = await widget.pickFromCamera();
 
@@ -115,6 +116,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                         _isLoading = false;
                       });
 
+                      // ignore: use_build_context_synchronously
                       Navigator.pop(context);
                     },
                     title: Text(

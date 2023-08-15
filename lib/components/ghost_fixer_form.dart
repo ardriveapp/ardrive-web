@@ -4,6 +4,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -26,7 +27,7 @@ Future<void> promptToReCreateFolder(BuildContext context,
             turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             syncCubit: context.read<SyncCubit>()),
-        child: GhostFixerForm(),
+        child: const GhostFixerForm(),
       ),
     );
   } else {
@@ -36,7 +37,7 @@ Future<void> promptToReCreateFolder(BuildContext context,
 }
 
 class GhostFixerForm extends StatefulWidget {
-  GhostFixerForm({Key? key}) : super(key: key);
+  const GhostFixerForm({Key? key}) : super(key: key);
 
   @override
   State<GhostFixerForm> createState() => _GhostFixerFormState();

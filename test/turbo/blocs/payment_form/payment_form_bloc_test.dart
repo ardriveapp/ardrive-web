@@ -103,7 +103,7 @@ void main() {
                 .add(const Duration(days: 1))
                 .difference(DateTime.now())
                 .inSeconds,
-            ['Country A', 'Country B'],
+            const ['Country A', 'Country B'],
           ),
         ],
       );
