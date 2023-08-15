@@ -148,6 +148,8 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
     arfs.EntityType entity,
     ARFSTagsArgs arguments,
   ) {
+    ARFSTagsValidator.validate(arguments, entity);
+
     List<Tag> tags = [];
 
     final driveId = Tag(EntityTag.driveId, arguments.driveId!);
@@ -238,6 +240,37 @@ class ARFSUploadMetadataArgsValidator {
 
       default:
         throw ArgumentError('Invalid EntityType');
+    }
+  }
+}
+
+class ARFSTagsValidator {
+  static void validate(ARFSTagsArgs args, arfs.EntityType entity) {
+    if (args.driveId == null) {
+      throw ArgumentError('driveId must not be null');
+    }
+
+    switch (entity) {
+      case arfs.EntityType.file:
+        if (args.entityId == null) {
+          throw ArgumentError('entityId must not be null');
+        }
+        if (args.parentFolderId == null) {
+          throw ArgumentError('parentFolderId must not be null');
+        }
+
+        break;
+      case arfs.EntityType.folder:
+        if (args.entityId == null) {
+          throw ArgumentError('entityId must not be null');
+        }
+
+        break;
+      case arfs.EntityType.drive:
+        if (args.privacy == null) {
+          throw ArgumentError('privacy must not be null');
+        }
+        break;
     }
   }
 }
