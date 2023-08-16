@@ -19,8 +19,8 @@ class PinFileInitial extends PinFileState {
       : super(
           id: '',
           name: '',
-          idValidation: IdValidationResult.required,
-          nameValidation: NameValidationResult.required,
+          idValidation: IdValidationResult.initial,
+          nameValidation: NameValidationResult.initial,
         );
 
   @override

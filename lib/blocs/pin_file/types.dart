@@ -1,6 +1,7 @@
 part of 'pin_file_bloc.dart';
 
 enum NameValidationResult {
+  initial,
   required,
   invalid,
   conflicting,
@@ -8,6 +9,7 @@ enum NameValidationResult {
 }
 
 enum IdValidationResult {
+  initial,
   required,
   invalid,
   validEntityId,

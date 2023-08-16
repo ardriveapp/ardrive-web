@@ -93,33 +93,12 @@ class PinFileDialog extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        String? customErrorMessage;
-
         if (state is PinFileError) {
           return const SizedBox();
         }
 
-        if (state is PinFileFieldsValidationError) {
-          if (!state.doesDataTransactionExist) {
-            customErrorMessage =
-                appLocalizationsOf(context).theIdProvidedDoesntExist;
-          }
-          // TODO: refactor the arweave method to let it distinguish between
-          /// these other cases
-          else if (!state.isArFsEntityValid) {
-            customErrorMessage =
-                appLocalizationsOf(context).fileDoesExistButIsInvalid;
-          } else if (!state.isArFsEntityPublic) {
-            customErrorMessage = appLocalizationsOf(context).fileIsNotPublic;
-          }
-        }
-
-        if (customErrorMessage == null) {
-          if (state.nameValidation == NameValidationResult.conflicting) {
-            customErrorMessage =
-                appLocalizationsOf(context).conflictingNameFound;
-          }
-        }
+        final idValidationError = _getIdValidationError(context, state);
+        final nameValidationError = _getNameValidationError(context, state);
 
         return ArDriveStandardModal(
           title: appLocalizationsOf(context).newFilePin,
@@ -132,65 +111,27 @@ class PinFileDialog extends StatelessWidget {
                   isEnabled: state is! PinFileNetworkCheckRunning,
                   label: appLocalizationsOf(context).enterTxIdOrFileId,
                   isFieldRequired: true,
+                  errorMessage: idValidationError,
+                  showErrorMessage: idValidationError != null,
                   onChanged: (value) {
                     pinFileBloc.add(
                       FieldsChanged(id: value, name: state.name),
                     );
-                  },
-                  validator: (p0) {
-                    if (p0 != null) {
-                      final validation = pinFileBloc.validateId(p0);
-                      if (validation == IdValidationResult.invalid) {
-                        return appLocalizationsOf(context)
-                            .theIdProvidedIsNotValid;
-                      } else if (validation == IdValidationResult.required) {
-                        return appLocalizationsOf(context).validationRequired;
-                      }
-                    }
-                    return null;
                   },
                 ),
                 ArDriveTextField(
                   isEnabled: true,
                   label: appLocalizationsOf(context).enterFileName,
                   isFieldRequired: true,
+                  errorMessage: nameValidationError,
+                  showErrorMessage: nameValidationError != null,
                   onChanged: (value) {
                     pinFileBloc.add(
                       FieldsChanged(id: state.id, name: value),
                     );
                   },
-                  validator: (p0) {
-                    if (p0 != null) {
-                      final validation = pinFileBloc.validateName(p0);
-                      if (validation == NameValidationResult.invalid) {
-                        return appLocalizationsOf(context).validationInvalid;
-                      } else if (validation == NameValidationResult.required) {
-                        return appLocalizationsOf(context).validationRequired;
-                      }
-                    }
-                    return null;
-                  },
                   controller: pinFileBloc.nameTextController,
                 ),
-                if (customErrorMessage != null)
-                  SizedBox(
-                    width: kMediumDialogWidth,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          customErrorMessage,
-                          style: ArDriveTypography.body.smallRegular(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeErrorDefault,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
               ],
             ),
           ),
@@ -210,6 +151,50 @@ class PinFileDialog extends StatelessWidget {
         );
       },
     );
+  }
+
+  String? _getIdValidationError(BuildContext context, PinFileState state) {
+    // if (state is PinFileInitial) {
+    //   return null;
+    // }
+
+    if (state.idValidation == IdValidationResult.invalid) {
+      return appLocalizationsOf(context).theIdProvidedIsNotValid;
+    } else if (state.idValidation == IdValidationResult.required) {
+      return appLocalizationsOf(context).validationRequired;
+    }
+
+    if (state is PinFileFieldsValidationError) {
+      if (state.networkError) {
+        return appLocalizationsOf(context).failedToRetrieveFileInfromation;
+      } else if (!state.doesDataTransactionExist) {
+        return appLocalizationsOf(context).theIdProvidedDoesntExist;
+      }
+      // TODO: refactor the arweave method to let it distinguish between
+      /// these other cases
+      else if (!state.isArFsEntityValid) {
+        return appLocalizationsOf(context).fileDoesExistButIsInvalid;
+      } else if (!state.isArFsEntityPublic) {
+        return appLocalizationsOf(context).fileIsNotPublic;
+      }
+    }
+
+    return null;
+  }
+
+  String? _getNameValidationError(BuildContext context, PinFileState state) {
+    // if (state is PinFileInitial) {
+    //   return null;
+    // }
+
+    if (state.nameValidation == NameValidationResult.invalid) {
+      return appLocalizationsOf(context).validationInvalid;
+    } else if (state.nameValidation == NameValidationResult.required) {
+      return appLocalizationsOf(context).validationRequired;
+    } else if (state.nameValidation == NameValidationResult.conflicting) {
+      return appLocalizationsOf(context).conflictingNameFound;
+    }
+    return null;
   }
 
   ArDriveStandardModal _errorDialog(
