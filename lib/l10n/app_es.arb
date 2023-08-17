@@ -1,5 +1,11 @@
 {
   "@@locale": "es",
+  "accept": "Aceptar",
+  "@accept": {},
+  "addButtonTurbo": "Añadir",
+  "@addButtonTurbo": {
+    "description": "text for add button"
+  },
   "addnewManifestEmphasized": "AÑADIR NUEVO MANIFIESTO",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
@@ -32,6 +38,10 @@
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
+  "amount": "Cantidad",
+  "@amount": {},
+  "anErrorOccuredWhileDownloadingYourKeyfile": "Se ha producido un error al descargar el archivo de claves de su monedero. Inténtalo de nuevo.",
+  "@anErrorOccuredWhileDownloadingYourKeyfile": {},
   "anyFilesWillOutliveYou": "¡Los archivos que cargues aquí existirán para siempre!",
   "@anyFilesWillOutliveYou": {
     "description": "Files on the Weave will exist there forever"
@@ -57,6 +67,10 @@
         "example": "0.0.0"
       }
     }
+  },
+  "arBalance": "Saldo",
+  "@arBalance": {
+    "description": "Balance in AR"
   },
   "arConnectRemainOnThisTab": "PRECAUCIÓN: Tu monedero WEB3 está firmando las transacciones. Por favor, mantente en esta pestaña hasta completar el proceso.",
   "@arConnectRemainOnThisTab": {
@@ -148,6 +162,8 @@
   "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
   },
+  "buyCredits": "Comprar créditos",
+  "@buyCredits": {},
   "camera": "Cámara",
   "@camera": {
     "description": "Button label to select a file from camera"
@@ -224,6 +240,12 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
+  "cookieConsent": "Consentimiento de «cookies»",
+  "@cookieConsent": {},
+  "cookieConsentBodyPart1": "Nuestro proveedor de servicios de pago, Stripe, utiliza «cookies» para que los usuarios puedan comprar créditos. Estas «cookies» son necesarias para la compra créditos.",
+  "@cookieConsentBodyPart1": {},
+  "cookieConsentBodyPart2": "Al hacer clic en «Aceptar», consientes el uso de las «cookies».",
+  "@cookieConsentBodyPart2": {},
   "copyBundleTxID": "Copiar la ID de la transacción del empaquetado",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
@@ -278,6 +300,12 @@
       }
     }
   },
+  "costUpload": "Coste",
+  "@costUpload": {
+    "description": "Cost"
+  },
+  "country": "País",
+  "@country": {},
   "create": "Crear",
   "@create": {
     "description": "Create an drive"
@@ -310,6 +338,10 @@
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
+  "createNewFilePin": "Crear un nuevo archivo PIN",
+  "@createNewFilePin": {
+    "description": "E.g.: I want to \"Create a New File Pin\""
+  },
   "createNewSnapshot": "Crear nueva instantánea",
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
@@ -336,6 +368,20 @@
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
   },
+  "creditCard": "Tarjeta de crédito",
+  "@creditCard": {},
+  "credits": "Créditos",
+  "@credits": {},
+  "creditsTurbo": "Créditos ",
+  "@creditsTurbo": {
+    "description": "suffix for turbo balance"
+  },
+  "creditsWillBeAutomaticallyAddedToYourTurboBalance": "Los créditos se añadirán de forma automática a tu saldo de Turbo y puedes empezar a utilizarlos de inmediato.",
+  "@creditsWillBeAutomaticallyAddedToYourTurboBalance": {},
+  "currency": "Moneda",
+  "@currency": {},
+  "customAmount": "Cantidad personalizada",
+  "@customAmount": {},
   "darkModeEmphasized": "MODO OSCURO",
   "@darkModeEmphasized": {
     "description": "Refers to the dark theme of the app. Emphasized with upper case"
@@ -415,6 +461,14 @@
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
+  "dontHaveAWallet1Part": "¿No tienes un monedero? Hazte uno",
+  "@dontHaveAWallet1Part": {
+    "description": "text to open the url to get a wallet"
+  },
+  "dontHaveAWallet2Part": "¡Aquí!",
+  "@dontHaveAWallet2Part": {
+    "description": "used like so: Get one Here!"
+  },
   "download": "Descargar",
   "@download": {
     "description": "Action of downloading a file"
@@ -431,6 +485,8 @@
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
+  "downloadWalletKeyfile": "Descargar archivo de claves del monedero",
+  "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Explorar Json",
   "@dragAndDropButtonTitle": {
     "description": "text of title drag and drop"
@@ -439,6 +495,8 @@
   "@dragAndDropDescription": {
     "description": "text of description drag and drop"
   },
+  "driveDoingInitialSetupMessage": "Tu disco está realizando la configuración inicial. Puede tardar unos minutos. Espera antes de realizar cualquier acción.",
+  "@driveDoingInitialSetupMessage": {},
   "driveID": "ID de la unidad",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -549,13 +607,23 @@
   "@enableStorageAccessTitle": {
     "description": "enable camera access"
   },
+  "enter": "Introducir",
+  "@enter": {},
   "enterFileKey": "Introduce la clave del archivo",
   "@enterFileKey": {
     "description": "File Key form field label"
   },
+  "enterFileName": "Introducir nombre del archivo",
+  "@enterFileName": {
+    "description": "To type the name of the file"
+  },
   "enterPassword": "Introduce la contraseña",
   "@enterPassword": {
     "description": "Please enter password"
+  },
+  "enterTxIdOrFileId": "Introducir ident. de transacción o ident. de archivo",
+  "@enterTxIdOrFileId": {
+    "description": "Indicates that you must enter a Transaction ID or a File ID"
   },
   "entityAlreadyExists": "¡La entidad con el nombre: \"{entityName}\" ya existe en el destino! Por favor, renombra el archivo o carpeta que estás moviendo e inténtalo nuevamente.",
   "@entityAlreadyExists": {
@@ -575,6 +643,14 @@
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
   },
+  "errorFetchingBalance": "Error al obtener el saldo",
+  "@errorFetchingBalance": {
+    "description": "Error fetching balance"
+  },
+  "errorFetchingQuote": "Error al obtener el nuevo presupuesto. Inténtalo de nuevo.",
+  "@errorFetchingQuote": {},
+  "estimatedStorage": "Almacenamiento estimado",
+  "@estimatedStorage": {},
   "expandSideBar": "Expandir la barra lateral",
   "@expandSideBar": {
     "description": "Expand side bar tooltip"
@@ -621,6 +697,8 @@
   "@feedbackTitle": {
     "description": "We thank the user"
   },
+  "fetchingNewQuote": "Obteniendo nuevo presupuesto...",
+  "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{ningún archivo} one{1 archivo} other{{fileCount} archivos}}",
   "@fileCount": {
     "description": "Plurals for the file count. First character in lower case",
@@ -877,6 +955,12 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
+  "howAreConversionsDetermined": "¿Cómo se calculan las conversiones?",
+  "@howAreConversionsDetermined": {},
+  "howDoesKeyfileLoginWork": "¿Cómo funcionan el archivo de claves y la frase de recuperación de inicio de sesión?",
+  "@howDoesKeyfileLoginWork": {
+    "description": "Title for explaining keyfile login"
+  },
   "infernoIsInFullSwing": "¡El programa de recompensas Inferno está en pleno apogeo! ¡Haz clic aquí para ver las reglas de participación!",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
@@ -979,6 +1063,8 @@
   "@itemPreviewEmphasized": {
     "description": "Item preview"
   },
+  "keepMeUpToDateOnNewsAndPromotions": "Mantenme al día de las novedades y promociones.",
+  "@keepMeUpToDateOnNewsAndPromotions": {},
   "lastModified": "Última modificación",
   "@lastModified": {
     "description": "Last modified date of the file in the local disk"
@@ -1000,6 +1086,8 @@
   "@learnMore": {
     "description": "Link to a document explaining manifests in detail"
   },
+  "leaveAnEmailToReceiveAReceipt": "Para recibir un recibo, indica una dirección de correo electrónico.",
+  "@leaveAnEmailToReceiveAReceipt": {},
   "leaveFeedback": "Dejar comentarios",
   "@leaveFeedback": {
     "description": "The action of leaving feedback"
@@ -1104,6 +1192,12 @@
   "@nameConflict": {
     "description": "A conflict of names between two entities"
   },
+  "nameOnCard": "Nombre en la tarjeta",
+  "@nameOnCard": {},
+  "networkUnreachable": "No podemos conectarnos a la red. Inténtalo de nuevo más tarde.",
+  "@networkUnreachable": {
+    "description": "Indicates that there were some issues while connecting to the internet"
+  },
   "neverDeletedEmphasized": "NUNCA SE BORRARÁ",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
@@ -1111,6 +1205,10 @@
   "newDrive": "Nueva unidad",
   "@newDrive": {
     "description": "Create a new drive entity"
+  },
+  "newFilePin": "Nuevo archivo PIN",
+  "@newFilePin": {
+    "description": "E.g.: I want to create a \"New File Pin\""
   },
   "newFolder": "Nueva carpeta",
   "@newFolder": {
@@ -1220,6 +1318,12 @@
   "@passwordMismatch": {
     "description": "Error message for when the confirmation password doesn't match the actual pass"
   },
+  "pay": "Pagar",
+  "@pay": {},
+  "paymentDetails": "Detalles del pago",
+  "@paymentDetails": {},
+  "paymentSuccessful": "Pago realizado con éxito",
+  "@paymentSuccessful": {},
   "payPerFileEmphasized": "PAGA SOLO POR LO QUE SUBAS",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
@@ -1236,6 +1340,10 @@
   "@pleaseAcceptTheTermsToContinue": {
     "description": "terms and conditions cta"
   },
+  "pleaseEnterAValidEmail": "Introduce una dirección de correo electrónico válida",
+  "@pleaseEnterAValidEmail": {},
+  "pleaseEnterYourPassword": "Introduce tu contraseña",
+  "@pleaseEnterYourPassword": {},
   "pleaseProvideSamePassword": "Por favor, ingresa la misma contraseña que utilizaste anteriormente.",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
@@ -1304,6 +1412,8 @@
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
+  "quoteUpdatesIn": "Actualizaciones de presupuesto en",
+  "@quoteUpdatesIn": {},
   "recreateFolderEmphasized": "RECREAR CARPETA",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
@@ -1311,6 +1421,12 @@
   "recreatingFolderEmphasized": "RECREANDO CARPETA...",
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
+  },
+  "refresh": "Refrescar",
+  "@refresh": {},
+  "refreshTurboBalanceTooltip": "Refrescar saldo",
+  "@refreshTurboBalanceTooltip": {
+    "description": "Tooltip on the icon to refresh the balance"
   },
   "rename": "Renombrar",
   "@rename": {
@@ -1360,6 +1476,8 @@
   "@resyncTooltip": {
     "description": "resync tooltip text"
   },
+  "review": "Revisar",
+  "@review": {},
   "rootFolderTxID": "Tx ID de la carpeta raíz",
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
@@ -1371,6 +1489,10 @@
   "secondsFromForeverEmphasized": "A SEGUNDOS DE LA ETERNIDAD",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"
+  },
+  "securityWalletOverlay": "Tu archivo de claves está encriptado, nunca sale de tu dispositivo y puede ser eliminado del mismo en cualquier momento.",
+  "@securityWalletOverlay": {
+    "description": "The text on the security overlay text on login"
   },
   "selectWalletEmphasized": "SELECCIONAR MONEDERO",
   "@selectWalletEmphasized": {
@@ -1520,10 +1642,22 @@
   "@termsAndConditions": {
     "description": "terms and conditions"
   },
+  "theIdProvidedDoesntExist": "El ident. proporcionado no existe",
+  "@theIdProvidedDoesntExist": {
+    "description": "Indicates that the valid ID you provided doesn't exist"
+  },
+  "theIdProvidedIsNotValid": "El ident. proporcionado no es válido",
+  "@theIdProvidedIsNotValid": {
+    "description": "Indicates that the ID you typed doesn't follow the ID pattern"
+  },
+  "theresBeenAProblem": "Ha habido un problema.",
+  "@theresBeenAProblem": {},
   "thinkTwiceBeforeUploading": "Piénsalo dos veces antes de cargar toda tu poesía de adolescente...",
   "@thinkTwiceBeforeUploading": {
     "description": "Uploaded items cannot be deleted"
   },
+  "thisIsAOneTimePaymentPoweredByStripe": "Este es un pago único, gestionado por Stripe.",
+  "@thisIsAOneTimePaymentPoweredByStripe": {},
   "thisMayTakeAWhile": "Ésto puede tomar un momento...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
@@ -1532,10 +1666,14 @@
   "@tooLargeForUpload": {
     "description": "Files too large for upload"
   },
+  "total": "Total",
+  "@total": {},
   "totalPrivacyControlEmphasized": "CONTROL TOTAL DE TU PRIVACIDAD",
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
+  "tryAgain": "Intentar de nuevo",
+  "@tryAgain": {},
   "tryAgainDownloadingFile": "Ésto puede suceder si el archivo fue cargado recientemente. Por favor, inténtalo nuevamente luego.",
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
@@ -1552,6 +1690,30 @@
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
+  "turboAddCreditsBlurb": "Añade créditos con tu tarjeta para que las cargas sean más rápidas.",
+  "@turboAddCreditsBlurb": {
+    "description": "text placeholder for turbo balance when no user"
+  },
+  "turboErrorMessageEstimationInformationFailed": "Error al cargar la información. Inténtalo de nuevo.",
+  "@turboErrorMessageEstimationInformationFailed": {},
+  "turboErrorMessageFetchPaymentIntentFailed": "El procesador de pagos no está disponible. Inténtalo de nuevo más tarde.",
+  "@turboErrorMessageFetchPaymentIntentFailed": {},
+  "turboErrorMessageNetwork": "No nos podemos conectar a Internet. Comprueba la conexión e inténtalo de nuevo.",
+  "@turboErrorMessageNetwork": {},
+  "turboErrorMessageServer": "No se ha podido realizar el pago. Comprueba la información de su tarjeta e inténtalo de nuevo.",
+  "@turboErrorMessageServer": {},
+  "turboErrorMessageSessionExpired": "Tu sesión en Turbo ha caducado. Inténtalo de nuevo.",
+  "@turboErrorMessageSessionExpired": {},
+  "turboErrorMessageUnknown": "No se ha podido realizar el pago. Comprueba la información de su tarjeta e inténtalo de nuevo.",
+  "@turboErrorMessageUnknown": {},
+  "unableToFetchEstimateAtThisTime": "No se puede obtener la estimación en este momento.",
+  "@unableToFetchEstimateAtThisTime": {},
+  "unableToUpdateQuote": "No se ha podido actualizar el presupuesto. Inténtalo de nuevo.",
+  "@unableToUpdateQuote": {},
+  "unit": "Unidad",
+  "@unit": {},
+  "units": "Unidades",
+  "@units": {},
   "unlock": "Desbloquear",
   "@unlock": {
     "description": "Unlock a file or drive."
@@ -1567,6 +1729,10 @@
   "uploadDragAndDrop": "Cargar archivo",
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
+  },
+  "uploadedBy": "Cargado por",
+  "@uploadedBy": {
+    "description": "Refers to the one that uploaded the data of a pinned file"
   },
   "uploadEmphasized": "CARGAR",
   "@uploadEmphasized": {
@@ -1766,6 +1932,8 @@
   "@weWontRemindYouDescription": {
     "description": "We let the user know where to find the 'Leave Feedback' button"
   },
+  "whatIsAKeyFile": "¿Qué es un archivo de claves y cómo funciona?",
+  "@whatIsAKeyFile": {},
   "whatIsArDrive": "¿Qué es ArDrive?",
   "@whatIsArDrive": {
     "description": "What is ArDrive? link on shared file page"
@@ -1774,6 +1942,10 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
+  "yourCreditsWillBeAddedToYourAccount": "Los créditos se añadirán pronto a tu cuenta. Puedes cerrar la ventana.",
+  "@yourCreditsWillBeAddedToYourAccount": {},
+  "yourPasswordCannotBeCahngedOrRetrivied": "La contraseña no se puede guardar ni recuperar, por lo que te rogamos que la guardes en un lugar seguro.",
+  "@yourPasswordCannotBeCahngedOrRetrivied": {},
   "yourPrivateSecureAndPermanentDrive": "Tu disco duro privado, seguro y permanente.",
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
@@ -1782,6 +1954,8 @@
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
+  "yourUploadFailedTurboTimeout": "Ha fallado esta carga. No se te cobrará por este intento.",
+  "@yourUploadFailedTurboTimeout": {},
   "zippingYourFiles": "Comprimiendo tu archivo(s)...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
