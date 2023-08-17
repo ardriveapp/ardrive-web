@@ -14,11 +14,6 @@ env:
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
 
 jobs:
-  pr-title-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: ./.github/workflows/pr_title_check.yaml
-
   pre-build:
     uses: ./.github/workflows/test.yml
 
