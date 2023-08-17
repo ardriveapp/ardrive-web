@@ -619,7 +619,6 @@ class TimerWidget extends StatefulWidget {
   final bool humanReadable;
   final bool humanReadableWithPadding;
   final bool boldTimer;
-  // final Widget Function(BuildContext context, int secondsLeft)? builder;
 
   const TimerWidget({
     super.key,
@@ -631,7 +630,6 @@ class TimerWidget extends StatefulWidget {
     required this.humanReadable,
     this.humanReadableWithPadding = false,
     this.boldTimer = false,
-    // this.builder,
   });
 
   @override
@@ -943,18 +941,6 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
 
                 return Row(
                   children: [
-                    // Padding(
-                    //   padding: const EdgeInsets.only(left: 8.0),
-                    //   child: Text(
-                    //     appLocalizationsOf(context).quoteUpdatesIn,
-                    //     style: ArDriveTypography.body.captionBold(
-                    //       color: ArDriveTheme.of(context)
-                    //           .themeData
-                    //           .colors
-                    //           .themeFgDefault,
-                    //     ),
-                    //   ),
-                    // ),
                     TimerWidget(
                       humanReadable: true,
                       humanReadableWithPadding: true,
@@ -1085,15 +1071,6 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Text(
-                    //   appLocalizationsOf(context).quoteUpdatesIn,
-                    //   style: ArDriveTypography.body.captionBold(
-                    //     color: ArDriveTheme.of(context)
-                    //         .themeData
-                    //         .colors
-                    //         .themeFgDefault,
-                    //   ),
-                    // ),
                     TimerWidget(
                       humanReadable: true,
                       key: state is PaymentFormQuoteLoaded
