@@ -266,13 +266,13 @@ void main() {
           const PinFileNetworkCheckRunning(
             id: validFileId_1,
             name: '',
-            nameValidation: NameValidationResult.required,
+            nameValidation: NameValidationResult.initial,
             idValidation: IdValidationResult.validEntityId,
           ),
           PinFileFieldsValid(
             id: validFileId_1,
             name: validName,
-            nameValidation: NameValidationResult.invalid,
+            nameValidation: NameValidationResult.initial,
             idValidation: IdValidationResult.validEntityId,
             privacy: DrivePrivacy.public,
             dataContentType: 'application/json',
