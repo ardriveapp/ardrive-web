@@ -17,7 +17,7 @@ jobs:
   pr-title-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/workflows/pr-title-check.yml
+      - uses: ./.github/workflows/pr-title-check.yaml
 
   pre-build:
     uses: ./.github/workflows/test.yml
