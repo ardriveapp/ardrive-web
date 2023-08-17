@@ -14,7 +14,6 @@ void main() {
     const knownFileId = 'ffffffff-0000-0000-0000-ffffffffffff';
     const unknownFileId = 'aaaaaaaa-0000-0000-0000-ffffffffffff';
 
-    //TODO Create and inject mock artemis client
     AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
 
     final arweave = MockArweaveService();
@@ -25,6 +24,7 @@ void main() {
           'DRIVE_ID',
           minBlockHeight: captureAny(named: 'minBlockHeight'),
           maxBlockHeight: captureAny(named: 'maxBlockHeight'),
+          ownerAddress: any(named: 'ownerAddress'),
         ),
       ).thenAnswer(
         (invocation) => fakeNodesStream(
@@ -41,8 +41,9 @@ void main() {
             )
             .map((event) => [event]),
       );
-      // when(() => arweave.getAllTransactionsFromDrive('DRIVE_ID'));
-
+      when(() => arweave.getOwnerForDriveEntityWithId(any())).thenAnswer(
+        (invocation) => Future.value('owner'),
+      );
       when(() => arweave.getAllFileEntitiesWithId(any())).thenAnswer(
         (invocation) => Future.value(),
       );
@@ -53,15 +54,23 @@ void main() {
 
     group('getAllTransactionsFromDrive method', () {
       test('calls getAllTransactionsFromDrive once', () async {
-        arweave.getAllTransactionsFromDrive('DRIVE_ID', lastBlockHeight: 10);
-        verify(() => arweave.getSegmentedTransactionsFromDrive('DRIVE_ID'))
-            .called(1);
+        arweave.getAllTransactionsFromDrive(
+          'DRIVE_ID',
+          lastBlockHeight: 10,
+          ownerAddress: '',
+        );
+        verify(
+          () => arweave.getSegmentedTransactionsFromDrive(
+            'DRIVE_ID',
+            ownerAddress: '',
+          ),
+        ).called(1);
       },
           skip:
               'Cannot stub a single method to verify that the actual method gets called once');
     });
 
-    group('getAllFileEntittiesWithId method', () {
+    group('getAllFileEntitiesWithId method', () {
       test('returns all the file entities for a known file id', () async {
         final fileEntities =
             await arweave.getAllFileEntitiesWithId(knownFileId);

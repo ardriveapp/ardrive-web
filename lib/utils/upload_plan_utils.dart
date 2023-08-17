@@ -1,8 +1,12 @@
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart'
     show getDirname, lookupMimeTypeWithDefaultType;
 import 'package:arweave/arweave.dart';
@@ -12,11 +16,15 @@ import 'package:uuid/uuid.dart';
 class UploadPlanUtils {
   UploadPlanUtils({
     required this.arweave,
+    required this.turboUploadService,
     required this.driveDao,
+    required this.crypto,
   });
 
   final ArweaveService arweave;
+  final TurboUploadService turboUploadService;
   final DriveDao driveDao;
+  final ArDriveCrypto crypto;
   final _uuid = const Uuid();
 
   Future<UploadPlan> filesToUploadPlan({
@@ -27,7 +35,15 @@ class UploadPlanUtils {
     required Drive targetDrive,
     required FolderEntry targetFolder,
     Map<String, WebFolder> foldersByPath = const {},
+    bool useTurbo = false,
   }) async {
+    logger.i(
+      'Creating upload plan for ${files.length} files\n'
+      'Target drive: ${targetDrive.name}\n'
+      'Target folder: ${targetFolder.path}\n'
+      'Use turbo: $useTurbo',
+    );
+
     final fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
     final fileV2UploadHandles = <String, FileV2UploadHandle>{};
     final folderDataItemUploadHandles = <String, FolderDataItemUploadHandle>{};
@@ -53,10 +69,19 @@ class UploadPlanUtils {
       );
 
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
-      fileEntity.id = conflictingFiles[file.getIdentifier()] ?? _uuid.v4();
+      if (conflictingFiles[file.getIdentifier()] != null) {
+        logger.i(
+            'File ${file.getIdentifier()} already exists in target folder. Reusing id.');
+        fileEntity.id = conflictingFiles[file.getIdentifier()];
+      } else {
+        logger.i(
+            'File ${file.getIdentifier()} does not exist in target folder. Creating new id.');
+        fileEntity.id = _uuid.v4();
+      }
 
-      final fileKey =
-          private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
+      final fileKey = private
+          ? await crypto.deriveFileKey(driveKey!, fileEntity.id!)
+          : null;
 
       final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
           ? RevisionAction.uploadNewVersion
@@ -72,6 +97,7 @@ class UploadPlanUtils {
           arweave: arweave,
           wallet: wallet,
           revisionAction: revisionAction,
+          crypto: crypto,
         );
       } else {
         fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
@@ -81,6 +107,7 @@ class UploadPlanUtils {
           driveKey: driveKey,
           fileKey: fileKey,
           revisionAction: revisionAction,
+          crypto: crypto,
         );
       }
     }
@@ -101,6 +128,9 @@ class UploadPlanUtils {
       fileV2UploadHandles: fileV2UploadHandles,
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
+      turboUploadService: turboUploadService,
+      maxDataItemCount:
+          useTurbo ? maxFilesSizePerBundleUsingTurbo : maxFilesPerBundle,
     );
   }
 

@@ -8,59 +8,12 @@ import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../test_utils/mocks.dart';
 import 'snapshot_test_helpers.dart';
 
 void main() {
   group('SnapshotItem class', () {
-    group('fromStream factory', () {
-      test('getStreamForIndex returns a valid stream of nodes', () async {
-        final r = Range(start: 0, end: 10);
-
-        SnapshotItem item = SnapshotItem.fromStream(
-          blockStart: r.start,
-          blockEnd: r.end,
-          driveId: 'DRIVE_ID',
-          subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
-          source: fakeNodesStream(r),
-        );
-        expect(item.subRanges.rangeSegments.length, 1);
-        expect(item.currentIndex, -1);
-        Stream stream = item.getNextStream();
-        expect(item.currentIndex, 0);
-        expect(await countStreamItems(stream), 11);
-        expect(
-          () => item.getNextStream(),
-          throwsA(isA<SubRangeIndexOverflow>()),
-        );
-
-        item = SnapshotItem.fromStream(
-          blockStart: r.start,
-          blockEnd: r.end,
-          driveId: 'DRIVE_ID',
-          subRanges: HeightRange(
-            rangeSegments: [
-              Range(start: 0, end: 4),
-              Range(start: 6, end: 10),
-            ],
-          ),
-          source: fakeNodesStream(r),
-        );
-        expect(item.subRanges.rangeSegments.length, 2);
-        expect(item.currentIndex, -1);
-        stream = item.getNextStream();
-        expect(item.currentIndex, 0);
-        expect(await countStreamItems(stream), 5);
-        stream = item.getNextStream();
-        expect(item.currentIndex, 1);
-        expect(await countStreamItems(stream), 5);
-
-        expect(
-          () => item.getNextStream(),
-          throwsA(isA<SubRangeIndexOverflow>()),
-        );
-      });
-    });
-
+    final ArweaveService arweave = MockArweaveService();
     group('fromGQLNode factory', () {
       test('getStreamForIndex returns a valid stream of nodes', () async {
         final r = Range(start: 0, end: 10);
@@ -85,6 +38,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
+          arweave: arweave,
           fakeSource: await fakeSnapshotSource(r),
         );
         expect(item.subRanges.rangeSegments.length, 1);
@@ -125,6 +79,7 @@ void main() {
             () => SnapshotItem.instantiateSingle(
                   snapshotTxWithBadRange,
                   obscuredBy: HeightRange(rangeSegments: []),
+                  arweave: arweave,
                 ),
             throwsA(isA<BadRange>()));
       });
@@ -160,6 +115,7 @@ void main() {
         SnapshotItem item = SnapshotItem.instantiateSingle(
           snapshotTx,
           obscuredBy: obscuredBy,
+          arweave: arweave,
           fakeSource: snapshotItemSource,
         );
 
@@ -208,6 +164,7 @@ void main() {
           SnapshotItem item = SnapshotItem.instantiateSingle(
             snapshotTx,
             obscuredBy: obscuredBy,
+            arweave: arweave,
             fakeSource: snapshotItemSource,
           );
 
@@ -254,6 +211,7 @@ void main() {
 
           List<SnapshotItem> allItems = await SnapshotItem.instantiateAll(
             Stream.fromIterable([snapshotTx, snapshotTx, snapshotTx]),
+            arweave: arweave,
             fakeSource: snapshotItemSource,
           ).toList();
 
@@ -315,6 +273,7 @@ void main() {
           List<SnapshotItem> allItems = await SnapshotItem.instantiateAll(
             Stream.fromIterable([snapshotTx, snapshotTx]),
             lastBlockHeight: 100,
+            arweave: arweave,
             fakeSource: snapshotItemSource,
           ).toList();
 
@@ -359,6 +318,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
+          arweave: arweave,
           fakeSource: await fakeSnapshotSource(r),
         ) as SnapshotItemOnChain;
 
@@ -375,9 +335,10 @@ void main() {
           );
           // further calls to the method results in a null response
           expect(
-              await SnapshotItemOnChain.getDataForTxId(
-                  'asdasdasdasd', '$height'),
-              null);
+            await SnapshotItemOnChain.getDataForTxId(
+                'asdasdasdasd', 'tx-$height'),
+            null,
+          );
         }
       });
 
@@ -404,6 +365,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
+          arweave: arweave,
           fakeSource: await fakeSnapshotSource(r),
         ) as SnapshotItemOnChain;
 

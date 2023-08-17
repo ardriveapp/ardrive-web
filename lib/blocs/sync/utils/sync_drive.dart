@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_logger.i
+
 part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 
 const fetchPhaseWeight = 0.1;
@@ -7,12 +9,15 @@ Stream<double> _syncDrive(
   String driveId, {
   required DriveDao driveDao,
   required ProfileState profileState,
-  required ArweaveService arweaveService,
+  required ArweaveService arweave,
   required Database database,
   required Function addError,
   required int currentBlockHeight,
   required int lastBlockHeight,
   required int transactionParseBatchSize,
+  required Map<FolderID, GhostFolder> ghostFolders,
+  required String ownerAddress,
+  required ConfigService configService,
 }) async* {
   /// Variables to count the current drive's progress information
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
@@ -39,13 +44,23 @@ Stream<double> _syncDrive(
 
   final transactions = <DriveHistoryTransaction>[];
 
-  final snapshotsStream = arweaveService.getAllSnapshotsOfDrive(
-    driveId,
-    lastBlockHeight,
-  );
-  final List<SnapshotItem> snapshotItems = await SnapshotItem.instantiateAll(
-    snapshotsStream,
-  ).toList();
+  List<SnapshotItem> snapshotItems = [];
+
+  if (configService.config.enableSyncFromSnapshot) {
+    logger.e('Syncing from snapshot');
+
+    final snapshotsStream = arweave.getAllSnapshotsOfDrive(
+      driveId,
+      lastBlockHeight,
+      ownerAddress: ownerAddress,
+    );
+
+    snapshotItems = await SnapshotItem.instantiateAll(
+      snapshotsStream,
+      arweave: arweave,
+    ).toList();
+  }
+
   final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
     items: snapshotItems,
   );
@@ -63,16 +78,21 @@ Stream<double> _syncDrive(
     totalRangeToQueryFor,
     snapshotDriveHistory.subRanges,
   );
+
   final GQLDriveHistory gqlDriveHistory = GQLDriveHistory(
     subRanges: gqlDriveHistorySubRanges,
     arweave: arweave,
     driveId: driveId,
+    ownerAddress: ownerAddress,
   );
 
-  print('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');
-  print(
-      'Sub ranges in snapshots: ${snapshotDriveHistory.subRanges.rangeSegments}');
-  print('Sub ranges in GQL: ${gqlDriveHistorySubRanges.rangeSegments}');
+  logger.e('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');
+  logger.e(
+    'Sub ranges in snapshots (DRIVE ID: $driveId): ${snapshotDriveHistory.subRanges.rangeSegments}',
+  );
+  logger.e(
+    'Sub ranges in GQL (DRIVE ID: $driveId): ${gqlDriveHistorySubRanges.rangeSegments}',
+  );
 
   final DriveHistoryComposite driveHistory = DriveHistoryComposite(
     subRanges: totalRangeToQueryFor,
@@ -106,7 +126,7 @@ Stream<double> _syncDrive(
         'The transaction block is null. \nTransaction node id: ${t.id}',
       );
 
-      print('New fetch-phase percentage: $fetchPhasePercentage');
+      logger.e('New fetch-phase percentage: $fetchPhasePercentage');
 
       /// if the block is null, we don't calculate and keep the same percentage
       return fetchPhasePercentage;
@@ -119,7 +139,7 @@ Stream<double> _syncDrive(
       if (block != null) {
         firstBlockHeight = block.height;
         totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
-        print(
+        logger.e(
           'First height: $firstBlockHeight, totalHeightDiff: $totalBlockHeightDifference',
         );
       } else {
@@ -128,10 +148,10 @@ Stream<double> _syncDrive(
         );
       }
     } else {
-      print('Block attribute is already present - $firstBlockHeight');
+      logger.e('Block attribute is already present - $firstBlockHeight');
     }
 
-    print('Adding transaction ${t.id}');
+    logger.e('Adding transaction ${t.id}');
     transactions.add(t);
 
     /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
@@ -140,7 +160,7 @@ Stream<double> _syncDrive(
         fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
       } else {
         // If the difference is zero means that the first phase was concluded.
-        print('The first phase just finished!');
+        logger.e('The first phase just finished!');
         fetchPhasePercentage = 1;
       }
       final percentage =
@@ -148,7 +168,7 @@ Stream<double> _syncDrive(
       yield percentage;
     }
   }
-  print('Done fetching data - ${gqlDriveHistory.driveId}');
+  logger.e('Done fetching data - ${gqlDriveHistory.driveId}');
 
   final fetchPhaseTotalTime =
       DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
@@ -161,20 +181,27 @@ Stream<double> _syncDrive(
     ''',
   );
 
-  yield* _parseDriveTransactionsIntoDatabaseEntities(
-    driveDao: driveDao,
-    arweaveService: arweaveService,
-    database: database,
-    transactions: transactions,
-    drive: drive,
-    driveKey: driveKey,
-    currentBlockHeight: currentBlockHeight,
-    lastBlockHeight: lastBlockHeight,
-    batchSize: transactionParseBatchSize,
-    snapshotDriveHistory: snapshotDriveHistory,
-  ).map(
-    (parseProgress) => parseProgress * 0.9,
-  );
+  try {
+    yield* _parseDriveTransactionsIntoDatabaseEntities(
+      ghostFolders: ghostFolders,
+      driveDao: driveDao,
+      arweave: arweave,
+      database: database,
+      transactions: transactions,
+      drive: drive,
+      driveKey: driveKey,
+      currentBlockHeight: currentBlockHeight,
+      lastBlockHeight: lastBlockHeight,
+      batchSize: transactionParseBatchSize,
+      snapshotDriveHistory: snapshotDriveHistory,
+      ownerAddress: ownerAddress,
+    ).map(
+      (parseProgress) => parseProgress * 0.9,
+    );
+  } catch (e) {
+    logger.e('[Sync Drive] Error while parsing transactions: $e');
+    rethrow;
+  }
 
   await SnapshotItemOnChain.dispose(drive.id);
 

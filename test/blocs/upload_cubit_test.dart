@@ -1,14 +1,24 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/pst/pst.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/types/winston.dart';
+import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -17,7 +27,31 @@ import 'package:cryptography/helpers.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../core/upload/uploader_test.dart';
 import '../test_utils/utils.dart';
+
+class MockArweaveService extends Mock implements ArweaveService {}
+
+class MockPstService extends Mock implements PstService {}
+
+class MockUploadPlanUtils extends Mock implements UploadPlanUtils {}
+
+class MockUploadFileChecker extends Mock implements UploadFileChecker {}
+
+class MockTurboUploadService extends Mock implements TurboUploadService {}
+
+class MockArDriveAuth extends Mock implements ArDriveAuth {}
+
+class MockUploadCostEstimateCalculatorForAR extends Mock
+    implements UploadCostEstimateCalculatorForAR {}
+
+class MockTurboBalanceRetriever extends Mock implements TurboBalanceRetriever {}
+
+class MockTurboUploadCostCalculator extends Mock
+    implements TurboUploadCostCalculator {}
+
+class MockArDriveUploadPreparationManager extends Mock
+    implements ArDriveUploadPreparationManager {}
 
 // TODO(thiagocarvalhodev): Test the case of remove files before download when pass ConflictingFileActions.SKIP.
 // TODO: Test startUpload
@@ -28,6 +62,13 @@ void main() {
   late MockPstService mockPst;
   late MockUploadPlanUtils mockUploadPlanUtils;
   MockProfileCubit? mockProfileCubit;
+  late MockUploadFileChecker mockUploadFileChecker;
+  late MockArDriveAuth mockArDriveAuth;
+  late MockUploadCostEstimateCalculatorForAR
+      mockUploadCostEstimateCalculatorForAR;
+  late MockTurboBalanceRetriever mockTurboBalanceRetriever;
+  late MockTurboUploadCostCalculator mockTurboUploadCostCalculator;
+  late MockArDriveUploadPreparationManager mockArDriveUploadPreparationManager;
 
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
@@ -45,6 +86,9 @@ void main() {
   late List<UploadFile> tSomeConflictingFiles;
   late List<UploadFile> tNoConflictingFiles;
 
+  // limits
+  const tPrivateFileSizeLimit = 100;
+
   final tWallet = getTestWallet();
   String? tWalletAddress;
 
@@ -54,6 +98,7 @@ void main() {
   setUpAll(() async {
     registerFallbackValue(SecretKey([]));
     registerFallbackValue(Wallet());
+    registerFallbackValue(getFakeUser());
     registerFallbackValue(FolderEntry(
         id: '',
         dateCreated: tDefaultDate,
@@ -72,6 +117,15 @@ void main() {
         dateCreated: tDefaultDate,
         lastUpdated: tDefaultDate,
         privacy: ''));
+
+    registerFallbackValue(UploadParams(
+      user: getFakeUser(),
+      files: [],
+      targetFolder: getFakeFolder(),
+      targetDrive: getFakeDrive(),
+      conflictingFiles: {},
+      foldersByPath: {},
+    ));
 
     tWalletAddress = await tWallet.getAddress();
 
@@ -112,6 +166,14 @@ void main() {
     mockDriveDao = db.driveDao;
     mockProfileCubit = MockProfileCubit();
     mockUploadPlanUtils = MockUploadPlanUtils();
+    mockUploadFileChecker = MockUploadFileChecker();
+    mockArDriveAuth = MockArDriveAuth();
+    mockUploadCostEstimateCalculatorForAR =
+        MockUploadCostEstimateCalculatorForAR();
+    mockTurboBalanceRetriever = MockTurboBalanceRetriever();
+    mockTurboUploadCostCalculator = MockTurboUploadCostCalculator();
+    mockArDriveUploadPreparationManager = MockArDriveUploadPreparationManager();
+    late MockUploadPlan uploadPlan;
 
     // Setup mock drive.
     await addTestFilesToDb(
@@ -124,17 +186,73 @@ void main() {
       nestedFolderId: tNestedFolderId,
       nestedFolderFileCount: tNestedFolderFileCount,
     );
+
+    final mockUploadCostEstimateAR = UploadCostEstimate(
+      totalCost: BigInt.from(100),
+      pstFee: BigInt.from(10),
+      totalSize: 200,
+      usdUploadCost: 25,
+    );
+
+    /// total cost 400
+    final mockUploadCostEstimateTurbo = UploadCostEstimate(
+      totalCost: BigInt.from(400),
+      pstFee: BigInt.from(40),
+      totalSize: 1000,
+      usdUploadCost: 100,
+    );
+
+    // mock limit for UploadFileChecker
+    when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+        files: any(named: 'files'))).thenAnswer((invocation) async => false);
+    const double stubArToUsdFactor = 10;
+    when(() => mockArweave.getArUsdConversionRateOrNull()).thenAnswer(
+      (_) => Future.value(stubArToUsdFactor),
+    );
+    uploadPlan = MockUploadPlan();
+
+    when(() => mockArDriveUploadPreparationManager.prepareUpload(
+          params: any(named: 'params'),
+        )).thenAnswer(
+      (invocation) => Future.value(
+        UploadPreparation(
+          uploadPlansPreparation: UploadPlansPreparation(
+            uploadPlanForAr: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          ),
+          uploadPaymentInfo: UploadPaymentInfo(
+            defaultPaymentMethod: UploadMethod.ar,
+            isUploadEligibleToTurbo: false,
+            arCostEstimate: mockUploadCostEstimateAR,
+            turboCostEstimate: mockUploadCostEstimateTurbo,
+            isFreeUploadPossibleUsingTurbo: false,
+            totalSize: 100,
+            isTurboAvailable: true,
+            turboBalance: BigInt.from(100),
+          ),
+        ),
+      ),
+    );
   });
+
+  final costEstimate = UploadCostEstimate(
+      pstFee: BigInt.one,
+      totalCost: BigInt.one,
+      totalSize: 100,
+      usdUploadCost: 100);
 
   UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
     return UploadCubit(
-        uploadPlanUtils: mockUploadPlanUtils,
+        arDriveUploadManager: mockArDriveUploadPreparationManager,
+        uploadFileChecker: mockUploadFileChecker,
         driveId: tDriveId,
         parentFolderId: tRootFolderId,
         files: files,
         profileCubit: mockProfileCubit!,
         driveDao: mockDriveDao,
         arweave: mockArweave,
+        turbo: DontUseUploadService(),
+        auth: mockArDriveAuth,
         pst: mockPst);
   }
 
@@ -147,9 +265,11 @@ void main() {
           targetFolder: any<FolderEntry>(named: 'targetFolder')))
       .thenAnswer((invocation) => Future.value(
             UploadPlan.create(
+              maxDataItemCount: 10,
               fileV2UploadHandles: {},
               fileDataItemUploadHandles: {},
               folderDataItemUploadHandles: {},
+              turboUploadService: DontUseUploadService(),
             ),
           ));
 
@@ -163,6 +283,7 @@ void main() {
           walletAddress: tWalletAddress!,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
+          useTurbo: false,
         ),
       );
       when(() => mockProfileCubit!.checkIfWalletMismatch())
@@ -171,8 +292,26 @@ void main() {
           .thenAnswer((i) => Future.value(false));
       when(() => mockPst.getPSTFee(BigInt.zero))
           .thenAnswer((invocation) => Future.value(Winston(BigInt.zero)));
-      when(() => mockArweave.getArUsdConversionRate())
-          .thenAnswer((invocation) => Future.value(10));
+      when(() => mockUploadCostEstimateCalculatorForAR.calculateCost(
+              totalSize: any(named: 'totalSize')))
+          .thenAnswer((invocation) => Future.value(costEstimate));
+
+      when(() => mockTurboUploadCostCalculator.calculateCost(
+              totalSize: any(named: 'totalSize')))
+          .thenAnswer((invocation) => Future.value(costEstimate));
+      when(() => mockTurboBalanceRetriever.getBalance(any()))
+          .thenAnswer((invocation) => Future.value(BigInt.zero));
+      when(() => mockArDriveAuth.currentUser).thenAnswer(
+        (_) => User(
+          password: 'password',
+          wallet: getTestWallet(),
+          walletAddress: 'walletAddress',
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey([]),
+          profileType: ProfileType.json,
+        ),
+      );
+
       setDumbUploadPlan();
     });
     blocTest<UploadCubit, UploadState>(
@@ -213,20 +352,126 @@ void main() {
             ]);
 
     blocTest<UploadCubit, UploadState>(
-        'should not found any conflicting file when there isnt any conflicting file to upload',
-        build: () {
-          return getUploadCubitInstanceWith(tNoConflictingFiles);
-        },
-        act: (cubit) async {
-          await cubit.startUploadPreparation();
-          await cubit.checkConflictingFiles();
-        },
-        expect: () => <dynamic>[
-              const TypeMatcher<UploadPreparationInitialized>(),
-              const TypeMatcher<UploadPreparationInProgress>(),
-              const TypeMatcher<UploadReady>()
-            ]);
+      'should not found any conflicting file when there isnt any conflicting file to upload',
+      build: () {
+        return getUploadCubitInstanceWith(tNoConflictingFiles);
+      },
+      act: (cubit) async {
+        await cubit.startUploadPreparation();
+        await cubit.checkConflictingFiles();
+      },
+      expect: () => <dynamic>[
+        const TypeMatcher<UploadPreparationInitialized>(),
+        const TypeMatcher<UploadPreparationInProgress>(),
+        const TypeMatcher<UploadReady>()
+      ],
+    );
   });
+
+  group(
+    'verify if is there any files above the safe limit for public files',
+    () {
+      setUp(() {
+        when(() => mockProfileCubit!.state).thenReturn(
+          ProfileLoggedIn(
+            useTurbo: false,
+            username: 'Test',
+            password: '123',
+            wallet: tWallet,
+            walletAddress: tWalletAddress!,
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey(tKeyBytes),
+          ),
+        );
+        when(() => mockProfileCubit!.checkIfWalletMismatch())
+            .thenAnswer((i) => Future.value(false));
+        when(() => mockPst.getPSTFee(BigInt.zero))
+            .thenAnswer((invocation) => Future.value(Winston(BigInt.zero)));
+        when(() => mockArweave.getArUsdConversionRate())
+            .thenAnswer((invocation) => Future.value(10));
+        when(() => mockUploadPlanUtils.filesToUploadPlan(
+            files: any(named: 'files'),
+            cipherKey: any(named: 'cipherKey'),
+            wallet: any(named: 'wallet'),
+            conflictingFiles: any(named: 'conflictingFiles'),
+            targetDrive: any(named: 'targetDrive'),
+            targetFolder: any<FolderEntry>(named: 'targetFolder'))).thenAnswer(
+          (invocation) => Future.value(
+            UploadPlan.create(
+              maxDataItemCount: 10,
+              turboUploadService: DontUseUploadService(),
+              fileV2UploadHandles: {},
+              fileDataItemUploadHandles: {},
+              folderDataItemUploadHandles: {},
+            ),
+          ),
+        );
+        when(() => mockProfileCubit!.isCurrentProfileArConnect())
+            .thenAnswer((i) => Future.value(true));
+      });
+
+      blocTest<UploadCubit, UploadState>(
+          'should show the warning when file checker found files above safe limit',
+          setUp: () {
+            when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+                    files: any(named: 'files')))
+                .thenAnswer((invocation) async => true);
+          },
+          build: () {
+            return getUploadCubitInstanceWith(tNoConflictingFiles);
+          },
+          act: (cubit) async {
+            await cubit.startUploadPreparation();
+            await cubit.verifyFilesAboveWarningLimit();
+          },
+          expect: () => <dynamic>[
+                const TypeMatcher<UploadPreparationInitialized>(),
+                const TypeMatcher<UploadShowingWarning>()
+              ]);
+      blocTest<UploadCubit, UploadState>(
+          'should show the warning when file checker found files above safe limit and emit UploadReady when user confirm the upload',
+          setUp: () {
+            when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+                    files: any(named: 'files')))
+                .thenAnswer((invocation) async => true);
+          },
+          build: () {
+            return getUploadCubitInstanceWith(tNoConflictingFiles);
+          },
+          act: (cubit) async {
+            await cubit.startUploadPreparation();
+            await cubit.verifyFilesAboveWarningLimit();
+            await cubit.checkConflictingFiles();
+          },
+          expect: () => <dynamic>[
+                const TypeMatcher<UploadPreparationInitialized>(),
+                const TypeMatcher<UploadShowingWarning>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
+                const TypeMatcher<UploadReady>(),
+              ]);
+      blocTest<UploadCubit, UploadState>(
+          'should not show the warning when file checker not found files above safe limit and emit UploadReady without user confirmation',
+          setUp: () {
+            when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+                    files: any(named: 'files')))
+                .thenAnswer((invocation) async => false);
+          },
+          build: () {
+            return getUploadCubitInstanceWith(tNoConflictingFiles);
+          },
+          act: (cubit) async {
+            await cubit.startUploadPreparation();
+            await cubit.checkConflictingFiles();
+          },
+          expect: () => <dynamic>[
+                const TypeMatcher<UploadPreparationInitialized>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
+                const TypeMatcher<UploadReady>(),
+              ]);
+    },
+  );
 
   group('prepare upload plan and costs estimates', () {
     setUp(() {
@@ -238,6 +483,7 @@ void main() {
           walletAddress: tWalletAddress!,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
+          useTurbo: false,
         ),
       );
       when(() => mockProfileCubit!.checkIfWalletMismatch())
@@ -255,9 +501,11 @@ void main() {
           targetFolder: any<FolderEntry>(named: 'targetFolder'))).thenAnswer(
         (invocation) => Future.value(
           UploadPlan.create(
+            maxDataItemCount: 10,
             fileV2UploadHandles: {},
             fileDataItemUploadHandles: {},
             folderDataItemUploadHandles: {},
+            turboUploadService: DontUseUploadService(),
           ),
         ),
       );
@@ -310,16 +558,22 @@ void main() {
 
         blocTest<UploadCubit, UploadState>(
           'should emit UploadFileTooLarge with hasFilesToUpload false when we have'
-          ' only a file larger than publicFileSizeLimit'
+          ' only a file larger than privateFileSizeLimit'
           ' is intended to upload',
           setUp: () async {
             final tFile = File('some_file.txt');
-            tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
+            tFile
+                .writeAsBytesSync(Uint8List(tPrivateFileSizeLimit.toInt() + 1));
             tTooLargeFile = UploadFile(
                 ioFile: await IOFile.fromData(tFile.readAsBytesSync(),
                     lastModifiedDate: tDefaultDate, name: 'some_file.txt'),
                 parentFolderId: tRootFolderId);
+
             tTooLargeFiles = [tTooLargeFile];
+            when(() =>
+                    mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
+                        files: any(named: 'files')))
+                .thenAnswer((invocation) async => ['some_file.txt']);
           },
           build: () {
             return getUploadCubitInstanceWith(tTooLargeFiles);
@@ -328,6 +582,7 @@ void main() {
             File('some_file.txt').deleteSync();
           },
           act: (cubit) async {
+            cubit.isPrivateForTesting = true;
             await cubit.startUploadPreparation();
             await cubit.checkFilesAboveLimit();
           },
@@ -345,7 +600,50 @@ void main() {
           ' others files not too large to upload',
           setUp: () async {
             final tFile = File('some_file.txt');
-            tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
+            tFile
+                .writeAsBytesSync(Uint8List(tPrivateFileSizeLimit.toInt() + 1));
+            tTooLargeFile = UploadFile(
+                ioFile: await IOFile.fromData(
+                    File(tFile.path).readAsBytesSync(),
+                    lastModifiedDate: tDefaultDate,
+                    name: 'some_file.txt'),
+                parentFolderId: tRootFolderId);
+            when(() =>
+                    mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
+                        files: any(named: 'files')))
+                .thenAnswer((invocation) async => ['some_file.txt']);
+          },
+          build: () {
+            final tTooLargeFilesWithNoConflictingFiles = tNoConflictingFiles
+              ..add(tTooLargeFile);
+
+            return getUploadCubitInstanceWith(
+                tTooLargeFilesWithNoConflictingFiles);
+          },
+          tearDown: () {
+            File('some_file.txt').deleteSync();
+          },
+          act: (cubit) async {
+            cubit.isPrivateForTesting = true;
+
+            await cubit.startUploadPreparation();
+            await cubit.checkFilesAboveLimit();
+          },
+          expect: () => <dynamic>[
+            UploadPreparationInitialized(),
+            UploadFileTooLarge(
+                hasFilesToUpload: false,
+                tooLargeFileNames: [tTooLargeFiles.first.getIdentifier()],
+                isPrivate: false)
+          ],
+        );
+
+        blocTest<UploadCubit, UploadState>(
+          'should UploadReady when we have a big file under 5GiB and is public and all files are under private size limit',
+          setUp: () async {
+            final tFile = File('some_file.txt');
+            tFile
+                .writeAsBytesSync(Uint8List(tPrivateFileSizeLimit.toInt() + 1));
             tTooLargeFile = UploadFile(
                 ioFile: await IOFile.fromData(
                     File(tFile.path).readAsBytesSync(),
@@ -369,10 +667,9 @@ void main() {
           },
           expect: () => <dynamic>[
             UploadPreparationInitialized(),
-            UploadFileTooLarge(
-                hasFilesToUpload: false,
-                tooLargeFileNames: [tTooLargeFiles.first.getIdentifier()],
-                isPrivate: false)
+            const TypeMatcher<UploadPreparationInProgress>(),
+            const TypeMatcher<UploadPreparationInProgress>(),
+            const TypeMatcher<UploadReady>(),
           ],
         );
 
@@ -382,7 +679,8 @@ void main() {
           setUp: () async {
             final tFile = File('some_file.txt');
 
-            tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
+            tFile
+                .writeAsBytesSync(Uint8List(tPrivateFileSizeLimit.toInt() + 1));
             tTooLargeFile = UploadFile(
                 ioFile: await IOFile.fromData(
                     File(tFile.path).readAsBytesSync(),
@@ -391,6 +689,10 @@ void main() {
                 parentFolderId: tRootFolderId);
             when(() => mockProfileCubit!.isCurrentProfileArConnect())
                 .thenAnswer((i) => Future.value(false));
+            when(() =>
+                    mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
+                        files: any(named: 'files')))
+                .thenAnswer((invocation) async => ['some_file.txt']);
           },
           build: () {
             final tTooLargeFilesWithNoConflictingFiles = tNoConflictingFiles
@@ -400,6 +702,8 @@ void main() {
             return getUploadCubitInstanceWith(files);
           },
           act: (cubit) async {
+            cubit.isPrivateForTesting = true;
+
             await cubit.startUploadPreparation();
             await cubit.checkFilesAboveLimit();
             await cubit.skipLargeFilesAndCheckForConflicts();

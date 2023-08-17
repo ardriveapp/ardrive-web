@@ -1,8 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/l11n/validation_messages.dart';
-import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -17,9 +18,11 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final String? fileId;
 
   final ArweaveService _arweave;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
+  final ArDriveCrypto _crypto;
 
   bool get _isRenamingFolder => folderId != null;
 
@@ -28,54 +31,39 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     this.folderId,
     this.fileId,
     required ArweaveService arweave,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
+    required ArDriveCrypto crypto,
   })  : _arweave = arweave,
+        _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
+        _crypto = crypto,
         assert(folderId != null || fileId != null),
         super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
-    form = FormGroup({
-      'name': FormControl<String>(
-        validators: [
-          Validators.required,
-          Validators.pattern(
-              folderId != null ? kFolderNameRegex : kFileNameRegex),
-          Validators.pattern(kTrimTrailingRegex),
-        ],
-        asyncValidators: [
-          folderId != null ? _uniqueFolderName : _uniqueFileName,
-        ],
-      ),
-    });
-
-    () async {
-      final name = _isRenamingFolder
-          ? await _driveDao
-              .folderById(driveId: driveId, folderId: folderId!)
-              .map((f) => f.name)
-              .getSingle()
-          : await _driveDao
-              .fileById(driveId: driveId, fileId: fileId!)
-              .map((f) => f.name)
-              .getSingle();
-
-      form.control('name').value = name;
-      emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
-    }();
+    emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
   }
 
-  Future<void> submit() async {
-    form.markAllAsTouched();
-
-    if (form.invalid) {
-      return;
-    }
-
+  Future<void> submit({required String newName}) async {
     try {
-      final newName = form.control('name').value.toString().trim();
+      late bool hasEntityWithSameName;
+
+      if (_isRenamingFolder) {
+        hasEntityWithSameName = await _folderWithSameNameExists(newName);
+      } else {
+        hasEntityWithSameName = await _fileWithSameNameExistis(newName);
+      }
+
+      if (hasEntityWithSameName) {
+        final previousState = state;
+        emit(EntityAlreadyExists(newName, isRenamingFolder: _isRenamingFolder));
+        emit(previousState);
+        return;
+      }
+
       final profile = _profileCubit.state as ProfileLoggedIn;
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
@@ -85,29 +73,44 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
             : const FileEntryRenameWalletMismatch());
         return;
       }
+
       if (_isRenamingFolder) {
         emit(const FolderEntryRenameInProgress());
+        var folder = await _driveDao
+            .folderById(driveId: driveId, folderId: folderId!)
+            .getSingle();
+        folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
 
         await _driveDao.transaction(() async {
-          var folder = await _driveDao
-              .folderById(driveId: driveId, folderId: folderId!)
-              .getSingle();
-          folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
-
           final folderEntity = folder.asEntity();
-          final folderTx = await _arweave.prepareEntityTx(
-              folderEntity, profile.wallet, driveKey);
+          if (_turboUploadService.useTurboUpload) {
+            final folderDataItem = await _arweave.prepareEntityDataItem(
+              folderEntity,
+              profile.wallet,
+              key: driveKey,
+            );
 
-          await _arweave.postTx(folderTx);
+            await _turboUploadService.postDataItem(
+              dataItem: folderDataItem,
+              wallet: profile.wallet,
+            );
+            folderEntity.txId = folderDataItem.id;
+          } else {
+            final folderTx = await _arweave.prepareEntityTx(
+                folderEntity, profile.wallet, driveKey);
+
+            await _arweave.postTx(folderTx);
+            folderEntity.txId = folderTx.id;
+          }
+
           await _driveDao.writeToFolder(folder);
-          folderEntity.txId = folderTx.id;
 
           await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
               performedAction: RevisionAction.rename));
-
-          final folderMap = {folder.id: folder.toCompanion(false)};
-          await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });
+
+        final folderMap = {folder.id: folder.toCompanion(false)};
+        await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
 
         emit(const FolderEntryRenameSuccess());
       } else {
@@ -119,17 +122,33 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               .getSingle();
           file = file.copyWith(name: newName, lastUpdated: DateTime.now());
 
-          final fileKey =
-              driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
+          final fileKey = driveKey != null
+              ? await _crypto.deriveFileKey(driveKey, file.id)
+              : null;
 
           final fileEntity = file.asEntity();
-          final fileTx = await _arweave.prepareEntityTx(
-              fileEntity, profile.wallet, fileKey);
 
-          await _arweave.postTx(fileTx);
+          if (_turboUploadService.useTurboUpload) {
+            final fileDataItem = await _arweave.prepareEntityDataItem(
+              fileEntity,
+              profile.wallet,
+              key: fileKey,
+            );
+
+            await _turboUploadService.postDataItem(
+              dataItem: fileDataItem,
+              wallet: profile.wallet,
+            );
+            fileEntity.txId = fileDataItem.id;
+          } else {
+            final fileTx = await _arweave.prepareEntityTx(
+                fileEntity, profile.wallet, fileKey);
+
+            await _arweave.postTx(fileTx);
+            fileEntity.txId = fileTx.id;
+          }
+
           await _driveDao.writeToFile(file);
-
-          fileEntity.txId = fileTx.id;
 
           await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
               performedAction: RevisionAction.rename));
@@ -142,18 +161,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     }
   }
 
-  Future<Map<String, dynamic>?> _uniqueFolderName(
-      AbstractControl<dynamic> control) async {
+  Future<bool> _folderWithSameNameExists(String newFolderName) async {
     final folder = await _driveDao
         .folderById(driveId: driveId, folderId: folderId!)
         .getSingle();
-    final String newFolderName = control.value;
-
-    if (newFolderName == folder.name) {
-      control.markAsTouched();
-      return {AppValidationMessage.fsEntryNameUnchanged: true};
-    }
-
     final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
       name: newFolderName,
       driveId: driveId,
@@ -161,24 +172,12 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
       parentFolderId: folder.parentFolderId!,
     );
 
-    if (entityWithSameNameExists) {
-      control.markAsTouched();
-      return {AppValidationMessage.fsEntryNameAlreadyPresent: true};
-    }
-
-    return null;
+    return entityWithSameNameExists;
   }
 
-  Future<Map<String, dynamic>?> _uniqueFileName(
-      AbstractControl<dynamic> control) async {
+  Future<bool> _fileWithSameNameExistis(String newFileName) async {
     final file =
         await _driveDao.fileById(driveId: driveId, fileId: fileId!).getSingle();
-    final String newFileName = control.value;
-
-    if (newFileName == file.name) {
-      control.markAsTouched();
-      return {AppValidationMessage.fsEntryNameUnchanged: true};
-    }
 
     final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
       name: newFileName,
@@ -186,22 +185,17 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
       parentFolderId: file.parentFolderId,
     );
 
-    if (entityWithSameNameExists) {
-      control.markAsTouched();
-      return {AppValidationMessage.fsEntryNameAlreadyPresent: true};
-    }
-
-    return null;
+    return entityWithSameNameExists;
   }
 
   @override
   void onError(Object error, StackTrace stackTrace) {
     if (_isRenamingFolder) {
       emit(const FolderEntryRenameFailure());
-      print('Failed to rename folder: $error $stackTrace');
+      logger.e('Failed to rename folder: $error $stackTrace');
     } else {
       emit(const FileEntryRenameFailure());
-      print('Failed to rename file: $error $stackTrace');
+      logger.e('Failed to rename file: $error $stackTrace');
     }
 
     super.onError(error, stackTrace);

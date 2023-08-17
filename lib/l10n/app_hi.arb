@@ -1,0 +1,1789 @@
+{
+  "@@locale": "hi",
+  "addnewManifestEmphasized": "नया मैनिफ़ेस्ट जोड़ें",
+  "@addnewManifestEmphasized": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "addProfileEmphasized": "प्रोफ़ाइल जोड़ें",
+  "@addProfileEmphasized": {
+    "description": "Add a wallet. Emphasized with upper case"
+  },
+  "addressCopied": "एड्रेस कॉपी कर लिया गया!",
+  "@addressCopied": {
+    "description": "Tooltip on copy wallet address button"
+  },
+  "addSomeFiles": "यहां देखने के लिए कुछ भी नहीं है। कुछ फ़ाइलें जोड़ने के लिए \"नया\" पर क्लिक करें।",
+  "@addSomeFiles": {
+    "description": "Empty folder"
+  },
+  "aggreeToTerms_body": "मैं ArDrive की सेवा की शर्तें और गोपनीयता नीति से सहमत हूं।",
+  "@aggreeToTerms_body": {
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
+  },
+  "aggreeToTerms_link": "ArDrive की सेवा की शर्तें और गोपनीयता नीति",
+  "@aggreeToTerms_link": {
+    "description": "Segment of text representing a link to the legal documents"
+  },
+  "aggreeToTerms_main": "मैं इससे सहमत हूं",
+  "@aggreeToTerms_main": {
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
+  },
+  "aManifestIsASpecialKindOfFile": "मैनिफ़ेस्ट एक खास तरह की फ़ाइल होती है, जो किसी भी संख्या में Arweave ट्रांज़ैक्शन को फ़्रेंडली पाथ नेम में मैप करती है।",
+  "@aManifestIsASpecialKindOfFile": {
+    "description": "Simple explanation of what a manifest is"
+  },
+  "anyFilesWillOutliveYou": "आपके ज़रिए यहां अपलोड की जाने वाली कोई भी फ़ाइल आपकी उम्र से भी ज़्यादा समय तक टिकी रहेगी!",
+  "@anyFilesWillOutliveYou": {
+    "description": "Files on the Weave will exist there forever"
+  },
+  "anyoneCanAccessThisDrivePrivate": "ऊपर दिए गए लिंक का इस्तेमाल करके कोई भी इस प्राइवेट ड्राइव को ऐक्सेस कर सकता है।",
+  "@anyoneCanAccessThisDrivePrivate": {
+    "description": "Warning for the user that is about to share a drive"
+  },
+  "anyoneCanAccessThisDrivePublic": "ऊपर दिए गए लिंक का इस्तेमाल करके कोई भी इस पब्लिक ड्राइव को ऐक्सेस कर सकता है।",
+  "@anyoneCanAccessThisDrivePublic": {
+    "description": "Warning for the user that is about to share a drive"
+  },
+  "anyoneCanAccessThisFile": "ऊपर दिए गए लिंक का इस्तेमाल करके कोई भी इस फ़ाइल को ऐक्सेस कर सकता है।",
+  "@anyoneCanAccessThisFile": {
+    "description": "Warning for the user that is about to share a file"
+  },
+  "appVersion": "वर्ज़न {version}।",
+  "@appVersion": {
+    "description": "App version number",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.0.0"
+      }
+    }
+  },
+  "arConnectRemainOnThisTab": "सावधानी: आपका Web3 वॉलेट आपके ट्रांज़ैक्शन पर साइन कर रहा है। कृपया इस टैब पर तब तक बने रहें जब तक कि यह पूरा नहीं हो जाता।",
+  "@arConnectRemainOnThisTab": {
+    "description": "Warning for the user to do not leave the tab"
+  },
+  "arConnectWalletDoestNotMatchArDriveWallet": "आपका ArConnect वॉलेट आपके ArDrive वॉलेट से मैच नहीं  करता है. कृपया दोबारा कोशिश करें. ",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
+  },
+  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive सिर्फ एक और क्लाउड सिंक ऐप नहीं है। यह एक स्थायी हार्ड ड्राइव की शुरुआत है।",
+  "@ardriveIsntJustAnotherCloudSyncApp": {
+    "description": "Description about the permanence and uniqueness of ArDrive"
+  },
+  "ardriveIsOptimizedForLargeScreens": "ArDrive फ़िलहाल केवल बड़ी स्क्रीन के लिए ऑप्टिमाइज़ किया गया है।",
+  "@ardriveIsOptimizedForLargeScreens": {
+    "description": "Screen not supported page"
+  },
+  "attachDrive": "ड्राइव अटैच करें",
+  "@attachDrive": {
+    "description": "Attach a shared drive"
+  },
+  "attachDriveEmphasized": "ड्राइव अटैच करें",
+  "@attachDriveEmphasized": {
+    "description": "Attach a shared drive. Emphasized with upper case"
+  },
+  "attachEmphasized": "अटैच करें",
+  "@attachEmphasized": {
+    "description": "The action of attaching a drive. Emphasized with upper case"
+  },
+  "attachingDriveEmphasized": "ड्राइव अटैच कर रहे हैं...",
+  "@attachingDriveEmphasized": {
+    "description": "Drive attach form. Emphasized with upper case"
+  },
+  "back": "पीछे जाएं",
+  "@back": {
+    "description": "Go back"
+  },
+  "backButtonOnboarding": "पीछे ",
+  "@backButtonOnboarding": {
+    "description": "Text of the back button onboarding"
+  },
+  "backEmphasized": "पीछे जाएं",
+  "@backEmphasized": {
+    "description": "Go back. Emphasized with upper case"
+  },
+  "backToFolder": "{entityName} फ़ोल्डर पर वापस जाएं",
+  "@backToFolder": {
+    "description": "Go back to folder",
+    "placeholders": {
+      "entityName": {
+        "type": "String",
+        "example": "entity name"
+      }
+    }
+  },
+  "biometricLoginDisabled": "बायोमेट्रिक लॉगिन डिसेबल है",
+  "@biometricLoginDisabled": {
+    "description": "Biometric Login is Disabled."
+  },
+  "biometricLoginEnabled": "बायोमेट्रिक लॉगिन एनेबल है",
+  "@biometricLoginEnabled": {
+    "description": "Biometric Login is Enabled."
+  },
+  "biometricsDisabledOnYourDevice": "यह फ़ंक्शन फ़िलहाल आपके डिवाइस पर डिसेबल है। इसका इस्तेमाल करने के लिए, कृपया अपने डिवाइस की सेटिंग्स पर जाएं और बायोमेट्रिक प्रमाणीकरण को एनेबल करें।",
+  "@biometricsDisabledOnYourDevice": {
+    "description": "Biometric is disabled"
+  },
+  "biometricsPasscodeNotSetAndroid": "बायोमेट्रिक्स का इस्तेमाल करने के लिए आपके डिवाइस को एक पिन/पैटर्न/पासवर्ड की आवश्यकता है। आगे बढ़ने के लिए कृपया इनमें से एक बनाएं।",
+  "@biometricsPasscodeNotSetAndroid": {
+    "description": "Passcode it not set on Android"
+  },
+  "biometricsPasscodeNotSetIOS": "बायोमेट्रिक्स का इस्तेमाल करने के लिए आपके डिवाइस को एक पासकोड की आवश्यकता है। आगे बढ़ने के लिए कृपया सेटिंग्स > फ़ेस ID और पासकोड पर जाकर एक पासकोड बनाएं।",
+  "@biometricsPasscodeNotSetIOS": {
+    "description": "Passcode it not set on Android"
+  },
+  "biometricsPermanentlyLockedOut": "बहुत ज़्यादा असफल कोशिशों की वजह से बायोमेट्रिक लॉगिन डिसेबल कर दिया गया है। बायोमेट्रिक फ़ंक्शनैलिटी अनलॉक करने के लिए कृपया अपना पिन/पासकोड डालें।",
+  "@biometricsPermanentlyLockedOut": {
+    "description": "Biometrics permanently locked out"
+  },
+  "biometricTemporarilyDisabled": "बहुत ज़्यादा असफल कोशिशों की वजह से बायोमेट्रिक लॉगिन अस्थायी तौर पर डिसेबल हो गया है।",
+  "@biometricTemporarilyDisabled": {
+    "description": "Biometric is locked out"
+  },
+  "bundleTxID": "बंडल ट्रांज़ैक्शन ID",
+  "@bundleTxID": {
+    "description": "The bundle transaction ID of the bundled item"
+  },
+  "bundlingAndSigningUpload": "अपलोड को बंडल और साइन किया जा रहा है",
+  "@bundlingAndSigningUpload": {
+    "description": "The app is bundling together and signing the transactions"
+  },
+  "camera": "कैमरा",
+  "@camera": {
+    "description": "Button label to select a file from camera"
+  },
+  "cancel": "कैंसिल करें",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "cancelEmphasized": "कैंसिल करें",
+  "@cancelEmphasized": {
+    "description": "Cancel button. Emphasized with upper case"
+  },
+  "changeTheme": "थीम बदलें ",
+  "@changeTheme": {
+    "description": "Theme switcher tooltip"
+  },
+  "changeWallet": "वॉलेट बदलें",
+  "@changeWallet": {
+    "description": "To use a different wallet"
+  },
+  "close": "बंद करें",
+  "@close": {
+    "description": "close"
+  },
+  "closeEmphasized": "बंद करें",
+  "@closeEmphasized": {
+    "description": "Close modal. Emphasized with upper case"
+  },
+  "collapseSideBar": "साइडबार को बंद करें",
+  "@collapseSideBar": {
+    "description": "Collapse side bar tooltip"
+  },
+  "computingSnapshotData": "स्नैपशॉट डेटा का हिसाब हो रहा है",
+  "@computingSnapshotData": {
+    "description": "Computing Snapshot Data"
+  },
+  "confirmed": "कन्फ़र्म किया गया",
+  "@confirmed": {
+    "description": "Status tooltip for transactions that are confirmed by the network"
+  },
+  "confirmEmphasized": "कन्फ़र्म करना",
+  "@confirmEmphasized": {
+    "description": "Confirm the prompted question"
+  },
+  "confirmPassword": "पासवर्ड कन्फ़र्म करें",
+  "@confirmPassword": {
+    "description": "Label for repeating the password again"
+  },
+  "conflictingFiles": "परस्पर-विरोधी फ़ाइलें:",
+  "@conflictingFiles": {
+    "description": "Files conflict with already existing items"
+  },
+  "conflictingManifestFound": "परस्पर-विरोधी मैनिफ़ेस्ट पाया गया",
+  "@conflictingManifestFound": {
+    "description": "There is an on-chain entity with the same name"
+  },
+  "conflictingManifestFoundChooseNewName": "इस लोकेशन पर इसी नाम का एक मैनिफ़ेस्ट पहले से मौजूद है। क्या आप जारी रखना चाहते हैं और इस मैनिफ़ेस्ट को एक नए वर्ज़न के तौर पर अपलोड करना चाहते हैं?",
+  "@conflictingManifestFoundChooseNewName": {
+    "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
+  },
+  "conflictingNameFound": "परस्पर-विरोधी नाम पाया गया",
+  "@conflictingNameFound": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "conflictingNameFoundChooseNewName": "इस लोकेशन पर उस नाम की एक इकाई पहले से मौजूद है। कृपया कोई नया नाम चुनें।",
+  "@conflictingNameFoundChooseNewName": {
+    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
+  },
+  "congestionWarning": "Arweave फ़िलहाल भारी भीड़ का सामना कर रहा है। यह संभावना नहीं है कि आपका अपलोड अभी सफल होगा।",
+  "@congestionWarning": {
+    "description": "Congestion warning"
+  },
+  "continueEmphasized": "जारी रहें",
+  "@continueEmphasized": {
+    "description": "To go ahead. Emphasized with upper case"
+  },
+  "copyBundleTxID": "बंडल ट्रांज़ैक्शन ID कॉपी करें",
+  "@copyBundleTxID": {
+    "description": "Copy transaction ID of the Bundle transaction"
+  },
+  "copyDataTxID": "डेटा ट्रांज़ैक्शन ID कॉपी करें",
+  "@copyDataTxID": {
+    "description": "Copy the transaction ID of the Data transaction"
+  },
+  "copyDriveID": "ड्राइव ID कॉपी करें",
+  "@copyDriveID": {
+    "description": "Tooltip of the copy icon for the Drive ID"
+  },
+  "copyDriveTxID": "ड्राइव ट्रांज़ैक्शन ID कॉपी करें",
+  "@copyDriveTxID": {
+    "description": "Copy transaction ID of Drive tooltip"
+  },
+  "copyFileID": "फ़ाइल ID कॉपी करें",
+  "@copyFileID": {
+    "description": "Tooltip of the copy icon for the File ID"
+  },
+  "copyFolderID": "फ़ोल्डर ID कॉपी करें",
+  "@copyFolderID": {
+    "description": "Tooltip of the copy icon for the Folder ID"
+  },
+  "copyLink": "लिंक कॉपी करें",
+  "@copyLink": {
+    "description": "Copy the link for sharing an entity"
+  },
+  "copyMetadataTxID": "मेटाडेटा ट्रांज़ैक्शन ID कॉपी करें",
+  "@copyMetadataTxID": {
+    "description": "Copy the transaction ID of the Metadata transaction"
+  },
+  "copyRootFolderTxID": "रूट फ़ोल्डर ट्रांज़ैक्शन ID कॉपी करें",
+  "@copyRootFolderTxID": {
+    "description": "Copy transaction ID of Root Folder tooltip"
+  },
+  "copyTooltip": "कॉपी करें ",
+  "@copyTooltip": {
+    "description": "Tooltip for copy button"
+  },
+  "copyWalletAddress": "वॉलेट एड्रेस कॉपी करें",
+  "@copyWalletAddress": {
+    "description": "Tooltip on copy wallet address button"
+  },
+  "cost": "लागत: {arPrice} AR",
+  "@cost": {
+    "description": "The total cost estimation of the upload quoted in AR",
+    "placeholders": {
+      "arPrice": {
+        "type": "String",
+        "example": "0"
+      }
+    }
+  },
+  "create": "बनाएं",
+  "@create": {
+    "description": "Create an drive"
+  },
+  "createAndConfirmPassword": "कृपया अपने पासवर्ड को क्रीएट और सुनिश्चित करें. आप लॉग इन करने के लिए इस पासवर्ड का इस्तेमाल करेंगे. ",
+  "@createAndConfirmPassword": {
+    "description": "Asks the user to create a password"
+  },
+  "createDriveEmphasized": "ड्राइव बनाएं",
+  "@createDriveEmphasized": {
+    "description": "Action of creating a new drive. Emphasized with upper case"
+  },
+  "createEmphasized": "बनाएं",
+  "@createEmphasized": {
+    "description": "Create a drive. Emphasized with upper case"
+  },
+  "createFolderEmphasized": "फ़ोल्डर बनाएं",
+  "@createFolderEmphasized": {
+    "description": "The action of creating a folder. Emphasized with upper case"
+  },
+  "createHereEmphasized": "यहां बनाएं",
+  "@createHereEmphasized": {
+    "description": "Create the manifest in the current selected folder"
+  },
+  "createManifest": "मैनिफ़ेस्ट बनाएं",
+  "@createManifest": {
+    "description": "To create a manifest"
+  },
+  "createManifestEmphasized": "मैनिफ़ेस्ट बनाएं",
+  "@createManifestEmphasized": {
+    "description": "To create a manifest"
+  },
+  "createNewSnapshot": "नया स्नैपशॉट बनाएं",
+  "@createNewSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
+  "createSnapshot": "स्नैपशॉट बनाएं",
+  "@createSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
+  "createSnapshotExplanation": "स्नैपशॉट ड्राइव को लोड होने में लगने वाले समय को कम कर देता है। क्या आप अपने ड्राइव {driveName} का एक स्नैपशॉट बनाना चाहते हैं?",
+  "@createSnapshotExplanation": {
+    "description": "Explains how Snapshots improves the sync-time of the drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
+  },
+  "creatingDriveEmphasized": "ड्राइव बनाया जा रहा है...",
+  "@creatingDriveEmphasized": {
+    "description": "The drive is being created. Emphasized with upper case"
+  },
+  "creatingFolderEmphasized": "फ़ोल्डर बनाया जा रहा है...",
+  "@creatingFolderEmphasized": {
+    "description": "Folder is being created. Emphasized with upper case"
+  },
+  "darkModeEmphasized": "डार्क मोड ",
+  "@darkModeEmphasized": {
+    "description": "Refers to the dark theme of the app. Emphasized with upper case"
+  },
+  "dataTxID": "डेटा ट्रांज़ैक्शन ID",
+  "@dataTxID": {
+    "description": "The transaction ID of the entity Data transaction"
+  },
+  "dateCreated": "बनाए जाने की तारीख़",
+  "@dateCreated": {
+    "description": "Creation time of the entity revision"
+  },
+  "decentralizedPermanent": "डिसेंट्रलाइज़्ड, स्थायी डेटा स्टोरेज एक पल में नहीं होता है।",
+  "@decentralizedPermanent": {
+    "description": "Permanence requires patience"
+  },
+  "deepResync": "डीप रीसिंक करें",
+  "@deepResync": {
+    "description": "Deep Sync Button Text"
+  },
+  "deepResyncTooltip": "कैशे खाली करें और सभी ड्राइव को रिफ़्रेश करें",
+  "@deepResyncTooltip": {
+    "description": "Deep Sync Tooltip Text"
+  },
+  "detachDrive": "क्या ड्राइव को अलग करें?",
+  "@detachDrive": {
+    "description": "Detach Drive Title"
+  },
+  "detachDriveQuestion": "क्या आप पक्का '{driveName}' को अलग करना चाहते हैं?",
+  "@detachDriveQuestion": {
+    "description": "Ask for user confirmation to detach drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Shared Drive A"
+      }
+    }
+  },
+  "detachEmphasized": "अलग करें",
+  "@detachEmphasized": {
+    "description": "Example: To DETACH a drive. Emphasized in upper case"
+  },
+  "determiningSizeAndCostOfSnapshot": "स्नैपशॉट का साइज़ और उसकी लागत तय करना",
+  "@determiningSizeAndCostOfSnapshot": {
+    "description": "Determining size and cost of snapshot. This may take a while."
+  },
+  "deviceNotSupportBiometrics": "यह डिवाइस बायोमेट्रिक्स के इस्तेमाल को सपोर्ट नहीं करता है।",
+  "@deviceNotSupportBiometrics": {
+    "description": "Biometric is not supported"
+  },
+  "displayedPaginatedData": "{total} में {from} - {to}",
+  "@displayedPaginatedData": {
+    "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
+    "placeholders": {
+      "from": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      },
+      "to": {
+        "type": "int",
+        "example": "25",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "example": "100",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "diveInButtonOnboarding": "डाइव इन ",
+  "@diveInButtonOnboarding": {
+    "description": "Text of the last button of the onboarding"
+  },
+  "doneEmphasized": "हो गया",
+  "@doneEmphasized": {
+    "description": "Done, no more to do here. Emphasized with upper case"
+  },
+  "download": "डाउनलोड करें",
+  "@download": {
+    "description": "Action of downloading a file"
+  },
+  "downloadFinished": "डाउनलोड समाप्त हुआ!",
+  "@downloadFinished": {
+    "description": "Download finished"
+  },
+  "downloadingCSV": "CSV डाउनलोड हो रही है...",
+  "@downloadingCSV": {
+    "description": "The CSV file is being downloaded"
+  },
+  "downloadingFile": "फ़ाइल डाउनलोड हो रही है...",
+  "@downloadingFile": {
+    "description": "File is being downloaded"
+  },
+  "dragAndDropButtonTitle": "Json ब्राउज़ करें ",
+  "@dragAndDropButtonTitle": {
+    "description": "text of title drag and drop"
+  },
+  "dragAndDropDescription": "अपनी कीफाइल को खींचें और ड्रॉप करें",
+  "@dragAndDropDescription": {
+    "description": "text of description drag and drop"
+  },
+  "driveID": "ड्राइव ID",
+  "@driveID": {
+    "description": "The Drive-ID tag"
+  },
+  "driveIssuesDetected": "हमें इस ड्राइव में समस्याएं मिली हैं। उन्हें रिज़ॉल्व करने के लिए ड्राइव में नेविगेट करें।",
+  "@driveIssuesDetected": {
+    "description": "Orphan folders detected, the user must navigate through the contents to reach them"
+  },
+  "driveKey": "ड्राइव की",
+  "@driveKey": {
+    "description": "Drive Key form field label"
+  },
+  "driveName": "ड्राइव का नाम",
+  "@driveName": {
+    "description": "The name of certain drive"
+  },
+  "driveRoot": "ड्राइव रूट",
+  "@driveRoot": {
+    "description": "The folder entity that is at the top of the folder hierarchy"
+  },
+  "driveSyncedOfDrivesCount": "{drivesCount} में से {drivesSynced} ड्राइव सिंक की गई",
+  "@driveSyncedOfDrivesCount": {
+    "description": "Show the number of drives synced and the number of user's drives",
+    "placeholders": {
+      "drivesSynced": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      },
+      "drivesCount": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "driveTxID": "ड्राइव ट्रांज़ैक्शन ID",
+  "@driveTxID": {
+    "description": "The transaction ID of the drive"
+  },
+  "driveWasCreatedWithName": "यह ड्राइव {driveName} नाम से बनाई गई थी।",
+  "@driveWasCreatedWithName": {
+    "description": "Drive activity (journal) entry: created",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "drive name"
+      }
+    }
+  },
+  "driveWasModified": "इस ड्राइव को मॉडिफ़ाई किया गया था।",
+  "@driveWasModified": {
+    "description": "Drive activity (journal) entry: modified"
+  },
+  "driveWasRenamed": "इस ड्राइव का नाम बदलकर {driveName} कर दिया गया था।",
+  "@driveWasRenamed": {
+    "description": "Drive activity (journal) entry: renamed",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "drive name"
+      }
+    }
+  },
+  "duplicateFiles": "{numberOfDuplicateFiles, plural, zero{} one{एक डुप्लीकेट फ़ाइल मिली} other{डुप्लीकेट फ़ाइलें मिली}}",
+  "@duplicateFiles": {
+    "description": "Count of conflicting items",
+    "placeholders": {
+      "numberOfDuplicateFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "duplicateFolders": "{numberOfDuplicateFolders, plural, zero{} one{एक डुप्लीकेट फ़ोल्डर मिला} other{डुप्लीकेट फ़ोल्डर्स मिलें}}",
+  "@duplicateFolders": {
+    "description": "Folder name conflict dialog title",
+    "placeholders": {
+      "numberOfDuplicateFolders": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "enableBiometricLogin": "बायोमेट्रिक लॉगिन एनेबल करें",
+  "@enableBiometricLogin": {
+    "description": "Enable Biometric Login"
+  },
+  "enableBiometricsOnSettings": "यह फ़ंक्शन फ़िलहाल आपके डिवाइस पर डिसेबल है। इसका इस्तेमाल करने के लिए, कृपया अपने डिवाइस की सेटिंग्स पर जाएं और बायोमेट्रिक प्रमाणीकरण को एनेबल करें।",
+  "@enableBiometricsOnSettings": {
+    "description": "Open settings to enable biometric"
+  },
+  "enableCamera": "कैमरा एनेबल करें",
+  "@enableCamera": {
+    "description": "Enable camera"
+  },
+  "enableCameraAccess": "सेटिंग्स में जाकर ArDrive पर टैप करें और कैमरा ऐक्सेस ऑन करें।",
+  "@enableCameraAccess": {
+    "description": "enable camera access"
+  },
+  "enableStorageAccess": "सेटिंग्स पर जाएं और ArDrive पर टैप करें और स्टोरेज ऐक्सेस को ऑन करें।",
+  "@enableStorageAccess": {
+    "description": "enable camera access"
+  },
+  "enableStorageAccessTitle": "स्टोरेज ऐक्सेस एनेबल करें",
+  "@enableStorageAccessTitle": {
+    "description": "enable camera access"
+  },
+  "enterFileKey": "फ़ाइल की डालें",
+  "@enterFileKey": {
+    "description": "File Key form field label"
+  },
+  "enterPassword": "पासवर्ड डालें ",
+  "@enterPassword": {
+    "description": "Please enter password"
+  },
+  "entityAlreadyExists": "{entityName} नाम की इकाई पहले से ही मूव डेस्टिनेशन पर मौजूद है! कृपया उस फ़ाइल या फ़ोल्डर का नाम बदलें जिसे आप मूव कर रहे हैं और दोबारा कोशिश करें।",
+  "@entityAlreadyExists": {
+    "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
+    "placeholders": {
+      "entityName": {
+        "type": "String",
+        "example": "entity name"
+      }
+    }
+  },
+  "error": "त्रुटि हुई",
+  "@error": {
+    "description": "Indicates that something went wrong"
+  },
+  "errorDragAndDropFolder": "हम फ़िलहाल फ़ोल्डर्स में ड्रैग और ड्रॉप का सपोर्ट नहीं करते हैं",
+  "@errorDragAndDropFolder": {
+    "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
+  },
+  "expandSideBar": "साइडबार को विस्तृत करें",
+  "@expandSideBar": {
+    "description": "Expand side bar tooltip"
+  },
+  "exportDriveContents": "ड्राइव के कॉन्टेंट को एक्सपोर्ट करें",
+  "@exportDriveContents": {
+    "description": "Export the data of a drive into a CSV file"
+  },
+  "exportFromCSV": "{driveId} {timestamp}.csv से एक्सपोर्ट करें",
+  "@exportFromCSV": {
+    "description": "Filename of the CSV data export",
+    "placeholders": {
+      "driveId": {
+        "type": "String",
+        "example": "362cbfee-feae-4835-b3fc-d5ed513eec7a"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "1646828373148"
+      }
+    }
+  },
+  "exportingData": "आपका डेटा एक्सपोर्ट किया जा रहा है, कृपया इंतज़ार करें।",
+  "@exportingData": {
+    "description": "The drive data is being processed"
+  },
+  "failed": "असफल रहा",
+  "@failed": {
+    "description": "Status tooltip for failed transactions"
+  },
+  "failedToCreateManifestEmphasized": "मैनिफ़ेस्ट बनाने में असफल रहा",
+  "@failedToCreateManifestEmphasized": {
+    "description": "The manifest could not be created"
+  },
+  "failedToSyncDrive": "ड्राइव के कॉन्टेंट को सिंक करने में असफल रहा।",
+  "@failedToSyncDrive": {
+    "description": "The app wasn't able to sync the drive"
+  },
+  "feedbackContent": "क्या आप ऐप का इस्तेमाल करने के अपने अनुभव पर फ़ीडबैक देना चाहेंगे?",
+  "@feedbackContent": {
+    "description": "Asks for feedback"
+  },
+  "feedbackTitle": "ArDrive का इस्तेमाल करने के लिए आपका धन्यवाद!",
+  "@feedbackTitle": {
+    "description": "We thank the user"
+  },
+  "fileCount": "{fileCount, plural, zero{कोई फ़ाइल नहीं} one{1 फ़ाइल} other{{fileCount} फ़ाइलें}}",
+  "@fileCount": {
+    "description": "Plurals for the file count. First character in lower case",
+    "placeholders": {
+      "fileCount": {
+        "type": "int",
+        "example": "2",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "fileDownloadFailed": "फ़ाइल डाउनलोड असफल रहा",
+  "@fileDownloadFailed": {
+    "description": "Could not export the CSV data"
+  },
+  "fileFailedToDownload": "फ़ाइल डाउनलोड असफल रहा",
+  "@fileFailedToDownload": {
+    "description": "Error message for failed downloads"
+  },
+  "fileFailedToDownloadFileAboveLimit": "आपने जो फ़ाइल चुनी है वह मोबाइल ऐप से डाउनलोड करने के लिए बहुत बड़ी है",
+  "@fileFailedToDownloadFileAboveLimit": {
+    "description": "Download failure message when a file is too big"
+  },
+  "fileFailedToDownloadFileAbovePublicLimit": "आपके द्वारा चुनी गई फाइल(ें) डाउनलोड करने के लिए बहुत बड़ी हैं",
+  "@fileFailedToDownloadFileAbovePublicLimit": {
+    "description": "Download failure message when a file is too big"
+  },
+  "fileHadANewRevision": "इस फ़ाइल का एक नया वर्ज़न अपलोड किया गया था।",
+  "@fileHadANewRevision": {
+    "description": "File activity (journal): new revision"
+  },
+  "fileID": "फ़ाइल ID",
+  "@fileID": {
+    "description": "The Entity-ID tag of files"
+  },
+  "fileName": "फ़ाइल का नाम",
+  "@fileName": {
+    "description": "The name of certain file"
+  },
+  "fileSize": "फ़ाइल का साइज़",
+  "@fileSize": {
+    "description": "The size of a file"
+  },
+  "filesTooLarge": "{numberOfFiles, plural, zero{} one{1 फ़ाइल बहुत बड़ी है} other{{numberOfFiles} फ़ाइलें बहुत बड़ी हैं}}",
+  "@filesTooLarge": {
+    "description": "A single or many files are too large to upload",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "filesTooLargeExplanationMobile": "मोबाइल पर ArDrive फ़िलहाल केवल 1024 MiB से छोटे वाले फ़ाइल अपलोड को सपोर्ट करता है",
+  "@filesTooLargeExplanationMobile": {
+    "description": "Limit of size to upload"
+  },
+  "filesTooLargeExplanationPrivate": "वेब पर ArDrive फ़िलहाल प्राइवेट ड्राइव के लिए केवल 100 MiB से छोटी फ़ाइल अपलोड को सपोर्ट करता है",
+  "@filesTooLargeExplanationPrivate": {
+    "description": "Limit of size to upload"
+  },
+  "filesTooLargeExplanationPublic": "वेब पर ArDrive फ़िलहाल पब्लिक ड्राइव के लिए केवल 1.20 GiB से छोटी फ़ाइल अपलोड को सपोर्ट करता है",
+  "@filesTooLargeExplanationPublic": {
+    "description": "Limit of size to upload"
+  },
+  "filesWillBePermanentlyPublicWarning": "यहां अपलोड की गई फ़ाइलें स्थायी तौर से इंटरनेट पर कोई भी देख सकेगा। पक्का करें कि आप इस डेटा को सार्वजनिक बनाने का इरादा रखते हैं।",
+  "@filesWillBePermanentlyPublicWarning": {
+    "description": "Make the user aware that it is uploading permanent data publicly"
+  },
+  "filesWillBeUploadedPublicly": "{numberOfFiles, plural, zero{} one{यह फ़ाइल पब्लिक्ली अपलोड की जाएगी।} other{ये फ़ाइलें पब्लिक्ली अपलोड की जाएंगी।}}",
+  "@filesWillBeUploadedPublicly": {
+    "description": "Warning for files that will be public after uploaded",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "2",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles, plural, zero{} one{इस लोकेशन पर इसी नाम की एक फ़ाइल पहले से मौजूद है। क्या आप जारी रखना चाहते हैं और इस फ़ाइल को एक नए वर्ज़न के तौर पर अपलोड करना चाहते हैं?} other{इस लोकेशन पर इसी नाम की {numberOfFiles} फ़ाइलें पहले से मौजूद हैं। क्या आप जारी रखना चाहते हैं और इन फ़ाइलों को एक नए वर्ज़न के तौर पर अपलोड करना चाहते हैं?}}",
+  "@filesWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with the items conflicting names",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "fileSystem": "फ़ाइलें",
+  "@fileSystem": {
+    "description": "Button label to select a file from file system"
+  },
+  "fileWasCreatedWithName": "यह फ़ाइल {fileName} नाम से बनाई गई थी।",
+  "@fileWasCreatedWithName": {
+    "description": "File activity (journal): created",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "file name"
+      }
+    }
+  },
+  "fileWasModified": "यह फ़ाइल मॉडिफ़ाई की गई थी।",
+  "@fileWasModified": {
+    "description": "File activity (journal): modified"
+  },
+  "fileWasMoved": "यह फ़ाइल मूव कर दी गई थी।",
+  "@fileWasMoved": {
+    "description": "File activity (journal): moved"
+  },
+  "fileWasRenamed": "इस फ़ाइल का नाम बदलकर {fileName} कर दिया गया था।",
+  "@fileWasRenamed": {
+    "description": "File activity (journal): renamed",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "file name"
+      }
+    }
+  },
+  "finishingThingsUp": "चीजों को खतम कर रहे हैं!",
+  "@finishingThingsUp": {
+    "description": "Finishing things up!"
+  },
+  "fix": "ठीक करें",
+  "@fix": {
+    "description": "Fix an orphan item"
+  },
+  "fixEmphasized": "ठीक करें",
+  "@fixEmphasized": {
+    "description": "Fix an orphan item. Emphasized with upper case"
+  },
+  "folderAndFileCountComposite": "{folderCountString}, {fileCountString}",
+  "@folderAndFileCountComposite": {
+    "description": "Composite of the folder and file counts. Comma separated for English",
+    "placeholders": {
+      "folderCountString": {
+        "type": "String",
+        "example": "10 folders"
+      },
+      "fileCountString": {
+        "type": "String",
+        "example": "10 files"
+      }
+    }
+  },
+  "folderCount": "{folderCount, plural, zero{कोई फ़ोल्डर नहीं} one{1 फ़ोल्डर} other{{folderCount} फ़ोल्डर्स}}",
+  "@folderCount": {
+    "description": "Plurals for the folder count. First character in lower case",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "example": "2",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "folderID": "फ़ोल्डर ID",
+  "@folderID": {
+    "description": "The Entity-ID tag of folders"
+  },
+  "folderName": "फ़ोल्डर का नाम",
+  "@folderName": {
+    "description": "The name of certain folder"
+  },
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders, plural, zero{} one{इस लोकेशन पर इसी नाम का एक फ़ोल्डर पहले से मौजूद है। कृपया इसका नाम बदलें और दोबारा अपलोड करने की कोशिश करें।} other{इस लोकेशन पर इसी नाम के {numberOfFolders} फ़ोल्डर्स पहले से मौजूद हैं। कृपया उनके नाम बदलें और दोबारा अपलोड करने की कोशिश करें।}}",
+  "@foldersWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with folder name conflicts",
+    "placeholders": {
+      "numberOfFolders": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "folderWasCreatedWithName": "यह फ़ोल्डर {folderName} नाम से बनाया गया था।",
+  "@folderWasCreatedWithName": {
+    "description": "Folder activity (journal) entry: created",
+    "placeholders": {
+      "folderName": {
+        "type": "String",
+        "example": "folder name"
+      }
+    }
+  },
+  "folderWasModified": "यह फ़ोल्डर मॉडिफ़ाई किया गया था।",
+  "@folderWasModified": {
+    "description": "Folder activity (journal): modified"
+  },
+  "folderWasMoved": "यह फ़ोल्डर मूव कर दिया गया था।",
+  "@folderWasMoved": {
+    "description": "Folder activity (journal): moved"
+  },
+  "folderWasRenamed": "इस फ़ोल्डर का नाम बदलकर {folderName} कर दिया गया था।",
+  "@folderWasRenamed": {
+    "description": "Folder activity (journal): renamed",
+    "placeholders": {
+      "folderName": {
+        "type": "String",
+        "example": "folder name"
+      }
+    }
+  },
+  "forgetWallet": "वॉलेट को भूल जाएं और प्रोफ़ाइल बदलें",
+  "@forgetWallet": {
+    "description": "Use a different wallet by forgetting the current one"
+  },
+  "forgetWalletDescription": "क्या आप पक्का अपना वॉलेट भूलना चाहते हैं? किसी दूसरे प्रोफ़ाइल से लॉगिन करने के लिए आपको कोई दूसरा वॉलेट चुनना होगा।",
+  "@forgetWalletDescription": {
+    "description": "Modal description to forget wallet"
+  },
+  "forgetWalletTitle": "वॉलेट भूलना चाहते हैं?",
+  "@forgetWalletTitle": {
+    "description": "Modal title to forget wallet"
+  },
+  "freeTurboTransaction": "लागत: 0 AR\nTurbo को धन्यवाद कि यह छोटा सा ट्रांज़ैक्शन फ़्री है।",
+  "@freeTurboTransaction": {
+    "description": "Message explaining that your upload will be free thanks to Turbo"
+  },
+  "gallery": "गैलरी",
+  "@gallery": {
+    "description": "Button label to select a file from gallery"
+  },
+  "getAWallet": "Don't have a wallet? Get one here!",
+  "@getAWallet": {
+    "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
+  },
+  "gotIt": "समझ गया!",
+  "@gotIt": {
+    "description": "Example similar phrases: I've got it, I understood, OK"
+  },
+  "goToDeviceSettings": "सेटिंग्स पर जाएं",
+  "@goToDeviceSettings": {
+    "description": "Go to device settings"
+  },
+  "goToFirst": "पहले पर जाएं",
+  "@goToFirst": {
+    "description": "Action of going to the first page"
+  },
+  "goToLast": "आखिरी पर जाएं",
+  "@goToLast": {
+    "description": "Action of going to the latest page"
+  },
+  "greenCheckMark": "जब आपकी फ़ाइल के आगे हरे रंग का चेकमार्क दिखाई देता है, तो इसका मतलब होता है कि इसे PermaWeb पर अपलोड कर दिया गया है।",
+  "@greenCheckMark": {
+    "description": "Describes the indicator of the status of uploaded files"
+  },
+  "help": "सहायता",
+  "@help": {
+    "description": "Link to a form for collecting feedback from the user"
+  },
+  "infernoIsInFullSwing": "इन्फर्नो रिवॉर्ड्स प्रोग्राम पूरे जोरों पर है! भाग लेने के नियमों को देखने के लिए यहां क्लिक करें!",
+  "@infernoIsInFullSwing": {
+    "description": "Text inviting the users to go read the Inferno rules"
+  },
+  "insufficientARForUpload": "अपलोड करने के लिए AR काफ़ी नहीं है।",
+  "@insufficientARForUpload": {
+    "description": "The wallet does not have enough balance"
+  },
+  "insufficientARToCreateDrive": "ड्राइव बनाने के लिए आपके पास AR काफ़ी नहीं है।",
+  "@insufficientARToCreateDrive": {
+    "description": "Not enough balance"
+  },
+  "insufficientBalanceForManifest": "मुहैया किए गए {walletBalance} AR का वॉलेट बैलेंस {totalCost} AR की लागत वाले इस मैनिफ़ेस्ट ट्रांज़ैक्शन के लिए काफ़ी नहीं है...",
+  "@insufficientBalanceForManifest": {
+    "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
+    "placeholders": {
+      "walletBalance": {
+        "type": "String",
+        "example": "0"
+      },
+      "totalCost": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "insufficientBalanceForSnapshot": "मुहैया किए गए {walletBalance} AR का वॉलेट बैलेंस {totalCost} AR की लागत वाले इस स्नैपशॉट ट्रांज़ैक्शन के लिए काफ़ी नहीं है...",
+  "@insufficientBalanceForSnapshot": {
+    "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
+    "placeholders": {
+      "walletBalance": {
+        "type": "String",
+        "example": "0"
+      },
+      "totalCost": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "insufficientFundsForCreateADrive": "आपके पास इस समय ड्राइव बनाने के लिए पर्याप्त फ़ंड नहीं है। अपने अकाउंट में फ़ंड जोड़ने के लिए कृपया टॉप अप पेज पर जाएं।",
+  "@insufficientFundsForCreateADrive": {
+    "description": "Show that needs funds to create a Drive"
+  },
+  "insufficientFundsForCreateAFolder": "आपके पास इस समय फ़ोल्डर बनाने के लिए पर्याप्त फ़ंड नहीं है। अपने अकाउंट में फ़ंड जोड़ने के लिए कृपया टॉप अप पेज पर जाएं।",
+  "@insufficientFundsForCreateAFolder": {
+    "description": "Show that needs funds to create a Folder"
+  },
+  "insufficientFundsForCreateAManifest": "आपके पास इस समय मैनिफ़ेस्ट बनाने के लिए पर्याप्त फ़ंड नहीं है। अपने अकाउंट में फ़ंड जोड़ने के लिए कृपया टॉप अप पेज पर जाएं।",
+  "@insufficientFundsForCreateAManifest": {
+    "description": "Show that needs funds to create a Manifest"
+  },
+  "insufficientFundsForUploadFiles": "आपके पास इस समय फ़ाइलें अपलोड करने के लिए पर्याप्त फ़ंड नहीं है। अपने अकाउंट में फ़ंड जोड़ने के लिए कृपया टॉप अप पेज पर जाएं।",
+  "@insufficientFundsForUploadFiles": {
+    "description": "Show that needs funds to upload files"
+  },
+  "insufficientFundsForUploadFolders": "आपके पास इस समय फ़ोल्डर्स अपलोड करने के लिए पर्याप्त फ़ंड नहीं है। अपने अकाउंट में फ़ंड जोड़ने के लिए कृपया टॉप अप पेज पर जाएं।",
+  "@insufficientFundsForUploadFolders": {
+    "description": "Show that needs funds to upload folders"
+  },
+  "invalidKeyFile": "इनवैलिड कीफाइल",
+  "@invalidKeyFile": {
+    "description": "Invalid Keyfile"
+  },
+  "invalidWalletFile": "अमान्य वॉलेट फ़ाइल",
+  "@invalidWalletFile": {
+    "description": "Wallet file is not a json or a text"
+  },
+  "invalidWalletFileDescription": "आपने जो फ़ाइल चुनी है वह अमान्य है।",
+  "@invalidWalletFileDescription": {
+    "description": "Invalid wallet file description"
+  },
+  "itemActivityEmphasized": "ऐक्टिविटी",
+  "@itemActivityEmphasized": {
+    "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
+  },
+  "itemContains": "शामिल हैं",
+  "@itemContains": {
+    "description": "Used like so: 'Contains 15 folders, 10 files'"
+  },
+  "itemDetailsEmphasized": "जानकारी",
+  "@itemDetailsEmphasized": {
+    "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
+  },
+  "itemIsBeingProcesed": "यह आइटम प्रोसेस किया जा रहा है...",
+  "@itemIsBeingProcesed": {
+    "description": "The entity is being processed, no details to display yet"
+  },
+  "itemMoveNameConflict": "निम्न आइटमों को मूव नहीं किया जा सका क्योंकि '{destinationFolderName}' में एक ही नाम वाले आइटम शामिल हैं।",
+  "@itemMoveNameConflict": {
+    "description": "Description for dialog to skip conflicting files or cancel",
+    "placeholders": {
+      "destinationFolderName": {
+        "type": "String",
+        "example": "Folder A"
+      }
+    }
+  },
+  "itemPreviewEmphasized": "प्रीव्यू",
+  "@itemPreviewEmphasized": {
+    "description": "Item preview"
+  },
+  "lastModified": "पिछली बार जब मॉडिफ़ाई किया गया",
+  "@lastModified": {
+    "description": "Last modified date of the file in the local disk"
+  },
+  "lastModifiedDate": "आखिरी बार जब मॉडिफ़ाई किया गया वह {date}",
+  "@lastModifiedDate": {
+    "description": "Last modified date of the file in the local disk",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lastUpdated": "आखिरी बार जब अपडेट किया गया",
+  "@lastUpdated": {
+    "description": "The timestamp of the transaction"
+  },
+  "learnMore": "और जानें",
+  "@learnMore": {
+    "description": "Link to a document explaining manifests in detail"
+  },
+  "leaveFeedback": "फ़ीडबैक दें",
+  "@leaveFeedback": {
+    "description": "The action of leaving feedback"
+  },
+  "letsGetStartedEmphasized": "चलिए शुरू करते हैं",
+  "@letsGetStartedEmphasized": {
+    "description": "Let's start setting up the account. Emphasized with upper case"
+  },
+  "lightModeEmphasized": "लाइट मोड ",
+  "@lightModeEmphasized": {
+    "description": "Refers to the light theme of the app. Emphasized with upper case"
+  },
+  "login": "लॉगिन करें",
+  "@login": {
+    "description": "The login process"
+  },
+  "logIn": "लॉग इन करें",
+  "@logIn": {
+    "description": "The action of logging in. Imperative form"
+  },
+  "loginFailed": "लॉगिन असफल रहा",
+  "@loginFailed": {
+    "description": "Text for when the user tried to login with wrong credentials"
+  },
+  "logInToExperienceFeatures": "ArDrive के सभी फ़ीचर्स का अनुभव करने के लिए लॉग इन करें!",
+  "@logInToExperienceFeatures": {
+    "description": "User must login to use the features of ArDrive"
+  },
+  "loginUsingBiometricCredential": "अपने बायोमेट्रिक क्रेडेंशियल का इस्तेमाल करके लॉगिन करें",
+  "@loginUsingBiometricCredential": {
+    "description": "Login using your biometric credential"
+  },
+  "logout": "लॉग आउट करें",
+  "@logout": {
+    "description": "The logout process"
+  },
+  "logOut": "लॉग आउट करें",
+  "@logOut": {
+    "description": "The action of logging out"
+  },
+  "logOutEmphasized": "लॉग आउट करें",
+  "@logOutEmphasized": {
+    "description": "The action of logging out. Emphasized with upper case"
+  },
+  "manifestName": "मैनिफ़ेस्ट का नाम",
+  "@manifestName": {
+    "description": "The name of the manifest"
+  },
+  "manifestTransactionUnexpectedlyFailed": "मैनिफ़ेस्ट ट्रांज़ैक्शन Arweave नेटवर्क पर अपलोड होने में अचानक से फ़ेल हो गया...",
+  "@manifestTransactionUnexpectedlyFailed": {
+    "description": "The manifest transaction did not succeed being uploaded"
+  },
+  "metadataTxID": "मेटाडेटा ट्रांज़ैक्शन ID",
+  "@metadataTxID": {
+    "description": "The transaction ID of the entity Metadata transaction"
+  },
+  "monthlyCharges": "आपके ज़रिए इस्तेमाल नहीं की जाने वाली खाली जगह के लिए एक और मासिक शुल्क के बजाय, एक बार कुछ सेंट का भुगतान करें और अपनी फ़ाइलों को हमेशा के लिए ArDrive पर स्टोर करें।",
+  "@monthlyCharges": {
+    "description": "Payment philosophy"
+  },
+  "moreInfo": "अधिक जानकारी ",
+  "@moreInfo": {
+    "description": "More info"
+  },
+  "move": "मूव करें",
+  "@move": {
+    "description": "Action of moving certain file or folder"
+  },
+  "moveFileEmphasized": "फ़ाइल को मूव करें",
+  "@moveFileEmphasized": {
+    "description": "The action of moving a file. Emphasized with upper case"
+  },
+  "moveFolderEmphasized": "फ़ोल्डर को मूव करें",
+  "@moveFolderEmphasized": {
+    "description": "The action of moving a folder. Emphasized with upper case"
+  },
+  "moveHereEmphasized": "यहां मूव करें",
+  "@moveHereEmphasized": {
+    "description": "Move the entity to the current folder. Emphasized with upper case"
+  },
+  "moveItems": "आइटमों को मूव करें",
+  "@moveItems": {
+    "description": "Move Items dialog title"
+  },
+  "movingFileEmphasized": "फ़ाइल मूव की जा रही है...",
+  "@movingFileEmphasized": {
+    "description": "The action of moving a file. Emphasized with upper case"
+  },
+  "movingFolderEmphasized": "फ़ोल्डर मूव किया जा रहा है...",
+  "@movingFolderEmphasized": {
+    "description": "The action of moving a folder. Emphasized with upper case"
+  },
+  "movingItemsEmphasized": "मूव हो रहे आइटम",
+  "@movingItemsEmphasized": {
+    "description": "Moving Items dialog title"
+  },
+  "name": "नाम",
+  "@name": {
+    "description": "Name of certain entity"
+  },
+  "nameConflict": "नाम संघर्ष",
+  "@nameConflict": {
+    "description": "A conflict of names between two entities"
+  },
+  "neverDeletedEmphasized": "कभी डिलीट नहीं किया गया",
+  "@neverDeletedEmphasized": {
+    "description": "Uploaded items cannot be deleted. Emphasized with upper case"
+  },
+  "newDrive": "नया ड्राइव",
+  "@newDrive": {
+    "description": "Create a new drive entity"
+  },
+  "newFolder": "नया फ़ोल्डर",
+  "@newFolder": {
+    "description": "Create a new folder entity"
+  },
+  "newString": "नया",
+  "@newString": {
+    "description": "New entity (folder, file, drive, manifest, attached drive)"
+  },
+  "newStringEmphasized": "नया",
+  "@newStringEmphasized": {
+    "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
+  },
+  "next": "अगला",
+  "@next": {
+    "description": "Action of going to the next page"
+  },
+  "nextEmphasized": "अगला",
+  "@nextEmphasized": {
+    "description": "Next step"
+  },
+  "noDeleteButton": "याद रखें: कोई डिलीट बटन नहीं है (आपके या हमारे लिए)!",
+  "@noDeleteButton": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "noDrives": "आपका कोई पर्सनल या अटैच्ड ड्राइव नहीं है।\nकुछ ड्राइव जोड़ने के लिए \"नया\" बटन पर क्लिक करें!",
+  "@noDrives": {
+    "description": "Text for when the wallet has no on-chain drives to display"
+  },
+  "noFiles": "यहां देखने के लिए कुछ भी नहीं है।",
+  "@noFiles": {
+    "description": "Empty folder"
+  },
+  "noOneWillSee": "कोई भी वह नहीं देखेगा जो आप उन्हें नहीं दिखाना चाहते हैं।",
+  "@noOneWillSee": {
+    "description": "Indicates that private content won't reach to the wrong hands"
+  },
+  "noSubscriptions": "कोई सब्सक्रिप्शन की ज़रूरत नहीं है!",
+  "@noSubscriptions": {
+    "description": "Payment philosophy"
+  },
+  "noThanks": "जी नहीं, शुक्रिया! मुझे दोबारा याद न दिलाएं",
+  "@noThanks": {
+    "description": "Don't leave feedback, and don't ask again for it"
+  },
+  "notLoggedIn": "आपने लॉग इन नहीं किया है",
+  "@notLoggedIn": {
+    "description": "User has not logged in"
+  },
+  "ok": "ठीक है",
+  "@ok": {
+    "description": "OK button"
+  },
+  "okEmphasized": "ठीक है",
+  "@okEmphasized": {
+    "description": "OK button. Emphasized in upper case"
+  },
+  "onboarding1Description": "ArDrive बस एक और क्लाउड सिंक ऐप नहीं है. यह आपका पर्सनल हार्ड ड्राइव है. ArDrive पर स्टोर की गई फ़ाइलों को किसी एक द्वारा हटाया या परिवर्तित नहीं किया जा सकता है और आपके द्वारा अपलोड की जाने वाली कोई भी चीज़ आपसे अधिक चलेगी!",
+  "@onboarding1Description": {
+    "description": "Description of 1st page of onboarding"
+  },
+  "onboarding1Title": "Permaweb में आपका स्वागत है ",
+  "@onboarding1Title": {
+    "description": "Title of 1st page of onboarding"
+  },
+  "onboarding2Description": "क्लाउड स्टोरेज सब्स्क्रिप्शन को अलविदा कहें. आपके द्वारा इस्तेमाल नहीं किए जाने वाली जगह के लिए पे करने के बजाय, अपने डेटा को हमेशा के लिए स्टोर करने के लिए बस एक बार पे करें. ",
+  "@onboarding2Description": {
+    "description": "Description of 2nd page of onboarding"
+  },
+  "onboarding2Title": "हर फ़ाइल के हिसाब से पे करें, ना की हर महीने ",
+  "@onboarding2Title": {
+    "description": "Title of 2nd page of onboarding"
+  },
+  "onboarding3Description": "आपकी पसंद: आपके द्वारा अपलोड की गई फ़ाइलों को किसी के लिए भी पब्लिक करें ताकि अत्याधुनिक एन्क्रिप्शन का उपयोग या फायदा उठाया जा सके जिससे कि आप यह नियंत्रण कर सकें कि आपकी फ़ाइलों को कौन देख सकता है. ",
+  "@onboarding3Description": {
+    "description": "Description of 4th page of onboarding"
+  },
+  "onboarding3Title": "पूरी प्राइवेसी कंट्रोल ",
+  "@onboarding3Title": {
+    "description": "Title of 4th page of onboarding"
+  },
+  "onceUploadedCantBeRemoved": "अपलोड होने के बाद, आपका डेटा हटाया नहीं जा सकता।",
+  "@onceUploadedCantBeRemoved": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "orContinueWith": "या ..... के साथ कंटीन्यू करें ",
+  "@orContinueWith": {
+    "description": "text to continue with ar connect"
+  },
+  "password": "पासवर्ड",
+  "@password": {
+    "description": "Label for the 'password' input"
+  },
+  "passwordCanNeverBeChanged": "आपका पासवर्ड कभी भी बदला या रिकवर किया नहीं जा सकता है। कृपया इसे सुरक्षित रखें!",
+  "@passwordCanNeverBeChanged": {
+    "description": "Explains that the password cannot be changed as it is the one of the wallet"
+  },
+  "passwordCannotBeEmpty": "पासवर्ड खाली नहीं हो सकता ",
+  "@passwordCannotBeEmpty": {
+    "description": "Button title to create a password"
+  },
+  "passwordDoNotMatch": "पासवर्ड मैच नहीं करता है ",
+  "@passwordDoNotMatch": {
+    "description": "Modal description when passwords dont match"
+  },
+  "passwordMismatch": "कन्फ़र्मेशन पासवर्ड मैच नहीं हो रहा है।",
+  "@passwordMismatch": {
+    "description": "Error message for when the confirmation password doesn't match the actual pass"
+  },
+  "payPerFileEmphasized": "हर फ़ाइल के लिए भुगतान करें",
+  "@payPerFileEmphasized": {
+    "description": "Payment philosophy. Emphasized with upper case"
+  },
+  "pending": "पेंडिंग",
+  "@pending": {
+    "description": "Status tooltip for transactions which are waiting to be minted"
+  },
+  "personalDrivesEmphasized": "पर्सनल ड्राइव",
+  "@personalDrivesEmphasized": {
+    "description": "Sub-header for the personal drives list. Emphasized with upper case"
+  },
+  "pleaseAcceptTheTermsToContinue": "जारी रखने के लिए कृपया नियम और शर्तें स्वीकार करें. ",
+  "@pleaseAcceptTheTermsToContinue": {
+    "description": "terms and conditions cta"
+  },
+  "pleaseProvideSamePassword": "कृपया वही पासवर्ड दें जो आपने पहले इस्तेमाल किया था।",
+  "@pleaseProvideSamePassword": {
+    "description": "Asks for the wallet password"
+  },
+  "pleaseRemainOnThisTab": "लोड हो रहा है... कृपया इस टैब पर बने रहें।",
+  "@pleaseRemainOnThisTab": {
+    "description": "Circular progress indicator"
+  },
+  "pleaseRemainOnThisTabSnapshots": "आपका Web3 वॉलेट आपके ट्रानज़ैकशन को साइन कर रहा है. कृपया इस पेज पर बने रहें जब तक हम काम पूरा नहीं कर लेते!",
+  "@pleaseRemainOnThisTabSnapshots": {
+    "description": "Please stay on this page while we finish things up!"
+  },
+  "pleaseTryAgain": "कृपया दोबारा कोशिश करें ",
+  "@pleaseTryAgain": {
+    "description": "Please try again."
+  },
+  "preparingManifestEmphasized": "मैनिफ़ेस्ट तैयार हो रहा है...",
+  "@preparingManifestEmphasized": {
+    "description": "The manifest is being prepared for the upload"
+  },
+  "preparingUpload": "अपलोड की तैयारी हो रही है...",
+  "@preparingUpload": {
+    "description": "The upload is being processed"
+  },
+  "preview": "प्रीव्यू करें",
+  "@preview": {
+    "description": "Action of previewing a file"
+  },
+  "previous": "पिछला",
+  "@previous": {
+    "description": "Action of going to the previous page"
+  },
+  "privacy": "प्राइवेसी",
+  "@privacy": {
+    "description": "The privacy attribute of entities (e.g.: private drive, public folder)"
+  },
+  "private": "प्राइवेट",
+  "@private": {
+    "description": "A private entity"
+  },
+  "privateDrives": "प्राइवेट ड्राइव ",
+  "@privateDrives": {
+    "description": "Private drives accordion title"
+  },
+  "proceed": "आगे बढ़ें ",
+  "@proceed": {
+    "description": "Proceed"
+  },
+  "proceedCongestionEmphasized": "आगे बढ़ें",
+  "@proceedCongestionEmphasized": {
+    "description": "Proceed being aware of the network congestion. Emphasized with upper case"
+  },
+  "proceedEmphasized": "आगे बढ़ें ",
+  "@proceedEmphasized": {
+    "description": "Proceed but capitalized"
+  },
+  "profile": "प्रोफ़ाइल",
+  "@profile": {
+    "description": "The user profile: user name, wallet address and wallet balance"
+  },
+  "public": "पब्लिक",
+  "@public": {
+    "description": "A public entity"
+  },
+  "publicDrives": "पब्लिक ड्राइव ",
+  "@publicDrives": {
+    "description": "Public drives accordion title"
+  },
+  "recreateFolderEmphasized": "फ़ोल्डर फिर से बनाएं",
+  "@recreateFolderEmphasized": {
+    "description": "Recreate a folder that failed to be minted"
+  },
+  "recreatingFolderEmphasized": "फ़ोल्डर फिर से बनाया जा रहा है...",
+  "@recreatingFolderEmphasized": {
+    "description": "Folder is being recreated. Emphasized with upper case"
+  },
+  "rename": "नाम बदलें",
+  "@rename": {
+    "description": "The action of renaming; imperative form"
+  },
+  "renameDrive": "ड्राइव का नाम बदलें",
+  "@renameDrive": {
+    "description": "The action of renaming a drive"
+  },
+  "renameDriveEmphasized": "ड्राइव का नाम बदलें",
+  "@renameDriveEmphasized": {
+    "description": "The action of renaming a drive. Emphasized with upper case"
+  },
+  "renameEmphasized": "नाम बदलें",
+  "@renameEmphasized": {
+    "description": "The action of renaming; imperative form. Emphasized with upper case"
+  },
+  "renameFileEmphasized": "फ़ाइल का नाम बदलें",
+  "@renameFileEmphasized": {
+    "description": "The action of renaming a file. Emphasized with upper case"
+  },
+  "renameFolderEmphasized": "फ़ोल्डर का नाम बदलें",
+  "@renameFolderEmphasized": {
+    "description": "The action of renaming a folder. Emphasized with upper case"
+  },
+  "renamingDriveEmphasized": "ड्राइव का नाम बदला जा रहा है...",
+  "@renamingDriveEmphasized": {
+    "description": "The drive is being renamed. Emphasized with upper case"
+  },
+  "renamingFileEmphasized": "फ़ाइल का नाम बदला जा रहा है...",
+  "@renamingFileEmphasized": {
+    "description": "File is being renamed. Emphasized with upper case"
+  },
+  "renamingFolderEmphasized": "फ़ोल्डर का नाम बदला जा रहा है...",
+  "@renamingFolderEmphasized": {
+    "description": "Folder is being renamed. Emphasized with upper case"
+  },
+  "replaceEmphasized": "बदलना",
+  "@replaceEmphasized": {
+    "description": "Example: to REPLACE an entity"
+  },
+  "resync": "रीसिंक करें",
+  "@resync": {
+    "description": "Sync button Text"
+  },
+  "resyncTooltip": "सभी ड्राइव को रिफ़्रेश करें",
+  "@resyncTooltip": {
+    "description": "resync tooltip text"
+  },
+  "rootFolderTxID": "रूट फ़ोल्डर ट्रांज़ैक्शन ID",
+  "@rootFolderTxID": {
+    "description": "The transaction ID of the Root Folder entity"
+  },
+  "rowsPerPage": "हर पेज के हिसाब से रो",
+  "@rowsPerPage": {
+    "description": "How many rows per page to use"
+  },
+  "secondsFromForeverEmphasized": "हमेशा के लिए होने से कुछ सेकंड दूर",
+  "@secondsFromForeverEmphasized": {
+    "description": "Shows how close you are from permanence. Emphasized with upper case"
+  },
+  "selectWalletEmphasized": "वॉलेट चुनें",
+  "@selectWalletEmphasized": {
+    "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
+  },
+  "sharedDrives": "ड्राइवों को शेयर किया गया है",
+  "@sharedDrives": {
+    "description": "Sub-header for the shared drives list"
+  },
+  "sharedDrivesEmphasized": "शेयर की गई ड्राइव",
+  "@sharedDrivesEmphasized": {
+    "description": "Sub-header for the shared drives list. Emphasized with upper case"
+  },
+  "sharedFileIsEncrypted": "यह फ़ाइल एन्क्रिप्ट की गई है।",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "shareDrive": "ड्राइव शेयर करें",
+  "@shareDrive": {
+    "description": "The action of sharing a drive link"
+  },
+  "shareDriveWithOthers": "दूसरों के साथ ड्राइव शेयर करें",
+  "@shareDriveWithOthers": {
+    "description": "The action of sharing a drive link"
+  },
+  "shareFailedFile": "आप जिस फ़ाइल को शेयर करने की कोशिश कर रहे हैं वह अमान्य है और वह शेयर नहीं की जा सकती।",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
+  },
+  "shareFile": "फ़ाइल शेयर करें",
+  "@shareFile": {
+    "description": "The action of sharing a file link"
+  },
+  "shareFileWithOthers": "दूसरों के साथ फ़ाइल शेयर करें",
+  "@shareFileWithOthers": {
+    "description": "To share a file link"
+  },
+  "sharePendingFile": "आप जिस फ़ाइल को शेयर करने की कोशिश कर रहे हैं वह फ़िलहाल पेंडिंग है और इस समय शेयर नहीं की जा सकती।",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "showMenu": "मेन्यू दिखाएँ ",
+  "@showMenu": {
+    "description": "show menu text"
+  },
+  "signingUpload": "अपलोड साइन किया जा रहा है",
+  "@signingUpload": {
+    "description": "The app is signing the transactions"
+  },
+  "size": "साइज़",
+  "@size": {
+    "description": "The size of a file, folder or drive"
+  },
+  "skip": "स्किप करें ",
+  "@skip": {
+    "description": "Skip"
+  },
+  "skipEmphasized": "स्किप करना",
+  "@skipEmphasized": {
+    "description": "Example: to SKIP a conflict"
+  },
+  "snapshotCreationFailed": "आपका स्नैपशॉट असफल रहा। इस असफल कोशिश के लिए आपसे शुल्क नहीं लिया गया है।",
+  "@snapshotCreationFailed": {
+    "description": "There was an error when creating the snapshot"
+  },
+  "snapshotCreationSucceeded": "आपने {driveName} का एक स्नैपशॉट सफलतापूर्वक बना लिया है!",
+  "@snapshotCreationSucceeded": {
+    "description": "The snapshot was sucessfuly created",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
+  },
+  "snapshotFailed": "स्नैपशॉट असफल रहा",
+  "@snapshotFailed": {
+    "description": "Snapshot Failed"
+  },
+  "snapshotOfDrive": "ड्राइव {driveName} का स्नैपशॉट",
+  "@snapshotOfDrive": {
+    "description": "Snapshot of drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
+  },
+  "snapshotSize": "स्नैपशॉट का साइज़: {size}",
+  "@snapshotSize": {
+    "description": "Snapshot Size",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "snapshotSuceeded": "सफल रहा",
+  "@snapshotSuceeded": {
+    "description": "Snapshot Succeeded"
+  },
+  "sorryLoginFailed": "सॉरी, लॉगिन असफल रहा। कृपया दोबारा कोशिश करें।",
+  "@sorryLoginFailed": {
+    "description": "Text for when the user tried to login with wrong credentials"
+  },
+  "specifiedFileDoesNotExist": "बताई गई फ़ाइल मौजूद नहीं है।",
+  "@specifiedFileDoesNotExist": {
+    "description": "The shared file the user is trying to access does not exist"
+  },
+  "subscribeEmphasized": "सब्सक्राइब करें",
+  "@subscribeEmphasized": {
+    "description": "Screen not supported page. Emphasized with upper case"
+  },
+  "sync": "همگام سازی",
+  "@sync": {
+    "description": "Sync button tooltip"
+  },
+  "syncingOnlyOneDrive": "आपकी ड्राइव सिंक हो रही है...",
+  "@syncingOnlyOneDrive": {
+    "description": "Show the message when the user has only one drive"
+  },
+  "syncingPleaseRemainOnThisTab": "सिंक हो रही है... कृपया इस टैब पर बने रहें।",
+  "@syncingPleaseRemainOnThisTab": {
+    "description": "Syncing drives"
+  },
+  "syncingPleaseWait": "सिंक हो रही है... कृपया इंतज़ार करें।",
+  "@syncingPleaseWait": {
+    "description": "Syncing drives"
+  },
+  "syncProgressPercentage": "{percentage}% पूरा हुआ",
+  "@syncProgressPercentage": {
+    "description": "The sync progress percentage",
+    "placeholders": {
+      "percentage": {
+        "type": "String",
+        "example": "45.5"
+      }
+    }
+  },
+  "targetFolderEmphasized": "टारगेट फ़ोल्डर",
+  "@targetFolderEmphasized": {
+    "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
+  },
+  "termsAndConditions": "नियम और शर्तें",
+  "@termsAndConditions": {
+    "description": "terms and conditions"
+  },
+  "thinkTwiceBeforeUploading": "अपने किशोरावस्था की सभी प्रेम कविताओं को अपलोड करने से पहले दो बार ज़रूर सोच लें...",
+  "@thinkTwiceBeforeUploading": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "thisMayTakeAWhile": "इसमें थोड़ा समय लग सकता है...",
+  "@thisMayTakeAWhile": {
+    "description": "Uploading may take a while"
+  },
+  "tooLargeForUpload": "अपलोड करने के लिए बहुत बड़ा है:",
+  "@tooLargeForUpload": {
+    "description": "Files too large for upload"
+  },
+  "totalPrivacyControlEmphasized": "पूरा प्राइवेसी कंट्रोल",
+  "@totalPrivacyControlEmphasized": {
+    "description": "Title for talking about privacy. Emphasized with upper case"
+  },
+  "tryAgainDownloadingFile": "ऐसा तब हो सकता है जब फ़ाइल हाल ही में अपलोड की गई हो। कृपया बाद में दोबारा कोशिश करें।",
+  "@tryAgainDownloadingFile": {
+    "description": "The data is still being replicated between nodes of the network and it's yet not available"
+  },
+  "tryAgainEmphasized": "दोबारा कोशिश करें",
+  "@tryAgainEmphasized": {
+    "description": "Try it again. Emphasized with upper case"
+  },
+  "tryLaterCongestionEmphasized": "बाद में कोशिश करें",
+  "@tryLaterCongestionEmphasized": {
+    "description": "Try to upload later. Emphasized with upper case"
+  },
+  "tryOnAnotherDevice": "कृपया किसी दूसरे डिवाइस पर कोशिश करें या नीचे दिए गए हमारे न्यूज़लेटर को सब्सक्राइब करके हमारे आगामी मोबाइल ऐप के लिए अपडेटेड रहें।",
+  "@tryOnAnotherDevice": {
+    "description": "Screen not supported page"
+  },
+  "unlock": "अनलॉक करें",
+  "@unlock": {
+    "description": "Unlock a file or drive."
+  },
+  "unlockEmphasized": "अनलॉक करें",
+  "@unlockEmphasized": {
+    "description": "Unlock the wallet with its password. Emphasized with upper case"
+  },
+  "upload": "अपलोड करें",
+  "@upload": {
+    "description": "The action of uploading certain item"
+  },
+  "uploadDragAndDrop": "फ़ाइल अपलोड करें",
+  "@uploadDragAndDrop": {
+    "description": "The action of uploading a file"
+  },
+  "uploadEmphasized": "अपलोड करें",
+  "@uploadEmphasized": {
+    "description": "The action of uploading certain item"
+  },
+  "uploadFailed": "अपलोड असफल रहा",
+  "@uploadFailed": {
+    "description": "Upload Failed dialog title"
+  },
+  "uploadFiles": "फ़ाइल(फ़ाइलें) अपलोड करें",
+  "@uploadFiles": {
+    "description": "Upload files to the Weave"
+  },
+  "uploadFolder": "फ़ोल्डर अपलोड करें",
+  "@uploadFolder": {
+    "description": "Upload a folder and every subfolder alongside files inside them"
+  },
+  "uploadingManifestEmphasized": "मैनिफ़ेस्ट अपलोड हो रहा है...",
+  "@uploadingManifestEmphasized": {
+    "description": "The manifest is being uploaded"
+  },
+  "uploadingNFiles": "{numberOfFiles, plural, zero{} one{1 फ़ाइल अपलोड हो रही है...} other{{numberOfFiles} फ़ाइलें अपलोड हो रही हैं...}}",
+  "@uploadingNFiles": {
+    "description": "Uploading a single or many files",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "uploadingSnapshot": "स्नैपशॉट अपलोड हो रहा है",
+  "@uploadingSnapshot": {
+    "description": "Uploading Snapshot"
+  },
+  "uploadNFiles": "{numberOfFiles, plural, zero{} one{1 फ़ाइल अपलोड करें} other{{numberOfFiles} फ़ाइलें अपलोड करें}}",
+  "@uploadNFiles": {
+    "description": "Upload a single or many files",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "uploadYourFirstFile": "अपनी पहली फाइल अपलोड करें",
+  "@uploadYourFirstFile": {
+    "description": "Empty folder"
+  },
+  "usdPriceNotAvailable": "(इस वक्त USD कीमत उपलब्ध नहीं है)",
+  "@usdPriceNotAvailable": {
+    "description": "Fallback message for when the USD price is not available"
+  },
+  "useArconnectEmphasized": "ARCONNECT का इस्तेमाल करें",
+  "@useArconnectEmphasized": {
+    "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
+  },
+  "username": "यूज़र का नाम",
+  "@username": {
+    "description": "Label for the username"
+  },
+  "validationAttachDriveCouldNotBeFound": "बताया गया ड्राइव नहीं मिल सका।",
+  "@validationAttachDriveCouldNotBeFound": {
+    "description": "Input validation error: The given drive ID does not exist"
+  },
+  "validationAttachUserLoggedOut": "प्राइवेट ड्राइव अटैच करने के लिए आपको साइन-इन करना होगा।",
+  "@validationAttachUserLoggedOut": {
+    "description": "Input validation error: the user cannot attach a drive when not logged in"
+  },
+  "validationDriveNameAlreadyPresent": "इस नाम की एक ड्राइव पहले से मौजूद है।",
+  "@validationDriveNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising drive"
+  },
+  "validationEntityNameAlreadyPresent": "इस नाम का एक फ़ोल्डर/फ़ाइल पहले से ही यहां मौजूद है।",
+  "@validationEntityNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising entity"
+  },
+  "validationInvalid": "यह फ़ील्ड अमान्य है।",
+  "@validationInvalid": {
+    "description": "Input validation error: the field has invalid data"
+  },
+  "validationInvalidKey": "अमान्य ड्राइव की।",
+  "@validationInvalidKey": {
+    "description": "Input validation error: The given drive key is wrong"
+  },
+  "validationNameUnchanged": "यह नाम मौजूदा नाम के जैसा ही है",
+  "@validationNameUnchanged": {
+    "description": "Input validation error: The given name is exactly the same"
+  },
+  "validationPasswordIncorrect": "यह पासवर्ड ग़लत है।",
+  "@validationPasswordIncorrect": {
+    "description": "Input validation error: the given password is wrong"
+  },
+  "validationRequired": "यह फ़ील्ड आवश्यक है।",
+  "@validationRequired": {
+    "description": "Input validation error: the field is empty, but it's required"
+  },
+  "validationSharedFileIncorrectFileKey": "ग़लत की डाली गई, कृपया दोबारा कोशिश करें।",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "viewInfo": "जानकारी देखें",
+  "@viewInfo": {
+    "description": "View the activity and details of the entity"
+  },
+  "viewOnly": "केवल देखें",
+  "@viewOnly": {
+    "description": "The user has no permission to edit, only to view"
+  },
+  "viewOnViewBlock": "viewblock.io पर देखें ",
+  "@viewOnViewBlock": {
+    "description": "Tooltip for external link for viewBlock"
+  },
+  "waitForDownload": "आपकी फ़ाइल के साइज़ के कारण, इस डाउनलोड में कुछ समय लग सकता है। जब डाउनलोड चल रहा हो तो कृपया ऐप को खुला रखें।",
+  "@waitForDownload": {
+    "description": "User must to wait this download"
+  },
+  "walletChangedDuringManifestCreation": "मुहैया किया गया वॉलेट मैनिफ़ेस्ट बनाने के दौरान अचानक से बदल गया...",
+  "@walletChangedDuringManifestCreation": {
+    "description": "The wallet has been changed while the creation of the manifest was in process"
+  },
+  "walletChangeDetected": "वॉलेट में बदलाव का पता चला है। कृपया लॉग आउट करें और दोबारा लॉग इन करें",
+  "@walletChangeDetected": {
+    "description": "The wallet has changed. The user must log in again"
+  },
+  "walletSwitch": "वॉलेट स्विच हो गया",
+  "@walletSwitch": {
+    "description": "The wallet has changed. The user must log in again"
+  },
+  "warningEmphasized": "चेतावनी",
+  "@warningEmphasized": {
+    "description": "Congestion warning. Emphasized with upper case"
+  },
+  "weDoAFewThingsDifferently": "इसका मतलब यह भी है कि हम कुछ चीज़ें अलग तरीके से करते हैं।",
+  "@weDoAFewThingsDifferently": {
+    "description": "What ArDrive does differently"
+  },
+  "weDontRecommendUploadsAboveASafeLimit": "हम {size} से बड़े साइज़ के आइटम को अपलोड करनने की सलाह नहीं देते हैं।",
+  "@weDontRecommendUploadsAboveASafeLimit": {
+    "description": "Shows a message like We do not recommend uploading items over 5GB in size.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "5 GiB"
+      }
+    }
+  },
+  "welcome": "स्वागत है ",
+  "@welcome": {
+    "description": "welcome"
+  },
+  "welcomeBack": "वापस आने के लिए स्वागत है ",
+  "@welcomeBack": {
+    "description": "welcome back"
+  },
+  "welcomeBackEmphasized": "आपका फिर से स्वागत है",
+  "@welcomeBackEmphasized": {
+    "description": "Welcoming for an existing user. Emphasized with upper case"
+  },
+  "welcomeBackUserEmphasized": "आपका फिर से स्वागत है, {username}",
+  "@welcomeBackUserEmphasized": {
+    "description": "Welcoming to the user. Emphasized with upper case",
+    "placeholders": {
+      "username": {
+        "type": "String",
+        "example": "user"
+      }
+    }
+  },
+  "welcomeTo_body": "आपका स्वागत है आपके निजी और सुरक्षित, डिसेंट्रलाइज़्ड, इस्तेमाल के अनुसार भुगतान, सेंसरशिप प्रतिरोधी और स्थायी हार्ड ड्राइव में",
+  "@welcomeTo_body": {
+    "description": "Welcoming message just after the ArDrive logo"
+  },
+  "welcomeTo_description": "आपके निजी और सुरक्षित, डिसेंट्रलाइज़्ड, इस्तेमाल के अनुसार भुगतान, सेंसरशिप प्रतिरोधी और स्थायी हार्ड ड्राइव में",
+  "@welcomeTo_description": {
+    "description": "Brief description of ArDrive as welcoming"
+  },
+  "welcomeTo_main": "आपका स्वागत है",
+  "@welcomeTo_main": {
+    "description": "Highly emphasized text giving welcome"
+  },
+  "welcomeToThePermawebEmphasized": "PERMAWEB में आपका स्वागत है",
+  "@welcomeToThePermawebEmphasized": {
+    "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
+  },
+  "weReSorryEmphasized": "सॉरी!",
+  "@weReSorryEmphasized": {
+    "description": "Screen not supported page. Emphasized with upper case"
+  },
+  "weWontRemindYou": "ठीक है! हम आपको दोबारा याद नहीं दिलाएंगे।",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them to leave feedback again"
+  },
+  "weWontRemindYouDescription": "अगर आप कभी भी अपना मन बदलते हैं और बाद की किसी तारीख में फ़ीडबैक देना चाहते हैं, तो आप अपने मेनू में दिए गए लिंक के ज़रिए ऐसा कर सकते हैं।",
+  "@weWontRemindYouDescription": {
+    "description": "We let the user know where to find the 'Leave Feedback' button"
+  },
+  "whatIsArDrive": "ArDrive क्या है?",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
+  },
+  "yourChoice": "आपकी पसंद: सबसे बेहतर एन्क्रिप्शन का इस्तेमाल करके फ़ाइलों को पब्लिक या प्राइवेट बनाएं।",
+  "@yourChoice": {
+    "description": "User can choose whether or not to make the content public"
+  },
+  "yourPrivateSecureAndPermanentDrive": "आपका प्राइवेट, सुरक्षित और प्रमनेन्ट हार्ड ड्राइव ",
+  "@yourPrivateSecureAndPermanentDrive": {
+    "description": "Your private, secure, and permanent hard drive."
+  },
+  "yourUploadFailed": "आपका अपलोड असफल रहा। असफल कोशिश के लिए आपसे शुल्क नहीं लिया गया है।",
+  "@yourUploadFailed": {
+    "description": "Upload fail dialog description."
+  },
+  "zippingYourFiles": "आपकी फाइल(ों) को ज़िप कर रहें हैं....",
+  "@zippingYourFiles": {
+    "description": "Download failure message when a file is too big"
+  }
+}

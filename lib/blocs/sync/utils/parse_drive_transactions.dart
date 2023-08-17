@@ -5,7 +5,7 @@ part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required DriveDao driveDao,
   required Database database,
-  required ArweaveService arweaveService,
+  required ArweaveService arweave,
   required List<DriveHistoryTransaction> transactions,
   required Drive drive,
   required SecretKey? driveKey,
@@ -13,6 +13,8 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required int currentBlockHeight,
   required int batchSize,
   required SnapshotDriveHistory snapshotDriveHistory,
+  required Map<FolderID, GhostFolder> ghostFolders,
+  required String ownerAddress,
 }) async* {
   final numberOfDriveEntitiesToParse = transactions.length;
   var numberOfDriveEntitiesParsed = 0;
@@ -39,22 +41,23 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
     'no. of entities in drive - ${drive.name} to be parsed are: $numberOfDriveEntitiesToParse\n',
   );
 
-  final owner = await arweave.getOwnerForDriveEntityWithId(drive.id);
-
   yield* _batchProcess<DriveHistoryTransaction>(
       list: transactions,
       batchSize: batchSize,
       endOfBatchCallback: (items) async* {
-        logSync('Getting metadata from drive ${drive.name}');
+        final isReadingFromSnapshot = snapshotDriveHistory.items.isNotEmpty;
+
+        if (!isReadingFromSnapshot) {
+          logSync('Getting metadata from drive ${drive.name}');
+        }
 
         final entityHistory =
             await arweave.createDriveEntityHistoryFromTransactions(
           items,
           driveKey,
-          owner,
           lastBlockHeight,
-          snapshotDriveHistory: snapshotDriveHistory,
           driveId: drive.id,
+          ownerAddress: ownerAddress,
         );
 
         // Create entries for all the new revisions of file and folders in this drive.
@@ -138,6 +141,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           });
 
           await _generateFsEntryPaths(
+            ghostFolders: ghostFolders,
             driveDao: driveDao,
             driveId: drive.id,
             foldersByIdMap: updatedFoldersById,

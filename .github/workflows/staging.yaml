@@ -18,7 +18,11 @@ env:
   RELEASE_NOTES: Staging - ${{ github.sha }}
 
 jobs:
-  test:
+  pre-build:
+    uses: ./.github/workflows/test.yml
+
+  build-web:
+    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -26,35 +30,14 @@ jobs:
         with:
           persist-credentials: false
 
-      # Install Flutter
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.3.9'
-          channel: 'stable'
-
-      - name: Install script_runner
-        run: flutter pub global activate script_runner
-
-      - name: Build app
-        run: scr setup
-
-      - name: Test app
-        run: scr test
-
-  web:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
 
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.9'
-          channel: 'stable'
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install script_runner
         run: flutter pub global activate script_runner
@@ -63,11 +46,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --release
-
-      # JS files cache invalidation
-      - name: main.dart.js cache invalidation
-        run: sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
+          flutter build web --dart-define=environment=staging --release
 
       # Deploy to github pages
       - uses: JamesIves/github-pages-deploy-action@4.1.1
@@ -77,8 +56,8 @@ jobs:
           folder: build/web
           clean: true
 
-  ios:
-    needs: test
+  build-ios:
+    needs: pre-build
     runs-on: macos-latest
     steps:
       # Checkout
@@ -89,11 +68,14 @@ jobs:
         with:
           ruby-version: '3.1'
 
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.9'
-          channel: 'stable'
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Set FIREBASE_JSON env var
         run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
@@ -114,8 +96,8 @@ jobs:
         working-directory: ./ios
         run: bundle exec fastlane deploy type:staging
 
-  android:
-    needs: test
+  build-android:
+    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -132,11 +114,14 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.9'
-          channel: 'stable'
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Set FIREBASE_JSON env var
         run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV

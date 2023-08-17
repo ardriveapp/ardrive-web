@@ -4,14 +4,14 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/local_key_value_store.dart';
-import 'package:ardrive/utils/secure_key_value_store.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 part 'profile_state.dart';
 
@@ -19,16 +19,22 @@ part 'profile_state.dart';
 /// and wallet balance.
 class ProfileCubit extends Cubit<ProfileState> {
   final ArweaveService _arweave;
+  final TurboUploadService _turboUploadService;
   final ProfileDao _profileDao;
   final Database _db;
+  final TabVisibilitySingleton _tabVisibilitySingleton;
 
   ProfileCubit({
     required ArweaveService arweave,
+    required TurboUploadService turboUploadService,
     required ProfileDao profileDao,
     required Database db,
+    required TabVisibilitySingleton tabVisibilitySingleton,
   })  : _arweave = arweave,
+        _turboUploadService = turboUploadService,
         _profileDao = profileDao,
         _db = db,
+        _tabVisibilitySingleton = tabVisibilitySingleton,
         super(ProfileCheckingAvailability()) {
     promptToAuthenticate();
   }
@@ -88,13 +94,31 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     if (profile.profileType == ProfileType.arConnect.index) {
-      if (!(await arconnect.checkPermissions())) {
-        return true;
-      }
-      final currentPublicKey = await arconnect.getPublicKey();
-      final savedPublicKey = profile.walletPublicKey;
-      if (currentPublicKey != savedPublicKey) {
-        return true;
+      try {
+        if (!(await arconnect.checkPermissions())) {
+          logger.i('ArConnect permissions changed');
+          throw Exception('ArConnect permissions changed');
+        }
+
+        final currentPublicKey = await arconnect.getPublicKey();
+        final savedPublicKey = profile.walletPublicKey;
+        if (currentPublicKey != savedPublicKey) {
+          return true;
+        }
+      } catch (e) {
+        if (_tabVisibilitySingleton.isTabFocused()) {
+          return false;
+        }
+
+        logger.e('Error checking ArConnect permissions: $e');
+
+        bool isWalletMismatch = false;
+
+        await _tabVisibilitySingleton.onTabGetsFocusedFuture(() async {
+          isWalletMismatch = await checkIfWalletMismatch();
+        });
+
+        return isWalletMismatch;
       }
     }
 
@@ -128,7 +152,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         case ProfileType.json:
           return profile.wallet;
         case ProfileType.arConnect:
-          return ArConnectWallet();
+          return ArConnectWallet(arconnect);
       }
     }();
 
@@ -140,6 +164,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         walletAddress: walletAddress,
         walletBalance: walletBalance,
         cipherKey: profile.key,
+        useTurbo: _turboUploadService.useTurboUpload,
       ),
     );
   }
@@ -156,28 +181,16 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(profile.copyWith(walletBalance: walletBalance));
   }
 
-  /// Removes the user's existing profile and its associated data then prompts them to add another.
-  ///
-  /// Works even when the user is not authenticated.
   Future<void> logoutProfile() async {
-    final profile = await _profileDao.defaultProfile().getSingleOrNull();
-    final arconnect = ArConnectService();
+    logger.i('Logging out profile. state: $state');
+    if (state is ProfileLoggingOut) {
+      emit(ProfilePromptAdd());
 
-    if (profile != null && profile.profileType == ProfileType.arConnect.index) {
-      try {
-        await arconnect.disconnect();
-      } catch (e) {
-        print(e);
-      }
+      logger.i('Profile logout already in progress. state: $state');
+      return;
     }
 
-    await deleteTables();
-    SecureKeyValueStore(const FlutterSecureStorage()).remove('password');
-    (await LocalKeyValueStore.getInstance()).remove('biometricEnabled');
-
     emit(ProfileLoggingOut());
-
-    unawaited(promptToAuthenticate());
   }
 
   Future<void> deleteTables() async {

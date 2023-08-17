@@ -1,4 +1,4 @@
-import 'package:ardrive/services/services.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -9,21 +9,25 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'entities.dart';
 
 abstract class Entity {
+  final ArDriveCrypto _crypto;
+
   /// The id of the transaction that represents this entity.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   late String txId;
 
   /// The address of the owner of this entity.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   late String ownerAddress;
 
   /// The bundle this entity is a part of.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? bundledIn;
 
   /// The time this entity was created at ie. its `Unix-Time`.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   DateTime createdAt = DateTime.now();
+
+  Entity(this._crypto);
 
   /// Returns a [Transaction] with the entity's data along with the appropriate tags.
   ///
@@ -33,7 +37,7 @@ abstract class Entity {
   }) async {
     final tx = key == null
         ? Transaction.withJsonData(data: this)
-        : await createEncryptedEntityTransaction(this, key);
+        : await _crypto.createEncryptedEntityTransaction(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
 
     addEntityTagsToTransaction(tx);
@@ -53,7 +57,7 @@ abstract class Entity {
   Future<DataItem> asDataItem(SecretKey? key) async {
     final item = key == null
         ? DataItem.withJsonData(data: this)
-        : await createEncryptedEntityDataItem(this, key);
+        : await _crypto.createEncryptedEntityDataItem(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
     addEntityTagsToTransaction(item);
     item.addApplicationTags(
@@ -107,15 +111,18 @@ extension TransactionUtils on TransactionBase {
 
   /// Tags this transaction with the ArFS version currently in use.
   void addArFsTag() {
-    addTag(EntityTag.arFs, '0.11');
+    addTag(EntityTag.arFs, '0.12');
   }
 
-  void addBarTags() {
-    addTag(EntityTag.protocolName, 'BAR');
-    addTag(EntityTag.action, 'Burn');
+  void addBundleTags() {
+    addTag('Bundle-Format', 'binary');
+    addTag('Bundle-Version', '2.0.0');
+  }
+
+  void addUTags() {
     addTag(EntityTag.appName, 'SmartWeaveAction');
     addTag(EntityTag.appVersion, '0.3.0');
     addTag(EntityTag.input, '{"function":"mint"}');
-    addTag(EntityTag.contract, 'VFr3Bk-uM-motpNNkkFg4lNW1BMmSfzqsVO551Ho4hA');
+    addTag(EntityTag.contract, 'KTzTXT_ANmF84fWEKHzWURD1LWd9QaFR9yfYUwH2Lxw');
   }
 }

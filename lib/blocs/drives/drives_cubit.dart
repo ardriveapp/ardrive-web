@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,26 +17,33 @@ part 'drives_state.dart';
 class DrivesCubit extends Cubit<DrivesState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
+  final ArDriveAuth _auth;
 
   late StreamSubscription _drivesSubscription;
   String? initialSelectedDriveId;
   DrivesCubit({
+    required ArDriveAuth auth,
     this.initialSelectedDriveId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
+        _auth = auth,
         super(DrivesLoadInProgress()) {
-    _profileCubit.stream.listen((state) {
-      if (state is ProfileLoggingOut) {
+    _auth.onAuthStateChanged().listen((user) {
+      if (user == null) {
         cleanDrives();
+        return;
       }
     });
+
     _drivesSubscription =
         Rx.combineLatest3<List<Drive>, List<FolderEntry>, void, List<Drive>>(
-      _driveDao
-          .allDrives(order: OrderBy([OrderingTerm.asc(_driveDao.drives.name)]))
-          .watch(),
+      _driveDao.allDrives(
+        order: (drives) {
+          return OrderBy([OrderingTerm.asc(drives.name)]);
+        },
+      ).watch(),
       _driveDao.ghostFolders().watch(),
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drives, _, __) => drives,
@@ -57,7 +66,8 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       final ghostFolders = await _driveDao.ghostFolders().get();
 
-      print('selected drive id: $selectedDriveId');
+      final sharedDrives =
+          drives.where((d) => !isDriveOwner(auth, d.ownerAddress)).toList();
 
       emit(
         DrivesLoadSuccess(
@@ -68,11 +78,7 @@ class DrivesCubit extends Cubit<DrivesState> {
                   ? d.ownerAddress == walletAddress
                   : false)
               .toList(),
-          sharedDrives: drives
-              .where((d) => profile is ProfileLoggedIn
-                  ? d.ownerAddress != walletAddress
-                  : true)
-              .toList(),
+          sharedDrives: sharedDrives,
           drivesWithAlerts: ghostFolders.map((e) => e.driveId).toList(),
           canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
         ),
@@ -97,6 +103,7 @@ class DrivesCubit extends Cubit<DrivesState> {
         sharedDrives: const [],
         drivesWithAlerts: const [],
         canCreateNewDrive: false);
+
     emit(state);
   }
 

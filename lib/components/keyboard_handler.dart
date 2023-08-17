@@ -1,5 +1,8 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/utils/extensions.dart';
+import 'package:ardrive/dev_tools/app_dev_tools.dart';
+import 'package:ardrive/dev_tools/shortcut_handler.dart';
+import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -64,7 +67,7 @@ Future<bool> isCtrlOrMetaKeyPressed(RawKeyEvent event) async {
     }
     return ctrlMetaKeyPressed;
   } catch (e) {
-    'Unable to compute platform'.logError();
+    logger.e('Unable to compute platform');
     return false;
   }
 }
@@ -85,4 +88,46 @@ bool isApple(String userAgent) {
     }
   }
   return false;
+}
+
+class ArDriveDevToolsShortcuts extends StatelessWidget {
+  final Widget child;
+  final List<Shortcut>? customShortcuts;
+
+  const ArDriveDevToolsShortcuts({
+    Key? key,
+    required this.child,
+    this.customShortcuts,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Define the shortcuts and their actions
+    final List<Shortcut> shortcuts = [
+      Shortcut(
+        modifier: LogicalKeyboardKey.shiftLeft,
+        key: LogicalKeyboardKey.keyQ,
+        action: () {
+          if (context.read<ConfigService>().flavor != Flavor.production) {
+            ArDriveDevTools.instance.showDevTools();
+          }
+        },
+      ),
+      Shortcut(
+        modifier: LogicalKeyboardKey.shiftLeft,
+        key: LogicalKeyboardKey.keyW,
+        action: () {
+          if (context.read<ConfigService>().flavor != Flavor.production) {
+            logger.i('Closing dev tools');
+            ArDriveDevTools.instance.closeDevTools();
+          }
+        },
+      ),
+    ];
+
+    return ShortcutHandler(
+      shortcuts: shortcuts + (customShortcuts ?? []),
+      child: child,
+    );
+  }
 }

@@ -4,5 +4,12 @@ const List<String> supportedImageTypesInFilePreview = [
   'image/gif',
   'image/webp',
   'image/bmp',
-  'image/vnd.wap.wbmp',
 ];
+
+const List<String> videoContentTypes = [
+  'video/mp4',
+];
+
+const profileQueryMaxRetries = 6;
+
+const String hasAcceptedCookiePolicyKey = 'hasAcceptedCookiePolicy';

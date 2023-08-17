@@ -1,9 +1,9 @@
-import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,11 +20,13 @@ Future<void> showCongestionDependentModalDialog(
     warnAboutCongestion = false;
   }
 
+  // ignore: use_build_context_synchronously
   return await showModalDialog(context, () async {
     if (warnAboutCongestion) {
-      final shouldShowDialog = await showDialog(
-        context: context,
-        builder: (_) => AppDialog(
+      bool shouldShowDialog = false;
+      await showAnimatedDialog(
+        context,
+        content: ArDriveStandardModal(
           title: appLocalizationsOf(context).warningEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
@@ -45,7 +47,7 @@ Future<void> showCongestionDependentModalDialog(
                                 text: appLocalizationsOf(context)
                                     .congestionWarning),
                           ],
-                          style: Theme.of(context).textTheme.bodyText1,
+                          style: ArDriveTypography.body.buttonNormalRegular(),
                         ),
                       ),
                     ),
@@ -55,19 +57,19 @@ Future<void> showCongestionDependentModalDialog(
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () {
+            ModalAction(
+              action: () {
+                shouldShowDialog = false;
                 Navigator.of(context).pop(false);
               },
-              child: Text(
-                  appLocalizationsOf(context).tryLaterCongestionEmphasized),
+              title: appLocalizationsOf(context).tryLaterCongestionEmphasized,
             ),
-            ElevatedButton(
-              onPressed: () async {
+            ModalAction(
+              action: () async {
+                shouldShowDialog = true;
                 Navigator.of(context).pop(true);
               },
-              child:
-                  Text(appLocalizationsOf(context).proceedCongestionEmphasized),
+              title: appLocalizationsOf(context).proceedEmphasized,
             ),
           ],
         ),

@@ -4,28 +4,30 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:reactive_forms/reactive_forms.dart';
 import 'package:uuid/uuid.dart';
+
+import '../../core/upload/cost_calculator.dart';
 
 part 'create_manifest_state.dart';
 
 class CreateManifestCubit extends Cubit<CreateManifestState> {
-  late FormGroup form;
   late FolderNode rootFolderNode;
 
   final ProfileCubit _profileCubit;
   final Drive drive;
 
   final ArweaveService _arweave;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final PstService _pst;
 
@@ -35,10 +37,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required this.drive,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required PstService pst,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
+        _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _pst = pst,
         super(CreateManifestInitial()) {
@@ -47,23 +51,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       // Private manifests need more consideration and are currently unavailable
       emit(CreateManifestPrivacyMismatch());
     }
-
-    form = FormGroup({
-      'name': FormControl(
-        validators: [
-          Validators.required,
-          Validators.pattern(kFileNameRegex),
-          Validators.pattern(kTrimTrailingRegex),
-        ],
-      ),
-    });
   }
 
   /// Validate form before User begins choosing a target folder
   Future<void> chooseTargetFolder() async {
-    if (form.invalid) {
-      return;
-    }
     rootFolderNode =
         await _driveDao.getFolderTree(drive.id, drive.rootFolderId);
 
@@ -71,14 +62,17 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   /// User has confirmed that they would like to submit a manifest revision transaction
-  Future<void> confirmRevision() async {
+  Future<void> confirmRevision(
+    String name,
+  ) async {
     final revisionConfirmationState = state as CreateManifestRevisionConfirm;
     final parentFolder = revisionConfirmationState.parentFolder;
     final existingManifestFileId =
         revisionConfirmationState.existingManifestFileId;
 
     emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
-    await prepareManifestTx(existingManifestFileId: existingManifestFileId);
+    await prepareManifestTx(
+        existingManifestFileId: existingManifestFileId, manifestName: name);
   }
 
   Future<void> loadParentFolder() async {
@@ -103,33 +97,31 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   /// User selected a new name due to name conflict, confirm that form is valid and check for conflicts again
-  Future<void> reCheckConflicts() async {
+  Future<void> reCheckConflicts(String name) async {
     final conflictState = (state as CreateManifestNameConflict);
     final parentFolder = conflictState.parentFolder;
     final conflictingName = conflictState.conflictingName;
 
-    if (form.invalid || form.control('name').value == conflictingName) {
+    if (name == conflictingName) {
       return;
     }
 
     emit(CreateManifestCheckingForConflicts(parentFolder: parentFolder));
-    await checkNameConflicts();
+    await checkNameConflicts(name);
   }
 
-  Future<void> checkForConflicts() async {
+  Future<void> checkForConflicts(String name) async {
     final parentFolder =
         (state as CreateManifestFolderLoadSuccess).viewingFolder.folder;
 
     emit(CreateManifestCheckingForConflicts(parentFolder: parentFolder));
-    await checkNameConflicts();
+    await checkNameConflicts(name);
   }
 
-  Future<void> checkNameConflicts() async {
+  Future<void> checkNameConflicts(String name) async {
     final parentFolder =
         (state as CreateManifestCheckingForConflicts).parentFolder;
     await _selectedFolderSubscription?.cancel();
-
-    final name = form.control('name').value;
 
     final foldersWithName = await _driveDao
         .foldersInFolderWithName(
@@ -169,11 +161,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       return;
     }
     emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
-    await prepareManifestTx();
+    await prepareManifestTx(manifestName: name);
   }
 
   Future<void> prepareManifestTx({
     FileID? existingManifestFileId,
+    required String manifestName,
   }) async {
     try {
       final parentFolder =
@@ -187,7 +180,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
-      final String manifestName = form.control('name').value;
 
       final manifestDataItem = await arweaveManifest.asPreparedDataItem(
         owner: await wallet.getOwner(),
@@ -215,6 +207,33 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       await manifestMetaDataItem.sign(wallet);
       manifestFileEntity.txId = manifestMetaDataItem.id;
 
+      addManifestToDatabase() => _driveDao.transaction(
+            () async {
+              await _driveDao.writeFileEntity(
+                  manifestFileEntity, '${parentFolder.path}/$manifestName');
+              await _driveDao.insertFileRevision(
+                manifestFileEntity.toRevisionCompanion(
+                  performedAction: existingManifestFileId == null
+                      ? RevisionAction.create
+                      : RevisionAction.uploadNewVersion,
+                ),
+              );
+            },
+          );
+      final canUseTurbo = _turboUploadService.useTurboUpload &&
+          arweaveManifest.size < _turboUploadService.allowedDataItemSize;
+      if (canUseTurbo) {
+        emit(
+          CreateManifestTurboUploadConfirmation(
+            manifestSize: arweaveManifest.size,
+            manifestName: manifestName,
+            manifestDataItems: [manifestDataItem, manifestMetaDataItem],
+            addManifestToDatabase: addManifestToDatabase,
+          ),
+        );
+        return;
+      }
+
       final bundle = await DataBundle.fromDataItems(
         items: [manifestDataItem, manifestMetaDataItem],
       );
@@ -238,8 +257,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       }
 
       final arUploadCost = winstonToAr(totalCost);
-      final usdUploadCost = await _arweave.getArUsdConversionRate().then(
-          (conversionRate) => double.parse(arUploadCost) * conversionRate);
+
+      final double? usdUploadCost = await ConvertArToUSD(arweave: _arweave)
+          .convertForUSD(double.parse(arUploadCost));
 
       // Sign bundle tx and preserve bundle tx ID on entity
       await bundleTx.sign(wallet);
@@ -247,16 +267,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       final uploadManifestParams = UploadManifestParams(
         signedBundleTx: bundleTx,
-        addManifestToDatabase: () => _driveDao.transaction(() async {
-          await _driveDao.writeFileEntity(
-              manifestFileEntity, '${parentFolder.path}/$manifestName');
-          await _driveDao.insertFileRevision(
-            manifestFileEntity.toRevisionCompanion(
-                performedAction: existingManifestFileId == null
-                    ? RevisionAction.create
-                    : RevisionAction.uploadNewVersion),
-          );
-        }),
+        addManifestToDatabase: addManifestToDatabase,
       );
 
       emit(
@@ -278,7 +289,25 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       emit(CreateManifestWalletMismatch());
       return;
     }
+    if (state is CreateManifestTurboUploadConfirmation) {
+      final params = state as CreateManifestTurboUploadConfirmation;
+      emit(CreateManifestUploadInProgress());
+      try {
+        for (var dataItem in params.manifestDataItems) {
+          await _turboUploadService.postDataItem(
+            dataItem: dataItem,
+            wallet: (_profileCubit.state as ProfileLoggedIn).wallet,
+          );
+        }
 
+        await params.addManifestToDatabase();
+
+        emit(CreateManifestSuccess());
+      } catch (err) {
+        addError(err);
+      }
+      return;
+    }
     final params =
         (state as CreateManifestUploadConfirmation).uploadManifestParams;
 
@@ -305,7 +334,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   void backToName() {
-    form.reset();
     emit(CreateManifestInitial());
   }
 
@@ -314,7 +342,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     emit(CreateManifestFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to create manifest: $error $stackTrace');
+    logger.i('Failed to create manifest: $error $stackTrace');
   }
 }
 

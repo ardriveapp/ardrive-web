@@ -1,0 +1,4 @@
+- Fixes the ArDrive logo on ArConnect permissions page.
+- Fixes an error during snapshot creation using ArConnect.
+- Fixes an error during sync when using ArConnect
+- Fixes a border case: sync on focus

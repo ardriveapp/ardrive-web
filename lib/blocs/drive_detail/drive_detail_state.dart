@@ -13,6 +13,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final bool hasWritePermissions;
   final bool driveIsEmpty;
   final bool multiselect;
+  final bool hasFoldersSelected;
 
   final FolderWithContents folderInView;
 
@@ -26,10 +27,13 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   ///
   /// Null if no file is selected.
   final String? selectedFilePreviewUrl;
+  final ArDriveDataTableItem? selectedItem;
 
   final int rowsPerPage;
   final List<int> availableRowsPerPage;
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
+
+  final List<ArDriveDataTableItem> currentFolderContents;
 
   DriveDetailLoadSuccess({
     required this.currentDrive,
@@ -42,8 +46,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.multiselect,
     this.selectedItems = const [],
     this.showSelectedItemDetails = false,
+    this.hasFoldersSelected = false,
     this.selectedFilePreviewUrl,
     required this.driveIsEmpty,
+    this.selectedItem,
+    required this.currentFolderContents,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -59,8 +66,13 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     List<int>? availableRowsPerPage,
     bool? driveIsEmpty,
     bool? multiselect,
+    bool? hasFoldersSelected,
+    ArDriveDataTableItem? selectedItem,
+    List<ArDriveDataTableItem>? currentFolderContents,
   }) =>
       DriveDetailLoadSuccess(
+        selectedItem: selectedItem ?? this.selectedItem,
+        hasFoldersSelected: hasFoldersSelected ?? this.hasFoldersSelected,
         currentDrive: currentDrive ?? this.currentDrive,
         multiselect: multiselect ?? this.multiselect,
         hasWritePermissions: hasWritePermissions ?? this.hasWritePermissions,
@@ -75,6 +87,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         availableRowsPerPage: availableRowsPerPage ?? this.availableRowsPerPage,
         rowsPerPage: rowsPerPage ?? this.rowsPerPage,
         driveIsEmpty: driveIsEmpty ?? this.driveIsEmpty,
+        currentFolderContents:
+            currentFolderContents ?? this.currentFolderContents,
       );
 
   @override
@@ -101,3 +115,5 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 /// [DriveDetailLoadNotFound] means that the specified drive could not be found attached to
 /// the user's profile.
 class DriveDetailLoadNotFound extends DriveDetailState {}
+
+class DriveInitialLoading extends DriveDetailState {}

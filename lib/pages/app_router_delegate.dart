@@ -1,14 +1,23 @@
 import 'package:ardrive/app_shell.dart';
+import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/feedback_survey.dart';
+import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/theme/theme_switcher_bloc.dart';
+import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -53,11 +62,29 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRouterDelegate() : navigatorKey = GlobalKey<NavigatorState>();
 
   @override
-  Widget build(BuildContext context) =>
-      BlocConsumer<ProfileCubit, ProfileState>(
+  Widget build(BuildContext context) {
+    if (context.read<ConfigService>().flavor != Flavor.production) {
+      return ArDriveAppWithDevTools(widget: _app());
+    }
+
+    return _app();
+  }
+
+  Widget _app() {
+    return BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
+      listener: (context, state) {
+        if (state is ThemeSwitcherDarkTheme) {
+          ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
+        } else if (state is ThemeSwitcherLightTheme) {
+          ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
+        }
+      },
+      builder: (context, _) => BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
           // Clear state to prevent the last drive from being attached on new login
           if (state is ProfileLoggingOut) {
+            logger.d('Cleaning state');
+
             clearState();
           }
 
@@ -105,10 +132,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 fileKey: sharedFileKey,
                 arweave: context.read<ArweaveService>(),
               ),
-              child: const SharedFilePage(),
+              child: SharedFilePage(),
             );
           } else if (signingIn) {
-            shell = const ProfileAuthPage();
+            shell = const LoginPage();
           } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
               listener: (context, state) {
@@ -133,6 +160,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
                 shellPage ??= const SizedBox();
                 driveId = driveId ?? rootPath;
+
                 return BlocProvider(
                   key: ValueKey(driveId),
                   create: (context) => DriveDetailCubit(
@@ -140,7 +168,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     initialFolderId: driveFolderId,
                     profileCubit: context.read<ProfileCubit>(),
                     driveDao: context.read<DriveDao>(),
-                    config: context.read<AppConfig>(),
+                    configService: context.read<ConfigService>(),
+                    auth: context.read<ArDriveAuth>(),
                   ),
                   child: MultiBlocListener(
                     listeners: [
@@ -149,15 +178,22 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                           if (state is DriveDetailLoadSuccess) {
                             driveId = state.currentDrive.id;
                             driveFolderId = state.folderInView.folder.id;
+
                             //Can be null at the root folder of the drive
                             notifyListeners();
                           } else if (state is DriveDetailLoadNotFound) {
                             // Do not prompt the user to attach an unfound drive if they are logging out.
                             final profileCubit = context.read<ProfileCubit>();
+
                             if (profileCubit.state is ProfileLoggingOut) {
+                              logger.d(
+                                  'Drive not found, but user is logging out. Not prompting to attach drive.');
+
                               clearState();
+
                               return;
                             }
+
                             attachDrive(
                               context: context,
                               driveId: driveId,
@@ -218,20 +254,23 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           );
 
           if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
-            print('Injecting SyncCubit');
             return MultiBlocProvider(
               providers: [
                 BlocProvider(
                   create: (context) => SyncCubit(
+                    activityTracker: context.read<ActivityTracker>(),
+                    configService: context.read<ConfigService>(),
                     profileCubit: context.read<ProfileCubit>(),
                     activityCubit: context.read<ActivityCubit>(),
                     arweave: context.read<ArweaveService>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),
+                    tabVisibility: TabVisibilitySingleton(),
                   ),
                 ),
                 BlocProvider(
                   create: (context) => DrivesCubit(
+                    auth: context.read<ArDriveAuth>(),
                     initialSelectedDriveId: driveId,
                     profileCubit: context.read<ProfileCubit>(),
                     driveDao: context.read<DriveDao>(),
@@ -262,7 +301,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             return navigator;
           }
         },
-      );
+      ),
+    );
+  }
 
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {

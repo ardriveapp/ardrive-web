@@ -1,24 +1,28 @@
 import 'package:ardrive/blocs/upload/upload_handles/file_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
+import 'package:ardrive/core/arconnect/safe_arconnect_action.dart';
+import 'package:ardrive/core/upload/bundle_signer.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
-import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
 class BundleUploadHandle implements UploadHandle {
   final List<FileDataItemUploadHandle> fileDataItemUploadHandles;
   final List<FolderDataItemUploadHandle> folderDataItemUploadHandles;
-
   late Transaction bundleTx;
+  late DataItem bundleDataItem;
+  late String bundleId;
   late Iterable<FileEntity> fileEntities;
 
   BundleUploadHandle._create({
     this.fileDataItemUploadHandles = const [],
     this.folderDataItemUploadHandles = const [],
-    this.size = 0,
   }) {
     fileEntities = fileDataItemUploadHandles.map((item) => item.entity);
   }
@@ -44,44 +48,110 @@ class BundleUploadHandle implements UploadHandle {
   @override
   double uploadProgress = 0;
 
+  void setUploadProgress(double progress) {
+    uploadProgress = progress;
+  }
+
   Future<void> prepareAndSignBundleTransaction({
     required ArweaveService arweaveService,
-    required DriveDao driveDao,
+    required TurboUploadService turboUploadService,
     required PstService pstService,
     required Wallet wallet,
+    required TabVisibilitySingleton tabVisibilitySingleton,
     bool isArConnect = false,
+    bool useTurbo = false,
   }) async {
-    final bundle = await DataBundle.fromHandles(
-      parallelize: !isArConnect,
-      handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
-              fileDataItemUploadHandles) +
-          List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
-              folderDataItemUploadHandles),
-    );
+    logger.d('Preparing bundle');
 
-    debugPrint('Bundle mounted');
+    late DataBundle bundle;
+    try {
+      if (isArConnect) {
+        bundle = await safeArConnectAction<DataBundle>(
+          tabVisibilitySingleton,
+          (_) async {
+            logger.d('Preparing bundle in safe ArConnect action');
+            return DataBundle.fromHandles(
+              parallelize: !isArConnect,
+              handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
+                      fileDataItemUploadHandles) +
+                  List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
+                      folderDataItemUploadHandles),
+            );
+          },
+        );
+      } else {
+        bundle = await DataBundle.fromHandles(
+          parallelize: !isArConnect,
+          handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
+                  fileDataItemUploadHandles) +
+              List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
+                  folderDataItemUploadHandles),
+        );
+      }
+    } catch (e) {
+      logger.e('Error while preparing bundle: $e');
+      hasError = true;
+      return;
+    }
 
-    debugPrint('Creating bundle transaction');
+    logger.d('Bundle mounted');
 
-    // Create bundle tx
-    bundleTx = await arweaveService.prepareDataBundleTxFromBlob(
-      bundle.blob,
-      wallet,
-    );
+    logger.d('Creating bundle transaction');
+    BundleSigner signer;
 
-    debugPrint('Bundle transaction created');
+    if (useTurbo) {
+      if (isArConnect) {
+        logger.d('Using ArConnect BDI signer');
 
-    debugPrint('Adding tip');
+        signer = SafeArConnectBDISigner(
+          BDISigner(
+            arweaveService: arweaveService,
+            wallet: wallet,
+          ),
+        );
+      } else {
+        signer = BDISigner(
+          arweaveService: arweaveService,
+          wallet: wallet,
+        );
+      }
 
-    await pstService.addCommunityTipToTx(bundleTx);
+      bundleDataItem = await signer.signBundle(unSignedBundle: bundle);
 
-    debugPrint('Tip added');
+      bundleId = bundleDataItem.id;
+    } else {
+      // Create bundle tx
+      if (isArConnect) {
+        signer = SafeArConnectTransactionSigner(
+          ArweaveBundleTransactionSigner(
+            arweaveService: arweaveService,
+            wallet: wallet,
+            pstService: pstService,
+          ),
+        );
+      } else {
+        signer = SafeArConnectArweaveBundleTransactionSigner(
+          ArweaveBundleTransactionSigner(
+            arweaveService: arweaveService,
+            wallet: wallet,
+            pstService: pstService,
+          ),
+        );
+      }
 
-    debugPrint('Signing bundle');
+      bundleTx = await signer.signBundle(unSignedBundle: bundle);
 
-    await bundleTx.sign(wallet);
+      bundleId = bundleTx.id;
+    }
+  }
 
-    debugPrint('Bundle signed');
+  // TODO: this should not be done here. Implement a new class that handles
+  Future<void> writeBundleItemsToDatabase({
+    required DriveDao driveDao,
+  }) async {
+    if (hasError) {
+      return;
+    }
 
     // Write entities to database
     for (var folder in folderDataItemUploadHandles) {
@@ -89,22 +159,16 @@ class BundleUploadHandle implements UploadHandle {
     }
     for (var file in fileDataItemUploadHandles) {
       await file.writeFileEntityToDatabase(
-          bundledInTxId: bundleTx.id, driveDao: driveDao);
+        bundledInTxId: bundleId,
+        driveDao: driveDao,
+      );
     }
   }
 
-  /// Uploads the bundle, emitting an event whenever the progress is updated.
-  Stream<double> upload(ArweaveService arweave) async* {
-    yield* arweave.client.transactions
-        .upload(bundleTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
-        .map((upload) {
-      uploadProgress = upload.progress;
-      return uploadProgress;
-    });
-  }
-
-  void dispose() {
-    bundleTx.setData(Uint8List(0));
+  void clearBundleData({bool useTurbo = false}) {
+    if (!useTurbo) {
+      bundleTx.setData(Uint8List(0));
+    }
   }
 
   Future<int> computeBundleSize() async {
@@ -122,13 +186,18 @@ class BundleUploadHandle implements UploadHandle {
     size += (fileSizes.length * 64);
     // Add bytes that denote number of data items
     size += 32;
+
     this.size = size;
+
     return size;
   }
 
   @override
-  int size;
+  int size = 0;
 
   @override
   int get uploadedSize => (size * uploadProgress).round();
+
+  @override
+  bool hasError = false;
 }

@@ -1,7 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -11,6 +13,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+// ignore: depend_on_referenced_packages
 import 'package:platform/platform.dart';
 import 'package:uuid/uuid.dart';
 
@@ -23,6 +26,7 @@ void main() {
     late Database db;
     late DriveDao driveDao;
     late ArweaveService arweave;
+    late TurboUploadService turboUploadService;
 
     late ProfileCubit profileCubit;
     late SyncCubit syncBloc;
@@ -33,6 +37,16 @@ void main() {
     const rootFolderFileCount = 3;
 
     setUp(() async {
+      registerFallbackValue(
+        await getTestTransaction('test/fixtures/signed_v2_tx.json'),
+      );
+      registerFallbackValue(
+        await getTestDataItem('test/fixtures/signed_v2_tx.json'),
+      );
+      registerFallbackValue(DataBundle(blob: Uint8List(0)));
+      registerFallbackValue(FileEntity());
+      registerFallbackValue(Wallet());
+
       db = getTestDb();
       await db.batch((batch) {
         // Default date
@@ -207,13 +221,22 @@ void main() {
       });
 
       driveDao = db.driveDao;
-      const arweaveGatewayUrl = 'https://www.fake-arweave-gateway-url.com';
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
-      arweave = ArweaveService(
-        Arweave(gatewayUrl: Uri.parse(arweaveGatewayUrl)),
+      arweave = MockArweaveService();
+      when(() => arweave.postTx(any())).thenAnswer((_) async => Future.value());
+      when(() => arweave.prepareEntityDataItem(any(), any(),
+          key: any(named: 'key'))).thenAnswer(
+        (_) async => await getTestDataItem('test/fixtures/signed_v2_tx.json'),
       );
+      when(() => arweave.prepareDataBundleTx(any(), any())).thenAnswer(
+        (_) async =>
+            await getTestTransaction('test/fixtures/signed_v2_tx.json'),
+      );
+      turboUploadService = DontUseUploadService();
       syncBloc = MockSyncBloc();
-
+      when(() => syncBloc.generateFsEntryPaths(any(), any(), any())).thenAnswer(
+        (_) async => Future.value(),
+      );
       profileCubit = MockProfileCubit();
 
       final keyBytes = Uint8List(32);
@@ -237,6 +260,7 @@ void main() {
           cipherKey: SecretKey(keyBytes),
           walletAddress: await wallet.getAddress(),
           walletBalance: BigInt.one,
+          useTurbo: false,
         ),
       );
     });
@@ -248,35 +272,28 @@ void main() {
       'throws when selectedItems is empty',
       build: () => FsEntryMoveBloc(
         arweave: arweave,
+        turboUploadService: turboUploadService,
         syncCubit: syncBloc,
         driveId: driveId,
         driveDao: driveDao,
         profileCubit: profileCubit,
         selectedItems: [],
+        crypto: ArDriveCrypto(),
       ),
       errors: () => [isA<Exception>()],
     );
-    late List<SelectedItem> selectedItems;
     blocTest(
       'successfully moves files into folders when there are no conflicts',
-      setUp: (() async {
-        final fileRevisions = await driveDao
-            .filesInFolderAtPathWithRevisionTransactions(
-              driveId: driveId,
-              path: '',
-            )
-            .get();
-        selectedItems = [
-          ...fileRevisions.map((f) => SelectedFile(file: f)),
-        ];
-      }),
       build: () => FsEntryMoveBloc(
+        crypto: ArDriveCrypto(),
         arweave: arweave,
+        turboUploadService: turboUploadService,
         syncCubit: syncBloc,
         driveId: driveId,
         driveDao: driveDao,
         profileCubit: profileCubit,
-        selectedItems: selectedItems,
+        // TODO: revisit this when we have a better way to mock the selected items
+        selectedItems: [],
         platform: FakePlatform(operatingSystem: 'android'),
       ),
       act: (FsEntryMoveBloc bloc) async {
@@ -286,7 +303,6 @@ void main() {
           bloc.add(FsEntryMoveSubmit(
             folderInView:
                 (bloc.state as FsEntryMoveLoadSuccess).viewingFolder.folder,
-            dryRun: true,
           ));
         }
       },

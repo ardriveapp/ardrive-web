@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/mime_lookup.dart';
@@ -16,12 +18,15 @@ part 'fs_entry_preview_state.dart';
 
 class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final String driveId;
-  final SelectedItem? maybeSelectedItem;
+  final ArDriveDataTableItem? maybeSelectedItem;
 
   final DriveDao _driveDao;
-  final AppConfig _config;
+  final ConfigService _configService;
   final ArweaveService _arweave;
   final ProfileCubit _profileCubit;
+  final ArDriveCrypto _crypto;
+
+  final SecretKey? _fileKey;
 
   StreamSubscription? _entrySubscription;
 
@@ -32,32 +37,131 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     required this.driveId,
     this.maybeSelectedItem,
     required DriveDao driveDao,
-    required AppConfig config,
+    required ConfigService configService,
     required ArweaveService arweave,
     required ProfileCubit profileCubit,
+    required ArDriveCrypto crypto,
+    SecretKey? fileKey,
+    bool isSharedFile = false,
   })  : _driveDao = driveDao,
-        _config = config,
+        _configService = configService,
         _arweave = arweave,
         _profileCubit = profileCubit,
+        _crypto = crypto,
+        _fileKey = fileKey,
         super(FsEntryPreviewInitial()) {
-    preview();
+    if (isSharedFile) {
+      sharedFilePreview(maybeSelectedItem!, fileKey);
+    } else {
+      preview();
+    }
+  }
+
+  Future<void> sharedFilePreview(
+    ArDriveDataTableItem selectedItem,
+    SecretKey? fileKey,
+  ) async {
+    if (selectedItem is FileDataTableItem) {
+      final file = selectedItem;
+      final contentType = file.contentType;
+      final fileExtension = contentType.split('/').last;
+      final previewType = contentType.split('/').first;
+      final previewUrl =
+          '${_configService.config.defaultArweaveGatewayUrl}/${file.dataTxId}';
+
+      if (!_supportedExtension(previewType, fileExtension)) {
+        emit(FsEntryPreviewUnavailable());
+        return;
+      }
+
+      switch (previewType) {
+        case 'image':
+          final data = await _getPreviewData(file, previewUrl);
+
+          if (data != null) {
+            emit(FsEntryPreviewImage(imageBytes: data, previewUrl: previewUrl));
+          } else {
+            emit(FsEntryPreviewUnavailable());
+          }
+
+          break;
+        case 'video':
+          _previewVideo(
+            fileKey != null,
+            selectedItem,
+            previewUrl,
+          );
+          break;
+
+        default:
+          emit(FsEntryPreviewUnavailable());
+      }
+    } else {
+      emit(FsEntryPreviewUnavailable());
+    }
+
+    return Future.value();
+  }
+
+  Future<Uint8List?> _getPreviewData(
+      FileDataTableItem file, String previewUrl) async {
+    final dataTx = await _getTxDetails(file);
+
+    if (dataTx == null) {
+      emit(FsEntryPreviewUnavailable());
+      return null;
+    }
+
+    final dataRes = await ArDriveHTTP().getAsBytes(previewUrl);
+
+    if (_fileKey != null) {
+      if (file.size! >= previewMaxFileSize) {
+        emit(FsEntryPreviewUnavailable());
+        return null;
+      }
+
+      try {
+        final decodedBytes = await _crypto.decryptTransactionData(
+          dataTx,
+          dataRes.data,
+          _fileKey!,
+        );
+
+        return decodedBytes;
+      } catch (e) {
+        emit(FsEntryPreviewUnavailable());
+        return Future.value();
+      }
+    }
+
+    return dataRes.data;
+  }
+
+  Future<TransactionCommonMixin?> _getTxDetails(FileDataTableItem file) async {
+    final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+
+    return dataTx;
   }
 
   Future<void> preview() async {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
-      if (selectedItem.runtimeType == SelectedFile) {
+      if (selectedItem.runtimeType == FileDataTableItem) {
         _entrySubscription = _driveDao
             .fileById(driveId: driveId, fileId: selectedItem.id)
             .watchSingle()
-            .listen((file) {
-          if (file.size <= previewMaxFileSize) {
+            .listen((file) async {
+          final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+
+          if ((drive.isPrivate && file.size <= previewMaxFileSize) ||
+              drive.isPublic) {
             final contentType =
                 file.dataContentType ?? lookupMimeType(file.name);
             final fileExtension = contentType?.split('/').last;
             final previewType = contentType?.split('/').first;
             final previewUrl =
-                '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
+                '${_configService.config.defaultArweaveGatewayUrl}/${file.dataTxId}';
+
             if (!_supportedExtension(previewType, fileExtension)) {
               emit(FsEntryPreviewUnavailable());
               return;
@@ -67,20 +171,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
               case 'image':
                 emitImagePreview(file, previewUrl);
                 break;
-
-              /// Enable more previews in the future after dealing
-              /// with state and widget disposal
-
-              // case 'audio':
-              //   emit(FsEntryPreviewAudio(previewUrl: previewUrl));
-              //   break;
-              // case 'video':
-              //   emit(FsEntryPreviewVideo(previewUrl: previewUrl));
-              //   break;
-              // case 'text':
-              //   emit(FsEntryPreviewText(previewUrl: previewUrl));
-              //   break;
-
+              case 'video':
+                _previewVideo(
+                  drive.isPrivate,
+                  selectedItem as FileDataTableItem,
+                  previewUrl,
+                );
+                break;
               default:
                 emit(FsEntryPreviewUnavailable());
             }
@@ -92,18 +189,37 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
+  void _previewVideo(
+      bool isPrivate, FileDataTableItem selectedItem, previewUrl) {
+    if (_configService.config.enableVideoPreview) {
+      if (isPrivate) {
+        emit(FsEntryPreviewUnavailable());
+        return;
+      }
+
+      emit(FsEntryPreviewVideo(previewUrl: previewUrl));
+
+      return;
+    }
+
+    emit(FsEntryPreviewUnavailable());
+  }
+
   Future<void> emitImagePreview(FileEntry file, String dataUrl) async {
     try {
       emit(const FsEntryPreviewLoading());
 
       final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+
       if (dataTx == null) {
         emit(FsEntryPreviewFailure());
         return;
       }
 
       late Uint8List dataBytes;
+
       final cachedBytes = await _driveDao.getPreviewDataFromMemory(dataTx.id);
+
       if (cachedBytes == null) {
         final dataRes = await ArDriveHTTP().getAsBytes(dataUrl);
         dataBytes = dataRes.data;
@@ -117,6 +233,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       }
 
       final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+
       switch (drive.privacy) {
         case DrivePrivacy.public:
           emit(
@@ -141,7 +258,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           }
 
           final fileKey = await _driveDao.getFileKey(file.id, driveKey);
-          final decodedBytes = await decryptTransactionData(
+          final decodedBytes = await _crypto.decryptTransactionData(
             dataTx,
             dataBytes,
             fileKey,
@@ -155,16 +272,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           emit(FsEntryPreviewFailure());
       }
     } catch (err) {
-      addError(err);
+      emit(FsEntryPreviewFailure());
     }
-  }
-
-  @override
-  void onError(Object error, StackTrace stackTrace) {
-    emit(FsEntryPreviewFailure());
-    super.onError(error, stackTrace);
-
-    print('Failed to load entity activity: $error $stackTrace');
   }
 
   bool _supportedExtension(String? previewType, String? fileExtension) {
@@ -175,6 +284,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     switch (previewType) {
       case 'image':
         return supportedImageTypesInFilePreview
+            .any((element) => element.contains(fileExtension));
+      case 'video':
+        return videoContentTypes
             .any((element) => element.contains(fileExtension));
       default:
         return false;

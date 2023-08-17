@@ -100,8 +100,8 @@ def get_build_type (type)
     }
   when 'staging'
     return {
-      'ios_flavor' => 'development',
-      'android_flavor' => 'development',
+      'ios_flavor' => 'production',
+      'android_flavor' => 'production',
       'ios_type' => 'adhoc',
       'ios_export_method' => 'ad-hoc',
       'android_type' => 'beta'

@@ -1,8 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -13,40 +14,32 @@ part 'drive_create_state.dart';
 
 class DriveCreateCubit extends Cubit<DriveCreateState> {
   final form = FormGroup({
-    'name': FormControl(
-      validators: [
-        Validators.required,
-        Validators.pattern(kDriveNameRegex),
-        Validators.pattern(kTrimTrailingRegex),
-      ],
-    ),
     'privacy': FormControl<String>(
         value: DrivePrivacy.private, validators: [Validators.required]),
   });
 
   final ArweaveService _arweave;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
 
   DriveCreateCubit({
     required ArweaveService arweave,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required DrivesCubit drivesCubit,
   })  : _arweave = arweave,
+        _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
         super(DriveCreateInitial());
 
-  Future<void> submit() async {
-    form.markAllAsTouched();
-
-    if (form.invalid) {
-      return;
-    }
-
+  Future<void> submit(
+    String driveName,
+  ) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(DriveCreateWalletMismatch());
@@ -54,14 +47,15 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     }
 
     final minimumWalletBalance = BigInt.from(10000000);
-    if (profile.walletBalance <= minimumWalletBalance) {
+    if (profile.walletBalance <= minimumWalletBalance &&
+        !_turboUploadService.useTurboUpload) {
       emit(DriveCreateZeroBalance());
       return;
     }
+
     emit(DriveCreateInProgress());
 
     try {
-      final driveName = form.control('name').value.toString().trim();
       final String drivePrivacy = form.control('privacy').value;
       final walletAddress = await profile.wallet.getAddress();
       final createRes = await _driveDao.createDrive(
@@ -103,15 +97,28 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       await rootFolderDataItem.sign(profile.wallet);
       await driveDataItem.sign(profile.wallet);
+      late TransactionBase createTx;
+      if (_turboUploadService.useTurboUpload) {
+        createTx = await _arweave.prepareBundledDataItem(
+          await DataBundle.fromDataItems(
+            items: [driveDataItem, rootFolderDataItem],
+          ),
+          profile.wallet,
+        );
+        await _turboUploadService.postDataItem(
+          dataItem: createTx as DataItem,
+          wallet: profile.wallet,
+        );
+      } else {
+        createTx = await _arweave.prepareDataBundleTx(
+          await DataBundle.fromDataItems(
+            items: [driveDataItem, rootFolderDataItem],
+          ),
+          profile.wallet,
+        );
+        await _arweave.postTx(createTx as Transaction);
+      }
 
-      final createTx = await _arweave.prepareDataBundleTx(
-        await DataBundle.fromDataItems(
-          items: [driveDataItem, rootFolderDataItem],
-        ),
-        profile.wallet,
-      );
-
-      await _arweave.postTx(createTx);
       rootFolderEntity.txId = rootFolderDataItem.id;
       await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create));
@@ -141,6 +148,6 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     emit(DriveCreateFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to create drive: $error $stackTrace');
+    logger.e('Failed to create drive: $error $stackTrace');
   }
 }

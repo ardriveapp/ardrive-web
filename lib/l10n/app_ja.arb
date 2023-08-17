@@ -8,6 +8,10 @@
   "@addProfileEmphasized": {
     "description": "Add a wallet. Emphasized with upper case"
   },
+  "addressCopied": "アドレスがコピーされました",
+  "@addressCopied": {
+    "description": "Tooltip on copy wallet address button"
+  },
   "addSomeFiles": "ここには何もありません ファイルを追加するには「新規作成」をクリックしてください",
   "@addSomeFiles": {
     "description": "Empty folder"
@@ -58,6 +62,10 @@
   "@arConnectRemainOnThisTab": {
     "description": "Warning for the user to do not leave the tab"
   },
+  "arConnectWalletDoestNotMatchArDriveWallet": "あなたのArConnectウォレットがArDriveウォレットと一致しません。もう一度お試しください。",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
+  },
   "ardriveIsntJustAnotherCloudSyncApp": "ArDriveはただのクラウド同期アプリではありません。永続的なハードドライブの始まりです。",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
@@ -86,6 +94,10 @@
   "@back": {
     "description": "Go back"
   },
+  "backButtonOnboarding": "戻る",
+  "@backButtonOnboarding": {
+    "description": "Text of the back button onboarding"
+  },
   "backEmphasized": "戻る",
   "@backEmphasized": {
     "description": "Go back. Emphasized with upper case"
@@ -100,6 +112,34 @@
       }
     }
   },
+  "biometricLoginDisabled": "生体認証ログインが無効になっています",
+  "@biometricLoginDisabled": {
+    "description": "Biometric Login is Disabled."
+  },
+  "biometricLoginEnabled": "生体認証ログインが有効になっています",
+  "@biometricLoginEnabled": {
+    "description": "Biometric Login is Enabled."
+  },
+  "biometricsDisabledOnYourDevice": "この機能は現在、お使いのデバイスで無効になっています。使用するには、デバイスの設定に移動し、生体認証を有効にしてください。",
+  "@biometricsDisabledOnYourDevice": {
+    "description": "Biometric is disabled"
+  },
+  "biometricsPasscodeNotSetAndroid": "生体認証を使用するには、デバイスにPIN/パターン/パスワードが必要です。続行するには作成してください。",
+  "@biometricsPasscodeNotSetAndroid": {
+    "description": "Passcode it not set on Android"
+  },
+  "biometricsPasscodeNotSetIOS": "生体認証を使用するには、デバイスにパスコードが必要です。続行するには、[設定] > [Face ID＆パスコード]に移動して作成してください。",
+  "@biometricsPasscodeNotSetIOS": {
+    "description": "Passcode it not set on Android"
+  },
+  "biometricsPermanentlyLockedOut": "生体認証ログインは、失敗した試行回数が多すぎるため無効になっています。 生体認証機能のロックを解除するには、PIN/パスコードを入力してください。",
+  "@biometricsPermanentlyLockedOut": {
+    "description": "Biometrics permanently locked out"
+  },
+  "biometricTemporarilyDisabled": "生体認証ログインは、失敗した試行回数が多すぎるため一時的に無効になっています。",
+  "@biometricTemporarilyDisabled": {
+    "description": "Biometric is locked out"
+  },
   "bundleTxID": "バンドルTx ID",
   "@bundleTxID": {
     "description": "The bundle transaction ID of the bundled item"
@@ -107,6 +147,10 @@
   "bundlingAndSigningUpload": "バンドルと署名のアップロード",
   "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
+  },
+  "camera": "カメラ",
+  "@camera": {
+    "description": "Button label to select a file from camera"
   },
   "cancel": "キャンセル",
   "@cancel": {
@@ -116,13 +160,29 @@
   "@cancelEmphasized": {
     "description": "Cancel button. Emphasized with upper case"
   },
+  "changeTheme": "テーマの変更",
+  "@changeTheme": {
+    "description": "Theme switcher tooltip"
+  },
   "changeWallet": "ウォレットを変更する",
   "@changeWallet": {
     "description": "To use a different wallet"
   },
+  "close": "閉じる",
+  "@close": {
+    "description": "close"
+  },
   "closeEmphasized": "閉じる",
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
+  },
+  "collapseSideBar": "サイドバーを折りたたむ",
+  "@collapseSideBar": {
+    "description": "Collapse side bar tooltip"
+  },
+  "computingSnapshotData": "スナップショットデータの算出",
+  "@computingSnapshotData": {
+    "description": "Computing Snapshot Data"
   },
   "confirmed": "確認済み",
   "@confirmed": {
@@ -200,6 +260,14 @@
   "@copyRootFolderTxID": {
     "description": "Copy transaction ID of Root Folder tooltip"
   },
+  "copyTooltip": "コピー",
+  "@copyTooltip": {
+    "description": "Tooltip for copy button"
+  },
+  "copyWalletAddress": "ウォレットアドレスのコピー",
+  "@copyWalletAddress": {
+    "description": "Tooltip on copy wallet address button"
+  },
   "cost": "料金：{arPrice} AR",
   "@cost": {
     "description": "The total cost estimation of the upload quoted in AR",
@@ -213,6 +281,10 @@
   "create": "作成する",
   "@create": {
     "description": "Create an drive"
+  },
+  "createAndConfirmPassword": "パスワードを作成して確認してください。このパスワードを使用してログインします。",
+  "@createAndConfirmPassword": {
+    "description": "Asks the user to create a password"
   },
   "createDriveEmphasized": "ドライブを作成",
   "@createDriveEmphasized": {
@@ -238,6 +310,24 @@
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
+  "createNewSnapshot": "新しいスナップショットを作成する",
+  "@createNewSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
+  "createSnapshot": "スナップショットを作成する",
+  "@createSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
+  "createSnapshotExplanation": "スナップショットにより、ドライブの読み込み時間が短縮されます。お使いの{driveName}ドライブのスナップショットを作成しますか？",
+  "@createSnapshotExplanation": {
+    "description": "Explains how Snapshots improves the sync-time of the drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
+  },
   "creatingDriveEmphasized": "ドライブを作成中…",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"
@@ -245,6 +335,10 @@
   "creatingFolderEmphasized": "フォルダ作成中…",
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
+  },
+  "darkModeEmphasized": "ダークモード",
+  "@darkModeEmphasized": {
+    "description": "Refers to the dark theme of the app. Emphasized with upper case"
   },
   "dataTxID": "データTx ID",
   "@dataTxID": {
@@ -257,6 +351,14 @@
   "decentralizedPermanent": "分散型の永久データ保存は一瞬では実現しません。",
   "@decentralizedPermanent": {
     "description": "Permanence requires patience"
+  },
+  "deepResync": "深層再同期",
+  "@deepResync": {
+    "description": "Deep Sync Button Text"
+  },
+  "deepResyncTooltip": "キャッシュの削除と全ドライブの更新",
+  "@deepResyncTooltip": {
+    "description": "Deep Sync Tooltip Text"
   },
   "detachDrive": "ドライブを切り離しますか？",
   "@detachDrive": {
@@ -275,6 +377,14 @@
   "detachEmphasized": "切り離す",
   "@detachEmphasized": {
     "description": "Example: To DETACH a drive. Emphasized in upper case"
+  },
+  "determiningSizeAndCostOfSnapshot": "スナップショットのサイズとコストを決定する",
+  "@determiningSizeAndCostOfSnapshot": {
+    "description": "Determining size and cost of snapshot. This may take a while."
+  },
+  "deviceNotSupportBiometrics": "このデバイスは生体認証の使用をサポートしていません。",
+  "@deviceNotSupportBiometrics": {
+    "description": "Biometric is not supported"
   },
   "displayedPaginatedData": "{total}件中の{from} ～ {to}件",
   "@displayedPaginatedData": {
@@ -297,11 +407,21 @@
       }
     }
   },
+  "diveInButtonOnboarding": "始める",
+  "@diveInButtonOnboarding": {
+    "description": "Text of the last button of the onboarding"
+  },
   "doneEmphasized": "完了",
-  "@doneEmphasized": {},
+  "@doneEmphasized": {
+    "description": "Done, no more to do here. Emphasized with upper case"
+  },
   "download": "ダウンロード",
   "@download": {
     "description": "Action of downloading a file"
+  },
+  "downloadFinished": "ダウンロードが完了しました！",
+  "@downloadFinished": {
+    "description": "Download finished"
   },
   "downloadingCSV": "CSVをダウンロード中…",
   "@downloadingCSV": {
@@ -310,6 +430,14 @@
   "downloadingFile": "ファイルのダウンロード中...",
   "@downloadingFile": {
     "description": "File is being downloaded"
+  },
+  "dragAndDropButtonTitle": "Jsonをブラウズする",
+  "@dragAndDropButtonTitle": {
+    "description": "text of title drag and drop"
+  },
+  "dragAndDropDescription": "キーファイルをドラッグ＆ドロップする",
+  "@dragAndDropDescription": {
+    "description": "text of description drag and drop"
   },
   "driveID": "ドライブID",
   "@driveID": {
@@ -375,7 +503,7 @@
       }
     }
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{重複する１個のファイルが見つかりました} =other{重複する複数のファイルが見つかりました}}",
+  "duplicateFiles": "{numberOfDuplicateFiles, plural, zero{} other{重複する複数のファイルが見つかりました}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -386,7 +514,7 @@
       }
     }
   },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{重複するフォルダが見つかりました。} =other{複数の重複するフォルダが見つかりました}}",
+  "duplicateFolders": "{numberOfDuplicateFolders, plural, zero{} other{複数の重複するフォルダが見つかりました}}",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title",
     "placeholders": {
@@ -397,9 +525,37 @@
       }
     }
   },
+  "enableBiometricLogin": "生体認証ログインを有効にする",
+  "@enableBiometricLogin": {
+    "description": "Enable Biometric Login"
+  },
+  "enableBiometricsOnSettings": "この機能は現在、お使いのデバイスで無効になっています。使用するには、デバイスの設定に移動し、生体認証を有効にしてください。",
+  "@enableBiometricsOnSettings": {
+    "description": "Open settings to enable biometric"
+  },
+  "enableCamera": "カメラを有効にする",
+  "@enableCamera": {
+    "description": "Enable camera"
+  },
+  "enableCameraAccess": "設定に移動し、ArDrive をタップして、カメラへのアクセスをオンにします。",
+  "@enableCameraAccess": {
+    "description": "enable camera access"
+  },
+  "enableStorageAccess": "設定に移動し、ArDrive をタップして、ストレージへのアクセスをオンにします。",
+  "@enableStorageAccess": {
+    "description": "enable camera access"
+  },
+  "enableStorageAccessTitle": "ストレージへのアクセスを有効にする",
+  "@enableStorageAccessTitle": {
+    "description": "enable camera access"
+  },
   "enterFileKey": "ファイルキーを入力する",
   "@enterFileKey": {
     "description": "File Key form field label"
+  },
+  "enterPassword": "パスワードを入力する",
+  "@enterPassword": {
+    "description": "Please enter password"
   },
   "entityAlreadyExists": "移動先に{entityName}という名前のエンティティが既に存在します。移動しようとしているファイルまたはフォルダの名前を変更して、再度お試しください。",
   "@entityAlreadyExists": {
@@ -418,6 +574,10 @@
   "errorDragAndDropFolder": "現在、フォルダでのドラッグ＆ドロップはサポートしておりません",
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
+  },
+  "expandSideBar": "サイドバーを広げる",
+  "@expandSideBar": {
+    "description": "Expand side bar tooltip"
   },
   "exportDriveContents": "ドライブの内容をエクスポート",
   "@exportDriveContents": {
@@ -480,6 +640,14 @@
   "@fileFailedToDownload": {
     "description": "Error message for failed downloads"
   },
+  "fileFailedToDownloadFileAboveLimit": "選択したファイルが大きすぎるため、モバイルアプリケーションからダウンロードできません。",
+  "@fileFailedToDownloadFileAboveLimit": {
+    "description": "Download failure message when a file is too big"
+  },
+  "fileFailedToDownloadFileAbovePublicLimit": "選択したファイルは大きすぎてダウンロードできません",
+  "@fileFailedToDownloadFileAbovePublicLimit": {
+    "description": "Download failure message when a file is too big"
+  },
   "fileHadANewRevision": "このファイルの新バージョンがアップロードされました。",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
@@ -496,7 +664,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{ファイルのサイズが大きすぎます} =other{{numberOfFiles} 複数のファイルのサイズが大きすぎます}}",
+  "filesTooLarge": "{numberOfFiles, plural, zero{} other{{numberOfFiles} 複数のファイルのサイズが大きすぎます}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -506,6 +674,10 @@
         "format": "decimalPattern"
       }
     }
+  },
+  "filesTooLargeExplanationMobile": "モバイル上の ArDrive は現在、1024 MiB 未満のファイルアップロードにのみ対応しています",
+  "@filesTooLargeExplanationMobile": {
+    "description": "Limit of size to upload"
   },
   "filesTooLargeExplanationPrivate": "ArDrive on web は現在、プライベート・ドライブでは 100 MiB 以下のファイルのアップロードにのみ対応しています。",
   "@filesTooLargeExplanationPrivate": {
@@ -519,7 +691,7 @@
   "@filesWillBePermanentlyPublicWarning": {
     "description": "Make the user aware that it is uploading permanent data publicly"
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{このファイルを公開ファイルとしてアップロードします。} =other{これらのファイルを公開ファイルとしてアップロードします。}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles, plural, zero{このファイルを公開ファイルとしてアップロードします。} other{これらのファイルを公開ファイルとしてアップロードします。}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -530,7 +702,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{ 同じ名前のファイルが既にこの場所に存在します。このファイルをこのまま新しいバージョンとしてアップロードしますか？} =other{{numberOfFiles} 個の同じ名前のファイルが既にこの場所に存在します。これらのファイルをこのまま新しいバージョンとしてアップロードしますか？}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles, plural, zero{} other{{numberOfFiles} 個の同じ名前のファイルが既にこの場所に存在します。これらのファイルをこのまま新しいバージョンとしてアップロードしますか？}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -540,6 +712,10 @@
         "format": "decimalPattern"
       }
     }
+  },
+  "fileSystem": "ファイル",
+  "@fileSystem": {
+    "description": "Button label to select a file from file system"
   },
   "fileWasCreatedWithName": "このファイルは{fileName}という名前で作成されました。",
   "@fileWasCreatedWithName": {
@@ -568,6 +744,10 @@
         "example": "file name"
       }
     }
+  },
+  "finishingThingsUp": "完了させる!\n",
+  "@finishingThingsUp": {
+    "description": "Finishing things up!"
   },
   "fix": "修正する",
   "@fix": {
@@ -610,7 +790,7 @@
   "@folderName": {
     "description": "The name of certain folder"
   },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{ 同じ名前のフォルダが既にこの場所に存在します。名前を変更して、再度アップロードしてください。} =other{{numberOfFolders}この場所には同じ名前の複数のフォルダが既に存在しています。名前を変更して、再度アップロードしてください。}}",
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders, plural, zero{} other{{numberOfFolders}この場所には同じ名前の複数のフォルダが既に存在しています。名前を変更して、再度アップロードしてください。}}",
   "@foldersWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with folder name conflicts",
     "placeholders": {
@@ -653,6 +833,22 @@
   "@forgetWallet": {
     "description": "Use a different wallet by forgetting the current one"
   },
+  "forgetWalletDescription": "本当にウォレットを忘れてもよろしいのでしょうか？別のプロフィールでサインインするには、別のウォレットを選択する必要があります。",
+  "@forgetWalletDescription": {
+    "description": "Modal description to forget wallet"
+  },
+  "forgetWalletTitle": "ウォレットをお忘れですか？",
+  "@forgetWalletTitle": {
+    "description": "Modal title to forget wallet"
+  },
+  "freeTurboTransaction": "コスト：0 AR\nこの小さな取引は、Turboのおかげで無料です。",
+  "@freeTurboTransaction": {
+    "description": "Message explaining that your upload will be free thanks to Turbo"
+  },
+  "gallery": "ギャラリー",
+  "@gallery": {
+    "description": "Button label to select a file from gallery"
+  },
   "getAWallet": "ウォレットをお持ちでないですか？今すぐここで手に入れましょう！",
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
@@ -660,6 +856,10 @@
   "gotIt": "了解です！",
   "@gotIt": {
     "description": "Example similar phrases: I've got it, I understood, OK"
+  },
+  "goToDeviceSettings": "設定に移動する",
+  "@goToDeviceSettings": {
+    "description": "Go to device settings"
   },
   "goToFirst": "最初に戻る",
   "@goToFirst": {
@@ -677,10 +877,6 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
-  "howDoIGetAR": "ARを取得するにはどうすればいいですか",
-  "@howDoIGetAR": {
-    "description": "Link to a help page explaining how to get Arweave tokens"
-  },
   "infernoIsInFullSwing": "インフェルノ・リワード・プログラムが本格化！参加ルールを確認するにはここをクリック！",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
@@ -693,13 +889,23 @@
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
   },
-  "insufficientARWarning": "残高不足",
-  "@insufficientARWarning": {
-    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
-  },
   "insufficientBalanceForManifest": "指定されたウォレットの残高が{walletBalance} ARでは、{totalCost} ARかかるこのマニフェストの取引に十分ではありません…",
   "@insufficientBalanceForManifest": {
     "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
+    "placeholders": {
+      "walletBalance": {
+        "type": "String",
+        "example": "0"
+      },
+      "totalCost": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "insufficientBalanceForSnapshot": "ウォレット残高が{walletBalance}ARでは、このスナップショットのトランザクションコストである{totalCost}ARに不足しています...",
+  "@insufficientBalanceForSnapshot": {
+    "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
     "placeholders": {
       "walletBalance": {
         "type": "String",
@@ -731,6 +937,18 @@
   "@insufficientFundsForUploadFolders": {
     "description": "Show that needs funds to upload folders"
   },
+  "invalidKeyFile": "無効なキーファイル",
+  "@invalidKeyFile": {
+    "description": "Invalid Keyfile"
+  },
+  "invalidWalletFile": "無効なウォレットファイル",
+  "@invalidWalletFile": {
+    "description": "Wallet file is not a json or a text"
+  },
+  "invalidWalletFileDescription": "選択したファイルは無効です。",
+  "@invalidWalletFileDescription": {
+    "description": "Invalid wallet file description"
+  },
   "itemActivityEmphasized": "アクティビティ",
   "@itemActivityEmphasized": {
     "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
@@ -746,6 +964,16 @@
   "itemIsBeingProcesed": "このアイテムは処理中です...",
   "@itemIsBeingProcesed": {
     "description": "The entity is being processed, no details to display yet"
+  },
+  "itemMoveNameConflict": "「{destinationFolderName}」に同じ名前のアイテムが含まれているため、次のアイテムを移動できませんでした。",
+  "@itemMoveNameConflict": {
+    "description": "Description for dialog to skip conflicting files or cancel",
+    "placeholders": {
+      "destinationFolderName": {
+        "type": "String",
+        "example": "Folder A"
+      }
+    }
   },
   "itemPreviewEmphasized": "プレビュー",
   "@itemPreviewEmphasized": {
@@ -780,6 +1008,10 @@
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
   },
+  "lightModeEmphasized": "ライトモード",
+  "@lightModeEmphasized": {
+    "description": "Refers to the light theme of the app. Emphasized with upper case"
+  },
   "login": "ログイン",
   "@login": {
     "description": "The login process"
@@ -795,6 +1027,10 @@
   "logInToExperienceFeatures": "ログインして、ArDriveのすべての機能を体験してください！",
   "@logInToExperienceFeatures": {
     "description": "User must login to use the features of ArDrive"
+  },
+  "loginUsingBiometricCredential": "生体認証情報を使用してログインする",
+  "@loginUsingBiometricCredential": {
+    "description": "Login using your biometric credential"
   },
   "logout": "ログアウト",
   "@logout": {
@@ -824,6 +1060,10 @@
   "@monthlyCharges": {
     "description": "Payment philosophy"
   },
+  "moreInfo": "詳細",
+  "@moreInfo": {
+    "description": "More info"
+  },
   "move": "移動する",
   "@move": {
     "description": "Action of moving certain file or folder"
@@ -840,6 +1080,10 @@
   "@moveHereEmphasized": {
     "description": "Move the entity to the current folder. Emphasized with upper case"
   },
+  "moveItems": "アイテムを移動する",
+  "@moveItems": {
+    "description": "Move Items dialog title"
+  },
   "movingFileEmphasized": "ファイル移動中…",
   "@movingFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
@@ -847,6 +1091,10 @@
   "movingFolderEmphasized": "フォルダ移動中…",
   "@movingFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
+  },
+  "movingItemsEmphasized": "アイテムを移動する",
+  "@movingItemsEmphasized": {
+    "description": "Moving Items dialog title"
   },
   "name": "名前",
   "@name": {
@@ -920,9 +1168,37 @@
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
+  "onboarding1Description": "ArDriveは単なるクラウド同期アプリではありません。これは、あなたの個人的な永続的ハードドライブです。ArDriveに保存されているファイルは、単一のエンティティによって削除または変更することはできず、アップロードしたものはすべて保存されます。",
+  "@onboarding1Description": {
+    "description": "Description of 1st page of onboarding"
+  },
+  "onboarding1Title": "Permawebへようこそ",
+  "@onboarding1Title": {
+    "description": "Title of 1st page of onboarding"
+  },
+  "onboarding2Description": "クラウドストレージのサブスクリプションをやめましょう。使用しないスペースに対して料金を支払うのではなく、一度支払うだけでデータを永久に保存できます。",
+  "@onboarding2Description": {
+    "description": "Description of 2nd page of onboarding"
+  },
+  "onboarding2Title": "月額ではなくファイルごとに支払う",
+  "@onboarding2Title": {
+    "description": "Title of 2nd page of onboarding"
+  },
+  "onboarding3Description": "選択: アップロードしたファイルを公開して誰でもアクセスできるようにする、もしくは、最先端の暗号化を活用し、ファイルを閲覧できるユーザーを制御する。",
+  "@onboarding3Description": {
+    "description": "Description of 4th page of onboarding"
+  },
+  "onboarding3Title": "総合的プライバシー管理",
+  "@onboarding3Title": {
+    "description": "Title of 4th page of onboarding"
+  },
   "onceUploadedCantBeRemoved": "一度アップロードしたデータは、削除することができません。",
   "@onceUploadedCantBeRemoved": {
     "description": "Uploaded items cannot be deleted"
+  },
+  "orContinueWith": "またはArConnectで続行してください",
+  "@orContinueWith": {
+    "description": "text to continue with ar connect"
   },
   "password": "パスワード",
   "@password": {
@@ -931,6 +1207,14 @@
   "passwordCanNeverBeChanged": "パスワードは変更・復元できません。大切に保管してください！",
   "@passwordCanNeverBeChanged": {
     "description": "Explains that the password cannot be changed as it is the one of the wallet"
+  },
+  "passwordCannotBeEmpty": "パスワードを空白にはできません",
+  "@passwordCannotBeEmpty": {
+    "description": "Button title to create a password"
+  },
+  "passwordDoNotMatch": "パスワードが一致しません",
+  "@passwordDoNotMatch": {
+    "description": "Modal description when passwords dont match"
   },
   "passwordMismatch": "確認パスワードが一致しません。",
   "@passwordMismatch": {
@@ -945,7 +1229,13 @@
     "description": "Status tooltip for transactions which are waiting to be minted"
   },
   "personalDrivesEmphasized": "個人用ドライブ",
-  "@personalDrivesEmphasized": {},
+  "@personalDrivesEmphasized": {
+    "description": "Sub-header for the personal drives list. Emphasized with upper case"
+  },
+  "pleaseAcceptTheTermsToContinue": "続行するには利用規約に同意してください。",
+  "@pleaseAcceptTheTermsToContinue": {
+    "description": "terms and conditions cta"
+  },
   "pleaseProvideSamePassword": "以前使用したのと同じパスワードを入力してください。",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
@@ -953,6 +1243,14 @@
   "pleaseRemainOnThisTab": "ロード中... このタブにとどまっていてください。",
   "@pleaseRemainOnThisTab": {
     "description": "Circular progress indicator"
+  },
+  "pleaseRemainOnThisTabSnapshots": "Web3ウォレットはトランザクションにサイニングしています。作業が完了するまで、このページに留まってください。",
+  "@pleaseRemainOnThisTabSnapshots": {
+    "description": "Please stay on this page while we finish things up!"
+  },
+  "pleaseTryAgain": "もう一度お試しください",
+  "@pleaseTryAgain": {
+    "description": "Please try again."
   },
   "preparingManifestEmphasized": "マニフェストを準備しています…",
   "@preparingManifestEmphasized": {
@@ -978,9 +1276,21 @@
   "@private": {
     "description": "A private entity"
   },
+  "privateDrives": "プライベートドライブ",
+  "@privateDrives": {
+    "description": "Private drives accordion title"
+  },
+  "proceed": "続行する",
+  "@proceed": {
+    "description": "Proceed"
+  },
   "proceedCongestionEmphasized": "続行する",
   "@proceedCongestionEmphasized": {
     "description": "Proceed being aware of the network congestion. Emphasized with upper case"
+  },
+  "proceedEmphasized": "続行する",
+  "@proceedEmphasized": {
+    "description": "Proceed but capitalized"
   },
   "profile": "プロフィール",
   "@profile": {
@@ -989,6 +1299,10 @@
   "public": "公開",
   "@public": {
     "description": "A public entity"
+  },
+  "publicDrives": "パブリックドライブ",
+  "@publicDrives": {
+    "description": "Public drives accordion title"
   },
   "recreateFolderEmphasized": "フォルダの再作成",
   "@recreateFolderEmphasized": {
@@ -1038,6 +1352,14 @@
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
+  "resync": "再同期",
+  "@resync": {
+    "description": "Sync button Text"
+  },
+  "resyncTooltip": "すべてのドライブを更新する",
+  "@resyncTooltip": {
+    "description": "resync tooltip text"
+  },
   "rootFolderTxID": "ルート・フォルダTx ID",
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
@@ -1054,8 +1376,14 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "sharedDrives": "共有ドライブ",
+  "@sharedDrives": {
+    "description": "Sub-header for the shared drives list"
+  },
   "sharedDrivesEmphasized": "共有ドライブ",
-  "@sharedDrivesEmphasized": {},
+  "@sharedDrivesEmphasized": {
+    "description": "Sub-header for the shared drives list. Emphasized with upper case"
+  },
   "sharedFileIsEncrypted": "このファイルは暗号化されています。",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
@@ -1084,6 +1412,10 @@
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
   },
+  "showMenu": "メニューを表示",
+  "@showMenu": {
+    "description": "show menu text"
+  },
   "signingUpload": "署名のアップロード",
   "@signingUpload": {
     "description": "The app is signing the transactions"
@@ -1092,9 +1424,55 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
+  "skip": "スキップする",
+  "@skip": {
+    "description": "Skip"
+  },
   "skipEmphasized": "スキップする",
   "@skipEmphasized": {
     "description": "Example: to SKIP a conflict"
+  },
+  "snapshotCreationFailed": "スナップショットに失敗しました。この失敗に対して課金されることはありません。",
+  "@snapshotCreationFailed": {
+    "description": "There was an error when creating the snapshot"
+  },
+  "snapshotCreationSucceeded": "{driveName}のスナップショットの作成に成功しました。",
+  "@snapshotCreationSucceeded": {
+    "description": "The snapshot was sucessfuly created",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
+  },
+  "snapshotFailed": "スナップショットに失敗しました",
+  "@snapshotFailed": {
+    "description": "Snapshot Failed"
+  },
+  "snapshotOfDrive": "ドライブ{driveName}のスナップショット",
+  "@snapshotOfDrive": {
+    "description": "Snapshot of drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
+  },
+  "snapshotSize": "スナップショットサイズ：{size}",
+  "@snapshotSize": {
+    "description": "Snapshot Size",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "snapshotSuceeded": "成功",
+  "@snapshotSuceeded": {
+    "description": "Snapshot Succeeded"
   },
   "sorryLoginFailed": "申し訳ありません。ログインが失敗しました。もう一度お試しください。",
   "@sorryLoginFailed": {
@@ -1137,6 +1515,10 @@
   "targetFolderEmphasized": "対象フォルダ",
   "@targetFolderEmphasized": {
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
+  },
+  "termsAndConditions": "利用規約",
+  "@termsAndConditions": {
+    "description": "terms and conditions"
   },
   "thinkTwiceBeforeUploading": "ティーン―エージャー時代の恋の詩をアップロードする前に、よく考えてください...",
   "@thinkTwiceBeforeUploading": {
@@ -1206,7 +1588,7 @@
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{ 1個のファイルをアップロード中...} =other{ {numberOfFiles} 個のファイルをアップロード中...}}",
+  "uploadingNFiles": "{numberOfFiles, plural, zero{} other{{numberOfFiles} 個のファイルをアップロード中...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -1217,7 +1599,11 @@
       }
     }
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{1個のファイルをアップロードする} =other{{numberOfFiles} 個のファイルをアップロードする}}",
+  "uploadingSnapshot": "スナップショットをアップロードする",
+  "@uploadingSnapshot": {
+    "description": "Uploading Snapshot"
+  },
+  "uploadNFiles": "{numberOfFiles, plural, zero{} other{{numberOfFiles} 個のファイルをアップロードする}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
@@ -1227,6 +1613,14 @@
         "format": "decimalPattern"
       }
     }
+  },
+  "uploadYourFirstFile": "最初のファイルをアップロードする",
+  "@uploadYourFirstFile": {
+    "description": "Empty folder"
+  },
+  "usdPriceNotAvailable": "(現時点では米ドル価格は利用できません)",
+  "@usdPriceNotAvailable": {
+    "description": "Fallback message for when the USD price is not available"
   },
   "useArconnectEmphasized": "ARCONNECTを使う",
   "@useArconnectEmphasized": {
@@ -1284,6 +1678,14 @@
   "@viewOnly": {
     "description": "The user has no permission to edit, only to view"
   },
+  "viewOnViewBlock": " viewblock.ioで見る",
+  "@viewOnViewBlock": {
+    "description": "Tooltip for external link for viewBlock"
+  },
+  "waitForDownload": "ファイルサイズが大きいため、ダウンロードに時間がかかる場合があります。ダウンロード中は、アプリケーションを開いたままにしておいてください。",
+  "@waitForDownload": {
+    "description": "User must to wait this download"
+  },
   "walletChangedDuringManifestCreation": "指定されたウォレットがマニフェストの作成中に予期せずに変更されました…",
   "@walletChangedDuringManifestCreation": {
     "description": "The wallet has been changed while the creation of the manifest was in process"
@@ -1303,6 +1705,24 @@
   "weDoAFewThingsDifferently": "私たちはいくつかのことを違ったやり方で行います",
   "@weDoAFewThingsDifferently": {
     "description": "What ArDrive does differently"
+  },
+  "weDontRecommendUploadsAboveASafeLimit": "{size} を超えるサイズのアイテムをアップロードすることはお勧めしません。",
+  "@weDontRecommendUploadsAboveASafeLimit": {
+    "description": "Shows a message like We do not recommend uploading items over 5GB in size.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "5 GiB"
+      }
+    }
+  },
+  "welcome": "ようこそ",
+  "@welcome": {
+    "description": "welcome"
+  },
+  "welcomeBack": "おかえりなさい",
+  "@welcomeBack": {
+    "description": "welcome back"
   },
   "welcomeBackEmphasized": "おかえりなさい",
   "@welcomeBackEmphasized": {
@@ -1354,8 +1774,16 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
+  "yourPrivateSecureAndPermanentDrive": "あなたのプライベートで安全で永続的なハードドライブ。",
+  "@yourPrivateSecureAndPermanentDrive": {
+    "description": "Your private, secure, and permanent hard drive."
+  },
   "yourUploadFailed": "アップロードに失敗しました。失敗した試行に対しては請求されていません。",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
+  },
+  "zippingYourFiles": "ファイルを圧縮しています...",
+  "@zippingYourFiles": {
+    "description": "Download failure message when a file is too big"
   }
 }

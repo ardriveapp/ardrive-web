@@ -1,9 +1,9 @@
 import 'dart:async';
 
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -29,7 +29,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   late Vault<Uint8List> _previewVault;
 
-  DriveDao(Database db) : super(db) {
+  final ArDriveCrypto _crypto = ArDriveCrypto();
+
+  DriveDao(
+    Database db,
+  ) : super(db) {
     initVaults();
   }
 
@@ -108,7 +112,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     SecretKey? driveKey;
     switch (privacy) {
       case DrivePrivacy.private:
-        driveKey = await deriveDriveKey(wallet, driveId, password);
+        driveKey = await _crypto.deriveDriveKey(wallet, driveId, password);
         insertDriveOp = await _addDriveKeyToDriveCompanion(
             insertDriveOp, profileKey, driveKey);
         break;
@@ -257,7 +261,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
 
     final driveKeyData = await aesGcm.decrypt(
-      secretBoxFromDataWithMacConcatenation(
+      _crypto.secretBoxFromDataWithMacConcatenation(
         drive.encryptedKey!,
         nonce: drive.keyEncryptionIv!,
       ),
@@ -274,7 +278,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     String fileId,
     SecretKey driveKey,
   ) async {
-    return deriveFileKey(driveKey, fileId);
+    return _crypto.deriveFileKey(driveKey, fileId);
   }
 
   Future<void> writeToDrive(Insertable<Drive> drive) =>
@@ -292,23 +296,54 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ? folderById(driveId: driveId, folderId: folderId)
             : folderWithPath(driveId: driveId, path: folderPath!))
         .watchSingleOrNull();
-    final subfolderOrder =
-        enumToFolderOrderByClause(folderEntries, orderBy, orderingMode);
 
     final subfolderQuery = (folderId != null
         ? foldersInFolder(
-            driveId: driveId, parentFolderId: folderId, order: subfolderOrder)
+            driveId: driveId,
+            parentFolderId: folderId,
+            order: (folderEntries) {
+              return enumToFolderOrderByClause(
+                folderEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          )
         : foldersInFolderAtPath(
-            driveId: driveId, path: folderPath!, order: subfolderOrder));
-
-    final filesOrder =
-        enumToFileOrderByClause(fileEntries, orderBy, orderingMode);
+            driveId: driveId,
+            path: folderPath!,
+            order: (folderEntries) {
+              return enumToFolderOrderByClause(
+                folderEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          ));
 
     final filesQuery = folderId != null
         ? filesInFolderWithRevisionTransactions(
-            driveId: driveId, parentFolderId: folderId, order: filesOrder)
+            driveId: driveId,
+            parentFolderId: folderId,
+            order: (fileEntries, _, __) {
+              return enumToFileOrderByClause(
+                fileEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          )
         : filesInFolderAtPathWithRevisionTransactions(
-            driveId: driveId, path: folderPath!, order: filesOrder);
+            driveId: driveId,
+            path: folderPath!,
+            order: (fileEntries, _, __) {
+              return enumToFileOrderByClause(
+                fileEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          );
 
     return Rx.combineLatest3(
         folderStream.where((folder) => folder != null).map((folder) => folder!),
@@ -457,4 +492,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>
       into(networkTransactions).insertOnConflictUpdate(transaction);
+
+  Future<void> deleteDrivesAndItsChildren() async {
+    await db.transaction(() async {
+      await delete(drives).go();
+      await delete(fileEntries).go();
+      await delete(folderEntries).go();
+      await delete(fileRevisions).go();
+      await delete(folderRevisions).go();
+      await delete(driveRevisions).go();
+      await delete(networkTransactions).go();
+    });
+  }
 }

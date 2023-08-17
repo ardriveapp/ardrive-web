@@ -1,16 +1,14 @@
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/bundles/next_fit_bundle_packer.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:flutter/foundation.dart';
 
 import '../upload_handles/file_data_item_upload_handle.dart';
 import '../upload_handles/file_v2_upload_handle.dart';
-
-const bundleSizeLimit = 503316480; // 480MiB
-const mobileBundleSizeLimit = 209715200; // 200MiB
-const maxBundleDataItemCount = 500;
-const maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
 
 class UploadPlan {
   /// A map of [FileV2UploadHandle]s keyed by their respective file's id.
@@ -18,8 +16,11 @@ class UploadPlan {
 
   final List<BundleUploadHandle> bundleUploadHandles = [];
 
+  final int maxDataItemCount;
+
   UploadPlan._create({
     required this.fileV2UploadHandles,
+    required this.maxDataItemCount,
   });
 
   static Future<UploadPlan> create({
@@ -27,36 +28,53 @@ class UploadPlan {
     required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
     required Map<String, FolderDataItemUploadHandle>
         folderDataItemUploadHandles,
+    required TurboUploadService turboUploadService,
+    required int maxDataItemCount,
   }) async {
-    final bundle = UploadPlan._create(
+    final uploadPlan = UploadPlan._create(
       fileV2UploadHandles: fileV2UploadHandles,
+      maxDataItemCount: maxDataItemCount,
     );
+
     if (fileDataItemUploadHandles.isNotEmpty ||
         folderDataItemUploadHandles.isNotEmpty) {
-      await bundle.createBundleHandlesFromDataItemHandles(
+      await uploadPlan.createBundleHandlesFromDataItemHandles(
         fileDataItemUploadHandles: fileDataItemUploadHandles,
         folderDataItemUploadHandles: folderDataItemUploadHandles,
+        turboUploadService: turboUploadService,
+        maxDataItemCount: maxDataItemCount,
       );
     }
-    return bundle;
+
+    return uploadPlan;
   }
 
   Future<void> createBundleHandlesFromDataItemHandles({
     Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles = const {},
     Map<String, FolderDataItemUploadHandle> folderDataItemUploadHandles =
         const {},
+    required TurboUploadService turboUploadService,
+    required int maxDataItemCount,
   }) async {
-    // Set bundle size limit according the platform
-    // This should be reviewed when we implement stream uploads
-    const int maxBundleSize = kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit;
+    logger.i(
+        'Creating bundle handles from data item handles with a max number of files of $maxDataItemCount');
+    final int maxBundleSize =
+        (kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit);
 
-    final bundleItems = await NextFitBundlePacker<UploadHandle>(
+    final folderItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: maxBundleSize,
-      maxDataItemCount: maxFilesPerBundle,
+      maxDataItemCount: maxDataItemCount,
+    ).packItems([...folderDataItemUploadHandles.values]);
+
+    final fileItems = await NextFitBundlePacker<UploadHandle>(
+      maxBundleSize: maxBundleSize,
+      maxDataItemCount: maxDataItemCount,
     ).packItems([
       ...fileDataItemUploadHandles.values,
-      ...folderDataItemUploadHandles.values
     ]);
+
+    final bundleItems = [...folderItems, ...fileItems];
+
     for (var uploadHandles in bundleItems) {
       final bundleToUpload = await BundleUploadHandle.create(
         fileDataItemUploadHandles: List.from(

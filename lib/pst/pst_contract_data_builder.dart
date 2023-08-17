@@ -1,5 +1,6 @@
 import 'package:ardrive/pst/pst_contract_data.dart';
 import 'package:ardrive/types/arweave_address.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 
 class CommunityContractDataBuilder {
@@ -208,7 +209,7 @@ class CommunityContractDataBuilder {
 
         default:
           // ignore: avoid_print
-          print('Ignoring unknown field: .votes[number].$key = $value');
+          logger.i('Ignoring unknown field: .votes[number].$key = $value');
           break;
       }
     });
@@ -276,7 +277,7 @@ class CommunityContractDataBuilder {
 
           default:
             // ignore: avoid_print
-            print(
+            logger.i(
               'Ignoring unknown field: .settings[number][1] ($key: $value)',
             );
             break;
@@ -361,7 +362,7 @@ class CommunityContractDataBuilder {
           break;
         default:
           // ignore: avoid_print
-          print('Ignoring unknown field .vault[address][number].$key');
+          logger.i('Ignoring unknown field .vault[address][number].$key');
       }
     });
   }

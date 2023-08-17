@@ -2,13 +2,15 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/upload/transaction_signer.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 class FileV2UploadHandle implements UploadHandle {
   final FileEntity entity;
@@ -17,6 +19,7 @@ class FileV2UploadHandle implements UploadHandle {
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
+  final ArDriveCrypto crypto;
 
   /// The size of the file before it was encoded/encrypted for upload.
   @override
@@ -39,11 +42,14 @@ class FileV2UploadHandle implements UploadHandle {
     required this.path,
     required this.file,
     required this.revisionAction,
+    required this.crypto,
     this.driveKey,
     this.fileKey,
+    this.hasError = false,
   });
 
   Future<void> writeFileEntityToDatabase({required DriveDao driveDao}) async {
+    if (hasError) return;
     await driveDao.transaction(() async {
       await driveDao.writeFileEntity(entity, path);
       await driveDao.insertFileRevision(
@@ -57,33 +63,34 @@ class FileV2UploadHandle implements UploadHandle {
     required Wallet wallet,
     required PstService pstService,
   }) async {
-    final fileData = await file.ioFile.readAsBytes();
-    final packageInfo = await PackageInfo.fromPlatform();
-    final String version = packageInfo.version;
-    dataTx = await arweaveService.client.transactions.prepare(
-      isPrivate
-          ? await createEncryptedTransaction(fileData, fileKey!)
-          : Transaction.withBlobData(data: fileData),
-      wallet,
-    )
-      ..addApplicationTags(version: version)
-      ..addBarTags();
+    TransactionSigner signer;
 
-    await pstService.addCommunityTipToTx(dataTx);
-
-    // Don't include the file's Content-Type tag if it is meant to be private.
-    if (!isPrivate) {
-      dataTx.addTag(
-        EntityTag.contentType,
-        entity.dataContentType!,
+    if (wallet is ArConnectWallet) {
+      signer = SafeArConnectTransactionSigner(
+        arweaveService: arweaveService,
+        wallet: wallet,
+        crypto: crypto,
+        pstService: pstService,
+      );
+    } else {
+      signer = ArweaveTransactionSigner(
+        arweaveService: arweaveService,
+        wallet: wallet,
+        crypto: crypto,
+        pstService: pstService,
       );
     }
 
-    await dataTx.sign(wallet);
+    final signedItem = await signer.signTransaction(
+      isPrivate: isPrivate,
+      file: file.ioFile,
+      fileKey: fileKey,
+      entity: entity,
+    );
 
-    entity.dataTxId = dataTx.id;
-    entityTx = await arweaveService.prepareEntityTx(entity, wallet, fileKey);
-    entity.txId = entityTx.id;
+    dataTx = signedItem.dataTx;
+    entityTx = signedItem.entityTx;
+    entity.id = signedItem.entity.id;
   }
 
   int getFileDataSize() {
@@ -104,20 +111,11 @@ class FileV2UploadHandle implements UploadHandle {
     return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
   }
 
-  /// Uploads the file, emitting an event whenever the progress is updated.
-  Stream<double> upload(ArweaveService arweave) async* {
-    await arweave.postTx(entityTx);
-
-    yield* arweave.client.transactions
-        .upload(dataTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
-        .map((upload) {
-      uploadProgress = upload.progress;
-      return uploadProgress;
-    });
-  }
-
   void dispose() {
     entityTx.setData(Uint8List(0));
     dataTx.setData(Uint8List(0));
   }
+
+  @override
+  bool hasError;
 }

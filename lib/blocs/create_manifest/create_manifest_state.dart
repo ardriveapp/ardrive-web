@@ -3,7 +3,7 @@ part of 'create_manifest_cubit.dart';
 @immutable
 abstract class CreateManifestState extends Equatable {
   @override
-  List<Object> get props => [];
+  List get props => [];
 }
 
 /// Initial state where user begins by selecting a name for the manifest
@@ -93,7 +93,7 @@ class CreateManifestUploadConfirmation extends CreateManifestState {
   final String manifestName;
 
   final String arUploadCost;
-  final double usdUploadCost;
+  final double? usdUploadCost;
 
   final UploadManifestParams uploadManifestParams;
 
@@ -106,12 +106,35 @@ class CreateManifestUploadConfirmation extends CreateManifestState {
   });
 
   @override
-  List<Object> get props => [
+  List get props => [
         manifestSize,
         manifestName,
         arUploadCost,
         usdUploadCost,
         uploadManifestParams,
+      ];
+}
+
+/// Manifest transaction is prepared, prompt user to confirm price of the upload
+class CreateManifestTurboUploadConfirmation extends CreateManifestState {
+  final int manifestSize;
+  final String manifestName;
+  final List<DataItem> manifestDataItems;
+  final Future<void> Function() addManifestToDatabase;
+
+  CreateManifestTurboUploadConfirmation({
+    required this.manifestSize,
+    required this.manifestName,
+    required this.manifestDataItems,
+    required this.addManifestToDatabase,
+  });
+
+  @override
+  List<Object> get props => [
+        manifestSize,
+        manifestName,
+        manifestDataItems,
+        addManifestToDatabase,
       ];
 }
 

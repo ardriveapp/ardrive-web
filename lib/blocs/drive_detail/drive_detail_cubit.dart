@@ -1,11 +1,15 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -18,20 +22,30 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final String driveId;
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
-  final AppConfig _config;
+  final ConfigService _configService;
+  final ArDriveAuth _auth;
 
   StreamSubscription? _folderSubscription;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
+
+  List<ArDriveDataTableItem> _selectedItems = [];
+  List<ArDriveDataTableItem> get selectedItems => _selectedItems;
+
+  bool _forceDisableMultiselect = false;
+
+  bool _refreshSelectedItem = false;
 
   DriveDetailCubit({
     required this.driveId,
     String? initialFolderId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
-    required AppConfig config,
+    required ConfigService configService,
+    required ArDriveAuth auth,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
-        _config = config,
+        _auth = auth,
+        _configService = configService,
         super(DriveDetailLoadInProgress()) {
     if (driveId.isEmpty) {
       return;
@@ -58,71 +72,175 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
-    emit(DriveDetailLoadInProgress());
+    try {
+      _selectedItem = null;
 
-    await _folderSubscription?.cancel();
-    // For attaching drives. If drive is not found, emit state to prompt drive attach
-    await _driveDao.driveById(driveId: driveId).getSingleOrNull().then((value) {
-      if (value == null) {
-        emit(DriveDetailLoadNotFound());
-        return;
-      }
-    });
+      logger.d('Opening folder $path');
 
-    _folderSubscription =
-        Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
-      _driveDao.driveById(driveId: driveId).watchSingle(),
-      _driveDao.watchFolderContents(
-        driveId,
-        folderPath: path,
-        orderBy: contentOrderBy,
-        orderingMode: contentOrderingMode,
-      ),
-      _profileCubit.stream.startWith(ProfileCheckingAvailability()),
-      (drive, folderContents, _) async {
-        final state = this.state is DriveDetailLoadSuccess
-            ? this.state as DriveDetailLoadSuccess
-            : null;
-        final profile = _profileCubit.state;
+      emit(DriveDetailLoadInProgress());
 
-        var availableRowsPerPage = _defaultAvailableRowsPerPage;
+      await _folderSubscription?.cancel();
+      // For attaching drives. If drive is not found, emit state to prompt drive attach
+      await _driveDao
+          .driveById(driveId: driveId)
+          .getSingleOrNull()
+          .then((value) async {
+        logger.d('Drive found $value');
 
-        availableRowsPerPage = calculateRowsPerPage(
-          folderContents.files.length + folderContents.subfolders.length,
-        );
+        if (value == null) {
+          logger.d('Drive not found');
 
-        final rootFolderNode =
-            await _driveDao.getFolderTree(driveId, drive.rootFolderId);
-
-        if (state != null) {
-          emit(
-            state.copyWith(
-              currentDrive: drive,
-              hasWritePermissions: profile is ProfileLoggedIn &&
-                  drive.ownerAddress == profile.walletAddress,
-              folderInView: folderContents,
-              contentOrderBy: contentOrderBy,
-              contentOrderingMode: contentOrderingMode,
-              rowsPerPage: availableRowsPerPage.first,
-              availableRowsPerPage: availableRowsPerPage,
-            ),
-          );
-        } else {
-          emit(DriveDetailLoadSuccess(
-            currentDrive: drive,
-            hasWritePermissions: profile is ProfileLoggedIn &&
-                drive.ownerAddress == profile.walletAddress,
-            folderInView: folderContents,
-            contentOrderBy: contentOrderBy,
-            contentOrderingMode: contentOrderingMode,
-            rowsPerPage: availableRowsPerPage.first,
-            availableRowsPerPage: availableRowsPerPage,
-            driveIsEmpty: rootFolderNode.isEmpty(),
-            multiselect: false,
-          ));
+          emit(DriveDetailLoadNotFound());
+          return;
         }
-      },
-    ).listen((_) {});
+
+        try {
+          await _driveDao.getFolderTree(driveId, value.rootFolderId);
+        } catch (e) {
+          logger.d('Folder not found');
+
+          emit(DriveInitialLoading());
+          return;
+        }
+      });
+
+      _folderSubscription =
+          Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
+        _driveDao.driveById(driveId: driveId).watchSingle(),
+        _driveDao.watchFolderContents(
+          driveId,
+          folderPath: path,
+          orderBy: contentOrderBy,
+          orderingMode: contentOrderingMode,
+        ),
+        _profileCubit.stream.startWith(ProfileCheckingAvailability()),
+        (drive, folderContents, _) async {
+          final state = this.state is DriveDetailLoadSuccess
+              ? this.state as DriveDetailLoadSuccess
+              : null;
+
+          final profile = _profileCubit.state;
+
+          var availableRowsPerPage = _defaultAvailableRowsPerPage;
+
+          availableRowsPerPage = calculateRowsPerPage(
+            folderContents.files.length + folderContents.subfolders.length,
+          );
+
+          final rootFolderNode =
+              await _driveDao.getFolderTree(driveId, drive.rootFolderId);
+
+          if (_selectedItem != null && _refreshSelectedItem) {
+            if (_selectedItem is FileDataTableItem) {
+              final index = folderContents.files.indexWhere(
+                (element) => element.id == _selectedItem!.id,
+              );
+
+              if (index >= 0) {
+                _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
+                  folderContents.files[index],
+                  _selectedItem!.index,
+                  _selectedItem!.isOwner,
+                );
+              }
+            } else if (_selectedItem is FolderDataTableItem) {
+              final index = folderContents.subfolders.indexWhere(
+                (element) => element.id == _selectedItem!.id,
+              );
+              if (index >= 0) {
+                _selectedItem = DriveDataTableItemMapper.fromFolderEntry(
+                  folderContents.subfolders[index],
+                  _selectedItem!.index,
+                  _selectedItem!.isOwner,
+                );
+              }
+            } else {
+              _selectedItem = DriveDataTableItemMapper.fromDrive(
+                drive,
+                (item) => null,
+                0,
+                _selectedItem!.isOwner,
+              );
+            }
+
+            _refreshSelectedItem = false;
+          }
+
+          final currentFolderContents = parseEntitiesToDatatableItem(
+            folder: folderContents,
+            isOwner: isDriveOwner(_auth, drive.ownerAddress),
+          );
+
+          if (state != null) {
+            emit(
+              state.copyWith(
+                selectedItem: _selectedItem,
+                currentDrive: drive,
+                hasWritePermissions: profile is ProfileLoggedIn &&
+                    drive.ownerAddress == profile.walletAddress,
+                folderInView: folderContents,
+                contentOrderBy: contentOrderBy,
+                contentOrderingMode: contentOrderingMode,
+                rowsPerPage: availableRowsPerPage.first,
+                availableRowsPerPage: availableRowsPerPage,
+                currentFolderContents: currentFolderContents,
+              ),
+            );
+          } else {
+            emit(
+              DriveDetailLoadSuccess(
+                selectedItem: _selectedItem,
+                currentDrive: drive,
+                hasWritePermissions: profile is ProfileLoggedIn &&
+                    drive.ownerAddress == profile.walletAddress,
+                folderInView: folderContents,
+                contentOrderBy: contentOrderBy,
+                contentOrderingMode: contentOrderingMode,
+                rowsPerPage: availableRowsPerPage.first,
+                availableRowsPerPage: availableRowsPerPage,
+                driveIsEmpty: rootFolderNode.isEmpty(),
+                multiselect: false,
+                currentFolderContents: currentFolderContents,
+              ),
+            );
+          }
+        },
+      ).listen((_) {
+        logger.d('Folder contents updated');
+      });
+    } catch (e) {
+      logger.e('An error occured mouting the drive explorer', e);
+    }
+  }
+
+  List<ArDriveDataTableItem> parseEntitiesToDatatableItem({
+    required FolderWithContents folder,
+    required bool isOwner,
+  }) {
+    int index = 0;
+
+    final folders = folder.subfolders.map(
+      (folder) => DriveDataTableItemMapper.fromFolderEntry(
+        folder,
+        index++,
+        isOwner,
+      ),
+    );
+
+    final files = folder.files.map(
+      (file) => DriveDataTableItemMapper.toFileDataTableItem(
+        file,
+        index++,
+        isOwner,
+      ),
+    );
+
+    final items = [
+      ...folders,
+      ...files,
+    ];
+
+    return items;
   }
 
   List<int> calculateRowsPerPage(int totalEntries) {
@@ -146,24 +264,46 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
-  Future<void> selectItem(SelectedItem selectedItem) async {
+  Future<void> selectDataItem(ArDriveDataTableItem item) async {
     var state = this.state as DriveDetailLoadSuccess;
 
-    state = state.multiselect
-        ? state.copyWith(selectedItems: [selectedItem, ...state.selectedItems])
-        : state.copyWith(selectedItems: [selectedItem]);
-    if (state.currentDrive.isPublic && selectedItem is SelectedFile) {
+    if (state.currentDrive.isPublic && item is FileDataTableItem) {
       final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
         driveId: driveId,
-        fileId: selectedItem.id,
+        fileId: item.id,
       );
       final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:
-              '${_config.defaultArweaveGatewayUrl}/$dataTxId');
+              '${_configService.config.defaultArweaveGatewayUrl}/$dataTxId');
     }
 
-    emit(state);
+    _selectedItem = item;
+
+    emit(state.copyWith(selectedItem: item, showSelectedItemDetails: true));
+  }
+
+  ArDriveDataTableItem? _selectedItem;
+
+  ArDriveDataTableItem? get selectedItem => _selectedItem;
+
+  Future<void> selectItems(List<ArDriveDataTableItem> items) async {
+    var state = this.state as DriveDetailLoadSuccess;
+
+    bool hasFolderSelected = false;
+
+    if (items.any((element) => element is FolderDataTableItem)) {
+      hasFolderSelected = true;
+    }
+
+    _selectedItems = items;
+
+    if (items.isEmpty) {
+      state = state.copyWith(multiselect: false, hasFoldersSelected: false);
+    } else {
+      emit(state.copyWith(
+          multiselect: true, hasFoldersSelected: hasFolderSelected));
+    }
   }
 
   Future<void> unselectItem(SelectedItem selectedItem) async {
@@ -185,16 +325,41 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
-  Future<void> clearSelection() async {
-    var state = this.state as DriveDetailLoadSuccess;
+  void setMultiSelect(bool multiSelect) {
+    final state = this.state as DriveDetailLoadSuccess;
 
-    state = state.copyWith(multiselect: false, selectedItems: []);
+    if (state.multiselect == multiSelect) return;
 
-    emit(state);
+    if (!multiSelect) {
+      clearSelection();
+    }
+
+    if (_selectedItems.isNotEmpty) {
+      emit(state.copyWith(multiselect: true));
+    } else {
+      emit(state.copyWith(multiselect: false));
+    }
   }
 
-  Future<void> launchPreview(TxID dataTxId) =>
-      openUrl(url: '${_config.defaultArweaveGatewayUrl}/$dataTxId');
+  Future<void> clearSelection() async {
+    _selectedItems.clear();
+  }
+
+  bool get forceDisableMultiselect {
+    if (_forceDisableMultiselect) {
+      _forceDisableMultiselect = false;
+      return true;
+    }
+
+    return false;
+  }
+
+  set forceDisableMultiselect(bool value) {
+    _forceDisableMultiselect = value;
+  }
+
+  Future<void> launchPreview(TxID dataTxId) => openUrl(
+      url: '${_configService.config.defaultArweaveGatewayUrl}/$dataTxId');
 
   void sortFolder({
     DriveOrder contentOrderBy = DriveOrder.name,
@@ -210,19 +375,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void toggleSelectedItemDetails() {
     final state = this.state as DriveDetailLoadSuccess;
+    if (state.showSelectedItemDetails) {
+      _selectedItem = null;
+    }
+
     emit(
       state.copyWith(showSelectedItemDetails: !state.showSelectedItemDetails),
     );
   }
 
-  void setMultiSelect(bool multiSelect) {
-    final state = this.state as DriveDetailLoadSuccess;
+  void refreshDriveDataTable() {
+    _refreshSelectedItem = true;
 
-    // Do not close selection when something is already selected
-    if (state.selectedItems.isNotEmpty) {
-      emit(state.copyWith(multiselect: true));
-    } else {
-      emit(state.copyWith(multiselect: multiSelect));
+    if (state is DriveDetailLoadSuccess) {
+      emit((state as DriveDetailLoadSuccess).copyWith());
     }
   }
 

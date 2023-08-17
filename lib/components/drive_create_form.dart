@@ -4,7 +4,10 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/validate_folder_name.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -14,11 +17,12 @@ import 'components.dart';
 Future<void> promptToCreateDrive(BuildContext context) =>
     showCongestionDependentModalDialog(
       context,
-      () => showDialog(
-        context: context,
-        builder: (BuildContext context) => BlocProvider(
+      () => showAnimatedDialog(
+        context,
+        content: BlocProvider(
           create: (_) => DriveCreateCubit(
             arweave: context.read<ArweaveService>(),
+            turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             drivesCubit: context.read<DrivesCubit>(),
@@ -28,8 +32,16 @@ Future<void> promptToCreateDrive(BuildContext context) =>
       ),
     );
 
-class DriveCreateForm extends StatelessWidget {
+class DriveCreateForm extends StatefulWidget {
   const DriveCreateForm({Key? key}) : super(key: key);
+
+  @override
+  State<DriveCreateForm> createState() => _DriveCreateFormState();
+}
+
+class _DriveCreateFormState extends State<DriveCreateForm> {
+  final _driveNameController = TextEditingController();
+  bool _isDriveNameValid = false;
 
   @override
   Widget build(BuildContext context) =>
@@ -37,7 +49,9 @@ class DriveCreateForm extends StatelessWidget {
         listener: (context, state) {
           if (state is DriveCreateInProgress) {
             showProgressDialog(
-                context, appLocalizationsOf(context).creatingDriveEmphasized);
+              context,
+              title: appLocalizationsOf(context).creatingDriveEmphasized,
+            );
           } else if (state is DriveCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -47,21 +61,19 @@ class DriveCreateForm extends StatelessWidget {
         },
         builder: (context, state) {
           if (state is DriveCreateZeroBalance) {
-            return AppDialog(
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context).createDriveEmphasized,
-              content: SizedBox(
-                  width: kMediumDialogWidth,
-                  child: Text(
-                      appLocalizationsOf(context).insufficientARToCreateDrive)),
+              description:
+                  appLocalizationsOf(context).insufficientARToCreateDrive,
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+                ModalAction(
+                  action: () => Navigator.of(context).pop(),
+                  title: appLocalizationsOf(context).cancelEmphasized,
                 ),
               ],
             );
           } else {
-            return AppDialog(
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context).createDriveEmphasized,
               content: SizedBox(
                 width: kMediumDialogWidth,
@@ -70,16 +82,27 @@ class DriveCreateForm extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ReactiveTextField(
-                        formControlName: 'name',
+                      ArDriveTextField(
+                        controller: _driveNameController,
                         autofocus: true,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: InputDecoration(
-                            labelText: appLocalizationsOf(context).name),
-                        showErrors: (control) =>
-                            control.dirty && control.invalid,
-                        validationMessages:
-                            kValidationMessages(appLocalizationsOf(context)),
+                        onFieldSubmitted: (value) {
+                          if (_isDriveNameValid) {
+                            context
+                                .read<FolderCreateCubit>()
+                                .submit(folderName: value);
+                          }
+                        },
+                        validator: (value) {
+                          final validation = validateEntityName(value, context);
+
+                          if (validation == null) {
+                            setState(() => _isDriveNameValid = true);
+                          } else {
+                            setState(() => _isDriveNameValid = false);
+                          }
+
+                          return validation;
+                        },
                       ),
                       const SizedBox(height: 16),
                       ReactiveDropdownField(
@@ -97,7 +120,9 @@ class DriveCreateForm extends StatelessWidget {
                           ),
                           DropdownMenuItem(
                             value: 'private',
-                            child: Text(appLocalizationsOf(context).private),
+                            child: Text(
+                              appLocalizationsOf(context).private,
+                            ),
                           )
                         ],
                       ),
@@ -106,13 +131,16 @@ class DriveCreateForm extends StatelessWidget {
                 ),
               ),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+                ModalAction(
+                  action: () => Navigator.of(context).pop(),
+                  title: appLocalizationsOf(context).cancelEmphasized,
                 ),
-                ElevatedButton(
-                  onPressed: () => context.read<DriveCreateCubit>().submit(),
-                  child: Text(appLocalizationsOf(context).createEmphasized),
+                ModalAction(
+                  isEnable: _isDriveNameValid,
+                  action: () => context.read<DriveCreateCubit>().submit(
+                        _driveNameController.text,
+                      ),
+                  title: appLocalizationsOf(context).createEmphasized,
                 ),
               ],
             );

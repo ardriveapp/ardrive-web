@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:app_settings/app_settings.dart';
-import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/error_codes.dart' as error_codes;
 import 'package:local_auth/local_auth.dart';
@@ -58,10 +57,22 @@ class BiometricAuthentication {
     return hasPassword != null;
   }
 
-  Future<bool> authenticate(
-    BuildContext context, {
+  bool _authenticated = false;
+  DateTime _lastAuthenticatedTime = DateTime.now();
+
+  Future<bool> authenticate({
     bool biometricOnly = true,
+    required String localizedReason,
+    bool useCached = false, // Add a new flag for using cached authentication
   }) async {
+    if (useCached &&
+        _authenticated &&
+        _lastAuthenticatedTime
+            .isAfter(DateTime.now().subtract(const Duration(seconds: 5)))) {
+      // Return the cached authentication state if it was authenticated less than 5 seconds ago
+      return _authenticated;
+    }
+
     try {
       final canAuthenticate = await checkDeviceSupport();
 
@@ -70,19 +81,20 @@ class BiometricAuthentication {
       }
 
       final authenticated = await _auth.authenticate(
-        localizedReason:
-            // ignore: use_build_context_synchronously
-            appLocalizationsOf(context).loginUsingBiometricCredential,
+        localizedReason: localizedReason,
         options: AuthenticationOptions(
           biometricOnly: biometricOnly,
           useErrorDialogs: false,
         ),
       );
 
+      _authenticated = authenticated;
+      _lastAuthenticatedTime = DateTime.now();
+
       return authenticated;
     } on PlatformException catch (e) {
-      debugPrint(e.toString());
-      debugPrint(e.code);
+      logger.e(e.toString());
+      logger.e(e.code);
       disable();
 
       switch (e.code) {

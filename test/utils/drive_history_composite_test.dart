@@ -26,6 +26,7 @@ void main() {
           'DRIVE_ID',
           minBlockHeight: captureAny(named: 'minBlockHeight'),
           maxBlockHeight: captureAny(named: 'maxBlockHeight'),
+          ownerAddress: any(named: 'ownerAddress'),
         ),
       ).thenAnswer(
         (invocation) => fakeNodesStream(
@@ -42,9 +43,13 @@ void main() {
             )
             .map((event) => [event]),
       );
+
+      when(() => arweave.getOwnerForDriveEntityWithId('DRIVE_ID')).thenAnswer(
+        (invocation) => Future.value('owner'),
+      );
     });
 
-    test('constructor throws with invalid sub-ranges amount', () {
+    test('constructor throws with invalid sub-ranges amount', () async {
       GQLDriveHistory gqlDriveHistory = GQLDriveHistory(
         arweave: arweave,
         driveId: 'DRIVE_ID',
@@ -53,15 +58,17 @@ void main() {
           Range(start: 26, end: 50),
           Range(start: 99, end: 100),
         ]),
+        ownerAddress: 'owner',
       );
       SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
-        items: mockSubRanges
+        items: await Future.wait(mockSubRanges
             .map(
               (r) => fakeSnapshotItemFromRange(
                 HeightRange(rangeSegments: [r]),
+                arweave,
               ),
             )
-            .toList(),
+            .toList()),
       );
 
       expect(
@@ -94,15 +101,17 @@ void main() {
           Range(start: 26, end: 50),
           Range(start: 99, end: 100),
         ]),
+        ownerAddress: 'owner',
       );
       SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
-        items: mockSubRanges
+        items: await Future.wait(mockSubRanges
             .map(
               (r) => fakeSnapshotItemFromRange(
                 HeightRange(rangeSegments: [r]),
+                arweave,
               ),
             )
-            .toList(),
+            .toList()),
       );
       DriveHistoryComposite driveHistoryComposite = DriveHistoryComposite(
         subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 100)]),

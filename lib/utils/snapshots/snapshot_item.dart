@@ -1,14 +1,14 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/main.dart';
-import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
-import 'package:ardrive_http/ardrive_http.dart';
-import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';
@@ -27,6 +27,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   factory SnapshotItem.fromGQLNode({
     required SnapshotEntityTransaction node,
     required HeightRange subRanges,
+    required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
   }) {
     final tags = node.tags;
@@ -46,23 +47,8 @@ abstract class SnapshotItem implements SegmentedGQLData {
       timestamp: timestamp,
       txId: txId,
       subRanges: subRanges,
+      arweave: arweave,
       fakeSource: fakeSource,
-    );
-  }
-
-  factory SnapshotItem.fromStream({
-    required Stream<DriveHistoryTransaction> source,
-    required int blockStart,
-    required int blockEnd,
-    required DriveID driveId,
-    required HeightRange subRanges,
-  }) {
-    return SnapshotItemToBeCreated(
-      blockStart: blockStart,
-      blockEnd: blockEnd,
-      driveId: driveId,
-      subRanges: subRanges,
-      source: source,
     );
   }
 
@@ -70,6 +56,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   static Stream<SnapshotItem> instantiateAll(
     Stream<SnapshotEntityTransaction> itemsStream, {
     int? lastBlockHeight,
+    required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
   }) async* {
     HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
@@ -84,9 +71,10 @@ abstract class SnapshotItem implements SegmentedGQLData {
           item,
           obscuredBy: obscuredByAccumulator,
           fakeSource: fakeSource,
+          arweave: arweave,
         );
       } catch (e) {
-        print('Ignoring snapshot transaction with wrong block range - $e');
+        logger.e('Ignoring snapshot transaction with invalid block range - $e');
         continue;
       }
 
@@ -106,6 +94,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   static SnapshotItem instantiateSingle(
     SnapshotEntityTransaction item, {
     required HeightRange obscuredBy,
+    required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
   }) {
     late Range totalRange;
@@ -131,68 +120,15 @@ abstract class SnapshotItem implements SegmentedGQLData {
     SnapshotItem snapshotItem = SnapshotItem.fromGQLNode(
       node: item,
       subRanges: subRanges,
+      arweave: arweave,
       fakeSource: fakeSource,
     );
     return snapshotItem;
   }
-}
-
-class SnapshotItemToBeCreated implements SnapshotItem {
-  final StreamQueue _streamQueue;
-  int _currentIndex = -1;
-
-  SnapshotItemToBeCreated({
-    required this.blockStart,
-    required this.blockEnd,
-    required this.driveId,
-    required this.subRanges,
-    required Stream<DriveHistoryTransaction> source,
-  }) : _streamQueue = StreamQueue(source);
 
   @override
-  final HeightRange subRanges;
-  @override
-  final int blockStart;
-  @override
-  final int blockEnd;
-  @override
-  final DriveID driveId;
-  @override
-  int get currentIndex => _currentIndex;
-
-  @override
-  Stream<DriveHistoryTransaction> getNextStream() {
-    _currentIndex++;
-    if (currentIndex >= subRanges.rangeSegments.length) {
-      throw SubRangeIndexOverflow(index: currentIndex);
-    }
-
-    return _getNextStream();
-  }
-
-  Stream<DriveHistoryTransaction> _getNextStream() async* {
-    final Range range = subRanges.rangeSegments[currentIndex];
-
-    while (await _streamQueue.hasNext) {
-      final DriveHistoryTransaction node = (await _streamQueue.peek);
-      final height = node.block!.height;
-
-      if (range.start > height) {
-        // discard items before the sub-range
-        _streamQueue.skip(1);
-      } else if (range.isInRange(height)) {
-        // yield items in range
-        yield (await _streamQueue.next) as DriveHistoryTransaction;
-      } else {
-        // when the stream for the latest sub-range is read, close the stream
-        if (currentIndex == subRanges.rangeSegments.length - 1) {
-          _streamQueue.cancel();
-        }
-
-        // return when the next item is after the sub-range
-        return;
-      }
-    }
+  String toString() {
+    return 'SnapshotItem{blockStart: $blockStart, blockEnd: $blockEnd, driveId: $driveId, subRanges: $subRanges}';
   }
 }
 
@@ -202,7 +138,10 @@ class SnapshotItemOnChain implements SnapshotItem {
   String? _cachedSource;
   int _currentIndex = -1;
 
-  static Map<String, Cache<Uint8List>> _jsonMetadataCaches = {};
+  final ArweaveService _arweave;
+
+  static final Map<String, Cache<Uint8List>> _jsonMetadataCaches = {};
+  static final Set<TxID> allTxs = {};
 
   SnapshotItemOnChain({
     required this.blockEnd,
@@ -211,8 +150,10 @@ class SnapshotItemOnChain implements SnapshotItem {
     required this.timestamp,
     required this.txId,
     required this.subRanges,
+    required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
-  }) : _cachedSource = fakeSource;
+  })  : _cachedSource = fakeSource,
+        _arweave = arweave;
 
   @override
   final HeightRange subRanges;
@@ -229,19 +170,9 @@ class SnapshotItemOnChain implements SnapshotItem {
     if (_cachedSource != null) {
       return _cachedSource!;
     }
-
-    final dataBytes = await ArDriveHTTP().getAsBytes(_dataUri).catchError(
-      (e) {
-        print('Error while fetching Snapshot Data - $e');
-      },
-    );
-
-    final dataBytesAsString = String.fromCharCodes(dataBytes.data);
+    final dataBytes = await _arweave.getEntityDataFromNetwork(txId: txId);
+    final dataBytesAsString = String.fromCharCodes(dataBytes);
     return _cachedSource = dataBytesAsString;
-  }
-
-  String get _dataUri {
-    return '${config.defaultArweaveGatewayUrl}/$txId';
   }
 
   @override
@@ -267,8 +198,10 @@ class SnapshotItemOnChain implements SnapshotItem {
       try {
         node = DriveHistoryTransaction.fromJson(item['gqlNode']);
       } catch (e, s) {
-        print('Error while parsing GQLNode - $e, $s');
-        rethrow;
+        logger.i(
+          'Error while parsing GQLNode from snapshot item ($txId) - $e, $s',
+        );
+        continue;
       }
 
       final isInRange = range.isInRange(node.block?.height ?? -1);
@@ -300,15 +233,22 @@ class SnapshotItemOnChain implements SnapshotItem {
     final Cache<Uint8List> cache = await _lazilyInitCache(driveId);
 
     await cache.put(txId, data);
+    allTxs.add(txId);
     return data;
   }
 
-  static Future<Uint8List?> getDataForTxId(DriveID driveId, TxID txId) async {
+  static Future<Uint8List?> getDataForTxId(
+    DriveID driveId,
+    TxID txId,
+  ) async {
     final Cache<Uint8List> cache = await _lazilyInitCache(driveId);
-
     final Uint8List? value = await cache.getAndRemove(txId);
 
     return value;
+  }
+
+  static Future<List<TxID>> getAllCachedTransactionIds() async {
+    return allTxs.toList();
   }
 
   static Future<Cache<Uint8List>> _lazilyInitCache(DriveID driveId) async {

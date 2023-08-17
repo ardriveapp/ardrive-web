@@ -138,14 +138,12 @@ DataRow _buildFolderRow({
           ? DataCell(
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  primary: LightColors.kOnLightSurfaceMediumEmphasis,
+                  backgroundColor: LightColors.kOnLightSurfaceMediumEmphasis,
                   textStyle: const TextStyle(
                       color: LightColors.kOnDarkSurfaceHighEmphasis),
                 ),
-                onPressed: () => showCongestionDependentModalDialog(
-                  context,
-                  () => promptToReCreateFolder(context, ghostFolder: folder),
-                ),
+                onPressed: () =>
+                    showCongestionDependentModalDialog(context, () => null),
                 child: Text(appLocalizationsOf(context).fix),
               ),
             )
@@ -229,7 +227,7 @@ Widget _buildFileIcon(
       throw ArgumentError();
   }
 
-  if (dataContentType == ContentType.manifest) {
+  if (dataContentType == entities.ContentType.manifest) {
     icon = const Icon(Icons.account_tree_outlined);
   } else {
     final fileType = dataContentType?.split('/').first;

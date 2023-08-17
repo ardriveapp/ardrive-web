@@ -1,4 +1,4 @@
-# Arweave File System "ArFS" (version 0.11)
+# Arweave File System "ArFS" (version 0.12)
 
 ArweaveFS is a data model designed to emulate file systems on Arweave.
 
@@ -6,12 +6,13 @@ Due to Arweave's permanent, immutable nature traditional file system operations 
 
 ## Entity Data Model
 
-ArweaveFS defines several entities for storing file system state on Arweave. These entities have their data split between being stored as tags on their transaction or encoded as JSON as the data of their transaction.  
+ArweaveFS defines several entities for storing file system state on Arweave. These entities have their data split between being stored as tags on their transaction or encoded as JSON as the data of their transaction.
 
 Drive entities require a single metadata transaction, with standard Drive tags and encoded JSON with secondary metadata.
 Folder entities require a single metadata transaction, with standard Folder tags and an encoded JSON with secondary metadata.
-File entities require a metadata transaction, with standard File tags an en encoded JSON with secondary metadata.  
+File entities require a metadata transaction, with standard File tags and an encoded JSON with secondary metadata.
 File entities also require a second data transaction, which includes a limited set of File tags and the actual file data itself.
+Snapshot entities require a single data transaction, with standard Snapshot tags and encoded JSON with GQL plus JSON metadata (Base64-encoded if private) on it.
 
 MetaData stored in any transaction tags will be defined in the following manner:
 
@@ -31,15 +32,15 @@ Fields suffixed with `?` are optional.
 
 Field enum values are defined in the format "value 1 | value 2".
 
-All metadata transactions that store these entities unencrypted should define a `Content-Type` tag with value `application/json` and an `ArFS` tag with the version of ArFS specification it implements, currently `0.11`.  
+All metadata transactions that store these entities unencrypted should define a `Content-Type` tag with value `application/json` and an `ArFS` tag with the version of ArFS specification it implements, currently `0.12`.
 
 ## Drive Privacy
 
 Drives can store either public or private data, indicated by the `Drive-Privacy` tag on the drive entity.
 
-If a Drive entity is private, an additional tag `Drive-Auth-Mode` is used to indicate how the Drive Key is derived.  ArDrive clients currently leverage a secure `password` along with the Arweave Wallet private key signature to derive the global Drive key.
+If a Drive entity is private, an additional tag `Drive-Auth-Mode` is used to indicate how the Drive Key is derived. ArDrive clients currently leverage a secure `password` along with the Arweave Wallet private key signature to derive the global Drive key.
 
-On every encrypted entity, a `Cipher` tag must be specified. The required public parameters for decrypting the data must also be specified with the parameter's tag name prefixed by `Cipher-*` eg. `Cipher-IV`. If the parameter is byte data it should be encoded as Base64 in the tag.  ArDrive clients currently leverage AES256-GCM for all symmetric encryption, which requires a Cipher Initialization Vector consisting of 12 random bytes.
+On every encrypted entity, a `Cipher` tag must be specified. The required public parameters for decrypting the data must also be specified with the parameter's tag name prefixed by `Cipher-*` eg. `Cipher-IV`. If the parameter is byte data it should be encoded as Base64 in the tag. ArDrive clients currently leverage AES256-GCM for all symmetric encryption, which requires a Cipher Initialization Vector consisting of 12 random bytes.
 
 Additionally, all encrypted transactions should have the `Content-Type` tag `application/octet-stream` as opposed to `application/json`.
 
@@ -54,7 +55,7 @@ A Drive is a logical grouping of folders and files. All folders and files must b
 When creating a Drive, a corresponding folder must be created as well. This folder will act as the Drive Root Folder. This seperation of drive and folder entity enables features such as folder view queries.
 
 ```
-ArFS: 0.11
+ArFS: 0.12
 Cipher?: AES256-GCM
 Cipher-IV?: <12 byte initialization vector as Base64>
 Content-Type: <application/json | application/octet-stream>
@@ -72,10 +73,10 @@ Unix-Time: <seconds since unix epoch>
 
 ### Folder
 
-A Folder is a logical grouping of other folders and files.  Folder entity metadata transactions without a parent folder id are considered the Drive Root Folder of their corresponding Drives.  All other Folder entities must have a parent folder id.  Since folders do not have underlying data, there is no Folder data transaction required.
+A Folder is a logical grouping of other folders and files. Folder entity metadata transactions without a parent folder id are considered the Drive Root Folder of their corresponding Drives. All other Folder entities must have a parent folder id. Since folders do not have underlying data, there is no Folder data transaction required.
 
 ```
-ArFS: 0.11
+ArFS: 0.12
 Cipher?: AES256-GCM
 Cipher-IV?: <12 byte initialization vector as Base64>
 Content-Type: <application/json | application/octet-stream>
@@ -92,10 +93,10 @@ Unix-Time: <seconds since unix epoch>
 
 ### File
 
-A File contains actual data, like a photo, document or movie.  File entity metadata transactions do no include the actual File data they represent.  Instead, the File data must  be uploaded as a separate transaction, called the File data transaction. The File metadata transaction JSON references the File data transaction for retrieval.  This separation allows for file metadata to be updated without requiring the file data to be reuploaded.
+A File contains actual data, like a photo, document or movie. File entity metadata transactions do no include the actual File data they represent. Instead, the File data must be uploaded as a separate transaction, called the File data transaction. The File metadata transaction JSON references the File data transaction for retrieval. This separation allows for file metadata to be updated without requiring the file data to be reuploaded.
 
-``` File MetaData Transaction
-ArFS: 0.11
+```File MetaData Transaction
+ArFS: 0.12
 Cipher?: AES256-GCM
 Cipher-IV?: <12 byte initialization vector as Base64>
 Content-Type: <application/json | application/octet-stream>
@@ -115,11 +116,41 @@ Unix-Time: <seconds since unix epoch>
 ```
 
 The File data transaction contains limited information about the file, such as the information required to decrypt it or the Content-Type (mime-type) needed to view in the browser.
-``` File Data Transaction
+
+```File Data Transaction
 Cipher?: AES256-GCM
 Cipher-IV?: <12 byte initialization vector as hex>
 Content-Type: <file mime-type | application/octet-stream>
  { File data }
+```
+
+## Snapshot
+
+A Snapshot is a transaction that contains a list of all transactions belonging to a drive. This allows for a client to quickly retrieve all transactions of a specific drive without having to query for each transaction individually. This is particularly useful for big drives with many transactions.
+
+```Snapshot Transaction
+ArFS: 0.12
+Drive-Id: <drive uuid>
+Entity-Type: snapshot
+Content-Type: <application/json | application/octet-stream>
+Block-Start: <start block height of the snapshot>
+Block-End: <end block height of the snapshot>
+Data-Start: <first block where there's data on the snapshot>
+Data-End: <last block where there's data on the snapshot>
+
+{ Snapshot Data }
+```
+
+The snapshot data is a JSON array of objects containing `gqlNode` and `jsonMetadata` fields. The `gqlNode` field contains the transaction node returned from GQL, and the `jsonMetadata` field contains the transaction's JSON metadata (Base64-encoded if private).
+
+```Snapshot Data
+[
+    {
+        "gqlNode": "<transaction>",
+        "jsonMetadata": "<transaction metadata>"
+    },
+    ...
+]
 ```
 
 ## Creating a Drive
@@ -142,11 +173,11 @@ ArweaveFS utilises a bottom-up data model (files refer to parent folder, folders
 
 ## Extending the Arweave File System Schema
 
-Web app and clients can extend the ArFS Schema as needed by adding additional tags into the File and Folder MetaData Transaction JSON.  This gives Developers additional flexibility to support specific application needs, without breaking the overall data model or impacting privacy.  
+Web app and clients can extend the ArFS Schema as needed by adding additional tags into the File and Folder MetaData Transaction JSON. This gives Developers additional flexibility to support specific application needs, without breaking the overall data model or impacting privacy.
 
 For example a Music Sharing App could use the following expanded File Metadata for specific music files.
 
-``` Expanded File MetaData Transaction JSON Example
+```Expanded File MetaData Transaction JSON Example
 {
     "name": "<user defined file name>",
     "size": <computed file size - int>,
@@ -158,7 +189,8 @@ For example a Music Sharing App could use the following expanded File Metadata f
     "albumSong": "<the title of the song>"
 }
 ```
-Additionally, the above extended MetaData fields could be added directly as a transaction tag as well, in order to support GraphQL queries.  However, it is important to not overload transaction tags for optimal performance.
+
+Additionally, the above extended MetaData fields could be added directly as a transaction tag as well, in order to support GraphQL queries. However, it is important to not overload transaction tags for optimal performance.
 
 ## Additional Client Concerns
 

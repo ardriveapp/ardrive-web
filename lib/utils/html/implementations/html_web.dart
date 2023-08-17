@@ -1,23 +1,30 @@
 import 'dart:async';
 
+import 'package:ardrive/services/arconnect/is_document_focused.dart';
 import 'package:universal_html/html.dart';
 
-bool isTabHidden() {
-  return window.document.visibilityState != 'visible';
+bool isTabFocused() {
+  return isDocumentFocused();
 }
 
-late StreamSubscription _onVisibilityChangeStream;
-
-void whenTabIsUnhidden(Function onShow) {
-  _onVisibilityChangeStream = document.onVisibilityChange.listen((event) {
-    if (!isTabHidden()) {
-      onShow();
-    }
+Future<void> onTabGetsFocusedFuture(Future Function() onFocus) async {
+  final completer = Completer<void>();
+  final subscription = onTabGetsFocused(() async {
+    await onFocus();
+    completer.complete();
   });
+  await completer.future; // wait for the completer to be resolved
+  await subscription.cancel();
 }
 
-Future<void> closeVisibilityChangeStream() async =>
-    await _onVisibilityChangeStream.cancel();
+StreamSubscription<Event> onTabGetsFocused(Function onFocus) {
+  final subscription = window.onFocus.listen(
+    (event) {
+      onFocus();
+    },
+  );
+  return subscription;
+}
 
 void onWalletSwitch(Function onWalletSwitch) {
   window.addEventListener('walletSwitch', (event) {

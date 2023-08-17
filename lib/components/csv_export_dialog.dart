@@ -7,18 +7,17 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'components.dart';
 
 Future<void> promptToExportCSVData({
   required BuildContext context,
   required String driveId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider<DataExportCubit>(
+    showAnimatedDialog(
+      context,
+      content: BlocProvider<DataExportCubit>(
         create: (_) {
           return DataExportCubit(
             driveId: driveId,
@@ -29,6 +28,7 @@ Future<void> promptToExportCSVData({
         },
         child: const FileDownloadDialog(),
       ),
+      barrierDismissible: false,
     );
 
 class FileDownloadDialog extends StatelessWidget {
@@ -41,33 +41,31 @@ class FileDownloadDialog extends StatelessWidget {
           if (state is DataExportSuccess) {
             final ArDriveIO io = ArDriveIO();
 
-            await io.saveFile(await IOFile.fromData(state.bytes,
+            final saveFile = io.saveFile(await IOFile.fromData(state.bytes,
                 name: state.fileName, lastModifiedDate: state.lastModified));
 
-            Navigator.pop(context);
+            saveFile.then((value) => Navigator.pop(context));
           }
         },
         builder: (context, state) {
           if (state is FileDownloadStarting) {
-            return AppDialog(
-              dismissable: false,
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context).downloadingCSV,
-              content: Column(
+              content: const Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Center(child: CircularProgressIndicator()),
                 ],
               ),
               actions: [
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(appLocalizationsOf(context).cancel),
+                ModalAction(
+                  action: () => Navigator.pop(context),
+                  title: appLocalizationsOf(context).cancel,
                 ),
               ],
             );
           } else if (state is FileDownloadInProgress) {
-            return AppDialog(
-              dismissable: false,
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context).downloadingCSV,
               content: SizedBox(
                 width: kMediumDialogWidth,
@@ -75,33 +73,30 @@ class FileDownloadDialog extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   title: Text(
                     appLocalizationsOf(context).exportingData,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   trailing: const CircularProgressIndicator(),
                 ),
               ),
               actions: [
-                ElevatedButton(
-                  onPressed: () {
+                ModalAction(
+                  action: () {
                     context.read<FileDownloadCubit>().abortDownload();
                     Navigator.pop(context);
                   },
-                  child: Text(appLocalizationsOf(context).cancel),
+                  title: appLocalizationsOf(context).cancel,
                 ),
               ],
             );
           } else if (state is FileDownloadFailure) {
-            return AppDialog(
-              dismissable: false,
+            return ArDriveStandardModal(
               title: appLocalizationsOf(context).fileDownloadFailed,
               content: const SizedBox(
                 width: kMediumDialogWidth,
               ),
               actions: [
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(appLocalizationsOf(context).ok),
+                ModalAction(
+                  action: () => Navigator.pop(context),
+                  title: appLocalizationsOf(context).ok,
                 ),
               ],
             );
