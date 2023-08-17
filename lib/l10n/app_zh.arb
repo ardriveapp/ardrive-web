@@ -1412,8 +1412,6 @@
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
-  "quoteUpdatesIn": "报价将在……更新",
-  "@quoteUpdatesIn": {},
   "recreateFolderEmphasized": "重新创建文件夹",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
