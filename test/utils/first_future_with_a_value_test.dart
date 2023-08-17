@@ -1,4 +1,4 @@
-import 'package:ardrive/utils/first_future_with_a_value.dart';
+import 'package:ardrive/utils/get_first_future_result.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -10,7 +10,8 @@ void main() {
     final future3sec =
         Future.delayed(const Duration(seconds: 3)).then((value) => 3);
 
-    final value = await firstWithAValue([future1sec, future2sec, future3sec]);
+    final value =
+        await getFirstFutureResult([future1sec, future2sec, future3sec]);
 
     expect(value, 1);
   });
@@ -25,7 +26,8 @@ void main() {
     final future3sec =
         Future.delayed(const Duration(seconds: 3)).then((value) => 3);
 
-    final value = await firstWithAValue([future1sec, future2sec, future3sec]);
+    final value =
+        await getFirstFutureResult([future1sec, future2sec, future3sec]);
 
     expect(value, 2);
   });
@@ -39,7 +41,8 @@ void main() {
         .then((value) => throw Exception());
 
     expectLater(
-        () async => await firstWithAValue([future1sec, future2sec, future3sec]),
+        () async =>
+            await getFirstFutureResult([future1sec, future2sec, future3sec]),
         throwsA(const TypeMatcher<List>()));
   });
 }

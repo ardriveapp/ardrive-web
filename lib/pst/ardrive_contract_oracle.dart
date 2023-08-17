@@ -1,6 +1,6 @@
 import 'package:ardrive/pst/contract_oracle.dart';
 import 'package:ardrive/pst/pst_contract_data.dart';
-import 'package:ardrive/utils/first_future_with_a_value.dart';
+import 'package:ardrive/utils/get_first_future_result.dart';
 import 'package:equatable/equatable.dart';
 import 'package:retry/retry.dart';
 
@@ -31,7 +31,7 @@ class ArDriveContractOracle implements ContractOracle {
 
   /// iterates over all contract readers attempting to read the contract
   Future<CommunityContractData> _getContractFromOracles() async {
-    final contract = await firstWithAValue<CommunityContractData>(
+    final contract = await getFirstFutureResult<CommunityContractData>(
         _contractOracles
             .map((e) async => await _getContractWithRetries(e))
             .toList());

@@ -6,7 +6,7 @@ class FutureError {
   FutureError(this.error, this.stackTrace);
 }
 
-Future<T> firstWithAValue<T>(Iterable<Future<T>> futures) {
+Future<T> getFirstFutureResult<T>(Iterable<Future<T>> futures) {
   final completer = Completer<T>.sync();
   final errors = [];
 
