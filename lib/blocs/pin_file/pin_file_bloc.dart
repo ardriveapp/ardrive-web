@@ -352,8 +352,13 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     String name,
     String id,
   ) async {
-    NameValidationResult nameValidation = validateName(name);
-    final IdValidationResult idValidation = validateId(id);
+    final hasNameFieldChanged = state.name != name;
+    final hasIdFieldChanged = state.id != id;
+
+    NameValidationResult nameValidation =
+        hasNameFieldChanged ? validateName(name) : state.nameValidation;
+    final IdValidationResult idValidation =
+        hasIdFieldChanged ? validateId(id) : state.idValidation;
 
     if (nameValidation == NameValidationResult.valid) {
       final doesItConflict = await _doesNameConflicts(name);
