@@ -3,7 +3,9 @@ import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/components/sizes.dart';
+import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -172,6 +174,14 @@ class _DetailsPanelState extends State<DetailsPanel> {
                               style: ArDriveTypography.body.buttonLargeBold(),
                             ),
                           ),
+                          if (widget.item is FileDataTableItem &&
+                              (widget.item as FileDataTableItem)
+                                      .pinnedDataOwnerAddress !=
+                                  null) ...{
+                            const PinIndicator(
+                              size: 32,
+                            ),
+                          },
                           if (widget.currentDrive != null &&
                               !widget.isSharePage)
                             ScreenTypeLayout.builder(
@@ -225,7 +235,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       children = _folderDetails(state);
     } else if (state is FsEntryInfoSuccess<FileEntry> ||
         widget.revisions != null) {
-      children = _fileDetails();
+      children = _fileDetails(state as FsEntryInfoSuccess);
     } else if (state is FsEntryInfoSuccess<Drive>) {
       children = _driveDetails(state);
     } else {
@@ -286,6 +296,28 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).driveID,
       ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArDriveIconButton(
+              tooltip: appLocalizationsOf(context).viewOnViewBlock,
+              icon: ArDriveIcons.newWindow(size: 20),
+              onPressed: () {
+                openUrl(
+                  url: 'https://viewblock.io/arweave/tx/${folder.metadataTxId}',
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            CopyButton(
+              text: folder.metadataTxId,
+            ),
+          ],
+        ),
+        itemTitle: appLocalizationsOf(context).metadataTxID,
+      ),
     ];
   }
 
@@ -334,15 +366,34 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArDriveIconButton(
+              tooltip: appLocalizationsOf(context).viewOnViewBlock,
+              icon: ArDriveIcons.newWindow(size: 20),
+              onPressed: () {
+                openUrl(
+                  url: 'https://viewblock.io/arweave/tx/${state.metadataTxId}',
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            CopyButton(
+              text: state.metadataTxId,
+            ),
+          ],
+        ),
+        itemTitle: appLocalizationsOf(context).metadataTxID,
+      ),
     ];
   }
 
-  List<Widget> _fileDetails() {
-    String? metadataTxId;
-
-    if (widget.item is FileDataTableItem) {
-      metadataTxId = (widget.item as FileDataTableItem).metadataTx?.id;
-    }
+  List<Widget> _fileDetails(FsEntryInfoSuccess state) {
+    String? pinnedDataOwnerAddress =
+        (widget.item as FileDataTableItem).pinnedDataOwnerAddress;
 
     return [
       DetailsPanelItem(
@@ -379,17 +430,30 @@ class _DetailsPanelState extends State<DetailsPanel> {
           widget.item.contentType,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
-        itemTitle: 'File type',
+        itemTitle: appLocalizationsOf(context).fileType,
       ),
-      if (metadataTxId != null) ...[
-        sizedBoxHeight16px,
-        DetailsPanelItem(
-          leading: CopyButton(
-            text: metadataTxId,
-          ),
-          itemTitle: appLocalizationsOf(context).metadataTxID,
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArDriveIconButton(
+              tooltip: appLocalizationsOf(context).viewOnViewBlock,
+              icon: ArDriveIcons.newWindow(size: 20),
+              onPressed: () {
+                openUrl(
+                  url: 'https://viewblock.io/arweave/tx/${state.metadataTxId}',
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            CopyButton(
+              text: state.metadataTxId,
+            ),
+          ],
         ),
-      ],
+        itemTitle: appLocalizationsOf(context).metadataTxID,
+      ),
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Row(
@@ -413,6 +477,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).dataTxID,
       ),
+      if (pinnedDataOwnerAddress != null) ...[
+        sizedBoxHeight16px,
+        DetailsPanelItem(
+          leading: TruncatedAddress(walletAddress: pinnedDataOwnerAddress),
+          itemTitle: appLocalizationsOf(context).uploadedBy,
+        ),
+      ]
     ];
   }
 
@@ -451,16 +522,18 @@ class _DetailsPanelState extends State<DetailsPanel> {
             if (revision is FolderRevisionWithTransaction) {
               switch (revision.action) {
                 case RevisionAction.create:
-                  title = 'Folder added to the drive';
+                  title = appLocalizationsOf(context)
+                      .folderWasCreatedWithName(revision.name);
                   break;
                 case RevisionAction.rename:
-                  title = 'Folder renamed to ${revision.name}';
+                  title = appLocalizationsOf(context)
+                      .folderWasRenamed(revision.name);
                   break;
                 case RevisionAction.move:
-                  title = 'Folder moved';
+                  title = appLocalizationsOf(context).folderWasMoved;
                   break;
                 default:
-                  title = 'Folder was modified';
+                  title = appLocalizationsOf(context).folderWasModified;
               }
               subtitle = yMMdDateFormatter.format(revision.dateCreated);
 
@@ -476,16 +549,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
             } else if (revision is DriveRevisionWithTransaction) {
               switch (revision.action) {
                 case RevisionAction.create:
-                  title = 'Drive created';
+                  title = appLocalizationsOf(context)
+                      .driveWasCreatedWithName(revision.name);
                   break;
                 case RevisionAction.rename:
-                  title = 'Drive renamed to ${revision.name}';
-                  break;
-                case RevisionAction.move:
-                  title = 'Drive moved';
+                  title = appLocalizationsOf(context)
+                      .driveWasRenamed(revision.name);
                   break;
                 default:
-                  title = 'Drive was modified';
+                  title = appLocalizationsOf(context).driveWasModified;
               }
 
               subtitle = yMMdDateFormatter.format(revision.dateCreated);
@@ -515,7 +587,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
     switch (action) {
       case RevisionAction.create:
-        title = 'File added to the drive';
+        if (file.pinnedDataOwnerAddress != null) {
+          title = appLocalizationsOf(context).fileWasPinnedToTheDrive;
+        } else {
+          title = appLocalizationsOf(context).fileWasCreatedWithName(file.name);
+        }
         leading = _DownloadOrPreview(
           isSharedFile: widget.isSharePage,
           privacy: widget.drivePrivacy,
@@ -524,13 +600,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
         );
         break;
       case RevisionAction.rename:
-        title = 'File renamed to ${file.name}';
+        title = appLocalizationsOf(context).fileWasRenamed(file.name);
         break;
       case RevisionAction.move:
-        title = 'File was moved';
+        title = appLocalizationsOf(context).fileWasMoved;
         break;
       case RevisionAction.uploadNewVersion:
-        title = 'File was updated';
+        title = appLocalizationsOf(context).fileHadANewRevision;
         leading = leading = _DownloadOrPreview(
           isSharedFile: widget.isSharePage,
           privacy: widget.drivePrivacy,

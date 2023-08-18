@@ -19,6 +19,8 @@ extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
         name: name.value,
         path: rootPath,
         lastUpdated: dateCreated,
+        customGQLTags: customGQLTags,
+        customJsonMetadata: customJsonMetadata,
       );
 
   /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
@@ -42,6 +44,8 @@ extension FolderEntityExtensions on FolderEntity {
         metadataTxId: txId,
         dateCreated: Value(createdAt),
         action: performedAction,
+        customGQLTags: Value(customGqlTagsAsString),
+        customJsonMetadata: Value(customJsonMetadataAsString),
       );
 
   /// Returns the action performed on the folder that lead to the new revision.

@@ -12,7 +12,7 @@ import 'entities.dart';
 part 'folder_entity.g.dart';
 
 @JsonSerializable()
-class FolderEntity extends Entity {
+class FolderEntity extends EntityWithCustomMetadata {
   @JsonKey(includeFromJson: false, includeToJson: false)
   String? id;
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -21,6 +21,20 @@ class FolderEntity extends Entity {
   String? parentFolderId;
 
   String? name;
+
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String> reservedGqlTags = [
+    ...EntityWithCustomMetadata.sharedReservedGqlTags,
+    EntityTag.folderId,
+    EntityTag.parentFolderId,
+  ];
+
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String> reservedJsonMetadataKeys = [
+    ...EntityWithCustomMetadata.sharedReservedJsonMetadataKeys,
+  ];
 
   FolderEntity({
     this.id,
@@ -47,13 +61,25 @@ class FolderEntity extends Entity {
         );
       }
 
-      return FolderEntity.fromJson(entityJson!)
+      final folder = FolderEntity.fromJson(entityJson!)
         ..id = transaction.getTag(EntityTag.folderId)
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..createdAt = transaction.getCommitTime();
+
+      final tags = transaction.tags
+          .map(
+            (t) => Tag.fromJson(t.toJson()),
+          )
+          .toList();
+      folder.customGqlTags = EntityWithCustomMetadata.getCustomGqlTags(
+        folder,
+        tags,
+      );
+
+      return folder;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
@@ -74,7 +100,18 @@ class FolderEntity extends Entity {
     }
   }
 
-  factory FolderEntity.fromJson(Map<String, dynamic> json) =>
-      _$FolderEntityFromJson(json);
-  Map<String, dynamic> toJson() => _$FolderEntityToJson(this);
+  factory FolderEntity.fromJson(Map<String, dynamic> json) {
+    final entity = _$FolderEntityFromJson(json);
+    entity.customJsonMetadata = EntityWithCustomMetadata.getCustomJsonMetadata(
+      entity,
+      json,
+    );
+    return entity;
+  }
+  Map<String, dynamic> toJson() {
+    final thisJson = _$FolderEntityToJson(this);
+    final custom = customJsonMetadata ?? {};
+    final merged = {...thisJson, ...custom};
+    return merged;
+  }
 }
