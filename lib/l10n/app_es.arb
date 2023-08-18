@@ -1412,8 +1412,6 @@
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
-  "quoteUpdatesIn": "Actualizaciones de presupuesto en",
-  "@quoteUpdatesIn": {},
   "recreateFolderEmphasized": "RECREAR CARPETA",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"

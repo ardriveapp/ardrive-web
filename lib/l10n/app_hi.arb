@@ -1412,8 +1412,6 @@
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
-  "quoteUpdatesIn": "क्वोट अपडेट होने वाला है ",
-  "@quoteUpdatesIn": {},
   "recreateFolderEmphasized": "फ़ोल्डर फिर से बनाएं",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
