@@ -53,16 +53,23 @@ promptToDownloadMultipleFiles(
             folderName: driveDetail.folderInView.folder.name,
           ),
         ),
-      child: MultipleFilesDownload(),
+      child: const MultipleFilesDownload(),
     ),
   );
 }
 
-class MultipleFilesDownload extends StatelessWidget {
+class MultipleFilesDownload extends StatefulWidget {
+  const MultipleFilesDownload({
+    super.key,
+  });
+
+  @override
+  State<MultipleFilesDownload> createState() => _MultipleFilesDownloadState();
+}
+
+class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
   final _scrollController = ScrollController();
   CancelableOperation? autoClose;
-
-  MultipleFilesDownload({super.key});
 
   @override
   Widget build(BuildContext context) {
