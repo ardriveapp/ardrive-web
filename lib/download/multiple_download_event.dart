@@ -20,3 +20,7 @@ class StartDownload extends MultipleDownloadEvent {
 class ResumeDownload extends MultipleDownloadEvent {
   const ResumeDownload();
 }
+
+class CancelDownload extends MultipleDownloadEvent {
+  const CancelDownload();
+}

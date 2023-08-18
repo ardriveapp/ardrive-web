@@ -6,6 +6,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -26,6 +27,7 @@ class MultipleDownloadBloc
   final ArDriveCrypto _crypto;
   final SecretKey? _cipherKey;
 
+  bool canceled = false;
   int currentFileIndex = 0;
   SecretKey? driveKey;
 
@@ -52,6 +54,9 @@ class MultipleDownloadBloc
     on<MultipleDownloadEvent>((event, emit) async {
       if (event is StartDownload) {
         await startDownload(event, emit);
+      } else if (event is CancelDownload) {
+        // signal the download process to exit
+        canceled = true;
       } else if (event is ResumeDownload) {
         await resumeDownload(event, emit);
       }
@@ -120,6 +125,7 @@ class MultipleDownloadBloc
   Future<void> _downloadMultipleFiles(
       Emitter<MultipleDownloadState> emit) async {
     try {
+      // TODO: move this check to startDownload...
       final files = items.whereType<ARFSFileEntity>().toList();
 
       final totalSize = files.map((e) => e.size).reduce((a, b) => a + b);
@@ -134,20 +140,32 @@ class MultipleDownloadBloc
         return;
       }
 
-      emit(
-        MultipleDownloadInProgress(
-          fileName: 'Multiple Files',
-          totalByteCount: totalSize,
-        ),
-      );
-
       while (currentFileIndex < files.length) {
+        if (canceled) {
+          // TODO: Determine whether to cleanup resources here?
+          logger.d('User cancelled multi-file downloading.');
+          return;
+        }
+
+        emit(
+          MultipleDownloadInProgress(
+            files: files,
+            currentFileIndex: currentFileIndex,
+          ),
+        );
+
         final file = files[currentFileIndex];
 
         //TODO: check download results in case of network error or file not mined
         final dataBytes = await _downloadService.download(file.txId);
 
-        var outputBytes;
+        if (canceled) {
+          // TODO: Determine whether to cleanup resources here?
+          logger.d('User cancelled multi-file downloading.');
+          return;
+        }
+
+        Uint8List outputBytes;
 
         if (drive.drivePrivacy == DrivePrivacy.private) {
           final fileKey = await _driveDao.getFileKey(file.id, driveKey!);
@@ -163,6 +181,7 @@ class MultipleDownloadBloc
             outputBytes = decryptedData;
           } else {
             // TODO: emit decryption error message
+            return;
           }
         } else {
           outputBytes = dataBytes;
@@ -174,12 +193,10 @@ class MultipleDownloadBloc
           outputBytes,
         ));
 
+        // await Future.delayed(const Duration(seconds: 2));
+
         currentFileIndex++;
       }
-
-      emit(const MultipleDownloadZippingFiles());
-
-      await Future.delayed(const Duration(milliseconds: 200));
 
       zipEncoder.endEncode();
 
@@ -188,7 +205,6 @@ class MultipleDownloadBloc
           name: outFileName,
           lastModifiedDate: DateTime.now());
 
-      // await FileZipper(files: ioFiles).downloadZipFile(fileName: folderName);
       await ArDriveIO().saveFile(outFile);
 
       emit(const MultipleDownloadFinishedWithSuccess(title: 'Multiple Files'));

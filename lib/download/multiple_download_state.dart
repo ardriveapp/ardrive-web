@@ -10,16 +10,16 @@ abstract class MultipleDownloadState extends Equatable {
 class MultipleDownloadInitial extends MultipleDownloadState {}
 
 class MultipleDownloadInProgress extends MultipleDownloadState {
-  final String fileName;
-  final int totalByteCount;
+  final List<ARFSFileEntity> files;
+  final int currentFileIndex;
 
   const MultipleDownloadInProgress({
-    required this.fileName,
-    required this.totalByteCount,
+    required this.files,
+    required this.currentFileIndex,
   });
 
   @override
-  List<Object> get props => [fileName, totalByteCount];
+  List<Object> get props => [files, currentFileIndex];
 }
 
 class MultipleDownloadWarning extends MultipleDownloadState {}
