@@ -1,11 +1,18 @@
+import 'package:archive/archive_io.dart';
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
-import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
-import 'package:ardrive/utils/file_zipper.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'limits.dart';
 
 part 'multiple_download_event.dart';
 part 'multiple_download_state.dart';
@@ -13,22 +20,107 @@ part 'multiple_download_state.dart';
 class MultipleDownloadBloc
     extends Bloc<MultipleDownloadEvent, MultipleDownloadState> {
   final DownloadService _downloadService;
+  final ArweaveService _arweave;
+  final DriveDao _driveDao;
+  final ARFSRepository _arfsRepository;
+  final ArDriveCrypto _crypto;
+  final SecretKey? _cipherKey;
 
-  MultipleDownloadBloc({
-    required DownloadService downloadService,
-  })  : _downloadService = downloadService,
+  int currentFileIndex = 0;
+  SecretKey? driveKey;
+
+  late ARFSDriveEntity drive;
+  late ZipEncoder zipEncoder;
+  late OutputStream outputStream;
+  late List<ARFSFileEntity> items;
+  late String outFileName;
+
+  MultipleDownloadBloc(
+      {required DownloadService downloadService,
+      required DriveDao driveDao,
+      required ArweaveService arweave,
+      required ARFSRepository arfsRepository,
+      required ArDriveCrypto crypto,
+      SecretKey? cipherKey})
+      : _downloadService = downloadService,
+        _driveDao = driveDao,
+        _arweave = arweave,
+        _arfsRepository = arfsRepository,
+        _crypto = crypto,
+        _cipherKey = cipherKey,
         super(MultipleDownloadInitial()) {
     on<MultipleDownloadEvent>((event, emit) async {
       if (event is StartDownload) {
-        await _downloadMultipleFiles(event.items, emit, event.folderName);
+        await startDownload(event, emit);
+      } else if (event is ResumeDownload) {
+        await resumeDownload(event, emit);
       }
     });
   }
-  Future<void> _downloadMultipleFiles(List<ARFSFileEntity> items,
-      Emitter<MultipleDownloadState> emit, String? folderName) async {
+
+  Future<void> startDownload(
+      StartDownload event, Emitter<MultipleDownloadState> emit) async {
+    items = event.items;
+
+    // check all files from same drive
+    var firstFile = items[0];
+    if (!items.every((file) => file.driveId == firstFile.driveId)) {
+      // TODO emit error event here and exit
+    }
+
+    drive = await _arfsRepository.getDriveById(firstFile.driveId);
+
+    if (drive.drivePrivacy == DrivePrivacy.private) {
+      if (_cipherKey != null) {
+        driveKey = await _driveDao.getDriveKey(
+          drive.driveId,
+          _cipherKey!,
+        );
+      } else {
+        driveKey = await _driveDao.getDriveKeyFromMemory(drive.driveId);
+      }
+
+      if (driveKey == null) {
+        throw StateError('Drive Key not found');
+      }
+    }
+
+    _initializeEncoder();
+    outFileName =
+        event.folderName != null ? '${event.folderName}.zip' : 'Archive.zip';
+
+    final totalSize = items.map((e) => e.size).reduce((a, b) => a + b);
+
+    if (_isSizeAbovePublicLimit(totalSize)) {
+      emit(
+        const MultipleDownloadFailure(
+          FileDownloadFailureReason.fileAboveLimit,
+        ),
+      );
+
+      return;
+    }
+
+    await _downloadMultipleFiles(emit);
+  }
+
+  Future<void> resumeDownload(
+      ResumeDownload event, Emitter<MultipleDownloadState> emit) async {
+    await _downloadMultipleFiles(emit);
+  }
+
+  void _initializeEncoder() {
+    zipEncoder = ZipEncoder();
+    outputStream = OutputStream(
+      byteOrder: LITTLE_ENDIAN,
+    );
+    zipEncoder.startEncode(outputStream, level: Deflate.NO_COMPRESSION);
+  }
+
+  Future<void> _downloadMultipleFiles(
+      Emitter<MultipleDownloadState> emit) async {
     try {
       final files = items.whereType<ARFSFileEntity>().toList();
-      final ioFiles = <IOFile>[];
 
       final totalSize = files.map((e) => e.size).reduce((a, b) => a + b);
 
@@ -49,23 +141,55 @@ class MultipleDownloadBloc
         ),
       );
 
-      for (final file in files) {
+      while (currentFileIndex < files.length) {
+        final file = files[currentFileIndex];
+
+        //TODO: check download results in case of network error or file not mined
         final dataBytes = await _downloadService.download(file.txId);
 
-        final ioFile = await IOFile.fromData(
-          dataBytes,
-          name: file.name,
-          lastModifiedDate: file.lastModifiedDate,
-        );
+        var outputBytes;
 
-        ioFiles.add(ioFile);
+        if (drive.drivePrivacy == DrivePrivacy.private) {
+          final fileKey = await _driveDao.getFileKey(file.id, driveKey!);
+          final dataTx = await (_arweave.getTransactionDetails(file.txId));
+
+          if (dataTx != null) {
+            final decryptedData = await _crypto.decryptTransactionData(
+              dataTx,
+              dataBytes,
+              fileKey,
+            );
+
+            outputBytes = decryptedData;
+          } else {
+            // TODO: emit decryption error message
+          }
+        } else {
+          outputBytes = dataBytes;
+        }
+
+        zipEncoder.addFile(ArchiveFile.noCompress(
+          file.name,
+          file.size,
+          outputBytes,
+        ));
+
+        currentFileIndex++;
       }
 
       emit(const MultipleDownloadZippingFiles());
 
       await Future.delayed(const Duration(milliseconds: 200));
 
-      await FileZipper(files: ioFiles).downloadZipFile(fileName: folderName);
+      zipEncoder.endEncode();
+
+      var outFile = await IOFile.fromData(
+          Uint8List.fromList(outputStream.getBytes()),
+          name: outFileName,
+          lastModifiedDate: DateTime.now());
+
+      // await FileZipper(files: ioFiles).downloadZipFile(fileName: folderName);
+      await ArDriveIO().saveFile(outFile);
 
       emit(const MultipleDownloadFinishedWithSuccess(title: 'Multiple Files'));
     } catch (e) {

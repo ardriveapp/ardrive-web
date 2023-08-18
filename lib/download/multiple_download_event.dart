@@ -16,3 +16,7 @@ class StartDownload extends MultipleDownloadEvent {
   @override
   List<Object> get props => [items];
 }
+
+class ResumeDownload extends MultipleDownloadEvent {
+  const ResumeDownload();
+}
