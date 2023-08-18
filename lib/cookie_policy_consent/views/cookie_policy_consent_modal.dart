@@ -58,12 +58,21 @@ class CookieConsentModal extends StatelessWidget {
                     TextSpan(
                       text:
                           '${appLocalizationsOf(context).cookieConsentBodyPart1} ',
-                      style: ArDriveTypography.body.buttonLargeBold(),
+                      style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          ),
                     ),
                     TextSpan(
                       text: appLocalizationsOf(context).learnMore,
                       style: ArDriveTypography.body.buttonLargeBold().copyWith(
                             decoration: TextDecoration.underline,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
                           ),
                       recognizer: TapGestureRecognizer()
                         ..onTap = () {
@@ -75,7 +84,12 @@ class CookieConsentModal extends StatelessWidget {
                     TextSpan(
                       text:
                           '\n${appLocalizationsOf(context).cookieConsentBodyPart2}',
-                      style: ArDriveTypography.body.buttonLargeBold(),
+                      style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          ),
                     ),
                   ],
                 ),
