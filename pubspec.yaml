@@ -89,7 +89,7 @@ dependencies:
   firebase_core: ^2.1.1
   bloc_concurrency: ^0.2.0
   universal_html: ^2.0.8
-  device_info_plus: ^8.0.0
+  device_info_plus: ^8.2.2
   local_auth: ^2.1.2
   flutter_secure_storage: ^8.0.0
   async: ^2.9.0

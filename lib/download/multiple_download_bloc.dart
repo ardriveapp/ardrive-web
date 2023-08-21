@@ -68,6 +68,16 @@ class MultipleDownloadBloc
       StartDownload event, Emitter<MultipleDownloadState> emit) async {
     items = event.items;
 
+    if (await isSizeAboveDownloadSizeLimit(
+        items, drive.drivePrivacy == DrivePrivacy.public)) {
+      emit(
+        const MultipleDownloadFailure(
+          FileDownloadFailureReason.fileAboveLimit,
+        ),
+      );
+      return;
+    }
+
     // check all files from same drive
     var firstFile = items[0];
 
@@ -98,18 +108,6 @@ class MultipleDownloadBloc
     outFileName =
         event.folderName != null ? '${event.folderName}.zip' : 'Archive.zip';
 
-    final totalSize = items.map((e) => e.size).reduce((a, b) => a + b);
-
-    if (_isSizeAbovePublicLimit(totalSize)) {
-      emit(
-        const MultipleDownloadFailure(
-          FileDownloadFailureReason.fileAboveLimit,
-        ),
-      );
-
-      return;
-    }
-
     await _downloadMultipleFiles(emit);
   }
 
@@ -130,24 +128,10 @@ class MultipleDownloadBloc
   Future<void> _downloadMultipleFiles(
       Emitter<MultipleDownloadState> emit) async {
     try {
-      // TODO: move this check to startDownload...
       final files = items.whereType<ARFSFileEntity>().toList();
-
-      final totalSize = files.map((e) => e.size).reduce((a, b) => a + b);
-
-      if (_isSizeAbovePublicLimit(totalSize)) {
-        emit(
-          const MultipleDownloadFailure(
-            FileDownloadFailureReason.fileAboveLimit,
-          ),
-        );
-
-        return;
-      }
 
       while (currentFileIndex < files.length) {
         if (canceled) {
-          // TODO: Determine whether to cleanup resources here?
           logger.d('User cancelled multi-file downloading.');
           return;
         }
@@ -166,7 +150,6 @@ class MultipleDownloadBloc
         final dataBytes = await _downloadService.download(file.txId);
 
         if (canceled) {
-          // TODO: Determine whether to cleanup resources here?
           logger.d('User cancelled multi-file downloading.');
           return;
         }
@@ -238,9 +221,5 @@ class MultipleDownloadBloc
       }
       logger.d('Multi-file Download Exception: ${e.toString()}');
     }
-  }
-
-  bool _isSizeAbovePublicLimit(int size) {
-    return size > publicDownloadSizeLimit;
   }
 }
