@@ -24,7 +24,7 @@ abstract class TagsGenerator<T> {
 abstract class ARFSDriveUploadMetadataGenerator {
   Future<ARFSUploadMetadata> generateDrive({
     required String name,
-    required String privacy,
+    required bool isPrivate,
   });
 }
 
@@ -100,16 +100,16 @@ class ARFSUploadMetadataGenerator
   @override
   Future<ARFSUploadMetadata> generateDrive({
     required String name,
-    required String privacy,
+    required bool isPrivate,
   }) async {
     final id = const Uuid().v4();
 
     return ARFSDriveUploadMetadata(
-      isPrivate: privacy == DrivePrivacy.private,
+      isPrivate: isPrivate,
       name: name,
       tags: _tagsGenerator.generateTags(
         ARFSTagsArgs(
-          privacy: privacy,
+          isPrivate: isPrivate,
           entityId: id,
         ),
       ),
@@ -178,8 +178,8 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
 
         break;
       case arfs.EntityType.drive:
-        if (arguments.privacy == DrivePrivacy.private) {
-          tags.add(Tag(EntityTag.driveAuthMode, arguments.privacy!));
+        if (arguments.isPrivate ?? false) {
+          tags.add(Tag(EntityTag.driveAuthMode, 'private'));
         }
 
         tags.add(Tag(EntityTag.entityType, arfs.EntityType.drive.name));
@@ -272,7 +272,7 @@ class ARFSTagsValidator {
 
         break;
       case arfs.EntityType.drive:
-        if (args.privacy == null) {
+        if (args.isPrivate == null) {
           throw ArgumentError('privacy must not be null');
         }
         break;
@@ -284,12 +284,12 @@ class ARFSTagsArgs {
   final String? driveId;
   final String? parentFolderId;
   final String? entityId;
-  final String? privacy;
+  final bool? isPrivate;
 
   ARFSTagsArgs({
     this.driveId,
     this.parentFolderId,
-    this.privacy,
+    this.isPrivate,
     this.entityId,
   });
 }

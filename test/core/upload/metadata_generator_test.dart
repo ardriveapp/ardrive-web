@@ -21,7 +21,7 @@ void main() {
   final args = ARFSTagsArgs(
     driveId: 'driveId',
     parentFolderId: 'parentFolderId',
-    privacy: 'public',
+    isPrivate: false,
     entityId: 'entityId',
   );
 
@@ -172,12 +172,12 @@ void main() {
 
         final drivePublic = await generator.generateDrive(
           name: 'name',
-          privacy: 'public',
+          isPrivate: false,
         );
 
         final drivePrivate = await generator.generateDrive(
           name: 'name',
-          privacy: 'private',
+          isPrivate: true,
         );
 
         expect(drivePublic, isA<ARFSDriveUploadMetadata>());
@@ -340,7 +340,7 @@ void main() {
 
         final wrongArgs = ARFSTagsArgs(
           driveId: null,
-          privacy: null,
+          isPrivate: null,
         );
 
         expect(
@@ -397,7 +397,7 @@ void main() {
       test('should not throw if the args is valid generating a drive', () {
         final wrongArgs = ARFSTagsArgs(
           driveId: 'drive id',
-          privacy: 'privacy',
+          isPrivate: false,
         );
 
         expect(
@@ -407,7 +407,7 @@ void main() {
       test('should throw if the args is invalid generating a drive', () {
         final wrongArgs = ARFSTagsArgs(
           driveId: null,
-          privacy: null,
+          isPrivate: null,
         );
 
         expect(
@@ -457,7 +457,7 @@ void main() {
       test('should not throw if the args is valid generating a folder', () {
         final wrongArgs = ARFSTagsArgs(
           driveId: 'drive id',
-          privacy: 'privacy',
+          isPrivate: false,
           entityId: 'entity id',
         );
 
