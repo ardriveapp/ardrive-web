@@ -11,7 +11,6 @@ import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -69,16 +68,13 @@ class MultipleFilesDownload extends StatefulWidget {
 
 class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
   final _scrollController = ScrollController();
-  CancelableOperation? autoClose;
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<MultipleDownloadBloc, MultipleDownloadState>(
       listener: (context, state) {
         if (state is MultipleDownloadFinishedWithSuccess) {
-          autoClose = CancelableOperation.fromFuture(
-              Future.delayed(const Duration(seconds: 3))
-                  .then((value) => Navigator.pop(context)));
+          Navigator.pop(context);
         }
       },
       child: BlocBuilder<MultipleDownloadBloc, MultipleDownloadState>(
@@ -152,43 +148,45 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 ),
               ],
             );
-          } else if (state is MultipleDownloadFinishedWithSuccess) {
-            content = Text(
-              appLocalizationsOf(context).downloadFinished,
-              style: ArDriveTypography.body.buttonLargeBold(),
-            );
+          } else if (state is MultipleDownloadFailure) {
+            switch (state.reason) {
+              case FileDownloadFailureReason.fileAboveLimit:
+                content = Text(
+                  appLocalizationsOf(context)
+                      .fileFailedToDownloadFileAbovePublicLimit,
+                );
+                break;
+              case FileDownloadFailureReason.fileNotFound:
+                content =
+                    Text(appLocalizationsOf(context).tryAgainDownloadingFile);
+                break;
+              case FileDownloadFailureReason.networkConnectionError:
+                content = const Text(
+                    'An error occurred while downloading your file(s). Please try again.');
+                break;
+              default:
+                content = Text(appLocalizationsOf(context).fileDownloadFailed);
+            }
 
             actions = [
               ModalAction(
                 action: () {
-                  autoClose?.cancel();
+                  context
+                      .read<MultipleDownloadBloc>()
+                      .add(const CancelDownload());
                   Navigator.pop(context);
                 },
-                title: appLocalizationsOf(context).ok,
+                title: appLocalizationsOf(context).cancel,
               ),
-            ];
-          } else if (state is MultipleDownloadFailure) {
-            if (state.reason == FileDownloadFailureReason.fileAboveLimit) {
-              content = Text(
-                appLocalizationsOf(context)
-                    .fileFailedToDownloadFileAbovePublicLimit,
-              );
-            } else {
-              content = Text(appLocalizationsOf(context).fileDownloadFailed);
-            }
-            actions = [
               ModalAction(
                 action: () {
-                  Navigator.pop(context);
+                  context
+                      .read<MultipleDownloadBloc>()
+                      .add(const ResumeDownload());
                 },
-                title: appLocalizationsOf(context).ok,
+                title: appLocalizationsOf(context).tryAgain,
               ),
             ];
-          } else if (state is MultipleDownloadZippingFiles) {
-            content = Text(
-              appLocalizationsOf(context).zippingYourFiles,
-              style: ArDriveTypography.body.buttonLargeBold(),
-            );
           } else {
             content = Text(
               appLocalizationsOf(context).download,

@@ -7,6 +7,7 @@ import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -69,9 +70,12 @@ class MultipleDownloadBloc
 
     // check all files from same drive
     var firstFile = items[0];
-    if (!items.every((file) => file.driveId == firstFile.driveId)) {
-      // TODO emit error event here and exit
-    }
+
+    // Currently assumes all files from the same drive. May need code like below
+    // to verify and emit error if not all files are from the same drive.
+    // if (!items.every((file) => file.driveId == firstFile.driveId)) {
+    //   // TODO emit error event here and exit
+    // }
 
     drive = await _arfsRepository.getDriveById(firstFile.driveId);
 
@@ -111,6 +115,7 @@ class MultipleDownloadBloc
 
   Future<void> resumeDownload(
       ResumeDownload event, Emitter<MultipleDownloadState> emit) async {
+    canceled = false;
     await _downloadMultipleFiles(emit);
   }
 
@@ -156,7 +161,8 @@ class MultipleDownloadBloc
 
         final file = files[currentFileIndex];
 
-        //TODO: check download results in case of network error or file not mined
+        // TODO: Use cancelable streaming downloading once it is available in
+        // ArDriveHTTP
         final dataBytes = await _downloadService.download(file.txId);
 
         if (canceled) {
@@ -171,16 +177,25 @@ class MultipleDownloadBloc
           final fileKey = await _driveDao.getFileKey(file.id, driveKey!);
           final dataTx = await (_arweave.getTransactionDetails(file.txId));
 
-          if (dataTx != null) {
-            final decryptedData = await _crypto.decryptTransactionData(
-              dataTx,
-              dataBytes,
-              fileKey,
-            );
+          try {
+            if (dataTx != null) {
+              final decryptedData = await _crypto.decryptTransactionData(
+                dataTx,
+                dataBytes,
+                fileKey,
+              );
 
-            outputBytes = decryptedData;
-          } else {
-            // TODO: emit decryption error message
+              outputBytes = decryptedData;
+            } else {
+              logger.e('Error decrypting file: dataTx is null');
+              emit(const MultipleDownloadFailure(
+                  FileDownloadFailureReason.unknownError));
+              return;
+            }
+          } catch (e) {
+            logger.e('Error decrypting file: ${e.toString()}');
+            emit(const MultipleDownloadFailure(
+                FileDownloadFailureReason.unknownError));
             return;
           }
         } else {
@@ -209,9 +224,19 @@ class MultipleDownloadBloc
 
       emit(const MultipleDownloadFinishedWithSuccess(title: 'Multiple Files'));
     } catch (e) {
-      emit(const MultipleDownloadFailure(
-        FileDownloadFailureReason.unknownError,
-      ));
+      if (e is ArDriveHTTPException) {
+        if (e.statusCode == 400) {
+          emit(const MultipleDownloadFailure(
+              FileDownloadFailureReason.fileNotFound));
+        } else {
+          emit(const MultipleDownloadFailure(
+              FileDownloadFailureReason.networkConnectionError));
+        }
+      } else {
+        emit(const MultipleDownloadFailure(
+            FileDownloadFailureReason.unknownError));
+      }
+      logger.d('Multi-file Download Exception: ${e.toString()}');
     }
   }
 
