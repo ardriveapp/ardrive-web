@@ -9,6 +9,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -342,15 +343,113 @@ class _AppSideBarState extends State<AppSideBar> {
                   child: HelpButton(),
                 ),
                 const SizedBox(
-                  height: 24,
+                  height: 16,
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: HoverWidget(
+                    child: GestureDetector(
+                      onTap: () {
+                        showAnimatedDialog(
+                          context,
+                          content: ArDriveStandardModal(
+                            title: 'Help',
+                            content: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'You can share your logs with the ArDrive team to help us improve the app. The logs will be downloaded to your device and you can share them with us via email or any other means.',
+                                  style:
+                                      ArDriveTypography.body.buttonLargeBold(),
+                                ),
+                                const SizedBox(
+                                  height: 16,
+                                ),
+                                Text(
+                                  'Our channels: ',
+                                  style: ArDriveTypography.body
+                                      .buttonLargeBold()
+                                      .copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                                ArDriveClickArea(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      openUrl(
+                                        url:
+                                            'https://discord.com/channels/743164999379451944/757396913732452412',
+                                      );
+                                    },
+                                    child: Text(
+                                      'Discord',
+                                      style: ArDriveTypography.body
+                                          .buttonLargeBold()
+                                          .copyWith(
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(
+                                  height: 4,
+                                ),
+                                ArDriveClickArea(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      openUrl(
+                                        url:
+                                            'https://help.ardrive.io/hc/en-us/articles/9350732157723-Contact-Us',
+                                      );
+                                    },
+                                    child: Text(
+                                      'Help Center',
+                                      style: ArDriveTypography.body
+                                          .buttonLargeBold()
+                                          .copyWith(
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              ModalAction(
+                                action: () {
+                                  Navigator.of(context).pop();
+                                },
+                                title: 'Cancel',
+                              ),
+                              ModalAction(
+                                action: () {
+                                  LogExporterSystem().exportLogs();
+                                },
+                                title: 'Download log file',
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Having trouble?',
+                        style: ArDriveTypography.body.buttonNormalBold(),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 16,
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
+                    const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         ThemeSwitcher(),
                         SizedBox(
                           height: 8,
