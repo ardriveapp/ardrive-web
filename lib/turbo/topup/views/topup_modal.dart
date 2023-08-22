@@ -1,8 +1,9 @@
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/services/config/config_service.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
@@ -19,6 +20,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 void showTurboModal(BuildContext context, {Function()? onSuccess}) {
+  final activityTracker = context.read<ActivityTracker>();
   final sessionManager = TurboSessionManager();
 
   final costCalculator = TurboCostCalculator(
@@ -54,6 +56,8 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
 
   initializeStripe(context.read<ConfigService>().config);
 
+  activityTracker.setToppingUp(true);
+
   showAnimatedDialogWithBuilder(
     context,
     builder: (modalContext) => MultiBlocProvider(
@@ -78,7 +82,11 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
   ).then((value) {
     logger.d('Turbo modal closed with value: ${turbo.paymentStatus}');
 
+    activityTracker.setToppingUp(false);
+
     if (turbo.paymentStatus == PaymentStatus.success) {
+      logger.d('Turbo payment success');
+
       onSuccess?.call();
     }
 

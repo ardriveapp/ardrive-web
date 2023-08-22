@@ -13,8 +13,9 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -117,11 +118,8 @@ Future<void> promptToUpload(
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
           auth: context.read<ArDriveAuth>(),
-          turboBalanceRetriever: TurboBalanceRetriever(
-            paymentService: context.read<PaymentService>(),
-          ),
         )..startUploadPreparation(),
-        child: UploadForm(),
+        child: const UploadForm(),
       ),
       barrierDismissible: false,
     ),
@@ -129,7 +127,7 @@ Future<void> promptToUpload(
 }
 
 class UploadForm extends StatefulWidget {
-  UploadForm({Key? key}) : super(key: key);
+  const UploadForm({Key? key}) : super(key: key);
 
   @override
   State<UploadForm> createState() => _UploadFormState();
@@ -361,78 +359,84 @@ class _UploadFormState extends State<UploadForm> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 256),
-                    child: ArDriveScrollBar(
-                        controller: _scrollController,
-                        alwaysVisible: true,
-                        child: ListView.builder(
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 256),
+                      child: ArDriveScrollBar(
                           controller: _scrollController,
-                          shrinkWrap: true,
-                          itemCount: files.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final file = files[index];
-                            if (file is FileV2UploadHandle) {
-                              return Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      '${file.entity.name!} ',
-                                      style: ArDriveTypography.body.smallBold(
+                          alwaysVisible: true,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.only(top: 0),
+                            controller: _scrollController,
+                            shrinkWrap: true,
+                            itemCount: files.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              final file = files[index];
+                              if (file is FileV2UploadHandle) {
+                                return Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        '${file.entity.name!} ',
+                                        style: ArDriveTypography.body.smallBold(
+                                          color: ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeFgSubtle,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      filesize(file.size),
+                                      style:
+                                          ArDriveTypography.body.smallRegular(
                                         color: ArDriveTheme.of(context)
                                             .themeData
                                             .colors
-                                            .themeFgSubtle,
+                                            .themeFgMuted,
                                       ),
                                     ),
-                                  ),
-                                  Text(
-                                    filesize(file.size),
-                                    style: ArDriveTypography.body.smallRegular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgSubtle,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              final bundle = file as BundleUploadHandle;
+                                  ],
+                                );
+                              } else {
+                                final bundle = file as BundleUploadHandle;
 
-                              return ListView(
-                                  shrinkWrap: true,
-                                  children: bundle.fileEntities.map((e) {
-                                    return Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            '${e.name!} ',
+                                return ListView(
+                                    padding: EdgeInsets.zero,
+                                    shrinkWrap: true,
+                                    children: bundle.fileEntities.map((e) {
+                                      return Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              '${e.name!} ',
+                                              style: ArDriveTypography.body
+                                                  .smallBold(
+                                                color: ArDriveTheme.of(context)
+                                                    .themeData
+                                                    .colors
+                                                    .themeFgSubtle,
+                                              ),
+                                            ),
+                                          ),
+                                          Text(
+                                            filesize(e.size),
                                             style: ArDriveTypography.body
-                                                .smallBold(
+                                                .smallRegular(
                                               color: ArDriveTheme.of(context)
                                                   .themeData
                                                   .colors
-                                                  .themeFgSubtle,
+                                                  .themeFgMuted,
                                             ),
                                           ),
-                                        ),
-                                        Text(
-                                          filesize(e.size),
-                                          style: ArDriveTypography.body
-                                              .smallRegular(
-                                            color: ArDriveTheme.of(context)
-                                                .themeData
-                                                .colors
-                                                .themeFgSubtle,
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }).toList());
-                            }
-                          },
-                        )),
+                                        ],
+                                      );
+                                    }).toList());
+                              }
+                            },
+                          )),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   RichText(
@@ -486,6 +490,9 @@ class _UploadFormState extends State<UploadForm> {
                       ),
                       style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
+                    const SizedBox(
+                      height: 8,
+                    ),
                   },
                   if (!state.isFreeThanksToTurbo) ...[
                     Text(
@@ -493,7 +500,7 @@ class _UploadFormState extends State<UploadForm> {
                       style: ArDriveTypography.body.buttonLargeBold(),
                     ),
                     const SizedBox(
-                      height: 16,
+                      height: 8,
                     ),
                     ArDriveRadioButtonGroup(
                       size: 15,
@@ -519,6 +526,7 @@ class _UploadFormState extends State<UploadForm> {
                       options: [
                         RadioButtonOptions(
                           value: state.uploadMethod == UploadMethod.ar,
+                          // TODO: Localization
                           text:
                               'Cost: ${winstonToAr(state.costEstimateAr.totalCost)} AR',
                           textStyle: ArDriveTypography.body.buttonLargeBold(),
@@ -527,9 +535,10 @@ class _UploadFormState extends State<UploadForm> {
                             state.isTurboUploadPossible)
                           RadioButtonOptions(
                             value: state.uploadMethod == UploadMethod.turbo,
+                            // TODO: Localization
                             text: state.isZeroBalance
                                 ? ''
-                                : 'Cost ${winstonToAr(state.costEstimateTurbo!.totalCost)} Credits',
+                                : 'Cost: ${winstonToAr(state.costEstimateTurbo!.totalCost)} Credits',
                             textStyle: ArDriveTypography.body.buttonLargeBold(),
                             content: state.isZeroBalance
                                 ? GestureDetector(
@@ -537,7 +546,9 @@ class _UploadFormState extends State<UploadForm> {
                                       showTurboModal(context, onSuccess: () {
                                         context
                                             .read<UploadCubit>()
-                                            .startUploadPreparation();
+                                            .startUploadPreparation(
+                                              isRetryingToPayWithTurbo: true,
+                                            );
                                       });
                                     },
                                     child: ArDriveClickArea(
@@ -592,7 +603,7 @@ class _UploadFormState extends State<UploadForm> {
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
-                                    .themeGbMuted,
+                                    .themeFgMuted,
                               ),
                             ),
                           ),
@@ -776,6 +787,20 @@ class _UploadFormState extends State<UploadForm> {
               ),
             );
           } else if (state is UploadFailure) {
+            if (state.error == UploadErrors.turboTimeout) {
+              return ArDriveStandardModal(
+                title: appLocalizationsOf(context).uploadFailed,
+                description:
+                    appLocalizationsOf(context).yourUploadFailedTurboTimeout,
+                actions: [
+                  ModalAction(
+                    action: () => Navigator.of(context).pop(false),
+                    title: appLocalizationsOf(context).okEmphasized,
+                  ),
+                ],
+              );
+            }
+
             return ArDriveStandardModal(
               title: appLocalizationsOf(context).uploadFailed,
               description: appLocalizationsOf(context).yourUploadFailed,
@@ -832,7 +857,9 @@ class _UploadFormState extends State<UploadForm> {
       return GestureDetector(
         onTap: () {
           showTurboModal(context, onSuccess: () {
-            context.read<UploadCubit>().startUploadPreparation();
+            context.read<UploadCubit>().startUploadPreparation(
+                  isRetryingToPayWithTurbo: true,
+                );
           });
         },
         child: ArDriveClickArea(
@@ -880,7 +907,9 @@ class _UploadFormState extends State<UploadForm> {
       return GestureDetector(
         onTap: () {
           showTurboModal(context, onSuccess: () {
-            context.read<UploadCubit>().startUploadPreparation();
+            context.read<UploadCubit>().startUploadPreparation(
+                  isRetryingToPayWithTurbo: true,
+                );
           });
         },
         child: ArDriveClickArea(

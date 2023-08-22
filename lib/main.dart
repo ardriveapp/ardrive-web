@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
@@ -16,9 +17,10 @@ import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
@@ -108,8 +110,9 @@ Future<void> _initialize() async {
   );
   _turboUpload = config.useTurboUpload
       ? TurboUploadService(
+          tabVisibilitySingleton: TabVisibilitySingleton(),
           turboUploadUri: Uri.parse(config.defaultTurboUploadUrl!),
-          allowedDataItemSize: config.allowedDataItemSizeForTurbo!,
+          allowedDataItemSize: config.allowedDataItemSizeForTurbo,
           httpClient: ArDriveHTTP(),
         )
       : DontUseUploadService();
@@ -179,6 +182,7 @@ class AppState extends State<App> {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
+        RepositoryProvider<ActivityTracker>(create: (_) => ActivityTracker()),
         RepositoryProvider<ArweaveService>(create: (_) => _arweave),
         // repository provider for UploadFileChecker
         RepositoryProvider<UploadFileChecker>(
@@ -265,6 +269,7 @@ class AppState extends State<App> {
                   turboUploadService: context.read<TurboUploadService>(),
                   profileDao: context.read<ProfileDao>(),
                   db: context.read<Database>(),
+                  tabVisibilitySingleton: TabVisibilitySingleton(),
                 ),
               ),
               BlocProvider(

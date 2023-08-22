@@ -7,6 +7,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -34,13 +35,13 @@ Future<void> promptToCreateManifest(
         driveDao: context.read<DriveDao>(),
         pst: context.read<PstService>(),
       ),
-      child: CreateManifestForm(),
+      child: const CreateManifestForm(),
     ),
   );
 }
 
 class CreateManifestForm extends StatefulWidget {
-  CreateManifestForm({Key? key}) : super(key: key);
+  const CreateManifestForm({Key? key}) : super(key: key);
 
   @override
   State<CreateManifestForm> createState() => _CreateManifestFormState();
@@ -73,7 +74,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         }
       }, builder: (context, state) {
         final textStyle = ArDriveTypography.body.buttonNormalRegular(
-          color: ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
+          color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
         );
 
         final readCubitContext = context.read<CreateManifestCubit>();

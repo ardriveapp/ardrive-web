@@ -1,5 +1,7 @@
 {
   "@@locale": "en",
+  "accept": "Accept",
+  "@accept": {},
   "addButtonTurbo": "Add",
   "@addButtonTurbo": {
     "description": "text for add button"
@@ -38,6 +40,8 @@
   },
   "amount": "Amount",
   "@amount": {},
+  "anErrorOccuredWhileDownloadingYourKeyfile": "An error occurred while downloading your wallet keyfile. Please try again.",
+  "@anErrorOccuredWhileDownloadingYourKeyfile": {},
   "anyFilesWillOutliveYou": "Any files you upload here will outlive you!",
   "@anyFilesWillOutliveYou": {
     "description": "Files on the Weave will exist there forever"
@@ -76,8 +80,6 @@
   "@arConnectWalletDoestNotMatchArDriveWallet": {
     "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
   },
-  "arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance": "ArDrive Credits will be automatically added to your Turbo balance, and you can start using them right away.",
-  "@arDriveCreditsWillBeAutomaticallyAddedToYourTurboBalance": {},
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
@@ -238,6 +240,12 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
+  "cookieConsent": "Cookie Consent",
+  "@cookieConsent": {},
+  "cookieConsentBodyPart1": "Our payment provider, Stripe, uses cookies to enable users to purchase Credits. These cookies are required for the purchasing of Credits.",
+  "@cookieConsentBodyPart1": {},
+  "cookieConsentBodyPart2": "By clicking “Accept” you consent to this use of cookies.",
+  "@cookieConsentBodyPart2": {},
   "copyBundleTxID": "Copy Bundle Tx ID",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
@@ -302,7 +310,7 @@
   "@create": {
     "description": "Create an drive"
   },
-  "createAndConfirmPassword": "Please create and confirm your password. You will use this password to log in.",
+  "createAndConfirmPassword": "Please create and confirm your password.",
   "@createAndConfirmPassword": {
     "description": "Asks the user to create a password"
   },
@@ -329,6 +337,10 @@
   "createManifestEmphasized": "CREATE MANIFEST",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
+  },
+  "createNewFilePin": "Create a New File Pin",
+  "@createNewFilePin": {
+    "description": "E.g.: I want to \"Create a New File Pin\""
   },
   "createNewSnapshot": "Create New Snapshot",
   "@createNewSnapshot": {
@@ -360,10 +372,12 @@
   "@creditCard": {},
   "credits": "Credits",
   "@credits": {},
-  "creditsTurbo": "credits",
+  "creditsTurbo": "Credits",
   "@creditsTurbo": {
     "description": "suffix for turbo balance"
   },
+  "creditsWillBeAutomaticallyAddedToYourTurboBalance": "Credits will be automatically added to your Turbo balance, and you can start using them right away.",
+  "@creditsWillBeAutomaticallyAddedToYourTurboBalance": {},
   "currency": "Currency",
   "@currency": {},
   "customAmount": "Custom Amount",
@@ -471,6 +485,8 @@
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
+  "downloadWalletKeyfile": "Download Wallet Keyfile",
+  "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Browse Json",
   "@dragAndDropButtonTitle": {
     "description": "text of title drag and drop"
@@ -479,6 +495,8 @@
   "@dragAndDropDescription": {
     "description": "text of description drag and drop"
   },
+  "driveDoingInitialSetupMessage": "Your drive is doing it's initial setup. This may take a few minutes. Please wait before taking any action.",
+  "@driveDoingInitialSetupMessage": {},
   "driveID": "Drive ID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -589,13 +607,23 @@
   "@enableStorageAccessTitle": {
     "description": "enable camera access"
   },
+  "enter": "Enter",
+  "@enter": {},
   "enterFileKey": "Enter file Key",
   "@enterFileKey": {
     "description": "File Key form field label"
   },
+  "enterFileName": "Enter file name",
+  "@enterFileName": {
+    "description": "To type the name of the file"
+  },
   "enterPassword": "Enter password",
   "@enterPassword": {
     "description": "Please enter password"
+  },
+  "enterTxIdOrFileId": "Enter Transaction ID or File ID",
+  "@enterTxIdOrFileId": {
+    "description": "Indicates that you must enter a Transaction ID or a File ID"
   },
   "entityAlreadyExists": "Entity with name {entityName} already exists at move destination! Please rename the file or folder you are moving and try again.",
   "@entityAlreadyExists": {
@@ -657,6 +685,14 @@
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
+  "failedToCreatePin": "Failed to create pin. Please try again later.",
+  "@failedToCreatePin": {
+    "description": "The pin could not be created"
+  },
+  "failedToRetrieveFileInfromation": "Failed to retrieve file information",
+  "@failedToRetrieveFileInfromation": {
+    "description": "Explains that there was an error while retrieving the file infromation"
+  },
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
@@ -682,6 +718,10 @@
       }
     }
   },
+  "fileDoesExistButIsInvalid": "The file does exist but is invalid",
+  "@fileDoesExistButIsInvalid": {
+    "description": "Explains that the file does exist, but some of its properties make it invalid"
+  },
   "fileDownloadFailed": "File download failed",
   "@fileDownloadFailed": {
     "description": "Could not export the CSV data"
@@ -705,6 +745,10 @@
   "fileID": "File ID",
   "@fileID": {
     "description": "The Entity-ID tag of files"
+  },
+  "fileIsNotPublic": "The file is not public",
+  "@fileIsNotPublic": {
+    "description": "Warning explaining that the file is not public"
   },
   "fileName": "File name",
   "@fileName": {
@@ -767,6 +811,10 @@
   "@fileSystem": {
     "description": "Button label to select a file from file system"
   },
+  "fileType": "File type",
+  "@fileType": {
+    "description": "The MIME type of the file"
+  },
   "fileWasCreatedWithName": "This file was created with the name {fileName}.",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
@@ -784,6 +832,10 @@
   "fileWasMoved": "This file was moved.",
   "@fileWasMoved": {
     "description": "File activity (journal): moved"
+  },
+  "fileWasPinnedToTheDrive": "File pinned to the drive.",
+  "@fileWasPinnedToTheDrive": {
+    "description": "File activity (journal): was pinned"
   },
   "fileWasRenamed": "This file was renamed to {fileName}.",
   "@fileWasRenamed": {
@@ -929,7 +981,7 @@
   },
   "howAreConversionsDetermined": "How are conversions determined?",
   "@howAreConversionsDetermined": {},
-  "howDoesKeyfileLoginWork": "How does keyfile log in work?",
+  "howDoesKeyfileLoginWork": "How do keyfile and seed phrase login work?",
   "@howDoesKeyfileLoginWork": {
     "description": "Title for explaining keyfile login"
   },
@@ -1058,7 +1110,7 @@
   "@learnMore": {
     "description": "Link to a document explaining manifests in detail"
   },
-  "leaveAnEmailToReceiveAReceipt": "Please leave an email if you want a receipt.",
+  "leaveAnEmailToReceiveAReceipt": "To receive a receipt, please provide an email.",
   "@leaveAnEmailToReceiveAReceipt": {},
   "leaveFeedback": "Leave Feedback",
   "@leaveFeedback": {
@@ -1166,6 +1218,10 @@
   },
   "nameOnCard": "Name on Card",
   "@nameOnCard": {},
+  "networkUnreachable": "We are unable to connect to the network. Please try again later.",
+  "@networkUnreachable": {
+    "description": "Indicates that there were some issues while connecting to the internet"
+  },
   "neverDeletedEmphasized": "NEVER DELETED",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
@@ -1173,6 +1229,10 @@
   "newDrive": "New drive",
   "@newDrive": {
     "description": "Create a new drive entity"
+  },
+  "newFilePin": "New File Pin",
+  "@newFilePin": {
+    "description": "E.g.: I want to create a \"New File Pin\""
   },
   "newFolder": "New folder",
   "@newFolder": {
@@ -1230,7 +1290,7 @@
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
-  "onboarding1Description": "ArDrive isn’t just another cloud sync app. It’s your personal permanent hard drive. Files stored on ArDrive can't be deleted or altered by any single entity and anything you upload will outlast you!",
+  "onboarding1Description": "ArDrive isn’t just another cloud storage app, it’s your personal permanent hard drive. Store your data securely for at least 200 years, without the fear of deletion. Anything you upload will be there for generations to come!",
   "@onboarding1Description": {
     "description": "Description of 1st page of onboarding"
   },
@@ -1238,7 +1298,7 @@
   "@onboarding1Title": {
     "description": "Title of 1st page of onboarding"
   },
-  "onboarding2Description": "Say goodbye to cloud storage subscriptions. Instead of paying for space you don’t use, just pay once to store your data forever.",
+  "onboarding2Description": "Say goodbye to storage subscriptions! Instead of paying for space you don’t use, just pay once to store your data forever.",
   "@onboarding2Description": {
     "description": "Description of 2nd page of onboarding"
   },
@@ -1300,12 +1360,18 @@
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
+  "pinFailedToUpload": "Your pin failed to upload",
+  "@pinFailedToUpload": {
+    "description": "Explains that pin creation has failed"
+  },
   "pleaseAcceptTheTermsToContinue": "Please accept the terms and conditions to continue.",
   "@pleaseAcceptTheTermsToContinue": {
     "description": "terms and conditions cta"
   },
   "pleaseEnterAValidEmail": "Please enter a valid email address",
   "@pleaseEnterAValidEmail": {},
+  "pleaseEnterYourPassword": "Please enter your password",
+  "@pleaseEnterYourPassword": {},
   "pleaseProvideSamePassword": "Please provide the same password as the one you used before.",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
@@ -1604,6 +1670,14 @@
   "@termsAndConditions": {
     "description": "terms and conditions"
   },
+  "theIdProvidedDoesntExist": "The ID provided doesn't exist",
+  "@theIdProvidedDoesntExist": {
+    "description": "Indicates that the valid ID you provided doesn't exist"
+  },
+  "theIdProvidedIsNotValid": "The ID provided is not valid",
+  "@theIdProvidedIsNotValid": {
+    "description": "Indicates that the ID you typed doesn't follow the ID pattern"
+  },
   "theresBeenAProblem": "There's been a problem.",
   "@theresBeenAProblem": {},
   "thinkTwiceBeforeUploading": "Think twice before uploading all your teenage love poetry...",
@@ -1644,7 +1718,7 @@
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
-  "turboAddCreditsBlurb": "Add credits using your card for faster uploads.",
+  "turboAddCreditsBlurb": "Add Credits using your card for faster uploads.",
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
@@ -1656,7 +1730,7 @@
   "@turboErrorMessageNetwork": {},
   "turboErrorMessageServer": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageServer": {},
-  "turboErrorMessageSessionExpired": "Your session has expired. Please try again.",
+  "turboErrorMessageSessionExpired": "Your Turbo session has expired. Please try again.",
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageUnknown": {},
@@ -1666,6 +1740,8 @@
   "@unableToUpdateQuote": {},
   "unit": "Unit",
   "@unit": {},
+  "units": "Units",
+  "@units": {},
   "unlock": "Unlock",
   "@unlock": {
     "description": "Unlock a file or drive."
@@ -1681,6 +1757,10 @@
   "uploadDragAndDrop": "Upload File",
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
+  },
+  "uploadedBy": "Uploaded by",
+  "@uploadedBy": {
+    "description": "Refers to the one that uploaded the data of a pinned file"
   },
   "uploadEmphasized": "UPLOAD",
   "@uploadEmphasized": {
@@ -1776,7 +1856,7 @@
   "@validationPasswordIncorrect": {
     "description": "Input validation error: the given password is wrong"
   },
-  "validationRequired": "This field is required.",
+  "validationRequired": "Field required.",
   "@validationRequired": {
     "description": "Input validation error: the field is empty, but it's required"
   },
@@ -1880,6 +1960,8 @@
   "@weWontRemindYouDescription": {
     "description": "We let the user know where to find the 'Leave Feedback' button"
   },
+  "whatIsAKeyFile": "What is a keyfile and how does it work?",
+  "@whatIsAKeyFile": {},
   "whatIsArDrive": "What is ArDrive?",
   "@whatIsArDrive": {
     "description": "What is ArDrive? link on shared file page"
@@ -1888,8 +1970,10 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
-  "yourCreditsWillBeAddedToYourAccount": "Your credits will be added to your account soon. You can close this window.",
+  "yourCreditsWillBeAddedToYourAccount": "Your Credits will be added to your account soon. You can close this window.",
   "@yourCreditsWillBeAddedToYourAccount": {},
+  "yourPasswordCannotBeCahngedOrRetrivied": "Your password cannot be changed or retrieved, so please keep this safe.",
+  "@yourPasswordCannotBeCahngedOrRetrivied": {},
   "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
@@ -1898,6 +1982,8 @@
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
+  "yourUploadFailedTurboTimeout": "This upload has failed. You will not be charged for this attempt.",
+  "@yourUploadFailedTurboTimeout": {},
   "zippingYourFiles": "Zipping your file(s)...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"

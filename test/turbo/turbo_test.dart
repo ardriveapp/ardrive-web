@@ -1,6 +1,6 @@
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/models/payment_user_information.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -8,6 +8,7 @@ import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
+// ignore: depend_on_referenced_packages
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -587,7 +588,11 @@ void main() {
 
       test('sets the paymentUserInformation', () {
         final mockPaymentUserInformation = PaymentUserInformation.create(
-            email: 'email', country: 'US', name: 'name');
+          email: 'email',
+          country: 'US',
+          name: 'name',
+          userAcceptedToReceiveEmails: true,
+        );
 
         turbo.paymentUserInformation = mockPaymentUserInformation;
 
@@ -596,14 +601,22 @@ void main() {
 
       test('changes the paymentUserInformation', () {
         final mockPaymentUserInformation = PaymentUserInformation.create(
-            email: 'email', country: 'US', name: 'name');
+          email: 'email',
+          country: 'US',
+          name: 'name',
+          userAcceptedToReceiveEmails: true,
+        );
 
         turbo.paymentUserInformation = mockPaymentUserInformation;
 
         expect(turbo.paymentUserInformation, mockPaymentUserInformation);
 
         final mockPaymentUserInformation2 = PaymentUserInformation.create(
-            email: 'email2', country: 'US', name: 'name');
+          email: 'email2',
+          country: 'US',
+          name: 'name',
+          userAcceptedToReceiveEmails: true,
+        );
 
         turbo.paymentUserInformation = mockPaymentUserInformation2;
 
@@ -670,6 +683,7 @@ void main() {
           country: 'US',
           email: 'email',
           name: 'name',
+          userAcceptedToReceiveEmails: true,
         );
 
         paymentModel = PaymentModel(
@@ -805,12 +819,15 @@ void main() {
           country: 'US',
           email: 'email',
           name: 'name',
+          userAcceptedToReceiveEmails: true,
         );
 
         when(() => mockPaymentProvider.confirmPayment(
               paymentModel: paymentModel,
               paymentUserInformation: mockPaymentUserInformation,
-            )).thenAnswer((_) => Future.value(PaymentStatus.failed));
+            )).thenAnswer(
+          (_) => Future.value(PaymentStatus.failed),
+        );
 
         final turbo = Turbo(
           supportedCountriesRetriever: MockTurboSupportedCountriesRetriever(),

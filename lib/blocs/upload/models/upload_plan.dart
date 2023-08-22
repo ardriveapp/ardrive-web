@@ -2,7 +2,7 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
-import 'package:ardrive/services/turbo/upload_service.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/bundles/next_fit_bundle_packer.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:flutter/foundation.dart';
@@ -61,13 +61,20 @@ class UploadPlan {
     final int maxBundleSize =
         (kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit);
 
-    final bundleItems = await NextFitBundlePacker<UploadHandle>(
+    final folderItems = await NextFitBundlePacker<UploadHandle>(
+      maxBundleSize: maxBundleSize,
+      maxDataItemCount: maxDataItemCount,
+    ).packItems([...folderDataItemUploadHandles.values]);
+
+    final fileItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: maxBundleSize,
       maxDataItemCount: maxDataItemCount,
     ).packItems([
       ...fileDataItemUploadHandles.values,
-      ...folderDataItemUploadHandles.values
     ]);
+
+    final bundleItems = [...folderItems, ...fileItems];
+
     for (var uploadHandles in bundleItems) {
       final bundleToUpload = await BundleUploadHandle.create(
         fileDataItemUploadHandles: List.from(

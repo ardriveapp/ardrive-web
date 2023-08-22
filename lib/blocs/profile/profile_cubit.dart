@@ -4,6 +4,8 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -20,16 +22,19 @@ class ProfileCubit extends Cubit<ProfileState> {
   final TurboUploadService _turboUploadService;
   final ProfileDao _profileDao;
   final Database _db;
+  final TabVisibilitySingleton _tabVisibilitySingleton;
 
   ProfileCubit({
     required ArweaveService arweave,
     required TurboUploadService turboUploadService,
     required ProfileDao profileDao,
     required Database db,
+    required TabVisibilitySingleton tabVisibilitySingleton,
   })  : _arweave = arweave,
         _turboUploadService = turboUploadService,
         _profileDao = profileDao,
         _db = db,
+        _tabVisibilitySingleton = tabVisibilitySingleton,
         super(ProfileCheckingAvailability()) {
     promptToAuthenticate();
   }
@@ -89,13 +94,31 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     if (profile.profileType == ProfileType.arConnect.index) {
-      if (!(await arconnect.checkPermissions())) {
-        return true;
-      }
-      final currentPublicKey = await arconnect.getPublicKey();
-      final savedPublicKey = profile.walletPublicKey;
-      if (currentPublicKey != savedPublicKey) {
-        return true;
+      try {
+        if (!(await arconnect.checkPermissions())) {
+          logger.i('ArConnect permissions changed');
+          throw Exception('ArConnect permissions changed');
+        }
+
+        final currentPublicKey = await arconnect.getPublicKey();
+        final savedPublicKey = profile.walletPublicKey;
+        if (currentPublicKey != savedPublicKey) {
+          return true;
+        }
+      } catch (e) {
+        if (_tabVisibilitySingleton.isTabFocused()) {
+          return false;
+        }
+
+        logger.e('Error checking ArConnect permissions: $e');
+
+        bool isWalletMismatch = false;
+
+        await _tabVisibilitySingleton.onTabGetsFocusedFuture(() async {
+          isWalletMismatch = await checkIfWalletMismatch();
+        });
+
+        return isWalletMismatch;
       }
     }
 

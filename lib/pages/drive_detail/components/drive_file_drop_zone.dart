@@ -11,7 +11,8 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -164,11 +165,8 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
               profileCubit: context.read<ProfileCubit>(),
               driveDao: context.read<DriveDao>(),
               auth: context.read<ArDriveAuth>(),
-              turboBalanceRetriever: TurboBalanceRetriever(
-                paymentService: context.read<PaymentService>(),
-              ),
             )..startUploadPreparation(),
-            child: UploadForm(),
+            child: const UploadForm(),
           ),
           barrierDismissible: false,
         ).then((value) => isCurrentlyShown = false),
@@ -176,7 +174,6 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
     }
   }
 
-  void _onHover() => setState(() => isHovering = true);
   void _onLeave() => setState(() => isHovering = false);
 
   Widget _buildDropZoneOnHover() => Center(

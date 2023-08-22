@@ -233,6 +233,19 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    ArDriveDevToolOption enablePinsOption = ArDriveDevToolOption(
+      name: 'enablePins',
+      value: settings.enablePins,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(enablePins: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
     ArDriveDevToolOption autoSyncIntervalInSecondsOption = ArDriveDevToolOption(
       name: 'autoSyncIntervalInSeconds',
       value: settings.autoSyncIntervalInSeconds,
@@ -284,6 +297,19 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    ArDriveDevToolOption enableSeedPhreaseLogin = ArDriveDevToolOption(
+      name: 'enableSeedPhreaseLogin',
+      value: settings.enableSeedPhraseLogin,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(enableSeedPhraseLogin: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
     // reload option
     ArDriveDevToolOption turboSetDefaultData = ArDriveDevToolOption(
       name: 'setDefaultDataOnPaymentForm',
@@ -310,6 +336,8 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       enableQuickSyncAuthoringOption,
       enableMultipleFileDownloadOption,
       enableVideoPreviewOption,
+      enableSeedPhreaseLogin,
+      enablePinsOption,
       allowedDataItemSizeForTurboOption,
       defaultArweaveGatewayUrlOption,
       defaultTurboUrlOption,

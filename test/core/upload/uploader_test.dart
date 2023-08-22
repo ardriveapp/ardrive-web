@@ -8,6 +8,7 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/size_utils.dart';
@@ -89,6 +90,9 @@ void main() {
         var mockBundleHandle = MockBundleUploadHandle();
         var mockFileV2Handle = MockFileV2UploadHandle();
 
+        when(() => mockBundleHandle.size).thenReturn(100);
+        when(() => mockFileV2Handle.size).thenReturn(100);
+
         when(() => bundleUploader.upload(mockBundleHandle)).thenAnswer(
           (_) => Stream<double>.fromIterable([0.1, 0.5, 1.0]),
         );
@@ -102,6 +106,7 @@ void main() {
           uploader.uploadFromHandles(
             bundleHandles: [mockBundleHandle],
             fileV2Handles: [mockFileV2Handle],
+            enableLogs: false,
           ),
           emitsInOrder([
             // (0.1 / 2) (from bundle handle) 5%
@@ -125,6 +130,9 @@ void main() {
         var mockBundleHandle = MockBundleUploadHandle();
         var mockFileV2Handle = MockFileV2UploadHandle();
 
+        when(() => mockBundleHandle.size).thenReturn(100);
+        when(() => mockFileV2Handle.size).thenReturn(100);
+
         when(() => bundleUploader.upload(mockBundleHandle)).thenAnswer(
           (_) => Stream<double>.fromIterable([0.25, 0.5, 0.6, 1.0]),
         );
@@ -136,6 +144,7 @@ void main() {
           uploader.uploadFromHandles(
             bundleHandles: [mockBundleHandle],
             fileV2Handles: [mockFileV2Handle],
+            enableLogs: false,
           ),
           emitsInOrder([
             // (0.25 / 2) (from bundle handle) 12.5%
@@ -534,11 +543,10 @@ void main() {
         });
 
         test('isTurboAvailable returns false when getBalance throws', () async {
-          final mockFile = MockBundleUploadHandle();
           when(() => mockFile.size).thenReturn(501);
-          when(() => mockFile.computeBundleSize())
+          when(() => mockBundle.computeBundleSize())
               .thenAnswer((invocation) => Future.value(501));
-          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
           when(() => turboBalanceRetriever.getBalance(any()))
               .thenThrow(Exception('error'));
 
@@ -561,12 +569,10 @@ void main() {
 
         test('isTurboAvailable returns false when calculateCost throws',
             () async {
-          final mockFile = MockBundleUploadHandle();
           when(() => mockFile.size).thenReturn(501);
-          when(() => mockFile.computeBundleSize())
+          when(() => mockBundle.computeBundleSize())
               .thenAnswer((invocation) => Future.value(501));
-
-          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockFile]);
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
           when(() => turboUploadCostCalculator.calculateCost(
               totalSize: any(named: 'totalSize'))).thenThrow(Exception());
 

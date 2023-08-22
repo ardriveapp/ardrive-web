@@ -1,16 +1,25 @@
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/utils/custom_metadata.dart';
 
 import './database/database.dart';
 
 extension FileEntryExtensions on FileEntry {
-  FileEntity asEntity() => FileEntity(
-        id: id,
-        driveId: driveId,
-        parentFolderId: parentFolderId,
-        name: name,
-        dataTxId: dataTxId,
-        size: size,
-        lastModifiedDate: lastModifiedDate,
-        dataContentType: dataContentType,
-      );
+  FileEntity asEntity() {
+    final file = FileEntity(
+      id: id,
+      driveId: driveId,
+      parentFolderId: parentFolderId,
+      name: name,
+      dataTxId: dataTxId,
+      size: size,
+      lastModifiedDate: lastModifiedDate,
+      dataContentType: dataContentType,
+      pinnedDataOwnerAddress: pinnedDataOwnerAddress,
+    );
+
+    file.customJsonMetadata = parseCustomJsonMetadata(customJsonMetadata);
+    file.customGqlTags = parseCustomGqlTags(customGQLTags);
+
+    return file;
+  }
 }

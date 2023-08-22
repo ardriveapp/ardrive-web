@@ -4,6 +4,7 @@ import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/drive_attach_form.dart';
 import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/folder_create_form.dart';
+import 'package:ardrive/components/pin_file_dialog.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -78,12 +79,17 @@ class NewButton extends StatelessWidget {
                         child: ListView(
                             controller: scrollController,
                             children: List.generate(items.length, (index) {
+                              final item = items[index];
+                              final isLastItem = index == items.length - 1;
+
                               return Column(
                                 children: [
                                   GestureDetector(
                                     onTap: () {
-                                      Navigator.pop(context);
-                                      items[index].onClick();
+                                      if (!item.isDisabled) {
+                                        Navigator.pop(context);
+                                        item.onClick();
+                                      }
                                     },
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -91,17 +97,15 @@ class NewButton extends StatelessWidget {
                                         horizontal: 16,
                                       ),
                                       child: ArDriveDropdownItemTile(
-                                        icon: items[index]
-                                            .icon
-                                            .copyWith(size: 24),
-                                        name: items[index].name,
-                                        isDisabled: items[index].isDisabled,
+                                        icon: item.icon.copyWith(size: 24),
+                                        name: item.name,
+                                        isDisabled: item.isDisabled,
                                         fontStyle: ArDriveTypography.body
                                             .buttonLargeBold(),
                                       ),
                                     ),
                                   ),
-                                  if (index != items.length - 1)
+                                  if (!isLastItem)
                                     const Padding(
                                       padding: EdgeInsets.symmetric(
                                           horizontal: 24.0),
@@ -213,7 +217,9 @@ class NewButton extends StatelessWidget {
                 drive: drive!,
               );
             },
-            isDisabled: driveDetailState.driveIsEmpty || !canUpload,
+            isDisabled: !driveDetailState.hasWritePermissions ||
+                driveDetailState.driveIsEmpty ||
+                !canUpload,
             name: appLocalizations.createManifest,
             icon: ArDriveIcons.tournament(size: defaultIconSize),
           ),
@@ -227,12 +233,23 @@ class NewButton extends StatelessWidget {
                 drive!,
               );
             },
-            isDisabled: driveDetailState.driveIsEmpty ||
+            isDisabled: !driveDetailState.hasWritePermissions ||
+                driveDetailState.driveIsEmpty ||
                 !profile.hasMinimumBalanceForUpload(
                   minimumWalletBalance: minimumWalletBalance,
                 ),
             name: appLocalizations.createSnapshot,
             icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
+          ),
+        if (context.read<ConfigService>().config.enablePins &&
+            driveDetailState is DriveDetailLoadSuccess &&
+            drive != null &&
+            drive?.privacy == 'public')
+          ArDriveNewButtonItem(
+            name: appLocalizationsOf(context).newFilePin,
+            icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
+            onClick: () => showPinFileDialog(context: context),
+            isDisabled: !driveDetailState.hasWritePermissions || drive == null,
           ),
       ];
     } else {
@@ -321,7 +338,9 @@ class NewButton extends StatelessWidget {
                 drive: drive!,
               );
             },
-            isDisabled: driveDetailState.driveIsEmpty || !canUpload,
+            isDisabled: !driveDetailState.hasWritePermissions ||
+                driveDetailState.driveIsEmpty ||
+                !canUpload,
             name: appLocalizations.createManifest,
             icon: ArDriveIcons.tournament(size: defaultIconSize),
           ),
@@ -335,12 +354,26 @@ class NewButton extends StatelessWidget {
                 drive!,
               );
             },
-            isDisabled: driveDetailState.driveIsEmpty ||
+            isDisabled: !driveDetailState.hasWritePermissions ||
+                driveDetailState.driveIsEmpty ||
                 !profile.hasMinimumBalanceForUpload(
                   minimumWalletBalance: minimumWalletBalance,
                 ),
             name: appLocalizations.createSnapshot,
             icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
+          ),
+        if (context.read<ConfigService>().config.enablePins &&
+            driveDetailState is DriveDetailLoadSuccess &&
+            drive != null &&
+            drive?.privacy == 'public')
+          _buildDriveDropdownItem(
+            name: appLocalizationsOf(context).newFilePin,
+            icon: ArDriveIcons.pinWithCircle(
+              size: defaultIconSize,
+              color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
+            ),
+            onClick: () => showPinFileDialog(context: context),
+            isDisabled: !driveDetailState.hasWritePermissions || drive == null,
           ),
       ];
     } else {

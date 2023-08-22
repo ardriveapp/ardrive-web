@@ -296,23 +296,54 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ? folderById(driveId: driveId, folderId: folderId)
             : folderWithPath(driveId: driveId, path: folderPath!))
         .watchSingleOrNull();
-    final subfolderOrder =
-        enumToFolderOrderByClause(folderEntries, orderBy, orderingMode);
 
     final subfolderQuery = (folderId != null
         ? foldersInFolder(
-            driveId: driveId, parentFolderId: folderId, order: subfolderOrder)
+            driveId: driveId,
+            parentFolderId: folderId,
+            order: (folderEntries) {
+              return enumToFolderOrderByClause(
+                folderEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          )
         : foldersInFolderAtPath(
-            driveId: driveId, path: folderPath!, order: subfolderOrder));
-
-    final filesOrder =
-        enumToFileOrderByClause(fileEntries, orderBy, orderingMode);
+            driveId: driveId,
+            path: folderPath!,
+            order: (folderEntries) {
+              return enumToFolderOrderByClause(
+                folderEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          ));
 
     final filesQuery = folderId != null
         ? filesInFolderWithRevisionTransactions(
-            driveId: driveId, parentFolderId: folderId, order: filesOrder)
+            driveId: driveId,
+            parentFolderId: folderId,
+            order: (fileEntries, _, __) {
+              return enumToFileOrderByClause(
+                fileEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          )
         : filesInFolderAtPathWithRevisionTransactions(
-            driveId: driveId, path: folderPath!, order: filesOrder);
+            driveId: driveId,
+            path: folderPath!,
+            order: (fileEntries, _, __) {
+              return enumToFileOrderByClause(
+                fileEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          );
 
     return Rx.combineLatest3(
         folderStream.where((folder) => folder != null).map((folder) => folder!),
@@ -423,6 +454,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       size: entity.size!,
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
       dataContentType: Value(entity.dataContentType),
+      pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
     );
 
     return into(fileEntries).insert(

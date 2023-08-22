@@ -14,7 +14,6 @@ void main() {
     const knownFileId = 'ffffffff-0000-0000-0000-ffffffffffff';
     const unknownFileId = 'aaaaaaaa-0000-0000-0000-ffffffffffff';
 
-    //TODO Create and inject mock artemis client
     AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
 
     final arweave = MockArweaveService();

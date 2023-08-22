@@ -14,7 +14,7 @@ import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
-import 'package:ardrive/services/turbo/upload_service.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/types/winston.dart';
 import 'package:ardrive/user/user.dart';
@@ -87,7 +87,7 @@ void main() {
   late List<UploadFile> tNoConflictingFiles;
 
   // limits
-  final tPrivateFileSizeLimit = 100;
+  const tPrivateFileSizeLimit = 100;
 
   final tWallet = getTestWallet();
   String? tWalletAddress;
@@ -253,7 +253,6 @@ void main() {
         arweave: mockArweave,
         turbo: DontUseUploadService(),
         auth: mockArDriveAuth,
-        turboBalanceRetriever: mockTurboBalanceRetriever,
         pst: mockPst);
   }
 

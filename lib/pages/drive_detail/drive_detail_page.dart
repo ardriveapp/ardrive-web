@@ -27,7 +27,6 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger/logger.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -37,13 +36,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:intersperse/intersperse.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-part 'components/drive_detail_actions_row.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
 part 'components/drive_detail_data_list.dart';
 part 'components/drive_detail_data_table_source.dart';
@@ -70,6 +67,43 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         builder: (context, state) {
           if (state is DriveDetailLoadInProgress) {
             return const Center(child: CircularProgressIndicator());
+          } else if (state is DriveInitialLoading) {
+            return ScreenTypeLayout.builder(
+              mobile: (context) {
+                return Scaffold(
+                  drawerScrimColor: Colors.transparent,
+                  drawer: const AppSideBar(),
+                  appBar: const MobileAppBar(),
+                  body: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Center(
+                      child: Text(
+                        appLocalizationsOf(context)
+                            .driveDoingInitialSetupMessage,
+                        style: ArDriveTypography.body.buttonLargeBold(),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              desktop: (context) => Scaffold(
+                drawerScrimColor: Colors.transparent,
+                body: Column(
+                  children: [
+                    const AppTopBar(),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          appLocalizationsOf(context)
+                              .driveDoingInitialSetupMessage,
+                          style: ArDriveTypography.body.buttonLargeBold(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           } else if (state is DriveDetailLoadSuccess) {
             final hasSubfolders = state.folderInView.subfolders.isNotEmpty;
 

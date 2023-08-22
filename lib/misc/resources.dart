@@ -11,7 +11,10 @@ class Resources {
   static const getWalletLink = 'https://www.arconnect.io/';
 
   static const howDoesKeyFileLoginWork =
-      'https://ardrive.zendesk.com/hc/en-us/articles/15412384724251-How-Does-Keyfile-Login-Work-';
+      'https://help.ardrive.io/hc/en-us/articles/15412384724251-How-Do-Keyfile-and-Seed-Phrase-Login-Work-';
+  static const howAreConversionsDetermined =
+      'https://help.ardrive.io/hc/en-us/articles/17043397992731';
+  static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
 }
 
 class Images {
@@ -45,7 +48,8 @@ class Brand {
   final blackLogo2 = 'assets/images/brand/black_logo_2x.png';
   final blackLogo025 = 'assets/images/brand/black_logo_0.25x.png';
   final blackLogo05 = 'assets/images/brand/black_logo_0.5x.png';
-  final turbo = 'assets/images/brand/turbo.svg';
+  final turboWhite = 'assets/images/brand/turbo-white.svg';
+  final turboBlack = 'assets/images/brand/turbo-black.svg';
 }
 
 class Profile {
@@ -69,7 +73,12 @@ class Profile {
 class Login {
   const Login();
 
-  final String gridImage = 'assets/images/login/grid_images.png';
+  final String gridImage = 'assets/images/login/grid_images.jpg';
   final String ardriveLogoOnboarding = 'assets/images/brand/2x.png';
   final String arconnectLogo = 'assets/images/login/arconnect_logo.png';
+  final String lattice = 'assets/images/login/lattice.svg';
+  final String latticeLight = 'assets/images/login/lattice_light.svg';
+  final String latticeLarge = 'assets/images/login/lattice_large.svg';
+  final String latticeLargeLight =
+      'assets/images/login/lattice_large_light.svg';
 }

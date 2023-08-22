@@ -126,6 +126,14 @@ class ArweaveService {
     return query.data?.transaction;
   }
 
+  Future<InfoOfTransactionToBePinned$Query$Transaction?> getInfoOfTxToBePinned(
+    String txId,
+  ) async {
+    final query = await _gql.execute(InfoOfTransactionToBePinnedQuery(
+        variables: InfoOfTransactionToBePinnedArguments(txId: txId)));
+    return query.data?.transaction;
+  }
+
   Stream<SnapshotEntityTransaction> getAllSnapshotsOfDrive(
     String driveId,
     int? lastBlockHeight, {
@@ -965,7 +973,7 @@ class ArweaveService {
     final bundleTx = await client.transactions.prepare(
       Transaction.withDataBundle(bundleBlob: bundleBlob)
         ..addApplicationTags(version: packageInfo.version)
-        ..addBarTags(),
+        ..addUTags(),
       wallet,
     );
 

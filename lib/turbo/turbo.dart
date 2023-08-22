@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:ardrive/blocs/turbo_payment/utils/storage_estimator.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/services/config/app_config.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
 import 'package:ardrive/turbo/models/payment_user_information.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
+import 'package:ardrive/turbo/utils/storage_estimator.dart';
 import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive/utils/disposable.dart';
 import 'package:ardrive/utils/file_size_units.dart';
@@ -148,14 +148,18 @@ class Turbo extends Disposable {
       wallet: _wallet,
     );
 
-    _quoteExpirationDate =
-        DateTime.parse(_currentPaymentIntent!.topUpQuote.quoteExpirationDate)
-            .subtract(const Duration(seconds: 5));
+    _quoteExpirationDate = DateTime.parse(
+      _currentPaymentIntent!.topUpQuote.quoteExpirationDate,
+    ).subtract(
+      const Duration(
+        seconds: 5,
+      ),
+    );
 
     return _currentPaymentIntent!;
   }
 
-  Future<PaymentStatus> confirmPayment() {
+  Future<PaymentStatus> confirmPayment() async {
     if (_currentPaymentIntent == null) {
       throw Exception(
           'Current payment intent is null. You should create it before calling this method.');
@@ -163,10 +167,12 @@ class Turbo extends Disposable {
 
     logger.d('Confirming payment: ${paymentUserInformation.toString()}');
 
-    return _paymentProvider.confirmPayment(
+    _paymentStatus = await _paymentProvider.confirmPayment(
       paymentUserInformation: paymentUserInformation,
       paymentModel: _currentPaymentIntent!,
     );
+
+    return _paymentStatus!;
   }
 
   Future<List<String>> getSupportedCountries() =>
@@ -434,26 +440,26 @@ class StripePaymentProvider implements TurboPaymentProvider {
       return PaymentStatus.quoteExpired;
     }
 
+    logger.d(
+        'Payment user information: ${paymentUserInformation.userAcceptedToReceiveEmails}');
+
     final billingDetails = BillingDetails(
-      email: paymentUserInformation.email,
-      address: Address(
-        city: '',
-        country: paymentUserInformation.country,
-        line1: '',
-        line2: '',
-        postalCode: '',
-        state: '',
-      ),
+      email: paymentUserInformation.userAcceptedToReceiveEmails
+          ? paymentUserInformation.email
+          : null,
       name: paymentUserInformation.name,
+    );
+
+    final params = PaymentMethodParams.card(
+      paymentMethodData: PaymentMethodData(
+        billingDetails: billingDetails,
+      ),
     );
 
     final paymentIntent = await stripe.confirmPayment(
       paymentIntentClientSecret: paymentModel.paymentSession.clientSecret,
-      data: PaymentMethodParams.card(
-        paymentMethodData: PaymentMethodData(
-          billingDetails: billingDetails,
-        ),
-      ),
+      data: params,
+      receiptEmail: paymentUserInformation.email,
     );
 
     logger.d(paymentIntent.toJson().toString());

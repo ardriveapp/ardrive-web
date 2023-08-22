@@ -39,9 +39,11 @@ class DrivesCubit extends Cubit<DrivesState> {
 
     _drivesSubscription =
         Rx.combineLatest3<List<Drive>, List<FolderEntry>, void, List<Drive>>(
-      _driveDao
-          .allDrives(order: OrderBy([OrderingTerm.asc(_driveDao.drives.name)]))
-          .watch(),
+      _driveDao.allDrives(
+        order: (drives) {
+          return OrderBy([OrderingTerm.asc(drives.name)]);
+        },
+      ).watch(),
       _driveDao.ghostFolders().watch(),
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drives, _, __) => drives,
