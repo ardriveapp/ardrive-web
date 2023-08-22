@@ -10,6 +10,7 @@ import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -72,9 +73,18 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<MultipleDownloadBloc, MultipleDownloadState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is MultipleDownloadFinishedWithSuccess) {
-          Navigator.pop(context);
+          final ArDriveIO io = ArDriveIO();
+
+          final file = await IOFile.fromData(
+            state.bytes,
+            name: state.fileName,
+            lastModifiedDate: state.lastModified,
+          );
+
+          // Close modal when save file
+          io.saveFile(file).then((value) => Navigator.pop(context));
         }
       },
       child: BlocBuilder<MultipleDownloadBloc, MultipleDownloadState>(

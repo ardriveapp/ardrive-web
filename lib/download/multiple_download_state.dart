@@ -34,18 +34,15 @@ class MultipleDownloadFailure extends MultipleDownloadState {
 }
 
 class MultipleDownloadFinishedWithSuccess extends MultipleDownloadState {
-  final String title;
+  const MultipleDownloadFinishedWithSuccess(
+      {required this.fileName,
+      required this.bytes,
+      required this.lastModified});
 
-  const MultipleDownloadFinishedWithSuccess({required this.title});
-
-  @override
-  List<Object> get props => [title];
-}
-
-// zipping your files
-class MultipleDownloadZippingFiles extends MultipleDownloadState {
-  const MultipleDownloadZippingFiles();
+  final String fileName;
+  final Uint8List bytes;
+  final DateTime lastModified;
 
   @override
-  List<Object> get props => [];
+  List<Object> get props => [fileName, bytes, lastModified];
 }

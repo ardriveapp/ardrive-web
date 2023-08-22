@@ -16,14 +16,14 @@ final privateDownloadFirefoxSizeLimit = const GiB(2).size;
 final privateDownloadMobileSizeLimit = const MiB(300).size;
 
 Future<int> calcDownloadSizeLimit(bool isPublic) async {
-  final info = await DeviceInfoPlugin().deviceInfo;
-  final isFirefox =
-      info is WebBrowserInfo && info.browserName == BrowserName.firefox;
-
   if (isPublic) {
     if (AppPlatform.isMobile) {
-      return publicDownloadWebSizeLimit;
+      return publicDownloadMobileSizeLimit;
     } else if (AppPlatform.getPlatform() == SystemPlatform.Web) {
+      final info = await DeviceInfoPlugin().deviceInfo;
+
+      final isFirefox =
+          info is WebBrowserInfo && info.browserName == BrowserName.firefox;
       return isFirefox
           ? publicDownloadFirefoxSizeLimit
           : publicDownloadWebSizeLimit;
@@ -32,8 +32,11 @@ Future<int> calcDownloadSizeLimit(bool isPublic) async {
     }
   } else {
     if (AppPlatform.isMobile) {
-      return privateDownloadWebSizeLimit;
+      return privateDownloadMobileSizeLimit;
     } else if (AppPlatform.getPlatform() == SystemPlatform.Web) {
+      final info = await DeviceInfoPlugin().deviceInfo;
+      final isFirefox =
+          info is WebBrowserInfo && info.browserName == BrowserName.firefox;
       return isFirefox
           ? privateDownloadFirefoxSizeLimit
           : privateDownloadWebSizeLimit;

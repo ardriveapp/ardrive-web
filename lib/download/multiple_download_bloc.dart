@@ -8,7 +8,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
-import 'package:ardrive_io/ardrive_io.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -68,16 +67,6 @@ class MultipleDownloadBloc
       StartDownload event, Emitter<MultipleDownloadState> emit) async {
     items = event.items;
 
-    if (await isSizeAboveDownloadSizeLimit(
-        items, drive.drivePrivacy == DrivePrivacy.public)) {
-      emit(
-        const MultipleDownloadFailure(
-          FileDownloadFailureReason.fileAboveLimit,
-        ),
-      );
-      return;
-    }
-
     // check all files from same drive
     var firstFile = items[0];
 
@@ -88,6 +77,16 @@ class MultipleDownloadBloc
     // }
 
     drive = await _arfsRepository.getDriveById(firstFile.driveId);
+
+    if (await isSizeAboveDownloadSizeLimit(
+        items, drive.drivePrivacy == DrivePrivacy.public)) {
+      emit(
+        const MultipleDownloadFailure(
+          FileDownloadFailureReason.fileAboveLimit,
+        ),
+      );
+      return;
+    }
 
     if (drive.drivePrivacy == DrivePrivacy.private) {
       if (_cipherKey != null) {
@@ -191,21 +190,16 @@ class MultipleDownloadBloc
           outputBytes,
         ));
 
-        // await Future.delayed(const Duration(seconds: 2));
-
         currentFileIndex++;
       }
 
       zipEncoder.endEncode();
 
-      var outFile = await IOFile.fromData(
-          Uint8List.fromList(outputStream.getBytes()),
-          name: outFileName,
-          lastModifiedDate: DateTime.now());
-
-      await ArDriveIO().saveFile(outFile);
-
-      emit(const MultipleDownloadFinishedWithSuccess(title: 'Multiple Files'));
+      emit(MultipleDownloadFinishedWithSuccess(
+        bytes: Uint8List.fromList(outputStream.getBytes()),
+        fileName: outFileName,
+        lastModified: DateTime.now(),
+      ));
     } catch (e) {
       if (e is ArDriveHTTPException) {
         if (e.statusCode == 400) {

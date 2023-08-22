@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
@@ -81,3 +82,92 @@ class MockConfigFetcher extends Mock implements ConfigFetcher {}
 class MockConfigService extends Mock implements ConfigService {}
 
 class MockEnvFetcher extends Mock implements EnvFetcher {}
+
+class MockTransactionCommonMixin extends Mock
+    implements TransactionCommonMixin {}
+
+class MockARFSFile extends ARFSFileEntity {
+  MockARFSFile({
+    required super.appName,
+    required super.appVersion,
+    required super.arFS,
+    required super.driveId,
+    required super.entityType,
+    required super.name,
+    required super.txId,
+    required super.unixTime,
+    required super.id,
+    required super.size,
+    required super.lastModifiedDate,
+    required super.parentFolderId,
+    super.contentType,
+  });
+}
+
+class MockARFSDrive extends ARFSDriveEntity {
+  MockARFSDrive({
+    required super.appName,
+    required super.appVersion,
+    required super.arFS,
+    required super.driveId,
+    required super.entityType,
+    required super.name,
+    required super.txId,
+    required super.unixTime,
+    required super.drivePrivacy,
+    required super.rootFolderId,
+  });
+}
+
+MockARFSFile createMockFile(
+    {appName = 'appName',
+    appVersion = 'appVersion',
+    arFS = 'arFS',
+    driveId = 'driveId',
+    entityType = EntityType.file,
+    txId = 'txId',
+    unixTime,
+    id = 'id',
+    lastModifiedDate,
+    parentFolderId = 'parentFolderId',
+    size = 100,
+    name = 'name'}) {
+  return MockARFSFile(
+    appName: appName,
+    appVersion: appVersion,
+    arFS: arFS,
+    driveId: driveId,
+    entityType: entityType,
+    name: name,
+    txId: txId,
+    unixTime: unixTime ?? DateTime.now(),
+    id: id,
+    size: size,
+    lastModifiedDate: lastModifiedDate ?? DateTime.now(),
+    parentFolderId: parentFolderId,
+  );
+}
+
+MockARFSDrive createMockDrive(
+    {appName = 'appName',
+    appVersion = 'appVersion',
+    arFS = 'arFS',
+    driveId = 'driveId',
+    entityType = EntityType.drive,
+    txId = 'txId',
+    unixTime,
+    drivePrivacy = DrivePrivacy.private,
+    rootFolderId = 'rootFolderId',
+    name = 'name'}) {
+  return MockARFSDrive(
+      appName: appName,
+      appVersion: appVersion,
+      arFS: arFS,
+      driveId: driveId,
+      entityType: entityType,
+      name: name,
+      txId: txId,
+      unixTime: unixTime ?? DateTime.now(),
+      drivePrivacy: drivePrivacy,
+      rootFolderId: rootFolderId);
+}
