@@ -15,12 +15,13 @@ final privateDownloadWebSizeLimit = const MiB(500).size;
 final privateDownloadFirefoxSizeLimit = const GiB(2).size;
 final privateDownloadMobileSizeLimit = const MiB(300).size;
 
-Future<int> calcDownloadSizeLimit(bool isPublic) async {
+Future<int> calcDownloadSizeLimit(bool isPublic,
+    {DeviceInfoPlugin? deviceInfo}) async {
   if (isPublic) {
     if (AppPlatform.isMobile) {
       return publicDownloadMobileSizeLimit;
     } else if (AppPlatform.getPlatform() == SystemPlatform.Web) {
-      final info = await DeviceInfoPlugin().deviceInfo;
+      final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
 
       final isFirefox =
           info is WebBrowserInfo && info.browserName == BrowserName.firefox;
@@ -34,7 +35,7 @@ Future<int> calcDownloadSizeLimit(bool isPublic) async {
     if (AppPlatform.isMobile) {
       return privateDownloadMobileSizeLimit;
     } else if (AppPlatform.getPlatform() == SystemPlatform.Web) {
-      final info = await DeviceInfoPlugin().deviceInfo;
+      final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
       final isFirefox =
           info is WebBrowserInfo && info.browserName == BrowserName.firefox;
       return isFirefox
@@ -48,10 +49,12 @@ Future<int> calcDownloadSizeLimit(bool isPublic) async {
 
 // TODO: extend to work drives and folders
 Future<bool> isSizeAboveDownloadSizeLimit(
-    List<ARFSFileEntity> items, bool isPublic) async {
+    List<ARFSFileEntity> items, bool isPublic,
+    {DeviceInfoPlugin? deviceInfo}) async {
   final totalSize = items.map((e) => e.size).reduce((a, b) => a + b);
 
-  final sizeLimit = await calcDownloadSizeLimit(isPublic);
+  final sizeLimit =
+      await calcDownloadSizeLimit(isPublic, deviceInfo: deviceInfo);
 
   return totalSize > sizeLimit;
 }

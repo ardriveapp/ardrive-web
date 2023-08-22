@@ -18,6 +18,7 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -85,6 +86,8 @@ class MockEnvFetcher extends Mock implements EnvFetcher {}
 
 class MockTransactionCommonMixin extends Mock
     implements TransactionCommonMixin {}
+
+class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
 
 class MockARFSFile extends ARFSFileEntity {
   MockARFSFile({

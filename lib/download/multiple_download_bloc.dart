@@ -9,6 +9,7 @@ import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,6 +27,7 @@ class MultipleDownloadBloc
   final ARFSRepository _arfsRepository;
   final ArDriveCrypto _crypto;
   final SecretKey? _cipherKey;
+  final DeviceInfoPlugin? _deviceInfo;
 
   bool canceled = false;
   int currentFileIndex = 0;
@@ -43,6 +45,7 @@ class MultipleDownloadBloc
       required ArweaveService arweave,
       required ARFSRepository arfsRepository,
       required ArDriveCrypto crypto,
+      DeviceInfoPlugin? deviceInfo,
       SecretKey? cipherKey})
       : _downloadService = downloadService,
         _driveDao = driveDao,
@@ -50,6 +53,7 @@ class MultipleDownloadBloc
         _arfsRepository = arfsRepository,
         _crypto = crypto,
         _cipherKey = cipherKey,
+        _deviceInfo = deviceInfo,
         super(MultipleDownloadInitial()) {
     on<MultipleDownloadEvent>((event, emit) async {
       if (event is StartDownload) {
@@ -79,7 +83,8 @@ class MultipleDownloadBloc
     drive = await _arfsRepository.getDriveById(firstFile.driveId);
 
     if (await isSizeAboveDownloadSizeLimit(
-        items, drive.drivePrivacy == DrivePrivacy.public)) {
+        items, drive.drivePrivacy == DrivePrivacy.public,
+        deviceInfo: _deviceInfo)) {
       emit(
         const MultipleDownloadFailure(
           FileDownloadFailureReason.fileAboveLimit,

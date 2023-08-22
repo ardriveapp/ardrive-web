@@ -11,6 +11,7 @@ import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -39,14 +40,21 @@ void main() async {
       MockTransactionCommonMixin();
 
   MultipleDownloadBloc createMultipleDownloadBloc(
-      {downloadService, arfsRepository, arweave, crypto, driveDao, cipherKey}) {
+      {downloadService,
+      arfsRepository,
+      arweave,
+      crypto,
+      driveDao,
+      cipherKey,
+      deviceInfo}) {
     return MultipleDownloadBloc(
         downloadService: downloadService ?? mockDownloadService,
         arfsRepository: arfsRepository ?? mockARFSRepository,
         arweave: arweave ?? mockArweaveService,
         crypto: crypto ?? mockCrypto,
         driveDao: driveDao ?? mockDriveDao,
-        cipherKey: cipherKey ?? SecretKey([]));
+        cipherKey: cipherKey ?? SecretKey([]),
+        deviceInfo: deviceInfo);
   }
 
   setUpAll(() {
@@ -110,14 +118,66 @@ void main() async {
         );
 
         blocTest<MultipleDownloadBloc, MultipleDownloadState>(
-          'should emit failure when files above limits',
-          build: () => multipleDownloadBloc,
+          'should emit failure when files above limits (Android)',
+          build: createMultipleDownloadBloc,
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
           },
           act: (bloc) => bloc.add(StartDownload([
             testFile,
             createMockFile(size: const MiB(2001).size),
+          ])),
+          expect: () => [
+            isA<MultipleDownloadFailure>().having(
+              (s) => s.reason,
+              'reason',
+              FileDownloadFailureReason.fileAboveLimit,
+            ),
+          ],
+        );
+
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'should emit failure when files above limits (Chrome)',
+          build: () {
+            final MockDeviceInfoPlugin deviceInfo = MockDeviceInfoPlugin();
+
+            when(() => deviceInfo.deviceInfo).thenAnswer((invokation) async =>
+                WebBrowserInfo.fromMap({'userAgent': 'Chrome'}));
+
+            return createMultipleDownloadBloc(deviceInfo: deviceInfo);
+          },
+          setUp: () {
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
+          },
+          act: (bloc) => bloc.add(StartDownload([
+            testFile,
+            createMockFile(size: const MiB(501).size),
+          ])),
+          expect: () => [
+            isA<MultipleDownloadFailure>().having(
+              (s) => s.reason,
+              'reason',
+              FileDownloadFailureReason.fileAboveLimit,
+            ),
+          ],
+        );
+
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'should emit failure when files above limits (Firefox)',
+          build: () {
+            final MockDeviceInfoPlugin deviceInfo = MockDeviceInfoPlugin();
+
+            when(() => deviceInfo.deviceInfo).thenAnswer((invocation) async =>
+                WebBrowserInfo.fromMap({'userAgent': 'Firefox'}));
+
+            return createMultipleDownloadBloc(deviceInfo: deviceInfo);
+          },
+          setUp: () {
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
+          },
+          act: (bloc) => bloc.add(StartDownload([
+            testFile,
+            createMockFile(size: const GiB(2).size),
           ])),
           expect: () => [
             isA<MultipleDownloadFailure>().having(
