@@ -1,14 +1,15 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
@@ -104,7 +105,6 @@ class _ProfileCardState extends State<ProfileCard> {
       content: _buildProfileCardContent(
         context,
         state,
-        walletAddress,
         isMobile: isMobile,
       ),
       child: _buildProfileCardHeader(context, walletAddress),
@@ -113,8 +113,7 @@ class _ProfileCardState extends State<ProfileCard> {
 
   Widget _buildProfileCardContent(
     BuildContext context,
-    ProfileLoggedIn state,
-    String walletAddress, {
+    ProfileLoggedIn state, {
     required bool isMobile,
   }) {
     return ArDriveCard(
@@ -222,24 +221,9 @@ class _ProfileCardState extends State<ProfileCard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               if (walletAddress.isNotEmpty)
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () {
-                      openUrl(
-                        url:
-                            'https://viewblock.io/arweave/address/$walletAddress',
-                      );
-                    },
-                    child: Text(
-                      '${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 5)}',
-                      style: ArDriveTypography.body.captionRegular().copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 18,
-                            decoration: TextDecoration.underline,
-                          ),
-                    ),
-                  ),
+                TruncatedAddress(
+                  walletAddress: walletAddress,
+                  fontSize: 18,
                 ),
               CopyButton(
                 size: 24,
@@ -346,7 +330,7 @@ class _ProfileCardState extends State<ProfileCard> {
             ArDriveIcons.user(size: 14),
             if (walletAddress.isNotEmpty)
               Text(
-                '${walletAddress.substring(0, 2)}...${walletAddress.substring(walletAddress.length - 2)}',
+                truncateString(walletAddress, offsetStart: 2, offsetEnd: 2),
                 style: ArDriveTypography.body.buttonNormalBold().copyWith(
                       fontWeight: FontWeight.w800,
                     ),

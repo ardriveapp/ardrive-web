@@ -14,12 +14,14 @@ class FsEntryInfoSuccess<T> extends FsEntryInfoState {
   final DateTime lastUpdated;
   final DateTime dateCreated;
   final T entry;
+  final String metadataTxId;
 
   const FsEntryInfoSuccess({
     required this.name,
     required this.lastUpdated,
     required this.dateCreated,
     required this.entry,
+    required this.metadataTxId,
   });
 
   @override
@@ -38,8 +40,10 @@ class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
     required this.drive,
     required this.rootFolderRevision,
     required this.rootFolderTree,
+    required String metadataTxId,
   }) : super(
           entry: drive,
+          metadataTxId: metadataTxId,
         );
 
   @override

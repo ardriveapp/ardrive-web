@@ -79,11 +79,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.6.0"
-      resolved-ref: "2e13257cf092e24627e67795c6567d7ef286202c"
+      ref: "v1.7.0"
+      resolved-ref: "8088d44a1ffc3be06644a5aa83ef0312527aa4e5"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.6.0"
+    version: "1.7.0"
   args:
     dependency: transitive
     description:
@@ -1106,6 +1106,11 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.1"
+  integration_test:
+    dependency: "direct dev"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
   intersperse:
     dependency: "direct main"
     description:

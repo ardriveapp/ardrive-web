@@ -205,9 +205,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             );
           }
         },
-      ).listen((_) {
-        logger.d('Folder contents updated');
-      });
+      ).listen((_) {});
     } catch (e) {
       logger.e('An error occured mouting the drive explorer', e);
     }
