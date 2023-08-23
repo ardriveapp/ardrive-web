@@ -75,7 +75,6 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
     if (parentPath != null) {
       await updateFolderTree(treeRoot, parentPath);
     } else {
-      logger.d('Add missing folder to folder with id ${treeRoot.folder.id}');
       await addMissingFolder(
         treeRoot.folder.parentFolderId!,
       );
