@@ -114,9 +114,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
             final hasFiles = state.folderInView.files.isNotEmpty;
 
-            final canDownloadMultipleFiles = state.multiselect &&
-                // state.currentDrive.isPublic &&
-                !state.hasFoldersSelected;
+            final canDownloadMultipleFiles =
+                state.multiselect && !state.hasFoldersSelected;
 
             return ScreenTypeLayout.builder(
               desktop: (context) => _desktopView(
