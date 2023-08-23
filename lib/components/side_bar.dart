@@ -7,6 +7,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/size_constants.dart';
@@ -117,9 +118,19 @@ class _AppSideBarState extends State<AppSideBar> {
               const SizedBox(
                 height: 16,
               ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _exportLogsButton(),
+              ),
+              const SizedBox(
+                height: 4,
+              ),
               const Padding(
                 padding: EdgeInsets.only(left: 16.0),
                 child: ThemeSwitcher(),
+              ),
+              const SizedBox(
+                height: 4,
               ),
               const Padding(
                 padding: EdgeInsets.only(left: 20.0),
@@ -345,101 +356,10 @@ class _AppSideBarState extends State<AppSideBar> {
                 ),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: HoverWidget(
-                    child: GestureDetector(
-                      onTap: () {
-                        showAnimatedDialog(
-                          context,
-                          content: ArDriveStandardModal(
-                            title: 'Help',
-                            content: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'You can share your logs with the ArDrive team to help us improve the app. The logs will be downloaded to your device and you can share them with us via email or any other means.',
-                                  style:
-                                      ArDriveTypography.body.buttonLargeBold(),
-                                ),
-                                const SizedBox(
-                                  height: 16,
-                                ),
-                                Text(
-                                  'Our channels: ',
-                                  style: ArDriveTypography.body
-                                      .buttonLargeBold()
-                                      .copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                ArDriveClickArea(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      openUrl(
-                                        url:
-                                            'https://discord.com/channels/743164999379451944/757396913732452412',
-                                      );
-                                    },
-                                    child: Text(
-                                      'Discord',
-                                      style: ArDriveTypography.body
-                                          .buttonLargeBold()
-                                          .copyWith(
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(
-                                  height: 4,
-                                ),
-                                ArDriveClickArea(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      openUrl(
-                                        url:
-                                            'https://help.ardrive.io/hc/en-us/articles/9350732157723-Contact-Us',
-                                      );
-                                    },
-                                    child: Text(
-                                      'Help Center',
-                                      style: ArDriveTypography.body
-                                          .buttonLargeBold()
-                                          .copyWith(
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            actions: [
-                              ModalAction(
-                                action: () {
-                                  Navigator.of(context).pop();
-                                },
-                                title: 'Cancel',
-                              ),
-                              ModalAction(
-                                action: () {
-                                  LogExporterSystem().exportLogs();
-                                },
-                                title: 'Download log file',
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'Having trouble?',
-                        style: ArDriveTypography.body.buttonNormalBold(),
-                      ),
-                    ),
-                  ),
+                  child: _exportLogsButton(),
                 ),
                 const SizedBox(
-                  height: 16,
+                  height: 8,
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -526,6 +446,116 @@ class _AppSideBarState extends State<AppSideBar> {
     } else {
       return _newButton(_isExpanded, isMobile);
     }
+  }
+
+  Widget _exportLogsButton() {
+    final logExportInfo = LogExportInfo(
+      emailSubject: appLocalizationsOf(context).shareLogsEmailSubject,
+      emailBody: appLocalizationsOf(context).shareLogsEmailBody,
+      shareText: appLocalizationsOf(context).shareLogsNativeShareText,
+      shareSubject: appLocalizationsOf(context).shareLogsNativeShareSubject,
+    );
+    return HoverWidget(
+      child: GestureDetector(
+        onTap: () {
+          showAnimatedDialog(
+            context,
+            content: ArDriveStandardModal(
+              hasCloseButton: true,
+              title: 'Help',
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'You can share your logs with the ArDrive team to help us improve the app. The logs will be downloaded to your device and you can share them with us via email or any other means.',
+                    style: ArDriveTypography.body.buttonLargeBold(),
+                  ),
+                  const SizedBox(
+                    height: 16,
+                  ),
+                  Text(
+                    'Our channels: ',
+                    style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  ArDriveClickArea(
+                    child: GestureDetector(
+                      onTap: () {
+                        openUrl(
+                          url:
+                              'https://discord.com/channels/743164999379451944/757396913732452412',
+                        );
+                      },
+                      child: Text(
+                        'Discord',
+                        style:
+                            ArDriveTypography.body.buttonLargeBold().copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 4,
+                  ),
+                  ArDriveClickArea(
+                    child: GestureDetector(
+                      onTap: () {
+                        openUrl(
+                          url:
+                              'https://help.ardrive.io/hc/en-us/articles/9350732157723-Contact-Us',
+                        );
+                      },
+                      child: Text(
+                        'Help Center',
+                        style:
+                            ArDriveTypography.body.buttonLargeBold().copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                ModalAction(
+                  action: () {
+                    logger.exportLogs(info: logExportInfo);
+                  },
+                  title: 'Download',
+                ),
+                if (AppPlatform.isMobile)
+                  ModalAction(
+                    action: () {
+                      logger.exportLogs(
+                        info: logExportInfo,
+                        share: true,
+                        shareAsEmail: true,
+                      );
+                    },
+                    title: 'Send email',
+                  ),
+                if (AppPlatform.isMobile)
+                  ModalAction(
+                    action: () {
+                      logger.exportLogs(
+                        info: logExportInfo,
+                        share: true,
+                      );
+                    },
+                    title: 'Share',
+                  ),
+              ],
+            ),
+          );
+        },
+        child: Text(
+          'Share logs',
+          style: ArDriveTypography.body.buttonNormalBold(),
+        ),
+      ),
+    );
   }
 
   Widget _newButton(

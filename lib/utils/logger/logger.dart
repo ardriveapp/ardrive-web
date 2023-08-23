@@ -1,68 +1,14 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:collection';
 import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:logger/logger.dart';
-
-final logger = Logger(
-  filter: Filter(),
-  printer: SimpleLogPrinter(),
-  output: LogExporterSystem(),
-);
-
-class Filter extends LogFilter {
-  @override
-  bool shouldLog(LogEvent event) {
-    // Print info, warning, error and wtf in production
-    if (isProduction && event.level.index < 2) {
-      return false;
-    }
-
-    return true;
-  }
-}
-
-class SimpleLogPrinter extends LogPrinter {
-  static final levelPrefixes = {
-    Level.verbose: 'verbose',
-    Level.debug: 'debug',
-    Level.info: 'info',
-    Level.warning: 'warning',
-    Level.error: 'error',
-    Level.wtf: 'wtf',
-  };
-
-  @override
-  List<String> log(LogEvent event) {
-    var time = event.time.toIso8601String();
-    var output = StringBuffer('level=${levelPrefixes[event.level]} time=$time');
-
-    if (event.message is String) {
-      output.write(' msg="${event.message}"');
-    } else if (event.message is Map) {
-      event.message.entries.forEach((entry) {
-        if (entry.value is num) {
-          output.write(' ${entry.key}=${entry.value}');
-        } else {
-          output.write(' ${entry.key}="${entry.value}"');
-        }
-      });
-    }
-
-    if (event.error != null) {
-      output.write(' error="${event.error}"');
-    }
-
-    return [output.toString()];
-  }
-}
-
-bool isProduction = false;
-
-setLoggerLevel(Flavor flavor) {
-  isProduction = flavor == Flavor.production;
-}
+import 'package:share_plus/share_plus.dart';
 
 class LogExporterSystem extends LogOutput {
   static LogExporterSystem? _instance;
@@ -85,28 +31,17 @@ class LogExporterSystem extends LogOutput {
     _logCache.add(message);
   }
 
-  Future<void> exportLogs() async {
-    // Convert log to JSON
-    String logString = '';
-
-    for (final log in _logCache) {
-      logString += '$log\n';
-    }
-
-    // Write the log to a file
-    _convertTextToIOFile(logString).then((file) async {
-      ArDriveIO().saveFile(file);
-    });
-  }
-
   @override
   void output(OutputEvent event) {
     event.lines.forEach(log);
   }
 }
 
-Future<IOFile> _convertTextToIOFile(String text) {
-  final fileName = 'ardrive_logs_${DateTime.now().toIso8601String()}.txt';
+Future<IOFile> _convertTextToIOFile({
+  required String text,
+  required String filePrefix,
+}) {
+  final fileName = '${filePrefix}_${DateTime.now().toIso8601String()}.txt';
   final dataBytes = utf8.encode(text) as Uint8List;
 
   return IOFile.fromData(
@@ -114,4 +49,199 @@ Future<IOFile> _convertTextToIOFile(String text) {
     name: fileName,
     lastModifiedDate: DateTime.now(),
   );
+}
+
+final logger = Logger(
+  logLevel: kReleaseMode ? LogLevel.warning : LogLevel.debug,
+  storeLogsInMemory: true,
+  logExporter: LogExporter(),
+);
+
+enum LogLevel {
+  debug,
+  info,
+  warning,
+  error,
+}
+
+class Logger {
+  final LogLevel _logLevel;
+  final bool _storeLogsInMemory;
+  final LogLevel _memoryLogLevel;
+  final int _memoryLogSize;
+  final LogExporter _logExporter;
+  late ListQueue<String> inMemoryLogs;
+
+  Logger({
+    LogLevel logLevel = LogLevel.warning,
+    bool storeLogsInMemory = false,
+    LogLevel memoryLogLevel = LogLevel.debug,
+    int memoryLogSize = 500,
+    required LogExporter logExporter,
+  })  : _logLevel = logLevel,
+        _logExporter = logExporter,
+        _storeLogsInMemory = storeLogsInMemory,
+        _memoryLogLevel = memoryLogLevel,
+        _memoryLogSize = memoryLogSize {
+    inMemoryLogs = ListQueue(storeLogsInMemory ? memoryLogSize : 0);
+  }
+
+  void d(String message) {
+    log(LogLevel.debug, message);
+  }
+
+  void i(String message) {
+    log(LogLevel.info, message);
+  }
+
+  void w(String message) {
+    log(LogLevel.warning, message);
+  }
+
+  void e(String message, [Object? error, StackTrace? stackTrace]) {
+    log(LogLevel.error, message);
+  }
+
+  void log(LogLevel level, String message) {
+    final shouldLog = _shouldLog(level);
+    final shouldSaveInMemory = _shouldSaveInMemory(level);
+    String? finalMessage;
+
+    if (shouldLog || shouldSaveInMemory) {
+      DateTime time = DateTime.now();
+      finalMessage =
+          '[${level.name.substring(0, 1).toUpperCase()}][${time.toIso8601String()}] $message';
+    }
+
+    if (finalMessage != null) {
+      if (shouldLog) {
+        // ignore: avoid_print
+        print(finalMessage);
+      }
+
+      if (shouldSaveInMemory) {
+        if (inMemoryLogs.length == _memoryLogSize) {
+          inMemoryLogs.removeFirst();
+        }
+
+        inMemoryLogs.add(finalMessage);
+      }
+    }
+  }
+
+  Future<void> exportLogs({
+    bool share = false,
+    bool shareAsEmail = false,
+    required LogExportInfo info,
+  }) async {
+    final logs = inMemoryLogs.toList();
+    await _logExporter.exportLogs(
+      share: share,
+      shareAsEmail: shareAsEmail,
+      logs: logs,
+      info: info,
+    );
+  }
+
+  bool _shouldLog(LogLevel level) {
+    return level.index >= _logLevel.index;
+  }
+
+  bool _shouldSaveInMemory(LogLevel level) {
+    return _storeLogsInMemory && level.index >= _memoryLogLevel.index;
+  }
+}
+
+abstract class LogExporter {
+  Future<void> exportLogs({
+    bool share = false,
+    bool shareAsEmail = false,
+    required Iterable<String> logs,
+    required LogExportInfo info,
+  });
+
+  factory LogExporter() {
+    return _LogExporter();
+  }
+}
+
+class _LogExporter implements LogExporter {
+  @override
+  Future<void> exportLogs({
+    bool share = false,
+    bool shareAsEmail = false,
+    required Iterable<String> logs,
+    required LogExportInfo info,
+  }) async {
+    String logString = '';
+
+    for (final log in logs) {
+      logString += '$log\n';
+    }
+
+    final file = await _convertTextToIOFile(
+      text: logString,
+      filePrefix: info.filePrefix,
+    );
+
+    if (kIsWeb) {
+      ArDriveIO().saveFile(file);
+      return;
+    }
+
+    final mobileIO = ArDriveIO() as MobileIO;
+    await mobileIO.saveFile(file, true);
+
+    if (shareAsEmail) {
+      _shareAsEmail(file, info);
+      return;
+    }
+
+    _exportWithNativeShare(file, info);
+  }
+
+  Future<void> _shareAsEmail(IOFile file, LogExportInfo info) async {
+    final Email email = Email(
+      body: info.emailBody,
+      subject: info.emailSubject,
+      recipients: [Resources.emailSupport],
+      attachmentPaths: [await getDefaultAppDir() + file.name],
+      isHTML: false,
+    );
+
+    try {
+      await FlutterEmailSender.send(email);
+      return;
+    } catch (error) {
+      logger.e('Failed to send email', error);
+    }
+  }
+
+  Future<void> _exportWithNativeShare(
+    IOFile file,
+    LogExportInfo info,
+  ) async {
+    final filePath = await getDefaultAppDir() + file.name;
+
+    Share.shareXFiles(
+      [XFile(filePath)],
+      text: info.shareText,
+      subject: info.shareSubject,
+    );
+  }
+}
+
+class LogExportInfo {
+  final String filePrefix = 'ardrive_logs';
+  final String emailSubject;
+  final String emailBody;
+  final String shareText;
+  final String shareSubject;
+
+  LogExportInfo({
+    required this.emailSubject,
+    required this.emailBody,
+    required this.shareText,
+    required this.shareSubject,
+  });
 }

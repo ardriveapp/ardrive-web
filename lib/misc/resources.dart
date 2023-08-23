@@ -15,6 +15,7 @@ class Resources {
   static const howAreConversionsDetermined =
       'https://help.ardrive.io/hc/en-us/articles/17043397992731';
   static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
+  static const emailSupport = 'support@ardrive.io';
 }
 
 class Images {
