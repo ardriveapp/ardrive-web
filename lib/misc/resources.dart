@@ -16,6 +16,9 @@ class Resources {
       'https://help.ardrive.io/hc/en-us/articles/17043397992731';
   static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
   static const emailSupport = 'support@ardrive.io';
+  static const helpCenterLink =
+      'https://help.ardrive.io/hc/en-us/articles/9350732157723-Contact-Us';
+  static const discordLink = 'https://discord.gg/KkTqDe4GAF';
 }
 
 class Images {
@@ -83,3 +86,5 @@ class Login {
   final String latticeLargeLight =
       'assets/images/login/lattice_large_light.svg';
 }
+
+const String discord = 'Discord';

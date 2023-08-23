@@ -979,6 +979,8 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
+  "helpCenter": "Help Center",
+  "@helpCenter": {},
   "howAreConversionsDetermined": "How are conversions determined?",
   "@howAreConversionsDetermined": {},
   "howDoesKeyfileLoginWork": "How do keyfile and seed phrase login work?",
@@ -1322,6 +1324,8 @@
   "@orContinueWith": {
     "description": "text to continue with ar connect"
   },
+  "ourChannels": "Our channels: ",
+  "@ourChannels": {},
   "password": "Password",
   "@password": {
     "description": "Label for the 'password' input"
@@ -1534,6 +1538,8 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "share": "Share",
+  "@share": {},
   "sharedDrives": "Shared Drives",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
@@ -1566,6 +1572,8 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
+  "shareLogsDescription": "You can share your logs with the ArDrive team to help us improve the app. The logs will be downloaded to your device and you can share them with us via email or any other means.'",
+  "@shareLogsDescription": {},
   "shareLogsEmailBody": "Attached are the logs for ArDrive",
   "@shareLogsEmailBody": {},
   "shareLogsEmailSubject": "ArDrive Logs",
@@ -1574,6 +1582,10 @@
   "@shareLogsNativeShareSubject": {},
   "shareLogsNativeShareText": "Attached are the logs for ArDrive",
   "@shareLogsNativeShareText": {},
+  "shareLogsText": "Share logs",
+  "@shareLogsText": {},
+  "shareLogsWithEmailText": "Send email",
+  "@shareLogsWithEmailText": {},
   "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
   "@sharePendingFile": {
     "description": "Pending file share dialog text"

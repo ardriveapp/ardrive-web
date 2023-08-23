@@ -462,19 +462,19 @@ class _AppSideBarState extends State<AppSideBar> {
             context,
             content: ArDriveStandardModal(
               hasCloseButton: true,
-              title: 'Help',
+              title: appLocalizationsOf(context).help,
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'You can share your logs with the ArDrive team to help us improve the app. The logs will be downloaded to your device and you can share them with us via email or any other means.',
+                    appLocalizationsOf(context).shareLogsDescription,
                     style: ArDriveTypography.body.buttonLargeBold(),
                   ),
                   const SizedBox(
                     height: 16,
                   ),
                   Text(
-                    'Our channels: ',
+                    appLocalizationsOf(context).ourChannels,
                     style: ArDriveTypography.body.buttonLargeBold().copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -483,12 +483,11 @@ class _AppSideBarState extends State<AppSideBar> {
                     child: GestureDetector(
                       onTap: () {
                         openUrl(
-                          url:
-                              'https://discord.com/channels/743164999379451944/757396913732452412',
+                          url: Resources.discordLink,
                         );
                       },
                       child: Text(
-                        'Discord',
+                        discord,
                         style:
                             ArDriveTypography.body.buttonLargeBold().copyWith(
                                   decoration: TextDecoration.underline,
@@ -503,12 +502,11 @@ class _AppSideBarState extends State<AppSideBar> {
                     child: GestureDetector(
                       onTap: () {
                         openUrl(
-                          url:
-                              'https://help.ardrive.io/hc/en-us/articles/9350732157723-Contact-Us',
+                          url: Resources.helpCenterLink,
                         );
                       },
                       child: Text(
-                        'Help Center',
+                        appLocalizationsOf(context).helpCenter,
                         style:
                             ArDriveTypography.body.buttonLargeBold().copyWith(
                                   decoration: TextDecoration.underline,
@@ -523,7 +521,7 @@ class _AppSideBarState extends State<AppSideBar> {
                   action: () {
                     logger.exportLogs(info: logExportInfo);
                   },
-                  title: 'Download',
+                  title: appLocalizationsOf(context).download,
                 ),
                 if (AppPlatform.isMobile)
                   ModalAction(
@@ -534,7 +532,7 @@ class _AppSideBarState extends State<AppSideBar> {
                         shareAsEmail: true,
                       );
                     },
-                    title: 'Send email',
+                    title: appLocalizationsOf(context).shareLogsWithEmailText,
                   ),
                 if (AppPlatform.isMobile)
                   ModalAction(
@@ -544,14 +542,14 @@ class _AppSideBarState extends State<AppSideBar> {
                         share: true,
                       );
                     },
-                    title: 'Share',
+                    title: appLocalizationsOf(context).share,
                   ),
               ],
             ),
           );
         },
         child: Text(
-          'Share logs',
+          appLocalizationsOf(context).shareLogsText,
           style: ArDriveTypography.body.buttonNormalBold(),
         ),
       ),
