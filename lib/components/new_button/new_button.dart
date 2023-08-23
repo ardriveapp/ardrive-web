@@ -258,13 +258,11 @@ class NewButton extends StatelessWidget {
 
       return TreeDropdownNode(
         id: '',
-        parent: null,
         content: child,
         children: [
           if (drivesState is DrivesLoadSuccess) ...[
             TreeDropdownNode(
               id: 'newDrive',
-              parent: null,
               isDisabled: !drivesState.canCreateNewDrive || !canUpload,
               onClick: () {
                 promptToCreateDrive(context);
@@ -276,7 +274,6 @@ class NewButton extends StatelessWidget {
             ),
             TreeDropdownNode(
               id: 'attachDrive',
-              parent: null,
               onClick: () => attachDrive(context: context),
               content: ArDriveDropdownItemTile(
                 name: appLocalizations.attachDrive,
@@ -287,7 +284,6 @@ class NewButton extends StatelessWidget {
           if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
             TreeDropdownNode(
               id: 'newFolder',
-              parent: null,
               isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
               onClick: () => promptToCreateFolder(
                 context,
@@ -301,7 +297,6 @@ class NewButton extends StatelessWidget {
             ),
             TreeDropdownNode(
               id: 'uploadFolder',
-              parent: null,
               isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
               onClick: () => promptToUpload(
                 context,
@@ -316,7 +311,6 @@ class NewButton extends StatelessWidget {
             ),
             TreeDropdownNode(
               id: 'uploadFiles',
-              parent: null,
               isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
               onClick: () {
                 promptToUpload(
@@ -337,7 +331,6 @@ class NewButton extends StatelessWidget {
               drive != null)
             TreeDropdownNode(
               id: 'createManifest',
-              parent: null,
               isDisabled: driveDetailState.driveIsEmpty || !canUpload,
               onClick: () {
                 promptToCreateManifest(
@@ -355,7 +348,6 @@ class NewButton extends StatelessWidget {
               drive != null)
             TreeDropdownNode(
               id: 'createSnapshot',
-              parent: null,
               isDisabled: driveDetailState.driveIsEmpty ||
                   !profile.hasMinimumBalanceForUpload(
                     minimumWalletBalance: minimumWalletBalance,
@@ -373,7 +365,6 @@ class NewButton extends StatelessWidget {
             ),
           TreeDropdownNode(
             id: 'MOAR',
-            parent: null,
             content: ArDriveDropdownItemTile(
               name: 'MOAR...',
               icon: ArDriveIcons.arrowRightOutline(),
@@ -381,7 +372,6 @@ class NewButton extends StatelessWidget {
             children: [
               TreeDropdownNode(
                 id: 'Alpargata',
-                parent: null,
                 content: ArDriveDropdownItemTile(
                   name: 'Alpargata',
                   icon: ArDriveIcons.question(),
@@ -389,7 +379,6 @@ class NewButton extends StatelessWidget {
               ),
               TreeDropdownNode(
                 id: 'Chorizo',
-                parent: null,
                 content: ArDriveDropdownItemTile(
                   name: 'Chorizo',
                   icon: ArDriveIcons.question(),
@@ -397,7 +386,6 @@ class NewButton extends StatelessWidget {
               ),
               TreeDropdownNode(
                 id: 'Bicicleta',
-                parent: null,
                 content: ArDriveDropdownItemTile(
                   name: 'Bicicleta',
                   icon: ArDriveIcons.question(),
@@ -405,7 +393,6 @@ class NewButton extends StatelessWidget {
               ),
               TreeDropdownNode(
                 id: 'Metal',
-                parent: null,
                 content: ArDriveDropdownItemTile(
                   name: 'Metal',
                   icon: ArDriveIcons.question(),
@@ -418,7 +405,6 @@ class NewButton extends StatelessWidget {
     } else {
       return TreeDropdownNode(
         id: 'attachDrive',
-        parent: null,
         onClick: () => attachDrive(context: context),
         content: ArDriveDropdownItemTile(
           name: appLocalizations.attachDrive,
