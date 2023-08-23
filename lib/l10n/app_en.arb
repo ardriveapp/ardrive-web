@@ -1440,8 +1440,16 @@
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
-  "quoteUpdatesIn": "Quote updates in ",
-  "@quoteUpdatesIn": {},
+  "quoteUpdatesIn": "Quote updates in {timer}",
+  "@quoteUpdatesIn": {
+    "description": "Indicates the time left for the next update of the quote",
+    "placeholders": {
+      "timer": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
+  },
   "recreateFolderEmphasized": "RECREATE FOLDER",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
@@ -1558,6 +1566,14 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
+  "shareLogsEmailBody": "Attached are the logs for ArDrive",
+  "@shareLogsEmailBody": {},
+  "shareLogsEmailSubject": "ArDrive Logs",
+  "@shareLogsEmailSubject": {},
+  "shareLogsNativeShareSubject": "ArDrive Logs",
+  "@shareLogsNativeShareSubject": {},
+  "shareLogsNativeShareText": "Attached are the logs for ArDrive",
+  "@shareLogsNativeShareText": {},
   "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
