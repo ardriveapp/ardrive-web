@@ -85,6 +85,14 @@ void main() {
         );
       });
 
+      setUp(() {
+        // Puts a delay to test the retries in the broken contract
+        // in other case it will returns before the broken one retry more than one time
+        when(() => myContractReader.readContract(pstTransactionId)).thenAnswer(
+            (_) => Future.delayed(const Duration(seconds: 4))
+                .then((value) => rawHealthyContractData));
+      });
+
       test(
           'returns a valid CommunityContractData after failing reading the broken oracle',
           () async {

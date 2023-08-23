@@ -61,13 +61,20 @@ class UploadPlan {
     final int maxBundleSize =
         (kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit);
 
-    final bundleItems = await NextFitBundlePacker<UploadHandle>(
+    final folderItems = await NextFitBundlePacker<UploadHandle>(
+      maxBundleSize: maxBundleSize,
+      maxDataItemCount: maxDataItemCount,
+    ).packItems([...folderDataItemUploadHandles.values]);
+
+    final fileItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: maxBundleSize,
       maxDataItemCount: maxDataItemCount,
     ).packItems([
       ...fileDataItemUploadHandles.values,
-      ...folderDataItemUploadHandles.values
     ]);
+
+    final bundleItems = [...folderItems, ...fileItems];
+
     for (var uploadHandles in bundleItems) {
       final bundleToUpload = await BundleUploadHandle.create(
         fileDataItemUploadHandles: List.from(

@@ -4,6 +4,7 @@ import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/drive_attach_form.dart';
 import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/folder_create_form.dart';
+import 'package:ardrive/components/pin_file_dialog.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -208,7 +209,9 @@ class NewButton extends StatelessWidget {
                 drive: drive!,
               );
             },
-            isDisabled: driveDetailState.driveIsEmpty || !canUpload,
+            isDisabled: !driveDetailState.hasWritePermissions ||
+                driveDetailState.driveIsEmpty ||
+                !canUpload,
             name: appLocalizations.createManifest,
             icon: ArDriveIcons.tournament(size: defaultIconSize),
           ),
@@ -222,12 +225,23 @@ class NewButton extends StatelessWidget {
                 drive!,
               );
             },
-            isDisabled: driveDetailState.driveIsEmpty ||
+            isDisabled: !driveDetailState.hasWritePermissions ||
+                driveDetailState.driveIsEmpty ||
                 !profile.hasMinimumBalanceForUpload(
                   minimumWalletBalance: minimumWalletBalance,
                 ),
             name: appLocalizations.createSnapshot,
             icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
+          ),
+        if (context.read<ConfigService>().config.enablePins &&
+            driveDetailState is DriveDetailLoadSuccess &&
+            drive != null &&
+            drive?.privacy == 'public')
+          ArDriveNewButtonItem(
+            name: appLocalizationsOf(context).newFilePin,
+            icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
+            onClick: () => showPinFileDialog(context: context),
+            isDisabled: !driveDetailState.hasWritePermissions || drive == null,
           ),
       ];
     } else {
@@ -348,7 +362,8 @@ class NewButton extends StatelessWidget {
               drive != null)
             TreeDropdownNode(
               id: 'createSnapshot',
-              isDisabled: driveDetailState.driveIsEmpty ||
+              isDisabled: !driveDetailState.hasWritePermissions ||
+                  driveDetailState.driveIsEmpty ||
                   !profile.hasMinimumBalanceForUpload(
                     minimumWalletBalance: minimumWalletBalance,
                   ),
@@ -363,6 +378,7 @@ class NewButton extends StatelessWidget {
                 icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
               ),
             ),
+          // TODO: add pins
           TreeDropdownNode(
             id: 'MOAR',
             content: ArDriveDropdownItemTile(
