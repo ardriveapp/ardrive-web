@@ -24,10 +24,7 @@ class NewButton extends StatelessWidget {
     required this.driveDetailState,
     required this.child,
     this.isBottomNavigationButton = false,
-    this.anchor = const Aligned(
-      follower: Alignment.bottomRight,
-      target: Alignment.topRight, // Top Right
-    ),
+    required this.anchor,
     this.dropdownWidth = 208,
   });
 
