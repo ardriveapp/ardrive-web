@@ -34,7 +34,6 @@ part 'utils/add_folder_entity_revisions.dart';
 part 'utils/create_ghosts.dart';
 part 'utils/generate_paths.dart';
 part 'utils/get_all_file_entities.dart';
-part 'utils/log_sync.dart';
 part 'utils/parse_drive_transactions.dart';
 part 'utils/sync_drive.dart';
 part 'utils/update_transaction_statuses.dart';
@@ -60,7 +59,6 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
-  final ActivityTracker _activityTracker;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -88,7 +86,6 @@ class SyncCubit extends Cubit<SyncState> {
         _db = db,
         _configService = configService,
         _tabVisibility = tabVisibility,
-        _activityTracker = activityTracker,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     logger.d('Building Sync Cubit...');
@@ -361,7 +358,7 @@ It should be $syncInterval''');
 
       logger.i('Transaction statuses updated');
     } catch (err, stackTrace) {
-      logger.e(err, stackTrace);
+      logger.e(err.toString(), stackTrace);
       addError(err);
     }
     _lastSync = DateTime.now();
@@ -404,7 +401,7 @@ The sync process took: ${_lastSync!.difference(_initSync).inMilliseconds}ms to f
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    logger.e(error, stackTrace);
+    logger.e('An error occured on SyncCubit', error, stackTrace);
     logger.d('Emitting SyncFailure state');
     if (isClosed) {
       return;

@@ -72,8 +72,6 @@ void main() async {
 
   final flavor = await configService.loadAppFlavor();
 
-  setLoggerLevel(flavor);
-
   if (!kIsWeb) {
     if (flavor == Flavor.development) {
       _runWithCrashlytics(flavor.name);

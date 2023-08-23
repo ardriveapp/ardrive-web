@@ -321,7 +321,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
               ?.read<PaymentFormBloc>()
               .add(PaymentFormPrePopulateFields());
         } catch (e) {
-          logger.e(e);
+          logger.e('Error setting default data on payment form', e);
         }
       },
       type: ArDriveDevToolOptionType.button,

@@ -360,8 +360,12 @@ class UploadPaymentEvaluator {
             await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
 
         logger.i('Turbo balance: $turboBalance');
-      } catch (e) {
-        logger.e(e);
+      } catch (e, stacktrace) {
+        logger.e(
+          'An error occured while getting the turbo balance',
+          e,
+          stacktrace,
+        );
         isTurboAvailableToUploadAllFiles = false;
         turboBalance = BigInt.zero;
       }
