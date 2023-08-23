@@ -166,7 +166,6 @@ class _LogExporter implements LogExporter {
 
     if (shareAsEmail) {
       await _shareAsEmail(file, info);
-      mobileIO.deleteFile(file);
       return;
     }
 

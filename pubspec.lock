@@ -69,9 +69,11 @@ packages:
   ardrive_io:
     dependency: "direct main"
     description:
-      path: "../ardrive_io"
-      relative: true
-    source: path
+      path: "."
+      ref: PE-4417-export-logs
+      resolved-ref: "136d27ae8290ce771a264a068484276b7df68027"
+      url: "https://github.com/ar-io/ardrive_io.git"
+    source: git
     version: "1.3.0"
   ardrive_ui:
     dependency: "direct main"
