@@ -84,10 +84,8 @@ class NewButton extends StatelessWidget {
                                   GestureDetector(
                                     behavior: HitTestBehavior.translucent,
                                     onTap: () {
-                                      if (!item.isDisabled) {
-                                        Navigator.pop(context);
-                                        item.onClick?.call();
-                                      }
+                                      Navigator.pop(context);
+                                      item.onClick?.call();
                                     },
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -279,6 +277,7 @@ class NewButton extends StatelessWidget {
                 promptToCreateDrive(context);
               },
               content: ArDriveDropdownItemTile(
+                isDisabled: !drivesState.canCreateNewDrive || !canUpload,
                 name: appLocalizations.newDrive,
                 icon: ArDriveIcons.addDrive(size: defaultIconSize),
               ),
@@ -302,6 +301,7 @@ class NewButton extends StatelessWidget {
                 parentFolderId: currentFolder!.folder.id,
               ),
               content: ArDriveDropdownItemTile(
+                isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
                 name: appLocalizations.newFolder,
                 icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
               ),
@@ -316,6 +316,7 @@ class NewButton extends StatelessWidget {
                 isFolderUpload: true,
               ),
               content: ArDriveDropdownItemTile(
+                isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
                 name: appLocalizations.uploadFolder,
                 icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
               ),
@@ -332,6 +333,7 @@ class NewButton extends StatelessWidget {
                 );
               },
               content: ArDriveDropdownItemTile(
+                isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
                 name: appLocalizations.uploadFiles,
                 icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
               ),
@@ -342,7 +344,9 @@ class NewButton extends StatelessWidget {
               drive != null)
             TreeDropdownNode(
               id: 'createManifest',
-              isDisabled: driveDetailState.driveIsEmpty || !canUpload,
+              isDisabled: !driveDetailState.hasWritePermissions ||
+                  driveDetailState.driveIsEmpty ||
+                  !canUpload,
               onClick: () {
                 promptToCreateManifest(
                   context,
@@ -350,6 +354,9 @@ class NewButton extends StatelessWidget {
                 );
               },
               content: ArDriveDropdownItemTile(
+                isDisabled: !driveDetailState.hasWritePermissions ||
+                    driveDetailState.driveIsEmpty ||
+                    !canUpload,
                 name: appLocalizations.createManifest,
                 icon: ArDriveIcons.tournament(size: defaultIconSize),
               ),
@@ -361,9 +368,7 @@ class NewButton extends StatelessWidget {
               id: 'createSnapshot',
               isDisabled: !driveDetailState.hasWritePermissions ||
                   driveDetailState.driveIsEmpty ||
-                  !profile.hasMinimumBalanceForUpload(
-                    minimumWalletBalance: minimumWalletBalance,
-                  ),
+                  !canUpload,
               onClick: () {
                 promptToCreateSnapshot(
                   context,
@@ -371,6 +376,9 @@ class NewButton extends StatelessWidget {
                 );
               },
               content: ArDriveDropdownItemTile(
+                isDisabled: !driveDetailState.hasWritePermissions ||
+                    driveDetailState.driveIsEmpty ||
+                    !canUpload,
                 name: appLocalizations.createSnapshot,
                 icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
               ),
