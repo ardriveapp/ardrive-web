@@ -21,11 +21,11 @@ class NewButton extends StatelessWidget {
     required this.drive,
     this.currentFolder,
     required this.driveDetailState,
-    this.child,
+    required this.child,
     this.isBottomNavigationButton = false,
     this.anchor = const Aligned(
-      follower: Alignment.bottomCenter,
-      target: Alignment.topCenter,
+      follower: Alignment.bottomRight,
+      target: Alignment.topRight, // Top Right
     ),
     this.dropdownWidth = 208,
   });
@@ -33,7 +33,7 @@ class NewButton extends StatelessWidget {
   final Drive? drive;
   final FolderWithContents? currentFolder;
   final DriveDetailState driveDetailState;
-  final Widget? child;
+  final Widget child;
   final Anchor anchor;
   final double dropdownWidth;
   final bool isBottomNavigationButton;
@@ -80,6 +80,7 @@ class NewButton extends StatelessWidget {
                             children: List.generate(items.length, (index) {
                               final item = items[index];
                               final isLastItem = index == items.length - 1;
+
                               return Column(
                                 children: [
                                   GestureDetector(
@@ -87,7 +88,7 @@ class NewButton extends StatelessWidget {
                                     onTap: () {
                                       if (!item.isDisabled) {
                                         Navigator.pop(context);
-                                        item.onClick();
+                                        item.onClick?.call();
                                       }
                                     },
                                     child: Padding(
@@ -123,21 +124,12 @@ class NewButton extends StatelessWidget {
           });
     }
 
-    return ArDriveDropdown(
+    return ArDriveTreeDropdown(
       width: dropdownWidth,
       anchor: anchor,
-      items: _buildDriveDropdownItems(context),
-      child: child ??
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: ArDriveFAB(
-              backgroundColor:
-                  ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-              child: ArDriveIcons.plus(
-                color: Colors.white,
-              ),
-            ),
-          ),
+      rootNode: _buildDropdownTree(context),
+      // nestedPortal: nestedPortal,
+      child: child,
     );
   }
 
@@ -249,7 +241,9 @@ class NewButton extends StatelessWidget {
     }
   }
 
-  List<ArDriveDropdownItem> _buildDriveDropdownItems(BuildContext context) {
+  TreeDropdownNode _buildDropdownTree(
+    BuildContext context,
+  ) {
     final driveDetailState = context.read<DriveDetailCubit>().state;
     final drivesState = context.read<DrivesCubit>().state;
     final appLocalizations = appLocalizationsOf(context);
@@ -262,98 +256,175 @@ class NewButton extends StatelessWidget {
         minimumWalletBalance: minimumWalletBalance,
       );
 
-      return [
-        if (drivesState is DrivesLoadSuccess) ...[
-          _buildDriveDropdownItem(
-            onClick: () {
-              promptToCreateDrive(context);
-            },
-            isDisabled: !drivesState.canCreateNewDrive || !canUpload,
-            name: appLocalizations.newDrive,
-            icon: ArDriveIcons.addDrive(size: defaultIconSize),
-          ),
-          _buildDriveDropdownItem(
-            onClick: () => attachDrive(context: context),
-            name: appLocalizations.attachDrive,
-            icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
-          ),
-        ],
-        if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
-          _buildDriveDropdownItem(
-            onClick: () => promptToCreateFolder(
-              context,
-              driveId: driveDetailState.currentDrive.id,
-              parentFolderId: currentFolder!.folder.id,
+      return TreeDropdownNode(
+        id: '',
+        parent: null,
+        content: child,
+        children: [
+          if (drivesState is DrivesLoadSuccess) ...[
+            TreeDropdownNode(
+              id: 'newDrive',
+              parent: null,
+              isDisabled: !drivesState.canCreateNewDrive || !canUpload,
+              onClick: () {
+                promptToCreateDrive(context);
+              },
+              content: ArDriveDropdownItemTile(
+                name: appLocalizations.newDrive,
+                icon: ArDriveIcons.addDrive(size: defaultIconSize),
+              ),
             ),
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.newFolder,
-            icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
-          ),
-          _buildDriveDropdownItem(
-            onClick: () => promptToUpload(
-              context,
-              driveId: drive!.id,
-              parentFolderId: currentFolder!.folder.id,
-              isFolderUpload: true,
+            TreeDropdownNode(
+              id: 'attachDrive',
+              parent: null,
+              onClick: () => attachDrive(context: context),
+              content: ArDriveDropdownItemTile(
+                name: appLocalizations.attachDrive,
+                icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
+              ),
             ),
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.uploadFolder,
-            icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
-          ),
-          _buildDriveDropdownItem(
-            onClick: () {
-              promptToUpload(
+          ],
+          if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
+            TreeDropdownNode(
+              id: 'newFolder',
+              parent: null,
+              isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+              onClick: () => promptToCreateFolder(
+                context,
+                driveId: driveDetailState.currentDrive.id,
+                parentFolderId: currentFolder!.folder.id,
+              ),
+              content: ArDriveDropdownItemTile(
+                name: appLocalizations.newFolder,
+                icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
+              ),
+            ),
+            TreeDropdownNode(
+              id: 'uploadFolder',
+              parent: null,
+              isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+              onClick: () => promptToUpload(
                 context,
                 driveId: drive!.id,
                 parentFolderId: currentFolder!.folder.id,
-                isFolderUpload: false,
-              );
-            },
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.uploadFiles,
-            icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
-          ),
-        ],
-        if (driveDetailState is DriveDetailLoadSuccess &&
-            driveDetailState.currentDrive.privacy == 'public' &&
-            drive != null)
-          _buildDriveDropdownItem(
-            onClick: () {
-              promptToCreateManifest(
-                context,
-                drive: drive!,
-              );
-            },
-            isDisabled: driveDetailState.driveIsEmpty || !canUpload,
-            name: appLocalizations.createManifest,
-            icon: ArDriveIcons.tournament(size: defaultIconSize),
-          ),
-        if (context.read<ConfigService>().config.enableQuickSyncAuthoring &&
-            driveDetailState is DriveDetailLoadSuccess &&
-            drive != null)
-          _buildDriveDropdownItem(
-            onClick: () {
-              promptToCreateSnapshot(
-                context,
-                drive!,
-              );
-            },
-            isDisabled: driveDetailState.driveIsEmpty ||
-                !profile.hasMinimumBalanceForUpload(
-                  minimumWalletBalance: minimumWalletBalance,
+                isFolderUpload: true,
+              ),
+              content: ArDriveDropdownItemTile(
+                name: appLocalizations.uploadFolder,
+                icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
+              ),
+            ),
+            TreeDropdownNode(
+              id: 'uploadFiles',
+              parent: null,
+              isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+              onClick: () {
+                promptToUpload(
+                  context,
+                  driveId: drive!.id,
+                  parentFolderId: currentFolder!.folder.id,
+                  isFolderUpload: false,
+                );
+              },
+              content: ArDriveDropdownItemTile(
+                name: appLocalizations.uploadFiles,
+                icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
+              ),
+            ),
+          ],
+          if (driveDetailState is DriveDetailLoadSuccess &&
+              driveDetailState.currentDrive.privacy == 'public' &&
+              drive != null)
+            TreeDropdownNode(
+              id: 'createManifest',
+              parent: null,
+              isDisabled: driveDetailState.driveIsEmpty || !canUpload,
+              onClick: () {
+                promptToCreateManifest(
+                  context,
+                  drive: drive!,
+                );
+              },
+              content: ArDriveDropdownItemTile(
+                name: appLocalizations.createManifest,
+                icon: ArDriveIcons.tournament(size: defaultIconSize),
+              ),
+            ),
+          if (context.read<ConfigService>().config.enableQuickSyncAuthoring &&
+              driveDetailState is DriveDetailLoadSuccess &&
+              drive != null)
+            TreeDropdownNode(
+              id: 'createSnapshot',
+              parent: null,
+              isDisabled: driveDetailState.driveIsEmpty ||
+                  !profile.hasMinimumBalanceForUpload(
+                    minimumWalletBalance: minimumWalletBalance,
+                  ),
+              onClick: () {
+                promptToCreateSnapshot(
+                  context,
+                  drive!,
+                );
+              },
+              content: ArDriveDropdownItemTile(
+                name: appLocalizations.createSnapshot,
+                icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
+              ),
+            ),
+          TreeDropdownNode(
+            id: 'MOAR',
+            parent: null,
+            content: ArDriveDropdownItemTile(
+              name: 'MOAR...',
+              icon: ArDriveIcons.arrowRightOutline(),
+            ),
+            children: [
+              TreeDropdownNode(
+                id: 'Alpargata',
+                parent: null,
+                content: ArDriveDropdownItemTile(
+                  name: 'Alpargata',
+                  icon: ArDriveIcons.question(),
                 ),
-            name: appLocalizations.createSnapshot,
-            icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
-          ),
-      ];
+              ),
+              TreeDropdownNode(
+                id: 'Chorizo',
+                parent: null,
+                content: ArDriveDropdownItemTile(
+                  name: 'Chorizo',
+                  icon: ArDriveIcons.question(),
+                ),
+              ),
+              TreeDropdownNode(
+                id: 'Bicicleta',
+                parent: null,
+                content: ArDriveDropdownItemTile(
+                  name: 'Bicicleta',
+                  icon: ArDriveIcons.question(),
+                ),
+              ),
+              TreeDropdownNode(
+                id: 'Metal',
+                parent: null,
+                content: ArDriveDropdownItemTile(
+                  name: 'Metal',
+                  icon: ArDriveIcons.question(),
+                ),
+              ),
+            ],
+          )
+        ],
+      );
     } else {
-      return [
-        _buildDriveDropdownItem(
-          onClick: () => attachDrive(context: context),
+      return TreeDropdownNode(
+        id: 'attachDrive',
+        parent: null,
+        onClick: () => attachDrive(context: context),
+        content: ArDriveDropdownItemTile(
           name: appLocalizations.attachDrive,
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
-      ];
+      );
     }
   }
 }
@@ -368,22 +439,6 @@ class ArDriveNewButtonItem {
 
   final String name;
   final ArDriveIcon icon;
-  final VoidCallback onClick;
+  final VoidCallback? onClick;
   final bool isDisabled;
-}
-
-ArDriveDropdownItem _buildDriveDropdownItem({
-  required VoidCallback? onClick,
-  required String name,
-  required ArDriveIcon icon,
-  bool isDisabled = false,
-}) {
-  return ArDriveDropdownItem(
-    onClick: isDisabled ? null : onClick,
-    content: ArDriveDropdownItemTile(
-      name: name,
-      icon: icon,
-      isDisabled: isDisabled,
-    ),
-  );
 }

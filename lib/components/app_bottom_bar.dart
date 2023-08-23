@@ -113,6 +113,18 @@ class AppBottomBar extends StatelessWidget {
               currentFolder: currentFolder,
               driveDetailState: driveDetailState,
               dropdownWidth: 208,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: ArDriveFAB(
+                  backgroundColor: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentBrand,
+                  child: ArDriveIcons.plus(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
