@@ -7,35 +7,7 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
-import 'package:logger/logger.dart';
 import 'package:share_plus/share_plus.dart';
-
-class LogExporterSystem extends LogOutput {
-  static LogExporterSystem? _instance;
-  final List<String> _logCache = [];
-  final int _maxCacheSize = 10000; // Define a suitable max cache size
-
-  // Private constructor
-  LogExporterSystem._();
-
-  factory LogExporterSystem() {
-    return _instance ??= LogExporterSystem._();
-  }
-
-  void log(String message) {
-    // Prune the log cache if it's too big
-    if (_logCache.length >= _maxCacheSize) {
-      _logCache.removeAt(0);
-    }
-
-    _logCache.add(message);
-  }
-
-  @override
-  void output(OutputEvent event) {
-    event.lines.forEach(log);
-  }
-}
 
 Future<IOFile> _convertTextToIOFile({
   required String text,
