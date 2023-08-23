@@ -215,7 +215,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         .read<ConfigService>()
                                         .config
                                         .enableMultipleFileDownload) ...[
-                                  // TODO: check sizelimits to conditionally enable/disable the button, also for now disable if a folder is selected
                                   ArDriveIconButton(
                                     tooltip: 'Download selected files',
                                     icon: ArDriveIcons.download(),
