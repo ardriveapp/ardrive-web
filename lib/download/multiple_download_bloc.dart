@@ -31,6 +31,7 @@ class MultipleDownloadBloc
 
   bool canceled = false;
   int currentFileIndex = 0;
+  List<ARFSFileEntity> skippedFiles = [];
   SecretKey? driveKey;
 
   late ARFSDriveEntity drive;
@@ -63,6 +64,8 @@ class MultipleDownloadBloc
         canceled = true;
       } else if (event is ResumeDownload) {
         await resumeDownload(event, emit);
+      } else if (event is SkipFileAndResumeDownload) {
+        await skipFileAndResumeDownload(event, emit);
       }
     });
   }
@@ -70,6 +73,7 @@ class MultipleDownloadBloc
   Future<void> startDownload(
       StartDownload event, Emitter<MultipleDownloadState> emit) async {
     items = event.items;
+    skippedFiles.clear();
 
     // check all files from same drive
     var firstFile = items[0];
@@ -118,6 +122,14 @@ class MultipleDownloadBloc
   Future<void> resumeDownload(
       ResumeDownload event, Emitter<MultipleDownloadState> emit) async {
     canceled = false;
+    await _downloadMultipleFiles(emit);
+  }
+
+  Future<void> skipFileAndResumeDownload(SkipFileAndResumeDownload event,
+      Emitter<MultipleDownloadState> emit) async {
+    canceled = false;
+    skippedFiles.add(items[currentFileIndex]);
+    currentFileIndex++;
     await _downloadMultipleFiles(emit);
   }
 
@@ -204,6 +216,7 @@ class MultipleDownloadBloc
         bytes: Uint8List.fromList(outputStream.getBytes()),
         fileName: outFileName,
         lastModified: DateTime.now(),
+        skippedFiles: skippedFiles,
       ));
     } catch (e) {
       if (e is ArDriveHTTPException) {

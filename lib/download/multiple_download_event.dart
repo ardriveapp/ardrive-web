@@ -21,6 +21,10 @@ class ResumeDownload extends MultipleDownloadEvent {
   const ResumeDownload();
 }
 
+class SkipFileAndResumeDownload extends MultipleDownloadEvent {
+  const SkipFileAndResumeDownload();
+}
+
 class CancelDownload extends MultipleDownloadEvent {
   const CancelDownload();
 }

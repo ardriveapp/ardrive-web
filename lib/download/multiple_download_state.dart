@@ -37,12 +37,14 @@ class MultipleDownloadFinishedWithSuccess extends MultipleDownloadState {
   const MultipleDownloadFinishedWithSuccess(
       {required this.fileName,
       required this.bytes,
-      required this.lastModified});
+      required this.lastModified,
+      required this.skippedFiles});
 
   final String fileName;
   final Uint8List bytes;
   final DateTime lastModified;
+  final List<ARFSFileEntity> skippedFiles;
 
   @override
-  List<Object> get props => [fileName, bytes, lastModified];
+  List<Object> get props => [fileName, bytes, lastModified, skippedFiles];
 }

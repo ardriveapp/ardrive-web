@@ -113,7 +113,8 @@ void main() async {
               'files.length',
               1,
             ),
-            isA<MultipleDownloadFinishedWithSuccess>(),
+            isA<MultipleDownloadFinishedWithSuccess>()
+                .having((s) => s.skippedFiles.length, 'skippedFiles.length', 0),
           ],
         );
 
@@ -219,7 +220,8 @@ void main() async {
                   3,
                 )
                 .having((s) => s.currentFileIndex, 'currentFileIndex', 2),
-            isA<MultipleDownloadFinishedWithSuccess>(),
+            isA<MultipleDownloadFinishedWithSuccess>()
+                .having((s) => s.skippedFiles.length, 'skippedFiles.length', 0),
           ],
         );
       });
@@ -373,7 +375,79 @@ void main() async {
                   3,
                 )
                 .having((s) => s.currentFileIndex, 'currentFileIndex', 2),
-            isA<MultipleDownloadFinishedWithSuccess>(),
+            isA<MultipleDownloadFinishedWithSuccess>()
+                .having((s) => s.skippedFiles.length, 'skippedFiles.length', 0),
+          ],
+        );
+
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'should emit Failure with networkConnectionError when status code is not 400 and skips files correctly',
+          build: () {
+            var failedOnce = false;
+            final secondFileFailureService = MockDownloadService();
+            when(() => secondFileFailureService.download(any()))
+                .thenAnswer((_) async => Uint8List(0));
+            when(() => secondFileFailureService.download("fail"))
+                .thenAnswer((_) async {
+              if (!failedOnce) {
+                failedOnce = true;
+                throw ArDriveHTTPException(
+                    exception: Exception(),
+                    retryAttempts: 8,
+                    statusCode: 404,
+                    statusMessage: 'File not found');
+              }
+              return Uint8List(0);
+            });
+
+            return createMultipleDownloadBloc(
+                downloadService: secondFileFailureService);
+          },
+          setUp: () {
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+          },
+          act: (bloc) async {
+            bloc.add(StartDownload(
+                [testFile, createMockFile(txId: 'fail'), testFile]));
+
+            // TODO: Replace this polling with a better solution!
+            while (bloc.state is! MultipleDownloadFailure) {
+              await Future.delayed(const Duration(milliseconds: 100));
+            }
+
+            bloc.add(const SkipFileAndResumeDownload());
+          },
+          expect: () => [
+            isA<MultipleDownloadInProgress>()
+                .having(
+                  (s) => s.files.length,
+                  'files.length',
+                  3,
+                )
+                .having((s) => s.currentFileIndex, 'currentFileIndex', 0),
+            isA<MultipleDownloadInProgress>()
+                .having(
+                  (s) => s.files.length,
+                  'files.length',
+                  3,
+                )
+                .having((s) => s.currentFileIndex, 'currentFileIndex', 1),
+            isA<MultipleDownloadFailure>().having((s) => s.reason, 'reason',
+                FileDownloadFailureReason.networkConnectionError),
+            isA<MultipleDownloadInProgress>()
+                .having(
+                  (s) => s.files.length,
+                  'files.length',
+                  3,
+                )
+                .having((s) => s.currentFileIndex, 'currentFileIndex', 2),
+            isA<MultipleDownloadFinishedWithSuccess>()
+                .having((s) => s.skippedFiles.length, 'skippedFiles.length', 1)
+                .having(
+                    (s) =>
+                        s.skippedFiles.isNotEmpty ? s.skippedFiles[0].txId : '',
+                    'skippedFile txid',
+                    'fail'),
           ],
         );
       });

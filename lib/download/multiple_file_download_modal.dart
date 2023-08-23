@@ -84,7 +84,11 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
           );
 
           // Close modal when save file
-          io.saveFile(file).then((value) => Navigator.pop(context));
+          io.saveFile(file).then((value) {
+            if (state.skippedFiles.isEmpty) {
+              Navigator.pop(context);
+            }
+          });
         }
       },
       child: BlocBuilder<MultipleDownloadBloc, MultipleDownloadState>(
@@ -158,6 +162,70 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 ),
               ],
             );
+          } else if (state is MultipleDownloadFinishedWithSuccess) {
+            // should only get here if there are skipped files
+            return ArDriveStandardModal(
+              width: 408,
+              // TODO: Localize text
+              title:
+                  'Download Complete with ${state.skippedFiles.length} skipped file(s)',
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 256),
+                      child: ArDriveScrollBar(
+                          controller: _scrollController,
+                          alwaysVisible: true,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.only(top: 0),
+                            controller: _scrollController,
+                            shrinkWrap: true,
+                            itemCount: state.skippedFiles.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              final file = state.skippedFiles[index];
+                              return Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      '${file.name} ',
+                                      style: ArDriveTypography.body.smallBold(
+                                        color: ArDriveTheme.of(context)
+                                            .themeData
+                                            .colors
+                                            .themeFgSubtle,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    filesize(file.size),
+                                    style: ArDriveTypography.body.smallRegular(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgMuted,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          )),
+                    ),
+                  )
+                ],
+              ),
+              actions: [
+                ModalAction(
+                  action: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  title: appLocalizationsOf(context).close,
+                ),
+              ],
+            );
           } else if (state is MultipleDownloadFailure) {
             switch (state.reason) {
               case FileDownloadFailureReason.fileAboveLimit:
@@ -171,6 +239,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                     Text(appLocalizationsOf(context).tryAgainDownloadingFile);
                 break;
               case FileDownloadFailureReason.networkConnectionError:
+                // TODO: Localize text
                 content = const Text(
                     'An error occurred while downloading your file(s). Please try again.');
                 break;
@@ -195,6 +264,14 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                       .add(const ResumeDownload());
                 },
                 title: appLocalizationsOf(context).tryAgain,
+              ),
+              ModalAction(
+                action: () {
+                  context
+                      .read<MultipleDownloadBloc>()
+                      .add(const SkipFileAndResumeDownload());
+                },
+                title: appLocalizationsOf(context).skip,
               ),
             ];
           } else {
