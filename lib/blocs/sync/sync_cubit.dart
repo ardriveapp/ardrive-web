@@ -88,8 +88,6 @@ class SyncCubit extends Cubit<SyncState> {
         _tabVisibility = tabVisibility,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
-    logger.d('Building Sync Cubit...');
-
     createSyncStream();
     restartSyncOnFocus();
     // Sync ArConnect
@@ -128,10 +126,9 @@ class SyncCubit extends Cubit<SyncState> {
       final isTimerDurationReadyToSync = minutesSinceLastSync >= syncInterval;
 
       if (!isTimerDurationReadyToSync) {
-        logger.d('''Can't restart sync when window is focused
-Is current active? ${!isClosed}
-last sync was $minutesSinceLastSync seconds ago.
-It should be $syncInterval''');
+        logger.d(
+            "Can't restart sync when window is focused. Is current active? ${!isClosed}. Last sync was $minutesSinceLastSync seconds ago. It should be $syncInterval.");
+
         return;
       }
     }
@@ -183,7 +180,6 @@ It should be $syncInterval''');
 
   Future<void> startSync({bool syncDeep = false}) async {
     logger.i('Starting Sync');
-    logger.d('SyncCubit is currently active? ${!isClosed}');
 
     if (state is SyncInProgress) {
       logger.d('Sync state is SyncInProgress, aborting sync...');
@@ -197,8 +193,6 @@ It should be $syncInterval''');
       String? ownerAddress;
 
       _initSync = DateTime.now();
-
-      logger.d('Emitting SyncInProgress state');
 
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
@@ -284,14 +278,12 @@ It should be $syncInterval''');
               configService: _configService,
             );
           } catch (error, stackTrace) {
-            logger.d('''
-                    Error syncing drive with id ${drive.id}. \n
-                    Skipping sync on this drive.\n
-                    Exception: \n
-                    ${error.toString()} \n
-                    StackTrace: \n
-                    ${stackTrace.toString()}
-                    ''');
+            logger.e(
+              'Error syncing drive with id ${drive.id}. Skipping sync on this drive',
+              error,
+              stackTrace,
+            );
+
             addError(error);
           }
         },
@@ -364,17 +356,13 @@ It should be $syncInterval''');
     _lastSync = DateTime.now();
 
     logger.i(
-      '''Syncing drives finished.
-Drives quantity: ${_syncProgress.drivesCount}
-The total progress was ${(_syncProgress.progress * 100).roundToDouble()}%
-The sync process took: ${_lastSync!.difference(_initSync).inMilliseconds}ms to finish''',
-    );
+        'Syncing drives finished. Drives quantity: ${_syncProgress.drivesCount}. The total progress was ${(_syncProgress.progress * 100).roundToDouble()}%. The sync process took: ${_lastSync!.difference(_initSync).inMilliseconds}ms to finish');
 
     emit(SyncIdle());
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {
-    logger.d('Last Block Height: $lastBlockHeight');
+    logger.d('Calculating sync last block height: $lastBlockHeight');
     if (_lastSync != null) {
       return lastBlockHeight;
     } else {
@@ -402,13 +390,12 @@ The sync process took: ${_lastSync!.difference(_initSync).inMilliseconds}ms to f
   @override
   void onError(Object error, StackTrace stackTrace) {
     logger.e('An error occured on SyncCubit', error, stackTrace);
-    logger.d('Emitting SyncFailure state');
     if (isClosed) {
       return;
     }
     emit(SyncFailure(error: error, stackTrace: stackTrace));
 
-    logger.d('Emitting SyncIdle state');
+    logger.d('SyncCubit error emitted');
     emit(SyncIdle());
     super.onError(error, stackTrace);
   }
@@ -427,5 +414,7 @@ The sync process took: ${_lastSync!.difference(_initSync).inMilliseconds}ms to f
     _restartArConnectOnFocusStreamSubscription = null;
 
     await super.close();
+
+    logger.d('SyncCubit closed');
   }
 }

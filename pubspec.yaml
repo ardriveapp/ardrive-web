@@ -122,9 +122,10 @@ dependencies:
 
 dependency_overrides:
   ardrive_io:
-    git:
-      url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-4417-export-logs
+    path: ../ardrive_io
+    # git:
+    #   url: https://github.com/ar-io/ardrive_io.git
+      # ref: PE-4417-export-logs
   flutter_downloader: 1.10.3
   stripe_js:
     git:

@@ -75,8 +75,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     try {
       _selectedItem = null;
 
-      logger.d('Opening folder $path');
-
       emit(DriveDetailLoadInProgress());
 
       await _folderSubscription?.cancel();
@@ -85,10 +83,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           .driveById(driveId: driveId)
           .getSingleOrNull()
           .then((value) async {
-        logger.d('Drive found $value');
+        logger.d('Drive with id $driveId found');
 
         if (value == null) {
-          logger.d('Drive not found');
+          logger.d('Drive with id $driveId not found');
 
           emit(DriveDetailLoadNotFound());
           return;
@@ -97,7 +95,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         try {
           await _driveDao.getFolderTree(driveId, value.rootFolderId);
         } catch (e) {
-          logger.d('Folder not found');
+          logger.d('Folder with id ${value.rootFolderId} not found');
 
           emit(DriveInitialLoading());
           return;
@@ -206,8 +204,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           }
         },
       ).listen((_) {});
-    } catch (e) {
-      logger.e('An error occured mouting the drive explorer', e);
+    } catch (e, stacktrace) {
+      logger.e('An error occured mouting the drive explorer', e, stacktrace);
     }
   }
 

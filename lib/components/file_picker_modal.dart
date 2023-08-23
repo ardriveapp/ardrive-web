@@ -108,7 +108,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                       } catch (e) {
                         if (e is FileSystemPermissionDeniedException) {
                           await _showCameraPermissionModal(context);
-                          logger.d(e.toString());
+                          logger.e('Camera permission denied', e);
                         }
                       }
 
@@ -147,7 +147,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                           logger.d('adding file');
                         }
                       } catch (e) {
-                        logger.e(e.toString());
+                        logger.e('Error while picking file from gallery', e);
                       }
 
                       setState(() {
@@ -185,7 +185,8 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                           logger.d('adding file');
                         }
                       } catch (e) {
-                        logger.e(e.toString());
+                        logger.e(
+                            'Error while picking file from file system', e);
                       }
 
                       setState(() {

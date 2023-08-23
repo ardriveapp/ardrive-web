@@ -98,7 +98,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       return wallet;
     } catch (e) {
-      logger.d('Invalid wallet file: $e');
+      logger.e('Invalid wallet file', e);
 
       return null;
     }
@@ -157,7 +157,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           await _loginWithBiometrics(emit: emit);
           return;
         } catch (e) {
-          logger.e('Failed to unlock user with biometrics: $e');
+          logger.e('Failed to unlock user with biometrics', e);
         }
       }
 
@@ -180,7 +180,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       emit(LoginSuccess(user));
     } catch (e) {
-      logger.e('Failed to unlock user with password: $e');
+      logger.e('Failed to unlock user with password', e);
 
       emit(LoginFailure(e));
       emit(previousState);

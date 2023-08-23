@@ -140,7 +140,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
 
     logger.i(
-      'Trusted range to be snapshotted (Current height: $_currentHeight): $_range',
+      'Trusted range to be snapshotted (Current height: $_currentHeight): $_range)',
     );
   }
 
@@ -224,7 +224,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           () async => await prepareTx(isArConnectProfile),
         );
       } else {
-        logger.i(
+        logger.e(
             'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
         rethrow;
       }
@@ -398,9 +398,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       await _arweave.postTx(_preparedTx);
 
       emit(SnapshotUploadSuccess());
-    } catch (err) {
-      logger.i(
-          'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}');
+    } catch (err, stacktrace) {
+      logger.e('Error while posting the snapshot transaction', err, stacktrace);
       emit(SnapshotUploadFailure(errorMessage: '$err'));
     }
   }

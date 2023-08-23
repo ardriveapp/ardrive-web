@@ -75,7 +75,7 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
     if (parentPath != null) {
       await updateFolderTree(treeRoot, parentPath);
     } else {
-      logger.d('Add missing folder: ${treeRoot.folder.name}');
+      logger.d('Add missing folder to folder with id ${treeRoot.folder.id}');
       await addMissingFolder(
         treeRoot.folder.parentFolderId!,
       );
@@ -101,8 +101,8 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
             driveId: staleOrphanFile.driveId,
             path: Value(filePath)));
       } else {
-        logger.d('Add missing folder to file: ${staleOrphanFile.name.value}'
-            'folder id: ${staleOrphanFile.id.value}');
+        logger.d(
+            'Add missing folder to file with id ${staleOrphanFile.parentFolderId}');
 
         await addMissingFolder(
           staleOrphanFile.parentFolderId.value,

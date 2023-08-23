@@ -24,7 +24,7 @@ class TurboBalanceCubit extends Cubit<TurboBalanceState> {
 
       emit(TurboBalanceSuccessState(balance: balance));
     } catch (e) {
-      logger.e('Error getting balance: $e');
+      logger.e('Error getting balance', e);
 
       /// Wait for the animation to finish
       await Future.delayed(const Duration(milliseconds: 500));

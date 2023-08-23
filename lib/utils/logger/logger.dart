@@ -165,7 +165,8 @@ class _LogExporter implements LogExporter {
     await mobileIO.saveFile(file, true);
 
     if (shareAsEmail) {
-      _shareAsEmail(file, info);
+      await _shareAsEmail(file, info);
+      mobileIO.deleteFile(file);
       return;
     }
 
@@ -183,6 +184,7 @@ class _LogExporter implements LogExporter {
 
     try {
       await FlutterEmailSender.send(email);
+
       return;
     } catch (error) {
       logger.e('Failed to send email', error);

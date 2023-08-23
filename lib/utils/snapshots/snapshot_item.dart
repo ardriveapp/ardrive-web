@@ -72,7 +72,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
           arweave: arweave,
         );
       } catch (e) {
-        logger.e('Ignoring snapshot transaction with invalid block range - $e');
+        logger.e('Ignoring snapshot transaction with invalid block range', e);
         continue;
       }
 
