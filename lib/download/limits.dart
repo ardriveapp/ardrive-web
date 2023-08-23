@@ -4,13 +4,12 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 import '../utils/app_platform.dart';
 
-final publicDownloadDesktopSizeLimit = const GiB(2).size;
+final publicDownloadUnknownPlatformSizeLimit = const GiB(2).size;
 final publicDownloadWebSizeLimit = const MiB(500).size;
 final publicDownloadFirefoxSizeLimit = const GiB(2).size;
 final publicDownloadMobileSizeLimit = const MiB(300).size;
 
-// unlimited size, use 1000 GiB as a limit
-final privateDownloadDesktopSizeLimit = const GiB(2000).size;
+final privateDownloadUnknownPlatformSizeLimit = const GiB(2).size;
 final privateDownloadWebSizeLimit = const MiB(500).size;
 final privateDownloadFirefoxSizeLimit = const GiB(2).size;
 final privateDownloadMobileSizeLimit = const MiB(300).size;
@@ -18,9 +17,7 @@ final privateDownloadMobileSizeLimit = const MiB(300).size;
 Future<int> calcDownloadSizeLimit(bool isPublic,
     {DeviceInfoPlugin? deviceInfo}) async {
   if (isPublic) {
-    if (AppPlatform.isMobile) {
-      return publicDownloadMobileSizeLimit;
-    } else if (AppPlatform.getPlatform() == SystemPlatform.Web) {
+    if (AppPlatform.getPlatform() == SystemPlatform.Web) {
       final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
 
       final isFirefox =
@@ -28,21 +25,23 @@ Future<int> calcDownloadSizeLimit(bool isPublic,
       return isFirefox
           ? publicDownloadFirefoxSizeLimit
           : publicDownloadWebSizeLimit;
+    } else if (AppPlatform.isMobile) {
+      return publicDownloadMobileSizeLimit;
     } else {
-      return publicDownloadDesktopSizeLimit;
+      return publicDownloadUnknownPlatformSizeLimit;
     }
   } else {
-    if (AppPlatform.isMobile) {
-      return privateDownloadMobileSizeLimit;
-    } else if (AppPlatform.getPlatform() == SystemPlatform.Web) {
+    if (AppPlatform.getPlatform() == SystemPlatform.Web) {
       final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
       final isFirefox =
           info is WebBrowserInfo && info.browserName == BrowserName.firefox;
       return isFirefox
           ? privateDownloadFirefoxSizeLimit
           : privateDownloadWebSizeLimit;
+    } else if (AppPlatform.isMobile) {
+      return privateDownloadMobileSizeLimit;
     } else {
-      return privateDownloadDesktopSizeLimit;
+      return privateDownloadUnknownPlatformSizeLimit;
     }
   }
 }
