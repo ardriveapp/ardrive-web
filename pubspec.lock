@@ -79,8 +79,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.7.0"
-      resolved-ref: "8088d44a1ffc3be06644a5aa83ef0312527aa4e5"
+      ref: PE-2586-new-button-redesign
+      resolved-ref: "076c57c557b8ae0deccbf514a50c797002dbe2fb"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.7.0"
