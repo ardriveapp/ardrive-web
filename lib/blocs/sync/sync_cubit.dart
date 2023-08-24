@@ -250,8 +250,8 @@ class SyncCubit extends Cubit<SyncState> {
 
       final currentBlockHeight = await retry(
         () async => await _arweave.getCurrentBlockHeight(),
-        onRetry: (exception) => logger.d(
-          'Retrying for get the current block height on exception ${exception.toString()}',
+        onRetry: (exception) => logger.w(
+          'Retrying for get the current block height',
         ),
       );
 
