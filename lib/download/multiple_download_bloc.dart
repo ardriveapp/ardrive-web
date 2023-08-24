@@ -29,16 +29,16 @@ class MultipleDownloadBloc
   final SecretKey? _cipherKey;
   final DeviceInfoPlugin? _deviceInfo;
 
-  bool canceled = false;
-  int currentFileIndex = 0;
-  List<ARFSFileEntity> skippedFiles = [];
-  SecretKey? driveKey;
+  bool _canceled = false;
+  int _currentFileIndex = 0;
+  List<ARFSFileEntity> _skippedFiles = [];
+  SecretKey? _driveKey;
 
-  late ARFSDriveEntity drive;
-  late ZipEncoder zipEncoder;
-  late OutputStream outputStream;
-  late List<ARFSFileEntity> items;
-  late String outFileName;
+  late ARFSDriveEntity _drive;
+  late ZipEncoder _zipEncoder;
+  late OutputStream _outputStream;
+  late List<ARFSFileEntity> _items;
+  late String _outFileName;
 
   MultipleDownloadBloc(
       {required DownloadService downloadService,
@@ -58,24 +58,24 @@ class MultipleDownloadBloc
         super(MultipleDownloadInitial()) {
     on<MultipleDownloadEvent>((event, emit) async {
       if (event is StartDownload) {
-        await startDownload(event, emit);
+        await _startDownload(event, emit);
       } else if (event is CancelDownload) {
         // signal the download process to exit
-        canceled = true;
+        _canceled = true;
       } else if (event is ResumeDownload) {
-        await resumeDownload(event, emit);
+        await _resumeDownload(event, emit);
       } else if (event is SkipFileAndResumeDownload) {
-        await skipFileAndResumeDownload(event, emit);
+        await _skipFileAndResumeDownload(event, emit);
       }
     });
   }
 
-  Future<void> startDownload(
+  Future<void> _startDownload(
       StartDownload event, Emitter<MultipleDownloadState> emit) async {
-    items = event.items;
-    skippedFiles.clear();
+    _items = event.items;
+    _skippedFiles.clear();
 
-    if (items.isEmpty) {
+    if (_items.isEmpty) {
       emit(
         const MultipleDownloadFailure(
           FileDownloadFailureReason.unknownError,
@@ -84,11 +84,11 @@ class MultipleDownloadBloc
       return;
     }
 
-    var firstFile = items[0];
-    drive = await _arfsRepository.getDriveById(firstFile.driveId);
+    var firstFile = _items[0];
+    _drive = await _arfsRepository.getDriveById(firstFile.driveId);
 
     if (await isSizeAboveDownloadSizeLimit(
-        items, drive.drivePrivacy == DrivePrivacy.public,
+        _items, _drive.drivePrivacy == DrivePrivacy.public,
         deviceInfo: _deviceInfo)) {
       emit(
         const MultipleDownloadFailure(
@@ -98,57 +98,57 @@ class MultipleDownloadBloc
       return;
     }
 
-    if (drive.drivePrivacy == DrivePrivacy.private) {
+    if (_drive.drivePrivacy == DrivePrivacy.private) {
       if (_cipherKey != null) {
-        driveKey = await _driveDao.getDriveKey(
-          drive.driveId,
+        _driveKey = await _driveDao.getDriveKey(
+          _drive.driveId,
           _cipherKey!,
         );
       } else {
-        driveKey = await _driveDao.getDriveKeyFromMemory(drive.driveId);
+        _driveKey = await _driveDao.getDriveKeyFromMemory(_drive.driveId);
       }
 
-      if (driveKey == null) {
+      if (_driveKey == null) {
         throw StateError('Drive Key not found');
       }
     }
 
     _initializeEncoder();
-    outFileName =
+    _outFileName =
         event.folderName != null ? '${event.folderName}.zip' : 'Archive.zip';
 
     await _downloadMultipleFiles(emit);
   }
 
-  Future<void> resumeDownload(
+  Future<void> _resumeDownload(
       ResumeDownload event, Emitter<MultipleDownloadState> emit) async {
-    canceled = false;
+    _canceled = false;
     await _downloadMultipleFiles(emit);
   }
 
-  Future<void> skipFileAndResumeDownload(SkipFileAndResumeDownload event,
+  Future<void> _skipFileAndResumeDownload(SkipFileAndResumeDownload event,
       Emitter<MultipleDownloadState> emit) async {
-    canceled = false;
-    skippedFiles.add(items[currentFileIndex]);
-    currentFileIndex++;
+    _canceled = false;
+    _skippedFiles.add(_items[_currentFileIndex]);
+    _currentFileIndex++;
     await _downloadMultipleFiles(emit);
   }
 
   void _initializeEncoder() {
-    zipEncoder = ZipEncoder();
-    outputStream = OutputStream(
+    _zipEncoder = ZipEncoder();
+    _outputStream = OutputStream(
       byteOrder: LITTLE_ENDIAN,
     );
-    zipEncoder.startEncode(outputStream, level: Deflate.NO_COMPRESSION);
+    _zipEncoder.startEncode(_outputStream, level: Deflate.NO_COMPRESSION);
   }
 
   Future<void> _downloadMultipleFiles(
       Emitter<MultipleDownloadState> emit) async {
     try {
-      final files = items.whereType<ARFSFileEntity>().toList();
+      final files = _items.whereType<ARFSFileEntity>().toList();
 
-      while (currentFileIndex < files.length) {
-        if (canceled) {
+      while (_currentFileIndex < files.length) {
+        if (_canceled) {
           logger.d('User cancelled multi-file downloading.');
           return;
         }
@@ -156,25 +156,25 @@ class MultipleDownloadBloc
         emit(
           MultipleDownloadInProgress(
             files: files,
-            currentFileIndex: currentFileIndex,
+            currentFileIndex: _currentFileIndex,
           ),
         );
 
-        final file = files[currentFileIndex];
+        final file = files[_currentFileIndex];
 
         // TODO: Use cancelable streaming downloading once it is available in
         // ArDriveHTTP
         final dataBytes = await _downloadService.download(file.txId);
 
-        if (canceled) {
+        if (_canceled) {
           logger.d('User cancelled multi-file downloading.');
           return;
         }
 
         Uint8List outputBytes;
 
-        if (drive.drivePrivacy == DrivePrivacy.private) {
-          final fileKey = await _driveDao.getFileKey(file.id, driveKey!);
+        if (_drive.drivePrivacy == DrivePrivacy.private) {
+          final fileKey = await _driveDao.getFileKey(file.id, _driveKey!);
           final dataTx = await (_arweave.getTransactionDetails(file.txId));
 
           try {
@@ -202,22 +202,22 @@ class MultipleDownloadBloc
           outputBytes = dataBytes;
         }
 
-        zipEncoder.addFile(ArchiveFile.noCompress(
+        _zipEncoder.addFile(ArchiveFile.noCompress(
           file.name,
           file.size,
           outputBytes,
         ));
 
-        currentFileIndex++;
+        _currentFileIndex++;
       }
 
-      zipEncoder.endEncode();
+      _zipEncoder.endEncode();
 
       emit(MultipleDownloadFinishedWithSuccess(
-        bytes: Uint8List.fromList(outputStream.getBytes()),
-        fileName: outFileName,
+        bytes: Uint8List.fromList(_outputStream.getBytes()),
+        fileName: _outFileName,
         lastModified: DateTime.now(),
-        skippedFiles: skippedFiles,
+        skippedFiles: _skippedFiles,
       ));
     } catch (e) {
       if (e is ArDriveHTTPException) {
