@@ -71,7 +71,17 @@ class Logger {
   }
 
   void e(String message, [Object? error, StackTrace? stackTrace]) {
-    log(LogLevel.error, message);
+    String errorMessage = message;
+
+    if (error != null) {
+      errorMessage += '\nError: $error\n';
+    }
+
+    if (stackTrace != null) {
+      errorMessage += 'StackTrace: $stackTrace'; 
+    }
+
+    log(LogLevel.error, errorMessage);
   }
 
   void log(LogLevel level, String message) {
