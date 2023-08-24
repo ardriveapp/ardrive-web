@@ -133,15 +133,19 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                                       ),
                                     ),
                                   ),
-                                  Text(
-                                    filesize(file.size),
-                                    style: ArDriveTypography.body.smallRegular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgMuted,
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 16),
+                                    child: Text(
+                                      filesize(file.size),
+                                      style:
+                                          ArDriveTypography.body.smallRegular(
+                                        color: ArDriveTheme.of(context)
+                                            .themeData
+                                            .colors
+                                            .themeFgMuted,
+                                      ),
                                     ),
-                                  ),
+                                  )
                                 ],
                               );
                             },
