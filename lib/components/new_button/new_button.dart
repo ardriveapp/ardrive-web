@@ -163,27 +163,37 @@ class NewButton extends StatelessWidget {
 
     final topItems = _getTopItems(context);
 
-    topLevelItems.addAll(topItems
-        .map((e) => ArDriveSubmenuItem(
-              onClick: e.onClick,
-              widget: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 24.0),
-                    child: ArDriveDropdownItemTile(
-                      icon: e.icon,
-                      name: e.name,
-                      isDisabled: e.isDisabled,
-                    ),
+    topLevelItems.addAll(topItems.map(
+      (e) {
+        if (e is ArDriveNewButtonItem) {
+          return ArDriveSubmenuItem(
+            onClick: e.onClick,
+            widget: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 24.0),
+                  child: ArDriveDropdownItemTile(
+                    icon: e.icon,
+                    name: e.name,
+                    isDisabled: e.isDisabled,
                   ),
-                  if (e.hasDivider)
-                    const Divider(
-                      height: 8,
-                    ),
-                ],
-              ),
-            ))
-        .toList());
+                ),
+              ],
+            ),
+          );
+        } else /** it's an ArDriveNewButtonDivider */ {
+          return ArDriveSubmenuItem(
+            widget: const Column(
+              children: [
+                Divider(
+                  height: 8,
+                ),
+              ],
+            ),
+          );
+        }
+      },
+    ).toList());
     final advancedItems = _getAdvancedItems(context);
     if (advancedItems.isNotEmpty) {
       topLevelItems.add(
@@ -269,7 +279,7 @@ class NewButton extends StatelessWidget {
     return [];
   }
 
-  List<ArDriveNewButtonItem> _getTopItems(BuildContext context) {
+  List<ArDriveNewButtonComponent> _getTopItems(BuildContext context) {
     final driveDetailState = context.read<DriveDetailCubit>().state;
     final drivesState = context.read<DrivesCubit>().state;
     final appLocalizations = appLocalizationsOf(context);
@@ -284,6 +294,37 @@ class NewButton extends StatelessWidget {
 
       return [
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
+          if (drivesState is DrivesLoadSuccess) ...[
+            ArDriveNewButtonItem(
+              onClick: () {
+                promptToCreateDrive(context);
+              },
+              isDisabled: !drivesState.canCreateNewDrive || !canUpload,
+              name: appLocalizations.newDrive,
+              icon: ArDriveIcons.addDrive(size: defaultIconSize),
+            ),
+          ],
+          ArDriveNewButtonItem(
+            onClick: () => promptToCreateFolder(
+              context,
+              driveId: driveDetailState.currentDrive.id,
+              parentFolderId: currentFolder!.folder.id,
+            ),
+            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+            name: appLocalizations.newFolder,
+            icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
+          ),
+          if (context.read<ConfigService>().config.enablePins &&
+              drive != null &&
+              drive?.privacy == 'public')
+            ArDriveNewButtonItem(
+              name: appLocalizationsOf(context).newFilePin,
+              icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
+              onClick: () => showPinFileDialog(context: context),
+              isDisabled:
+                  !driveDetailState.hasWritePermissions || drive == null,
+            ),
+          const ArDriveNewButtonDivider(),
           ArDriveNewButtonItem(
             onClick: () {
               promptToUpload(
@@ -307,39 +348,9 @@ class NewButton extends StatelessWidget {
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.uploadFolder,
             icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
-            hasDivider: true,
           ),
-          if (drivesState is DrivesLoadSuccess) ...[
-            ArDriveNewButtonItem(
-              onClick: () {
-                promptToCreateDrive(context);
-              },
-              isDisabled: !drivesState.canCreateNewDrive || !canUpload,
-              name: appLocalizations.newDrive,
-              icon: ArDriveIcons.addDrive(size: defaultIconSize),
-            ),
-          ],
-          ArDriveNewButtonItem(
-            onClick: () => promptToCreateFolder(
-              context,
-              driveId: driveDetailState.currentDrive.id,
-              parentFolderId: currentFolder!.folder.id,
-            ),
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.newFolder,
-            icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
-          ),
+          const ArDriveNewButtonDivider(),
         ],
-        if (context.read<ConfigService>().config.enablePins &&
-            driveDetailState is DriveDetailLoadSuccess &&
-            drive != null &&
-            drive?.privacy == 'public')
-          ArDriveNewButtonItem(
-            name: appLocalizationsOf(context).newFilePin,
-            icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
-            onClick: () => showPinFileDialog(context: context),
-            isDisabled: !driveDetailState.hasWritePermissions || drive == null,
-          ),
       ];
     } else {
       return [
@@ -474,18 +485,24 @@ class NewButton extends StatelessWidget {
   }
 }
 
-class ArDriveNewButtonItem {
+abstract class ArDriveNewButtonComponent {
+  const ArDriveNewButtonComponent();
+}
+
+class ArDriveNewButtonItem extends ArDriveNewButtonComponent {
   const ArDriveNewButtonItem({
     required this.name,
     required this.icon,
     required this.onClick,
     this.isDisabled = false,
-    this.hasDivider = false,
   });
 
   final String name;
   final ArDriveIcon icon;
   final VoidCallback onClick;
   final bool isDisabled;
-  final bool hasDivider;
+}
+
+class ArDriveNewButtonDivider extends ArDriveNewButtonComponent {
+  const ArDriveNewButtonDivider();
 }
