@@ -233,7 +233,7 @@ void main() async {
             final secondFileFailureService = MockDownloadService();
             when(() => secondFileFailureService.download(any()))
                 .thenAnswer((_) async => Uint8List(0));
-            when(() => secondFileFailureService.download("fail")).thenThrow(
+            when(() => secondFileFailureService.download('fail')).thenThrow(
                 ArDriveHTTPException(
                     exception: Exception(),
                     retryAttempts: 8,
@@ -273,7 +273,7 @@ void main() async {
             final secondFileFailureService = MockDownloadService();
             when(() => secondFileFailureService.download(any()))
                 .thenAnswer((_) async => Uint8List(0));
-            when(() => secondFileFailureService.download("fail")).thenThrow(
+            when(() => secondFileFailureService.download('fail')).thenThrow(
                 ArDriveHTTPException(
                     exception: Exception(),
                     retryAttempts: 8,
@@ -314,7 +314,7 @@ void main() async {
             final secondFileFailureService = MockDownloadService();
             when(() => secondFileFailureService.download(any()))
                 .thenAnswer((_) async => Uint8List(0));
-            when(() => secondFileFailureService.download("fail"))
+            when(() => secondFileFailureService.download('fail'))
                 .thenAnswer((_) async {
               if (!failedOnce) {
                 failedOnce = true;
@@ -387,7 +387,7 @@ void main() async {
             final secondFileFailureService = MockDownloadService();
             when(() => secondFileFailureService.download(any()))
                 .thenAnswer((_) async => Uint8List(0));
-            when(() => secondFileFailureService.download("fail"))
+            when(() => secondFileFailureService.download('fail'))
                 .thenAnswer((_) async {
               if (!failedOnce) {
                 failedOnce = true;
