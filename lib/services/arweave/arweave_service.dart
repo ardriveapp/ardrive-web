@@ -53,7 +53,7 @@ class ArweaveService {
       HttpRetryOptions(
         onRetry: (exception) {
           if (exception is GatewayError) {
-            logger.i(
+            logger.w(
               'Retrying for ${exception.runtimeType} exception'
               ' for route ${exception.requestUrl}'
               ' and status code ${exception.statusCode}',
@@ -61,7 +61,7 @@ class ArweaveService {
             return;
           }
 
-          logger.w('Retrying for unknown exception: ${exception.toString()}');
+          logger.w('Retrying for unknown exception');
         },
         retryIf: (exception) {
           return exception is! RateLimitError;
@@ -489,9 +489,7 @@ class ArweaveService {
           () async => await Future.wait(
                 driveTxs.map((e) => client.api.getSandboxedTx(e.id)),
               ), onRetry: (Exception err) {
-        logger.w(
-          'Retrying for get unique user drive entities on Exception: ${err.toString()}',
-        );
+        logger.w('Retrying for get unique user drive entities');
       });
 
       final drivesById = <String?, DriveEntity>{};
@@ -529,14 +527,16 @@ class ArweaveService {
           logger.e(
             'Failed to parse transaction '
             'with id ${parseException.transactionId}',
+            parseException,
           );
         }
       }
       return drivesWithKey;
     } catch (e, stacktrace) {
       logger.e(
-        'An error occurred when getting the unique user drive entities.'
-        ' Exception: ${e.toString()} stacktrace: ${stacktrace.toString()}',
+        'An error occurred when getting the unique user drive entities.',
+        e,
+        stacktrace,
       );
       rethrow;
     }
@@ -591,6 +591,7 @@ class ArweaveService {
       logger.e(
         'Failed to parse transaction '
         'with id ${parseException.transactionId}',
+        parseException,
       );
       return null;
     }
@@ -805,7 +806,9 @@ class ArweaveService {
           );
         } on EntityTransactionParseException catch (parseException) {
           logger.e(
-              'Failed to parse transaction with id ${parseException.transactionId}');
+            'Failed to parse transaction with id ${parseException.transactionId}',
+            parseException,
+          );
         }
       }
 

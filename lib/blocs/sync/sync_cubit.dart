@@ -350,7 +350,7 @@ class SyncCubit extends Cubit<SyncState> {
 
       logger.i('Transaction statuses updated');
     } catch (err, stackTrace) {
-      logger.e(err.toString(), stackTrace);
+      logger.e('Error syncing drives', err, stackTrace);
       addError(err);
     }
     _lastSync = DateTime.now();

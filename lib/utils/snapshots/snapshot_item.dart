@@ -195,9 +195,9 @@ class SnapshotItemOnChain implements SnapshotItem {
 
       try {
         node = DriveHistoryTransaction.fromJson(item['gqlNode']);
-      } catch (e, s) {
-        logger.i(
-          'Error while parsing GQLNode from snapshot item ($txId) - $e, $s',
+      } catch (e) {
+        logger.w(
+          'Error while parsing GQLNode from snapshot item ($txId)',
         );
         continue;
       }

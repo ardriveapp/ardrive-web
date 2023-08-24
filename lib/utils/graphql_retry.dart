@@ -26,8 +26,7 @@ class GraphQLRetry {
         maxAttempts: maxAttempts,
         onRetry: (exception) {
           onRetry?.call(exception);
-          logger.i(
-              'Retrying Query: ${query.toString()}. On Exception: ${exception.toString()}');
+          logger.w('Retrying Query: ${query.operationName}');
         },
       );
 

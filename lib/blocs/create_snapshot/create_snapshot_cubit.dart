@@ -225,7 +225,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         );
       } else {
         logger.e(
-            'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
+          'Error preparing snapshot transaction - isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused',
+          e,
+        );
         rethrow;
       }
     }
@@ -260,8 +262,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           },
         );
       } else {
-        logger.i(
-            'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
+        logger.e(
+          'Error signing snapshot transaction isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused',
+          e,
+        );
         rethrow;
       }
     }
@@ -388,7 +392,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
       logger.i('Failed to confirm the upload: Wallet mismatch');
-      emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
+      emit(SnapshotUploadFailure());
       return;
     }
 
@@ -400,7 +404,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       emit(SnapshotUploadSuccess());
     } catch (err, stacktrace) {
       logger.e('Error while posting the snapshot transaction', err, stacktrace);
-      emit(SnapshotUploadFailure(errorMessage: '$err'));
+      emit(SnapshotUploadFailure());
     }
   }
 
