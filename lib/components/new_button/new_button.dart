@@ -211,7 +211,7 @@ class NewButton extends StatelessWidget {
                   ))
               .toList(),
           widget: ArDriveDropdownItemTile(
-            name: 'Advanced',
+            name: appLocalizationsOf(context).advanced,
             icon: ArDriveIcons.carretRight(size: defaultIconSize),
             isDisabled: false,
             iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,
@@ -440,7 +440,7 @@ class NewButton extends StatelessWidget {
         ],
         const ArDriveNewButtonDivider(),
         ArDriveNewButtonItem(
-          name: 'Advanced',
+          name: appLocalizationsOf(context).advanced,
           icon: ArDriveIcons.carretRight(size: defaultIconSize),
           isDisabled: false,
           onClick: () {
