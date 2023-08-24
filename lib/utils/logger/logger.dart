@@ -74,11 +74,11 @@ class Logger {
     String errorMessage = message;
 
     if (error != null) {
-      errorMessage += '\nError: $error\n';
+      errorMessage += '\nError: $error';
     }
 
     if (stackTrace != null) {
-      errorMessage += 'StackTrace: $stackTrace'; 
+      errorMessage += '\nStackTrace: $stackTrace';
     }
 
     log(LogLevel.error, errorMessage);
