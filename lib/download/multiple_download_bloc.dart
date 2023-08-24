@@ -75,15 +75,16 @@ class MultipleDownloadBloc
     items = event.items;
     skippedFiles.clear();
 
-    // check all files from same drive
+    if (items.isEmpty) {
+      emit(
+        const MultipleDownloadFailure(
+          FileDownloadFailureReason.unknownError,
+        ),
+      );
+      return;
+    }
+
     var firstFile = items[0];
-
-    // Currently assumes all files from the same drive. May need code like below
-    // to verify and emit error if not all files are from the same drive.
-    // if (!items.every((file) => file.driveId == firstFile.driveId)) {
-    //   // TODO emit error event here and exit
-    // }
-
     drive = await _arfsRepository.getDriveById(firstFile.driveId);
 
     if (await isSizeAboveDownloadSizeLimit(
