@@ -73,12 +73,8 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
 class UploadingSnapshot extends CreateSnapshotState {}
 
 class SnapshotUploadFailure extends CreateSnapshotState {
-  final String errorMessage;
-
-  SnapshotUploadFailure({required this.errorMessage});
-
   @override
-  List<Object> get props => [errorMessage];
+  List<Object> get props => [];
 }
 
 class SnapshotUploadSuccess extends CreateSnapshotState {}

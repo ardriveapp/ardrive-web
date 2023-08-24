@@ -15,6 +15,7 @@ Future<void> _updateTransactionStatuses({
   logger.i(
     'Skipping status update for ${txsIdsToSkip.length} transactions that were captured in snapshots',
   );
+
   for (final txId in txsIdsToSkip) {
     pendingTxMap.remove(txId);
   }

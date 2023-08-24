@@ -140,7 +140,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
 
     logger.i(
-      'Trusted range to be snapshotted (Current height: $_currentHeight): $_range',
+      'Trusted range to be snapshotted (Current height: $_currentHeight): $_range)',
     );
   }
 
@@ -224,8 +224,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           () async => await prepareTx(isArConnectProfile),
         );
       } else {
-        logger.i(
-            'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
+        logger.e(
+          'Error preparing snapshot transaction - isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused',
+          e,
+        );
         rethrow;
       }
     }
@@ -260,8 +262,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           },
         );
       } else {
-        logger.i(
-            'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
+        logger.e(
+          'Error signing snapshot transaction isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused',
+          e,
+        );
         rethrow;
       }
     }
@@ -388,7 +392,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
       logger.i('Failed to confirm the upload: Wallet mismatch');
-      emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
+      emit(SnapshotUploadFailure());
       return;
     }
 
@@ -398,10 +402,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       await _arweave.postTx(_preparedTx);
 
       emit(SnapshotUploadSuccess());
-    } catch (err) {
-      logger.i(
-          'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}');
-      emit(SnapshotUploadFailure(errorMessage: '$err'));
+    } catch (err, stacktrace) {
+      logger.e('Error while posting the snapshot transaction', err, stacktrace);
+      emit(SnapshotUploadFailure());
     }
   }
 

@@ -125,6 +125,6 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     emit(FolderCreateFailure());
     super.onError(error, stackTrace);
 
-    logger.e('Failed to create folder: $error $stackTrace');
+    logger.e('Failed to create folder', error, stackTrace);
   }
 }

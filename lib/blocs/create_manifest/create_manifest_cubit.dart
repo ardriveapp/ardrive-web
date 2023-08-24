@@ -342,7 +342,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     emit(CreateManifestFailure());
     super.onError(error, stackTrace);
 
-    logger.i('Failed to create manifest: $error $stackTrace');
+    logger.e('Failed to create manifest', error, stackTrace);
   }
 }
 

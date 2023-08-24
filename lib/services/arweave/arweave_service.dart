@@ -49,21 +49,25 @@ class ArweaveService {
       internetChecker: InternetChecker(connectivity: Connectivity()),
     );
     httpRetry = HttpRetry(
-        GatewayResponseHandler(),
-        HttpRetryOptions(onRetry: (exception) {
+      GatewayResponseHandler(),
+      HttpRetryOptions(
+        onRetry: (exception) {
           if (exception is GatewayError) {
-            logger.i(
-              'Retrying for ${exception.runtimeType} exception\n'
-              'for route ${exception.requestUrl}\n'
-              'and status code ${exception.statusCode}',
+            logger.w(
+              'Retrying for ${exception.runtimeType} exception'
+              ' for route ${exception.requestUrl}'
+              ' and status code ${exception.statusCode}',
             );
             return;
           }
 
-          logger.w('Retrying for unknown exception: ${exception.toString()}');
-        }, retryIf: (exception) {
+          logger.w('Retrying for unknown exception');
+        },
+        retryIf: (exception) {
           return exception is! RateLimitError;
-        }));
+        },
+      ),
+    );
   }
 
   int bytesToChunks(int bytes) {
@@ -168,7 +172,7 @@ class ArweaveService {
           break;
         }
       } catch (e) {
-        logger.i('Error fetching snapshots for drive $driveId - $e');
+        logger.e('Error fetching snapshots for drive $driveId', e);
         logger.i('This drive and ones after will fall back to GQL');
         break;
       }
@@ -331,9 +335,9 @@ class ArweaveService {
       } on GatewayError catch (fetchException) {
         logger.e(
           'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
-          'for transaction ${transaction.id}, '
-          'with status ${fetchException.statusCode} '
-          'and reason ${fetchException.reasonPhrase}',
+          ' for transaction ${transaction.id}, '
+          ' with status ${fetchException.statusCode} '
+          ' and reason ${fetchException.reasonPhrase}',
         );
       }
     }
@@ -485,9 +489,7 @@ class ArweaveService {
           () async => await Future.wait(
                 driveTxs.map((e) => client.api.getSandboxedTx(e.id)),
               ), onRetry: (Exception err) {
-        logger.i(
-          'Retrying for get unique user drive entities on Exception: ${err.toString()}',
-        );
+        logger.w('Retrying for get unique user drive entities');
       });
 
       final drivesById = <String?, DriveEntity>{};
@@ -525,14 +527,16 @@ class ArweaveService {
           logger.e(
             'Failed to parse transaction '
             'with id ${parseException.transactionId}',
+            parseException,
           );
         }
       }
       return drivesWithKey;
     } catch (e, stacktrace) {
       logger.e(
-        'An error occurred when getting the unique user drive entities.'
-        ' Exception: ${e.toString()} stacktrace: ${stacktrace.toString()}',
+        'An error occurred when getting the unique user drive entities.',
+        e,
+        stacktrace,
       );
       rethrow;
     }
@@ -587,6 +591,7 @@ class ArweaveService {
       logger.e(
         'Failed to parse transaction '
         'with id ${parseException.transactionId}',
+        parseException,
       );
       return null;
     }
@@ -801,7 +806,9 @@ class ArweaveService {
           );
         } on EntityTransactionParseException catch (parseException) {
           logger.e(
-              'Failed to parse transaction with id ${parseException.transactionId}');
+            'Failed to parse transaction with id ${parseException.transactionId}',
+            parseException,
+          );
         }
       }
 
@@ -863,7 +870,7 @@ class ArweaveService {
     try {
       await Future.wait(confirmationFutures);
     } catch (e) {
-      logger.e('Error getting transactions confirmations on exception: $e');
+      logger.e('Error getting transactions confirmations on exception', e);
       rethrow;
     }
 
@@ -959,9 +966,8 @@ class ArweaveService {
       ..setOwner(await wallet.getOwner());
     await item.sign(wallet);
 
-    logger.i('Prepared bundled data item with id ${item.id}\n'
-        ' with tags ${item.tags}\n'
-        ' and owner ${item.owner}');
+    logger.i('Prepared bundled data item with id ${item.id}'
+        ' with tags ${item.tags}');
 
     return item;
   }

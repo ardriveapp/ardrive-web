@@ -86,8 +86,6 @@ class MetadataCache {
     CacheStore store, {
     required int maxEntries,
   }) async {
-    logger.d('Creating metadata cache with max entries: $maxEntries');
-
     return store.cache<Uint8List>(
       name: defaultCacheName,
       maxEntries: maxEntries,

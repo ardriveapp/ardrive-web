@@ -23,7 +23,7 @@ Stream<double> _syncDrive(
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
   final startSyncDT = DateTime.now();
 
-  logger.i('Syncing drive: ${drive.name}');
+  logger.i('Syncing drive: ${drive.id}');
 
   SecretKey? driveKey;
 
@@ -40,14 +40,14 @@ Stream<double> _syncDrive(
   }
   final fetchPhaseStartDT = DateTime.now();
 
-  logger.d('Fetching all transactions for drive ${drive.name}');
+  logger.d('Fetching all transactions for drive ${drive.id}');
 
   final transactions = <DriveHistoryTransaction>[];
 
   List<SnapshotItem> snapshotItems = [];
 
   if (configService.config.enableSyncFromSnapshot) {
-    logger.i('Syncing from snapshot: ${drive.name}');
+    logger.i('Syncing from snapshot: ${drive.id}');
 
     final snapshotsStream = arweave.getAllSnapshotsOfDrive(
       driveId,
@@ -123,7 +123,7 @@ Stream<double> _syncDrive(
             ((currentBlockHeight - block.height) / totalBlockHeightDifference));
       }
       logger.d(
-        'The transaction block is null. \nTransaction node id: ${t.id}',
+        'The transaction block is null. Transaction node id: ${t.id}',
       );
 
       logger.d('New fetch-phase percentage: $fetchPhasePercentage');
@@ -144,11 +144,9 @@ Stream<double> _syncDrive(
         );
       } else {
         logger.d(
-          'The transaction block is null. \nTransaction node id: ${t.id}',
+          'The transaction block is null. Transaction node id: ${t.id}',
         );
       }
-    } else {
-      logger.d('Block attribute is already present - $firstBlockHeight');
     }
 
     logger.d('Adding transaction ${t.id}');
@@ -174,10 +172,7 @@ Stream<double> _syncDrive(
       DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
 
   logger.d(
-    '''Duration of fetch phase for ${drive.name} : $fetchPhaseTotalTime ms
-Progress by block height: $fetchPhasePercentage%
-Starting parse phase''',
-  );
+      'Duration of fetch phase for ${drive.name}: $fetchPhaseTotalTime ms. Progress by block height: $fetchPhasePercentage%. Starting parse phase');
 
   try {
     yield* _parseDriveTransactionsIntoDatabaseEntities(
@@ -197,7 +192,7 @@ Starting parse phase''',
       (parseProgress) => parseProgress * 0.9,
     );
   } catch (e) {
-    logger.e('[Sync Drive] Error while parsing transactions: $e');
+    logger.e('[Sync Drive] Error while parsing transactions', e);
     rethrow;
   }
 
@@ -209,10 +204,5 @@ Starting parse phase''',
   final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
 
   logger.i(
-    '''Drive ${drive.name} completed parse phase
-Progress by block height: $fetchPhasePercentage%
-Starting parse phase
-Sync duration: $syncDriveTotalTime ms
-Parsing used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process''',
-  );
+      'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Parsing used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
 }
