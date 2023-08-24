@@ -141,6 +141,7 @@ class NewButton extends StatelessWidget {
                                 horizontal: 16,
                               ),
                               child: ArDriveDropdownItemTile(
+                                iconAlignment: item.iconAlignment,
                                 icon: item.icon.copyWith(size: 24),
                                 name: item.name,
                                 isDisabled: item.isDisabled,
@@ -446,6 +447,7 @@ class NewButton extends StatelessWidget {
         ],
         const ArDriveNewButtonDivider(),
         ArDriveNewButtonItem(
+          iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,
           name: appLocalizationsOf(context).advanced,
           icon: ArDriveIcons.carretRight(size: defaultIconSize),
           isDisabled: false,
@@ -480,12 +482,14 @@ class ArDriveNewButtonItem extends ArDriveNewButtonComponent {
     required this.icon,
     required this.onClick,
     this.isDisabled = false,
+    this.iconAlignment = ArDriveArDriveDropdownItemTileIconAlignment.left,
   });
 
   final String name;
   final ArDriveIcon icon;
   final VoidCallback onClick;
   final bool isDisabled;
+  final ArDriveArDriveDropdownItemTileIconAlignment iconAlignment;
 }
 
 class ArDriveNewButtonDivider extends ArDriveNewButtonComponent {
