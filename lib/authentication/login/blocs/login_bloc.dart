@@ -83,7 +83,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         await _loginWithBiometrics(emit: emit);
       }
     } catch (e) {
-      logger.e('Failed to unlock user with biometrics: $e');
+      logger.e('Failed to unlock user with biometrics.', e);
 
       emit(LoginFailure(e));
 

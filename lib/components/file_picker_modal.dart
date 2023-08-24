@@ -186,7 +186,9 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                         }
                       } catch (e) {
                         logger.e(
-                            'Error while picking file from file system', e);
+                          'Error while picking file from file system',
+                          e,
+                        );
                       }
 
                       setState(() {

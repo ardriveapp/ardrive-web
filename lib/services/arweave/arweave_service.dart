@@ -335,9 +335,9 @@ class ArweaveService {
       } on GatewayError catch (fetchException) {
         logger.e(
           'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
-          'for transaction ${transaction.id}, '
-          'with status ${fetchException.statusCode} '
-          'and reason ${fetchException.reasonPhrase}',
+          ' for transaction ${transaction.id}, '
+          ' with status ${fetchException.statusCode} '
+          ' and reason ${fetchException.reasonPhrase}',
         );
       }
     }
