@@ -42,123 +42,125 @@ class NewButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<ArDriveNewButtonItem> items = _getItems(context);
-
     if (isBottomNavigationButton) {
-      return ArDriveFAB(
-          backgroundColor:
-              ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-          child: ArDriveIcons.plus(
-            color: Colors.white,
-          ),
-          onPressed: () {
-            final scrollController = ScrollController();
-
-            showModalBottomSheet(
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
-                  ),
-                ),
-                context: context,
-                builder: (context) {
-                  return ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      topRight: Radius.circular(8),
-                    ),
-                    child: Container(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .tableTheme
-                          .backgroundColor,
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: ArDriveScrollBar(
-                        controller: scrollController,
-                        alwaysVisible: true,
-                        child: ListView(
-                            controller: scrollController,
-                            children: List.generate(items.length, (index) {
-                              final item = items[index];
-                              final isLastItem = index == items.length - 1;
-
-                              return Column(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      if (!item.isDisabled) {
-                                        Navigator.pop(context);
-                                        item.onClick();
-                                      }
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 16,
-                                      ),
-                                      child: ArDriveDropdownItemTile(
-                                        icon: item.icon.copyWith(size: 24),
-                                        name: item.name,
-                                        isDisabled: item.isDisabled,
-                                        fontStyle: ArDriveTypography.body
-                                            .buttonLargeBold(),
-                                      ),
-                                    ),
-                                  ),
-                                  if (!isLastItem)
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 24.0),
-                                      child: Divider(
-                                        height: 1,
-                                        thickness: 1,
-                                      ),
-                                    ),
-                                ],
-                              );
-                            })),
-                      ),
-                    ),
-                  );
-                });
-          });
+      return _buildPlusButton(context);
+    } else {
+      return _buildNewButton(context);
     }
+  }
+
+  Widget _buildPlusButton(BuildContext context) {
+    return ArDriveFAB(
+        backgroundColor:
+            ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+        child: ArDriveIcons.plus(
+          color: Colors.white,
+        ),
+        onPressed: () {
+          final ScrollController scrollController = ScrollController();
+          final List<ArDriveNewButtonComponent> items =
+              _getPlusButtonItems(context);
+
+          _displayPlusModal(context, scrollController, items);
+        });
+  }
+
+  Widget _buildNewButton(BuildContext context) {
+    final List<ArDriveSubmenuItem> menuItems = _getNewMenuItems(context);
+
+    final theChild = child ??
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: ArDriveFAB(
+            backgroundColor:
+                ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+            child: ArDriveIcons.plus(
+              color: Colors.white,
+            ),
+          ),
+        );
 
     return ScreenTypeLayout.builder(
-      mobile: (_) => ArDriveSubmenu(
-        menuChildren: _getMenuItems(context),
-        child: child ??
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: ArDriveFAB(
-                backgroundColor:
-                    ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-                child: ArDriveIcons.plus(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-      ),
+      mobile: (_) => ArDriveSubmenu(menuChildren: menuItems, child: theChild),
       desktop: (_) => ArDriveSubmenu(
         alignmentOffset: const Offset(140, -40),
-        menuChildren: _getMenuItems(context),
-        child: child ??
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: ArDriveFAB(
-                backgroundColor:
-                    ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-                child: ArDriveIcons.plus(
-                  color: Colors.white,
-                ),
-              ),
-            ),
+        menuChildren: menuItems,
+        child: theChild,
       ),
     );
   }
 
-  List<ArDriveSubmenuItem> _getMenuItems(BuildContext context) {
+  void _displayPlusModal(
+    BuildContext context,
+    ScrollController scrollController,
+    List<ArDriveNewButtonComponent> items,
+  ) {
+    showModalBottomSheet(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(8),
+            topRight: Radius.circular(8),
+          ),
+        ),
+        context: context,
+        builder: (context) {
+          return ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
+            ),
+            child: Container(
+              color:
+                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+              padding: const EdgeInsets.only(bottom: 8),
+              child: ArDriveScrollBar(
+                controller: scrollController,
+                alwaysVisible: true,
+                child: ListView(
+                    controller: scrollController,
+                    children: List.generate(items.length, (index) {
+                      final item = items[index];
+
+                      if (item is ArDriveNewButtonItem) {
+                        return Column(
+                          children: [
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                if (!item.isDisabled) {
+                                  Navigator.pop(context);
+                                  item.onClick();
+                                }
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 16,
+                                ),
+                                child: ArDriveDropdownItemTile(
+                                  icon: item.icon.copyWith(size: 24),
+                                  name: item.name,
+                                  isDisabled: item.isDisabled,
+                                  fontStyle:
+                                      ArDriveTypography.body.buttonLargeBold(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      } else {
+                        return const Divider(
+                          height: 8,
+                        );
+                      }
+                    })),
+              ),
+            ),
+          );
+        });
+  }
+
+  List<ArDriveSubmenuItem> _getNewMenuItems(BuildContext context) {
     final List<ArDriveSubmenuItem> topLevelItems = [];
 
     final topItems = _getTopItems(context);
@@ -294,6 +296,31 @@ class NewButton extends StatelessWidget {
 
       return [
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
+          ArDriveNewButtonItem(
+            onClick: () {
+              promptToUpload(
+                context,
+                driveId: drive!.id,
+                parentFolderId: currentFolder!.folder.id,
+                isFolderUpload: false,
+              );
+            },
+            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+            name: appLocalizations.uploadFiles,
+            icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
+          ),
+          ArDriveNewButtonItem(
+            onClick: () => promptToUpload(
+              context,
+              driveId: drive!.id,
+              parentFolderId: currentFolder!.folder.id,
+              isFolderUpload: true,
+            ),
+            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+            name: appLocalizations.uploadFolder,
+            icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
+          ),
+          const ArDriveNewButtonDivider(),
           if (drivesState is DrivesLoadSuccess) ...[
             ArDriveNewButtonItem(
               onClick: () {
@@ -325,31 +352,6 @@ class NewButton extends StatelessWidget {
                   !driveDetailState.hasWritePermissions || drive == null,
             ),
           const ArDriveNewButtonDivider(),
-          ArDriveNewButtonItem(
-            onClick: () {
-              promptToUpload(
-                context,
-                driveId: drive!.id,
-                parentFolderId: currentFolder!.folder.id,
-                isFolderUpload: false,
-              );
-            },
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.uploadFiles,
-            icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
-          ),
-          ArDriveNewButtonItem(
-            onClick: () => promptToUpload(
-              context,
-              driveId: drive!.id,
-              parentFolderId: currentFolder!.folder.id,
-              isFolderUpload: true,
-            ),
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.uploadFolder,
-            icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
-          ),
-          const ArDriveNewButtonDivider(),
         ],
       ];
     } else {
@@ -363,7 +365,7 @@ class NewButton extends StatelessWidget {
     }
   }
 
-  List<ArDriveNewButtonItem> _getItems(BuildContext context) {
+  List<ArDriveNewButtonComponent> _getPlusButtonItems(BuildContext context) {
     final driveDetailState = context.read<DriveDetailCubit>().state;
     final drivesState = context.read<DrivesCubit>().state;
     final appLocalizations = appLocalizationsOf(context);
@@ -377,32 +379,7 @@ class NewButton extends StatelessWidget {
       );
 
       return [
-        if (drivesState is DrivesLoadSuccess) ...[
-          ArDriveNewButtonItem(
-            onClick: () {
-              promptToCreateDrive(context);
-            },
-            isDisabled: !drivesState.canCreateNewDrive || !canUpload,
-            name: appLocalizations.newDrive,
-            icon: ArDriveIcons.addDrive(size: defaultIconSize),
-          ),
-          ArDriveNewButtonItem(
-            onClick: () => attachDrive(context: context),
-            name: appLocalizations.attachDrive,
-            icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
-          ),
-        ],
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
-          ArDriveNewButtonItem(
-            onClick: () => promptToCreateFolder(
-              context,
-              driveId: driveDetailState.currentDrive.id,
-              parentFolderId: currentFolder!.folder.id,
-            ),
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.newFolder,
-            icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
-          ),
           ArDriveNewButtonItem(
             onClick: () => promptToUpload(
               context,
@@ -427,51 +404,53 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.uploadFiles,
             icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
           ),
+          const ArDriveNewButtonDivider(),
         ],
-        if (driveDetailState is DriveDetailLoadSuccess &&
-            driveDetailState.currentDrive.privacy == 'public' &&
-            drive != null)
+        if (drivesState is DrivesLoadSuccess) ...[
           ArDriveNewButtonItem(
             onClick: () {
-              promptToCreateManifest(
-                context,
-                drive: drive!,
-              );
+              promptToCreateDrive(context);
             },
-            isDisabled: !driveDetailState.hasWritePermissions ||
-                driveDetailState.driveIsEmpty ||
-                !canUpload,
-            name: appLocalizations.createManifest,
-            icon: ArDriveIcons.tournament(size: defaultIconSize),
+            isDisabled: !drivesState.canCreateNewDrive || !canUpload,
+            name: appLocalizations.newDrive,
+            icon: ArDriveIcons.addDrive(size: defaultIconSize),
           ),
-        if (context.read<ConfigService>().config.enableQuickSyncAuthoring &&
-            driveDetailState is DriveDetailLoadSuccess &&
-            drive != null)
+        ],
+        if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
           ArDriveNewButtonItem(
-            onClick: () {
-              promptToCreateSnapshot(
-                context,
-                drive!,
-              );
-            },
-            isDisabled: !driveDetailState.hasWritePermissions ||
-                driveDetailState.driveIsEmpty ||
-                !profile.hasMinimumBalanceForUpload(
-                  minimumWalletBalance: minimumWalletBalance,
-                ),
-            name: appLocalizations.createSnapshot,
-            icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
+            onClick: () => promptToCreateFolder(
+              context,
+              driveId: driveDetailState.currentDrive.id,
+              parentFolderId: currentFolder!.folder.id,
+            ),
+            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+            name: appLocalizations.newFolder,
+            icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
           ),
-        if (context.read<ConfigService>().config.enablePins &&
-            driveDetailState is DriveDetailLoadSuccess &&
-            drive != null &&
-            drive?.privacy == 'public')
-          ArDriveNewButtonItem(
-            name: appLocalizationsOf(context).newFilePin,
-            icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
-            onClick: () => showPinFileDialog(context: context),
-            isDisabled: !driveDetailState.hasWritePermissions || drive == null,
-          ),
+          if (context.read<ConfigService>().config.enablePins &&
+              drive != null &&
+              drive?.privacy == 'public')
+            ArDriveNewButtonItem(
+              name: appLocalizationsOf(context).newFilePin,
+              icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
+              onClick: () => showPinFileDialog(context: context),
+              isDisabled:
+                  !driveDetailState.hasWritePermissions || drive == null,
+            ),
+        ],
+        const ArDriveNewButtonDivider(),
+        ArDriveNewButtonItem(
+          name: 'Advanced',
+          icon: ArDriveIcons.carretRight(size: defaultIconSize),
+          isDisabled: false,
+          onClick: () {
+            _displayPlusModal(
+              context,
+              ScrollController(),
+              _getAdvancedItems(context),
+            );
+          },
+        ),
       ];
     } else {
       return [
