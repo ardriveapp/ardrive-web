@@ -16,34 +16,38 @@ final privateDownloadMobileSizeLimit = const MiB(300).size;
 
 Future<int> calcDownloadSizeLimit(bool isPublic,
     {DeviceInfoPlugin? deviceInfo}) async {
-  if (isPublic) {
-    if (AppPlatform.getPlatform() == SystemPlatform.Web) {
-      final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
-
-      final isFirefox =
-          info is WebBrowserInfo && info.browserName == BrowserName.firefox;
-      return isFirefox
-          ? publicDownloadFirefoxSizeLimit
-          : publicDownloadWebSizeLimit;
-    } else if (AppPlatform.isMobile) {
-      return publicDownloadMobileSizeLimit;
-    } else {
-      return publicDownloadUnknownPlatformSizeLimit;
-    }
+  if (AppPlatform.getPlatform() == SystemPlatform.Web) {
+    return await _webDownloadLimit(isPublic, deviceInfo);
+  } else if (AppPlatform.isMobile) {
+    return _mobileLimit(isPublic);
   } else {
-    if (AppPlatform.getPlatform() == SystemPlatform.Web) {
-      final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
-      final isFirefox =
-          info is WebBrowserInfo && info.browserName == BrowserName.firefox;
-      return isFirefox
-          ? privateDownloadFirefoxSizeLimit
-          : privateDownloadWebSizeLimit;
-    } else if (AppPlatform.isMobile) {
-      return privateDownloadMobileSizeLimit;
-    } else {
-      return privateDownloadUnknownPlatformSizeLimit;
-    }
+    return _unknownPlatformLimit(isPublic);
   }
+}
+
+Future<int> _webDownloadLimit(
+    bool isPublic, DeviceInfoPlugin? deviceInfo) async {
+  if (isPublic) {
+    return await AppPlatform.isFireFox(deviceInfo: deviceInfo)
+        ? publicDownloadFirefoxSizeLimit
+        : publicDownloadWebSizeLimit;
+  }
+
+  return await AppPlatform.isFireFox(deviceInfo: deviceInfo)
+      ? privateDownloadFirefoxSizeLimit
+      : privateDownloadWebSizeLimit;
+}
+
+int _mobileLimit(bool isPublic) {
+  return isPublic
+      ? publicDownloadMobileSizeLimit
+      : privateDownloadMobileSizeLimit;
+}
+
+int _unknownPlatformLimit(bool isPublic) {
+  return isPublic
+      ? publicDownloadUnknownPlatformSizeLimit
+      : privateDownloadUnknownPlatformSizeLimit;
 }
 
 // TODO: extend to work drives and folders
