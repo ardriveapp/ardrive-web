@@ -96,68 +96,74 @@ class NewButton extends StatelessWidget {
     List<ArDriveNewButtonComponent> items,
   ) {
     showModalBottomSheet(
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(8),
+          topRight: Radius.circular(8),
+        ),
+      ),
+      context: context,
+      builder: (context) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(8),
             topRight: Radius.circular(8),
           ),
-        ),
-        context: context,
-        builder: (context) {
-          return ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(8),
-              topRight: Radius.circular(8),
-            ),
-            child: Container(
-              color:
-                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-              padding: const EdgeInsets.only(bottom: 8),
-              child: ArDriveScrollBar(
+          child: Container(
+            color:
+                ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ArDriveScrollBar(
+              controller: scrollController,
+              alwaysVisible: true,
+              child: ListView(
+                shrinkWrap: true,
                 controller: scrollController,
-                alwaysVisible: true,
-                child: ListView(
-                    controller: scrollController,
-                    children: List.generate(items.length, (index) {
-                      final item = items[index];
+                children: List.generate(
+                  items.length,
+                  (index) {
+                    final item = items[index];
 
-                      if (item is ArDriveNewButtonItem) {
-                        return Column(
-                          children: [
-                            GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () {
-                                if (!item.isDisabled) {
-                                  Navigator.pop(context);
-                                  item.onClick();
-                                }
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 16,
-                                ),
-                                child: ArDriveDropdownItemTile(
-                                  icon: item.icon.copyWith(size: 24),
-                                  name: item.name,
-                                  isDisabled: item.isDisabled,
-                                  fontStyle:
-                                      ArDriveTypography.body.buttonLargeBold(),
-                                ),
+                    if (item is ArDriveNewButtonItem) {
+                      return Column(
+                        children: [
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              if (!item.isDisabled) {
+                                Navigator.pop(context);
+                                item.onClick();
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 16,
+                              ),
+                              child: ArDriveDropdownItemTile(
+                                icon: item.icon.copyWith(size: 24),
+                                name: item.name,
+                                isDisabled: item.isDisabled,
+                                fontStyle:
+                                    ArDriveTypography.body.buttonLargeBold(),
                               ),
                             ),
-                          ],
-                        );
-                      } else {
-                        return const Divider(
-                          height: 8,
-                        );
-                      }
-                    })),
+                          ),
+                        ],
+                      );
+                    } else {
+                      return const Divider(
+                        height: 8,
+                      );
+                    }
+                  },
+                ),
               ),
             ),
-          );
-        });
+          ),
+        );
+      },
+    );
   }
 
   List<ArDriveSubmenuItem> _getNewMenuItems(BuildContext context) {
