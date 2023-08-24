@@ -31,7 +31,7 @@ class MultipleDownloadBloc
 
   bool _canceled = false;
   int _currentFileIndex = 0;
-  List<ARFSFileEntity> _skippedFiles = [];
+  final List<ARFSFileEntity> _skippedFiles = [];
   SecretKey? _driveKey;
 
   late ARFSDriveEntity _drive;
