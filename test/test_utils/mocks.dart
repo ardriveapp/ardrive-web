@@ -7,6 +7,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/services/services.dart';
@@ -173,4 +174,41 @@ MockARFSDrive createMockDrive(
       unixTime: unixTime ?? DateTime.now(),
       drivePrivacy: drivePrivacy,
       rootFolderId: rootFolderId);
+}
+
+FileDataTableItem createMockFileDataTableItem(
+    {appName = 'appName',
+    appVersion = 'appVersion',
+    arFS = 'arFS',
+    driveId = 'driveId',
+    dataTxId = 'txId',
+    NetworkTransaction? dataTx,
+    NetworkTransaction? metadataTx,
+    unixTime,
+    fileId = 'id',
+    lastModifiedDate,
+    lastUpdated,
+    DateTime? dateCreated,
+    parentFolderId = 'parentFolderId',
+    size = 100,
+    name = 'name',
+    path = 'path',
+    index = 0,
+    isOwner = true}) {
+  return FileDataTableItem(
+      fileId: fileId,
+      driveId: driveId,
+      parentFolderId: parentFolderId,
+      dataTxId: dataTxId,
+      lastUpdated: lastUpdated ?? DateTime.now(),
+      lastModifiedDate: lastModifiedDate ?? DateTime.now(),
+      metadataTx: metadataTx,
+      dataTx: dataTx,
+      name: name,
+      size: size,
+      dateCreated: dateCreated ?? DateTime.now(),
+      contentType: 'contentType',
+      path: path,
+      index: index,
+      isOwner: isOwner);
 }

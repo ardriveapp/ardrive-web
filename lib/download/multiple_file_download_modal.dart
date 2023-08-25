@@ -19,13 +19,11 @@ import '../core/arfs/repository/arfs_repository.dart';
 
 promptToDownloadMultipleFiles(
   BuildContext context, {
-  required List<FileDataTableItem> items,
+  required List<ArDriveDataTableItem> selectedItems,
 }) async {
   final arweave = context.read<ArweaveService>();
 
-  final arfsItems = items
-      .map((item) => ARFSFactory().getARFSFileFromFileDataItemTable(item))
-      .toList();
+  final driveDao = context.read<DriveDao>();
 
   final driveDetail =
       (context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess);
@@ -45,11 +43,11 @@ promptToDownloadMultipleFiles(
         ),
         arweave: arweave,
         crypto: ArDriveCrypto(),
-        driveDao: context.read<DriveDao>(),
+        driveDao: driveDao,
         cipherKey: cipherKey,
       )..add(
           StartDownload(
-            arfsItems,
+            selectedItems,
             folderName: driveDetail.folderInView.folder.name,
           ),
         ),
@@ -124,7 +122,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                                 children: [
                                   Flexible(
                                     child: Text(
-                                      '${file.name} ',
+                                      '${file.fileName} ',
                                       style: ArDriveTypography.body.smallBold(
                                         color: ArDriveTheme.of(context)
                                             .themeData
@@ -195,7 +193,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                                 children: [
                                   Flexible(
                                     child: Text(
-                                      '${file.name} ',
+                                      '${file.fileName} ',
                                       style: ArDriveTypography.body.smallBold(
                                         color: ArDriveTheme.of(context)
                                             .themeData

@@ -28,7 +28,7 @@ void main() async {
   ARFSRepository mockARFSRepository = MockARFSRepository();
   ARFSRepository mockARFSRepositoryPrivate = MockARFSRepository();
 
-  MockARFSFile testFile = createMockFile(size: const MiB(1).size);
+  final testFile = createMockFileDataTableItem(size: const MiB(1).size);
 
   MockARFSDrive mockDrivePrivate =
       createMockDrive(drivePrivacy: DrivePrivacy.private);
@@ -126,7 +126,7 @@ void main() async {
           },
           act: (bloc) => bloc.add(StartDownload([
             testFile,
-            createMockFile(size: const MiB(2001).size),
+            createMockFileDataTableItem(size: const MiB(2001).size),
           ])),
           expect: () => [
             isA<MultipleDownloadFailure>().having(
@@ -152,7 +152,7 @@ void main() async {
           },
           act: (bloc) => bloc.add(StartDownload([
             testFile,
-            createMockFile(size: const MiB(501).size),
+            createMockFileDataTableItem(size: const MiB(501).size),
           ])),
           expect: () => [
             isA<MultipleDownloadFailure>().having(
@@ -178,7 +178,7 @@ void main() async {
           },
           act: (bloc) => bloc.add(StartDownload([
             testFile,
-            createMockFile(size: const GiB(2).size),
+            createMockFileDataTableItem(size: const GiB(2).size),
           ])),
           expect: () => [
             isA<MultipleDownloadFailure>().having(
@@ -245,8 +245,11 @@ void main() async {
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
           },
-          act: (bloc) => bloc.add(StartDownload(
-              [testFile, createMockFile(txId: 'fail'), testFile])),
+          act: (bloc) => bloc.add(StartDownload([
+            testFile,
+            createMockFileDataTableItem(dataTxId: 'fail'),
+            testFile
+          ])),
           expect: () => [
             isA<MultipleDownloadInProgress>()
                 .having(
@@ -285,8 +288,11 @@ void main() async {
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
           },
-          act: (bloc) => bloc.add(StartDownload(
-              [testFile, createMockFile(txId: 'fail'), testFile])),
+          act: (bloc) => bloc.add(StartDownload([
+            testFile,
+            createMockFileDataTableItem(dataTxId: 'fail'),
+            testFile
+          ])),
           expect: () => [
             isA<MultipleDownloadInProgress>()
                 .having(
@@ -334,8 +340,11 @@ void main() async {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
           },
           act: (bloc) async {
-            bloc.add(StartDownload(
-                [testFile, createMockFile(txId: 'fail'), testFile]));
+            bloc.add(StartDownload([
+              testFile,
+              createMockFileDataTableItem(dataTxId: 'fail'),
+              testFile
+            ]));
 
             // TODO: Replace this polling with a better solution!
             while (bloc.state is! MultipleDownloadFailure) {
@@ -407,8 +416,11 @@ void main() async {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
           },
           act: (bloc) async {
-            bloc.add(StartDownload(
-                [testFile, createMockFile(txId: 'fail'), testFile]));
+            bloc.add(StartDownload([
+              testFile,
+              createMockFileDataTableItem(dataTxId: 'fail'),
+              testFile
+            ]));
 
             // TODO: Replace this polling with a better solution!
             while (bloc.state is! MultipleDownloadFailure) {
@@ -473,8 +485,11 @@ void main() async {
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
           },
-          act: (bloc) => bloc.add(StartDownload(
-              [testFile, createMockFile(txId: 'cancel'), testFile])),
+          act: (bloc) => bloc.add(StartDownload([
+            testFile,
+            createMockFileDataTableItem(dataTxId: 'cancel'),
+            testFile
+          ])),
           expect: () => [
             isA<MultipleDownloadInProgress>()
                 .having(
@@ -501,8 +516,12 @@ void main() async {
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
           },
-          act: (bloc) => bloc.add(StartDownload(
-              [testFile, testFile, createMockFile(txId: ''), testFile])),
+          act: (bloc) => bloc.add(StartDownload([
+            testFile,
+            testFile,
+            createMockFileDataTableItem(dataTxId: ''),
+            testFile
+          ])),
           expect: () => [
             isA<MultipleDownloadInProgress>()
                 .having(
@@ -538,7 +557,7 @@ void main() async {
           act: (bloc) => bloc.add(StartDownload([
             testFile,
             testFile,
-            createMockFile(txId: 'decryptionFailure'),
+            createMockFileDataTableItem(dataTxId: 'decryptionFailure'),
             testFile
           ])),
           expect: () => [

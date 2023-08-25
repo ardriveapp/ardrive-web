@@ -4,7 +4,9 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
+import 'package:ardrive/download/download_utils.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -31,13 +33,13 @@ class MultipleDownloadBloc
 
   bool _canceled = false;
   int _currentFileIndex = 0;
-  final List<ARFSFileEntity> _skippedFiles = [];
+  final List<MultiDownloadFile> _skippedFiles = [];
   SecretKey? _driveKey;
 
   late ARFSDriveEntity _drive;
   late ZipEncoder _zipEncoder;
   late OutputStream _outputStream;
-  late List<ARFSFileEntity> _items;
+  late List<MultiDownloadFile> _files;
   late String _outFileName;
 
   MultipleDownloadBloc(
@@ -72,10 +74,12 @@ class MultipleDownloadBloc
 
   Future<void> _startDownload(
       StartDownload event, Emitter<MultipleDownloadState> emit) async {
-    _items = event.items;
+    _files = await convertSelectionToMultiDownloadFileList(
+        _driveDao, event.selectedItems);
+
     _skippedFiles.clear();
 
-    if (_items.isEmpty) {
+    if (_files.isEmpty) {
       emit(
         const MultipleDownloadFailure(
           FileDownloadFailureReason.unknownError,
@@ -84,11 +88,11 @@ class MultipleDownloadBloc
       return;
     }
 
-    var firstFile = _items[0];
+    var firstFile = _files[0];
     _drive = await _arfsRepository.getDriveById(firstFile.driveId);
 
     if (await isSizeAboveDownloadSizeLimit(
-        _items, _drive.drivePrivacy == DrivePrivacy.public,
+        _files, _drive.drivePrivacy == DrivePrivacy.public,
         deviceInfo: _deviceInfo)) {
       emit(
         const MultipleDownloadFailure(
@@ -129,7 +133,7 @@ class MultipleDownloadBloc
   Future<void> _skipFileAndResumeDownload(SkipFileAndResumeDownload event,
       Emitter<MultipleDownloadState> emit) async {
     _canceled = false;
-    _skippedFiles.add(_items[_currentFileIndex]);
+    _skippedFiles.add(_files[_currentFileIndex]);
     _currentFileIndex++;
     await _downloadMultipleFiles(emit);
   }
@@ -145,9 +149,7 @@ class MultipleDownloadBloc
   Future<void> _downloadMultipleFiles(
       Emitter<MultipleDownloadState> emit) async {
     try {
-      final files = _items.whereType<ARFSFileEntity>().toList();
-
-      while (_currentFileIndex < files.length) {
+      while (_currentFileIndex < _files.length) {
         if (_canceled) {
           logger.d('User cancelled multi-file downloading.');
           return;
@@ -155,12 +157,12 @@ class MultipleDownloadBloc
 
         emit(
           MultipleDownloadInProgress(
-            files: files,
+            files: _files,
             currentFileIndex: _currentFileIndex,
           ),
         );
 
-        final file = files[_currentFileIndex];
+        final file = _files[_currentFileIndex];
 
         // TODO: Use cancelable streaming downloading once it is available in
         // ArDriveHTTP
@@ -174,7 +176,7 @@ class MultipleDownloadBloc
         Uint8List outputBytes;
 
         if (_drive.drivePrivacy == DrivePrivacy.private) {
-          final fileKey = await _driveDao.getFileKey(file.id, _driveKey!);
+          final fileKey = await _driveDao.getFileKey(file.fileId, _driveKey!);
           final dataTx = await (_arweave.getTransactionDetails(file.txId));
 
           try {
@@ -202,8 +204,10 @@ class MultipleDownloadBloc
           outputBytes = dataBytes;
         }
 
+        // TODO make sure writing to path/filename works to unzip
+        // folder structure
         _zipEncoder.addFile(ArchiveFile.noCompress(
-          file.name,
+          file.fileName,
           file.size,
           outputBytes,
         ));

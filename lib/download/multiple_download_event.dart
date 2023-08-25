@@ -8,13 +8,13 @@ abstract class MultipleDownloadEvent extends Equatable {
 }
 
 class StartDownload extends MultipleDownloadEvent {
-  final List<ARFSFileEntity> items;
+  final List<ArDriveDataTableItem> selectedItems;
   final String? folderName;
 
-  const StartDownload(this.items, {this.folderName});
+  const StartDownload(this.selectedItems, {this.folderName});
 
   @override
-  List<Object> get props => [items];
+  List<Object> get props => [selectedItems];
 }
 
 class ResumeDownload extends MultipleDownloadEvent {

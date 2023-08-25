@@ -114,8 +114,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
             final hasFiles = state.folderInView.files.isNotEmpty;
 
-            final canDownloadMultipleFiles =
-                state.multiselect && !state.hasFoldersSelected;
+            final canDownloadMultipleFiles = state.multiselect;
 
             return ScreenTypeLayout.builder(
               desktop: (context) => _desktopView(
@@ -218,16 +217,14 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   ArDriveIconButton(
                                     tooltip: 'Download selected files',
                                     icon: ArDriveIcons.download(),
-                                    onPressed: () {
-                                      final files = context
+                                    onPressed: () async {
+                                      final selectedItems = context
                                           .read<DriveDetailCubit>()
-                                          .selectedItems
-                                          .whereType<FileDataTableItem>()
-                                          .toList();
+                                          .selectedItems;
 
                                       promptToDownloadMultipleFiles(
                                         context,
-                                        items: files,
+                                        selectedItems: selectedItems,
                                       );
                                     },
                                   ),
