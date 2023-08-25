@@ -67,10 +67,50 @@ class NetworkFileIdResolver implements FileIdResolver {
     final _OwnerPrivacySizeAndType metadataTxInfo =
         await _getOwnerAndPrivacyOfDataTransaction(dataTxId);
 
+    String type;
+
+    if (metadataTxInfo.type == null) {
+      final uri = Uri.parse(
+        '${configService.config.defaultArweaveGatewayUrl}/$dataTxId',
+      );
+      final response = await retry(
+        () => httpClient.head(uri),
+        maxAttempts: 3,
+      );
+
+      final Map headers = response.headers;
+      final String? contentTypeHeader = headers['content-type'];
+
+      if (response.statusCode != 200) {
+        throw FileIdResolverException(
+          id: dataTxId,
+          cancelled: false,
+          networkError: true,
+          isArFsEntityValid: false,
+          isArFsEntityPublic: false,
+          doesDataTransactionExist: false,
+        );
+      } else if (contentTypeHeader == null) {
+        throw FileIdResolverException(
+          id: dataTxId,
+          cancelled: false,
+          networkError: false,
+          isArFsEntityValid: false,
+          isArFsEntityPublic: false,
+          doesDataTransactionExist: true,
+        );
+      }
+
+      // Mime without extra properties such as charset.
+      type = contentTypeHeader.replaceFirst(RegExp(r';.*$'), '');
+    } else {
+      type = metadataTxInfo.type!;
+    }
+
     final ResolveIdResult fileInfo = ResolveIdResult(
       privacy: metadataTxInfo.privacy,
       maybeName: null,
-      dataContentType: metadataTxInfo.type,
+      dataContentType: type,
       maybeLastUpdated: null,
       maybeLastModified: null,
       dateCreated: DateTime.now(),
@@ -101,7 +141,7 @@ class NetworkFileIdResolver implements FileIdResolver {
     final size = int.tryParse(transactionDetails.data.size);
     final type = transactionDetails.data.type;
 
-    if (size == null || type == null) {
+    if (size == null) {
       throw FileIdResolverException(
         id: dataTxId,
         cancelled: false,
@@ -153,7 +193,7 @@ class _OwnerPrivacySizeAndType {
   final String ownerAddress;
   final DrivePrivacy privacy;
   final int size;
-  final String type;
+  final String? type;
 
   const _OwnerPrivacySizeAndType({
     required this.ownerAddress,
