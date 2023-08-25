@@ -6,6 +6,7 @@ import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
@@ -847,27 +848,33 @@ class DetailsPanelToolbar extends StatelessWidget {
                 }
               },
             ),
-          if (item is FileDataTableItem) ...[
+          if (item is FileDataTableItem || item is FolderDataTableItem)
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).download,
               icon: ArDriveIcons.download(size: defaultIconSize),
               onTap: () {
-                promptToDownloadProfileFile(
-                  context: context,
-                  file: item as FileDataTableItem,
-                );
+                if (item is FileDataTableItem) {
+                  promptToDownloadProfileFile(
+                    context: context,
+                    file: item as FileDataTableItem,
+                  );
+                } else if (item is FolderDataTableItem) {
+                  promptToDownloadMultipleFiles(
+                    context,
+                    selectedItems: [item as FolderDataTableItem],
+                  );
+                }
               },
             ),
-            if (drive.isPublic)
-              _buildActionIcon(
-                tooltip: appLocalizationsOf(context).preview,
-                icon: ArDriveIcons.newWindow(size: defaultIconSize),
-                onTap: () {
-                  final bloc = context.read<DriveDetailCubit>();
-                  bloc.launchPreview((item as FileDataTableItem).dataTxId);
-                },
-              ),
-          ],
+          if (item is FileDataTableItem && drive.isPublic)
+            _buildActionIcon(
+              tooltip: appLocalizationsOf(context).preview,
+              icon: ArDriveIcons.newWindow(size: defaultIconSize),
+              onTap: () {
+                final bloc = context.read<DriveDetailCubit>();
+                bloc.launchPreview((item as FileDataTableItem).dataTxId);
+              },
+            ),
           if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).rename,
