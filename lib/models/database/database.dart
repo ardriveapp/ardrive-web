@@ -21,6 +21,7 @@ class Database extends _$Database {
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
+          logger.i('creating database schema');
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
