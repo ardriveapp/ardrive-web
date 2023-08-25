@@ -536,7 +536,6 @@ class _AppSideBarState extends State<AppSideBar> {
                         action: () {
                           logger.exportLogs(
                             info: logExportInfo,
-                            share: true,
                             shareAsEmail: true,
                           );
                         },
