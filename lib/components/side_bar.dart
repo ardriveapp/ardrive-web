@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AppSideBar extends StatefulWidget {
   const AppSideBar({super.key});
@@ -455,104 +456,114 @@ class _AppSideBarState extends State<AppSideBar> {
       shareText: appLocalizationsOf(context).shareLogsNativeShareText,
       shareSubject: appLocalizationsOf(context).shareLogsNativeShareSubject,
     );
-    return HoverWidget(
-      child: GestureDetector(
-        onTap: () {
-          showAnimatedDialog(
-            context,
-            content: ArDriveStandardModal(
-              hasCloseButton: true,
-              title: appLocalizationsOf(context).help,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    appLocalizationsOf(context).shareLogsDescription,
-                    style: ArDriveTypography.body.buttonLargeBold(),
-                  ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  Text(
-                    appLocalizationsOf(context).ourChannels,
-                    style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                          fontWeight: FontWeight.bold,
+    return FutureBuilder<bool>(
+      future: canLaunchUrl(Uri.parse('mailto:')),
+      builder: (context, snapshot) {
+        final canLaunchEmail = snapshot.data ?? false;
+        return HoverWidget(
+          child: GestureDetector(
+            onTap: () {
+              showAnimatedDialog(
+                context,
+                content: ArDriveStandardModal(
+                  hasCloseButton: true,
+                  title: appLocalizationsOf(context).help,
+                  content: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appLocalizationsOf(context).shareLogsDescription,
+                        style: ArDriveTypography.body.buttonLargeBold(),
+                      ),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      Text(
+                        appLocalizationsOf(context).ourChannels,
+                        style:
+                            ArDriveTypography.body.buttonLargeBold().copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      ArDriveClickArea(
+                        child: GestureDetector(
+                          onTap: () {
+                            openUrl(
+                              url: Resources.discordLink,
+                            );
+                          },
+                          child: Text(
+                            discord,
+                            style: ArDriveTypography.body
+                                .buttonLargeBold()
+                                .copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                          ),
                         ),
-                  ),
-                  ArDriveClickArea(
-                    child: GestureDetector(
-                      onTap: () {
-                        openUrl(
-                          url: Resources.discordLink,
-                        );
-                      },
-                      child: Text(
-                        discord,
-                        style:
-                            ArDriveTypography.body.buttonLargeBold().copyWith(
+                      ),
+                      const SizedBox(
+                        height: 4,
+                      ),
+                      ArDriveClickArea(
+                        child: GestureDetector(
+                          onTap: () {
+                            openUrl(
+                              url: Resources.helpCenterLink,
+                            );
+                          },
+                          child: Text(
+                            appLocalizationsOf(context).helpCenter,
+                            style: ArDriveTypography.body
+                                .buttonLargeBold()
+                                .copyWith(
                                   decoration: TextDecoration.underline,
                                 ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(
-                    height: 4,
-                  ),
-                  ArDriveClickArea(
-                    child: GestureDetector(
-                      onTap: () {
-                        openUrl(
-                          url: Resources.helpCenterLink,
-                        );
+                  actions: [
+                    ModalAction(
+                      action: () {
+                        logger.exportLogs(info: logExportInfo);
                       },
-                      child: Text(
-                        appLocalizationsOf(context).helpCenter,
-                        style:
-                            ArDriveTypography.body.buttonLargeBold().copyWith(
-                                  decoration: TextDecoration.underline,
-                                ),
-                      ),
+                      title: appLocalizationsOf(context).download,
                     ),
-                  ),
-                ],
-              ),
-              actions: [
-                ModalAction(
-                  action: () {
-                    logger.exportLogs(info: logExportInfo);
-                  },
-                  title: appLocalizationsOf(context).download,
+                    if (AppPlatform.isMobile && canLaunchEmail)
+                      ModalAction(
+                        action: () {
+                          logger.exportLogs(
+                            info: logExportInfo,
+                            share: true,
+                            shareAsEmail: true,
+                          );
+                        },
+                        title:
+                            appLocalizationsOf(context).shareLogsWithEmailText,
+                      ),
+                    if (AppPlatform.isMobile)
+                      ModalAction(
+                        action: () {
+                          logger.exportLogs(
+                            info: logExportInfo,
+                            share: true,
+                          );
+                        },
+                        title: appLocalizationsOf(context).share,
+                      ),
+                  ],
                 ),
-                if (AppPlatform.isMobile)
-                  ModalAction(
-                    action: () {
-                      logger.exportLogs(
-                        info: logExportInfo,
-                        share: true,
-                        shareAsEmail: true,
-                      );
-                    },
-                    title: appLocalizationsOf(context).shareLogsWithEmailText,
-                  ),
-                if (AppPlatform.isMobile)
-                  ModalAction(
-                    action: () {
-                      logger.exportLogs(
-                        info: logExportInfo,
-                        share: true,
-                      );
-                    },
-                    title: appLocalizationsOf(context).share,
-                  ),
-              ],
+              );
+            },
+            child: Text(
+              appLocalizationsOf(context).shareLogsText,
+              style: ArDriveTypography.body.buttonNormalBold(),
             ),
-          );
-        },
-        child: Text(
-          appLocalizationsOf(context).shareLogsText,
-          style: ArDriveTypography.body.buttonNormalBold(),
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

@@ -166,20 +166,26 @@ class _LogExporter implements LogExporter {
       filePrefix: info.filePrefix,
     );
 
-    if (kIsWeb) {
+    /// prompt the user to select a location to save the file
+    if (kIsWeb || (!share && !shareAsEmail)) {
       ArDriveIO().saveFile(file);
       return;
     }
 
     final mobileIO = ArDriveIO() as MobileIO;
+
+    // saves the file on the app directory so that it can be shared
     await mobileIO.saveFile(file, true);
 
-    if (shareAsEmail) {
-      await _shareAsEmail(file, info);
+    if (share) {
+      _exportWithNativeShare(file, info);
       return;
     }
 
-    _exportWithNativeShare(file, info);
+    if (shareAsEmail) {
+      _shareAsEmail(file, info);
+      return;
+    }
   }
 
   Future<void> _shareAsEmail(IOFile file, LogExportInfo info) async {
