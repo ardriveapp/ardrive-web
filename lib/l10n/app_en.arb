@@ -22,6 +22,10 @@
   "@addSomeFiles": {
     "description": "Empty folder"
   },
+  "advanced": "Advanced",
+  "@advanced": {
+    "description": "The advanced options"
+  },
   "aggreeToTerms_body": "I agree to the ArDrive terms of service and privacy policy.",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
@@ -88,7 +92,7 @@
   "@ardriveIsOptimizedForLargeScreens": {
     "description": "Screen not supported page"
   },
-  "attachDrive": "Attach drive",
+  "attachDrive": "Attach Drive",
   "@attachDrive": {
     "description": "Attach a shared drive"
   },
@@ -330,7 +334,7 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "Create manifest",
+  "createManifest": "New Manifest",
   "@createManifest": {
     "description": "To create a manifest"
   },
@@ -346,7 +350,7 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "Create Snapshot",
+  "createSnapshot": "New Snapshot",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
@@ -1228,7 +1232,7 @@
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
   },
-  "newDrive": "New drive",
+  "newDrive": "New Drive",
   "@newDrive": {
     "description": "Create a new drive entity"
   },
@@ -1236,7 +1240,7 @@
   "@newFilePin": {
     "description": "E.g.: I want to create a \"New File Pin\""
   },
-  "newFolder": "New folder",
+  "newFolder": "New Folder",
   "@newFolder": {
     "description": "Create a new folder entity"
   },
@@ -1572,7 +1576,7 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
-  "shareLogsDescription": "You can share your logs with the ArDrive team to help us improve the app. The logs will be downloaded to your device and you can share them with us via email or any other means.'",
+  "shareLogsDescription": "You can share your logs with the ArDrive team to help us improve the app. The logs can be downloaded to your device and shared with us via email, Discord, or added to a support ticket.",
   "@shareLogsDescription": {},
   "shareLogsEmailBody": "Attached are the logs for ArDrive",
   "@shareLogsEmailBody": {},
@@ -1798,11 +1802,11 @@
   "@uploadFailed": {
     "description": "Upload Failed dialog title"
   },
-  "uploadFiles": "Upload file(s)",
+  "uploadFiles": "Upload File(s)",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
   },
-  "uploadFolder": "Upload folder",
+  "uploadFolder": "Upload Folder",
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },
