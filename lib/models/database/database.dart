@@ -52,6 +52,11 @@ class Database extends _$Database {
             await m.addColumn(fileEntries, fileEntries.customJsonMetadata);
             await m.addColumn(fileEntries, fileEntries.customGQLTags);
           } else if (from >= 1 && from < schemaVersion) {
+            logger.i(
+              'No strategy set for migration v$from to v$to'
+              ' - Resetting database schema',
+            );
+
             // Reset the database.
             for (final table in allTables) {
               await m.deleteTable(table.actualTableName);
