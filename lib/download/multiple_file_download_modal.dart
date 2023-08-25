@@ -229,12 +229,14 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
               ],
             );
           } else if (state is MultipleDownloadFailure) {
+            bool showRetryAndSkip = true;
             switch (state.reason) {
               case FileDownloadFailureReason.fileAboveLimit:
                 content = Text(
                   appLocalizationsOf(context)
                       .fileFailedToDownloadFileAbovePublicLimit,
                 );
+                showRetryAndSkip = false;
                 break;
               case FileDownloadFailureReason.fileNotFound:
                 content =
@@ -259,22 +261,24 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 },
                 title: appLocalizationsOf(context).cancel,
               ),
-              ModalAction(
-                action: () {
-                  context
-                      .read<MultipleDownloadBloc>()
-                      .add(const ResumeDownload());
-                },
-                title: appLocalizationsOf(context).tryAgain,
-              ),
-              ModalAction(
-                action: () {
-                  context
-                      .read<MultipleDownloadBloc>()
-                      .add(const SkipFileAndResumeDownload());
-                },
-                title: appLocalizationsOf(context).skip,
-              ),
+              if (showRetryAndSkip) ...[
+                ModalAction(
+                  action: () {
+                    context
+                        .read<MultipleDownloadBloc>()
+                        .add(const ResumeDownload());
+                  },
+                  title: appLocalizationsOf(context).tryAgain,
+                ),
+                ModalAction(
+                  action: () {
+                    context
+                        .read<MultipleDownloadBloc>()
+                        .add(const SkipFileAndResumeDownload());
+                  },
+                  title: appLocalizationsOf(context).skip,
+                ),
+              ]
             ];
           } else {
             content = Text(
