@@ -212,3 +212,91 @@ FileDataTableItem createMockFileDataTableItem(
       index: index,
       isOwner: isOwner);
 }
+
+FolderDataTableItem createMockFolderDataTableItem(
+    {appVersion = 'appVersion',
+    arFS = 'arFS',
+    driveId = 'driveId',
+    folderId = 'folderId',
+    contentType = 'contentType',
+    lastModifiedDate,
+    lastUpdated,
+    DateTime? dateCreated,
+    isGhostFolder = false,
+    parentFolderId = '',
+    name = 'name',
+    path = 'path',
+    fileStatusFromTransactions,
+    index = 0,
+    isOwner = true}) {
+  return FolderDataTableItem(
+      driveId: driveId,
+      folderId: folderId,
+      name: name,
+      lastUpdated: lastUpdated ?? DateTime.now(),
+      dateCreated: dateCreated ?? DateTime.now(),
+      contentType: contentType,
+      path: path,
+      fileStatusFromTransactions: fileStatusFromTransactions,
+      parentFolderId: parentFolderId,
+      isGhostFolder: isGhostFolder,
+      index: index,
+      isOwner: isOwner);
+}
+
+FolderEntry createMockFolderEntry(
+    {name = 'name',
+    id = 'id',
+    driveId = 'driveId',
+    path = 'name',
+    contentType = 'contentType',
+    lastUpdated,
+    dateCreated,
+    parentFolderId,
+    isGhost = false,
+    index = 0,
+    isOwner = true}) {
+  return FolderEntry(
+    name: name,
+    id: id,
+    driveId: driveId,
+    lastUpdated: DateTime.now(),
+    dateCreated: DateTime.now(),
+    path: path,
+    parentFolderId: parentFolderId,
+    isGhost: isGhost,
+  );
+}
+
+FileEntry createMockFileEntry(
+    {name = 'name',
+    id = 'id',
+    driveId = 'driveId',
+    path = 'name',
+    dataTxId = 'txId',
+    contentType = 'contentType',
+    dataContentType,
+    size = 100,
+    lastModifiedDate,
+    dateCreated,
+    lastUpdated,
+    parentFolderId = 'parentFolderId',
+    bundledIn,
+    isGhost = false,
+    index = 0,
+    isOwner = true}) {
+  return FileEntry(
+    name: name,
+    id: id,
+    driveId: driveId,
+    dataTxId: dataTxId,
+    dataContentType: dataContentType,
+    size: size,
+    lastModifiedDate: lastModifiedDate ?? DateTime.now(),
+    dateCreated: dateCreated ?? DateTime.now(),
+    lastUpdated: lastUpdated ?? DateTime.now(),
+    path: path,
+    parentFolderId: parentFolderId,
+    bundledIn: bundledIn,
+  );
+}
