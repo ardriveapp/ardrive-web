@@ -73,19 +73,31 @@ class NetworkFileIdResolver implements FileIdResolver {
       final uri = Uri.parse(
         '${configService.config.defaultArweaveGatewayUrl}/$dataTxId',
       );
-      final response = await httpClient.head(uri);
+      final response = await retry(
+        () => httpClient.head(uri),
+        maxAttempts: 3,
+      );
 
       final Map headers = response.headers;
       final String? contentTypeHeader = headers['content-type'];
 
-      if (response.statusCode != 200 || contentTypeHeader == null) {
+      if (response.statusCode != 200) {
+        throw FileIdResolverException(
+          id: dataTxId,
+          cancelled: false,
+          networkError: true,
+          isArFsEntityValid: false,
+          isArFsEntityPublic: false,
+          doesDataTransactionExist: false,
+        );
+      } else if (contentTypeHeader == null) {
         throw FileIdResolverException(
           id: dataTxId,
           cancelled: false,
           networkError: false,
           isArFsEntityValid: false,
           isArFsEntityPublic: false,
-          doesDataTransactionExist: false,
+          doesDataTransactionExist: true,
         );
       }
 
