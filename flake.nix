@@ -11,14 +11,11 @@
       {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
+            flutter
             ruby
             cocoapods
             fastlane
           ];
-          shellHook = ''
-            export PATH="$PWD/.fvm/flutter_sdk/bin:$PATH"
-            echo "Welcome to ArDrive-Web shell"
-          '';
         };
       });
 }
