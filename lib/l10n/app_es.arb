@@ -915,7 +915,7 @@
   "@forgetWalletDescription": {
     "description": "Modal description to forget wallet"
   },
-  "forgetWalletTitle": "¿Has olvidado tu cartera?",
+  "forgetWalletTitle": "¿Olvidar cartera?",
   "@forgetWalletTitle": {
     "description": "Modal title to forget wallet"
   },
