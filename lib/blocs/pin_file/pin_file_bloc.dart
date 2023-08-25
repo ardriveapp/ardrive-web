@@ -14,6 +14,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart';
+import 'package:retry/retry.dart';
 import 'package:uuid/uuid.dart';
 
 part 'file_id_resolver.dart';
