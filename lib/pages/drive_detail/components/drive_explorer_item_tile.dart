@@ -3,6 +3,7 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
+import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -216,7 +217,6 @@ class _DriveExplorerItemTileTrailingState
           items: _getItems(widget.item, context),
           // ignore: sized_box_for_whitespace
           child: HoverWidget(
-            
             tooltip: appLocalizationsOf(context).showMenu,
             child: ArDriveIcons.kebabMenu(),
           ),
@@ -231,6 +231,20 @@ class _DriveExplorerItemTileTrailingState
 
     if (item is FolderDataTableItem) {
       return [
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToDownloadMultipleFiles(
+              context,
+              selectedItems: [item],
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).download,
+            ArDriveIcons.download(
+              size: defaultIconSize,
+            ),
+          ),
+        ),
         if (isOwner) ...[
           ArDriveDropdownItem(
             onClick: () {
@@ -422,6 +436,20 @@ class EntityActionsMenu extends StatelessWidget {
 
     if (item is FolderDataTableItem) {
       return [
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToDownloadMultipleFiles(
+              context,
+              selectedItems: [item],
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).download,
+            ArDriveIcons.download(
+              size: defaultIconSize,
+            ),
+          ),
+        ),
         if (isOwner) ...[
           ArDriveDropdownItem(
             onClick: () {
