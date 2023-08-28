@@ -402,17 +402,6 @@ class NewButton extends StatelessWidget {
       return [
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
           ArDriveNewButtonItem(
-            onClick: () => promptToUpload(
-              context,
-              driveId: drive!.id,
-              parentFolderId: currentFolder!.folder.id,
-              isFolderUpload: true,
-            ),
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.uploadFolder,
-            icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
-          ),
-          ArDriveNewButtonItem(
             onClick: () {
               promptToUpload(
                 context,
@@ -424,6 +413,17 @@ class NewButton extends StatelessWidget {
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.uploadFiles,
             icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
+          ),
+          ArDriveNewButtonItem(
+            onClick: () => promptToUpload(
+              context,
+              driveId: drive!.id,
+              parentFolderId: currentFolder!.folder.id,
+              isFolderUpload: true,
+            ),
+            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+            name: appLocalizations.uploadFolder,
+            icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
           ),
           const ArDriveNewButtonDivider(),
         ],
