@@ -8,7 +8,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'topup_estimation_event.dart';
 part 'topup_estimation_state.dart';
 
-final presetAmounts = [25, 50, 75, 100];
+const presetAmounts = [10, 25, 50, 75];
+const minAmount = 5;
+const maxAmount = 10000; // 10,000
 final supportedCurrencies = ['usd'];
 
 class TurboTopUpEstimationBloc

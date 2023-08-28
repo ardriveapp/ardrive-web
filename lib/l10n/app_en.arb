@@ -1722,6 +1722,20 @@
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
+  "turboCustomAmount": "Custom Amount (min {min} - max {max})",
+  "@turboCustomAmount": {
+    "description": "Describes the range of credits the user can choose",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "$10,000"
+      },
+      "min": {
+        "type": "String",
+        "example": "$5"
+      }
+    }
+  },
   "turboErrorMessageEstimationInformationFailed": "Error loading information. Please try again.",
   "@turboErrorMessageEstimationInformationFailed": {},
   "turboErrorMessageFetchPaymentIntentFailed": "Payment processor is currently unavailable, please try again later",
@@ -1734,6 +1748,20 @@
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageUnknown": {},
+  "turboPleaseEnterAmountBetween": "Please enter an amount between {min} - {max}",
+  "@turboPleaseEnterAmountBetween": {
+    "description": "Error message for when the given amount is not in range",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "$10,000"
+      },
+      "min": {
+        "type": "String",
+        "example": "$5"
+      }
+    }
+  },
   "unableToFetchEstimateAtThisTime": "Unable to fetch the estimate at this time.",
   "@unableToFetchEstimateAtThisTime": {},
   "unableToUpdateQuote": "Unable to update quote. Please try again.",
