@@ -1,5 +1,11 @@
 {
-  "@@locale": "zh_HK",
+  "@@locale": "zh-HK",
+  "accept": "接受",
+  "@accept": {},
+  "addButtonTurbo": "添加",
+  "@addButtonTurbo": {
+    "description": "text for add button"
+  },
   "addnewManifestEmphasized": "新增資訊清單",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
@@ -32,6 +38,10 @@
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
+  "amount": "金額",
+  "@amount": {},
+  "anErrorOccuredWhileDownloadingYourKeyfile": "下載你的銀包密鑰文件時發生錯誤。請再試一次。",
+  "@anErrorOccuredWhileDownloadingYourKeyfile": {},
   "anyFilesWillOutliveYou": "所有上載到這裏的檔案, 都會比你於這地球上存在得更耐 !",
   "@anyFilesWillOutliveYou": {
     "description": "Files on the Weave will exist there forever"
@@ -57,6 +67,10 @@
         "example": "0.0.0"
       }
     }
+  },
+  "arBalance": "餘額",
+  "@arBalance": {
+    "description": "Balance in AR"
   },
   "arConnectRemainOnThisTab": "注意: 你正在以 Web3 錢包繳付交易。請停留在這介面, 直至交易完成。",
   "@arConnectRemainOnThisTab": {
@@ -148,6 +162,8 @@
   "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
   },
+  "buyCredits": "購買積分",
+  "@buyCredits": {},
   "camera": "相機",
   "@camera": {
     "description": "Button label to select a file from camera"
@@ -224,6 +240,12 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
+  "cookieConsent": "同意 Cookie",
+  "@cookieConsent": {},
+  "cookieConsentBodyPart1": "我們的付款供應商 Stripe 使用 cookies 來讓用戶購買積分。購買積分時需要這些 cookies。",
+  "@cookieConsentBodyPart1": {},
+  "cookieConsentBodyPart2": "點擊「接受」表示你同意使用 cookies。",
+  "@cookieConsentBodyPart2": {},
   "copyBundleTxID": "複製捆綁批次 的交易識別碼",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
@@ -278,6 +300,12 @@
       }
     }
   },
+  "costUpload": "費用",
+  "@costUpload": {
+    "description": "Cost"
+  },
+  "country": "國家",
+  "@country": {},
   "create": "建立",
   "@create": {
     "description": "Create an drive"
@@ -302,20 +330,16 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "建立資訊清單",
-  "@createManifest": {
-    "description": "To create a manifest"
-  },
   "createManifestEmphasized": "建立資訊清單",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
+  "createNewFilePin": "建立新文件 Pin",
+  "@createNewFilePin": {
+    "description": "E.g.: I want to \"Create a New File Pin\""
+  },
   "createNewSnapshot": "建立新快照",
   "@createNewSnapshot": {
-    "description": "The action of snapshotting a drive"
-  },
-  "createSnapshot": "建立快照",
-  "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
   "createSnapshotExplanation": "快照會縮短磁碟機載入所需的時間。您要建立磁碟機 {driveName} 的快照嗎？",
@@ -336,6 +360,20 @@
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
   },
+  "creditCard": "信用卡",
+  "@creditCard": {},
+  "credits": "積分",
+  "@credits": {},
+  "creditsTurbo": "積分",
+  "@creditsTurbo": {
+    "description": "suffix for turbo balance"
+  },
+  "creditsWillBeAutomaticallyAddedToYourTurboBalance": "積分將自動添加到你的 Turbo 餘額中，你可立即開始使用。",
+  "@creditsWillBeAutomaticallyAddedToYourTurboBalance": {},
+  "currency": "貨幣",
+  "@currency": {},
+  "customAmount": "自訂金額",
+  "@customAmount": {},
   "darkModeEmphasized": "深色模式",
   "@darkModeEmphasized": {
     "description": "Refers to the dark theme of the app. Emphasized with upper case"
@@ -415,6 +453,14 @@
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
+  "dontHaveAWallet1Part": "沒有銀包？獲得一個吧 ",
+  "@dontHaveAWallet1Part": {
+    "description": "text to open the url to get a wallet"
+  },
+  "dontHaveAWallet2Part": "這裡！",
+  "@dontHaveAWallet2Part": {
+    "description": "used like so: Get one Here!"
+  },
   "download": "下載",
   "@download": {
     "description": "Action of downloading a file"
@@ -431,6 +477,8 @@
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
+  "downloadWalletKeyfile": "下載銀包密鑰文件",
+  "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "瀏覽 Json",
   "@dragAndDropButtonTitle": {
     "description": "text of title drag and drop"
@@ -439,6 +487,8 @@
   "@dragAndDropDescription": {
     "description": "text of description drag and drop"
   },
+  "driveDoingInitialSetupMessage": "你的硬碟正在進行初步設定。這可能需要幾分鐘的時間。請等待後再作出行動。",
+  "@driveDoingInitialSetupMessage": {},
   "driveID": "檔案盤識別碼",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -549,13 +599,23 @@
   "@enableStorageAccessTitle": {
     "description": "enable camera access"
   },
+  "enter": "輸入",
+  "@enter": {},
   "enterFileKey": "輸入檔案金鑰",
   "@enterFileKey": {
     "description": "File Key form field label"
   },
+  "enterFileName": "輸入檔案名稱",
+  "@enterFileName": {
+    "description": "To type the name of the file"
+  },
   "enterPassword": "輸入密碼",
   "@enterPassword": {
     "description": "Please enter password"
+  },
+  "enterTxIdOrFileId": "輸入交易 ID 或文件 ID",
+  "@enterTxIdOrFileId": {
+    "description": "Indicates that you must enter a Transaction ID or a File ID"
   },
   "entityAlreadyExists": "在資料夾或檔案移到的目標位置中, 此單位名字 {entityName} 已被使用。請重新命名。",
   "@entityAlreadyExists": {
@@ -575,6 +635,14 @@
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
   },
+  "errorFetchingBalance": "獲取餘額時出錯",
+  "@errorFetchingBalance": {
+    "description": "Error fetching balance"
+  },
+  "errorFetchingQuote": "獲取新報價時出錯，請重試。",
+  "@errorFetchingQuote": {},
+  "estimatedStorage": "預計儲存量",
+  "@estimatedStorage": {},
   "expandSideBar": "展開側邊欄",
   "@expandSideBar": {
     "description": "Expand side bar tooltip"
@@ -621,6 +689,8 @@
   "@feedbackTitle": {
     "description": "We thank the user"
   },
+  "fetchingNewQuote": "正在獲取新報價...",
+  "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{無檔案} other{{fileCount}個檔案}}",
   "@fileCount": {
     "description": "Plurals for the file count. First character in lower case",
@@ -877,6 +947,12 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
+  "howAreConversionsDetermined": "轉換率是如何決定的？",
+  "@howAreConversionsDetermined": {},
+  "howDoesKeyfileLoginWork": "密鑰文件和助記詞登入如何運作？\n",
+  "@howDoesKeyfileLoginWork": {
+    "description": "Title for explaining keyfile login"
+  },
   "infernoIsInFullSwing": "地獄獎勵計劃正如火如荼！點擊這裡查看參與規則！",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
@@ -979,6 +1055,8 @@
   "@itemPreviewEmphasized": {
     "description": "Item preview"
   },
+  "keepMeUpToDateOnNewsAndPromotions": "讓我了解最新的資訊和優惠活動。",
+  "@keepMeUpToDateOnNewsAndPromotions": {},
   "lastModified": "最後修訂 ",
   "@lastModified": {
     "description": "Last modified date of the file in the local disk"
@@ -1000,6 +1078,8 @@
   "@learnMore": {
     "description": "Link to a document explaining manifests in detail"
   },
+  "leaveAnEmailToReceiveAReceipt": "如需收據，請提供電郵。",
+  "@leaveAnEmailToReceiveAReceipt": {},
   "leaveFeedback": "請提供意見回饋",
   "@leaveFeedback": {
     "description": "The action of leaving feedback"
@@ -1104,6 +1184,12 @@
   "@nameConflict": {
     "description": "A conflict of names between two entities"
   },
+  "nameOnCard": "信用卡上的名字",
+  "@nameOnCard": {},
+  "networkUnreachable": "現無法連接到網絡。請稍後再試。",
+  "@networkUnreachable": {
+    "description": "Indicates that there were some issues while connecting to the internet"
+  },
   "neverDeletedEmphasized": "永遠不會被删除",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
@@ -1111,6 +1197,10 @@
   "newDrive": "新檔案盤",
   "@newDrive": {
     "description": "Create a new drive entity"
+  },
+  "newFilePin": "新文件 Pin",
+  "@newFilePin": {
+    "description": "E.g.: I want to create a \"New File Pin\""
   },
   "newFolder": "新資料夾",
   "@newFolder": {
@@ -1220,6 +1310,12 @@
   "@passwordMismatch": {
     "description": "Error message for when the confirmation password doesn't match the actual pass"
   },
+  "pay": "付款",
+  "@pay": {},
+  "paymentDetails": "付款細節",
+  "@paymentDetails": {},
+  "paymentSuccessful": "成功支付！",
+  "@paymentSuccessful": {},
   "payPerFileEmphasized": "按檔案收費",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
@@ -1236,6 +1332,10 @@
   "@pleaseAcceptTheTermsToContinue": {
     "description": "terms and conditions cta"
   },
+  "pleaseEnterAValidEmail": "請輸入有效的電郵地址",
+  "@pleaseEnterAValidEmail": {},
+  "pleaseEnterYourPassword": "請輸入你的密碼",
+  "@pleaseEnterYourPassword": {},
   "pleaseProvideSamePassword": "請提供你一直源用的相同密碼。",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
@@ -1312,6 +1412,12 @@
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
   },
+  "refresh": "重試",
+  "@refresh": {},
+  "refreshTurboBalanceTooltip": "重新加載餘額",
+  "@refreshTurboBalanceTooltip": {
+    "description": "Tooltip on the icon to refresh the balance"
+  },
   "rename": "重新命名",
   "@rename": {
     "description": "The action of renaming; imperative form"
@@ -1360,6 +1466,8 @@
   "@resyncTooltip": {
     "description": "resync tooltip text"
   },
+  "review": " 重新檢視",
+  "@review": {},
   "rootFolderTxID": "根資料夾的交易識別碼",
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
@@ -1371,6 +1479,10 @@
   "secondsFromForeverEmphasized": "幾秒之間, 就能恒永留存",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"
+  },
+  "securityWalletOverlay": "你的密鑰文件已加密，它不會離開你的設備，並隨時可從你的設備中刪除。",
+  "@securityWalletOverlay": {
+    "description": "The text on the security overlay text on login"
   },
   "selectWalletEmphasized": "選擇錢包",
   "@selectWalletEmphasized": {
@@ -1520,10 +1632,22 @@
   "@termsAndConditions": {
     "description": "terms and conditions"
   },
+  "theIdProvidedDoesntExist": "提供的 ID 不存在",
+  "@theIdProvidedDoesntExist": {
+    "description": "Indicates that the valid ID you provided doesn't exist"
+  },
+  "theIdProvidedIsNotValid": "提供的 ID 無效",
+  "@theIdProvidedIsNotValid": {
+    "description": "Indicates that the ID you typed doesn't follow the ID pattern"
+  },
+  "theresBeenAProblem": "有點問題。",
+  "@theresBeenAProblem": {},
   "thinkTwiceBeforeUploading": "在上載你的少年情詩之前, 請再三考慮清楚",
   "@thinkTwiceBeforeUploading": {
     "description": "Uploaded items cannot be deleted"
   },
+  "thisIsAOneTimePaymentPoweredByStripe": "這是由 Stripe 提供支持的一次性支付。",
+  "@thisIsAOneTimePaymentPoweredByStripe": {},
   "thisMayTakeAWhile": "這可能要一點時間 ...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
@@ -1532,10 +1656,14 @@
   "@tooLargeForUpload": {
     "description": "Files too large for upload"
   },
+  "total": "總額",
+  "@total": {},
   "totalPrivacyControlEmphasized": "完全掌控私隱",
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
+  "tryAgain": "再試一次",
+  "@tryAgain": {},
   "tryAgainDownloadingFile": "新近上載的檔案, 可能會遇到這個情況。請於稍後再試。",
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
@@ -1552,6 +1680,30 @@
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
+  "turboAddCreditsBlurb": "以你的信用卡添加積分以加快上載。",
+  "@turboAddCreditsBlurb": {
+    "description": "text placeholder for turbo balance when no user"
+  },
+  "turboErrorMessageEstimationInformationFailed": "加載信息時出錯。請再試一次。",
+  "@turboErrorMessageEstimationInformationFailed": {},
+  "turboErrorMessageFetchPaymentIntentFailed": "付款處理器現無法使用，請稍後再試",
+  "@turboErrorMessageFetchPaymentIntentFailed": {},
+  "turboErrorMessageNetwork": "無法連接到互聯網。請檢查你的連接並重試。",
+  "@turboErrorMessageNetwork": {},
+  "turboErrorMessageServer": "未能成功付款。請檢查你的信用卡資料並重試。",
+  "@turboErrorMessageServer": {},
+  "turboErrorMessageSessionExpired": "這節 Turbo 已過時限。請再試一次。",
+  "@turboErrorMessageSessionExpired": {},
+  "turboErrorMessageUnknown": "未能成功付款。請檢查你的信用卡資料並重試。",
+  "@turboErrorMessageUnknown": {},
+  "unableToFetchEstimateAtThisTime": "目前無法獲取估算值。",
+  "@unableToFetchEstimateAtThisTime": {},
+  "unableToUpdateQuote": "無法更新報價。請再試一次。",
+  "@unableToUpdateQuote": {},
+  "unit": "單位",
+  "@unit": {},
+  "units": "單位",
+  "@units": {},
   "unlock": "解鎖",
   "@unlock": {
     "description": "Unlock a file or drive."
@@ -1567,6 +1719,10 @@
   "uploadDragAndDrop": "上載檔案",
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
+  },
+  "uploadedBy": "上載者：",
+  "@uploadedBy": {
+    "description": "Refers to the one that uploaded the data of a pinned file"
   },
   "uploadEmphasized": "上載",
   "@uploadEmphasized": {
@@ -1766,6 +1922,8 @@
   "@weWontRemindYouDescription": {
     "description": "We let the user know where to find the 'Leave Feedback' button"
   },
+  "whatIsAKeyFile": "甚麼是密鑰文件以及它如何運作？",
+  "@whatIsAKeyFile": {},
   "whatIsArDrive": "什麼是 ArDrive？",
   "@whatIsArDrive": {
     "description": "What is ArDrive? link on shared file page"
@@ -1774,6 +1932,10 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
+  "yourCreditsWillBeAddedToYourAccount": "積分將很快添加到你的帳戶中。你可關閉此頁面。",
+  "@yourCreditsWillBeAddedToYourAccount": {},
+  "yourPasswordCannotBeCahngedOrRetrivied": "你無法更改或找回密碼，請妥善記載。",
+  "@yourPasswordCannotBeCahngedOrRetrivied": {},
   "yourPrivateSecureAndPermanentDrive": "您私人、安全、且永久性的硬碟。",
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
@@ -1782,6 +1944,8 @@
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
+  "yourUploadFailedTurboTimeout": "這次上載失敗。你無需為此付費。",
+  "@yourUploadFailedTurboTimeout": {},
   "zippingYourFiles": "正在壓縮您的檔案...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
