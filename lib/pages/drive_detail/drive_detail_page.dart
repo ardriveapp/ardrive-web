@@ -247,6 +247,29 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         target: Alignment.bottomRight,
                                       ),
                                       items: [
+                                        ArDriveDropdownItem(
+                                          onClick: () async {
+                                            final driveItem =
+                                                DriveDataTableItemMapper
+                                                    .fromDrive(
+                                                        state.currentDrive,
+                                                        (p0) => null,
+                                                        0,
+                                                        true);
+
+                                            promptToDownloadMultipleFiles(
+                                              context,
+                                              selectedItems: [driveItem],
+                                            );
+                                          },
+                                          content: ArDriveDropdownItemTile(
+                                            name: appLocalizationsOf(context)
+                                                .download,
+                                            icon: ArDriveIcons.download(
+                                              size: defaultIconSize,
+                                            ),
+                                          ),
+                                        ),
                                         if (isDriveOwner)
                                           ArDriveDropdownItem(
                                             onClick: () {

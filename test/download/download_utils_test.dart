@@ -1,3 +1,4 @@
+import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/download/download_utils.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/utils/data_size.dart';
@@ -67,13 +68,14 @@ void main() {
   group('convertSelectionToMultiDownloadFileList', () {
     test('works with selection of only files', () async {
       DriveDao mockDriveDao = MockDriveDao();
+      ARFSRepository mockArfsRepository = MockARFSRepository();
       final selectedItems = [
         createMockFileDataTableItem(dataTxId: '1', size: 50),
         createMockFileDataTableItem(dataTxId: '2', size: const GiB(3).size),
         createMockFileDataTableItem(dataTxId: '3', size: 20),
       ];
       final output = (await convertSelectionToMultiDownloadFileList(
-              mockDriveDao, selectedItems))
+              mockDriveDao, mockArfsRepository, selectedItems))
           .whereType<MultiDownloadFile>()
           .toList();
 
@@ -88,6 +90,7 @@ void main() {
 
     test('works with selection of files and nested folders', () async {
       DriveDao mockDriveDao = MockDriveDao();
+      ARFSRepository mockArfsRepository = MockARFSRepository();
       when(() => mockDriveDao.getFolderTree(any(), any()))
           .thenAnswer((_) async => mockFolderA);
 
@@ -97,7 +100,7 @@ void main() {
         createMockFileDataTableItem(dataTxId: '2', size: const GiB(3).size),
       ];
       final output = (await convertSelectionToMultiDownloadFileList(
-          mockDriveDao, selectedItems));
+          mockDriveDao, mockArfsRepository, selectedItems));
 
       expect(output.length, 6);
       expect(output[0] is MultiDownloadFolder, true);

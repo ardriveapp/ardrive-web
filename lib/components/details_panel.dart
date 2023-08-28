@@ -848,8 +848,7 @@ class DetailsPanelToolbar extends StatelessWidget {
                 }
               },
             ),
-          if (item is FileDataTableItem || item is FolderDataTableItem)
-            _buildActionIcon(
+          _buildActionIcon(
               tooltip: appLocalizationsOf(context).download,
               icon: ArDriveIcons.download(size: defaultIconSize),
               onTap: () {
@@ -863,9 +862,13 @@ class DetailsPanelToolbar extends StatelessWidget {
                     context,
                     selectedItems: [item as FolderDataTableItem],
                   );
+                } else if (item is DriveDataItem) {
+                  promptToDownloadMultipleFiles(
+                    context,
+                    selectedItems: [item as DriveDataItem],
+                  );
                 }
-              },
-            ),
+              }),
           if (item is FileDataTableItem && drive.isPublic)
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).preview,

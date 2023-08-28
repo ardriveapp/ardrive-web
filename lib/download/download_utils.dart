@@ -1,3 +1,4 @@
+import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 
@@ -44,12 +45,22 @@ Future<List<MultiDownloadItem>> convertFolderToMultidownloadFileList(
 }
 
 Future<List<MultiDownloadItem>> convertSelectionToMultiDownloadFileList(
-    DriveDao driveDao, List<ArDriveDataTableItem> selectedItems,
+    DriveDao driveDao,
+    ARFSRepository arfsRepository,
+    List<ArDriveDataTableItem> selectedItems,
     {String path = ''}) async {
   final multiDownloadFileList = <MultiDownloadItem>[];
 
   for (final item in selectedItems) {
-    if (item is FolderDataTableItem) {
+    if (item is DriveDataItem) {
+      final drive = await arfsRepository.getDriveById(item.driveId);
+      final folderNode =
+          await driveDao.getFolderTree(item.driveId, drive.rootFolderId);
+
+      multiDownloadFileList.addAll(await convertFolderToMultidownloadFileList(
+          driveDao, folderNode,
+          path: path));
+    } else if (item is FolderDataTableItem) {
       final folderNode = await driveDao.getFolderTree(item.driveId, item.id);
 
       multiDownloadFileList.addAll(await convertFolderToMultidownloadFileList(
