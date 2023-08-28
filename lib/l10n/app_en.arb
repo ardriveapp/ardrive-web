@@ -1448,8 +1448,16 @@
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
-  "quoteUpdatesIn": "Quote updates in ",
-  "@quoteUpdatesIn": {},
+  "quoteUpdatesIn": "Quote updates in {timer}",
+  "@quoteUpdatesIn": {
+    "description": "Indicates the time left for the next update of the quote",
+    "placeholders": {
+      "timer": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
+  },
   "recreateFolderEmphasized": "RECREATE FOLDER",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"

@@ -164,7 +164,6 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   @visibleForTesting
   bool isSizeAbovePrivateLimit(int size) {
-    logger.d(_privateFileLimit.toString());
     return size > _privateFileLimit;
   }
 
@@ -192,6 +191,6 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     );
     super.onError(error, stackTrace);
 
-    logger.e('Failed to download personal file: $error $stackTrace');
+    logger.e('Failed to download personal file', error, stackTrace);
   }
 }

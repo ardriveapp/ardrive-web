@@ -110,7 +110,7 @@ class TurboUploadService {
         );
 
         if (!acceptedStatusCodes.contains(response.statusCode)) {
-          logger.e(response.data);
+          logger.e('Error posting bytes', response.data);
           throw _handleException(response);
         }
         return;
@@ -125,7 +125,7 @@ class TurboUploadService {
           data: await convertDataItemToStreamBytes(dataItem));
 
       if (!acceptedStatusCodes.contains(response.statusCode)) {
-        logger.e(response.data);
+        logger.e('Error posting bytes', response.data);
         throw _handleException(response);
       }
     } catch (e) {
@@ -150,7 +150,7 @@ class TurboUploadService {
         'Handling exception in UploadService with status code: ${error.statusCode}',
         error,
       );
-      
+
       return TurboUploadTimeoutException();
     }
 
