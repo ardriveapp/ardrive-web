@@ -81,7 +81,10 @@ class NewButton extends StatelessWidget {
         );
 
     return ScreenTypeLayout.builder(
-      mobile: (_) => ArDriveSubmenu(menuChildren: menuItems, child: theChild),
+      mobile: (_) => ArDriveSubmenu(
+        menuChildren: menuItems,
+        child: theChild,
+      ),
       desktop: (_) => ArDriveSubmenu(
         alignmentOffset: const Offset(140, -40),
         menuChildren: menuItems,
@@ -169,29 +172,15 @@ class NewButton extends StatelessWidget {
 
   List<ArDriveSubmenuItem> _getNewMenuItems(BuildContext context) {
     final List<ArDriveSubmenuItem> topLevelItems = [];
-
-    final topItems = _getTopItems(context);
+    final List<ArDriveNewButtonComponent> topItems = _getTopItems(context);
 
     topLevelItems.addAll(topItems.map(
-      (e) {
-        if (e is ArDriveNewButtonItem) {
-          return ArDriveSubmenuItem(
-            onClick: e.onClick,
-            widget: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 24.0),
-                  child: ArDriveDropdownItemTile(
-                    icon: e.icon,
-                    name: e.name,
-                    isDisabled: e.isDisabled,
-                  ),
-                ),
-              ],
-            ),
-          );
+      (topItem) {
+        if (topItem is ArDriveNewButtonItem) {
+          return _newButtonItemToSubMenuItem(context, topItem);
         } else /** it's an ArDriveNewButtonDivider */ {
           return ArDriveSubmenuItem(
+            isDisabled: true,
             widget: const Column(
               children: [
                 Divider(
@@ -207,15 +196,14 @@ class NewButton extends StatelessWidget {
     if (advancedItems.isNotEmpty) {
       topLevelItems.add(
         ArDriveSubmenuItem(
+          isDisabled: false,
           children: advancedItems
-              .map((e) => ArDriveSubmenuItem(
-                    onClick: e.onClick,
-                    widget: ArDriveDropdownItemTile(
-                      icon: e.icon,
-                      name: e.name,
-                      isDisabled: e.isDisabled,
-                    ),
-                  ))
+              .map(
+                (advancedItem) => _newButtonItemToSubMenuItem(
+                  context,
+                  advancedItem,
+                ),
+              )
               .toList(),
           widget: ArDriveDropdownItemTile(
             name: appLocalizationsOf(context).advanced,
@@ -228,6 +216,32 @@ class NewButton extends StatelessWidget {
     }
 
     return topLevelItems;
+  }
+
+  ArDriveSubmenuItem _newButtonItemToSubMenuItem(
+    BuildContext context,
+    ArDriveNewButtonItem item,
+  ) {
+    return ArDriveSubmenuItem(
+      isDisabled: item.isDisabled,
+      onClick: () {
+        if (!item.isDisabled) {
+          item.onClick();
+        }
+      },
+      widget: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 24.0),
+            child: ArDriveDropdownItemTile(
+              icon: item.icon,
+              name: item.name,
+              isDisabled: item.isDisabled,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   List<ArDriveNewButtonItem> _getAdvancedItems(BuildContext context) {
