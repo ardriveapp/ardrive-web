@@ -10,7 +10,7 @@ abstract class MultipleDownloadState extends Equatable {
 class MultipleDownloadInitial extends MultipleDownloadState {}
 
 class MultipleDownloadInProgress extends MultipleDownloadState {
-  final List<MultiDownloadFile> files;
+  final List<MultiDownloadItem> files;
   final int currentFileIndex;
 
   const MultipleDownloadInProgress({
@@ -43,7 +43,7 @@ class MultipleDownloadFinishedWithSuccess extends MultipleDownloadState {
   final String fileName;
   final Uint8List bytes;
   final DateTime lastModified;
-  final List<MultiDownloadFile> skippedFiles;
+  final List<MultiDownloadItem> skippedFiles;
 
   @override
   List<Object> get props => [fileName, bytes, lastModified, skippedFiles];

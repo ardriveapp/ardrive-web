@@ -3,6 +3,7 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
+import 'package:ardrive/download/download_utils.dart';
 import 'package:ardrive/download/multiple_download_bloc.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -455,11 +456,12 @@ void main() async {
                 .having((s) => s.currentFileIndex, 'currentFileIndex', 2),
             isA<MultipleDownloadFinishedWithSuccess>()
                 .having((s) => s.skippedFiles.length, 'skippedFiles.length', 1)
-                .having(
-                    (s) =>
-                        s.skippedFiles.isNotEmpty ? s.skippedFiles[0].txId : '',
-                    'skippedFile txid',
-                    'fail'),
+                .having((s) {
+              if (s.skippedFiles.isNotEmpty) {
+                final f = s.skippedFiles[0] as MultiDownloadFile;
+                return f.txId;
+              }
+            }, 'skippedFile txid', 'fail'),
           ],
         );
       });

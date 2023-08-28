@@ -52,9 +52,11 @@ int _unknownPlatformLimit(bool isPublic) {
 
 // TODO: extend to work drives and folders
 Future<bool> isSizeAboveDownloadSizeLimit(
-    List<MultiDownloadFile> items, bool isPublic,
+    List<MultiDownloadItem> items, bool isPublic,
     {DeviceInfoPlugin? deviceInfo}) async {
-  final totalSize = items.map((e) => e.size).reduce((a, b) => a + b);
+  final totalSize = items
+      .map((e) => e is MultiDownloadFile ? e.size : 0)
+      .reduce((a, b) => a + b);
 
   final sizeLimit =
       await calcDownloadSizeLimit(isPublic, deviceInfo: deviceInfo);

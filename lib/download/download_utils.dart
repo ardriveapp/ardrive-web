@@ -1,7 +1,9 @@
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 
-class MultiDownloadFile {
+abstract class MultiDownloadItem {}
+
+class MultiDownloadFile extends MultiDownloadItem {
   final String driveId;
   final String fileId;
   final String fileName;
@@ -12,12 +14,20 @@ class MultiDownloadFile {
       this.driveId, this.fileId, this.fileName, this.txId, this.size);
 }
 
-Future<List<MultiDownloadFile>> convertFolderToMultidownloadFileList(
+class MultiDownloadFolder extends MultiDownloadItem {
+  final String folderPath;
+
+  MultiDownloadFolder(this.folderPath);
+}
+
+Future<List<MultiDownloadItem>> convertFolderToMultidownloadFileList(
     DriveDao driveDao, FolderNode folderNode,
     {String path = ''}) async {
-  final multiDownloadFileList = <MultiDownloadFile>[];
+  final multiDownloadFileList = <MultiDownloadItem>[];
 
   final folderPath = '$path${folderNode.folder.name}/';
+
+  multiDownloadFileList.add(MultiDownloadFolder(folderPath));
 
   for (final subFolder in folderNode.subfolders) {
     multiDownloadFileList.addAll(await convertFolderToMultidownloadFileList(
@@ -33,10 +43,10 @@ Future<List<MultiDownloadFile>> convertFolderToMultidownloadFileList(
   return multiDownloadFileList;
 }
 
-Future<List<MultiDownloadFile>> convertSelectionToMultiDownloadFileList(
+Future<List<MultiDownloadItem>> convertSelectionToMultiDownloadFileList(
     DriveDao driveDao, List<ArDriveDataTableItem> selectedItems,
     {String path = ''}) async {
-  final multiDownloadFileList = <MultiDownloadFile>[];
+  final multiDownloadFileList = <MultiDownloadItem>[];
 
   for (final item in selectedItems) {
     if (item is FolderDataTableItem) {
@@ -55,7 +65,10 @@ Future<List<MultiDownloadFile>> convertSelectionToMultiDownloadFileList(
 }
 
 int calculateTotalFileSize(
-    DriveDao driveDao, List<MultiDownloadFile> selectedItems) {
-  return selectedItems.fold(
-      0, (previousValue, element) => previousValue + element.size);
+    DriveDao driveDao, List<MultiDownloadItem> selectedItems) {
+  return selectedItems.fold(0, (previousValue, element) {
+    return element is MultiDownloadFile
+        ? previousValue + element.size
+        : previousValue;
+  });
 }

@@ -10,6 +10,7 @@ import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
+import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:equatable/equatable.dart';
@@ -33,13 +34,13 @@ class MultipleDownloadBloc
 
   bool _canceled = false;
   int _currentFileIndex = 0;
-  final List<MultiDownloadFile> _skippedFiles = [];
+  final List<MultiDownloadItem> _skippedFiles = [];
   SecretKey? _driveKey;
 
   late ARFSDriveEntity _drive;
   late ZipEncoder _zipEncoder;
   late OutputStream _outputStream;
-  late List<MultiDownloadFile> _files;
+  late List<MultiDownloadItem> _files;
   late String _outFileName;
 
   MultipleDownloadBloc(
@@ -88,33 +89,40 @@ class MultipleDownloadBloc
       return;
     }
 
-    var firstFile = _files[0];
-    _drive = await _arfsRepository.getDriveById(firstFile.driveId);
+    MultiDownloadFile? firstFile =
+        _files.firstWhereOrNull((element) => element is MultiDownloadFile)
+            as MultiDownloadFile?;
 
-    if (await isSizeAboveDownloadSizeLimit(
-        _files, _drive.drivePrivacy == DrivePrivacy.public,
-        deviceInfo: _deviceInfo)) {
-      emit(
-        const MultipleDownloadFailure(
-          FileDownloadFailureReason.fileAboveLimit,
-        ),
-      );
-      return;
-    }
+    if (firstFile != null) {
+      _drive = await _arfsRepository.getDriveById(firstFile.driveId);
 
-    if (_drive.drivePrivacy == DrivePrivacy.private) {
-      if (_cipherKey != null) {
-        _driveKey = await _driveDao.getDriveKey(
-          _drive.driveId,
-          _cipherKey!,
+      if (await isSizeAboveDownloadSizeLimit(
+          _files, _drive.drivePrivacy == DrivePrivacy.public,
+          deviceInfo: _deviceInfo)) {
+        emit(
+          const MultipleDownloadFailure(
+            FileDownloadFailureReason.fileAboveLimit,
+          ),
         );
-      } else {
-        _driveKey = await _driveDao.getDriveKeyFromMemory(_drive.driveId);
+        return;
       }
 
-      if (_driveKey == null) {
-        throw StateError('Drive Key not found');
+      if (_drive.drivePrivacy == DrivePrivacy.private) {
+        if (_cipherKey != null) {
+          _driveKey = await _driveDao.getDriveKey(
+            _drive.driveId,
+            _cipherKey!,
+          );
+        } else {
+          _driveKey = await _driveDao.getDriveKeyFromMemory(_drive.driveId);
+        }
+
+        if (_driveKey == null) {
+          throw StateError('Drive Key not found');
+        }
       }
+    } else {
+      _driveKey = null;
     }
 
     _initializeEncoder();
@@ -164,53 +172,60 @@ class MultipleDownloadBloc
 
         final file = _files[_currentFileIndex];
 
-        // TODO: Use cancelable streaming downloading once it is available in
-        // ArDriveHTTP
-        final dataBytes = await _downloadService.download(file.txId);
+        if (file is MultiDownloadFile) {
+          // TODO: Use cancelable streaming downloading once it is available in
+          // ArDriveHTTP
+          final dataBytes = await _downloadService.download(file.txId);
 
-        if (_canceled) {
-          logger.d('User cancelled multi-file downloading.');
-          return;
-        }
+          if (_canceled) {
+            logger.d('User cancelled multi-file downloading.');
+            return;
+          }
 
-        Uint8List outputBytes;
+          Uint8List outputBytes;
 
-        if (_drive.drivePrivacy == DrivePrivacy.private) {
-          final fileKey = await _driveDao.getFileKey(file.fileId, _driveKey!);
-          final dataTx = await (_arweave.getTransactionDetails(file.txId));
+          if (_driveKey != null) {
+            final fileKey = await _driveDao.getFileKey(file.fileId, _driveKey!);
+            final dataTx = await (_arweave.getTransactionDetails(file.txId));
 
-          try {
-            if (dataTx != null) {
-              final decryptedData = await _crypto.decryptTransactionData(
-                dataTx,
-                dataBytes,
-                fileKey,
-              );
+            try {
+              if (dataTx != null) {
+                final decryptedData = await _crypto.decryptTransactionData(
+                  dataTx,
+                  dataBytes,
+                  fileKey,
+                );
 
-              outputBytes = decryptedData;
-            } else {
-              logger.e('Error decrypting file: dataTx is null');
+                outputBytes = decryptedData;
+              } else {
+                logger.e('Error decrypting file: dataTx is null');
+                emit(const MultipleDownloadFailure(
+                    FileDownloadFailureReason.unknownError));
+                return;
+              }
+            } catch (e) {
+              logger.e('Error decrypting file: ${e.toString()}');
               emit(const MultipleDownloadFailure(
                   FileDownloadFailureReason.unknownError));
               return;
             }
-          } catch (e) {
-            logger.e('Error decrypting file: ${e.toString()}');
-            emit(const MultipleDownloadFailure(
-                FileDownloadFailureReason.unknownError));
-            return;
+          } else {
+            outputBytes = dataBytes;
           }
-        } else {
-          outputBytes = dataBytes;
-        }
 
-        // TODO make sure writing to path/filename works to unzip
-        // folder structure
-        _zipEncoder.addFile(ArchiveFile.noCompress(
-          file.fileName,
-          file.size,
-          outputBytes,
-        ));
+          _zipEncoder.addFile(ArchiveFile.noCompress(
+            file.fileName,
+            file.size,
+            outputBytes,
+          ));
+        } else {
+          // FOLDER ENTRY
+          final dir = file as MultiDownloadFolder;
+          final entry =
+              ArchiveFile.noCompress(dir.folderPath, 0, Uint8List.fromList([]));
+          entry.isFile = false;
+          _zipEncoder.addFile(entry);
+        }
 
         _currentFileIndex++;
       }

@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../core/arfs/repository/arfs_repository.dart';
+import 'download_utils.dart';
 
 promptToDownloadMultipleFiles(
   BuildContext context, {
@@ -122,7 +123,10 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                                 children: [
                                   Flexible(
                                     child: Text(
-                                      '${file.fileName} ',
+                                      file is MultiDownloadFile
+                                          ? '${file.fileName} '
+                                          : (file as MultiDownloadFolder)
+                                              .folderPath,
                                       style: ArDriveTypography.body.smallBold(
                                         color: ArDriveTheme.of(context)
                                             .themeData
@@ -131,19 +135,20 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                                       ),
                                     ),
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 16),
-                                    child: Text(
-                                      filesize(file.size),
-                                      style:
-                                          ArDriveTypography.body.smallRegular(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeFgMuted,
+                                  if (file is MultiDownloadFile)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 16),
+                                      child: Text(
+                                        filesize(file.size),
+                                        style:
+                                            ArDriveTypography.body.smallRegular(
+                                          color: ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeFgMuted,
+                                        ),
                                       ),
-                                    ),
-                                  )
+                                    )
                                 ],
                               );
                             },
@@ -193,7 +198,10 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                                 children: [
                                   Flexible(
                                     child: Text(
-                                      '${file.fileName} ',
+                                      file is MultiDownloadFile
+                                          ? '${file.fileName} '
+                                          : (file as MultiDownloadFolder)
+                                              .folderPath,
                                       style: ArDriveTypography.body.smallBold(
                                         color: ArDriveTheme.of(context)
                                             .themeData
@@ -202,15 +210,17 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                                       ),
                                     ),
                                   ),
-                                  Text(
-                                    filesize(file.size),
-                                    style: ArDriveTypography.body.smallRegular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgMuted,
+                                  if (file is MultiDownloadFile)
+                                    Text(
+                                      filesize(file.size),
+                                      style:
+                                          ArDriveTypography.body.smallRegular(
+                                        color: ArDriveTheme.of(context)
+                                            .themeData
+                                            .colors
+                                            .themeFgMuted,
+                                      ),
                                     ),
-                                  ),
                                 ],
                               );
                             },
