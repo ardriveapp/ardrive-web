@@ -254,12 +254,14 @@ class _ProfileCardState extends State<ProfileCard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  appLocalizationsOf(context).downloadWalletKeyfile,
-                  style: ArDriveTypography.body.captionRegular().copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                      ),
+                Flexible(
+                  child: Text(
+                    appLocalizationsOf(context).downloadWalletKeyfile,
+                    style: ArDriveTypography.body.captionRegular().copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                        ),
+                  ),
                 ),
                 ArDriveIcons.arrowDownload(),
               ],
