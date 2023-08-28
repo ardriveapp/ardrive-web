@@ -461,6 +461,7 @@ void main() async {
                 final f = s.skippedFiles[0] as MultiDownloadFile;
                 return f.txId;
               }
+              return '';
             }, 'skippedFile txid', 'fail'),
           ],
         );
