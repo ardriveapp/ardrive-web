@@ -148,6 +148,6 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     emit(DriveCreateFailure());
     super.onError(error, stackTrace);
 
-    logger.e('Failed to create drive: $error $stackTrace');
+    logger.e('Failed to create drive', error, stackTrace);
   }
 }

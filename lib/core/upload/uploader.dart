@@ -71,7 +71,7 @@ class ArDriveUploader {
       try {
         await _prepareBundle(bundleHandle);
       } catch (e) {
-        logger.e('Error preparing bundle: ${e.toString()}');
+        logger.e('Error preparing bundle', e);
         _onUploadBundleError(bundleHandle, e);
         return;
       }
@@ -98,18 +98,18 @@ class ArDriveUploader {
         final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
         final uploadSpeed = dataSize / elapsedSeconds;
 
-        logger.i('Total time elapsed: $elapsedSeconds seconds');
-        logger.i('Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
+        logger.i('Total time elapsed: $elapsedSeconds seconds. '
+            'Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
       }
     }
 
     for (final fileV2Handle in fileV2Handles) {
-      logger.i('Uploading fileV2Handle: ${fileV2Handle.toString()}');
+      logger.i('Uploading fileV2Handle...');
 
       try {
         await _prepareFile(fileV2Handle);
       } catch (e) {
-        logger.e('Error preparing file: ${e.toString()}');
+        logger.e('Error preparing file', e);
         _onUploadFileError(fileV2Handle, e);
         return;
       }
@@ -136,8 +136,8 @@ class ArDriveUploader {
         final elapsedSeconds = stopwatch.elapsedMilliseconds / 1000.0;
         final uploadSpeed = dataSize / elapsedSeconds;
 
-        logger.i('Total time elapsed: $elapsedSeconds seconds');
-        logger.i('Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
+        logger.i('Total time elapsed: $elapsedSeconds seconds '
+            'Average upload speed: ${filesize(uploadSpeed.toInt())}/sec');
       }
     }
   }
@@ -162,8 +162,8 @@ class ArDriveUploader {
         yield Tuple2(index, progress);
       }
 
-      logger.i('[UPLOADER]: Finished uploading item handle'
-          '\n[UPLOADER]: Disposing item handle');
+      logger.i('[UPLOADER]: Finished uploading item handle '
+          '[UPLOADER]: Disposing item handle');
 
       onFinishUpload(itemHandle).then((value) => dispose(itemHandle));
     } catch (e, stacktrace) {
@@ -360,8 +360,12 @@ class UploadPaymentEvaluator {
             await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
 
         logger.i('Turbo balance: $turboBalance');
-      } catch (e) {
-        logger.e(e);
+      } catch (e, stacktrace) {
+        logger.e(
+          'An error occured while getting the turbo balance',
+          e,
+          stacktrace,
+        );
         isTurboAvailableToUploadAllFiles = false;
         turboBalance = BigInt.zero;
       }

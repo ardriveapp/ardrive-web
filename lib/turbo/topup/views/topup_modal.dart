@@ -272,11 +272,11 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         content: TurboErrorView(
           errorType: type,
           onDismiss: () {
-            logger.d('dismiss');
+            logger.d('clicked dismiss on error modal');
             Navigator.of(modalContext).pop();
           },
           onTryAgain: () {
-            logger.d('try again');
+            logger.d('clicked try again on error modal');
             Navigator.of(modalContext).pop();
             Navigator.of(context).pop();
 

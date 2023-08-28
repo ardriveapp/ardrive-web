@@ -26,10 +26,7 @@ class GraphQLRetry {
         maxAttempts: maxAttempts,
         onRetry: (exception) {
           onRetry?.call(exception);
-          logger.i('''
-          Retrying Query: ${query.toString()}\n
-          On Exception: ${exception.toString()}
-          ''');
+          logger.w('Retrying Query: ${query.operationName}');
         },
       );
 
@@ -37,11 +34,10 @@ class GraphQLRetry {
     } catch (e) {
       final isConnected = await _internetChecker.isConnected();
 
-      logger.e('''
-        Fatal error while querying: ${query.operationName}\n
-        Number of retries exceeded.
-        Exception: ${e.toString()}
-        ''');
+      logger.e(
+        'Fatal error while querying: ${query.operationName}. Number of retries exceeded',
+        e,
+      );
 
       if (!isConnected) {
         throw NoConnectionException();
