@@ -80,7 +80,7 @@ packages:
     description:
       path: "."
       ref: PE-4469-ui-overflow-issues-in-various-scenarios
-      resolved-ref: "400fadb22a8b4f16ceaa4f2679125bbdc2d483d9"
+      resolved-ref: be3cd73c7e466b8fdf5d86b83376b20588826c71
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.7.0"
