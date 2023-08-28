@@ -111,7 +111,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     emit(FsEntryInfoFailure());
     super.onError(error, stackTrace);
 
-    logger.e('Failed to load entity info: $error $stackTrace');
+    logger.e('Failed to load entity info', error, stackTrace);
   }
 
   @override

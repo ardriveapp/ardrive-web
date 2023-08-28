@@ -15,7 +15,7 @@ class DatabaseHelpers {
         }
       });
     } catch (e) {
-      logger.e('Error deleting all tables: $e');
+      logger.e('Error deleting all tables', e);
     }
   }
 }

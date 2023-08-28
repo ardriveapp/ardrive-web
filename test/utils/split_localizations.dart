@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,9 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('splitTranslationsWithMultipleStyles method', () {
     Widget defaultFactory(String text) => Text(text);
+    // ignore: duplicate_ignore
     Widget anchorFactory(String text) => TextButton(
           child: Text(text),
-          // ignore: avoid_print
           onPressed: () => print('PRESS'),
         );
 

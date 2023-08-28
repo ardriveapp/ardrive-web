@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_print
-
 part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 
 Future<void> _updateTransactionStatuses({
@@ -17,6 +15,7 @@ Future<void> _updateTransactionStatuses({
   logger.i(
     'Skipping status update for ${txsIdsToSkip.length} transactions that were captured in snapshots',
   );
+
   for (final txId in txsIdsToSkip) {
     pendingTxMap.remove(txId);
   }
