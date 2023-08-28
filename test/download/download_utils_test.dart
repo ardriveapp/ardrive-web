@@ -99,19 +99,33 @@ void main() {
       final output = (await convertSelectionToMultiDownloadFileList(
           mockDriveDao, selectedItems));
 
-      // expect(output.length, 4);
-      // expect(output[0].txId, 'b0');
-      // expect(output[0].size, 75);
-      // expect(output[0].fileName, 'a/b/b0.txt');
+      expect(output.length, 6);
+      expect(output[0] is MultiDownloadFolder, true);
+      expect((output[0] as MultiDownloadFolder).folderPath, 'a/');
 
-      // expect(output[1].txId, 'a0');
-      // expect(output[1].size, 85);
-      // expect(output[1].fileName, 'a/a0.txt');
+      expect(output[1] is MultiDownloadFolder, true);
+      expect((output[1] as MultiDownloadFolder).folderPath, 'a/b/');
 
-      // expect(output[2].txId, '1');
-      // expect(output[2].size, 50);
-      // expect(output[3].txId, '2');
-      // expect(output[3].size, const GiB(3).size);
+      expect(output[2] is MultiDownloadFile, true);
+      var file = output[2] as MultiDownloadFile;
+      expect(file.txId, 'b0');
+      expect(file.size, 75);
+      expect(file.fileName, 'a/b/b0.txt');
+
+      expect(output[3] is MultiDownloadFile, true);
+      file = output[3] as MultiDownloadFile;
+      expect(file.txId, 'a0');
+      expect(file.size, 85);
+      expect(file.fileName, 'a/a0.txt');
+
+      expect(output[4] is MultiDownloadFile, true);
+      file = output[4] as MultiDownloadFile;
+      expect(file.txId, '1');
+      expect(file.size, 50);
+      expect(output[5] is MultiDownloadFile, true);
+      file = output[5] as MultiDownloadFile;
+      expect(file.txId, '2');
+      expect(file.size, const GiB(3).size);
     });
   });
 }
