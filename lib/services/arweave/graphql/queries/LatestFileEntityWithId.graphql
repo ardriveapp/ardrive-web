@@ -4,7 +4,6 @@ query LatestFileEntityWithId($fileId: String!, $owner: String!) {
     sort: HEIGHT_DESC
     owners: [$owner]
     tags: [
-      { name: "ArFS", values: ["0.10", "0.11", "0.12", "0.13"] }
       { name: "File-Id", values: [$fileId] }
     ]
   ) {

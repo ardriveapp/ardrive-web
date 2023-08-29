@@ -3,7 +3,6 @@ query FirstDriveEntityWithIdOwner($driveId: String!) {
     first: 1
     sort: HEIGHT_ASC
     tags: [
-      { name: "ArFS", values: ["0.10", "0.11", "0.12", "0.13"] }
       { name: "Entity-Type", values: ["drive"] }
       { name: "Drive-Id", values: [$driveId] }
     ]

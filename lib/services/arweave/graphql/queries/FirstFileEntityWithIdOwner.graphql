@@ -3,7 +3,6 @@ query FirstFileEntityWithIdOwner($fileId: String!) {
     first: 1
     sort: HEIGHT_ASC
     tags: [
-      { name: "ArFS", values: ["0.10", "0.11", "0.12", "0.13"] }
       { name: "File-Id", values: [$fileId] }
     ]
   ) {
