@@ -98,9 +98,9 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
           if (state is MultipleDownloadInProgress) {
             return ArDriveStandardModal(
               width: 408,
-              // TODO: Localize text
-              title:
-                  'Downloading file(s)... ${state.currentFileIndex + 1} of ${state.files.length}',
+              title: appLocalizationsOf(context)
+                  .multiDownloadDownloadingFilesProgress(
+                      state.currentFileIndex + 1, state.files.length),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,9 +173,9 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
             // should only get here if there are skipped files
             return ArDriveStandardModal(
               width: 408,
-              // TODO: Localize text
-              title:
-                  'Download Complete with ${state.skippedFiles.length} skipped file(s)',
+              title: appLocalizationsOf(context)
+                  .multiDownloadCompleteWithSkippedFiles(
+                      state.skippedFiles.length),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,9 +253,8 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                     Text(appLocalizationsOf(context).tryAgainDownloadingFile);
                 break;
               case FileDownloadFailureReason.networkConnectionError:
-                // TODO: Localize text
-                content = const Text(
-                    'An error occurred while downloading your file(s). Please try again.');
+                content = Text(
+                    appLocalizationsOf(context).multiDownloadErrorTryAgain);
                 break;
               default:
                 content = Text(appLocalizationsOf(context).fileDownloadFailed);
