@@ -235,7 +235,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       children = _folderDetails(state);
     } else if (state is FsEntryInfoSuccess<FileEntry> ||
         widget.revisions != null) {
-      children = _fileDetails(state as FsEntryInfoSuccess);
+      children = _fileDetails(state);
     } else if (state is FsEntryInfoSuccess<Drive>) {
       children = _driveDetails(state);
     } else {
@@ -391,7 +391,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     ];
   }
 
-  List<Widget> _fileDetails(FsEntryInfoSuccess state) {
+  List<Widget> _fileDetails(FsEntryInfoState state) {
     String? pinnedDataOwnerAddress =
         (widget.item as FileDataTableItem).pinnedDataOwnerAddress;
 
@@ -433,27 +433,29 @@ class _DetailsPanelState extends State<DetailsPanel> {
         itemTitle: appLocalizationsOf(context).fileType,
       ),
       sizedBoxHeight16px,
-      DetailsPanelItem(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ArDriveIconButton(
-              tooltip: appLocalizationsOf(context).viewOnViewBlock,
-              icon: ArDriveIcons.newWindow(size: 20),
-              onPressed: () {
-                openUrl(
-                  url: 'https://viewblock.io/arweave/tx/${state.metadataTxId}',
-                );
-              },
-            ),
-            const SizedBox(width: 12),
-            CopyButton(
-              text: state.metadataTxId,
-            ),
-          ],
+      if (state is FsEntryInfoSuccess)
+        DetailsPanelItem(
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ArDriveIconButton(
+                tooltip: appLocalizationsOf(context).viewOnViewBlock,
+                icon: ArDriveIcons.newWindow(size: 20),
+                onPressed: () {
+                  openUrl(
+                    url:
+                        'https://viewblock.io/arweave/tx/${state.metadataTxId}',
+                  );
+                },
+              ),
+              const SizedBox(width: 12),
+              CopyButton(
+                text: state.metadataTxId,
+              ),
+            ],
+          ),
+          itemTitle: appLocalizationsOf(context).metadataTxID,
         ),
-        itemTitle: appLocalizationsOf(context).metadataTxID,
-      ),
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Row(
