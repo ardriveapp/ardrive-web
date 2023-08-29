@@ -68,7 +68,7 @@ class NewButton extends StatelessWidget {
   Widget _buildNewButton(BuildContext context) {
     final List<ArDriveSubmenuItem> menuItems = _getNewMenuItems(context);
 
-    final theChild = child ??
+    final subMenuChild = child ??
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: ArDriveFAB(
@@ -83,12 +83,12 @@ class NewButton extends StatelessWidget {
     return ScreenTypeLayout.builder(
       mobile: (_) => ArDriveSubmenu(
         menuChildren: menuItems,
-        child: theChild,
+        child: subMenuChild,
       ),
       desktop: (_) => ArDriveSubmenu(
         alignmentOffset: const Offset(140, -40),
         menuChildren: menuItems,
-        child: theChild,
+        child: subMenuChild,
       ),
     );
   }
@@ -143,13 +143,16 @@ class NewButton extends StatelessWidget {
                                 vertical: 8,
                                 horizontal: 16,
                               ),
-                              child: ArDriveDropdownItemTile(
-                                iconAlignment: item.iconAlignment,
-                                icon: item.icon.copyWith(size: 24),
-                                name: item.name,
-                                isDisabled: item.isDisabled,
-                                fontStyle:
-                                    ArDriveTypography.body.buttonLargeBold(),
+                              child: ArDriveHoverWidget(
+                                showMouseCursor: !item.isDisabled,
+                                child: ArDriveDropdownItemTile(
+                                  iconAlignment: item.iconAlignment,
+                                  icon: item.icon.copyWith(size: 24),
+                                  name: item.name,
+                                  isDisabled: item.isDisabled,
+                                  fontStyle:
+                                      ArDriveTypography.body.buttonLargeBold(),
+                                ),
                               ),
                             ),
                           ),
@@ -205,11 +208,14 @@ class NewButton extends StatelessWidget {
                 ),
               )
               .toList(),
-          widget: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).advanced,
-            icon: ArDriveIcons.carretRight(size: defaultIconSize),
-            isDisabled: false,
-            iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,
+          widget: ArDriveHoverWidget(
+            showMouseCursor: true,
+            child: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).advanced,
+              icon: ArDriveIcons.carretRight(size: defaultIconSize),
+              isDisabled: false,
+              iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,
+            ),
           ),
         ),
       );
@@ -229,17 +235,20 @@ class NewButton extends StatelessWidget {
           item.onClick();
         }
       },
-      widget: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 24.0),
-            child: ArDriveDropdownItemTile(
-              icon: item.icon,
-              name: item.name,
-              isDisabled: item.isDisabled,
+      widget: ArDriveHoverWidget(
+        showMouseCursor: !item.isDisabled,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 24.0),
+              child: ArDriveDropdownItemTile(
+                icon: item.icon,
+                name: item.name,
+                isDisabled: item.isDisabled,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
