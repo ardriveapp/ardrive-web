@@ -38,10 +38,10 @@ class UploadPlanUtils {
     bool useTurbo = false,
   }) async {
     logger.i(
-      'Creating upload plan for ${files.length} files\n'
-      'Target drive: ${targetDrive.name}\n'
-      'Target folder: ${targetFolder.path}\n'
-      'Use turbo: $useTurbo',
+      'Creating upload plan for ${files.length} files'
+      ' Target drive: ${targetDrive.id}'
+      ' Target folder: ${targetFolder.id}'
+      ' Use turbo: $useTurbo',
     );
 
     final fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
@@ -70,12 +70,10 @@ class UploadPlanUtils {
 
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
       if (conflictingFiles[file.getIdentifier()] != null) {
-        logger.i(
-            'File ${file.getIdentifier()} already exists in target folder. Reusing id.');
+        logger.i('File already exists in target folder. Reusing id.');
         fileEntity.id = conflictingFiles[file.getIdentifier()];
       } else {
-        logger.i(
-            'File ${file.getIdentifier()} does not exist in target folder. Creating new id.');
+        logger.i('File does not exist in target folder. Creating new id.');
         fileEntity.id = _uuid.v4();
       }
 

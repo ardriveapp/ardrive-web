@@ -36,7 +36,7 @@ class ConfigService {
   Future<AppConfig> loadConfig() async {
     _config ??= await _configFetcher.fetchConfig(await loadAppFlavor());
 
-    logger.i('App config: $_config');
+    logger.d('App config: $_config');
 
     return _config!;
   }

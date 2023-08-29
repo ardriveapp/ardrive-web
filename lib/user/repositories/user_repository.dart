@@ -54,7 +54,7 @@ class _UserRepository implements UserRepository {
       ),
     );
 
-    logger.d('Loaded user: ${user.walletAddress}');
+    logger.d('Loaded user');
 
     return user;
   }

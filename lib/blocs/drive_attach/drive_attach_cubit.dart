@@ -236,6 +236,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     emit(DriveAttachFailure());
     super.onError(error, stackTrace);
 
-    logger.i('Failed to attach drive: $error $stackTrace');
+    logger.e('Failed to attach drive', error, stackTrace);
   }
 }

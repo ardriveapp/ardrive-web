@@ -62,8 +62,6 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     String name = event.name;
     final String id = event.id;
 
-    logger.d('FieldsChanged: name: $name, id: $id');
-
     if (name.isEmpty && id.isEmpty) {
       emit(const PinFileInitial());
       return;
@@ -339,7 +337,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         idValidation: state.idValidation,
       ));
     }).catchError((err, stacktrace) {
-      logger.d('PinFileSubmit error: $err - $stacktrace');
+      logger.e('PinFileSubmit error', err, stacktrace);
       emit(PinFileError(
         id: state.id,
         name: state.name,
@@ -374,10 +372,9 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     );
   }
 
+// TODO: FIX
   Future<bool> _doesNameConflicts(String name) async {
-    logger.d(
-      'About to check if entity with same name ($name) exists',
-    );
+    logger.d('About to check if entity with same name ($name) exists');
     final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
       name: name,
       driveId: _driveId,

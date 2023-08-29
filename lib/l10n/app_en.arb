@@ -22,6 +22,10 @@
   "@addSomeFiles": {
     "description": "Empty folder"
   },
+  "advanced": "Advanced",
+  "@advanced": {
+    "description": "The advanced options"
+  },
   "aggreeToTerms_body": "I agree to the ArDrive terms of service and privacy policy.",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
@@ -88,7 +92,7 @@
   "@ardriveIsOptimizedForLargeScreens": {
     "description": "Screen not supported page"
   },
-  "attachDrive": "Attach drive",
+  "attachDrive": "Attach Drive",
   "@attachDrive": {
     "description": "Attach a shared drive"
   },
@@ -330,7 +334,7 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "Create manifest",
+  "createManifest": "New Manifest",
   "@createManifest": {
     "description": "To create a manifest"
   },
@@ -346,7 +350,7 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "Create Snapshot",
+  "createSnapshot": "New Snapshot",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
@@ -979,6 +983,8 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
+  "helpCenter": "Help Center",
+  "@helpCenter": {},
   "howAreConversionsDetermined": "How are conversions determined?",
   "@howAreConversionsDetermined": {},
   "howDoesKeyfileLoginWork": "How do keyfile and seed phrase login work?",
@@ -1226,7 +1232,7 @@
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
   },
-  "newDrive": "New drive",
+  "newDrive": "New Drive",
   "@newDrive": {
     "description": "Create a new drive entity"
   },
@@ -1234,7 +1240,7 @@
   "@newFilePin": {
     "description": "E.g.: I want to create a \"New File Pin\""
   },
-  "newFolder": "New folder",
+  "newFolder": "New Folder",
   "@newFolder": {
     "description": "Create a new folder entity"
   },
@@ -1322,6 +1328,8 @@
   "@orContinueWith": {
     "description": "text to continue with ar connect"
   },
+  "ourChannels": "Our channels: ",
+  "@ourChannels": {},
   "password": "Password",
   "@password": {
     "description": "Label for the 'password' input"
@@ -1440,8 +1448,16 @@
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
-  "quoteUpdatesIn": "Quote updates in ",
-  "@quoteUpdatesIn": {},
+  "quoteUpdatesIn": "Quote updates in {timer}",
+  "@quoteUpdatesIn": {
+    "description": "Indicates the time left for the next update of the quote",
+    "placeholders": {
+      "timer": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
+  },
   "recreateFolderEmphasized": "RECREATE FOLDER",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
@@ -1526,6 +1542,8 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "share": "Share",
+  "@share": {},
   "sharedDrives": "Shared Drives",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
@@ -1558,6 +1576,20 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
+  "shareLogsDescription": "You can share your logs with the ArDrive team to help us improve the app. The logs can be downloaded to your device and shared with us via email, Discord, or added to a support ticket.",
+  "@shareLogsDescription": {},
+  "shareLogsEmailBody": "Attached are the logs for ArDrive",
+  "@shareLogsEmailBody": {},
+  "shareLogsEmailSubject": "ArDrive Logs",
+  "@shareLogsEmailSubject": {},
+  "shareLogsNativeShareSubject": "ArDrive Logs",
+  "@shareLogsNativeShareSubject": {},
+  "shareLogsNativeShareText": "Attached are the logs for ArDrive",
+  "@shareLogsNativeShareText": {},
+  "shareLogsText": "Share logs",
+  "@shareLogsText": {},
+  "shareLogsWithEmailText": "Send email",
+  "@shareLogsWithEmailText": {},
   "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
@@ -1770,11 +1802,11 @@
   "@uploadFailed": {
     "description": "Upload Failed dialog title"
   },
-  "uploadFiles": "Upload file(s)",
+  "uploadFiles": "Upload File(s)",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
   },
-  "uploadFolder": "Upload folder",
+  "uploadFolder": "Upload Folder",
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },

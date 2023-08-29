@@ -96,7 +96,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('Building video player');
     return VisibilityDetector(
       key: const Key('video-player'),
       onVisibilityChanged: (VisibilityInfo info) {

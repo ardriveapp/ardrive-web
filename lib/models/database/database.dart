@@ -25,7 +25,7 @@ class Database extends _$Database {
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          logger.i('schema changed from $from to $to ');
+          logger.i('schema changed from $from to $to');
 
           if (from == 16 && to == 17) {
             // Then we're adding the pin and custom fields columns

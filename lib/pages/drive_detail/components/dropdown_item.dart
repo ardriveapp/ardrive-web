@@ -1,18 +1,25 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
+enum ArDriveArDriveDropdownItemTileIconAlignment {
+  left,
+  right,
+}
+
 class ArDriveDropdownItemTile extends StatelessWidget {
   final String name;
-  final ArDriveIcon icon;
+  final ArDriveIcon? icon;
   final bool isDisabled;
   final TextStyle? fontStyle;
+  final ArDriveArDriveDropdownItemTileIconAlignment iconAlignment;
 
   const ArDriveDropdownItemTile({
     Key? key,
     required this.name,
-    required this.icon,
+    this.icon,
     this.isDisabled = false,
     this.fontStyle,
+    this.iconAlignment = ArDriveArDriveDropdownItemTileIconAlignment.left,
   }) : super(key: key);
 
   @override
@@ -25,15 +32,19 @@ class ArDriveDropdownItemTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            icon.copyWith(
-              color: isDisabled
-                  ? ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeAccentDisabled
-                  : null,
-            ),
-            const SizedBox(width: 20),
+            if (icon != null &&
+                iconAlignment ==
+                    ArDriveArDriveDropdownItemTileIconAlignment.left) ...[
+              icon!.copyWith(
+                color: isDisabled
+                    ? ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled
+                    : null,
+              ),
+              const SizedBox(width: 20),
+            ],
             Text(
               name,
               style: fontStyle ??
@@ -46,6 +57,19 @@ class ArDriveDropdownItemTile extends StatelessWidget {
                         : null,
                   ),
             ),
+            if (icon != null &&
+                iconAlignment ==
+                    ArDriveArDriveDropdownItemTileIconAlignment.right) ...[
+              const Spacer(),
+              icon!.copyWith(
+                color: isDisabled
+                    ? ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled
+                    : null,
+              ),
+            ]
           ],
         ),
       ),

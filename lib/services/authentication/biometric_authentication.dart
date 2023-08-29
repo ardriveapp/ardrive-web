@@ -93,8 +93,7 @@ class BiometricAuthentication {
 
       return authenticated;
     } on PlatformException catch (e) {
-      logger.e(e.toString());
-      logger.e(e.code);
+      logger.e('Error authenticating', e);
       disable();
 
       switch (e.code) {

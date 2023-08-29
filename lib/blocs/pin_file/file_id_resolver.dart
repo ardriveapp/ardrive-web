@@ -31,8 +31,8 @@ class NetworkFileIdResolver implements FileIdResolver {
 
     if (fileEntity == null) {
       // It either doesn't exist, is invalid, or private.
-
-      logger.d('Failed to get file entity for $fileId');
+      logger.d(
+          'Failed to get file entity for $fileId. It either doesnt exist, is invalid, or private');
 
       throw FileIdResolverException(
         id: fileId,
