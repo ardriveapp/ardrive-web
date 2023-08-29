@@ -4,8 +4,8 @@ query LatestDriveEntityWithId($driveId: String!, $owner: String!) {
     sort: HEIGHT_DESC
     owners: [$owner]
     tags: [
-      { name: "Entity-Type", values: ["drive"] }
       { name: "Drive-Id", values: [$driveId] }
+      { name: "Entity-Type", values: ["drive"] }
     ]
   ) {
     edges {
