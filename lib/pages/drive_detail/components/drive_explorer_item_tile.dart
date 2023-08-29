@@ -3,6 +3,7 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
+import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
@@ -202,6 +203,13 @@ class _DriveExplorerItemTileTrailingState
             width: 4,
           ),
         ],
+        if (widget.item is FileDataTableItem &&
+            (widget.item as FileDataTableItem).pinnedDataOwnerAddress !=
+                null) ...{
+          const PinIndicator(
+            size: 32,
+          ),
+        },
         ArDriveDropdown(
           calculateVerticalAlignment: (isAboveHalfScreen) {
             if (isAboveHalfScreen) {

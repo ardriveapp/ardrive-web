@@ -139,9 +139,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       _range = Range(start: 0, end: maximumHeightToSnapshot);
     }
 
-    // ignore: avoid_print
     logger.i(
-      'Trusted range to be snapshotted (Current height: $_currentHeight): $_range',
+      'Trusted range to be snapshotted (Current height: $_currentHeight): $_range)',
     );
   }
 
@@ -183,7 +182,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     SnapshotEntity snapshotEntity,
     Uint8List data,
   ) async {
-    // ignore: avoid_print
     logger.i('About to prepare and sign snapshot transaction');
 
     final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
@@ -205,7 +203,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
 
     try {
-      // ignore: avoid_print
       logger.i(
         'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
@@ -220,7 +217,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     } catch (e) {
       final isTabFocused = _tabVisibility.isTabFocused();
       if (isArConnectProfile && !isTabFocused) {
-        // ignore: avoid_print
         logger.i(
           'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
         );
@@ -228,9 +224,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           () async => await prepareTx(isArConnectProfile),
         );
       } else {
-        // ignore: avoid_print
-        logger.i(
-            'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
+        logger.e(
+          'Error preparing snapshot transaction - isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused',
+          e,
+        );
         rethrow;
       }
     }
@@ -242,7 +239,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
 
     try {
-      // ignore: avoid_print
       logger.i(
         'Signing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
@@ -257,7 +253,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     } catch (e) {
       final isTabFocused = _tabVisibility.isTabFocused();
       if (isArConnectProfile && !isTabFocused) {
-        // ignore: avoid_print
         logger.i(
           'Signing snapshot transaction while user is not focusing the tab. Waiting...',
         );
@@ -267,16 +262,16 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           },
         );
       } else {
-        // ignore: avoid_print
-        logger.i(
-            'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
+        logger.e(
+          'Error signing snapshot transaction isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused',
+          e,
+        );
         rethrow;
       }
     }
   }
 
   Future<Uint8List> _getSnapshotData() async {
-    // ignore: avoid_print
     logger.i('Computing snapshot data');
 
     emit(ComputingSnapshotData(
@@ -304,7 +299,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       dataBuffer.add(chunk);
     }
 
-    // ignore: avoid_print
     logger.i('Finished computing snapshot data');
 
     final data = dataBuffer.takeBytes();
@@ -397,9 +391,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
-      // ignore: avoid_print
       logger.i('Failed to confirm the upload: Wallet mismatch');
-      emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
+      emit(SnapshotUploadFailure());
       return;
     }
 
@@ -409,16 +402,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       await _arweave.postTx(_preparedTx);
 
       emit(SnapshotUploadSuccess());
-    } catch (err) {
-      // ignore: avoid_print
-      logger.i(
-          'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}');
-      emit(SnapshotUploadFailure(errorMessage: '$err'));
+    } catch (err, stacktrace) {
+      logger.e('Error while posting the snapshot transaction', err, stacktrace);
+      emit(SnapshotUploadFailure());
     }
   }
 
   void cancelSnapshotCreation() {
-    // ignore: avoid_print
     logger.i('User cancelled the snapshot creation');
 
     _wasSnapshotDataComputingCanceled = true;

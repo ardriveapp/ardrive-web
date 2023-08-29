@@ -167,7 +167,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       currentUser = await _userRepository.getUser(password);
 
-      logger.d('User unlocked');
+      logger.i('User unlocked');
 
       _userStreamController.add(_currentUser);
 

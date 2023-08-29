@@ -55,16 +55,15 @@ class ArweaveBundleTransactionSigner implements BundleTransactionSigner {
       unSignedBundle.blob,
       wallet,
     );
-
     logger.i('Bundle transaction created');
 
-    logger.i('Adding tip');
+    logger.i('Adding tip...');
 
     await pstService.addCommunityTipToTx(bundleTx);
 
     logger.i('Tip added');
 
-    logger.i('Signing bundle');
+    logger.i('Signing bundle...');
 
     await bundleTx.sign(wallet);
 

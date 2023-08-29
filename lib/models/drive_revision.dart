@@ -19,6 +19,8 @@ extension DriveRevisionCompanionExtensions on DriveRevisionsCompanion {
         name: name.value,
         lastUpdated: dateCreated,
         privacy: privacy.value,
+        customGQLTags: customGQLTags,
+        customJsonMetadata: customJsonMetadata,
       );
 
   /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
@@ -44,6 +46,8 @@ extension DriveEntityExtensions on DriveEntity {
         dateCreated: Value(createdAt),
         action: performedAction,
         bundledIn: Value(bundledIn),
+        customGQLTags: Value(customGqlTagsAsString),
+        customJsonMetadata: Value(customJsonMetadataAsString),
       );
 
   /// Returns the action performed on the Drive that lead to the new revision.
