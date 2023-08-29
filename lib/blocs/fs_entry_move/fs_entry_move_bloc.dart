@@ -81,7 +81,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
                 parentFolder: folderInView,
               );
             } catch (err) {
-              logger.e('Error moving items: $err');
+              logger.e('Error moving items', err);
             }
             emit(const FsEntryMoveSuccess());
           } else {

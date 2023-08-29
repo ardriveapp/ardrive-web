@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_print
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -74,7 +72,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
           arweave: arweave,
         );
       } catch (e) {
-        logger.e('Ignoring snapshot transaction with invalid block range - $e');
+        logger.e('Ignoring snapshot transaction with invalid block range', e);
         continue;
       }
 
@@ -197,9 +195,9 @@ class SnapshotItemOnChain implements SnapshotItem {
 
       try {
         node = DriveHistoryTransaction.fromJson(item['gqlNode']);
-      } catch (e, s) {
-        logger.i(
-          'Error while parsing GQLNode from snapshot item ($txId) - $e, $s',
+      } catch (e) {
+        logger.w(
+          'Error while parsing GQLNode from snapshot item ($txId)',
         );
         continue;
       }

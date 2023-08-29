@@ -70,9 +70,9 @@ void main() async {
 
   await configService.loadConfig();
 
-  if (!kIsWeb) {
-    final flavor = await configService.loadAppFlavor();
+  final flavor = await configService.loadAppFlavor();
 
+  if (!kIsWeb) {
     if (flavor == Flavor.development) {
       _runWithCrashlytics(flavor.name);
       return;
@@ -96,7 +96,7 @@ Future<void> _initialize() async {
 
   final config = configService.config;
 
-  logger.d('Initializing with config: $config');
+  logger.i('Initializing with config: $config');
 
   ArDriveDownloader.initialize();
 

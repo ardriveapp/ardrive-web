@@ -1,7 +1,11 @@
 name: PR Title Check
 
 on:
-  workflow_call:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
 
 jobs:
   pr-title-check:

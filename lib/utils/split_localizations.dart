@@ -4,8 +4,8 @@ typedef WidgetFactory<T> = T Function(String text);
 
 List<T> splitTranslationsWithMultipleStyles<T>({
   required String originalText,
-  required WidgetFactory defaultMapper,
-  required Map<String, WidgetFactory> parts,
+  required WidgetFactory<T> defaultMapper,
+  required Map<String, WidgetFactory<T>> parts,
   T? separator,
 }) {
   final partitions = TextPartitions(wholeText: originalText);
