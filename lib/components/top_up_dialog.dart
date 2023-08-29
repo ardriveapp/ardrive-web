@@ -290,7 +290,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     int amountInt = int.parse(amount);
 
     // Selects zero to disable the button
-    if (amount.isEmpty || amountInt < 10) {
+    if (amount.isEmpty || amountInt < minAmount) {
       amountInt = 0;
     }
 
@@ -391,6 +391,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         ),
       ),
     );
+
     return ArDriveForm(
       key: _formKey,
       child: Column(
