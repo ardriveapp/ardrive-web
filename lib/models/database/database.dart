@@ -15,6 +15,8 @@ part 'database.g.dart';
 class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
+  // TODO: DO NOT MERGE
+
   @override
   int get schemaVersion => 16;
 
