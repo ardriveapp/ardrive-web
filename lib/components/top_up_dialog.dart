@@ -287,7 +287,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   }
 
   void _onCustomAmountSelected(String amount) {
-    int amountInt = int.parse(amount);
+    int amountInt = int.tryParse(amount) ?? 0;
 
     // Selects zero to disable the button
     if (amount.isEmpty || amountInt < minAmount) {
@@ -512,6 +512,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
             setState(() {
               if (s == null || s.isEmpty) {
                 _customAmountValidationMessage = null;
+                _onCustomAmountSelected('');
                 return;
               }
 
