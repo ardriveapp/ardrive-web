@@ -100,6 +100,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final DateTime lastModifiedDate;
   final NetworkTransaction? metadataTx;
   final NetworkTransaction? dataTx;
+  final String? pinnedDataOwnerAddress;
 
   FileDataTableItem({
     required this.fileId,
@@ -110,6 +111,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
     required this.lastModifiedDate,
     required this.metadataTx,
     required this.dataTx,
+    required this.pinnedDataOwnerAddress,
     required String name,
     required int size,
     required DateTime dateCreated,
@@ -320,6 +322,7 @@ class DriveDataTableItemMapper {
       metadataTx: file.metadataTx,
       dataTx: file.dataTx,
       index: index,
+      pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
     );
   }
 
@@ -381,6 +384,7 @@ class DriveDataTableItemMapper {
       metadataTx: null,
       dataTx: null,
       index: 0,
+      pinnedDataOwnerAddress: revision.pinnedDataOwnerAddress,
     );
   }
 }

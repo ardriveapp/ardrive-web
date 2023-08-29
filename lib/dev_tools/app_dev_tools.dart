@@ -233,6 +233,19 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    ArDriveDevToolOption enablePinsOption = ArDriveDevToolOption(
+      name: 'enablePins',
+      value: settings.enablePins,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(enablePins: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
     ArDriveDevToolOption autoSyncIntervalInSecondsOption = ArDriveDevToolOption(
       name: 'autoSyncIntervalInSeconds',
       value: settings.autoSyncIntervalInSeconds,
@@ -308,7 +321,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
               ?.read<PaymentFormBloc>()
               .add(PaymentFormPrePopulateFields());
         } catch (e) {
-          logger.e(e);
+          logger.e('Error setting default data on payment form', e);
         }
       },
       type: ArDriveDevToolOptionType.button,
@@ -324,6 +337,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       enableMultipleFileDownloadOption,
       enableVideoPreviewOption,
       enableSeedPhreaseLogin,
+      enablePinsOption,
       allowedDataItemSizeForTurboOption,
       defaultArweaveGatewayUrlOption,
       defaultTurboUrlOption,

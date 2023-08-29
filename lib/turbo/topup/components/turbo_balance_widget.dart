@@ -149,7 +149,7 @@ class _TurboBalanceState extends State<TurboBalance> {
                     ArDriveIconButton(
                       icon: ArDriveIcons.refresh(),
                       onPressed: () {
-                        logger.d('Refreshing baclance');
+                        logger.d('Refreshing balance');
                         _turboBalanceCubit.getBalance();
                       },
                     )

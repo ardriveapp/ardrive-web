@@ -99,15 +99,14 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     Wallet wallet,
     ProfileType profileType,
   ) async {
-    logger.d('Adding profile $username with type $profileType');
+    logger.d('Adding profile with type $profileType');
 
     final profileKdRes =
         await compute<Map<String, dynamic>, ProfileKeyDerivationResult>(
       deriveKey,
       {'password': password},
     );
-
-    logger.d('Profile key derivation result: $profileKdRes');
+    logger.d('Derived key finished');
 
     final profileSalt = profileKdRes.salt;
     final encryptedWallet = await () async {

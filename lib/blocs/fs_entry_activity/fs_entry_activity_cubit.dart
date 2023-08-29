@@ -68,7 +68,7 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
     emit(FsEntryActivityFailure());
     super.onError(error, stackTrace);
 
-    logger.e('Failed to load entity activity: $error $stackTrace');
+    logger.e('Failed to load entity activity', error, stackTrace);
   }
 
   @override

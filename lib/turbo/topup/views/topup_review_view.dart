@@ -294,6 +294,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                 child: Row(
                                   children: [
                                     TimerWidget(
+                                      humanReadable: false,
                                       key: state is PaymentReviewQuoteLoaded
                                           ? const ValueKey('quote_loaded')
                                           : null,
@@ -306,99 +307,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                             .read<PaymentReviewBloc>()
                                             .add(PaymentReviewRefreshQuote());
                                       },
-                                      builder: (context, seconds) {
-                                        Color textColor;
-                                        if (seconds < 30) {
-                                          textColor = ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeErrorDefault;
-                                        } else if (seconds < 60) {
-                                          textColor = ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeWarningMuted;
-                                        } else {
-                                          textColor = ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault;
-                                        }
-
-                                        String formatDuration(int seconds) {
-                                          int minutes = seconds ~/ 60;
-                                          int remainingSeconds = seconds % 60;
-                                          String minutesStr = minutes
-                                              .toString()
-                                              .padLeft(2, '0');
-                                          String secondsStr = remainingSeconds
-                                              .toString()
-                                              .padLeft(2, '0');
-                                          return '$minutesStr:$secondsStr';
-                                        }
-
-                                        if (state
-                                            is PaymentReviewLoadingQuote) {
-                                          return Text(
-                                            appLocalizationsOf(context)
-                                                .fetchingNewQuote,
-                                            style: ArDriveTypography.body
-                                                .buttonNormalBold()
-                                                .copyWith(
-                                                  color: textColor,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                          );
-                                        } else if (state
-                                            is PaymentReviewQuoteError) {
-                                          return Text(
-                                            appLocalizationsOf(context)
-                                                .errorFetchingQuote,
-                                            style: ArDriveTypography.body
-                                                .buttonNormalBold(
-                                                  color:
-                                                      ArDriveTheme.of(context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeErrorDefault,
-                                                )
-                                                .copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                          );
-                                        }
-
-                                        return RichText(
-                                          text: TextSpan(
-                                            children: [
-                                              TextSpan(
-                                                text:
-                                                    appLocalizationsOf(context)
-                                                        .quoteUpdatesIn,
-                                                style: ArDriveTypography.body
-                                                    .buttonNormalBold()
-                                                    .copyWith(
-                                                      color: ArDriveTheme.of(
-                                                              context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeFgDefault,
-                                                    ),
-                                              ),
-                                              TextSpan(
-                                                text: formatDuration(seconds),
-                                                style: ArDriveTypography.body
-                                                    .buttonNormalBold()
-                                                    .copyWith(
-                                                      color: textColor,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
+                                      isFetching:
+                                          state is PaymentReviewLoadingQuote,
+                                      hasError: state is PaymentReviewEvent,
                                     ),
                                     const Spacer(),
                                     const RefreshQuoteButton(),

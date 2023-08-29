@@ -1,0 +1,15 @@
+query InfoOfTransactionToBePinned($txId: ID!) {
+  transaction(id: $txId) {
+    owner {
+      address
+    }
+    tags {
+      name
+      value
+    }
+    data {
+      size
+      type
+    }
+  }
+}

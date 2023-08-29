@@ -189,6 +189,7 @@ FileDataTableItem createMockFileDataTableItem(
     lastModifiedDate,
     lastUpdated,
     DateTime? dateCreated,
+    pinnedDataOwnerAddress,
     parentFolderId = 'parentFolderId',
     size = 100,
     name = 'name',
@@ -210,6 +211,7 @@ FileDataTableItem createMockFileDataTableItem(
       contentType: 'contentType',
       path: path,
       index: index,
+      pinnedDataOwnerAddress: pinnedDataOwnerAddress,
       isOwner: isOwner);
 }
 

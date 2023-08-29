@@ -30,30 +30,44 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               .getFolderTree(driveId, selectedItem.id)
               .asStream()
               .listen(
-                (f) => emit(
-                  FsEntryInfoSuccess<FolderNode>(
-                    name: f.folder.name,
-                    lastUpdated: f.folder.lastUpdated,
-                    dateCreated: f.folder.dateCreated,
-                    entry: f,
-                  ),
+            (f) async {
+              final metadataTxId = await _driveDao
+                  .latestFolderRevisionByFolderId(
+                      driveId: driveId, folderId: selectedItem.id)
+                  .getSingle();
+
+              emit(
+                FsEntryInfoSuccess<FolderNode>(
+                  name: f.folder.name,
+                  lastUpdated: f.folder.lastUpdated,
+                  dateCreated: f.folder.dateCreated,
+                  entry: f,
+                  metadataTxId: metadataTxId.metadataTxId,
                 ),
               );
+            },
+          );
           break;
         case FileDataTableItem:
           _entrySubscription = _driveDao
               .fileById(driveId: driveId, fileId: selectedItem.id)
               .watchSingle()
               .listen(
-                (f) => emit(
-                  FsEntryInfoSuccess<FileEntry>(
-                    name: f.name,
-                    lastUpdated: f.lastUpdated,
-                    dateCreated: f.dateCreated,
-                    entry: f,
-                  ),
-                ),
-              );
+            (f) async {
+              final metadataTxId = await _driveDao
+                  .latestFileRevisionByFileId(
+                      driveId: driveId, fileId: selectedItem.id)
+                  .getSingle();
+
+              emit(FsEntryInfoSuccess<FileEntry>(
+                name: f.name,
+                lastUpdated: f.lastUpdated,
+                dateCreated: f.dateCreated,
+                entry: f,
+                metadataTxId: metadataTxId.metadataTxId,
+              ));
+            },
+          );
           break;
         default:
           _entrySubscription = _driveDao
@@ -71,6 +85,10 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                   .getSingle();
               final rootFolderTree =
                   await _driveDao.getFolderTree(d.id, d.rootFolderId);
+              final metadataTxId = await _driveDao
+                  .latestDriveRevisionByDriveId(driveId: driveId)
+                  .getSingle();
+
               emit(
                 FsEntryDriveInfoSuccess(
                   name: d.name,
@@ -79,6 +97,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                   drive: d,
                   rootFolderRevision: rootFolderRevision,
                   rootFolderTree: rootFolderTree,
+                  metadataTxId: metadataTxId.metadataTxId,
                 ),
               );
             },
@@ -92,7 +111,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     emit(FsEntryInfoFailure());
     super.onError(error, stackTrace);
 
-    logger.e('Failed to load entity info: $error $stackTrace');
+    logger.e('Failed to load entity info', error, stackTrace);
   }
 
   @override

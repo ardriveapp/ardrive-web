@@ -83,7 +83,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         listener: (context, state) {
           // Clear state to prevent the last drive from being attached on new login
           if (state is ProfileLoggingOut) {
-            logger.d('Cleaning state');
+            logger.d('Logging out. Clearing state.');
 
             clearState();
           }
