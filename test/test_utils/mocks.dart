@@ -246,6 +246,24 @@ FolderDataTableItem createMockFolderDataTableItem(
       isOwner: isOwner);
 }
 
+DriveDataItem createMockDriveDataItem(
+    {id = 'id',
+    driveId = 'driveId',
+    name = 'name',
+    lastUpdated,
+    dateCreated,
+    index = 0,
+    isOwner = true}) {
+  return DriveDataItem(
+      id: id,
+      driveId: driveId,
+      name: name,
+      lastUpdated: lastUpdated ?? DateTime.now(),
+      dateCreated: dateCreated ?? DateTime.now(),
+      index: index,
+      isOwner: isOwner);
+}
+
 FolderEntry createMockFolderEntry(
     {name = 'name',
     id = 'id',

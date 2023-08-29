@@ -130,5 +130,39 @@ void main() {
       expect(file.txId, '2');
       expect(file.size, const GiB(3).size);
     });
+
+    test('works with drive', () async {
+      DriveDao mockDriveDao = MockDriveDao();
+      ARFSRepository mockArfsRepository = MockARFSRepository();
+      final drive = createMockDrive();
+
+      when(() => mockArfsRepository.getDriveById(any()))
+          .thenAnswer((_) async => drive);
+      when(() => mockDriveDao.getFolderTree(any(), any()))
+          .thenAnswer((_) async => mockFolderA);
+
+      final selectedItems = [createMockDriveDataItem()];
+      final output = (await convertSelectionToMultiDownloadFileList(
+          mockDriveDao, mockArfsRepository, selectedItems));
+
+      expect(output.length, 4);
+      expect(output[0] is MultiDownloadFolder, true);
+      expect((output[0] as MultiDownloadFolder).folderPath, 'a/');
+
+      expect(output[1] is MultiDownloadFolder, true);
+      expect((output[1] as MultiDownloadFolder).folderPath, 'a/b/');
+
+      expect(output[2] is MultiDownloadFile, true);
+      var file = output[2] as MultiDownloadFile;
+      expect(file.txId, 'b0');
+      expect(file.size, 75);
+      expect(file.fileName, 'a/b/b0.txt');
+
+      expect(output[3] is MultiDownloadFile, true);
+      file = output[3] as MultiDownloadFile;
+      expect(file.txId, 'a0');
+      expect(file.size, 85);
+      expect(file.fileName, 'a/a0.txt');
+    });
   });
 }
