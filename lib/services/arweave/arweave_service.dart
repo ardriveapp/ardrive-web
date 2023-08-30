@@ -436,39 +436,56 @@ class ArweaveService {
     String userAddress, {
     int maxRetries = defaultMaxRetries,
   }) async {
-    // FIXME: make me run all pages
-    final userDriveEntitiesQuery = await _graphQLRetry.execute(
-      UserDriveEntitiesQuery(
-        variables: UserDriveEntitiesArguments(owner: userAddress),
-      ),
-      maxAttempts: maxRetries,
-    );
+    List<TransactionCommonMixin> drives = [];
+    String cursor = '';
 
-    final queryEdges = userDriveEntitiesQuery.data!.transactions.edges;
-    final filteredEdges = queryEdges.where(
-      (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
-        element.node.tags
-            .map(
-              (e) => arfs_txs_filter.Tag(e.name, e.value),
-            )
-            .toList(),
-      ),
-    );
+    while (true) {
+      final userDriveEntitiesQuery = await _graphQLRetry.execute(
+        UserDriveEntitiesQuery(
+          variables: UserDriveEntitiesArguments(
+            owner: userAddress,
+            after: cursor,
+          ),
+        ),
+        maxAttempts: maxRetries,
+      );
 
-    return filteredEdges
-        .map((e) => e.node)
-        .fold<Map<String?, TransactionCommonMixin>>(
-          {},
-          (map, tx) {
-            final driveId = tx.getTag('Drive-Id');
-            if (!map.containsKey(driveId)) {
-              map[driveId] = tx;
-            }
-            return map;
-          },
-        )
-        .values
-        .toList();
+      final queryEdges = userDriveEntitiesQuery.data!.transactions.edges;
+      final filteredEdges = queryEdges.where(
+        (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
+          element.node.tags
+              .map(
+                (e) => arfs_txs_filter.Tag(e.name, e.value),
+              )
+              .toList(),
+        ),
+      );
+
+      final drivesInThisPage = filteredEdges
+          .map((e) => e.node)
+          .fold<Map<String?, TransactionCommonMixin>>(
+            {},
+            (map, tx) {
+              final driveId = tx.getTag('Drive-Id');
+              if (!map.containsKey(driveId)) {
+                map[driveId] = tx;
+              }
+              return map;
+            },
+          )
+          .values
+          .toList();
+
+      drives.addAll(drivesInThisPage);
+
+      final hasNextPage =
+          userDriveEntitiesQuery.data!.transactions.pageInfo.hasNextPage;
+      if (!hasNextPage) {
+        break;
+      }
+    }
+
+    return drives;
   }
 
   Future<String?> getFirstPrivateDriveTxId(
