@@ -51,6 +51,12 @@ class Database extends _$Database {
             await m.addColumn(fileRevisions, fileRevisions.customGQLTags);
             await m.addColumn(fileEntries, fileEntries.customJsonMetadata);
             await m.addColumn(fileEntries, fileEntries.customGQLTags);
+
+            await m.addColumn(fileEntries, fileEntries.pinnedDataOwnerAddress);
+            await m.addColumn(
+              fileRevisions,
+              fileRevisions.pinnedDataOwnerAddress,
+            );
           } else if (from >= 1 && from < schemaVersion) {
             logger.i(
               'No strategy set for migration v$from to v$to'

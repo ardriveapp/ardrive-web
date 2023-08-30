@@ -16,7 +16,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+
+const humanReadableNumberFormat = '#,##0';
 
 class TopUpEstimationView extends StatefulWidget {
   const TopUpEstimationView({super.key});
@@ -284,10 +287,10 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   }
 
   void _onCustomAmountSelected(String amount) {
-    int amountInt = int.parse(amount);
+    int amountInt = int.tryParse(amount) ?? 0;
 
     // Selects zero to disable the button
-    if (amount.isEmpty || amountInt < 10) {
+    if (amount.isEmpty || amountInt < minAmount) {
       amountInt = 0;
     }
 
@@ -388,6 +391,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         ),
       ),
     );
+
     return ArDriveForm(
       key: _formKey,
       child: Column(
@@ -421,7 +425,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
               children: [
                 const SizedBox(height: 24),
                 Text(
-                  'Custom Amount (min \$10 - max \$10,000)',
+                  _customAmountText,
                   style: ArDriveTypography.body.buttonNormalBold(
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeFgMuted,
@@ -452,7 +456,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                     Text(
                       _customAmountValidationMessage == null &&
                               (_customAmountValidationMessage?.isEmpty ?? true)
-                          ? 'Custom Amount (min \$10 - max \$10,000)'
+                          ? _customAmountText
                           : '',
                       style: ArDriveTypography.body.buttonNormalBold(
                         color: ArDriveTheme.of(context)
@@ -508,6 +512,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
             setState(() {
               if (s == null || s.isEmpty) {
                 _customAmountValidationMessage = null;
+                _onCustomAmountSelected('');
                 return;
               }
 
@@ -515,9 +520,10 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
 
               final numValue = int.tryParse(s);
 
-              if (numValue == null || numValue < 10 || numValue > 10000) {
-                // TODO: Localize
-                errorMessage = 'Please enter an amount between \$10 - \$10,000';
+              if (numValue == null ||
+                  numValue < minAmount ||
+                  numValue > maxAmount) {
+                errorMessage = _pleaseEnterAnAmountBetweenText;
               }
 
               _customAmountValidationMessage = errorMessage;
@@ -540,8 +546,9 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
 
               if (newValueText.isNotEmpty) {
                 int valueAsInt = int.parse(newValueText);
-                if (valueAsInt > 10000) {
-                  // If the value is greater than 10000, truncate the last digit and place the cursor at the end
+                if (valueAsInt > maxAmount) {
+                  // If the value is greater than the max amount, truncate the
+                  /// last digit and place the cursor at the end
                   String newString =
                       newValueText.substring(0, newValueText.length - 1);
                   return TextEditingValue(
@@ -560,6 +567,28 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         ),
       ),
     );
+  }
+
+  String get _customAmountText {
+    return appLocalizationsOf(context).turboCustomAmount(
+      '\$$_formattedMaxAmount',
+      '\$$_formattedMinAmount',
+    );
+  }
+
+  String get _pleaseEnterAnAmountBetweenText {
+    return appLocalizationsOf(context).turboPleaseEnterAmountBetween(
+      '\$$_formattedMaxAmount',
+      '\$$_formattedMinAmount',
+    );
+  }
+
+  String get _formattedMinAmount {
+    return NumberFormat(humanReadableNumberFormat).format(minAmount);
+  }
+
+  String get _formattedMaxAmount {
+    return NumberFormat(humanReadableNumberFormat).format(maxAmount);
   }
 }
 
