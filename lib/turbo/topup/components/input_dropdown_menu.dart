@@ -49,12 +49,15 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
   Widget build(BuildContext context) {
     return ArDriveClickArea(
       child: ArDriveDropdown(
+        height: 48,
         anchor: widget.anchor,
-        width: 200,
         items: widget.items
             .map(
               (e) => ArDriveDropdownItem(
-                content: Center(
+                content: Container(
+                  height: 48,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     e.label,
                     style: widget.itemsTextStyle ??

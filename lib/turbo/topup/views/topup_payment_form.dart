@@ -816,6 +816,7 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
         showScrollbars: true,
         onClick: widget.onClick,
         maxHeight: 275,
+        width: 200,
         anchor: widget.anchor,
         items: widget.items
             .map(
