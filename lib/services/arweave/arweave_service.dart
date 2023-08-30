@@ -6,6 +6,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
@@ -215,7 +216,11 @@ class ArweaveService {
         ),
       );
 
-      yield driveEntityHistoryQuery.data!.transactions.edges;
+      yield driveEntityHistoryQuery.data!.transactions.edges
+          .where(
+            (element) => doesTagsContainValidArFSVersion(element.node.tags),
+          )
+          .toList();
 
       cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
           ? driveEntityHistoryQuery.data!.transactions.edges.last.cursor
@@ -787,7 +792,13 @@ class ArweaveService {
           ),
         ),
       );
-      final queryEdges = allFileEntitiesQuery.data!.transactions.edges;
+      final List<
+              AllFileEntitiesWithId$Query$TransactionConnection$TransactionEdge>
+          queryEdges = allFileEntitiesQuery.data!.transactions.edges
+              .where(
+                (element) => doesTagsContainValidArFSVersion(element.node.tags),
+              )
+              .toList();
       if (queryEdges.isEmpty) {
         break;
       }
