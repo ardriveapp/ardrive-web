@@ -179,6 +179,6 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     emit(GhostFixerFailure());
     super.onError(error, stackTrace);
 
-    logger.e('Failed to create folder: $error $stackTrace');
+    logger.e('Failed to create folder', error, stackTrace);
   }
 }

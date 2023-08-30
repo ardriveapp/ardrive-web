@@ -208,7 +208,6 @@ class CommunityContractDataBuilder {
           break;
 
         default:
-          // ignore: avoid_print
           logger.i('Ignoring unknown field: .votes[number].$key = $value');
           break;
       }
@@ -276,7 +275,6 @@ class CommunityContractDataBuilder {
             break;
 
           default:
-            // ignore: avoid_print
             logger.i(
               'Ignoring unknown field: .settings[number][1] ($key: $value)',
             );
@@ -361,7 +359,6 @@ class CommunityContractDataBuilder {
           }
           break;
         default:
-          // ignore: avoid_print
           logger.i('Ignoring unknown field .vault[address][number].$key');
       }
     });

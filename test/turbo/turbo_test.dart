@@ -1043,12 +1043,8 @@ void main() {
         // dispose the sessionManager
         sessionManager.dispose();
 
-        logger.i('elapsed 24 minutes');
-
         // advance time by 25 minutes
         async.elapse(const Duration(minutes: 25));
-
-        logger.i('elapsed 25 minutes');
 
         // assert that expired is still false
         expect(expired, isFalse);

@@ -165,7 +165,7 @@ class Turbo extends Disposable {
           'Current payment intent is null. You should create it before calling this method.');
     }
 
-    logger.d('Confirming payment: ${paymentUserInformation.toString()}');
+    logger.d('Confirming payment with payment provider');
 
     _paymentStatus = await _paymentProvider.confirmPayment(
       paymentUserInformation: paymentUserInformation,
@@ -275,7 +275,7 @@ class TurboBalanceRetriever {
       return balance;
     } catch (e) {
       if (e is TurboUserNotFound) {
-        logger.e('Error getting balance: $e');
+        logger.e('Error getting balance', e);
         return BigInt.zero;
       }
       rethrow;
@@ -329,7 +329,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
 
       return price;
     } catch (e) {
-      logger.e('Error computing price estimate: $e');
+      logger.e('Error computing price estimate', e);
       rethrow;
     }
   }
@@ -440,8 +440,7 @@ class StripePaymentProvider implements TurboPaymentProvider {
       return PaymentStatus.quoteExpired;
     }
 
-    logger.d(
-        'Payment user information: ${paymentUserInformation.userAcceptedToReceiveEmails}');
+    logger.d('Confirming payment with Stripe');
 
     final billingDetails = BillingDetails(
       email: paymentUserInformation.userAcceptedToReceiveEmails
@@ -461,8 +460,6 @@ class StripePaymentProvider implements TurboPaymentProvider {
       data: params,
       receiptEmail: paymentUserInformation.email,
     );
-
-    logger.d(paymentIntent.toJson().toString());
 
     if (paymentIntent.status == PaymentIntentsStatus.Succeeded) {
       logger.d('Payment succeeded');

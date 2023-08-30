@@ -110,7 +110,7 @@ class ProfileCubit extends Cubit<ProfileState> {
           return false;
         }
 
-        logger.e('Error checking ArConnect permissions: $e');
+        logger.e('Error checking ArConnect permissions', e);
 
         bool isWalletMismatch = false;
 
@@ -182,11 +182,12 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<void> logoutProfile() async {
-    logger.i('Logging out profile. state: $state');
+    logger.i('Logging out profile. state: ${state.runtimeType}');
     if (state is ProfileLoggingOut) {
       emit(ProfilePromptAdd());
 
-      logger.i('Profile logout already in progress. state: $state');
+      logger
+          .i('Profile logout already in progress. state: ${state.runtimeType}');
       return;
     }
 

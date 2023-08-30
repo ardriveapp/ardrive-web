@@ -116,7 +116,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
       return;
     } catch (e) {
-      logger.e(e.toString());
+      logger.e('Failed to submit file key', e);
     }
 
     emit(SharedFileKeyInvalid());

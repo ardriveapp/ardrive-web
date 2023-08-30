@@ -10,6 +10,7 @@ import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -613,14 +614,22 @@ class TimerWidget extends StatefulWidget {
   final int durationInSeconds;
   final VoidCallback onFinished;
   final TextStyle? textStyle;
-  final Widget Function(BuildContext context, int secondsLeft)? builder;
+  final bool isFetching;
+  final bool hasError;
+  final bool humanReadable;
+  final bool humanReadableWithPadding;
+  final bool boldTimer;
 
   const TimerWidget({
     super.key,
     required this.durationInSeconds,
     required this.onFinished,
     this.textStyle,
-    this.builder,
+    this.isFetching = false,
+    this.hasError = false,
+    required this.humanReadable,
+    this.humanReadableWithPadding = false,
+    this.boldTimer = false,
   });
 
   @override
@@ -677,12 +686,78 @@ class TimerWidgetState extends State<TimerWidget> {
       textColor = ArDriveTheme.of(context).themeData.colors.themeFgDefault;
     }
 
-    return widget.builder != null
-        ? widget.builder!(context, _secondsLeft)
-        : Text(
-            _formatDuration(_secondsLeft),
-            style: widget.textStyle?.copyWith(color: textColor),
-          );
+    if (widget.isFetching) {
+      return Text(
+        appLocalizationsOf(context).fetchingNewQuote,
+        style: ArDriveTypography.body.buttonNormalBold().copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w700,
+            ),
+      );
+    } else if (widget.hasError) {
+      return Text(
+        appLocalizationsOf(context).errorFetchingQuote,
+        style: ArDriveTypography.body
+            .buttonNormalBold(
+              color:
+                  ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+            )
+            .copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+      );
+    }
+
+    final formattedDuration = _formatDuration(_secondsLeft);
+
+    if (!widget.humanReadable) {
+      final originalText =
+          appLocalizationsOf(context).quoteUpdatesIn(formattedDuration);
+      final widgetParts = splitTranslationsWithMultipleStyles<Widget>(
+          originalText: originalText,
+          defaultMapper: (textPart) => RichText(
+                text: TextSpan(
+                  text: textPart,
+                  style: ArDriveTypography.body.buttonNormalBold().copyWith(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
+                ),
+              ),
+          parts: {
+            formattedDuration: (text) {
+              final richText = RichText(
+                text: TextSpan(
+                  text: text,
+                  style: ArDriveTypography.body.buttonNormalBold().copyWith(
+                        color: textColor,
+                        fontWeight: widget.boldTimer ? FontWeight.w700 : null,
+                      ),
+                ),
+              );
+
+              if (widget.humanReadableWithPadding) {
+                return Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: richText,
+                );
+              } else {
+                return richText;
+              }
+            }
+          });
+
+      return Column(
+        children: widgetParts,
+      );
+    } else {
+      return Text(
+        formattedDuration,
+        style: widget.textStyle?.copyWith(color: textColor),
+      );
+    }
   }
 }
 
@@ -741,30 +816,31 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
         showScrollbars: true,
         onClick: widget.onClick,
         maxHeight: 275,
-        anchor: widget.anchor,
         width: 200,
+        anchor: widget.anchor,
         items: widget.items
             .map(
               (e) => ArDriveDropdownItem(
                 content: Container(
+                  width: 200,
+                  alignment: Alignment.center,
+                  height: 44,
                   color: widget.backgroundColor ??
                       ArDriveTheme.of(context)
                           .themeData
                           .textFieldTheme
                           .inputBackgroundColor,
-                  child: Center(
-                    child: Text(
-                      e.label,
-                      style: widget.itemsTextStyle ??
-                          ArDriveTypography.body.captionBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .textFieldTheme
-                                .inputTextStyle
-                                .color,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
+                  child: Text(
+                    e.label,
+                    style: widget.itemsTextStyle ??
+                        ArDriveTypography.body.captionBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .textFieldTheme
+                              .inputTextStyle
+                              .color,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 onClick: () {
@@ -866,19 +942,9 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
 
                 return Row(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Text(
-                        appLocalizationsOf(context).quoteUpdatesIn,
-                        style: ArDriveTypography.body.captionBold(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgDefault,
-                        ),
-                      ),
-                    ),
                     TimerWidget(
+                      humanReadable: true,
+                      humanReadableWithPadding: true,
                       textStyle: ArDriveTypography.body.captionBold(
                         color: ArDriveTheme.of(context)
                             .themeData
@@ -1006,16 +1072,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      appLocalizationsOf(context).quoteUpdatesIn,
-                      style: ArDriveTypography.body.captionBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      ),
-                    ),
                     TimerWidget(
+                      humanReadable: true,
                       key: state is PaymentFormQuoteLoaded
                           ? const ValueKey('reset_timer')
                           : null,

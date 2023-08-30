@@ -22,6 +22,10 @@
   "@addSomeFiles": {
     "description": "Empty folder"
   },
+  "advanced": "Advanced",
+  "@advanced": {
+    "description": "The advanced options"
+  },
   "aggreeToTerms_body": "I agree to the ArDrive terms of service and privacy policy.",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
@@ -88,7 +92,7 @@
   "@ardriveIsOptimizedForLargeScreens": {
     "description": "Screen not supported page"
   },
-  "attachDrive": "Attach drive",
+  "attachDrive": "Attach Drive",
   "@attachDrive": {
     "description": "Attach a shared drive"
   },
@@ -310,7 +314,7 @@
   "@create": {
     "description": "Create an drive"
   },
-  "createAndConfirmPassword": "Please create and confirm your password. Your password cannot be changed or retrieved, so please keep this safe.",
+  "createAndConfirmPassword": "Please create and confirm your password.",
   "@createAndConfirmPassword": {
     "description": "Asks the user to create a password"
   },
@@ -330,7 +334,7 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "Create manifest",
+  "createManifest": "New Manifest",
   "@createManifest": {
     "description": "To create a manifest"
   },
@@ -338,11 +342,15 @@
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
+  "createNewFilePin": "Create a New File Pin",
+  "@createNewFilePin": {
+    "description": "E.g.: I want to \"Create a New File Pin\""
+  },
   "createNewSnapshot": "Create New Snapshot",
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "Create Snapshot",
+  "createSnapshot": "New Snapshot",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
@@ -609,9 +617,17 @@
   "@enterFileKey": {
     "description": "File Key form field label"
   },
+  "enterFileName": "Enter file name",
+  "@enterFileName": {
+    "description": "To type the name of the file"
+  },
   "enterPassword": "Enter password",
   "@enterPassword": {
     "description": "Please enter password"
+  },
+  "enterTxIdOrFileId": "Enter Transaction ID or File ID",
+  "@enterTxIdOrFileId": {
+    "description": "Indicates that you must enter a Transaction ID or a File ID"
   },
   "entityAlreadyExists": "Entity with name {entityName} already exists at move destination! Please rename the file or folder you are moving and try again.",
   "@entityAlreadyExists": {
@@ -673,6 +689,14 @@
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
+  "failedToCreatePin": "Failed to create pin. Please try again later.",
+  "@failedToCreatePin": {
+    "description": "The pin could not be created"
+  },
+  "failedToRetrieveFileInfromation": "Failed to retrieve file information",
+  "@failedToRetrieveFileInfromation": {
+    "description": "Explains that there was an error while retrieving the file infromation"
+  },
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
@@ -698,6 +722,10 @@
       }
     }
   },
+  "fileDoesExistButIsInvalid": "The file does exist but is invalid",
+  "@fileDoesExistButIsInvalid": {
+    "description": "Explains that the file does exist, but some of its properties make it invalid"
+  },
   "fileDownloadFailed": "File download failed",
   "@fileDownloadFailed": {
     "description": "Could not export the CSV data"
@@ -721,6 +749,10 @@
   "fileID": "File ID",
   "@fileID": {
     "description": "The Entity-ID tag of files"
+  },
+  "fileIsNotPublic": "The file is not public",
+  "@fileIsNotPublic": {
+    "description": "Warning explaining that the file is not public"
   },
   "fileName": "File name",
   "@fileName": {
@@ -783,6 +815,10 @@
   "@fileSystem": {
     "description": "Button label to select a file from file system"
   },
+  "fileType": "File type",
+  "@fileType": {
+    "description": "The MIME type of the file"
+  },
   "fileWasCreatedWithName": "This file was created with the name {fileName}.",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
@@ -800,6 +836,10 @@
   "fileWasMoved": "This file was moved.",
   "@fileWasMoved": {
     "description": "File activity (journal): moved"
+  },
+  "fileWasPinnedToTheDrive": "File pinned to the drive.",
+  "@fileWasPinnedToTheDrive": {
+    "description": "File activity (journal): was pinned"
   },
   "fileWasRenamed": "This file was renamed to {fileName}.",
   "@fileWasRenamed": {
@@ -943,6 +983,8 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
+  "helpCenter": "Help Center",
+  "@helpCenter": {},
   "howAreConversionsDetermined": "How are conversions determined?",
   "@howAreConversionsDetermined": {},
   "howDoesKeyfileLoginWork": "How do keyfile and seed phrase login work?",
@@ -1182,15 +1224,23 @@
   },
   "nameOnCard": "Name on Card",
   "@nameOnCard": {},
+  "networkUnreachable": "We are unable to connect to the network. Please try again later.",
+  "@networkUnreachable": {
+    "description": "Indicates that there were some issues while connecting to the internet"
+  },
   "neverDeletedEmphasized": "NEVER DELETED",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
   },
-  "newDrive": "New drive",
+  "newDrive": "New Drive",
   "@newDrive": {
     "description": "Create a new drive entity"
   },
-  "newFolder": "New folder",
+  "newFilePin": "New File Pin",
+  "@newFilePin": {
+    "description": "E.g.: I want to create a \"New File Pin\""
+  },
+  "newFolder": "New Folder",
   "@newFolder": {
     "description": "Create a new folder entity"
   },
@@ -1278,6 +1328,8 @@
   "@orContinueWith": {
     "description": "text to continue with ar connect"
   },
+  "ourChannels": "Our channels: ",
+  "@ourChannels": {},
   "password": "Password",
   "@password": {
     "description": "Label for the 'password' input"
@@ -1315,6 +1367,10 @@
   "personalDrivesEmphasized": "PERSONAL DRIVES",
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
+  },
+  "pinFailedToUpload": "Your pin failed to upload",
+  "@pinFailedToUpload": {
+    "description": "Explains that pin creation has failed"
   },
   "pleaseAcceptTheTermsToContinue": "Please accept the terms and conditions to continue.",
   "@pleaseAcceptTheTermsToContinue": {
@@ -1392,8 +1448,16 @@
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
-  "quoteUpdatesIn": "Quote updates in ",
-  "@quoteUpdatesIn": {},
+  "quoteUpdatesIn": "Quote updates in {timer}",
+  "@quoteUpdatesIn": {
+    "description": "Indicates the time left for the next update of the quote",
+    "placeholders": {
+      "timer": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
+  },
   "recreateFolderEmphasized": "RECREATE FOLDER",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
@@ -1478,6 +1542,8 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "share": "Share",
+  "@share": {},
   "sharedDrives": "Shared Drives",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
@@ -1510,6 +1576,20 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
+  "shareLogsDescription": "You can share your logs with the ArDrive team to help us improve the app. The logs can be downloaded to your device and shared with us via email, Discord, or added to a support ticket.",
+  "@shareLogsDescription": {},
+  "shareLogsEmailBody": "Attached are the logs for ArDrive",
+  "@shareLogsEmailBody": {},
+  "shareLogsEmailSubject": "ArDrive Logs",
+  "@shareLogsEmailSubject": {},
+  "shareLogsNativeShareSubject": "ArDrive Logs",
+  "@shareLogsNativeShareSubject": {},
+  "shareLogsNativeShareText": "Attached are the logs for ArDrive",
+  "@shareLogsNativeShareText": {},
+  "shareLogsText": "Share logs",
+  "@shareLogsText": {},
+  "shareLogsWithEmailText": "Send email",
+  "@shareLogsWithEmailText": {},
   "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
@@ -1622,6 +1702,14 @@
   "@termsAndConditions": {
     "description": "terms and conditions"
   },
+  "theIdProvidedDoesntExist": "The ID provided doesn't exist",
+  "@theIdProvidedDoesntExist": {
+    "description": "Indicates that the valid ID you provided doesn't exist"
+  },
+  "theIdProvidedIsNotValid": "The ID provided is not valid",
+  "@theIdProvidedIsNotValid": {
+    "description": "Indicates that the ID you typed doesn't follow the ID pattern"
+  },
   "theresBeenAProblem": "There's been a problem.",
   "@theresBeenAProblem": {},
   "thinkTwiceBeforeUploading": "Think twice before uploading all your teenage love poetry...",
@@ -1666,6 +1754,20 @@
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
+  "turboCustomAmount": "Custom Amount (min {min} - max {max})",
+  "@turboCustomAmount": {
+    "description": "Describes the range of credits the user can choose",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "$10,000"
+      },
+      "min": {
+        "type": "String",
+        "example": "$5"
+      }
+    }
+  },
   "turboErrorMessageEstimationInformationFailed": "Error loading information. Please try again.",
   "@turboErrorMessageEstimationInformationFailed": {},
   "turboErrorMessageFetchPaymentIntentFailed": "Payment processor is currently unavailable, please try again later",
@@ -1678,6 +1780,20 @@
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageUnknown": {},
+  "turboPleaseEnterAmountBetween": "Please enter an amount between {min} - {max}",
+  "@turboPleaseEnterAmountBetween": {
+    "description": "Error message for when the given amount is not in range",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "$10,000"
+      },
+      "min": {
+        "type": "String",
+        "example": "$5"
+      }
+    }
+  },
   "unableToFetchEstimateAtThisTime": "Unable to fetch the estimate at this time.",
   "@unableToFetchEstimateAtThisTime": {},
   "unableToUpdateQuote": "Unable to update quote. Please try again.",
@@ -1702,6 +1818,10 @@
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
   },
+  "uploadedBy": "Uploaded by",
+  "@uploadedBy": {
+    "description": "Refers to the one that uploaded the data of a pinned file"
+  },
   "uploadEmphasized": "UPLOAD",
   "@uploadEmphasized": {
     "description": "The action of uploading certain item"
@@ -1710,11 +1830,11 @@
   "@uploadFailed": {
     "description": "Upload Failed dialog title"
   },
-  "uploadFiles": "Upload file(s)",
+  "uploadFiles": "Upload File(s)",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
   },
-  "uploadFolder": "Upload folder",
+  "uploadFolder": "Upload Folder",
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },

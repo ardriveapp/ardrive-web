@@ -1,0 +1,8 @@
+- Implemented the pin feature for public drives
+- Re-organized the options in the NEW menu
+- Reduced the minimum Turbo top up purchase to $5
+- Implemented an option for exporting logs
+- Details Panel will now display the Metadata TX
+- Added app translations for: Spanish, Hindi, Japanese, Hong Kong Chinese and Traditional Chinese
+- Custom metadata (for JSON metadata and GQL tags) are now moved over with new entities' revisions
+- Minor UI fixes

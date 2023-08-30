@@ -215,9 +215,7 @@ class UploadCubit extends Cubit<UploadState> {
           .getSingleOrNull();
 
       if (existingFileId != null) {
-        logger.d(
-            'Found conflicting file: $fileName with identifier: ${file.getIdentifier()}');
-        logger.d('Existing file id: $existingFileId');
+        logger.d('Found conflicting file. Existing file id: $existingFileId');
         conflictingFiles[file.getIdentifier()] = existingFileId;
       }
     }
@@ -317,8 +315,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     logger.i(
-      'Upload preparation started\n'
-      'UploadMethod: $_uploadMethod',
+      'Upload preparation started. UploadMethod: $_uploadMethod',
     );
 
     try {
@@ -449,11 +446,7 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     logger.i(
-      'Wallet verified\n'
-      'Starting bundle preparation....\n'
-      'Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}'
-      'Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}',
-    );
+        'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
     final uploader = _getUploader();
 
@@ -469,7 +462,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
     }
 
-    logger.i('Upload complete');
+    logger.i('Upload finished');
 
     unawaited(_profileCubit.refreshBalance());
 
@@ -532,7 +525,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     emit(UploadFailure(error: UploadErrors.unknown));
-    logger.e('Failed to upload file: $error $stackTrace');
+    logger.e('Failed to upload file', error, stackTrace);
     super.onError(error, stackTrace);
   }
 
@@ -542,7 +535,8 @@ class UploadCubit extends Cubit<UploadState> {
     final turboUploader = TurboUploader(_turbo, wallet);
     final arweaveUploader = ArweaveBundleUploader(_arweave.client);
 
-    logger.i('Uploaders created: $turboUploader, $arweaveUploader');
+    logger.i(
+        'Uploaders created: Turbo: $turboUploader, Arweave: $arweaveUploader');
 
     final bundleUploader = BundleUploader(
       turboUploader,
@@ -572,7 +566,7 @@ class UploadCubit extends Cubit<UploadState> {
         logger.i('Bundle preparation finished');
       },
       prepareFile: (handle) async {
-        logger.i('Preparing file ${handle.file.ioFile.name}');
+        logger.i('Preparing file...');
 
         await handle.prepareAndSignTransactions(
           arweaveService: _arweave,

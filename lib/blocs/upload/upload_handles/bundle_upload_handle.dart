@@ -89,7 +89,7 @@ class BundleUploadHandle implements UploadHandle {
         );
       }
     } catch (e) {
-      logger.e('Error while preparing bundle: $e');
+      logger.e('Error while preparing bundle', e);
       hasError = true;
       return;
     }

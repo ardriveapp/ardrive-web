@@ -29,7 +29,7 @@
       "name": "Flutter Release",
       "request": "launch",
       "type": "dart",
-      "args": ["--release"],
+      "args": ["--release --dart-define=environment=production"],
       "program": "lib/main.dart"
     }
   ]
