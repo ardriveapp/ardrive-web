@@ -1,4 +1,3 @@
-import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,22 +7,10 @@ void main() {
   group('doesTagsContainValidArFSVersion method', () {
     test('returns true for transactions containing the correct versions', () {
       final tags = [
-        TransactionCommonMixin$Tag.fromJson({
-          'name': arFsTagName,
-          'value': '0.10',
-        }),
-        TransactionCommonMixin$Tag.fromJson({
-          'name': arFsTagName,
-          'value': '0.11',
-        }),
-        TransactionCommonMixin$Tag.fromJson({
-          'name': arFsTagName,
-          'value': '0.12',
-        }),
-        TransactionCommonMixin$Tag.fromJson({
-          'name': arFsTagName,
-          'value': '0.13',
-        }),
+        Tag(arFsTagName, '0.10'),
+        Tag(arFsTagName, '0.11'),
+        Tag(arFsTagName, '0.12'),
+        Tag(arFsTagName, '0.13'),
       ];
 
       for (final tag in tags) {
@@ -34,26 +21,11 @@ void main() {
     test('returns false for transactions containing the incorrect versions',
         () {
       final tags = [
-        TransactionCommonMixin$Tag.fromJson({
-          'name': arFsTagName,
-          'value': '0.9',
-        }),
-        TransactionCommonMixin$Tag.fromJson({
-          'name': arFsTagName,
-          'value': '0.14',
-        }),
-        TransactionCommonMixin$Tag.fromJson({
-          'name': arFsTagName,
-          'value': '0.15',
-        }),
-        TransactionCommonMixin$Tag.fromJson({
-          'name': arFsTagName,
-          'value': '0.16',
-        }),
-        TransactionCommonMixin$Tag.fromJson({
-          'name': arFsTagName,
-          'value': 'Supercalifragilisticoespialidoso',
-        }),
+        Tag(arFsTagName, '0.9'),
+        Tag(arFsTagName, '0.14'),
+        Tag(arFsTagName, '0.15'),
+        Tag(arFsTagName, '0.16'),
+        Tag(arFsTagName, 'Supercalifragilisticoespialidoso'),
       ];
 
       for (final tag in tags) {

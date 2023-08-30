@@ -1,6 +1,11 @@
-query LatestDriveEntityWithId($driveId: String!, $owner: String!) {
+query LatestDriveEntityWithId(
+  $driveId: String!
+  $owner: String!
+  $after: String
+) {
   transactions(
-    first: 1
+    first: 10
+    after: $after
     sort: HEIGHT_DESC
     owners: [$owner]
     tags: [
@@ -12,6 +17,7 @@ query LatestDriveEntityWithId($driveId: String!, $owner: String!) {
       node {
         ...TransactionCommon
       }
+      cursor
     }
   }
 }

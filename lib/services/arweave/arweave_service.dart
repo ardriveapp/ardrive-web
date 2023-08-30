@@ -6,7 +6,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/arfs_txs_filter.dart';
+import 'package:ardrive/utils/arfs_txs_filter.dart' as arfs_txs_filter;
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
@@ -218,7 +218,8 @@ class ArweaveService {
 
       yield driveEntityHistoryQuery.data!.transactions.edges
           .where(
-            (element) => doesTagsContainValidArFSVersion(element.node.tags),
+            (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
+                element.node.tags as List<arfs_txs_filter.Tag>),
           )
           .toList();
 
@@ -559,46 +560,57 @@ class ArweaveService {
     SecretKey? driveKey,
     int maxRetries = defaultMaxRetries,
   ]) async {
-    final firstOwnerQuery = await _graphQLRetry.execute(
-      FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
-      ),
-      maxAttempts: maxRetries,
-    );
-
-    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+    final driveOwner = await getOwnerForDriveEntityWithId(driveId);
+    if (driveOwner == null) {
       return null;
     }
 
-    final driveOwner =
-        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
-
-    final latestDriveQuery = await _graphQLRetry.execute(
-      LatestDriveEntityWithIdQuery(
-        variables: LatestDriveEntityWithIdArguments(
-            driveId: driveId, owner: driveOwner),
-      ),
-      maxAttempts: maxRetries,
-    );
-
-    final queryEdges = latestDriveQuery.data!.transactions.edges;
-    if (queryEdges.isEmpty) {
-      return null;
-    }
-
-    final fileTx = queryEdges.first.node;
-    final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
-
-    try {
-      return await DriveEntity.fromTransaction(
-          fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
-    } on EntityTransactionParseException catch (parseException) {
-      logger.e(
-        'Failed to parse transaction '
-        'with id ${parseException.transactionId}',
-        parseException,
+    String cursor = '';
+    while (true) {
+      final latestDriveQuery = await _graphQLRetry.execute(
+        LatestDriveEntityWithIdQuery(
+          variables: LatestDriveEntityWithIdArguments(
+            driveId: driveId,
+            owner: driveOwner,
+            after: cursor,
+          ),
+        ),
+        maxAttempts: maxRetries,
       );
-      return null;
+
+      final queryEdges = latestDriveQuery.data!.transactions.edges;
+      if (queryEdges.isEmpty) {
+        return null;
+      }
+
+      final filteredEdges = queryEdges.where(
+        (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
+          element.node.tags
+              .map(
+                (e) => arfs_txs_filter.Tag(e.name, e.value),
+              )
+              .toList(),
+        ),
+      );
+      if (filteredEdges.isEmpty) {
+        cursor = queryEdges.last.cursor;
+        continue;
+      }
+
+      final fileTx = filteredEdges.first.node;
+      final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+
+      try {
+        return await DriveEntity.fromTransaction(
+            fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
+      } on EntityTransactionParseException catch (parseException) {
+        logger.e(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+          parseException,
+        );
+        return null;
+      }
     }
   }
 
@@ -610,18 +622,10 @@ class ArweaveService {
   ///
   /// Returns `null` if no valid drive is found.
   Future<Privacy?> getDrivePrivacyForId(String driveId) async {
-    final firstOwnerQuery = await _gql.execute(
-      FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
-      ),
-    );
-
-    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+    final driveOwner = await getOwnerForDriveEntityWithId(driveId);
+    if (driveOwner == null) {
       return null;
     }
-
-    final driveOwner =
-        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
     final latestDriveQuery = await _graphQLRetry.execute(
         LatestDriveEntityWithIdQuery(
@@ -677,15 +681,43 @@ class ArweaveService {
   /// Gets the owner of the drive sorted by blockheight.
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
   Future<String?> getOwnerForDriveEntityWithId(String driveId) async {
-    final firstOwnerQuery = await _graphQLRetry.execute(
+    String cursor = '';
+
+    while (true) {
+      final firstOwnerQuery = await _graphQLRetry.execute(
         FirstDriveEntityWithIdOwnerQuery(
-            variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+          variables: FirstDriveEntityWithIdOwnerArguments(
+            driveId: driveId,
+            after: cursor,
+          ),
+        ),
+      );
 
-    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
-      return null;
+      if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+        return null;
+      }
+
+      final List<
+              FirstDriveEntityWithIdOwner$Query$TransactionConnection$TransactionEdge>
+          filteredEdges = firstOwnerQuery.data!.transactions.edges
+              .where(
+                (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
+                  element.node.tags
+                      .map(
+                        (e) => arfs_txs_filter.Tag(e.name, e.value),
+                      )
+                      .toList(),
+                ),
+              )
+              .toList();
+
+      if (filteredEdges.isEmpty) {
+        cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
+        continue;
+      }
+
+      return filteredEdges.first.node.owner.address;
     }
-
-    return firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
   }
 
   /// Gets any created private drive belonging to [profileId], as long as its unlockable with [password] when used with the [getSignatureFn]
@@ -796,7 +828,13 @@ class ArweaveService {
               AllFileEntitiesWithId$Query$TransactionConnection$TransactionEdge>
           queryEdges = allFileEntitiesQuery.data!.transactions.edges
               .where(
-                (element) => doesTagsContainValidArFSVersion(element.node.tags),
+                (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
+                  element.node.tags
+                      .map(
+                        (e) => arfs_txs_filter.Tag(e.name, e.value),
+                      )
+                      .toList(),
+                ),
               )
               .toList();
       if (queryEdges.isEmpty) {
