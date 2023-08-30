@@ -816,30 +816,31 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
         showScrollbars: true,
         onClick: widget.onClick,
         maxHeight: 275,
-        anchor: widget.anchor,
         width: 200,
+        anchor: widget.anchor,
         items: widget.items
             .map(
               (e) => ArDriveDropdownItem(
                 content: Container(
+                  width: 200,
+                  alignment: Alignment.center,
+                  height: 44,
                   color: widget.backgroundColor ??
                       ArDriveTheme.of(context)
                           .themeData
                           .textFieldTheme
                           .inputBackgroundColor,
-                  child: Center(
-                    child: Text(
-                      e.label,
-                      style: widget.itemsTextStyle ??
-                          ArDriveTypography.body.captionBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .textFieldTheme
-                                .inputTextStyle
-                                .color,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
+                  child: Text(
+                    e.label,
+                    style: widget.itemsTextStyle ??
+                        ArDriveTypography.body.captionBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .textFieldTheme
+                              .inputTextStyle
+                              .color,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 onClick: () {
