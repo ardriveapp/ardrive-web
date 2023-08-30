@@ -436,6 +436,7 @@ class ArweaveService {
     String userAddress, {
     int maxRetries = defaultMaxRetries,
   }) async {
+    // FIXME: make me run all pages
     final userDriveEntitiesQuery = await _graphQLRetry.execute(
       UserDriveEntitiesQuery(
         variables: UserDriveEntitiesArguments(owner: userAddress),
@@ -443,7 +444,18 @@ class ArweaveService {
       maxAttempts: maxRetries,
     );
 
-    return userDriveEntitiesQuery.data!.transactions.edges
+    final queryEdges = userDriveEntitiesQuery.data!.transactions.edges;
+    final filteredEdges = queryEdges.where(
+      (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
+        element.node.tags
+            .map(
+              (e) => arfs_txs_filter.Tag(e.name, e.value),
+            )
+            .toList(),
+      ),
+    );
+
+    return filteredEdges
         .map((e) => e.node)
         .fold<Map<String?, TransactionCommonMixin>>(
           {},
