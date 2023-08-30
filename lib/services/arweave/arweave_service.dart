@@ -604,9 +604,17 @@ class ArweaveService {
               .toList(),
         ),
       );
+
+      final hasNextPage =
+          latestDriveQuery.data!.transactions.pageInfo.hasNextPage;
+
       if (filteredEdges.isEmpty) {
-        cursor = queryEdges.last.cursor;
-        continue;
+        if (hasNextPage) {
+          cursor = latestDriveQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
       }
 
       final fileTx = filteredEdges.first.node;
@@ -696,9 +704,17 @@ class ArweaveService {
               .toList(),
         ),
       );
+
+      final hasNextPage =
+          latestFileQuery.data!.transactions.pageInfo.hasNextPage;
+
       if (filteredEdges.isEmpty) {
-        cursor = queryEdges.last.cursor;
-        continue;
+        if (hasNextPage) {
+          cursor = latestFileQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
       }
 
       final fileTx = filteredEdges.first.node;
@@ -742,9 +758,16 @@ class ArweaveService {
               )
               .toList();
 
+      final hasNextPage =
+          firstOwnerQuery.data!.transactions.pageInfo.hasNextPage;
+
       if (filteredEdges.isEmpty) {
-        cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
-        continue;
+        if (hasNextPage) {
+          cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
       }
 
       return filteredEdges.first.node.owner.address;
@@ -946,9 +969,16 @@ class ArweaveService {
           )
           .toList();
 
+      final hasNextPage =
+          firstOwnerQuery.data!.transactions.pageInfo.hasNextPage;
+
       if (filteredEdges.isEmpty) {
-        cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
-        continue;
+        if (hasNextPage) {
+          cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
       }
 
       final fileOwner = filteredEdges.first.node.owner.address;

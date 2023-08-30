@@ -16,5 +16,8 @@ query LatestFileEntityWithId(
       }
       cursor
     }
+    pageInfo {
+      hasNextPage
+    }
   }
 }

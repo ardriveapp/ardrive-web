@@ -17,5 +17,8 @@ query FirstFileEntityWithIdOwner($fileId: String!, $after: String) {
       }
       cursor
     }
+    pageInfo {
+      hasNextPage
+    }
   }
 }

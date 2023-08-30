@@ -19,5 +19,8 @@ query LatestDriveEntityWithId(
       }
       cursor
     }
+    pageInfo {
+      hasNextPage
+    }
   }
 }

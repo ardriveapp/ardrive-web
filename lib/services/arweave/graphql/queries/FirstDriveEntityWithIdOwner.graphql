@@ -20,5 +20,8 @@ query FirstDriveEntityWithIdOwner($driveId: String!, $after: String) {
       }
       cursor
     }
+    pageInfo {
+      hasNextPage
+    }
   }
 }
