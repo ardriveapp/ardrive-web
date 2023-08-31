@@ -148,10 +148,7 @@ class NewButton extends StatelessWidget {
                                     .themeData
                                     .dropdownTheme
                                     .hoverColor,
-                                defaultColor: ArDriveTheme.of(context)
-                                    .themeData
-                                    .dropdownTheme
-                                    .backgroundColor,
+                                defaultColor: null,
                                 showMouseCursor: !item.isDisabled,
                                 child: ArDriveDropdownItemTile(
                                   iconAlignment: item.iconAlignment,
