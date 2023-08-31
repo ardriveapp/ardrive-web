@@ -31,7 +31,6 @@ import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:chewie/chewie.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

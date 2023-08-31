@@ -197,7 +197,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         return;
       }
 
-      emit(FsEntryPreviewVideo(previewUrl: previewUrl));
+      emit(FsEntryPreviewVideo(
+          filename: selectedItem.name, previewUrl: previewUrl));
 
       return;
     }

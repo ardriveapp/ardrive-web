@@ -8,6 +8,7 @@ const List<String> supportedImageTypesInFilePreview = [
 
 const List<String> videoContentTypes = [
   'video/mp4',
+  'video/quicktime',
 ];
 
 const profileQueryMaxRetries = 6;

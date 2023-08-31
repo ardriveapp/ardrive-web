@@ -46,12 +46,15 @@ class FsEntryPreviewAudio extends FsEntryPreviewSuccess {
 }
 
 class FsEntryPreviewVideo extends FsEntryPreviewSuccess {
+  final String filename;
+
   const FsEntryPreviewVideo({
     required String previewUrl,
+    required this.filename,
   }) : super(previewUrl: previewUrl);
 
   @override
-  List<Object> get props => [previewUrl];
+  List<Object> get props => [previewUrl, filename];
 }
 
 class FsEntryPreviewMemory extends FsEntryPreviewSuccess {
