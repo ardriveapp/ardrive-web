@@ -246,7 +246,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                       Text(
                                         'Subtotal',
                                         style: ArDriveTypography.body
-                                            .buttonNormalRegular(),
+                                            .buttonNormalRegular()
+                                            .copyWith(
+                                              color: ArDriveTheme.of(context)
+                                                  .themeData
+                                                  .colors
+                                                  .themeFgDisabled,
+                                            ),
                                       ),
                                       const Spacer(),
                                       BlocBuilder<PaymentReviewBloc,
@@ -261,9 +267,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                             return Text(
                                               '\$${state.subTotal}',
                                               style: ArDriveTypography.body
-                                                  .buttonNormalBold()
+                                                  .buttonNormalRegular()
                                                   .copyWith(
-                                                    fontWeight: FontWeight.w700,
+                                                    color:
+                                                        ArDriveTheme.of(context)
+                                                            .themeData
+                                                            .colors
+                                                            .themeFgDisabled,
                                                   ),
                                             );
                                           }
@@ -271,9 +281,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                           return Text(
                                             '\$0',
                                             style: ArDriveTypography.body
-                                                .buttonNormalBold()
+                                                .buttonNormalRegular()
                                                 .copyWith(
-                                                  fontWeight: FontWeight.w700,
+                                                  color:
+                                                      ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeFgDisabled,
                                                 ),
                                           );
                                         },
@@ -286,7 +300,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                       Text(
                                         'Discount',
                                         style: ArDriveTypography.body
-                                            .buttonNormalRegular(),
+                                            .buttonNormalRegular()
+                                            .copyWith(
+                                              color: ArDriveTheme.of(context)
+                                                  .themeData
+                                                  .colors
+                                                  .themeFgDisabled,
+                                            ),
                                       ),
                                       const Spacer(),
                                       BlocBuilder<PaymentReviewBloc,
@@ -302,9 +322,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                             return Text(
                                               '-\$${state.promoDiscount}',
                                               style: ArDriveTypography.body
-                                                  .buttonNormalBold()
+                                                  .buttonNormalRegular()
                                                   .copyWith(
-                                                    fontWeight: FontWeight.w700,
+                                                    color:
+                                                        ArDriveTheme.of(context)
+                                                            .themeData
+                                                            .colors
+                                                            .themeFgDisabled,
                                                   ),
                                             );
                                           }

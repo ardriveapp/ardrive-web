@@ -262,8 +262,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                           if (_promoDiscountFactor != 0.0)
                             TextSpan(
                               text:
-                                  ' (${_promoDiscountFactor * 100}% discount applied)',
-                              style: ArDriveTypography.body.bodyRegular(
+                                  ' (${_promoDiscountFactor * 100}% discount applied)', // TODO: localize
+                              style: ArDriveTypography.body.buttonNormalRegular(
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
