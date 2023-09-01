@@ -27,9 +27,11 @@ class TurboPaymentFormView extends StatefulWidget {
 
 class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   CardFieldInputDetails? card;
-
   CountryItem? _selectedCountry;
+  String _promoCode = '';
+  bool _promoCodeInvalid = false;
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _promoCodeController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -470,6 +472,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               },
             ),
           ),
+          const SizedBox(height: 16),
+          Row(children: [promoCodeLabel()]),
+          Row(children: [promoCodeWidget(theme)]),
           const SizedBox(
             height: 16,
           ),
@@ -572,6 +577,112 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         return const SizedBox();
       },
     );
+  }
+
+  Widget promoCodeLabel() {
+    return Text(
+      'Promo Code', // TODO: localize
+      style: ArDriveTypography.body.buttonNormalBold(
+        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+      ),
+    );
+  }
+
+  Widget promoCodeWidget(ArDriveTextFieldTheme theme) {
+    return Expanded(
+      child: _promoCode.isNotEmpty
+          ? promoCodeAppliedWidget(theme)
+          : promoCodeTextField(),
+    );
+  }
+
+  Widget promoCodeAppliedWidget(ArDriveTextFieldTheme theme) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(4),
+        color: ArDriveTheme.of(context)
+            .themeData
+            .textFieldTheme
+            .inputBackgroundColor,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 13,
+        vertical: 10,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              'Discount code successfully applied', // TODO: localize
+              style: theme.inputTextStyle,
+            ),
+          ),
+          ArDriveIcons.carretDown(
+            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget promoCodeTextField() {
+    return ArDriveTextField(
+      controller: _promoCodeController,
+      isFieldRequired: false,
+      useErrorMessageOffset: true,
+      validator: (s) {
+        return null;
+      },
+      onChanged: (_) {
+        setState(() {
+          _promoCodeInvalid = false;
+        });
+      },
+      errorMessage: _promoCodeInvalid
+          ? 'Promo code is invalid or expired' // TODO: localize
+          : null,
+      showErrorMessage: _promoCodeInvalid,
+      suffixIcon: _applyPromoCodeButton(),
+      inputFormatters: [
+        TextInputFormatter.withFunction((oldValue, newValue) {
+          return newValue.copyWith(
+            text: newValue.text.toUpperCase().replaceAll(' ', ''),
+            selection: newValue.selection,
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _applyPromoCodeButton() {
+    return GestureDetector(
+      onTap: () => _applyPromoCode(),
+      child: ArDriveIcons.arrowRightFilled(
+        color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+      ),
+    );
+  }
+
+  Future<void> _applyPromoCode() async {
+    if (await _isPromoCodeValid()) {
+      setState(() {
+        _promoCode = _promoCodeController.text;
+      });
+    } else {
+      setState(() {
+        _promoCode = '';
+        _promoCodeInvalid = true;
+        _promoCodeController.clear();
+      });
+    }
+  }
+
+  Future<bool> _isPromoCodeValid() async {
+    const validCodes = ['ARDRIVE', 'TURBO', 'MATI'];
+    final textInPromoCode = _promoCodeController.text;
+
+    return validCodes.contains(textInPromoCode);
   }
 
   InputBorder _getBorder(Color color) {
