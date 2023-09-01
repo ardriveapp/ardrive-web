@@ -30,6 +30,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   CountryItem? _selectedCountry;
   String _promoCode = '';
   bool _promoCodeInvalid = false;
+  bool _promoCodeFetching = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _promoCodeController = TextEditingController();
 
@@ -474,7 +475,10 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           ),
           const SizedBox(height: 16),
           Row(children: [promoCodeLabel()]),
-          Row(children: [promoCodeWidget(theme)]),
+          Row(children: [
+            promoCodeWidget(theme),
+            const Flexible(child: SizedBox()),
+          ]),
           const SizedBox(
             height: 16,
           ),
@@ -597,32 +601,46 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget promoCodeAppliedWidget(ArDriveTextFieldTheme theme) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        color: ArDriveTheme.of(context)
-            .themeData
-            .textFieldTheme
-            .inputBackgroundColor,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 13,
-        vertical: 10,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              'Discount code successfully applied', // TODO: localize
-              style: theme.inputTextStyle,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 48,
+            child: Align(
+              child: Text(
+                'Promo code successfully applied', // TODO: localize
+                style: ArDriveTypography.body.buttonNormalBold(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeSuccessDefault,
+                ),
+              ),
             ),
           ),
-          ArDriveIcons.carretDown(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+        ),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _promoCode = '';
+              _promoCodeController.clear();
+            });
+          },
+          child: Tooltip(
+            message: 'Remove promo code', // TODO: localize
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: ArDriveIcons.closeCircle(
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .colors
+                    .themeSuccessDefault,
+              ),
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -656,25 +674,51 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget _applyPromoCodeButton() {
-    return GestureDetector(
-      onTap: () => _applyPromoCode(),
-      child: ArDriveIcons.arrowRightFilled(
-        color: ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+    if (_promoCodeFetching) {
+      return const SizedBox(
+        height: 18,
+        width: 18,
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
+    final isPromoCodeEmpty = _isPromoCodeEmpty();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () => _applyPromoCode(),
+        child: MouseRegion(
+          cursor: isPromoCodeEmpty
+              ? SystemMouseCursors.basic
+              : SystemMouseCursors.click,
+          child: Text(
+            'Apply', // TODO: localize
+            style: ArDriveTypography.body.buttonNormalBold(
+              color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Future<void> _applyPromoCode() async {
-    if (await _isPromoCodeValid()) {
-      setState(() {
-        _promoCode = _promoCodeController.text;
-      });
-    } else {
-      setState(() {
-        _promoCode = '';
-        _promoCodeInvalid = true;
-        _promoCodeController.clear();
-      });
+    if (!_isPromoCodeEmpty()) {
+      if (await _isPromoCodeValid()) {
+        setState(() {
+          _promoCode = _promoCodeController.text;
+        });
+      } else {
+        setState(() {
+          _promoCode = '';
+          _promoCodeInvalid = true;
+          _promoCodeController.clear();
+        });
+      }
     }
   }
 
@@ -682,7 +726,19 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     const validCodes = ['ARDRIVE', 'TURBO', 'MATI'];
     final textInPromoCode = _promoCodeController.text;
 
+    setState(() {
+      _promoCodeFetching = true;
+    });
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() {
+      _promoCodeFetching = false;
+    });
+
     return validCodes.contains(textInPromoCode);
+  }
+
+  bool _isPromoCodeEmpty() {
+    return _promoCodeController.text.isEmpty;
   }
 
   InputBorder _getBorder(Color color) {
