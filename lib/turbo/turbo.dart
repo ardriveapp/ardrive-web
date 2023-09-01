@@ -54,7 +54,7 @@ class Turbo extends Disposable {
   double? _currentAmount;
   String? _currentCurrency;
   FileSizeUnit? _currentDataUnit;
-  double? _promoDiscountPercentage = 0;
+  double? _promoDiscountFactor = 0;
 
   PaymentUserInformation? _paymentUserInformation;
 
@@ -91,18 +91,18 @@ class Turbo extends Disposable {
     required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
-    required double promoDiscountPercentage,
+    required double promoDiscountFactor,
   }) async {
     _currentAmount = currentAmount;
     _currentCurrency = currentCurrency;
     _currentDataUnit = currentDataUnit;
-    _promoDiscountPercentage = promoDiscountPercentage;
+    _promoDiscountFactor = promoDiscountFactor;
 
     _priceEstimate = await _priceEstimator.computePriceEstimate(
       currentAmount: currentAmount,
       currentCurrency: currentCurrency,
       currentDataUnit: currentDataUnit,
-      promoDiscountPercentage: promoDiscountPercentage,
+      promoDiscountFactor: promoDiscountFactor,
     );
 
     return _priceEstimate;
@@ -113,7 +113,7 @@ class Turbo extends Disposable {
       _currentAmount != null &&
           _currentCurrency != null &&
           _currentDataUnit != null &&
-          _promoDiscountPercentage != null,
+          _promoDiscountFactor != null,
       'Cannot refresh price estimate without first computing it',
     );
 
@@ -121,7 +121,7 @@ class Turbo extends Disposable {
       currentAmount: _currentAmount!,
       currentCurrency: _currentCurrency!,
       currentDataUnit: _currentDataUnit!,
-      promoDiscountPercentage: _promoDiscountPercentage!,
+      promoDiscountFactor: _promoDiscountFactor!,
     );
 
     return _priceEstimate;
@@ -307,7 +307,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
     required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
-    required double promoDiscountPercentage,
+    required double promoDiscountFactor,
   }) async {
     try {
       final double correctAmount = currentAmount * 100;
@@ -330,7 +330,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
         credits: priceEstimate,
         priceInCurrency: currentAmount,
         estimatedStorage: estimatedStorageForSelectedAmount,
-        promoDiscountPercentage: promoDiscountPercentage,
+        promoDiscountFactor: promoDiscountFactor,
       );
 
       _priceEstimateController.add(price);
@@ -386,7 +386,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
         currentAmount: 0,
         currentCurrency: 'usd',
         currentDataUnit: FileSizeUnit.gigabytes,
-        promoDiscountPercentage: 0,
+        promoDiscountFactor: 0,
       );
 
       _priceEstimateController.add(priceEstimate);

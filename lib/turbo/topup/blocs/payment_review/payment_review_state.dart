@@ -17,6 +17,7 @@ class PaymentReviewLoading extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.promoDiscount,
   });
 }
 
@@ -28,12 +29,14 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
   final String total;
   final String subTotal;
   final String credits;
+  final String? promoDiscount;
   final DateTime quoteExpirationDate;
 
   const PaymentReviewPaymentModelLoaded({
     required this.total,
     required this.subTotal,
     required this.credits,
+    required this.promoDiscount,
     required this.quoteExpirationDate,
   });
 
@@ -42,13 +45,15 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
     String? subTotal,
     String? credits,
     DateTime? quoteExpirationDate,
-    PaymentUserInformation? userInformation,
+    // PaymentUserInformation? userInformation,
+    String? promoDiscount,
   }) {
     return PaymentReviewPaymentModelLoaded(
       total: total ?? this.total,
       subTotal: subTotal ?? this.subTotal,
       credits: credits ?? this.credits,
       quoteExpirationDate: quoteExpirationDate ?? this.quoteExpirationDate,
+      promoDiscount: promoDiscount ?? this.promoDiscount,
     );
   }
 }
@@ -59,6 +64,7 @@ class PaymentReviewLoadingQuote extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.promoDiscount,
   });
 }
 
@@ -68,6 +74,7 @@ class PaymentReviewQuoteLoaded extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.promoDiscount,
   });
 }
 
@@ -79,6 +86,7 @@ class PaymentReviewQuoteError extends PaymentReviewPaymentModelLoaded {
     required super.subTotal,
     required super.credits,
     required super.quoteExpirationDate,
+    required super.promoDiscount,
   });
 }
 
@@ -88,6 +96,7 @@ class PaymentReviewPaymentSuccess extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.promoDiscount,
   });
 }
 
@@ -107,6 +116,7 @@ class PaymentReviewPaymentError extends PaymentReviewPaymentModelLoaded {
     required super.subTotal,
     required super.credits,
     required this.errorType,
+    required super.promoDiscount,
   });
 }
 

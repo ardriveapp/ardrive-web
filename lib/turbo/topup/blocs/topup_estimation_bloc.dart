@@ -20,12 +20,12 @@ class TurboTopUpEstimationBloc
   FileSizeUnit _currentDataUnit = FileSizeUnit.gigabytes;
   String _currentCurrency = 'usd';
   double _currentAmount = 0;
-  double _promoDiscountPercentage = 0;
+  double _promoDiscountFactor = 0;
 
   String get currentCurrency => _currentCurrency;
   double get currentAmount => _currentAmount;
   FileSizeUnit get currentDataUnit => _currentDataUnit;
-  double get promoDiscountPercentage => _promoDiscountPercentage;
+  double get promoDiscountFactor => _promoDiscountFactor;
   late BigInt _balance;
 
   TurboTopUpEstimationBloc({
@@ -51,7 +51,7 @@ class TurboTopUpEstimationBloc
               currentAmount: 0,
               currentCurrency: currentCurrency,
               currentDataUnit: currentDataUnit,
-              promoDiscountPercentage: promoDiscountPercentage,
+              promoDiscountFactor: promoDiscountFactor,
               shouldRethrow: true,
             );
           } catch (e, s) {
@@ -67,7 +67,7 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoDiscountPercentage: promoDiscountPercentage,
+            promoDiscountFactor: promoDiscountFactor,
           );
         } else if (event is CurrencyUnitChanged) {
           _currentCurrency = event.currencyUnit;
@@ -77,7 +77,7 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoDiscountPercentage: promoDiscountPercentage,
+            promoDiscountFactor: promoDiscountFactor,
           );
         } else if (event is DataUnitChanged) {
           _currentDataUnit = event.dataUnit;
@@ -87,17 +87,17 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoDiscountPercentage: promoDiscountPercentage,
+            promoDiscountFactor: promoDiscountFactor,
           );
         } else if (event is PromoCodeChanged) {
-          _promoDiscountPercentage = event.discountPercentage;
+          _promoDiscountFactor = event.discountPercentage;
 
           await _computeAndUpdatePriceEstimate(
             emit,
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoDiscountPercentage: promoDiscountPercentage,
+            promoDiscountFactor: promoDiscountFactor,
           );
         } else if (event is FetchPriceEstimate) {
           final estimatedStorageForBalance =
@@ -129,7 +129,7 @@ class TurboTopUpEstimationBloc
     required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
-    required double promoDiscountPercentage,
+    required double promoDiscountFactor,
     bool shouldRethrow = false,
   }) async {
     try {
@@ -138,7 +138,7 @@ class TurboTopUpEstimationBloc
         currentAmount: currentAmount,
         currentCurrency: currentCurrency,
         currentDataUnit: currentDataUnit,
-        promoDiscountPercentage: promoDiscountPercentage,
+        promoDiscountFactor: promoDiscountFactor,
       );
 
       final estimatedStorageForBalance =

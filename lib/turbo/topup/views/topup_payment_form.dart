@@ -32,7 +32,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   String _promoCode = '';
   bool _promoCodeInvalid = false;
   bool _promoCodeFetching = false;
-  double _promoDiscountPercentage = 0.0;
+  double _promoDiscountFactor = 0.0;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _promoCodeController = TextEditingController();
 
@@ -251,7 +251,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                         children: [
                           TextSpan(
                             text:
-                                '\$${(state.priceEstimate.priceInCurrency * (1 - _promoDiscountPercentage)).toStringAsFixed(2)}',
+                                '\$${(state.priceEstimate.priceInCurrency * (1 - _promoDiscountFactor)).toStringAsFixed(2)}',
                             style: ArDriveTypography.body.captionBold(
                               color: ArDriveTheme.of(context)
                                   .themeData
@@ -259,10 +259,10 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                                   .themeFgMuted,
                             ),
                           ),
-                          if (_promoDiscountPercentage != 0.0)
+                          if (_promoDiscountFactor != 0.0)
                             TextSpan(
                               text:
-                                  ' (${_promoDiscountPercentage * 100}% discount applied)',
+                                  ' (${_promoDiscountFactor * 100}% discount applied)',
                               style: ArDriveTypography.body.bodyRegular(
                                 color: ArDriveTheme.of(context)
                                     .themeData
@@ -640,7 +640,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             setState(() {
               _promoCode = '';
               _promoCodeController.clear();
-              _promoDiscountPercentage = 0.0;
+              _promoDiscountFactor = 0.0;
               estimationBloc.add(const PromoCodeChanged(0.0));
             });
           },
@@ -730,7 +730,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
       if (promoDiscount != null) {
         setState(() {
           _promoCode = _promoCodeController.text;
-          _promoDiscountPercentage = promoDiscount;
+          _promoDiscountFactor = promoDiscount;
           estimationBloc.add(PromoCodeChanged(promoDiscount));
         });
       } else {

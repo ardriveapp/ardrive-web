@@ -237,6 +237,80 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                               Row(
                                 children: [
                                   Text(
+                                    'Subtotal',
+                                    style: ArDriveTypography.body
+                                        .buttonNormalRegular(),
+                                  ),
+                                  const Spacer(),
+                                  BlocBuilder<PaymentReviewBloc,
+                                      PaymentReviewState>(
+                                    buildWhen: (previous, current) {
+                                      return current
+                                          is PaymentReviewPaymentModelLoaded;
+                                    },
+                                    builder: (context, state) {
+                                      if (state
+                                          is PaymentReviewPaymentModelLoaded) {
+                                        return Text(
+                                          '\$${state.subTotal}',
+                                          style: ArDriveTypography.body
+                                              .buttonNormalBold()
+                                              .copyWith(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        );
+                                      }
+
+                                      return Text(
+                                        '\$0',
+                                        style: ArDriveTypography.body
+                                            .buttonNormalBold()
+                                            .copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const Divider(),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Discount',
+                                    style: ArDriveTypography.body
+                                        .buttonNormalRegular(),
+                                  ),
+                                  const Spacer(),
+                                  BlocBuilder<PaymentReviewBloc,
+                                      PaymentReviewState>(
+                                    buildWhen: (previous, current) {
+                                      return current
+                                              is PaymentReviewPaymentModelLoaded &&
+                                          current.promoDiscount != null;
+                                    },
+                                    builder: (context, state) {
+                                      if (state
+                                          is PaymentReviewPaymentModelLoaded) {
+                                        return Text(
+                                          '-\$${state.promoDiscount}',
+                                          style: ArDriveTypography.body
+                                              .buttonNormalBold()
+                                              .copyWith(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        );
+                                      }
+
+                                      return Container();
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const Divider(),
+                              Row(
+                                children: [
+                                  Text(
                                     appLocalizationsOf(context).total,
                                     style: ArDriveTypography.body
                                         .buttonNormalBold(),
