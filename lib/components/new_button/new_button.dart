@@ -144,6 +144,11 @@ class NewButton extends StatelessWidget {
                                 horizontal: 16,
                               ),
                               child: ArDriveHoverWidget(
+                                hoverColor: ArDriveTheme.of(context)
+                                    .themeData
+                                    .dropdownTheme
+                                    .hoverColor,
+                                defaultColor: null,
                                 showMouseCursor: !item.isDisabled,
                                 child: ArDriveDropdownItemTile(
                                   iconAlignment: item.iconAlignment,
@@ -159,7 +164,11 @@ class NewButton extends StatelessWidget {
                         ],
                       );
                     } else {
-                      return const Divider(
+                      return Divider(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgSubtle,
                         height: 8,
                       );
                     }
@@ -189,9 +198,11 @@ class NewButton extends StatelessWidget {
                   .themeData
                   .dropdownTheme
                   .backgroundColor,
-              child: const Column(
+              child: Column(
                 children: [
                   Divider(
+                    color:
+                        ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
                     height: 8,
                   ),
                 ],
@@ -215,6 +226,12 @@ class NewButton extends StatelessWidget {
               )
               .toList(),
           widget: ArDriveHoverWidget(
+            hoverColor:
+                ArDriveTheme.of(context).themeData.dropdownTheme.hoverColor,
+            defaultColor: ArDriveTheme.of(context)
+                .themeData
+                .dropdownTheme
+                .backgroundColor,
             showMouseCursor: true,
             child: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).advanced,
@@ -242,6 +259,9 @@ class NewButton extends StatelessWidget {
         }
       },
       widget: ArDriveHoverWidget(
+        hoverColor: ArDriveTheme.of(context).themeData.dropdownTheme.hoverColor,
+        defaultColor:
+            ArDriveTheme.of(context).themeData.dropdownTheme.backgroundColor,
         showMouseCursor: !item.isDisabled,
         child: Column(
           children: [
