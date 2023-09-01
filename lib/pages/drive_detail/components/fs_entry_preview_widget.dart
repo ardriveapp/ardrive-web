@@ -59,6 +59,7 @@ class VideoPlayerWidget extends StatefulWidget {
 
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   late VideoPlayerController _videoPlayerController;
+  late VideoPlayer _videoPlayer;
 
   @override
   void initState() {
@@ -68,6 +69,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
     _videoPlayerController.initialize();
     _videoPlayerController.addListener(_listener);
+    _videoPlayer =
+        VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
   }
 
   @override
@@ -96,6 +99,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
         _videoPlayerController.initialize();
         _videoPlayerController.addListener(_listener);
+
+        _videoPlayer =
+            VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
       }
     });
   }
@@ -121,6 +127,31 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     timeString += seconds.toString().padLeft(2, '0');
 
     return timeString;
+  }
+
+  void goFullScreen() {
+    final fsController =
+        VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+    fsController.initialize().then((_) {
+      fsController.seekTo(_videoPlayerController.value.position);
+      fsController.play();
+    });
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => Scaffold(
+          body: Center(
+            child: TapRegion(
+                onTapInside: (v) {
+                  _videoPlayerController.seekTo(fsController.value.position);
+                  Navigator.of(context).pop();
+                },
+                child: VideoPlayer(fsController)),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -152,8 +183,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               Expanded(
                   child: AspectRatio(
                       aspectRatio: _videoPlayerController.value.aspectRatio,
-                      child: VideoPlayer(_videoPlayerController,
-                          key: const Key('video-player-view')))),
+                      child: TapRegion(
+                          onTapInside: (v) {
+                            goFullScreen();
+                          },
+                          child: _videoPlayer))),
               const SizedBox(height: 8),
               Column(children: [
                 Text(widget.filename,
