@@ -184,12 +184,18 @@ class NewButton extends StatelessWidget {
         } else /** it's an ArDriveNewButtonDivider */ {
           return ArDriveSubmenuItem(
             isDisabled: true,
-            widget: const Column(
-              children: [
-                Divider(
-                  height: 8,
-                ),
-              ],
+            widget: Container(
+              color: ArDriveTheme.of(context)
+                  .themeData
+                  .dropdownTheme
+                  .backgroundColor,
+              child: const Column(
+                children: [
+                  Divider(
+                    height: 8,
+                  ),
+                ],
+              ),
             ),
           );
         }
