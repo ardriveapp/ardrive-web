@@ -6,7 +6,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/arfs_txs_filter.dart' as arfs_txs_filter;
+import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
@@ -217,10 +217,9 @@ class ArweaveService {
       );
 
       yield driveEntityHistoryQuery.data!.transactions.edges
-          .where(
-            (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
-                element.node.tags as List<arfs_txs_filter.Tag>),
-          )
+          .where((element) => doesTagsContainValidArFSVersion(
+                element.node.tags as List<Tag>,
+              ))
           .toList();
 
       cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
@@ -452,12 +451,8 @@ class ArweaveService {
 
       final queryEdges = userDriveEntitiesQuery.data!.transactions.edges;
       final filteredEdges = queryEdges.where(
-        (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
-          element.node.tags
-              .map(
-                (e) => arfs_txs_filter.Tag(e.name, e.value),
-              )
-              .toList(),
+        (element) => doesTagsContainValidArFSVersion(
+          element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
         ),
       );
 
@@ -613,17 +608,21 @@ class ArweaveService {
       }
 
       final filteredEdges = queryEdges.where(
-        (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
-          element.node.tags
-              .map(
-                (e) => arfs_txs_filter.Tag(e.name, e.value),
-              )
-              .toList(),
+        (element) => doesTagsContainValidArFSVersion(
+          element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
         ),
       );
+
+      final hasNextPage =
+          latestDriveQuery.data!.transactions.pageInfo.hasNextPage;
+
       if (filteredEdges.isEmpty) {
-        cursor = queryEdges.last.cursor;
-        continue;
+        if (hasNextPage) {
+          cursor = latestDriveQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
       }
 
       final fileTx = filteredEdges.first.node;
@@ -705,17 +704,21 @@ class ArweaveService {
       }
 
       final filteredEdges = queryEdges.where(
-        (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
-          element.node.tags
-              .map(
-                (e) => arfs_txs_filter.Tag(e.name, e.value),
-              )
-              .toList(),
+        (element) => doesTagsContainValidArFSVersion(
+          element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
         ),
       );
+
+      final hasNextPage =
+          latestFileQuery.data!.transactions.pageInfo.hasNextPage;
+
       if (filteredEdges.isEmpty) {
-        cursor = queryEdges.last.cursor;
-        continue;
+        if (hasNextPage) {
+          cursor = latestFileQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
       }
 
       final fileTx = filteredEdges.first.node;
@@ -749,19 +752,22 @@ class ArweaveService {
               FirstDriveEntityWithIdOwner$Query$TransactionConnection$TransactionEdge>
           filteredEdges = firstOwnerQuery.data!.transactions.edges
               .where(
-                (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
-                  element.node.tags
-                      .map(
-                        (e) => arfs_txs_filter.Tag(e.name, e.value),
-                      )
-                      .toList(),
+                (element) => doesTagsContainValidArFSVersion(
+                  element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
                 ),
               )
               .toList();
 
+      final hasNextPage =
+          firstOwnerQuery.data!.transactions.pageInfo.hasNextPage;
+
       if (filteredEdges.isEmpty) {
-        cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
-        continue;
+        if (hasNextPage) {
+          cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
       }
 
       return filteredEdges.first.node.owner.address;
@@ -828,12 +834,8 @@ class ArweaveService {
       }
 
       final filteredEdges = queryEdges.where(
-        (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
-          element.node.tags
-              .map(
-                (e) => arfs_txs_filter.Tag(e.name, e.value),
-              )
-              .toList(),
+        (element) => doesTagsContainValidArFSVersion(
+          element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
         ),
       );
       if (filteredEdges.isEmpty) {
@@ -888,12 +890,8 @@ class ArweaveService {
               AllFileEntitiesWithId$Query$TransactionConnection$TransactionEdge>
           queryEdges = allFileEntitiesQuery.data!.transactions.edges
               .where(
-                (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
-                  element.node.tags
-                      .map(
-                        (e) => arfs_txs_filter.Tag(e.name, e.value),
-                      )
-                      .toList(),
+                (element) => doesTagsContainValidArFSVersion(
+                  element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
                 ),
               )
               .toList();
@@ -953,19 +951,22 @@ class ArweaveService {
 
       final filteredEdges = firstOwnerQuery.data!.transactions.edges
           .where(
-            (element) => arfs_txs_filter.doesTagsContainValidArFSVersion(
-              element.node.tags
-                  .map(
-                    (e) => arfs_txs_filter.Tag(e.name, e.value),
-                  )
-                  .toList(),
+            (element) => doesTagsContainValidArFSVersion(
+              element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
             ),
           )
           .toList();
 
+      final hasNextPage =
+          firstOwnerQuery.data!.transactions.pageInfo.hasNextPage;
+
       if (filteredEdges.isEmpty) {
-        cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
-        continue;
+        if (hasNextPage) {
+          cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
       }
 
       final fileOwner = filteredEdges.first.node.owner.address;
