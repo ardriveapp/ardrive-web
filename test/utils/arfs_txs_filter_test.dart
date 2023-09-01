@@ -1,4 +1,5 @@
 import 'package:ardrive/utils/arfs_txs_filter.dart';
+import 'package:arweave/arweave.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
