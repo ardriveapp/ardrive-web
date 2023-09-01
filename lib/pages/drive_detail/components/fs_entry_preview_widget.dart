@@ -60,10 +60,6 @@ class VideoPlayerWidget extends StatefulWidget {
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   late VideoPlayerController _videoPlayerController;
 
-  late Null Function() listener;
-  // late ChewieController _chewieController;
-  // bool _isPlaying = false;
-
   @override
   void initState() {
     logger.d('Initializing video player: ${widget.videoUrl}');
@@ -71,45 +67,37 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _videoPlayerController =
         VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
     _videoPlayerController.initialize();
-
-    listener = () {
-      // print('buffer data:');
-      // for (final bufferRange in _videoPlayerController.value.buffered) {
-      //   print(bufferRange);
-      // }
-      setState(() {});
-    };
-
-    _videoPlayerController.addListener(listener);
-    // _chewieController = ChewieController(
-    //   videoPlayerController: _videoPlayerController,
-    //   autoPlay: false,
-    //   looping: true,
-    //   showControls: true,
-    //   allowFullScreen: true,
-    //   aspectRatio: 1,
-    //   errorBuilder: (context, errorMessage) {
-    //     return Center(
-    //       child: Text(
-    //         errorMessage,
-    //         style: ArDriveTypography.body.buttonXLargeRegular(
-    //           color:
-    //               ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
-    //         ),
-    //       ),
-    // );
-    // },
-    // );
+    _videoPlayerController.addListener(_listener);
   }
 
   @override
   void dispose() {
     logger.d('Disposing video player');
-    // _chewieController.videoPlayerController.dispose();
-    // _chewieController.dispose();
-    _videoPlayerController.removeListener(listener);
+    _videoPlayerController.removeListener(_listener);
     _videoPlayerController.dispose();
     super.dispose();
+  }
+
+  void _listener() {
+    setState(() {
+      if (_videoPlayerController.value.hasError) {
+        logger.d('>>> ${_videoPlayerController.value.errorDescription}');
+
+        // FIXME: This is a hack to deal with Chrome having problems on pressing
+        // play after pause rapidly. Also happens when a video reaches its end
+        // and a user plays it again right away.
+        // The error message is:
+        // "The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22"
+        // A better fix is required but putting this in for now.
+        _videoPlayerController.removeListener(_listener);
+        _videoPlayerController.dispose();
+
+        _videoPlayerController =
+            VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+        _videoPlayerController.initialize();
+        _videoPlayerController.addListener(_listener);
+      }
+    });
   }
 
   String getTimeString(Duration duration) {
@@ -164,7 +152,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               Expanded(
                   child: AspectRatio(
                       aspectRatio: _videoPlayerController.value.aspectRatio,
-                      child: VideoPlayer(_videoPlayerController))),
+                      child: VideoPlayer(_videoPlayerController,
+                          key: const Key('video-player-view')))),
               const SizedBox(height: 8),
               Column(children: [
                 Text(widget.filename,
@@ -174,20 +163,36 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 const Text('metadata'),
                 const SizedBox(height: 8),
                 Slider(
-                    value: videoValue.position.inSeconds.toDouble(),
+                    value: min(videoValue.position.inMilliseconds.toDouble(),
+                        videoValue.duration.inMilliseconds.toDouble()),
                     min: 0.0,
-                    max: videoValue.duration.inSeconds.toDouble(),
-                    onChangeStart: (v) async {
-                      await _videoPlayerController.pause();
+                    max: videoValue.duration.inMilliseconds.toDouble(),
+                    onChangeStart: (v) {
+                      setState(() {
+                        if (_videoPlayerController.value.duration >
+                            Duration.zero) {
+                          _videoPlayerController.pause();
+                        }
+                      });
                     },
-                    onChanged: (v) async {
-                      await _videoPlayerController
-                          .seekTo(Duration(seconds: v.toInt()));
+                    onChanged: (v) {
+                      setState(() {
+                        if (_videoPlayerController.value.duration >
+                            Duration.zero) {
+                          _videoPlayerController
+                              .seekTo(Duration(milliseconds: v.toInt()));
+                        }
+                      });
                     },
-                    onChangeEnd: (v) async {
-                      await _videoPlayerController
-                          .seekTo(Duration(seconds: v.toInt()));
-                      await _videoPlayerController.play();
+                    onChangeEnd: (v) {
+                      setState(() {
+                        if (_videoPlayerController.value.duration >
+                            Duration.zero) {
+                          // _videoPlayerController
+                          //     .seekTo(Duration(milliseconds: v.toInt()));
+                          _videoPlayerController.play();
+                        }
+                      });
                     }),
                 const SizedBox(height: 4),
                 Row(
@@ -204,19 +209,38 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   children: [
                     IconButton(
                         onPressed: () {
-                          final videoValue = _videoPlayerController.value;
-                          final newPosition =
-                              videoValue.position - const Duration(seconds: 15);
-                          _videoPlayerController.seekTo(newPosition);
+                          setState(() {
+                            if (!_videoPlayerController.value.isInitialized ||
+                                _videoPlayerController.value.isBuffering ||
+                                _videoPlayerController.value.duration <=
+                                    Duration.zero) {
+                              return;
+                            }
+                            final videoValue = _videoPlayerController.value;
+                            final newPosition = videoValue.position -
+                                const Duration(seconds: 15);
+                            _videoPlayerController.seekTo(newPosition);
+                          });
                         },
                         icon: const Icon(Icons.fast_rewind_outlined, size: 24)),
                     IconButton.filled(
-                      onPressed: () async {
-                        if (_videoPlayerController.value.isPlaying) {
-                          await _videoPlayerController.pause();
-                        } else {
-                          await _videoPlayerController.play();
-                        }
+                      onPressed: () {
+                        setState(() {
+                          final value = _videoPlayerController.value;
+                          if (!value.isInitialized ||
+                              value.isBuffering ||
+                              value.duration <= Duration.zero) {
+                            return;
+                          }
+                          if (_videoPlayerController.value.isPlaying) {
+                            _videoPlayerController.pause();
+                          } else {
+                            if (value.position >= value.duration) {
+                              _videoPlayerController.seekTo(Duration.zero);
+                            }
+                            _videoPlayerController.play();
+                          }
+                        });
                       },
                       icon: _videoPlayerController.value.isPlaying
                           ? const Icon(Icons.pause_outlined, size: 24)
@@ -224,21 +248,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     ),
                     IconButton(
                         onPressed: () {
-                          final videoValue = _videoPlayerController.value;
-                          final newPosition =
-                              videoValue.position + const Duration(seconds: 15);
+                          setState(() {
+                            if (!_videoPlayerController.value.isInitialized ||
+                                _videoPlayerController.value.isBuffering ||
+                                _videoPlayerController.value.duration <=
+                                    Duration.zero) {
+                              return;
+                            }
+                            final videoValue = _videoPlayerController.value;
+                            final newPosition = videoValue.position +
+                                const Duration(seconds: 15);
 
-                          _videoPlayerController.seekTo(newPosition);
+                            _videoPlayerController.seekTo(newPosition);
+                          });
                         },
                         icon: const Icon(Icons.fast_forward_outlined, size: 24))
                   ],
                 )
               ])
-            ]))
-
-        // Chewie(
-        //   controller: _chewieController,
-        // ),
-        );
+            ])));
   }
 }
