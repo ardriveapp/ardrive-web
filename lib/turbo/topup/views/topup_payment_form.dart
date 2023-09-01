@@ -4,6 +4,7 @@ import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
+import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
@@ -31,6 +32,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   String _promoCode = '';
   bool _promoCodeInvalid = false;
   bool _promoCodeFetching = false;
+  double _promoDiscountPercentage = 0.0;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _promoCodeController = TextEditingController();
 
@@ -249,7 +251,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                         children: [
                           TextSpan(
                             text:
-                                '\$${state.priceEstimate.priceInCurrency.toStringAsFixed(2)}',
+                                '\$${(state.priceEstimate.priceInCurrency * (1 - _promoDiscountPercentage)).toStringAsFixed(2)}',
                             style: ArDriveTypography.body.captionBold(
                               color: ArDriveTheme.of(context)
                                   .themeData
@@ -257,6 +259,17 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                                   .themeFgMuted,
                             ),
                           ),
+                          if (_promoDiscountPercentage != 0.0)
+                            TextSpan(
+                              text:
+                                  ' (${_promoDiscountPercentage * 100}% discount applied)',
+                              style: ArDriveTypography.body.bodyRegular(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDisabled,
+                              ),
+                            ),
                         ],
                       ),
                     );
@@ -601,6 +614,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget promoCodeAppliedWidget(ArDriveTextFieldTheme theme) {
+    final estimationBloc = context.read<TurboTopUpEstimationBloc>();
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -625,6 +640,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             setState(() {
               _promoCode = '';
               _promoCodeController.clear();
+              _promoDiscountPercentage = 0.0;
+              estimationBloc.add(const PromoCodeChanged(0.0));
             });
           },
           child: Tooltip(
@@ -707,10 +724,14 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Future<void> _applyPromoCode() async {
+    final estimationBloc = context.read<TurboTopUpEstimationBloc>();
     if (!_isPromoCodeEmpty()) {
-      if (await _isPromoCodeValid()) {
+      final promoDiscount = await _validatePromoCode();
+      if (promoDiscount != null) {
         setState(() {
           _promoCode = _promoCodeController.text;
+          _promoDiscountPercentage = promoDiscount;
+          estimationBloc.add(PromoCodeChanged(promoDiscount));
         });
       } else {
         setState(() {
@@ -722,8 +743,12 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     }
   }
 
-  Future<bool> _isPromoCodeValid() async {
-    const validCodes = ['ARDRIVE', 'TURBO', 'MATI'];
+  Future<double?> _validatePromoCode() async {
+    const validCodes = {
+      'ARDRIVE': 1.0,
+      'TURBO': 0.5,
+      'MATI': 0.1,
+    };
     final textInPromoCode = _promoCodeController.text;
 
     setState(() {
@@ -734,7 +759,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
       _promoCodeFetching = false;
     });
 
-    return validCodes.contains(textInPromoCode);
+    final isValid = validCodes.keys.contains(textInPromoCode);
+
+    return isValid ? validCodes[textInPromoCode] : null;
   }
 
   bool _isPromoCodeEmpty() {

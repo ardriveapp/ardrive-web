@@ -36,7 +36,7 @@ class PaymentService {
   }
 
   Future<BigInt> getPriceForFiat({
-    required int amount,
+    required double amount,
     required String currency,
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
@@ -90,7 +90,7 @@ class PaymentService {
 
   Future<PaymentModel> getPaymentIntent({
     required Wallet wallet,
-    required int amount,
+    required double amount,
     String currency = 'usd',
   }) async {
     final nonce = const Uuid().v4();
@@ -138,7 +138,7 @@ class DontUsePaymentService implements PaymentService {
   @override
   Future<PaymentModel> getPaymentIntent({
     required Wallet wallet,
-    required int amount,
+    required double amount,
     String currency = 'usd',
   }) async {
     throw UnimplementedError();
@@ -152,7 +152,7 @@ class DontUsePaymentService implements PaymentService {
 
   @override
   Future<BigInt> getPriceForFiat({
-    required int amount,
+    required double amount,
     required String currency,
   }) =>
       throw UnimplementedError();

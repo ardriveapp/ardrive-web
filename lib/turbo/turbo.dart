@@ -51,9 +51,10 @@ class Turbo extends Disposable {
   final Wallet _wallet;
 
   PriceEstimate _priceEstimate = PriceEstimate.zero();
-  int? _currentAmount;
+  double? _currentAmount;
   String? _currentCurrency;
   FileSizeUnit? _currentDataUnit;
+  double? _promoDiscountPercentage = 0;
 
   PaymentUserInformation? _paymentUserInformation;
 
@@ -87,18 +88,21 @@ class Turbo extends Disposable {
   }
 
   Future<PriceEstimate> computePriceEstimate({
-    required int currentAmount,
+    required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
+    required double promoDiscountPercentage,
   }) async {
     _currentAmount = currentAmount;
     _currentCurrency = currentCurrency;
     _currentDataUnit = currentDataUnit;
+    _promoDiscountPercentage = promoDiscountPercentage;
 
     _priceEstimate = await _priceEstimator.computePriceEstimate(
       currentAmount: currentAmount,
       currentCurrency: currentCurrency,
       currentDataUnit: currentDataUnit,
+      promoDiscountPercentage: promoDiscountPercentage,
     );
 
     return _priceEstimate;
@@ -108,7 +112,8 @@ class Turbo extends Disposable {
     assert(
       _currentAmount != null &&
           _currentCurrency != null &&
-          _currentDataUnit != null,
+          _currentDataUnit != null &&
+          _promoDiscountPercentage != null,
       'Cannot refresh price estimate without first computing it',
     );
 
@@ -116,6 +121,7 @@ class Turbo extends Disposable {
       currentAmount: _currentAmount!,
       currentCurrency: _currentCurrency!,
       currentDataUnit: _currentDataUnit!,
+      promoDiscountPercentage: _promoDiscountPercentage!,
     );
 
     return _priceEstimate;
@@ -139,7 +145,7 @@ class Turbo extends Disposable {
   DateTime? get quoteExpirationDate => _quoteExpirationDate;
 
   Future<PaymentModel> createPaymentIntent({
-    required int amount,
+    required double amount,
     required String currency,
   }) async {
     _currentPaymentIntent = await _paymentProvider.createPaymentIntent(
@@ -298,12 +304,13 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
   DateTime? get maxQuoteExpirationTime => _maxQuoteExpirationTime;
 
   Future<PriceEstimate> computePriceEstimate({
-    required int currentAmount,
+    required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
+    required double promoDiscountPercentage,
   }) async {
     try {
-      final int correctAmount = currentAmount * 100;
+      final double correctAmount = currentAmount * 100;
 
       final priceEstimate = await paymentService.getPriceForFiat(
         currency: currentCurrency,
@@ -323,6 +330,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
         credits: priceEstimate,
         priceInCurrency: currentAmount,
         estimatedStorage: estimatedStorageForSelectedAmount,
+        promoDiscountPercentage: promoDiscountPercentage,
       );
 
       _priceEstimateController.add(price);
@@ -378,6 +386,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
         currentAmount: 0,
         currentCurrency: 'usd',
         currentDataUnit: FileSizeUnit.gigabytes,
+        promoDiscountPercentage: 0,
       );
 
       _priceEstimateController.add(priceEstimate);
@@ -394,7 +403,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
 abstract class TurboPaymentProvider {
   Future<PaymentModel> createPaymentIntent({
     required String currency,
-    required int amount,
+    required double amount,
     required Wallet wallet,
   });
 
@@ -416,7 +425,7 @@ class StripePaymentProvider implements TurboPaymentProvider {
   @override
   Future<PaymentModel> createPaymentIntent({
     required String currency,
-    required int amount,
+    required double amount,
     required Wallet wallet,
   }) async {
     final correctAmount = amount * 100;

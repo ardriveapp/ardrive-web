@@ -228,7 +228,7 @@ class PresetAmountSelector extends StatefulWidget {
   final List<int> amounts;
   final String currencyUnit;
   final int preSelectedAmount;
-  final Function(int) onAmountSelected;
+  final Function(double) onAmountSelected;
   const PresetAmountSelector({
     super.key,
     required this.amounts,
@@ -275,7 +275,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
   }
 
   void _onAmountChanged(String amount) {
-    widget.onAmountSelected(int.parse(amount));
+    widget.onAmountSelected(double.parse(amount));
   }
 
   void _onPresetAmountSelected(int amount) {
@@ -673,7 +673,7 @@ class _BalanceViewState extends State<_BalanceView> {
 }
 
 class PriceEstimateView extends StatelessWidget {
-  final int fiatAmount;
+  final double fiatAmount;
   final String fiatCurrency;
   final BigInt estimatedCredits;
   final String estimatedStorage;

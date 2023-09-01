@@ -10,7 +10,7 @@ class LoadInitialData extends TopupEstimationEvent {
 }
 
 class FiatAmountSelected extends TopupEstimationEvent {
-  final int amount;
+  final double amount;
 
   const FiatAmountSelected(this.amount);
 
@@ -34,6 +34,15 @@ class DataUnitChanged extends TopupEstimationEvent {
 
   @override
   List<Object?> get props => [];
+}
+
+class PromoCodeChanged extends TopupEstimationEvent {
+  final double discountPercentage;
+
+  const PromoCodeChanged(this.discountPercentage);
+
+  @override
+  List<Object?> get props => [discountPercentage];
 }
 
 class AddCreditsClicked extends TopupEstimationEvent {

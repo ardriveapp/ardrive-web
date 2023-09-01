@@ -22,7 +22,7 @@ class EstimationLoading extends TopupEstimationState {
 class EstimationLoaded extends TopupEstimationState {
   final BigInt balance;
   final String estimatedStorageForBalance;
-  final int selectedAmount;
+  final double selectedAmount;
   final BigInt creditsForSelectedAmount;
   final String estimatedStorageForSelectedAmount;
   final String currencyUnit;
