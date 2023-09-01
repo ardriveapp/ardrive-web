@@ -175,179 +175,188 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         Padding(
                           padding: const EdgeInsets.only(
                               top: 24, left: 24, right: 24),
-                          child: Column(
-                            children: [
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: turboLogo(context, height: 15),
-                              ),
-                              const SizedBox(
-                                height: 18,
-                              ),
-                              BlocBuilder<PaymentReviewBloc,
-                                  PaymentReviewState>(
-                                buildWhen: (previous, current) {
-                                  return current
-                                      is PaymentReviewPaymentModelLoaded;
-                                },
-                                builder: (context, state) {
-                                  if (state
-                                      is PaymentReviewPaymentModelLoaded) {
+                          child: BlocBuilder<PaymentReviewBloc,
+                              PaymentReviewState>(
+                            builder: (context, paymentReviewBlocState) =>
+                                Column(
+                              children: [
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: turboLogo(context, height: 15),
+                                ),
+                                const SizedBox(
+                                  height: 18,
+                                ),
+                                BlocBuilder<PaymentReviewBloc,
+                                    PaymentReviewState>(
+                                  buildWhen: (previous, current) {
+                                    return current
+                                        is PaymentReviewPaymentModelLoaded;
+                                  },
+                                  builder: (context, state) {
+                                    if (state
+                                        is PaymentReviewPaymentModelLoaded) {
+                                      return Text(
+                                        state.credits,
+                                        style: ArDriveTypography.headline
+                                            .headline4Regular(
+                                              color: ArDriveTheme.of(context)
+                                                  .themeData
+                                                  .colors
+                                                  .themeFgMuted,
+                                            )
+                                            .copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      );
+                                    }
+
                                     return Text(
-                                      state.credits,
+                                      '0',
                                       style: ArDriveTypography.headline
                                           .headline4Regular(
-                                            color: ArDriveTheme.of(context)
-                                                .themeData
-                                                .colors
-                                                .themeFgMuted,
-                                          )
-                                          .copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                        color: ArDriveTheme.of(context)
+                                            .themeData
+                                            .colors
+                                            .themeFgMuted,
+                                      ),
                                     );
-                                  }
-
-                                  return Text(
-                                    '0',
-                                    style: ArDriveTypography.headline
-                                        .headline4Regular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgMuted,
-                                    ),
-                                  );
-                                },
-                              ),
-                              Text(
-                                appLocalizationsOf(context).credits,
-                                style:
-                                    ArDriveTypography.body.buttonLargeRegular(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgDefault,
+                                  },
                                 ),
-                              ),
-                              const SizedBox(
-                                height: 40,
-                              ),
-                              const Divider(),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Subtotal',
-                                    style: ArDriveTypography.body
-                                        .buttonNormalRegular(),
+                                Text(
+                                  appLocalizationsOf(context).credits,
+                                  style:
+                                      ArDriveTypography.body.buttonLargeRegular(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgDefault,
                                   ),
-                                  const Spacer(),
-                                  BlocBuilder<PaymentReviewBloc,
-                                      PaymentReviewState>(
-                                    buildWhen: (previous, current) {
-                                      return current
-                                          is PaymentReviewPaymentModelLoaded;
-                                    },
-                                    builder: (context, state) {
-                                      if (state
-                                          is PaymentReviewPaymentModelLoaded) {
-                                        return Text(
-                                          '\$${state.subTotal}',
-                                          style: ArDriveTypography.body
-                                              .buttonNormalBold()
-                                              .copyWith(
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        );
-                                      }
-
-                                      return Text(
-                                        '\$0',
+                                ),
+                                const SizedBox(
+                                  height: 40,
+                                ),
+                                const Divider(),
+                                if (paymentReviewBlocState
+                                        is PaymentReviewPaymentModelLoaded &&
+                                    paymentReviewBlocState.promoDiscount !=
+                                        null) ...[
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Subtotal',
                                         style: ArDriveTypography.body
-                                            .buttonNormalBold()
-                                            .copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                              const Divider(),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Discount',
-                                    style: ArDriveTypography.body
-                                        .buttonNormalRegular(),
-                                  ),
-                                  const Spacer(),
-                                  BlocBuilder<PaymentReviewBloc,
-                                      PaymentReviewState>(
-                                    buildWhen: (previous, current) {
-                                      return current
-                                              is PaymentReviewPaymentModelLoaded &&
-                                          current.promoDiscount != null;
-                                    },
-                                    builder: (context, state) {
-                                      if (state
-                                          is PaymentReviewPaymentModelLoaded) {
-                                        return Text(
-                                          '-\$${state.promoDiscount}',
-                                          style: ArDriveTypography.body
-                                              .buttonNormalBold()
-                                              .copyWith(
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        );
-                                      }
+                                            .buttonNormalRegular(),
+                                      ),
+                                      const Spacer(),
+                                      BlocBuilder<PaymentReviewBloc,
+                                          PaymentReviewState>(
+                                        buildWhen: (previous, current) {
+                                          return current
+                                              is PaymentReviewPaymentModelLoaded;
+                                        },
+                                        builder: (context, state) {
+                                          if (state
+                                              is PaymentReviewPaymentModelLoaded) {
+                                            return Text(
+                                              '\$${state.subTotal}',
+                                              style: ArDriveTypography.body
+                                                  .buttonNormalBold()
+                                                  .copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            );
+                                          }
 
-                                      return Container();
-                                    },
+                                          return Text(
+                                            '\$0',
+                                            style: ArDriveTypography.body
+                                                .buttonNormalBold()
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          );
+                                        },
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              const Divider(),
-                              Row(
-                                children: [
-                                  Text(
-                                    appLocalizationsOf(context).total,
-                                    style: ArDriveTypography.body
-                                        .buttonNormalBold(),
-                                  ),
-                                  const Spacer(),
-                                  BlocBuilder<PaymentReviewBloc,
-                                      PaymentReviewState>(
-                                    buildWhen: (previous, current) {
-                                      return current
-                                          is PaymentReviewPaymentModelLoaded;
-                                    },
-                                    builder: (context, state) {
-                                      if (state
-                                          is PaymentReviewPaymentModelLoaded) {
-                                        return Text(
-                                          '\$${state.total}',
-                                          style: ArDriveTypography.body
-                                              .buttonNormalBold()
-                                              .copyWith(
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        );
-                                      }
-
-                                      return Text(
-                                        '\$0',
+                                  const Divider(),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Discount',
                                         style: ArDriveTypography.body
-                                            .buttonNormalBold()
-                                            .copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      );
-                                    },
+                                            .buttonNormalRegular(),
+                                      ),
+                                      const Spacer(),
+                                      BlocBuilder<PaymentReviewBloc,
+                                          PaymentReviewState>(
+                                        buildWhen: (previous, current) {
+                                          return current
+                                                  is PaymentReviewPaymentModelLoaded &&
+                                              current.promoDiscount != null;
+                                        },
+                                        builder: (context, state) {
+                                          if (state
+                                              is PaymentReviewPaymentModelLoaded) {
+                                            return Text(
+                                              '-\$${state.promoDiscount}',
+                                              style: ArDriveTypography.body
+                                                  .buttonNormalBold()
+                                                  .copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            );
+                                          }
+
+                                          return Container();
+                                        },
+                                      ),
+                                    ],
                                   ),
+                                  const Divider(),
                                 ],
-                              ),
-                            ],
+                                Row(
+                                  children: [
+                                    Text(
+                                      appLocalizationsOf(context).total,
+                                      style: ArDriveTypography.body
+                                          .buttonNormalBold(),
+                                    ),
+                                    const Spacer(),
+                                    BlocBuilder<PaymentReviewBloc,
+                                        PaymentReviewState>(
+                                      buildWhen: (previous, current) {
+                                        return current
+                                            is PaymentReviewPaymentModelLoaded;
+                                      },
+                                      builder: (context, state) {
+                                        if (state
+                                            is PaymentReviewPaymentModelLoaded) {
+                                          return Text(
+                                            '\$${state.total}',
+                                            style: ArDriveTypography.body
+                                                .buttonNormalBold()
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          );
+                                        }
+
+                                        return Text(
+                                          '\$0',
+                                          style: ArDriveTypography.body
+                                              .buttonNormalBold()
+                                              .copyWith(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(
