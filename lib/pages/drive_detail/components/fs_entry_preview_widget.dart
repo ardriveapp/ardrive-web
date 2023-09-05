@@ -147,7 +147,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   _videoPlayerController.seekTo(fsController.value.position);
                   Navigator.of(context).pop();
                 },
-                child: VideoPlayer(fsController)),
+                child: AspectRatio(
+                    aspectRatio: _videoPlayerController.value.aspectRatio,
+                    child: VideoPlayer(fsController))),
           ),
         ),
       ),
