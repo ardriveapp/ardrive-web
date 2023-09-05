@@ -1,0 +1,3 @@
+- Resolved an issue where the new button was incorrectly disabled for new users.
+- Corrected the background color of the separator line on the new button.
+- Resolved an issue with the Advanced option of the new button on mobile
