@@ -164,7 +164,7 @@ class NewButton extends StatelessWidget {
                                 ),
                               ],
                             )
-                          : SizedBox();
+                          : const SizedBox();
                     } else {
                       return Divider(
                         color: ArDriveTheme.of(context)
