@@ -85,6 +85,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           }
 
           break;
+
+        case 'audio':
+          _previewAudio(
+            fileKey != null,
+            selectedItem,
+            previewUrl,
+          );
+          break;
+
         case 'video':
           _previewVideo(
             fileKey != null,
@@ -171,6 +180,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
               case 'image':
                 emitImagePreview(file, previewUrl);
                 break;
+
+              case 'audio':
+                _previewAudio(
+                  drive.isPrivate,
+                  selectedItem as FileDataTableItem,
+                  previewUrl,
+                );
+                break;
               case 'video':
                 _previewVideo(
                   drive.isPrivate,
@@ -187,6 +204,23 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     } else {
       emit(FsEntryPreviewUnavailable());
     }
+  }
+
+  void _previewAudio(
+      bool isPrivate, FileDataTableItem selectedItem, previewUrl) {
+    if (_configService.config.enableVideoPreview) {
+      if (isPrivate) {
+        emit(FsEntryPreviewUnavailable());
+        return;
+      }
+
+      emit(FsEntryPreviewAudio(
+          filename: selectedItem.name, previewUrl: previewUrl));
+
+      return;
+    }
+
+    emit(FsEntryPreviewUnavailable());
   }
 
   void _previewVideo(
@@ -285,6 +319,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     switch (previewType) {
       case 'image':
         return supportedImageTypesInFilePreview
+            .any((element) => element.contains(fileExtension));
+      case 'audio':
+        return audioContentTypes
             .any((element) => element.contains(fileExtension));
       case 'video':
         return videoContentTypes

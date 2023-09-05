@@ -35,6 +35,12 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           ),
         );
 
+      case FsEntryPreviewAudio:
+        return AudioPlayerWidget(
+          filename: (widget.state as FsEntryPreviewAudio).filename,
+          audioUrl: (widget.state as FsEntryPreviewAudio).previewUrl,
+        );
+
       default:
         return VideoPlayerWidget(
           filename: (widget.state as FsEntryPreviewVideo).filename,
@@ -303,5 +309,227 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 )
               ])
             ])));
+  }
+}
+
+class AudioPlayerWidget extends StatefulWidget {
+  final String audioUrl;
+  final String filename;
+
+  const AudioPlayerWidget(
+      {Key? key, required this.filename, required this.audioUrl})
+      : super(key: key);
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _AudioPlayerWidgetState createState() => _AudioPlayerWidgetState();
+}
+
+enum LoadState { loading, loaded, failed }
+
+class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
+  late AudioPlayer player;
+  LoadState _loadState = LoadState.loading;
+
+  @override
+  void initState() {
+    logger.d('Initializing audio player: ${widget.audioUrl}');
+    player = AudioPlayer();
+    player.setUrl(widget.audioUrl).then((value) {
+      setState(() {
+        _loadState = LoadState.loaded;
+        player.positionStream.listen((event) {
+          setState(() {});
+        });
+
+        player.playerStateStream.listen((event) {
+          // logger.d('Player state: $event');
+          if (event.processingState == ProcessingState.completed) {
+            player.stop();
+          }
+          setState(() {});
+        });
+      });
+    }).catchError((e) {
+      logger.d('Error setting audio url: $e');
+      setState(() {
+        _loadState = LoadState.failed;
+      });
+    });
+
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    logger.d('Disposing audio player');
+    player.dispose();
+    super.dispose();
+  }
+
+  String getTimeString(Duration duration) {
+    int durSeconds = duration.inSeconds;
+    const hour = 60 * 60;
+    const minute = 60;
+
+    final hours = (durSeconds / hour).floor();
+    final minutes = ((durSeconds % hour) / minute).floor();
+    final seconds = durSeconds % minute;
+
+    String timeString = '';
+
+    if (hours > 0) {
+      timeString = '${hours.floor()}:';
+    }
+
+    timeString +=
+        hours > 0 ? minutes.toString().padLeft(2, '0') : minutes.toString();
+    timeString += ':';
+    timeString += seconds.toString().padLeft(2, '0');
+
+    return timeString;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var colors = ArDriveTheme.of(context).themeData.colors;
+
+    player.duration;
+
+    var currentTime = getTimeString(player.position);
+    var duration =
+        player.duration != null ? getTimeString(player.duration!) : '0:00';
+
+    return VisibilityDetector(
+        key: const Key('audio-player'),
+        onVisibilityChanged: (VisibilityInfo info) {
+          if (mounted) {
+            setState(
+              () {
+                // if (_videoPlayerController.value.isInitialized) {
+                //   _isPlaying = info.visibleFraction > 0.5;
+                //   _isPlaying
+                //       ? _videoPlayerController.play()
+                //       : _videoPlayerController.pause();
+                // }
+              },
+            );
+          }
+        },
+        child: _loadState == LoadState.loading
+            ? const Center(
+                child: SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            : _loadState == LoadState.failed
+                ? const Center(
+                    child: Text('Failed to load audio'),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    child: Column(children: [
+                      Expanded(child: Container(color: Colors.black)),
+                      const SizedBox(height: 8),
+                      Column(children: [
+                        Text(widget.filename,
+                            style: ArDriveTypography.body
+                                .smallBold700(color: colors.themeFgDefault)),
+                        const SizedBox(height: 4),
+                        const Text('metadata'),
+                        const SizedBox(height: 8),
+                        Slider(
+                            value: min(
+                                player.position.inMilliseconds.toDouble(),
+                                player.duration?.inMilliseconds.toDouble() ??
+                                    0),
+                            min: 0.0,
+                            max:
+                                player.duration?.inMilliseconds.toDouble() ?? 0,
+                            onChangeStart: (v) {
+                              setState(() {
+                                player.pause();
+                              });
+                            },
+                            onChanged: (v) {
+                              setState(() {
+                                player.seek(Duration(milliseconds: v.toInt()));
+                              });
+                            },
+                            onChangeEnd: (v) {
+                              setState(() {
+                                player.play();
+                              });
+                            }),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(currentTime),
+                            const Expanded(child: SizedBox.shrink()),
+                            Text(duration)
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    if (player.duration != null) {
+                                      final newPosition = player.position -
+                                          const Duration(seconds: 15);
+                                      player.seek(newPosition >= Duration.zero
+                                          ? newPosition
+                                          : Duration.zero);
+                                    }
+                                  });
+                                },
+                                icon: const Icon(Icons.fast_rewind_outlined,
+                                    size: 24)),
+                            IconButton.filled(
+                              onPressed: () {
+                                setState(() {
+                                  if (player.playerState.processingState ==
+                                          ProcessingState.completed ||
+                                      !player.playing) {
+                                    if (player.position == player.duration) {
+                                      player.stop();
+                                      player.seek(Duration.zero);
+                                    }
+                                    player.play();
+                                  } else {
+                                    player.pause();
+                                  }
+                                });
+                              },
+                              icon: (player.playerState.processingState ==
+                                          ProcessingState.completed ||
+                                      !player.playing)
+                                  ? const Icon(Icons.play_arrow_outlined,
+                                      size: 24)
+                                  : const Icon(Icons.pause_outlined, size: 24),
+                            ),
+                            IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    if (player.duration != null) {
+                                      final newPosition = player.position +
+                                          const Duration(seconds: 15);
+                                      player.seek(newPosition > player.duration!
+                                          ? player.duration!
+                                          : newPosition);
+                                    }
+                                  });
+                                },
+                                icon: const Icon(Icons.fast_forward_outlined,
+                                    size: 24))
+                          ],
+                        )
+                      ])
+                    ])));
   }
 }
