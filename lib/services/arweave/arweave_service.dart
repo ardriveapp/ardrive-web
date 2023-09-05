@@ -218,7 +218,7 @@ class ArweaveService {
 
       yield driveEntityHistoryQuery.data!.transactions.edges
           .where((element) => doesTagsContainValidArFSVersion(
-                element.node.tags as List<Tag>,
+                element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
               ))
           .toList();
 
