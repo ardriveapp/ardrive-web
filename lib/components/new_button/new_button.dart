@@ -30,6 +30,7 @@ class NewButton extends StatelessWidget {
       target: Alignment.topCenter,
     ),
     this.dropdownWidth = 208,
+    this.customOffset,
   });
 
   final Drive? drive;
@@ -39,6 +40,7 @@ class NewButton extends StatelessWidget {
   final Anchor anchor;
   final double dropdownWidth;
   final bool isBottomNavigationButton;
+  final Offset? customOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -80,13 +82,15 @@ class NewButton extends StatelessWidget {
           ),
         );
 
+    final offset = customOffset ?? const Offset(140, -40);
+
     return ScreenTypeLayout.builder(
       mobile: (_) => ArDriveSubmenu(
         menuChildren: menuItems,
         child: subMenuChild,
       ),
       desktop: (_) => ArDriveSubmenu(
-        alignmentOffset: const Offset(140, -40),
+        alignmentOffset: offset,
         menuChildren: menuItems,
         child: subMenuChild,
       ),
