@@ -11,7 +11,6 @@ import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -69,7 +68,6 @@ class NewButton extends StatelessWidget {
   Widget _buildNewButton(BuildContext context) {
     final List<ArDriveSubmenuItem> menuItems = _getNewMenuItems(context);
 
-    logger.d('menuItems: $menuItems');
     final subMenuChild = child ??
         Padding(
           padding: const EdgeInsets.only(top: 8),
@@ -247,8 +245,6 @@ class NewButton extends StatelessWidget {
         ),
       );
     }
-
-    logger.d('topLevelItems: $topLevelItems');
 
     return topLevelItems;
   }
