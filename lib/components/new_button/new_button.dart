@@ -294,12 +294,12 @@ class NewButton extends StatelessWidget {
       );
 
       return [
+        ArDriveNewButtonItem(
+          onClick: () => attachDrive(context: context),
+          name: appLocalizations.attachDrive,
+          icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
+        ),
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
-          ArDriveNewButtonItem(
-            onClick: () => attachDrive(context: context),
-            name: appLocalizations.attachDrive,
-            icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
-          ),
           if (driveDetailState.currentDrive.privacy == 'public' &&
               drive != null)
             ArDriveNewButtonItem(
