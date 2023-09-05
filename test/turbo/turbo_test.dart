@@ -1094,9 +1094,11 @@ void main() {
       const currentAmount = 1.0;
       const currentCurrency = 'USD';
       const currentDataUnit = FileSizeUnit.gigabytes;
+      const currentPromoDiscountFactor = 0.1;
 
       final expectedCredits = BigInt.from(100);
       const expectedEstimatedStorage = 1.0;
+      const expectedPromoDiscountFactor = 0.1;
 
       when(() => mockPaymentService.getPriceForFiat(
             currency: currentCurrency,
@@ -1111,13 +1113,14 @@ void main() {
         currentAmount: currentAmount,
         currentCurrency: currentCurrency,
         currentDataUnit: currentDataUnit,
-        promoDiscountFactor: 0,
+        promoDiscountFactor: currentPromoDiscountFactor,
       );
 
       // Verify the result
       expect(priceEstimate.credits, expectedCredits);
       expect(priceEstimate.priceInCurrency, currentAmount);
       expect(priceEstimate.estimatedStorage, expectedEstimatedStorage);
+      expect(priceEstimate.promoDiscountFactor, expectedPromoDiscountFactor);
     });
 
     group('computeStorageEstimateForCredits', () {
