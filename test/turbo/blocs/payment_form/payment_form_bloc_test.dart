@@ -16,7 +16,11 @@ void main() {
     setUp(() {
       mockTurbo = MockTurbo();
       initialPriceEstimate = PriceEstimate(
-          credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
+        credits: BigInt.from(10),
+        priceInCurrency: 10,
+        estimatedStorage: 1,
+        promoDiscountFactor: 0,
+      );
       when(() => mockTurbo.maxQuoteExpirationDate).thenAnswer(
           (invocation) => DateTime.now().add(const Duration(days: 1)));
       paymentFormBloc = PaymentFormBloc(mockTurbo, initialPriceEstimate);
@@ -26,7 +30,11 @@ void main() {
       setUp(() {
         mockTurbo = MockTurbo();
         final initialPriceEstimate = PriceEstimate(
-            credits: BigInt.from(10), priceInCurrency: 10, estimatedStorage: 1);
+          credits: BigInt.from(10),
+          priceInCurrency: 10,
+          estimatedStorage: 1,
+          promoDiscountFactor: 0,
+        );
         when(() => mockTurbo.maxQuoteExpirationDate).thenAnswer(
             (invocation) => DateTime.now().add(const Duration(days: 1)));
         paymentFormBloc = PaymentFormBloc(mockTurbo, initialPriceEstimate);
@@ -40,6 +48,7 @@ void main() {
               credits: BigInt.from(15),
               priceInCurrency: 15,
               estimatedStorage: 1.5,
+              promoDiscountFactor: 0,
             ),
           );
           when(() => mockTurbo.getSupportedCountries())

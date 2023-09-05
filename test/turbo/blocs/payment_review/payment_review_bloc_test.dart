@@ -46,9 +46,11 @@ void main() {
       setUp(() {
         mockTurbo = MockTurbo();
         mockPriceEstimate = PriceEstimate(
-            priceInCurrency: 100,
-            credits: BigInt.from(100),
-            estimatedStorage: 1);
+          priceInCurrency: 100,
+          credits: BigInt.from(100),
+          estimatedStorage: 1,
+          promoDiscountFactor: 0,
+        );
         paymentReviewBloc = PaymentReviewBloc(
           mockTurbo,
           mockPriceEstimate,
@@ -89,6 +91,7 @@ void main() {
             total: '10.00',
             subTotal: '10.00',
             credits: '10',
+            promoDiscount: null,
           ),
         ],
       );
@@ -124,9 +127,11 @@ void main() {
       setUp(() {
         mockTurbo = MockTurbo();
         mockPriceEstimate = PriceEstimate(
-            priceInCurrency: 100,
-            credits: BigInt.from(100),
-            estimatedStorage: 1);
+          priceInCurrency: 100,
+          credits: BigInt.from(100),
+          estimatedStorage: 1,
+          promoDiscountFactor: 0,
+        );
         paymentReviewBloc = PaymentReviewBloc(
           mockTurbo,
           mockPriceEstimate,
@@ -308,9 +313,11 @@ void main() {
       setUp(() {
         mockTurbo = MockTurbo();
         mockPriceEstimate = PriceEstimate(
-            priceInCurrency: 100,
-            credits: BigInt.from(100),
-            estimatedStorage: 1);
+          priceInCurrency: 100,
+          credits: BigInt.from(100),
+          estimatedStorage: 1,
+          promoDiscountFactor: 0,
+        );
         paymentReviewBloc = PaymentReviewBloc(
           mockTurbo,
           mockPriceEstimate,
