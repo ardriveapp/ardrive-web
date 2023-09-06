@@ -64,7 +64,14 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
             }
           }
 
-          await _downloadFile(drive, cipherKey);
+          final isPinFile = _file.pinnedDataOwnerAddress != null;
+
+          if (isPinFile) {
+            await _downloadFile(drive, null);
+          } else {
+            await _downloadFile(drive, cipherKey);
+          }
+
           break;
         case DrivePrivacy.public:
           if (AppPlatform.isMobile) {
@@ -116,6 +123,19 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
     if (drive.drivePrivacy == DrivePrivacy.private) {
       SecretKey? driveKey;
+
+      final isPinFile = _file.pinnedDataOwnerAddress != null;
+      if (isPinFile) {
+        emit(
+          FileDownloadSuccess(
+            bytes: dataBytes,
+            fileName: _file.name,
+            mimeType: _file.contentType ?? lookupMimeType(_file.name),
+            lastModified: _file.lastModifiedDate,
+          ),
+        );
+        return;
+      }
 
       if (cipherKey != null) {
         driveKey = await _driveDao.getDriveKey(

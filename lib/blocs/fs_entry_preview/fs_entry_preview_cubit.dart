@@ -7,6 +7,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/mime_lookup.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:cryptography/cryptography.dart';
@@ -69,6 +70,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       final previewUrl =
           '${_configService.config.defaultArweaveGatewayUrl}/${file.dataTxId}';
 
+      logger.d('Previewing file: ${file.name}'
+          ' (isPin: ${file.pinnedDataOwnerAddress != null})'
+          ' (previewType: $previewType)'
+          ' (fileExtension: $fileExtension)'
+          ' (previewUrl: $previewUrl)'
+          ' (fileKey: $fileKey)'
+          ' (fileSize: ${file.size})'
+          ' (previewMaxFileSize: $previewMaxFileSize)');
+
       if (!_supportedExtension(previewType, fileExtension)) {
         emit(FsEntryPreviewUnavailable());
         return;
@@ -104,7 +114,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   }
 
   Future<Uint8List?> _getPreviewData(
-      FileDataTableItem file, String previewUrl) async {
+    FileDataTableItem file,
+    String previewUrl,
+  ) async {
     final dataTx = await _getTxDetails(file);
 
     if (dataTx == null) {
@@ -114,7 +126,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     final dataRes = await ArDriveHTTP().getAsBytes(previewUrl);
 
-    if (_fileKey != null) {
+    final isPinFile = file.pinnedDataOwnerAddress != null;
+
+    logger.d('Previewing file: ${file.name} (isPin: $isPinFile))');
+
+    if (_fileKey != null && !isPinFile) {
       if (file.size! >= previewMaxFileSize) {
         emit(FsEntryPreviewUnavailable());
         return null;
@@ -243,6 +259,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         case DrivePrivacy.private:
           final profile = _profileCubit.state;
           SecretKey? driveKey;
+
+          final isPinFile = file.pinnedDataOwnerAddress != null;
+
+          if (isPinFile) {
+            emit(
+              FsEntryPreviewImage(imageBytes: dataBytes, previewUrl: dataUrl),
+            );
+            break;
+          }
 
           if (profile is ProfileLoggedIn) {
             driveKey = await _driveDao.getDriveKey(
