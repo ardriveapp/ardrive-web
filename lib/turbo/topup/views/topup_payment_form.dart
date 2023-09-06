@@ -31,8 +31,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   CountryItem? _selectedCountry;
   String _promoCode = '';
   bool _promoCodeInvalid = false;
-  bool _promoCodeFetching = false;
   double _promoDiscountFactor = 0.0;
+  bool _errorFetchingPromoCode = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _promoCodeController = TextEditingController();
 
@@ -662,36 +662,72 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget promoCodeTextField() {
-    return ArDriveTextField(
-      controller: _promoCodeController,
-      isFieldRequired: false,
-      useErrorMessageOffset: true,
-      validator: (s) {
-        return null;
+    return BlocConsumer<PaymentFormBloc, PaymentFormState>(
+      listenWhen: (previous, current) => current is PaymentFormLoaded,
+      listener: (context, state) {
+        logger.d('PaymentFormBloc state: $state');
+        if (state is PaymentFormLoaded) {
+          setState(() {
+            _promoCodeInvalid = state.isPromoCodeInvalid;
+            _errorFetchingPromoCode = state.errorFetchingPromoCode;
+            _promoDiscountFactor = state.promoDiscountFactor ?? 0.0;
+
+            final isFetchingPromoCode = state.isFetchingPromoCode;
+
+            if (!_promoCodeInvalid &&
+                !_errorFetchingPromoCode &&
+                !isFetchingPromoCode) {
+              _promoCode = _promoCodeController.text;
+              final estimationBloc = context.read<TurboTopUpEstimationBloc>();
+              estimationBloc.add(PromoCodeChanged(_promoDiscountFactor));
+            }
+          });
+        }
       },
-      onChanged: (_) {
-        setState(() {
-          _promoCodeInvalid = false;
-        });
+      builder: (context, state) {
+        final promoCodeFetching =
+            state is PaymentFormLoaded ? state.isFetchingPromoCode : false;
+
+        return ArDriveTextField(
+          controller: _promoCodeController,
+          isFieldRequired: false,
+          useErrorMessageOffset: true,
+          isEnabled: !promoCodeFetching,
+          onChanged: (_) {
+            setState(() {
+              _promoCodeInvalid = false;
+              _errorFetchingPromoCode = false;
+            });
+          },
+          errorMessage: _getPromoCodeErrorMessage(),
+          showErrorMessage: _promoCodeInvalid || _errorFetchingPromoCode,
+          suffixIcon: _applyPromoCodeButton(promoCodeFetching),
+          inputFormatters: [
+            TextInputFormatter.withFunction((oldValue, newValue) {
+              return newValue.copyWith(
+                text: newValue.text.toUpperCase().replaceAll(' ', ''),
+                selection: newValue.selection,
+              );
+            }),
+          ],
+        );
       },
-      errorMessage: _promoCodeInvalid
-          ? 'Promo code is invalid or expired' // TODO: localize
-          : null,
-      showErrorMessage: _promoCodeInvalid,
-      suffixIcon: _applyPromoCodeButton(),
-      inputFormatters: [
-        TextInputFormatter.withFunction((oldValue, newValue) {
-          return newValue.copyWith(
-            text: newValue.text.toUpperCase().replaceAll(' ', ''),
-            selection: newValue.selection,
-          );
-        }),
-      ],
     );
   }
 
-  Widget _applyPromoCodeButton() {
-    if (_promoCodeFetching) {
+  String? _getPromoCodeErrorMessage() {
+    if (_errorFetchingPromoCode) {
+      return 'Error fetching the promo code'; // TODO: localize
+    }
+    if (_promoCodeInvalid) {
+      return 'Promo code is invalid or expired'; // TODO: localize
+    }
+
+    return null;
+  }
+
+  Widget _applyPromoCodeButton(bool promoCodeFetching) {
+    if (promoCodeFetching) {
       return const SizedBox(
         height: 18,
         width: 18,
@@ -703,7 +739,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
       );
     }
 
-    final isPromoCodeEmpty = _isPromoCodeEmpty();
+    final isPromoCodeEmpty = _isPromoCodeTextFieldEmpty();
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
@@ -715,7 +751,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           child: Text(
             'Apply', // TODO: localize
             style: ArDriveTypography.body.buttonNormalBold(
-              color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+              color: ArDriveTheme.of(context).themeData.colors.themeInputText,
             ),
           ),
         ),
@@ -723,49 +759,20 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     );
   }
 
-  Future<void> _applyPromoCode() async {
-    final estimationBloc = context.read<TurboTopUpEstimationBloc>();
-    if (!_isPromoCodeEmpty()) {
-      final promoDiscount = await _validatePromoCode();
-      if (promoDiscount != null) {
-        setState(() {
-          _promoCode = _promoCodeController.text;
-          _promoDiscountFactor = promoDiscount;
-          estimationBloc.add(PromoCodeChanged(promoDiscount));
-        });
-      } else {
-        setState(() {
-          _promoCode = '';
-          _promoCodeInvalid = true;
-          _promoCodeController.clear();
-        });
-      }
-    }
-  }
-
-  Future<double?> _validatePromoCode() async {
-    const validCodes = {
-      'ARDRIVE': 1.0,
-      'TURBO': 0.5,
-      'MATI': 0.1,
-    };
-    final textInPromoCode = _promoCodeController.text;
-
-    setState(() {
-      _promoCodeFetching = true;
-    });
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {
-      _promoCodeFetching = false;
-    });
-
-    final isValid = validCodes.keys.contains(textInPromoCode);
-
-    return isValid ? validCodes[textInPromoCode] : null;
-  }
-
-  bool _isPromoCodeEmpty() {
+  bool _isPromoCodeTextFieldEmpty() {
     return _promoCodeController.text.isEmpty;
+  }
+
+  void _applyPromoCode() async {
+    logger.d('Apply promo code clicked');
+
+    if (_isPromoCodeTextFieldEmpty()) {
+      logger.d('Promo code is empty');
+      return;
+    }
+
+    final paymentFormBloc = context.read<PaymentFormBloc>();
+    paymentFormBloc.add(PaymentFormUpdatePromoCode(_promoCodeController.text));
   }
 
   InputBorder _getBorder(Color color) {

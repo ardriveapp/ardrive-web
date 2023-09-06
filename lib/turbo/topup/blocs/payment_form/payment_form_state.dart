@@ -26,45 +26,67 @@ class PaymentFormLoading extends PaymentFormState {
 
 class PaymentFormLoaded extends PaymentFormState {
   final List<String> supportedCountries;
+  final double? promoDiscountFactor;
+  final bool isPromoCodeInvalid;
+  final bool isFetchingPromoCode;
+  final bool errorFetchingPromoCode;
 
   const PaymentFormLoaded(
     super.priceEstimate,
     super.quoteExpirationTime,
-    this.supportedCountries,
-  );
+    this.supportedCountries, {
+    this.promoDiscountFactor,
+    this.isPromoCodeInvalid = false,
+    this.isFetchingPromoCode = false,
+    this.errorFetchingPromoCode = false,
+  });
 
   @override
-  List<Object> get props => [];
+  List<Object> get props => [
+        priceEstimate,
+        quoteExpirationTimeInSeconds,
+        supportedCountries,
+        promoDiscountFactor ?? 0,
+        isPromoCodeInvalid,
+        isFetchingPromoCode,
+        errorFetchingPromoCode,
+      ];
 }
 
 class PaymentFormPopulatingFieldsForTesting extends PaymentFormLoaded {
   const PaymentFormPopulatingFieldsForTesting(
     super.priceEstimate,
     super.quoteExpirationTime,
-    super.supportedCountries,
-  );
-
-  @override
-  List<Object> get props => [];
+    super.supportedCountries, {
+    super.promoDiscountFactor,
+    super.isPromoCodeInvalid,
+    super.isFetchingPromoCode,
+    super.errorFetchingPromoCode,
+  });
 }
 
 class PaymentFormLoadingQuote extends PaymentFormLoaded {
   const PaymentFormLoadingQuote(
     super.priceEstimate,
     super.quoteExpirationTime,
-    super.supportedCountries,
-  );
+    super.supportedCountries, {
+    super.promoDiscountFactor,
+    super.isPromoCodeInvalid,
+    super.isFetchingPromoCode,
+    super.errorFetchingPromoCode,
+  });
 }
 
 class PaymentFormQuoteLoaded extends PaymentFormLoaded {
   const PaymentFormQuoteLoaded(
     super.priceEstimate,
     super.quoteExpirationTime,
-    super.supportedCountries,
-  );
-
-  @override
-  List<Object> get props => [];
+    super.supportedCountries, {
+    super.promoDiscountFactor,
+    super.isPromoCodeInvalid,
+    super.isFetchingPromoCode,
+    super.errorFetchingPromoCode,
+  });
 }
 
 class PaymentFormError extends PaymentFormState {
@@ -73,6 +95,7 @@ class PaymentFormError extends PaymentFormState {
     super.quoteExpirationTime,
   );
 
+  // TODO: remove unnecdessary
   @override
   List<Object> get props => [];
 }

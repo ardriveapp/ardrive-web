@@ -192,6 +192,43 @@ class Turbo extends Disposable {
 
     logger.d('Turbo disposed');
   }
+
+  // Future<double?> _getPromoDiscountFactor(String promoCode) async {
+  //   // final estimationBloc = context.read<TurboTopUpEstimationBloc>();
+  //   if (!_isPromoCodeEmpty()) {
+  //     final promoDiscount = await getPromoDiscountFactor(promoCode);
+  //     if (promoDiscount != null) {
+  //       // setState(() {
+  //       //   _promoCode = _promoCodeController.text;
+  //       //   _promoDiscountFactor = promoDiscount;
+  //       //   estimationBloc.add(PromoCodeChanged(promoDiscount));
+  //       // });
+
+  //     } else {
+  //       // setState(() {
+  //       //   _promoCode = '';
+  //       //   _promoCodeInvalid = true;
+  //       //   _promoCodeController.clear();
+  //       // });
+  //     }
+  //   }
+  // }
+
+  Future<double?> getPromoDiscountFactor(String promoCode) async {
+    const validCodes = {
+      'ARDRIVE': 1.0,
+      'TURBO': 0.5,
+      'MATI': 0.1,
+    };
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Simulate error
+    if (promoCode == 'ERROR') throw Exception('Error getting promo code');
+
+    final isValid = validCodes.keys.contains(promoCode);
+    return isValid ? validCodes[promoCode] : null;
+  }
 }
 
 class TurboSessionManager extends Disposable {
