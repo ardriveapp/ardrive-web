@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/pin_file/pin_file_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -46,6 +47,7 @@ Future<void> showPinFileDialog({
             profileCubit: profileCubit,
             driveID: currentDrive.id,
             parentFolderId: currentFolder.folder.id,
+            crypto: ArDriveCrypto(),
           );
         },
         child: const PinFileDialog(),
