@@ -11,6 +11,7 @@ import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
 import 'package:ardrive/l11n/l11n.dart';

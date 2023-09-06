@@ -8,6 +8,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,7 +30,7 @@ Future<void> showPinFileDialog({
 
   return showModalDialog(
     context,
-    () => showAnimatedDialog(
+    () => showArDriveDialog(
       context,
       content: BlocProvider(
         create: (context) {
@@ -68,7 +69,7 @@ class PinFileDialog extends StatelessWidget {
         if (state is PinFileAbort || state is PinFileSuccess) {
           Navigator.of(context).pop();
         } else if (state is PinFileError) {
-          showAnimatedDialog(
+          showArDriveDialog(
             context,
             content: _errorDialog(
               context,
@@ -78,7 +79,7 @@ class PinFileDialog extends StatelessWidget {
           );
         } else if (state is PinFileFieldsValidationError) {
           if (state.networkError) {
-            showAnimatedDialog(
+            showArDriveDialog(
               context,
               content: _errorDialog(
                 context,

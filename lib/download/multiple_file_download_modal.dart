@@ -7,6 +7,7 @@ import 'package:ardrive/download/multiple_download_bloc.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,7 +22,7 @@ promptToDownloadMultipleFiles(
       .map((item) => ARFSFactory().getARFSFileFromFileDataItemTable(item))
       .toList();
 
-  showAnimatedDialog(
+  showArDriveDialog(
     context,
     barrierDismissible: false,
     content: BlocProvider(

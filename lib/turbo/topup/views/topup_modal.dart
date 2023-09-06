@@ -14,6 +14,7 @@ import 'package:ardrive/turbo/topup/views/topup_success_view.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -249,7 +250,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   }
 
   void _showSuccessDialog() {
-    showAnimatedDialog(
+    showArDriveDialog(
       context,
       content: const ArDriveStandardModal(
         width: 575,

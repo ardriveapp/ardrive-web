@@ -6,6 +6,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +21,7 @@ Future<void> promptToRenameDrive(
 }) =>
     showCongestionDependentModalDialog(
       context,
-      () => showAnimatedDialog(
+      () => showArDriveDialog(
         context,
         content: MultiBlocProvider(
           providers: [

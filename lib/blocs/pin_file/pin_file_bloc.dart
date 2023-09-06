@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
@@ -298,11 +299,20 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           .folderById(driveId: _driveId, folderId: _parentFolderId)
           .getSingle();
 
+      final profile = _profileCubit.state as ProfileLoggedIn;
+
+      final key = await _driveDao.getDriveKey(
+        _driveId,
+        profile.cipherKey,
+      );
+      final crypto = ArDriveCrypto();
+      final fileKey = await crypto.deriveFileKey(key!, newFileEntity.id!);
+
       if (_turboUploadService.useTurboUpload) {
         final fileDataItem = await _arweave.prepareEntityDataItem(
           newFileEntity,
           profileState.wallet,
-          // TODO: key
+          key: fileKey,
         );
 
         await _turboUploadService.postDataItem(
@@ -314,7 +324,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         final fileDataItem = await _arweave.prepareEntityTx(
           newFileEntity,
           profileState.wallet,
-          null, // TODO: key
+          fileKey,
         );
 
         await _arweave.postTx(fileDataItem);

@@ -19,6 +19,7 @@ import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
@@ -209,7 +210,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           // TODO: Verify if the error is `NoConnectionException` and show an appropriate message after validating with UI/UX
 
           if (state.error is WalletMismatchException) {
-            showAnimatedDialog(
+            showArDriveDialog(
               context,
               content: ArDriveIconModal(
                 title: appLocalizationsOf(context).loginFailed,
@@ -229,7 +230,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             return;
           }
 
-          showAnimatedDialog(
+          showArDriveDialog(
             context,
             content: ArDriveIconModal(
               title: appLocalizationsOf(context).loginFailed,
@@ -924,7 +925,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     final isValid = _formKey.currentState!.validateSync();
 
     if (!isValid) {
-      showAnimatedDialog(context,
+      showArDriveDialog(context,
           content: ArDriveIconModal(
             icon: ArDriveIcons.triangle(
               size: 88,
@@ -945,7 +946,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
-      showAnimatedDialog(context,
+      showArDriveDialog(context,
           content: ArDriveIconModal(
             icon: ArDriveIcons.triangle(
               size: 88,
@@ -1430,7 +1431,7 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
         bip39.validateMnemonic(_seedPhraseController.text);
 
     if (!isValid) {
-      showAnimatedDialog(context,
+      showArDriveDialog(context,
           content: ArDriveIconModal(
             icon: ArDriveIcons.triangle(
               size: 88,
@@ -2201,7 +2202,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                                           color: colors.themeErrorMuted,
                                         )
                                         .copyWith(fontSize: 14)))
-                          ]),
+                          ]), 
                           shape: RoundedRectangleBorder(
                             side: BorderSide(
                                 color: colors.themeErrorMuted, width: 1),

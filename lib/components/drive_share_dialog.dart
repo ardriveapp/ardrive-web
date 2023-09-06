@@ -4,6 +4,7 @@ import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,7 +13,7 @@ Future<void> promptToShareDrive({
   required BuildContext context,
   required Drive drive,
 }) =>
-    showAnimatedDialog(
+    showArDriveDialog(
       context,
       content: BlocProvider(
         create: (_) => DriveShareCubit(

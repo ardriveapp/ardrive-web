@@ -12,6 +12,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../utils/show_general_dialog.dart';
 import 'components.dart';
 
 Future<void> attachDrive({
@@ -25,7 +26,7 @@ Future<void> attachDrive({
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   return showModalDialog(
     context,
-    () => showAnimatedDialog(
+    () => showArDriveDialog(
       context,
       content: BlocProvider<DriveAttachCubit>(
         create: (context) => DriveAttachCubit(
@@ -87,7 +88,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
     return BlocConsumer<DriveAttachCubit, DriveAttachState>(
       listener: (context, state) {
         if (state is DriveAttachInvalidDriveKey) {
-          showAnimatedDialog(
+          showArDriveDialog(
             context,
             content: ArDriveStandardModal(
               title: appLocalizationsOf(context).error,
@@ -95,7 +96,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
             ),
           );
         } else if (state is DriveAttachDriveNotFound) {
-          showAnimatedDialog(
+          showArDriveDialog(
             context,
             content: ArDriveStandardModal(
               title: appLocalizationsOf(context).error,
