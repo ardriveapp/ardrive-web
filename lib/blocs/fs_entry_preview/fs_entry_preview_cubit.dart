@@ -7,7 +7,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/mime_lookup.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:cryptography/cryptography.dart';
@@ -70,15 +69,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       final previewUrl =
           '${_configService.config.defaultArweaveGatewayUrl}/${file.dataTxId}';
 
-      logger.d('Previewing file: ${file.name}'
-          ' (isPin: ${file.pinnedDataOwnerAddress != null})'
-          ' (previewType: $previewType)'
-          ' (fileExtension: $fileExtension)'
-          ' (previewUrl: $previewUrl)'
-          ' (fileKey: $fileKey)'
-          ' (fileSize: ${file.size})'
-          ' (previewMaxFileSize: $previewMaxFileSize)');
-
       if (!_supportedExtension(previewType, fileExtension)) {
         emit(FsEntryPreviewUnavailable());
         return;
@@ -127,8 +117,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     final dataRes = await ArDriveHTTP().getAsBytes(previewUrl);
 
     final isPinFile = file.pinnedDataOwnerAddress != null;
-
-    logger.d('Previewing file: ${file.name} (isPin: $isPinFile))');
 
     if (_fileKey != null && !isPinFile) {
       if (file.size! >= previewMaxFileSize) {
