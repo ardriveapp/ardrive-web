@@ -30,6 +30,7 @@ class NewButton extends StatelessWidget {
       target: Alignment.topCenter,
     ),
     this.dropdownWidth = 208,
+    this.customOffset,
   });
 
   final Drive? drive;
@@ -39,6 +40,7 @@ class NewButton extends StatelessWidget {
   final Anchor anchor;
   final double dropdownWidth;
   final bool isBottomNavigationButton;
+  final Offset? customOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -80,13 +82,15 @@ class NewButton extends StatelessWidget {
           ),
         );
 
+    final offset = customOffset ?? const Offset(140, -40);
+
     return ScreenTypeLayout.builder(
       mobile: (_) => ArDriveSubmenu(
         menuChildren: menuItems,
         child: subMenuChild,
       ),
       desktop: (_) => ArDriveSubmenu(
-        alignmentOffset: const Offset(140, -40),
+        alignmentOffset: offset,
         menuChildren: menuItems,
         child: subMenuChild,
       ),
@@ -128,38 +132,49 @@ class NewButton extends StatelessWidget {
                     final item = items[index];
 
                     if (item is ArDriveNewButtonItem) {
-                      return Column(
-                        children: [
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              if (!item.isDisabled) {
-                                Navigator.pop(context);
-                                item.onClick();
-                              }
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                                horizontal: 16,
-                              ),
-                              child: ArDriveHoverWidget(
-                                showMouseCursor: !item.isDisabled,
-                                child: ArDriveDropdownItemTile(
-                                  iconAlignment: item.iconAlignment,
-                                  icon: item.icon.copyWith(size: 24),
-                                  name: item.name,
-                                  isDisabled: item.isDisabled,
-                                  fontStyle:
-                                      ArDriveTypography.body.buttonLargeBold(),
+                      return item.display
+                          ? Column(
+                              children: [
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () {
+                                    if (!item.isDisabled) {
+                                      Navigator.pop(context);
+                                      item.onClick();
+                                    }
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                      horizontal: 16,
+                                    ),
+                                    child: ArDriveHoverWidget(
+                                      hoverColor: ArDriveTheme.of(context)
+                                          .themeData
+                                          .dropdownTheme
+                                          .hoverColor,
+                                      defaultColor: null,
+                                      showMouseCursor: !item.isDisabled,
+                                      child: ArDriveDropdownItemTile(
+                                        iconAlignment: item.iconAlignment,
+                                        icon: item.icon.copyWith(size: 24),
+                                        name: item.name,
+                                        isDisabled: item.isDisabled,
+                                        fontStyle: ArDriveTypography.body
+                                            .buttonLargeBold(),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
+                              ],
+                            )
+                          : const SizedBox();
                     } else {
-                      return const Divider(
+                      return Divider(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgSubtle,
                         height: 8,
                       );
                     }
@@ -184,12 +199,20 @@ class NewButton extends StatelessWidget {
         } else /** it's an ArDriveNewButtonDivider */ {
           return ArDriveSubmenuItem(
             isDisabled: true,
-            widget: const Column(
-              children: [
-                Divider(
-                  height: 8,
-                ),
-              ],
+            widget: Container(
+              color: ArDriveTheme.of(context)
+                  .themeData
+                  .dropdownTheme
+                  .backgroundColor,
+              child: Column(
+                children: [
+                  Divider(
+                    color:
+                        ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                    height: 8,
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -209,6 +232,12 @@ class NewButton extends StatelessWidget {
               )
               .toList(),
           widget: ArDriveHoverWidget(
+            hoverColor:
+                ArDriveTheme.of(context).themeData.dropdownTheme.hoverColor,
+            defaultColor: ArDriveTheme.of(context)
+                .themeData
+                .dropdownTheme
+                .backgroundColor,
             showMouseCursor: true,
             child: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).advanced,
@@ -236,6 +265,9 @@ class NewButton extends StatelessWidget {
         }
       },
       widget: ArDriveHoverWidget(
+        hoverColor: ArDriveTheme.of(context).themeData.dropdownTheme.hoverColor,
+        defaultColor:
+            ArDriveTheme.of(context).themeData.dropdownTheme.backgroundColor,
         showMouseCursor: !item.isDisabled,
         child: Column(
           children: [
@@ -266,12 +298,12 @@ class NewButton extends StatelessWidget {
       );
 
       return [
+        ArDriveNewButtonItem(
+          onClick: () => attachDrive(context: context),
+          name: appLocalizations.attachDrive,
+          icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
+        ),
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
-          ArDriveNewButtonItem(
-            onClick: () => attachDrive(context: context),
-            name: appLocalizations.attachDrive,
-            icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
-          ),
           if (driveDetailState.currentDrive.privacy == 'public' &&
               drive != null)
             ArDriveNewButtonItem(
@@ -351,16 +383,18 @@ class NewButton extends StatelessWidget {
             icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
           ),
           const ArDriveNewButtonDivider(),
-          if (drivesState is DrivesLoadSuccess) ...[
-            ArDriveNewButtonItem(
-              onClick: () {
-                promptToCreateDrive(context);
-              },
-              isDisabled: !drivesState.canCreateNewDrive || !canUpload,
-              name: appLocalizations.newDrive,
-              icon: ArDriveIcons.addDrive(size: defaultIconSize),
-            ),
-          ],
+        ],
+        if (drivesState is DrivesLoadSuccess) ...[
+          ArDriveNewButtonItem(
+            onClick: () {
+              promptToCreateDrive(context);
+            },
+            isDisabled: !drivesState.canCreateNewDrive || !canUpload,
+            name: appLocalizations.newDrive,
+            icon: ArDriveIcons.addDrive(size: defaultIconSize),
+          ),
+        ],
+        if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
           ArDriveNewButtonItem(
             onClick: () => promptToCreateFolder(
               context,
@@ -467,11 +501,12 @@ class NewButton extends StatelessWidget {
               isDisabled:
                   !driveDetailState.hasWritePermissions || drive == null,
             ),
+          const ArDriveNewButtonDivider(),
         ],
-        const ArDriveNewButtonDivider(),
         ArDriveNewButtonItem(
           iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,
           name: appLocalizationsOf(context).advanced,
+          display: _getAdvancedItems(context).isNotEmpty,
           icon: ArDriveIcons.carretRight(size: defaultIconSize),
           isDisabled: false,
           onClick: () {
@@ -506,6 +541,7 @@ class ArDriveNewButtonItem extends ArDriveNewButtonComponent {
     required this.onClick,
     this.isDisabled = false,
     this.iconAlignment = ArDriveArDriveDropdownItemTileIconAlignment.left,
+    this.display = true,
   });
 
   final String name;
@@ -513,6 +549,7 @@ class ArDriveNewButtonItem extends ArDriveNewButtonComponent {
   final VoidCallback onClick;
   final bool isDisabled;
   final ArDriveArDriveDropdownItemTileIconAlignment iconAlignment;
+  final bool display;
 }
 
 class ArDriveNewButtonDivider extends ArDriveNewButtonComponent {
