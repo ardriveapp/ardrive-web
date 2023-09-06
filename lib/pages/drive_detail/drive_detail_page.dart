@@ -114,7 +114,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
             final hasFiles = state.folderInView.files.isNotEmpty;
 
-            final canDownloadMultipleFiles = state.multiselect;
+            final canDownloadMultipleFiles = state.multiselect &&
+                context.read<DriveDetailCubit>().selectedItems.isNotEmpty;
 
             return ScreenTypeLayout.builder(
               desktop: (context) => _desktopView(
@@ -194,7 +195,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   driveName: state.currentDrive.name,
                                 ),
                                 const Spacer(),
-                                if (state.multiselect && isDriveOwner)
+                                if (state.multiselect &&
+                                    context
+                                        .read<DriveDetailCubit>()
+                                        .selectedItems
+                                        .isNotEmpty &&
+                                    isDriveOwner)
                                   ArDriveIconButton(
                                     tooltip: appLocalizationsOf(context).move,
                                     icon: ArDriveIcons.move(),
