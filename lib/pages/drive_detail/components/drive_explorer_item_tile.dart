@@ -507,6 +507,17 @@ class EntityActionsMenu extends StatelessWidget {
     } else if (item is DriveDataItem) {
       return [
         ArDriveDropdownItem(
+            onClick: () async {
+              promptToDownloadMultipleFiles(context,
+                  selectedItems: [item], zipName: item.name);
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).download,
+              icon: ArDriveIcons.download(
+                size: defaultIconSize,
+              ),
+            )),
+        ArDriveDropdownItem(
           onClick: () {
             promptToRenameDrive(
               context,

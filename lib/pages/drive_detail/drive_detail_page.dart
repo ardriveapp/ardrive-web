@@ -776,6 +776,21 @@ class MobileFolderNavigation extends StatelessWidget {
                     target: Alignment.bottomRight,
                   ),
                   items: [
+                    ArDriveDropdownItem(
+                        onClick: () async {
+                          final driveItem = DriveDataTableItemMapper.fromDrive(
+                              state.currentDrive, (p0) => null, 0, true);
+
+                          promptToDownloadMultipleFiles(context,
+                              selectedItems: [driveItem],
+                              zipName: driveItem.name);
+                        },
+                        content: ArDriveDropdownItemTile(
+                          name: appLocalizationsOf(context).download,
+                          icon: ArDriveIcons.download(
+                            size: defaultIconSize,
+                          ),
+                        )),
                     if (isOwner)
                       ArDriveDropdownItem(
                         onClick: () {
