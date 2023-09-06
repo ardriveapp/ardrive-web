@@ -294,6 +294,11 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     );
 
     await _driveDao.transaction(() async {
+      final driveKey = await _driveDao.getDriveKey(
+        _driveId,
+        profileState.cipherKey,
+      );
+
       final parentFolder = await _driveDao
           .folderById(driveId: _driveId, folderId: _parentFolderId)
           .getSingle();
@@ -302,7 +307,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         final fileDataItem = await _arweave.prepareEntityDataItem(
           newFileEntity,
           profileState.wallet,
-          // TODO: key
+          key: driveKey,
         );
 
         await _turboUploadService.postDataItem(
@@ -314,7 +319,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         final fileDataItem = await _arweave.prepareEntityTx(
           newFileEntity,
           profileState.wallet,
-          null, // TODO: key
+          driveKey,
         );
 
         await _arweave.postTx(fileDataItem);
