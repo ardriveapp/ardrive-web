@@ -1,4 +1,3 @@
-import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -21,13 +20,12 @@ import 'download_utils.dart';
 promptToDownloadMultipleFiles(
   BuildContext context, {
   required List<ArDriveDataTableItem> selectedItems,
+  required String zipName,
 }) async {
   final arweave = context.read<ArweaveService>();
 
   final driveDao = context.read<DriveDao>();
 
-  final driveDetail =
-      (context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess);
   final profileState = context.read<ProfileCubit>().state;
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
@@ -49,7 +47,8 @@ promptToDownloadMultipleFiles(
       )..add(
           StartDownload(
             selectedItems,
-            folderName: driveDetail.folderInView.folder.name,
+            // folderName: driveDetail.folderInView.folder.name,
+            zipName: zipName,
           ),
         ),
       child: const MultipleFilesDownload(),

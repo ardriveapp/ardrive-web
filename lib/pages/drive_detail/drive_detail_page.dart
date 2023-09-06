@@ -222,10 +222,28 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           .read<DriveDetailCubit>()
                                           .selectedItems;
 
-                                      promptToDownloadMultipleFiles(
-                                        context,
-                                        selectedItems: selectedItems,
-                                      );
+                                      var zipName;
+
+                                      if (selectedItems.length == 1 &&
+                                          selectedItems[0]
+                                              is FolderDataTableItem) {
+                                        zipName = selectedItems[0].name;
+                                      } else {
+                                        final driveDetail = (context
+                                            .read<DriveDetailCubit>()
+                                            .state as DriveDetailLoadSuccess);
+
+                                        final currentFolder =
+                                            driveDetail.folderInView.folder;
+                                        zipName =
+                                            currentFolder.parentFolderId == null
+                                                ? driveDetail.currentDrive.name
+                                                : currentFolder.name;
+                                      }
+
+                                      promptToDownloadMultipleFiles(context,
+                                          selectedItems: selectedItems,
+                                          zipName: zipName);
                                     },
                                   ),
                                   const SizedBox(width: 8),
@@ -258,9 +276,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                         true);
 
                                             promptToDownloadMultipleFiles(
-                                              context,
-                                              selectedItems: [driveItem],
-                                            );
+                                                context,
+                                                selectedItems: [driveItem],
+                                                zipName: driveItem.name);
                                           },
                                           content: ArDriveDropdownItemTile(
                                             name: appLocalizationsOf(context)
