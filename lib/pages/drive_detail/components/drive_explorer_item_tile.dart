@@ -4,6 +4,7 @@ import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/pin_indicator.dart';
+import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -238,6 +239,28 @@ class _DriveExplorerItemTileTrailingState
 
     if (item is FolderDataTableItem) {
       return [
+        ArDriveDropdownItem(
+          onClick: () {
+            final driveDetail = (context.read<DriveDetailCubit>().state
+                as DriveDetailLoadSuccess);
+
+            final zipName = item.id == driveDetail.currentDrive.rootFolderId
+                ? driveDetail.currentDrive.name
+                : item.name;
+
+            promptToDownloadMultipleFiles(
+              context,
+              selectedItems: [item],
+              zipName: zipName,
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).download,
+            ArDriveIcons.download(
+              size: defaultIconSize,
+            ),
+          ),
+        ),
         if (isOwner) ...[
           ArDriveDropdownItem(
             onClick: () {
@@ -429,6 +452,21 @@ class EntityActionsMenu extends StatelessWidget {
 
     if (item is FolderDataTableItem) {
       return [
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToDownloadMultipleFiles(
+              context,
+              selectedItems: [item],
+              zipName: item.name,
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).download,
+            ArDriveIcons.download(
+              size: defaultIconSize,
+            ),
+          ),
+        ),
         if (isOwner) ...[
           ArDriveDropdownItem(
             onClick: () {
@@ -468,6 +506,17 @@ class EntityActionsMenu extends StatelessWidget {
       ];
     } else if (item is DriveDataItem) {
       return [
+        ArDriveDropdownItem(
+            onClick: () async {
+              promptToDownloadMultipleFiles(context,
+                  selectedItems: [item], zipName: item.name);
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).download,
+              icon: ArDriveIcons.download(
+                size: defaultIconSize,
+              ),
+            )),
         ArDriveDropdownItem(
           onClick: () {
             promptToRenameDrive(
