@@ -456,6 +456,8 @@ class ArweaveService {
         ),
       );
 
+      cursor = queryEdges.isNotEmpty ? queryEdges.last.cursor : '';
+
       final drivesInThisPage = filteredEdges
           .map((e) => e.node)
           .fold<Map<String?, TransactionCommonMixin>>(
