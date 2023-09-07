@@ -228,7 +228,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           .read<DriveDetailCubit>()
                                           .selectedItems;
 
-                                      var zipName;
+                                      String zipName;
 
                                       if (selectedItems.length == 1 &&
                                           selectedItems[0]
