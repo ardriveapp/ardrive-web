@@ -127,7 +127,7 @@ class MultipleDownloadBloc
 
     _initializeEncoder();
     _outFileName =
-        event.folderName != null ? '${event.folderName}.zip' : 'Archive.zip';
+        event.zipName != null ? '${event.zipName}.zip' : 'Archive.zip';
 
     await _downloadMultipleFiles(emit);
   }

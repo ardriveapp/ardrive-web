@@ -296,6 +296,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     if (items.isEmpty) {
       state = state.copyWith(multiselect: false, hasFoldersSelected: false);
+      emit(state);
     } else {
       emit(state.copyWith(
           multiselect: true, hasFoldersSelected: hasFolderSelected));

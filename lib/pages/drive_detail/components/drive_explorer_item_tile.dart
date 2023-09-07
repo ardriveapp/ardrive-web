@@ -241,9 +241,17 @@ class _DriveExplorerItemTileTrailingState
       return [
         ArDriveDropdownItem(
           onClick: () {
+            final driveDetail = (context.read<DriveDetailCubit>().state
+                as DriveDetailLoadSuccess);
+
+            final zipName = item.id == driveDetail.currentDrive.rootFolderId
+                ? driveDetail.currentDrive.name
+                : item.name;
+
             promptToDownloadMultipleFiles(
               context,
               selectedItems: [item],
+              zipName: zipName,
             );
           },
           content: _buildItem(
@@ -449,6 +457,7 @@ class EntityActionsMenu extends StatelessWidget {
             promptToDownloadMultipleFiles(
               context,
               selectedItems: [item],
+              zipName: item.name,
             );
           },
           content: _buildItem(
@@ -497,6 +506,17 @@ class EntityActionsMenu extends StatelessWidget {
       ];
     } else if (item is DriveDataItem) {
       return [
+        ArDriveDropdownItem(
+            onClick: () async {
+              promptToDownloadMultipleFiles(context,
+                  selectedItems: [item], zipName: item.name);
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).download,
+              icon: ArDriveIcons.download(
+                size: defaultIconSize,
+              ),
+            )),
         ArDriveDropdownItem(
           onClick: () {
             promptToRenameDrive(

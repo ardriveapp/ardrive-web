@@ -936,15 +936,13 @@ class DetailsPanelToolbar extends StatelessWidget {
                     file: item as FileDataTableItem,
                   );
                 } else if (item is FolderDataTableItem) {
-                  promptToDownloadMultipleFiles(
-                    context,
-                    selectedItems: [item as FolderDataTableItem],
-                  );
+                  promptToDownloadMultipleFiles(context,
+                      selectedItems: [item as FolderDataTableItem],
+                      zipName: item.name);
                 } else if (item is DriveDataItem) {
-                  promptToDownloadMultipleFiles(
-                    context,
-                    selectedItems: [item as DriveDataItem],
-                  );
+                  promptToDownloadMultipleFiles(context,
+                      selectedItems: [item as DriveDataItem],
+                      zipName: item.name);
                 }
               }),
           if (item is FileDataTableItem && drive.isPublic)
