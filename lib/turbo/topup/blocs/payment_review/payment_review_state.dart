@@ -45,7 +45,6 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
     String? subTotal,
     String? credits,
     DateTime? quoteExpirationDate,
-    // PaymentUserInformation? userInformation,
     String? promoDiscount,
   }) {
     return PaymentReviewPaymentModelLoaded(
