@@ -4,6 +4,7 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/turbo/turbo_promo_code.dart';
 import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -32,6 +33,8 @@ class MockPaymentProvider extends Mock implements TurboPaymentProvider {}
 
 class MockPaymentModel extends Mock implements PaymentModel {}
 
+class MockTurboPromoCode extends Mock implements TurboPromoCode {}
+
 class MockTurboSupportedCountriesRetriever extends Mock
     implements TurboSupportedCountriesRetriever {}
 
@@ -40,7 +43,6 @@ void main() {
     clientSecret: 'clientSecret',
     id: 'paymentIntentId',
   );
-
   final mockTopUpQuote = TopUpQuote(
     currencyType: 'usd',
     destinationAddress: 'destinationAddress',
@@ -51,6 +53,7 @@ void main() {
     quoteId: 'quoteId',
     winstonCreditAmount: '5000',
   );
+  final mockTurboPromoCode = MockTurboPromoCode();
 
   group('initializeStripe', () {
     test('should use the stripePublishableKey from config', () {
@@ -108,6 +111,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -137,6 +141,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -166,6 +171,7 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -215,6 +221,7 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -255,6 +262,7 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -363,6 +371,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -403,6 +412,7 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -461,6 +471,7 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
 
         expect(turbo.currentPriceEstimate, PriceEstimate.zero());
@@ -479,6 +490,7 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
 
         final mockPriceEstimate100 = PriceEstimate(
@@ -539,6 +551,7 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
 
         expect(() => turbo.maxQuoteExpirationDate, throwsA(isA<Exception>()));
@@ -559,6 +572,7 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
 
         final mockPriceEstimate100 = PriceEstimate(
@@ -606,6 +620,7 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -655,6 +670,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
 
         expect(() => turbo.paymentUserInformation, throwsException);
@@ -676,6 +692,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
+          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -740,6 +757,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
+          turboPromoCode: mockTurboPromoCode,
         );
 
         // must to set before doing the payment
@@ -772,6 +790,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
+          turboPromoCode: mockTurboPromoCode,
         );
 
         // must to set before doing the payment
@@ -803,6 +822,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
+          turboPromoCode: mockTurboPromoCode,
         );
 
         // must to set before doing the payment
@@ -830,6 +850,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
+          turboPromoCode: mockTurboPromoCode,
         );
 
         expect(() async => await turbo.confirmPayment(), throwsException);
@@ -860,6 +881,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
+          turboPromoCode: mockTurboPromoCode,
         );
 
         // ONLY SET THE PAYMENT USER INFO, NOT THE PAYMENT INTENT
@@ -884,6 +906,7 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
+          turboPromoCode: mockTurboPromoCode,
         );
       });
 
