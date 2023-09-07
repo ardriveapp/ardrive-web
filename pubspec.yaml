@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: v1.9.0
+      ref: PE-4540-fix-dataTable-firing-multiselect-state
   artemis: ^7.0.0-beta.13
   arweave:
     git:
@@ -89,7 +89,7 @@ dependencies:
   firebase_core: ^2.1.1
   bloc_concurrency: ^0.2.0
   universal_html: ^2.0.8
-  device_info_plus: ^8.0.0
+  device_info_plus: ^8.2.2
   local_auth: ^2.1.2
   flutter_secure_storage: ^8.0.0
   async: ^2.9.0

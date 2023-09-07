@@ -10,16 +10,16 @@ abstract class MultipleDownloadState extends Equatable {
 class MultipleDownloadInitial extends MultipleDownloadState {}
 
 class MultipleDownloadInProgress extends MultipleDownloadState {
-  final String fileName;
-  final int totalByteCount;
+  final List<MultiDownloadItem> files;
+  final int currentFileIndex;
 
   const MultipleDownloadInProgress({
-    required this.fileName,
-    required this.totalByteCount,
+    required this.files,
+    required this.currentFileIndex,
   });
 
   @override
-  List<Object> get props => [fileName, totalByteCount];
+  List<Object> get props => [files, currentFileIndex];
 }
 
 class MultipleDownloadWarning extends MultipleDownloadState {}
@@ -34,18 +34,17 @@ class MultipleDownloadFailure extends MultipleDownloadState {
 }
 
 class MultipleDownloadFinishedWithSuccess extends MultipleDownloadState {
-  final String title;
+  const MultipleDownloadFinishedWithSuccess(
+      {required this.fileName,
+      required this.bytes,
+      required this.lastModified,
+      required this.skippedFiles});
 
-  const MultipleDownloadFinishedWithSuccess({required this.title});
+  final String fileName;
+  final Uint8List bytes;
+  final DateTime lastModified;
+  final List<MultiDownloadItem> skippedFiles;
 
   @override
-  List<Object> get props => [title];
-}
-
-// zipping your files
-class MultipleDownloadZippingFiles extends MultipleDownloadState {
-  const MultipleDownloadZippingFiles();
-
-  @override
-  List<Object> get props => [];
+  List<Object> get props => [fileName, bytes, lastModified, skippedFiles];
 }
