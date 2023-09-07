@@ -195,7 +195,7 @@ void main() {
         PaymentFormLoaded(
           initialPriceEstimate,
           1234,
-          [],
+          const [],
           promoDiscountFactor: 0,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: true,
@@ -204,7 +204,7 @@ void main() {
         PaymentFormLoaded(
           initialPriceEstimate,
           1234,
-          [],
+          const [],
           promoDiscountFactor: 0.1,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: false,
@@ -213,7 +213,7 @@ void main() {
         PaymentFormLoaded(
           initialPriceEstimate,
           1234,
-          [],
+          const [],
           promoDiscountFactor: 0,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: true,
@@ -222,7 +222,7 @@ void main() {
         PaymentFormLoaded(
           initialPriceEstimate,
           1234,
-          [],
+          const [],
           promoDiscountFactor: 0,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: false,
@@ -231,7 +231,7 @@ void main() {
         PaymentFormLoaded(
           initialPriceEstimate,
           1234,
-          [],
+          const [],
           promoDiscountFactor: 0,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: true,
@@ -240,7 +240,7 @@ void main() {
         PaymentFormLoaded(
           initialPriceEstimate,
           1234,
-          [],
+          const [],
           promoDiscountFactor: 0.2,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: false,
