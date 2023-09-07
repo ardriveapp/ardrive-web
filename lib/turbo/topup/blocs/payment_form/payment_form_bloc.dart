@@ -9,8 +9,6 @@ part 'payment_form_state.dart';
 
 class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
   final Turbo turbo;
-  // String _promoCode = '';
-  // final TextEditingController _promoCodeController = TextEditingController();
 
   PaymentFormBloc(this.turbo, PriceEstimate initialPriceEstimation)
       : super(PaymentFormInitial(initialPriceEstimation,
