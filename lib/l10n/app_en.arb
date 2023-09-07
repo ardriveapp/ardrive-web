@@ -44,6 +44,8 @@
   },
   "amount": "Amount",
   "@amount": {},
+  "anErrorOccuredWhileDownloadingYourFiles": "An error occurred while downloading your file(s). Please try again.",
+  "@anErrorOccuredWhileDownloadingYourFiles": {},
   "anErrorOccuredWhileDownloadingYourKeyfile": "An error occurred while downloading your wallet keyfile. Please try again.",
   "@anErrorOccuredWhileDownloadingYourKeyfile": {},
   "anyFilesWillOutliveYou": "Any files you upload here will outlive you!",
@@ -1213,6 +1215,18 @@
   "movingItemsEmphasized": "Moving Items",
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
+  },
+  "multiDownloadCompleteWithSkippedFiles": "Download Complete with {numSkippedFiles} skipped file(s)",
+  "@multiDownloadCompleteWithSkippedFiles": {
+    "description": "Title to modal shown when user completes multi-file download and has skipped files. "
+  },
+  "multiDownloadDownloadingFilesProgress": "Downloading file(s)... {currentFileNum} of {totalNumFiles}",
+  "@multiDownloadDownloadingFilesProgress": {
+    "description": "Title to modal shown when user is downloading multiple file.  "
+  },
+  "multiDownloadErrorTryAgain": "An error occurred while downloading your file(s). Please try again.",
+  "@multiDownloadErrorTryAgain": {
+    "description": "Error message to show user when an error has occurred downloading a file within a set of multi-file downloads."
   },
   "name": "Name",
   "@name": {

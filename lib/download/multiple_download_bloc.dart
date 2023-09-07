@@ -1,11 +1,23 @@
+import 'package:archive/archive_io.dart';
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
-import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
-import 'package:ardrive/utils/file_zipper.dart';
-import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive/download/download_utils.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_http/ardrive_http.dart';
+import 'package:collection/collection.dart';
+import 'package:cryptography/cryptography.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'limits.dart';
 
 part 'multiple_download_event.dart';
 part 'multiple_download_state.dart';
@@ -13,69 +25,233 @@ part 'multiple_download_state.dart';
 class MultipleDownloadBloc
     extends Bloc<MultipleDownloadEvent, MultipleDownloadState> {
   final DownloadService _downloadService;
+  final ArweaveService _arweave;
+  final DriveDao _driveDao;
+  final ARFSRepository _arfsRepository;
+  final ArDriveCrypto _crypto;
+  final SecretKey? _cipherKey;
+  final DeviceInfoPlugin? _deviceInfo;
 
-  MultipleDownloadBloc({
-    required DownloadService downloadService,
-  })  : _downloadService = downloadService,
+  bool _canceled = false;
+  int _currentFileIndex = 0;
+  final List<MultiDownloadItem> _skippedFiles = [];
+  SecretKey? _driveKey;
+
+  late ARFSDriveEntity _drive;
+  late ZipEncoder _zipEncoder;
+  late OutputStream _outputStream;
+  late List<MultiDownloadItem> _files;
+  late String _outFileName;
+
+  MultipleDownloadBloc(
+      {required DownloadService downloadService,
+      required DriveDao driveDao,
+      required ArweaveService arweave,
+      required ARFSRepository arfsRepository,
+      required ArDriveCrypto crypto,
+      DeviceInfoPlugin? deviceInfo,
+      SecretKey? cipherKey})
+      : _downloadService = downloadService,
+        _driveDao = driveDao,
+        _arweave = arweave,
+        _arfsRepository = arfsRepository,
+        _crypto = crypto,
+        _cipherKey = cipherKey,
+        _deviceInfo = deviceInfo,
         super(MultipleDownloadInitial()) {
     on<MultipleDownloadEvent>((event, emit) async {
       if (event is StartDownload) {
-        await _downloadMultipleFiles(event.items, emit, event.folderName);
+        await _startDownload(event, emit);
+      } else if (event is CancelDownload) {
+        // signal the download process to exit
+        _canceled = true;
+      } else if (event is ResumeDownload) {
+        await _resumeDownload(event, emit);
+      } else if (event is SkipFileAndResumeDownload) {
+        await _skipFileAndResumeDownload(event, emit);
       }
     });
   }
-  Future<void> _downloadMultipleFiles(List<ARFSFileEntity> items,
-      Emitter<MultipleDownloadState> emit, String? folderName) async {
-    try {
-      final files = items.whereType<ARFSFileEntity>().toList();
-      final ioFiles = <IOFile>[];
 
-      final totalSize = files.map((e) => e.size).reduce((a, b) => a + b);
+  Future<void> _startDownload(
+      StartDownload event, Emitter<MultipleDownloadState> emit) async {
+    _files = await convertSelectionToMultiDownloadFileList(
+        _driveDao, _arfsRepository, event.selectedItems);
 
-      if (_isSizeAbovePublicLimit(totalSize)) {
+    _skippedFiles.clear();
+
+    if (_files.isEmpty) {
+      emit(
+        const MultipleDownloadFailure(
+          FileDownloadFailureReason.unknownError,
+        ),
+      );
+      return;
+    }
+
+    MultiDownloadFile? firstFile =
+        _files.firstWhereOrNull((element) => element is MultiDownloadFile)
+            as MultiDownloadFile?;
+
+    if (firstFile != null) {
+      _drive = await _arfsRepository.getDriveById(firstFile.driveId);
+
+      if (await isSizeAboveDownloadSizeLimit(
+          _files, _drive.drivePrivacy == DrivePrivacy.public,
+          deviceInfo: _deviceInfo)) {
         emit(
           const MultipleDownloadFailure(
             FileDownloadFailureReason.fileAboveLimit,
           ),
         );
-
         return;
       }
 
-      emit(
-        MultipleDownloadInProgress(
-          fileName: 'Multiple Files',
-          totalByteCount: totalSize,
-        ),
-      );
+      if (_drive.drivePrivacy == DrivePrivacy.private) {
+        if (_cipherKey != null) {
+          _driveKey = await _driveDao.getDriveKey(
+            _drive.driveId,
+            _cipherKey!,
+          );
+        } else {
+          _driveKey = await _driveDao.getDriveKeyFromMemory(_drive.driveId);
+        }
 
-      for (final file in files) {
-        final dataBytes = await _downloadService.download(file.txId);
-
-        final ioFile = await IOFile.fromData(
-          dataBytes,
-          name: file.name,
-          lastModifiedDate: file.lastModifiedDate,
-        );
-
-        ioFiles.add(ioFile);
+        if (_driveKey == null) {
+          throw StateError('Drive Key not found');
+        }
       }
-
-      emit(const MultipleDownloadZippingFiles());
-
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      await FileZipper(files: ioFiles).downloadZipFile(fileName: folderName);
-
-      emit(const MultipleDownloadFinishedWithSuccess(title: 'Multiple Files'));
-    } catch (e) {
-      emit(const MultipleDownloadFailure(
-        FileDownloadFailureReason.unknownError,
-      ));
+    } else {
+      _driveKey = null;
     }
+
+    _initializeEncoder();
+    _outFileName =
+        event.zipName != null ? '${event.zipName}.zip' : 'Archive.zip';
+
+    await _downloadMultipleFiles(emit);
   }
 
-  bool _isSizeAbovePublicLimit(int size) {
-    return size > publicDownloadSizeLimit;
+  Future<void> _resumeDownload(
+      ResumeDownload event, Emitter<MultipleDownloadState> emit) async {
+    _canceled = false;
+    await _downloadMultipleFiles(emit);
+  }
+
+  Future<void> _skipFileAndResumeDownload(SkipFileAndResumeDownload event,
+      Emitter<MultipleDownloadState> emit) async {
+    _canceled = false;
+    _skippedFiles.add(_files[_currentFileIndex]);
+    _currentFileIndex++;
+    await _downloadMultipleFiles(emit);
+  }
+
+  void _initializeEncoder() {
+    _zipEncoder = ZipEncoder();
+    _outputStream = OutputStream(
+      byteOrder: LITTLE_ENDIAN,
+    );
+    _zipEncoder.startEncode(_outputStream, level: Deflate.NO_COMPRESSION);
+  }
+
+  Future<void> _downloadMultipleFiles(
+      Emitter<MultipleDownloadState> emit) async {
+    try {
+      while (_currentFileIndex < _files.length) {
+        if (_canceled) {
+          logger.d('User cancelled multi-file downloading.');
+          return;
+        }
+
+        emit(
+          MultipleDownloadInProgress(
+            files: _files,
+            currentFileIndex: _currentFileIndex,
+          ),
+        );
+
+        final file = _files[_currentFileIndex];
+
+        if (file is MultiDownloadFile) {
+          // TODO: Use cancelable streaming downloading once it is available in
+          // ArDriveHTTP
+          final dataBytes = await _downloadService.download(file.txId);
+
+          if (_canceled) {
+            logger.d('User cancelled multi-file downloading.');
+            return;
+          }
+
+          Uint8List outputBytes;
+
+          if (_driveKey != null) {
+            final fileKey = await _driveDao.getFileKey(file.fileId, _driveKey!);
+            final dataTx = await (_arweave.getTransactionDetails(file.txId));
+
+            try {
+              if (dataTx != null) {
+                final decryptedData = await _crypto.decryptTransactionData(
+                  dataTx,
+                  dataBytes,
+                  fileKey,
+                );
+
+                outputBytes = decryptedData;
+              } else {
+                logger.e('Error decrypting file: dataTx is null');
+                emit(const MultipleDownloadFailure(
+                    FileDownloadFailureReason.unknownError));
+                return;
+              }
+            } catch (e) {
+              logger.e('Error decrypting file: ${e.toString()}');
+              emit(const MultipleDownloadFailure(
+                  FileDownloadFailureReason.unknownError));
+              return;
+            }
+          } else {
+            outputBytes = dataBytes;
+          }
+
+          _zipEncoder.addFile(ArchiveFile.noCompress(
+            file.fileName,
+            file.size,
+            outputBytes,
+          ));
+        } else {
+          // FOLDER ENTRY
+          final dir = file as MultiDownloadFolder;
+          final entry =
+              ArchiveFile.noCompress(dir.folderPath, 0, Uint8List.fromList([]));
+          entry.isFile = false;
+          _zipEncoder.addFile(entry);
+        }
+
+        _currentFileIndex++;
+      }
+
+      _zipEncoder.endEncode();
+
+      emit(MultipleDownloadFinishedWithSuccess(
+        bytes: Uint8List.fromList(_outputStream.getBytes()),
+        fileName: _outFileName,
+        lastModified: DateTime.now(),
+        skippedFiles: _skippedFiles,
+      ));
+    } catch (e) {
+      if (e is ArDriveHTTPException) {
+        if (e.statusCode == 400) {
+          emit(const MultipleDownloadFailure(
+              FileDownloadFailureReason.fileNotFound));
+        } else {
+          emit(const MultipleDownloadFailure(
+              FileDownloadFailureReason.networkConnectionError));
+        }
+      } else {
+        emit(const MultipleDownloadFailure(
+            FileDownloadFailureReason.unknownError));
+      }
+      logger.d('Multi-file Download Exception: ${e.toString()}');
+    }
   }
 }
