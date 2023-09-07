@@ -46,7 +46,7 @@ class PaymentFormLoaded extends PaymentFormState {
         priceEstimate,
         quoteExpirationTimeInSeconds,
         supportedCountries,
-        promoDiscountFactor ?? 0,
+        promoDiscountFactor ?? 0.0,
         isPromoCodeInvalid,
         isFetchingPromoCode,
         errorFetchingPromoCode,

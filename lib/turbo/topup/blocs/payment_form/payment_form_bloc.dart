@@ -9,10 +9,21 @@ part 'payment_form_state.dart';
 
 class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
   final Turbo turbo;
+  final int Function(DateTime d)? mockExpirationTimeInSeconds;
 
-  PaymentFormBloc(this.turbo, PriceEstimate initialPriceEstimation)
-      : super(PaymentFormInitial(initialPriceEstimation,
-            _expirationTimeInSeconds(turbo.maxQuoteExpirationDate))) {
+  PaymentFormBloc(
+    this.turbo,
+    PriceEstimate initialPriceEstimation, {
+    this.mockExpirationTimeInSeconds,
+  }) : super(
+          PaymentFormInitial(
+            initialPriceEstimation,
+            _expirationTimeInSeconds(
+              turbo.maxQuoteExpirationDate,
+              mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
+            ),
+          ),
+        ) {
     on<PaymentFormLoadSupportedCountries>(_handleLoadSupportedCountries);
     on<PaymentFormUpdateQuote>(_handleUpdateQuote);
     on<PaymentFormUpdatePromoCode>(_handleUpdatePromoCode);
@@ -24,7 +35,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
   ) async {
     emit(PaymentFormLoading(
       state.priceEstimate,
-      _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+      _expirationTimeInSeconds(
+        turbo.maxQuoteExpirationDate,
+        mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
+      ),
     ));
 
     try {
@@ -33,7 +47,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
       emit(
         PaymentFormLoaded(
           state.priceEstimate,
-          _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+          _expirationTimeInSeconds(
+            turbo.maxQuoteExpirationDate,
+            mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
+          ),
           supportedCountries,
         ),
       );
@@ -43,7 +60,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
       emit(
         PaymentFormError(
           state.priceEstimate,
-          _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+          _expirationTimeInSeconds(
+            turbo.maxQuoteExpirationDate,
+            mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
+          ),
         ),
       );
     }
@@ -58,6 +78,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
         state.priceEstimate,
         _expirationTimeInSeconds(
           turbo.maxQuoteExpirationDate,
+          mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
         ),
         (state as PaymentFormLoaded).supportedCountries,
       ),
@@ -69,7 +90,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
       emit(
         PaymentFormQuoteLoaded(
           priceEstimate,
-          _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+          _expirationTimeInSeconds(
+            turbo.maxQuoteExpirationDate,
+            mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
+          ),
           (state as PaymentFormLoaded).supportedCountries,
         ),
       );
@@ -79,7 +103,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
       emit(
         PaymentFormQuoteLoadFailure(
           state.priceEstimate,
-          _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+          _expirationTimeInSeconds(
+            turbo.maxQuoteExpirationDate,
+            mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
+          ),
         ),
       );
     }
@@ -96,7 +123,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
     emit(
       PaymentFormLoaded(
         state.priceEstimate,
-        _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+        _expirationTimeInSeconds(
+          turbo.maxQuoteExpirationDate,
+          mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
+        ),
         (state as PaymentFormLoaded).supportedCountries,
         isFetchingPromoCode: true,
       ),
@@ -112,7 +142,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
       emit(
         PaymentFormLoaded(
           state.priceEstimate,
-          _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+          _expirationTimeInSeconds(
+            turbo.maxQuoteExpirationDate,
+            mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
+          ),
           (state as PaymentFormLoaded).supportedCountries,
           promoDiscountFactor: promoDiscountFactor,
           isPromoCodeInvalid: isInvalid,
@@ -125,7 +158,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
       emit(
         PaymentFormLoaded(
           state.priceEstimate,
-          _expirationTimeInSeconds(turbo.maxQuoteExpirationDate),
+          _expirationTimeInSeconds(
+            turbo.maxQuoteExpirationDate,
+            mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
+          ),
           (state as PaymentFormLoaded).supportedCountries,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: false,
@@ -136,5 +172,9 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
   }
 }
 
-int _expirationTimeInSeconds(DateTime d) =>
+int _expirationTimeInSeconds(
+  DateTime d, {
+  int Function(DateTime d)? mockExpirationTimeInSeconds,
+}) =>
+    mockExpirationTimeInSeconds?.call(d) ??
     d.difference(DateTime.now()).inSeconds;
