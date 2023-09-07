@@ -6,6 +6,7 @@ import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
+import 'package:ardrive/turbo/turbo_promo_code.dart';
 import 'package:ardrive/turbo/utils/storage_estimator.dart';
 import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive/utils/disposable.dart';
@@ -23,13 +24,15 @@ class Turbo extends Disposable {
     required TurboPaymentProvider paymentProvider,
     required Wallet wallet,
     required TurboSupportedCountriesRetriever supportedCountriesRetriever,
+    required TurboPromoCode turboPromoCode,
   })  : _balanceRetriever = balanceRetriever,
         _costCalculator = costCalculator,
         _priceEstimator = priceEstimator,
         _paymentProvider = paymentProvider,
         _wallet = wallet,
         _sessionManager = sessionManager,
-        _supportedCountriesRetriever = supportedCountriesRetriever;
+        _supportedCountriesRetriever = supportedCountriesRetriever,
+        _turboPromoCode = turboPromoCode;
 
   DateTime get maxQuoteExpirationDate {
     final maxQuoteExpirationTime = _priceEstimator.maxQuoteExpirationTime;
@@ -49,6 +52,7 @@ class Turbo extends Disposable {
   final TurboPaymentProvider _paymentProvider;
   final TurboSupportedCountriesRetriever _supportedCountriesRetriever;
   final Wallet _wallet;
+  final TurboPromoCode _turboPromoCode;
 
   PriceEstimate _priceEstimate = PriceEstimate.zero();
   double? _currentAmount;
@@ -193,42 +197,8 @@ class Turbo extends Disposable {
     logger.d('Turbo disposed');
   }
 
-  // Future<double?> _getPromoDiscountFactor(String promoCode) async {
-  //   // final estimationBloc = context.read<TurboTopUpEstimationBloc>();
-  //   if (!_isPromoCodeEmpty()) {
-  //     final promoDiscount = await getPromoDiscountFactor(promoCode);
-  //     if (promoDiscount != null) {
-  //       // setState(() {
-  //       //   _promoCode = _promoCodeController.text;
-  //       //   _promoDiscountFactor = promoDiscount;
-  //       //   estimationBloc.add(PromoCodeChanged(promoDiscount));
-  //       // });
-
-  //     } else {
-  //       // setState(() {
-  //       //   _promoCode = '';
-  //       //   _promoCodeInvalid = true;
-  //       //   _promoCodeController.clear();
-  //       // });
-  //     }
-  //   }
-  // }
-
-  Future<double?> getPromoDiscountFactor(String promoCode) async {
-    const validCodes = {
-      'ARDRIVE': 1.0,
-      'TURBO': 0.5,
-      'MATI': 0.1,
-    };
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    // Simulate error
-    if (promoCode == 'ERROR') throw Exception('Error getting promo code');
-
-    final isValid = validCodes.keys.contains(promoCode);
-    return isValid ? validCodes[promoCode] : null;
-  }
+  Future<double?> getPromoDiscountFactor(String promoCode) =>
+      _turboPromoCode.getPromoDiscountFactor(promoCode);
 }
 
 class TurboSessionManager extends Disposable {

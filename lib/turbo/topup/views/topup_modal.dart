@@ -13,6 +13,7 @@ import 'package:ardrive/turbo/topup/views/topup_review_view.dart';
 import 'package:ardrive/turbo/topup/views/topup_success_view.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/turbo/turbo_promo_code.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,10 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
   final turboSupportedCountriesRetriever = TurboSupportedCountriesRetriever(
       paymentService: context.read<PaymentService>());
 
+  final turboPromoCode = TurboPromoCodeImpl(
+    paymentService: context.read<PaymentService>(),
+  );
+
   final turbo = Turbo(
     sessionManager: sessionManager,
     costCalculator: costCalculator,
@@ -52,6 +57,7 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
     paymentProvider: turboPaymentProvider,
     wallet: context.read<ArDriveAuth>().currentUser!.wallet,
     supportedCountriesRetriever: turboSupportedCountriesRetriever,
+    turboPromoCode: turboPromoCode,
   );
 
   initializeStripe(context.read<ConfigService>().config);

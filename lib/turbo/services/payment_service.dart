@@ -121,6 +121,25 @@ class PaymentService {
 
     return List<String>.from(jsonDecode(result.data));
   }
+
+  Future<double?> getPromoDiscountFactor(String promoCode) async {
+    const validCodes = {
+      'ARDRIVE': 1.0,
+      'TURBO': 0.5,
+      'MATI': 0.1,
+    };
+    const errorCodes = ['ERROR', 'FAIL'];
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Simulate error
+    if (errorCodes.contains(promoCode)) {
+      throw Exception('Error getting promo code');
+    }
+
+    final isValid = validCodes.keys.contains(promoCode);
+    return isValid ? validCodes[promoCode] : null;
+  }
 }
 
 class DontUsePaymentService implements PaymentService {
@@ -159,6 +178,11 @@ class DontUsePaymentService implements PaymentService {
 
   @override
   Future<List<String>> getSupportedCountries() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<double?> getPromoDiscountFactor(String promoCode) {
     throw UnimplementedError();
   }
 }
