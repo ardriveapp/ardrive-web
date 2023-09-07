@@ -23,7 +23,11 @@ void main() {
       );
       when(() => mockTurbo.maxQuoteExpirationDate).thenAnswer(
           (invocation) => DateTime.now().add(const Duration(days: 1)));
-      paymentFormBloc = PaymentFormBloc(mockTurbo, initialPriceEstimate);
+      paymentFormBloc = PaymentFormBloc(
+        mockTurbo,
+        initialPriceEstimate,
+        mockExpirationTimeInSeconds: (DateTime d) => 1234,
+      );
     });
 
     group('PaymentFormUpdateQuote', () {
@@ -108,10 +112,7 @@ void main() {
           isA<PaymentFormLoading>(),
           PaymentFormLoaded(
             initialPriceEstimate,
-            DateTime.now()
-                .add(const Duration(days: 1))
-                .difference(DateTime.now())
-                .inSeconds,
+            1234,
             const ['Country A', 'Country B'],
           ),
         ],
@@ -130,5 +131,122 @@ void main() {
         ],
       );
     });
+  });
+
+  group('promo code', () {
+    final validPromoCodes = {
+      'BANANA': 0.1,
+      'MANZANA': 0.2,
+    };
+    const errorPromoCode = 'ERROR';
+
+    setUp(() {
+      mockTurbo = MockTurbo();
+      final initialPriceEstimate = PriceEstimate(
+        credits: BigInt.from(10),
+        priceInCurrency: 10,
+        estimatedStorage: 1,
+        promoDiscountFactor: 0,
+      );
+      when(() => mockTurbo.maxQuoteExpirationDate).thenAnswer(
+          (invocation) => DateTime.now().add(const Duration(days: 1)));
+      paymentFormBloc = PaymentFormBloc(
+        mockTurbo,
+        initialPriceEstimate,
+        mockExpirationTimeInSeconds: (DateTime d) => 1234,
+      );
+    });
+
+    blocTest<PaymentFormBloc, PaymentFormState>(
+      'is accordingly being updated depending on the promo code entered',
+      build: () {
+        when(() => mockTurbo.getPromoDiscountFactor(any()))
+            .thenAnswer((invocation) async {
+          final promoCode = invocation.positionalArguments[0] as String;
+          if (validPromoCodes.containsKey(promoCode)) {
+            return validPromoCodes[promoCode];
+          } else {
+            // invalid promo code
+            return 0.0;
+          }
+        });
+
+        when(() => mockTurbo.getPromoDiscountFactor(errorPromoCode))
+            .thenThrow(Exception());
+
+        return paymentFormBloc;
+      },
+      seed: () {
+        return PaymentFormLoaded(
+          initialPriceEstimate,
+          DateTime.now()
+              .add(const Duration(days: 1))
+              .difference(DateTime.now())
+              .inSeconds,
+          const [],
+        );
+      },
+      act: (bloc) async {
+        bloc.add(const PaymentFormUpdatePromoCode('BANANA'));
+        bloc.add(const PaymentFormUpdatePromoCode(errorPromoCode));
+        bloc.add(const PaymentFormUpdatePromoCode('MANZANA'));
+      },
+      expect: () => [
+        PaymentFormLoaded(
+          initialPriceEstimate,
+          1234,
+          [],
+          promoDiscountFactor: 0,
+          isPromoCodeInvalid: false,
+          isFetchingPromoCode: true,
+          errorFetchingPromoCode: false,
+        ),
+        PaymentFormLoaded(
+          initialPriceEstimate,
+          1234,
+          [],
+          promoDiscountFactor: 0.1,
+          isPromoCodeInvalid: false,
+          isFetchingPromoCode: false,
+          errorFetchingPromoCode: false,
+        ),
+        PaymentFormLoaded(
+          initialPriceEstimate,
+          1234,
+          [],
+          promoDiscountFactor: 0,
+          isPromoCodeInvalid: false,
+          isFetchingPromoCode: true,
+          errorFetchingPromoCode: false,
+        ),
+        PaymentFormLoaded(
+          initialPriceEstimate,
+          1234,
+          [],
+          promoDiscountFactor: 0,
+          isPromoCodeInvalid: false,
+          isFetchingPromoCode: false,
+          errorFetchingPromoCode: true,
+        ),
+        PaymentFormLoaded(
+          initialPriceEstimate,
+          1234,
+          [],
+          promoDiscountFactor: 0,
+          isPromoCodeInvalid: false,
+          isFetchingPromoCode: true,
+          errorFetchingPromoCode: false,
+        ),
+        PaymentFormLoaded(
+          initialPriceEstimate,
+          1234,
+          [],
+          promoDiscountFactor: 0.2,
+          isPromoCodeInvalid: false,
+          isFetchingPromoCode: false,
+          errorFetchingPromoCode: false,
+        ),
+      ],
+    );
   });
 }
