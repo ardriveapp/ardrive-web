@@ -508,14 +508,8 @@ class ArweaveService {
     String password,
   ) async {
     try {
-      final userDriveEntitiesQuery = await _graphQLRetry.execute(
-          UserDriveEntitiesQuery(
-              variables: UserDriveEntitiesArguments(
-                  owner: await wallet.getAddress())));
-
-      final driveTxs = userDriveEntitiesQuery.data!.transactions.edges
-          .map((e) => e.node)
-          .toList();
+      final userAddress = await wallet.getAddress();
+      final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
 
       final driveResponses = await retry(
           () async => await Future.wait(
