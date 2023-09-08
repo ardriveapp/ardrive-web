@@ -594,6 +594,7 @@ class _AppSideBarState extends State<AppSideBar> {
         drive: currentDrive,
         driveDetailState: context.read<DriveDetailCubit>().state,
         currentFolder: currentFolder,
+        customOffset: _isExpanded ? null : const Offset(52, -40),
         child: LayoutBuilder(
           builder: (context, constraints) {
             return Container(

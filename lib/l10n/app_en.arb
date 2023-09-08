@@ -44,6 +44,8 @@
   },
   "amount": "Amount",
   "@amount": {},
+  "anErrorOccuredWhileDownloadingYourFiles": "An error occurred while downloading your file(s). Please try again.",
+  "@anErrorOccuredWhileDownloadingYourFiles": {},
   "anErrorOccuredWhileDownloadingYourKeyfile": "An error occurred while downloading your wallet keyfile. Please try again.",
   "@anErrorOccuredWhileDownloadingYourKeyfile": {},
   "anyFilesWillOutliveYou": "Any files you upload here will outlive you!",
@@ -196,7 +198,7 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "collapseSideBar": "Collapse sidebar",
+  "collapseSideBar": "Collapse Sidebar",
   "@collapseSideBar": {
     "description": "Collapse side bar tooltip"
   },
@@ -613,11 +615,11 @@
   },
   "enter": "Enter",
   "@enter": {},
-  "enterFileKey": "Enter file Key",
+  "enterFileKey": "Enter File Key",
   "@enterFileKey": {
     "description": "File Key form field label"
   },
-  "enterFileName": "Enter file name",
+  "enterFileName": "Enter File Name",
   "@enterFileName": {
     "description": "To type the name of the file"
   },
@@ -722,7 +724,7 @@
       }
     }
   },
-  "fileDoesExistButIsInvalid": "The file does exist but is invalid",
+  "fileDoesExistButIsInvalid": "The file provided is corrupted and cannot be pinned.",
   "@fileDoesExistButIsInvalid": {
     "description": "Explains that the file does exist, but some of its properties make it invalid"
   },
@@ -750,7 +752,7 @@
   "@fileID": {
     "description": "The Entity-ID tag of files"
   },
-  "fileIsNotPublic": "The file is not public",
+  "fileIsNotPublic": "The ID provided is for a private file and cannot be pinned.",
   "@fileIsNotPublic": {
     "description": "Warning explaining that the file is not public"
   },
@@ -1178,7 +1180,7 @@
   "@monthlyCharges": {
     "description": "Payment philosophy"
   },
-  "moreInfo": "More info",
+  "moreInfo": "More Info",
   "@moreInfo": {
     "description": "More info"
   },
@@ -1213,6 +1215,18 @@
   "movingItemsEmphasized": "Moving Items",
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
+  },
+  "multiDownloadCompleteWithSkippedFiles": "Download Complete with {numSkippedFiles} skipped file(s)",
+  "@multiDownloadCompleteWithSkippedFiles": {
+    "description": "Title to modal shown when user completes multi-file download and has skipped files. "
+  },
+  "multiDownloadDownloadingFilesProgress": "Downloading file(s)... {currentFileNum} of {totalNumFiles}",
+  "@multiDownloadDownloadingFilesProgress": {
+    "description": "Title to modal shown when user is downloading multiple file.  "
+  },
+  "multiDownloadErrorTryAgain": "An error occurred while downloading your file(s). Please try again.",
+  "@multiDownloadErrorTryAgain": {
+    "description": "Error message to show user when an error has occurred downloading a file within a set of multi-file downloads."
   },
   "name": "Name",
   "@name": {
@@ -1476,7 +1490,7 @@
   "@rename": {
     "description": "The action of renaming; imperative form"
   },
-  "renameDrive": "Rename drive",
+  "renameDrive": "Rename Drive",
   "@renameDrive": {
     "description": "The action of renaming a drive"
   },
@@ -1516,7 +1530,7 @@
   "@resync": {
     "description": "Sync button Text"
   },
-  "resyncTooltip": "Refresh all drives",
+  "resyncTooltip": "Refresh All Drives",
   "@resyncTooltip": {
     "description": "resync tooltip text"
   },
@@ -1578,23 +1592,23 @@
   },
   "shareLogsDescription": "You can share your logs with the ArDrive team to help us improve the app. The logs can be downloaded to your device and shared with us via email, Discord, or added to a support ticket.",
   "@shareLogsDescription": {},
-  "shareLogsEmailBody": "Attached are the logs for ArDrive",
+  "shareLogsEmailBody": "ArDrive user logs are attached.",
   "@shareLogsEmailBody": {},
   "shareLogsEmailSubject": "ArDrive Logs",
   "@shareLogsEmailSubject": {},
   "shareLogsNativeShareSubject": "ArDrive Logs",
   "@shareLogsNativeShareSubject": {},
-  "shareLogsNativeShareText": "Attached are the logs for ArDrive",
+  "shareLogsNativeShareText": "ArDrive user logs are attached.",
   "@shareLogsNativeShareText": {},
-  "shareLogsText": "Share logs",
+  "shareLogsText": "Share Logs",
   "@shareLogsText": {},
-  "shareLogsWithEmailText": "Send email",
+  "shareLogsWithEmailText": "Send Email",
   "@shareLogsWithEmailText": {},
   "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
   },
-  "showMenu": "Show menu",
+  "showMenu": "Show Menu",
   "@showMenu": {
     "description": "show menu text"
   },
@@ -1668,7 +1682,7 @@
   "@subscribeEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
-  "sync": "همگام سازی",
+  "sync": "Sync",
   "@sync": {
     "description": "Sync button tooltip"
   },
@@ -1702,7 +1716,7 @@
   "@termsAndConditions": {
     "description": "terms and conditions"
   },
-  "theIdProvidedDoesntExist": "The ID provided doesn't exist",
+  "theIdProvidedDoesntExist": "The ID provided does not exist",
   "@theIdProvidedDoesntExist": {
     "description": "Indicates that the valid ID you provided doesn't exist"
   },

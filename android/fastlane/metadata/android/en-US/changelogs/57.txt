@@ -1,0 +1,2 @@
+- Users can now download multiple files using the multiselect, or entire folders and drives
+- Fixes an issue with the new button on the collapsed sidebar

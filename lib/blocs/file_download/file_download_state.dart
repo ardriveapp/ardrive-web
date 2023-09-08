@@ -76,4 +76,9 @@ class FileDownloadWarning extends FileDownloadState {
 
 class FileDownloadAborted extends FileDownloadState {}
 
-enum FileDownloadFailureReason { unknownError, fileAboveLimit }
+enum FileDownloadFailureReason {
+  unknownError,
+  fileAboveLimit,
+  networkConnectionError,
+  fileNotFound
+}
