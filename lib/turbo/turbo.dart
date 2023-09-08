@@ -111,7 +111,9 @@ class Turbo extends Disposable {
     return _priceEstimate;
   }
 
-  Future<PriceEstimate> refreshPriceEstimate() async {
+  Future<PriceEstimate> refreshPriceEstimate({
+    String? promoCode,
+  }) async {
     assert(
       _currentAmount != null &&
           _currentCurrency != null &&
@@ -123,7 +125,7 @@ class Turbo extends Disposable {
       currentAmount: _currentAmount!,
       currentCurrency: _currentCurrency!,
       currentDataUnit: _currentDataUnit!,
-      promoCode: _promoCode,
+      promoCode: promoCode ?? _promoCode,
     );
 
     return _priceEstimate;
@@ -313,19 +315,18 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
   DateTime? _maxQuoteExpirationTime;
   DateTime? get maxQuoteExpirationTime => _maxQuoteExpirationTime;
 
-  void _setPromoCodeAndWallet(String? promoCode) {
+  void _setPromoCode(String? promoCode) {
     _promoCode = promoCode;
   }
 
   Future<PriceEstimate> computePriceEstimate({
-    // required Wallet wallet,
     required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
     String? promoCode,
   }) async {
     final double correctAmount = currentAmount * 100;
-    _setPromoCodeAndWallet(promoCode);
+    _setPromoCode(promoCode);
 
     try {
       final priceEstimate = await paymentService.getPriceForFiat(

@@ -118,7 +118,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
     Emitter<PaymentFormState> emit,
   ) async {
     final promoCode = event.promoCode;
-    bool isInvalid = false;
 
     logger.d('Updating promo code to $promoCode.');
 
@@ -137,7 +136,15 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
     );
 
     try {
-      final refreshedPriceEstimate = await turbo.refreshPriceEstimate();
+      // Here you tell turbo to update the promo code
+      final refreshedPriceEstimate = await turbo.refreshPriceEstimate(
+        promoCode: promoCode,
+      );
+
+      logger.d(
+          '[PAYMENT FORM BLOC] Promo code updated to $promoCode. - $refreshedPriceEstimate');
+
+      final isInvalid = refreshedPriceEstimate.estimate.adjustments.isEmpty;
 
       emit(
         PaymentFormLoaded(
@@ -161,7 +168,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
           (state as PaymentFormLoaded).supportedCountries,
-          isPromoCodeInvalid: isInvalid,
+          isPromoCodeInvalid: true,
           isFetchingPromoCode: false,
         ),
       );

@@ -90,14 +90,33 @@ class TurboTopUpEstimationBloc
           );
         } else if (event is PromoCodeChanged) {
           _promoCode = event.promoCode;
+          final stateAsLoaded = state as EstimationLoaded;
 
-          await _computeAndUpdatePriceEstimate(
-            emit,
-            currentAmount: _currentAmount,
-            currentCurrency: currentCurrency,
-            currentDataUnit: currentDataUnit,
-            promoCode: _promoCode,
-          );
+          logger.d('Recieved promo code: $_promoCode');
+
+          try {
+            await _computeAndUpdatePriceEstimate(
+              emit,
+              currentAmount: _currentAmount,
+              currentCurrency: currentCurrency,
+              currentDataUnit: currentDataUnit,
+              promoCode: _promoCode,
+              shouldRethrow: true,
+            );
+          } catch (e, s) {
+            logger.e('error updating the promo code', e, s);
+            emit(EstimationLoaded(
+              balance: stateAsLoaded.balance,
+              estimatedStorageForBalance:
+                  stateAsLoaded.estimatedStorageForBalance,
+              selectedAmount: stateAsLoaded.selectedAmount,
+              creditsForSelectedAmount: stateAsLoaded.creditsForSelectedAmount,
+              estimatedStorageForSelectedAmount:
+                  stateAsLoaded.estimatedStorageForSelectedAmount,
+              currencyUnit: stateAsLoaded.currencyUnit,
+              dataUnit: stateAsLoaded.dataUnit,
+            ));
+          }
         } else if (event is FetchPriceEstimate) {
           final estimatedStorageForBalance =
               await turbo.computeStorageEstimateForCredits(

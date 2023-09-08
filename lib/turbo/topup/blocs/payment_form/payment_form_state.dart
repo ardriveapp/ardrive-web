@@ -38,7 +38,11 @@ class PaymentFormLoaded extends PaymentFormState {
     final adjustment = priceEstimate.estimate.adjustments.first;
     final adjustmentMagnitude = adjustment.operatorMagnitude;
 
-    return 1 - adjustmentMagnitude;
+    // Multiplying by 100 and then dividing by 100 is a workaround for
+    /// floating point precision issues.
+    final factor = (100 - (adjustmentMagnitude * 100)) / 100;
+
+    return factor;
   }
 
   const PaymentFormLoaded(
