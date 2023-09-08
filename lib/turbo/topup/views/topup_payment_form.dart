@@ -31,7 +31,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   CountryItem? _selectedCountry;
   String _promoCode = '';
   bool _promoCodeInvalid = false;
-  double _promoDiscountFactor = 0.0;
+  double _promoDiscountFactor = 0.0; // TODO: remove, maybe unnecessary
   bool _errorFetchingPromoCode = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _promoCodeController = TextEditingController();
@@ -239,7 +239,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
                     return Text(
-                      '${convertCreditsToLiteralString(state.priceEstimate.credits)} Credits',
+                      '${convertCreditsToLiteralString(state.priceEstimate.estimate.winstonCredits)} Credits',
                       style: ArDriveTypography.body.leadBold(),
                     );
                   },
@@ -641,7 +641,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               _promoCode = '';
               _promoCodeController.clear();
               _promoDiscountFactor = 0.0;
-              estimationBloc.add(const PromoCodeChanged(0.0));
+              estimationBloc.add(const PromoCodeChanged(null));
             });
           },
           child: Tooltip(
@@ -679,7 +679,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 !isFetchingPromoCode) {
               _promoCode = _promoCodeController.text;
               final estimationBloc = context.read<TurboTopUpEstimationBloc>();
-              estimationBloc.add(PromoCodeChanged(_promoDiscountFactor));
+              estimationBloc.add(PromoCodeChanged(_promoCode));
             }
           });
         }

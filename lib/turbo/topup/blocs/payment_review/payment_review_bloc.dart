@@ -108,7 +108,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         credits: _getCreditsFromPaymentModel(),
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
-        promoDiscount: _getPromoDiscountFromPriceEstimation(),
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -120,7 +120,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
         quoteExpirationDate: _quoteExpirationDate!,
-        promoDiscount: _getPromoDiscountFromPriceEstimation(),
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -132,7 +132,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
         quoteExpirationDate: _quoteExpirationDate!,
-        promoDiscount: _getPromoDiscountFromPriceEstimation(),
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -144,7 +144,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
         quoteExpirationDate: _quoteExpirationDate!,
-        promoDiscount: _getPromoDiscountFromPriceEstimation(),
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -157,7 +157,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         credits: _getCreditsFromPaymentModel(),
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
-        promoDiscount: _getPromoDiscountFromPriceEstimation(),
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -170,7 +170,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         credits: _getCreditsFromPaymentModel(),
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
-        promoDiscount: _getPromoDiscountFromPriceEstimation(),
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -182,7 +182,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
         quoteExpirationDate: _quoteExpirationDate!,
-        promoDiscount: _getPromoDiscountFromPriceEstimation(),
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -205,26 +205,20 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
       BigInt.from(int.parse(_paymentModel!.topUpQuote.winstonCreditAmount)));
 
   String _getSubTotalFromPaymentModel() =>
-      (_paymentModel!.topUpQuote.paymentAmount / 100).toStringAsFixed(2);
+      (_paymentModel!.topUpQuote.quotedPaymentAmount / 100).toStringAsFixed(2);
 
   String _getTotalFromPaymentModel() {
-    final subTotal = _paymentModel!.topUpQuote.paymentAmount / 100;
-    final promoDiscountFactor = _priceEstimate.promoDiscountFactor;
-    final total = subTotal * (1 - promoDiscountFactor);
+    final total = _paymentModel!.topUpQuote.paymentAmount / 100;
 
     return total.toStringAsFixed(2);
   }
 
-  String? _getPromoDiscountFromPriceEstimation() {
-    final promoDiscountFactor = _priceEstimate.promoDiscountFactor;
-
-    if (promoDiscountFactor == 0) {
+  String? _getPromoDiscountFromModel() {
+    final adjustments = _paymentModel!.adjustments;
+    if (adjustments.isEmpty) {
       return null;
     }
 
-    final promoDiscount =
-        _priceEstimate.priceInCurrency * (_priceEstimate.promoDiscountFactor);
-
-    return promoDiscount.toStringAsFixed(2);
+    return adjustments.first.humanReadableDiscountPercentage;
   }
 }

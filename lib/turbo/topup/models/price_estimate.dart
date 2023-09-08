@@ -1,37 +1,37 @@
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:equatable/equatable.dart';
 
 class PriceEstimate extends Equatable {
-  final BigInt credits;
+  final PriceForFiat estimate;
   final double priceInCurrency;
   final double estimatedStorage;
-  final double promoDiscountFactor;
+  // final double promoDiscountFactor;
 
   const PriceEstimate({
-    required this.credits,
+    required this.estimate,
     required this.priceInCurrency,
     required this.estimatedStorage,
-    required this.promoDiscountFactor,
+    // required this.promoDiscountFactor,
   });
 
   factory PriceEstimate.zero() => PriceEstimate(
-        credits: BigInt.from(0),
+        estimate: PriceForFiat.zero(),
         priceInCurrency: 0,
         estimatedStorage: 0,
-        promoDiscountFactor: 0,
+        // promoDiscountFactor: 0,
       );
 
   @override
   String toString() {
-    return 'PriceEstimate{credits: $credits, priceInCurrency: $priceInCurrency,'
-        ' estimatedStorage: $estimatedStorage,'
-        ' promoDiscountFactor: $promoDiscountFactor}';
+    return 'PriceEstimate{credits: ${estimate.winstonCredits},'
+        ' priceInCurrency: $priceInCurrency,'
+        ' estimatedStorage: $estimatedStorage,';
   }
 
   @override
   List<Object?> get props => [
-        credits,
+        estimate,
         priceInCurrency,
         estimatedStorage,
-        promoDiscountFactor,
       ];
 }

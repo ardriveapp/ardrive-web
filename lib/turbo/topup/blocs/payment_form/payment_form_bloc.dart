@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -117,8 +118,11 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
     Emitter<PaymentFormState> emit,
   ) async {
     final promoCode = event.promoCode;
+    bool isInvalid = false;
 
     logger.d('Updating promo code to $promoCode.');
+
+    final stateAsLoaded = state as PaymentFormLoaded;
 
     emit(
       PaymentFormLoaded(
@@ -127,18 +131,28 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
           turbo.maxQuoteExpirationDate,
           mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
         ),
-        (state as PaymentFormLoaded).supportedCountries,
+        stateAsLoaded.supportedCountries,
         isFetchingPromoCode: true,
       ),
     );
 
     try {
-      final promoDiscountFactor = await turbo.getPromoDiscountFactor(promoCode);
-      final isInvalid = promoDiscountFactor == null;
+      final refreshedPriceEstimate = await turbo.refreshPriceEstimate();
 
-      logger.d('Promo code $promoCode is ${isInvalid ? 'in' : ''}'
-          'valid: $promoDiscountFactor.');
-
+      emit(
+        PaymentFormLoaded(
+          refreshedPriceEstimate,
+          _expirationTimeInSeconds(
+            turbo.maxQuoteExpirationDate,
+            mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
+          ),
+          (state as PaymentFormLoaded).supportedCountries,
+          isPromoCodeInvalid: isInvalid,
+          isFetchingPromoCode: false,
+        ),
+      );
+    } on PaymentServiceInvalidPromoCode catch (_) {
+      logger.d('Invalid promo code: $promoCode.');
       emit(
         PaymentFormLoaded(
           state.priceEstimate,
@@ -147,14 +161,12 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
           (state as PaymentFormLoaded).supportedCountries,
-          promoDiscountFactor: promoDiscountFactor,
           isPromoCodeInvalid: isInvalid,
           isFetchingPromoCode: false,
         ),
       );
     } catch (e) {
       logger.e('Error fetching the promo code.', e);
-
       emit(
         PaymentFormLoaded(
           state.priceEstimate,

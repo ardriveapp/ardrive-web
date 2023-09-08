@@ -20,12 +20,11 @@ class TurboTopUpEstimationBloc
   FileSizeUnit _currentDataUnit = FileSizeUnit.gigabytes;
   String _currentCurrency = 'usd';
   double _currentAmount = 0;
-  double _promoDiscountFactor = 0;
+  String? _promoCode;
 
   String get currentCurrency => _currentCurrency;
   double get currentAmount => _currentAmount;
   FileSizeUnit get currentDataUnit => _currentDataUnit;
-  double get promoDiscountFactor => _promoDiscountFactor;
   late BigInt _balance;
 
   TurboTopUpEstimationBloc({
@@ -51,7 +50,7 @@ class TurboTopUpEstimationBloc
               currentAmount: 0,
               currentCurrency: currentCurrency,
               currentDataUnit: currentDataUnit,
-              promoDiscountFactor: promoDiscountFactor,
+              promoCode: _promoCode,
               shouldRethrow: true,
             );
           } catch (e, s) {
@@ -67,7 +66,7 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoDiscountFactor: promoDiscountFactor,
+            promoCode: _promoCode,
           );
         } else if (event is CurrencyUnitChanged) {
           _currentCurrency = event.currencyUnit;
@@ -77,7 +76,7 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoDiscountFactor: promoDiscountFactor,
+            promoCode: _promoCode,
           );
         } else if (event is DataUnitChanged) {
           _currentDataUnit = event.dataUnit;
@@ -87,17 +86,17 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoDiscountFactor: promoDiscountFactor,
+            promoCode: _promoCode,
           );
         } else if (event is PromoCodeChanged) {
-          _promoDiscountFactor = event.discountPercentage;
+          _promoCode = event.promoCode;
 
           await _computeAndUpdatePriceEstimate(
             emit,
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoDiscountFactor: promoDiscountFactor,
+            promoCode: _promoCode,
           );
         } else if (event is FetchPriceEstimate) {
           final estimatedStorageForBalance =
@@ -112,7 +111,8 @@ class TurboTopUpEstimationBloc
               estimatedStorageForBalance:
                   estimatedStorageForBalance.toStringAsFixed(2),
               selectedAmount: event.priceEstimate.priceInCurrency,
-              creditsForSelectedAmount: event.priceEstimate.credits,
+              creditsForSelectedAmount:
+                  event.priceEstimate.estimate.winstonCredits,
               estimatedStorageForSelectedAmount:
                   event.priceEstimate.estimatedStorage.toStringAsFixed(2),
               currencyUnit: currentCurrency,
@@ -129,7 +129,7 @@ class TurboTopUpEstimationBloc
     required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
-    required double promoDiscountFactor,
+    required String? promoCode,
     bool shouldRethrow = false,
   }) async {
     try {
@@ -138,7 +138,7 @@ class TurboTopUpEstimationBloc
         currentAmount: currentAmount,
         currentCurrency: currentCurrency,
         currentDataUnit: currentDataUnit,
-        promoDiscountFactor: promoDiscountFactor,
+        promoCode: promoCode,
       );
 
       final estimatedStorageForBalance =
@@ -155,7 +155,7 @@ class TurboTopUpEstimationBloc
           estimatedStorageForBalance:
               estimatedStorageForBalance.toStringAsFixed(2),
           selectedAmount: priceEstimate.priceInCurrency,
-          creditsForSelectedAmount: priceEstimate.credits,
+          creditsForSelectedAmount: priceEstimate.estimate.winstonCredits,
           estimatedStorageForSelectedAmount:
               priceEstimate.estimatedStorage.toStringAsFixed(2),
           currencyUnit: currentCurrency,

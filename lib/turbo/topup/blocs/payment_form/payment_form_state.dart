@@ -26,16 +26,25 @@ class PaymentFormLoading extends PaymentFormState {
 
 class PaymentFormLoaded extends PaymentFormState {
   final List<String> supportedCountries;
-  final double? promoDiscountFactor;
   final bool isPromoCodeInvalid;
   final bool isFetchingPromoCode;
   final bool errorFetchingPromoCode;
+
+  double? get promoDiscountFactor {
+    if (priceEstimate.estimate.adjustments.isEmpty) {
+      return null;
+    }
+
+    final adjustment = priceEstimate.estimate.adjustments.first;
+    final adjustmentMagnitude = adjustment.operatorMagnitude;
+
+    return 1 - adjustmentMagnitude;
+  }
 
   const PaymentFormLoaded(
     super.priceEstimate,
     super.quoteExpirationTime,
     this.supportedCountries, {
-    this.promoDiscountFactor,
     this.isPromoCodeInvalid = false,
     this.isFetchingPromoCode = false,
     this.errorFetchingPromoCode = false,
@@ -46,7 +55,6 @@ class PaymentFormLoaded extends PaymentFormState {
         priceEstimate,
         quoteExpirationTimeInSeconds,
         supportedCountries,
-        promoDiscountFactor ?? 0.0,
         isPromoCodeInvalid,
         isFetchingPromoCode,
         errorFetchingPromoCode,
@@ -58,7 +66,6 @@ class PaymentFormPopulatingFieldsForTesting extends PaymentFormLoaded {
     super.priceEstimate,
     super.quoteExpirationTime,
     super.supportedCountries, {
-    super.promoDiscountFactor,
     super.isPromoCodeInvalid,
     super.isFetchingPromoCode,
     super.errorFetchingPromoCode,
@@ -70,7 +77,6 @@ class PaymentFormLoadingQuote extends PaymentFormLoaded {
     super.priceEstimate,
     super.quoteExpirationTime,
     super.supportedCountries, {
-    super.promoDiscountFactor,
     super.isPromoCodeInvalid,
     super.isFetchingPromoCode,
     super.errorFetchingPromoCode,
@@ -82,7 +88,6 @@ class PaymentFormQuoteLoaded extends PaymentFormLoaded {
     super.priceEstimate,
     super.quoteExpirationTime,
     super.supportedCountries, {
-    super.promoDiscountFactor,
     super.isPromoCodeInvalid,
     super.isFetchingPromoCode,
     super.errorFetchingPromoCode,
