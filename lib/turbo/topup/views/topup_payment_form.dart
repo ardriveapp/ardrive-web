@@ -246,12 +246,18 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 ),
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
+                    final actualPaymentAmount =
+                        state.priceEstimate.estimate.actualPaymentAmount != null
+                            ? state.priceEstimate.estimate
+                                    .actualPaymentAmount! /
+                                100
+                            : state.priceEstimate.priceInCurrency / 100;
                     return RichText(
                       text: TextSpan(
                         children: [
                           TextSpan(
                             text:
-                                '\$${(state.priceEstimate.priceInCurrency * (1 - _promoDiscountFactor)).toStringAsFixed(2)}',
+                                '\$${(actualPaymentAmount).toStringAsFixed(2)}',
                             style: ArDriveTypography.body.captionBold(
                               color: ArDriveTheme.of(context)
                                   .themeData
@@ -346,6 +352,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                   context
                       .read<TurboTopupFlowBloc>()
                       .add(const TurboTopUpShowEstimationView());
+                  // Here you have to reset the promo code
                 },
                 child: Text(
                   appLocalizationsOf(context).back,
@@ -676,7 +683,11 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
 
             if (!_promoCodeInvalid &&
                 !_errorFetchingPromoCode &&
-                !isFetchingPromoCode) {
+                !isFetchingPromoCode &&
+                _promoCodeController.text.isNotEmpty) {
+              logger.d(
+                'Promo code in payment form is now updated to $_promoCode',
+              );
               _promoCode = _promoCodeController.text;
 
               // Here you tell the estimation bloc to refresh the estimate given

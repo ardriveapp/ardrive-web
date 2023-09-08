@@ -83,9 +83,9 @@ class PaymentService {
     final parsedData = json.decode(result.data);
 
     final winc = BigInt.parse(parsedData['winc']);
-    final actualPaymentAmount = parsedData['actualPaymentAmount'];
-    final quotedPaymentAmount = parsedData['quotedPaymentAmount'];
-    final adjustments = (parsedData['adjustments'] as List)
+    final int? actualPaymentAmount = parsedData['actualPaymentAmount'];
+    final int? quotedPaymentAmount = parsedData['quotedPaymentAmount'];
+    final adjustments = ((parsedData['adjustments'] ?? const []) as List)
         .map((e) => Adjustment.fromJson(e))
         .toList();
 
@@ -233,8 +233,8 @@ class PaymentServiceInvalidPromoCode implements PaymentServiceException {
 
 class PriceForFiat {
   final BigInt winc;
-  final int actualPaymentAmount;
-  final int quotedPaymentAmount;
+  final int? actualPaymentAmount;
+  final int? quotedPaymentAmount;
   final List<Adjustment> adjustments;
 
   String? get humanReadableDiscountPercentage {
@@ -252,7 +252,11 @@ class PriceForFiat {
 
     final adjustmentMagnitude = adjustments.first.operatorMagnitude;
 
-    return 1 - adjustmentMagnitude;
+    // Multiplying by 100 and then dividing by 100 is a workaround for
+    /// floating point precision issues.
+    final factor = (100 - (adjustmentMagnitude * 100)) / 100;
+
+    return factor;
   }
 
   BigInt get winstonCredits => winc;

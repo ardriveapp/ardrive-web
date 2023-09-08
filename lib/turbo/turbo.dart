@@ -157,7 +157,7 @@ class Turbo extends Disposable {
       amount: amount,
       currency: currency,
       wallet: _wallet,
-      promoCode: promoCode,
+      promoCode: promoCode ?? _promoCode,
     );
 
     _quoteExpirationDate = DateTime.parse(

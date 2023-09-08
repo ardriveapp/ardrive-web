@@ -46,7 +46,7 @@ class TopUpQuote {
   final String destinationAddress;
   final String destinationAddressType;
   final int paymentAmount;
-  final int quotedPaymentAmount;
+  final int? quotedPaymentAmount;
   final String currencyType;
   final String winstonCreditAmount;
   final String quoteExpirationDate;

@@ -27,7 +27,7 @@ class PaymentReviewLoadingPaymentModel extends PaymentReviewState {
 
 class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
   final String total;
-  final String subTotal;
+  final String? subTotal;
   final String credits;
   final String? promoDiscount;
   final DateTime quoteExpirationDate;

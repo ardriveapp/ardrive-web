@@ -5,20 +5,17 @@ class PriceEstimate extends Equatable {
   final PriceForFiat estimate;
   final double priceInCurrency;
   final double estimatedStorage;
-  // final double promoDiscountFactor;
 
   const PriceEstimate({
     required this.estimate,
     required this.priceInCurrency,
     required this.estimatedStorage,
-    // required this.promoDiscountFactor,
   });
 
   factory PriceEstimate.zero() => PriceEstimate(
         estimate: PriceForFiat.zero(),
         priceInCurrency: 0,
         estimatedStorage: 0,
-        // promoDiscountFactor: 0,
       );
 
   @override

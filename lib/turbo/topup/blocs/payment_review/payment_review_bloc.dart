@@ -60,7 +60,8 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   }
 
   Future<void> _handlePaymentReviewRefreshQuote(
-      Emitter<PaymentReviewState> emit) async {
+    Emitter<PaymentReviewState> emit,
+  ) async {
     try {
       _emitPaymentReviewLoadingQuote(emit);
 
@@ -73,7 +74,8 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   }
 
   Future<void> _handlePaymentReviewLoadPaymentModel(
-      Emitter<PaymentReviewState> emit) async {
+    Emitter<PaymentReviewState> emit,
+  ) async {
     try {
       _emitPaymentReviewLoadingPaymentModel(emit);
 
@@ -204,8 +206,11 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   String _getCreditsFromPaymentModel() => convertCreditsToLiteralString(
       BigInt.from(int.parse(_paymentModel!.topUpQuote.winstonCreditAmount)));
 
-  String _getSubTotalFromPaymentModel() =>
-      (_paymentModel!.topUpQuote.quotedPaymentAmount / 100).toStringAsFixed(2);
+  String? _getSubTotalFromPaymentModel() {
+    if (_paymentModel!.topUpQuote.quotedPaymentAmount == null) return null;
+    return (_paymentModel!.topUpQuote.quotedPaymentAmount! / 100)
+        .toStringAsFixed(2);
+  }
 
   String _getTotalFromPaymentModel() {
     final total = _paymentModel!.topUpQuote.paymentAmount / 100;
