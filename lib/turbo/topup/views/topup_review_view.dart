@@ -241,7 +241,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                         is PaymentReviewPaymentModelLoaded &&
                                     paymentReviewBlocState.promoDiscount !=
                                         null) ...[
-                                  // HERE, Mati
                                   Row(
                                     children: [
                                       Text(
