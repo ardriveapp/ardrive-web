@@ -506,8 +506,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     );
   }
 
-  /// TextFields
-  ///
   Widget nameOnCardTextField() {
     return Expanded(
       child: ArDriveTextField(
@@ -612,13 +610,10 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget promoCodeWidget(ArDriveTextFieldTheme theme) {
-    // HEY MATI
     return BlocBuilder<PaymentFormBloc, PaymentFormState>(
         builder: (context, state) {
       final hasPromoCodeApplied =
           state.priceEstimate.estimate.adjustments.isNotEmpty;
-
-      logger.d('hasPromoCodeApplied: $hasPromoCodeApplied');
 
       return Expanded(
         child: hasPromoCodeApplied
@@ -629,7 +624,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget promoCodeAppliedWidget(ArDriveTextFieldTheme theme) {
-    final estimationBloc = context.read<TurboTopUpEstimationBloc>();
     final paymentFormBloc = context.read<PaymentFormBloc>();
 
     return Row(
@@ -655,7 +649,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           onTap: () {
             setState(() {
               _promoCodeController.clear();
-              estimationBloc.add(const PromoCodeChanged());
               paymentFormBloc.add(const PaymentFormUpdatePromoCode(null));
             });
           },

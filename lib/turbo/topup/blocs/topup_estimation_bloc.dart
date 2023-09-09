@@ -91,8 +91,6 @@ class TurboTopUpEstimationBloc
           final promoCode = turbo.promoCode;
           final stateAsLoaded = state as EstimationLoaded;
 
-          logger.d('Recieved promo code: $promoCode');
-
           try {
             await _refreshEstimate(
               emit,
