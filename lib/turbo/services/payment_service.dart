@@ -65,14 +65,23 @@ class PaymentService {
         ? '?promoCode=$promoCode'
         : '';
 
-    final result = await httpClient.get(
-      url: '$turboPaymentUri/v1/price/$currency/$amount$urlParams',
-      headers: headers,
+    final result = await httpClient
+        .get(
+            url: '$turboPaymentUri/v1/price/$currency/$amount$urlParams',
+            headers: headers)
+        .onError(
+      (ArDriveHTTPException error, stackTrace) {
+        if (error.statusCode == 400) {
+          logger.d('Invalid promo code: $promoCode');
+          throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
+        }
+        throw PaymentServiceException(
+          'Turbo price fetch failed with status code ${error.statusCode}',
+        );
+      },
     );
 
-    if (result.statusCode == 400) {
-      throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
-    }
+    logger.d('Turbo price fetch status code: ${result.statusCode}');
 
     if (!acceptedStatusCodes.contains(result.statusCode)) {
       throw PaymentServiceException(
