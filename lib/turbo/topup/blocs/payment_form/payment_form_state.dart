@@ -3,11 +3,13 @@ part of 'payment_form_bloc.dart';
 abstract class PaymentFormState extends Equatable {
   const PaymentFormState(
     this.priceEstimate,
-    this.quoteExpirationTimeInSeconds,
-  );
+    this.quoteExpirationTimeInSeconds, {
+    required this.promoCode,
+  });
 
   final PriceEstimate priceEstimate;
   final int quoteExpirationTimeInSeconds;
+  final String? promoCode;
 
   @override
   List<Object> get props => [
@@ -17,11 +19,19 @@ abstract class PaymentFormState extends Equatable {
 }
 
 class PaymentFormInitial extends PaymentFormState {
-  const PaymentFormInitial(super.priceEstimate, super.quoteExpirationTime);
+  const PaymentFormInitial(
+    super.priceEstimate,
+    super.quoteExpirationTime, {
+    required super.promoCode,
+  });
 }
 
 class PaymentFormLoading extends PaymentFormState {
-  const PaymentFormLoading(super.priceEstimate, super.quoteExpirationTime);
+  const PaymentFormLoading(
+    super.priceEstimate,
+    super.quoteExpirationTime, {
+    required super.promoCode,
+  });
 }
 
 class PaymentFormLoaded extends PaymentFormState {
@@ -49,6 +59,7 @@ class PaymentFormLoaded extends PaymentFormState {
     super.priceEstimate,
     super.quoteExpirationTime,
     this.supportedCountries, {
+    required super.promoCode,
     this.isPromoCodeInvalid = false,
     this.isFetchingPromoCode = false,
     this.errorFetchingPromoCode = false,
@@ -70,6 +81,7 @@ class PaymentFormPopulatingFieldsForTesting extends PaymentFormLoaded {
     super.priceEstimate,
     super.quoteExpirationTime,
     super.supportedCountries, {
+    super.promoCode,
     super.isPromoCodeInvalid,
     super.isFetchingPromoCode,
     super.errorFetchingPromoCode,
@@ -81,6 +93,7 @@ class PaymentFormLoadingQuote extends PaymentFormLoaded {
     super.priceEstimate,
     super.quoteExpirationTime,
     super.supportedCountries, {
+    super.promoCode,
     super.isPromoCodeInvalid,
     super.isFetchingPromoCode,
     super.errorFetchingPromoCode,
@@ -92,6 +105,7 @@ class PaymentFormQuoteLoaded extends PaymentFormLoaded {
     super.priceEstimate,
     super.quoteExpirationTime,
     super.supportedCountries, {
+    super.promoCode,
     super.isPromoCodeInvalid,
     super.isFetchingPromoCode,
     super.errorFetchingPromoCode,
@@ -101,8 +115,9 @@ class PaymentFormQuoteLoaded extends PaymentFormLoaded {
 class PaymentFormError extends PaymentFormState {
   const PaymentFormError(
     super.priceEstimate,
-    super.quoteExpirationTime,
-  );
+    super.quoteExpirationTime, {
+    required super.promoCode,
+  });
 
   // TODO: remove unnecdessary
   @override
@@ -112,8 +127,9 @@ class PaymentFormError extends PaymentFormState {
 class PaymentFormQuoteLoadFailure extends PaymentFormState {
   const PaymentFormQuoteLoadFailure(
     super.priceEstimate,
-    super.quoteExpirationTime,
-  );
+    super.quoteExpirationTime, {
+    required super.promoCode,
+  });
 
   @override
   List<Object> get props => [priceEstimate, quoteExpirationTimeInSeconds];

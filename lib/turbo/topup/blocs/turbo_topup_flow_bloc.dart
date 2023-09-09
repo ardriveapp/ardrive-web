@@ -26,10 +26,19 @@ class TurboTopupFlowBloc
             ),
           );
         } else if (event is TurboTopUpShowPaymentFormView) {
+          String? promoCode;
+          if (state is TurboTopupFlowShowingPaymentFormView) {
+            promoCode =
+                (state as TurboTopupFlowShowingPaymentFormView).promoCode;
+          } else if (state is TurboTopupFlowShowingPaymentReviewView) {
+            promoCode =
+                (state as TurboTopupFlowShowingPaymentReviewView).promoCode;
+          }
           emit(
             TurboTopupFlowShowingPaymentFormView(
               isMovingForward: _currentStep <= event.stepNumber,
               priceEstimate: turbo.currentPriceEstimate,
+              promoCode: promoCode,
             ),
           );
         } else if (event is TurboTopUpShowSuccessView) {
@@ -45,10 +54,20 @@ class TurboTopupFlowBloc
             userAcceptedToReceiveEmails: false,
           );
 
+          String? promoCode;
+          if (state is TurboTopupFlowShowingPaymentFormView) {
+            promoCode =
+                (state as TurboTopupFlowShowingPaymentFormView).promoCode;
+          } else if (state is TurboTopupFlowShowingPaymentReviewView) {
+            promoCode =
+                (state as TurboTopupFlowShowingPaymentReviewView).promoCode;
+          }
+
           emit(
             TurboTopupFlowShowingPaymentReviewView(
               isMovingForward: _currentStep <= event.stepNumber,
               priceEstimate: turbo.currentPriceEstimate,
+              promoCode: promoCode,
             ),
           );
         } else if (event is TurboTopUpShowSuccessView) {

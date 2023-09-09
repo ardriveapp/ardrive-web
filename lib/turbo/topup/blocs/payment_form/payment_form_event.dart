@@ -16,8 +16,8 @@ class PaymentFormUpdateQuote extends PaymentFormEvent {}
 class PaymentFormUpdatePromoCode extends PaymentFormEvent {
   const PaymentFormUpdatePromoCode(this.promoCode);
 
-  final String promoCode;
+  final String? promoCode;
 
   @override
-  List<Object> get props => [promoCode];
+  List<Object> get props => [promoCode ?? ''];
 }

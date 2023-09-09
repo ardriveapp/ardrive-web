@@ -166,6 +166,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                 create: (context) => PaymentFormBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
+                  promoCode: state.promoCode,
                 )..add(PaymentFormLoadSupportedCountries()),
                 child: Container(
                   key: const ValueKey('payment_form'),
@@ -187,6 +188,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                 create: (context) => PaymentFormBloc(
                   context.read<Turbo>(),
                   state.priceEstimate,
+                  promoCode: state.promoCode,
                 )..add(PaymentFormLoadSupportedCountries()),
                 child: Container(
                   key: const ValueKey('payment_form'),

@@ -29,9 +29,8 @@ class TurboPaymentFormView extends StatefulWidget {
 class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   CardFieldInputDetails? card;
   CountryItem? _selectedCountry;
-  String _promoCode = '';
+  // String _promoCode = '';
   bool _promoCodeInvalid = false;
-  double _promoDiscountFactor = 0.0; // TODO: remove, maybe unnecessary
   bool _errorFetchingPromoCode = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _promoCodeController = TextEditingController();
@@ -246,12 +245,11 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 ),
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
-                    final actualPaymentAmount =
-                        state.priceEstimate.estimate.actualPaymentAmount != null
-                            ? state.priceEstimate.estimate
-                                    .actualPaymentAmount! /
-                                100
-                            : state.priceEstimate.priceInCurrency;
+                    final actualPaymentAmount = state
+                            .priceEstimate.estimate.adjustments.isNotEmpty
+                        ? state.priceEstimate.estimate.actualPaymentAmount! /
+                            100
+                        : state.priceEstimate.priceInCurrency;
                     return RichText(
                       text: TextSpan(
                         children: [
@@ -265,10 +263,12 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                                   .themeFgMuted,
                             ),
                           ),
-                          if (_promoDiscountFactor != 0.0)
+                          if (state.priceEstimate.estimate
+                                  .humanReadableDiscountPercentage !=
+                              null)
                             TextSpan(
                               text:
-                                  ' (${_promoDiscountFactor * 100}% discount applied)', // TODO: localize
+                                  ' (${state.priceEstimate.estimate.humanReadableDiscountPercentage}% discount applied)', // TODO: localize
                               style: ArDriveTypography.body.buttonNormalRegular(
                                 color: ArDriveTheme.of(context)
                                     .themeData
@@ -613,15 +613,25 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget promoCodeWidget(ArDriveTextFieldTheme theme) {
-    return Expanded(
-      child: _promoCode.isNotEmpty
-          ? promoCodeAppliedWidget(theme)
-          : promoCodeTextField(),
-    );
+    // HEY MATI
+    return BlocBuilder<PaymentFormBloc, PaymentFormState>(
+        builder: (context, state) {
+      final hasPromoCodeApplied =
+          state.priceEstimate.estimate.adjustments.isNotEmpty;
+
+      logger.d('hasPromoCodeApplied: $hasPromoCodeApplied');
+
+      return Expanded(
+        child: hasPromoCodeApplied
+            ? promoCodeAppliedWidget(theme)
+            : promoCodeTextField(),
+      );
+    });
   }
 
   Widget promoCodeAppliedWidget(ArDriveTextFieldTheme theme) {
     final estimationBloc = context.read<TurboTopUpEstimationBloc>();
+    final paymentFormBloc = context.read<PaymentFormBloc>();
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -645,10 +655,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         GestureDetector(
           onTap: () {
             setState(() {
-              _promoCode = '';
               _promoCodeController.clear();
-              _promoDiscountFactor = 0.0;
               estimationBloc.add(const PromoCodeChanged(null));
+              paymentFormBloc.add(const PaymentFormUpdatePromoCode(null));
             });
           },
           child: Tooltip(
@@ -677,23 +686,33 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           setState(() {
             _promoCodeInvalid = state.isPromoCodeInvalid;
             _errorFetchingPromoCode = state.errorFetchingPromoCode;
-            _promoDiscountFactor = state.promoDiscountFactor ?? 0.0;
 
             final isFetchingPromoCode = state.isFetchingPromoCode;
+
+            String? promoCode;
 
             if (!_promoCodeInvalid &&
                 !_errorFetchingPromoCode &&
                 !isFetchingPromoCode &&
-                _promoCodeController.text.isNotEmpty) {
+                state.promoCode != null &&
+                state.promoCode!.isNotEmpty) {
+              if (_promoCodeController.text.isNotEmpty) {
+                promoCode = _promoCodeController.text;
+              } else if (state.promoCode != null) {
+                promoCode = state.promoCode!;
+              } else {
+                logger.d(
+                  'Neither promo code controller nor state has promo code',
+                );
+              }
               logger.d(
-                'Promo code in payment form is now updated to $_promoCode',
+                'Promo code in payment form is now updated to $promoCode',
               );
-              _promoCode = _promoCodeController.text;
 
               // Here you tell the estimation bloc to refresh the estimate given
               /// the promo code
               final estimationBloc = context.read<TurboTopUpEstimationBloc>();
-              estimationBloc.add(PromoCodeChanged(_promoCode));
+              estimationBloc.add(PromoCodeChanged(promoCode));
             }
           });
         }
