@@ -23,7 +23,6 @@ class Turbo extends Disposable {
     required TurboPaymentProvider paymentProvider,
     required Wallet wallet,
     required TurboSupportedCountriesRetriever supportedCountriesRetriever,
-    // required TurboPromoCode turboPromoCode,
   })  : _balanceRetriever = balanceRetriever,
         _costCalculator = costCalculator,
         _priceEstimator = priceEstimator,
@@ -31,7 +30,6 @@ class Turbo extends Disposable {
         _wallet = wallet,
         _sessionManager = sessionManager,
         _supportedCountriesRetriever = supportedCountriesRetriever;
-  // _turboPromoCode = turboPromoCode;
 
   DateTime get maxQuoteExpirationDate {
     final maxQuoteExpirationTime = _priceEstimator.maxQuoteExpirationTime;

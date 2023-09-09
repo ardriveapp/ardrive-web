@@ -199,8 +199,6 @@ class TurboTopUpEstimationBloc
         outputDataUnit: currentDataUnit,
       );
 
-      logger.i('selected amount: ${priceEstimate.priceInCurrency}');
-
       emit(
         EstimationLoaded(
           balance: _balance,
@@ -215,7 +213,6 @@ class TurboTopUpEstimationBloc
         ),
       );
     } catch (e, s) {
-      logger.e('Error calculating the estimation', e, s);
       rethrow;
     }
   }

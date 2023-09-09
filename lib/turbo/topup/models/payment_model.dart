@@ -10,7 +10,6 @@ class PaymentModel {
   // top up quote
   final TopUpQuote topUpQuote;
 
-  // adjustments
   final List<Adjustment> adjustments;
 
   PaymentModel({
