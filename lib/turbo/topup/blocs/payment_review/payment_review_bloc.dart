@@ -225,7 +225,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     }
 
     final adjustment = adjustments.first;
-    final adjustmentAmount = adjustment.adjustmentAmount;
+    final adjustmentAmount = adjustment.adjustmentAmount / 100;
 
     if (adjustmentAmount == 0) {
       return null;
