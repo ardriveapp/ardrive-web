@@ -20,7 +20,6 @@ class TurboTopUpEstimationBloc
   FileSizeUnit _currentDataUnit = FileSizeUnit.gigabytes;
   String _currentCurrency = 'usd';
   double _currentAmount = 0;
-  String? _promoCode;
 
   String get currentCurrency => _currentCurrency;
   double get currentAmount => _currentAmount;
@@ -50,7 +49,7 @@ class TurboTopUpEstimationBloc
               currentAmount: 0,
               currentCurrency: currentCurrency,
               currentDataUnit: currentDataUnit,
-              promoCode: _promoCode,
+              promoCode: turbo.promoCode,
               shouldRethrow: true,
             );
           } catch (e, s) {
@@ -66,7 +65,7 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoCode: _promoCode,
+            promoCode: turbo.promoCode,
           );
         } else if (event is CurrencyUnitChanged) {
           _currentCurrency = event.currencyUnit;
@@ -76,7 +75,7 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoCode: _promoCode,
+            promoCode: turbo.promoCode,
           );
         } else if (event is DataUnitChanged) {
           _currentDataUnit = event.dataUnit;
@@ -86,13 +85,13 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
-            promoCode: _promoCode,
+            promoCode: turbo.promoCode,
           );
         } else if (event is PromoCodeChanged) {
-          _promoCode = event.promoCode;
+          final promoCode = event.promoCode;
           final stateAsLoaded = state as EstimationLoaded;
 
-          logger.d('Recieved promo code: $_promoCode');
+          logger.d('Recieved promo code: $promoCode');
 
           try {
             await _computeAndUpdatePriceEstimate(
@@ -100,7 +99,7 @@ class TurboTopUpEstimationBloc
               currentAmount: _currentAmount,
               currentCurrency: currentCurrency,
               currentDataUnit: currentDataUnit,
-              promoCode: _promoCode,
+              promoCode: promoCode,
               shouldRethrow: true,
             );
           } catch (e, s) {

@@ -29,7 +29,6 @@ class TurboPaymentFormView extends StatefulWidget {
 class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   CardFieldInputDetails? card;
   CountryItem? _selectedCountry;
-  // String _promoCode = '';
   bool _promoCodeInvalid = false;
   bool _errorFetchingPromoCode = false;
   final TextEditingController _nameController = TextEditingController();
@@ -686,36 +685,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           setState(() {
             _promoCodeInvalid = state.isPromoCodeInvalid;
             _errorFetchingPromoCode = state.errorFetchingPromoCode;
-
-            final isFetchingPromoCode = state.isFetchingPromoCode;
-
-            String? promoCode;
-
-            if (!_promoCodeInvalid &&
-                !_errorFetchingPromoCode &&
-                !isFetchingPromoCode &&
-                state.promoCode != null &&
-                state.promoCode!.isNotEmpty) {
-              if (_promoCodeController.text.isNotEmpty) {
-                promoCode = _promoCodeController.text;
-              } else if (state.promoCode != null) {
-                promoCode = state.promoCode!;
-              } else {
-                logger.d(
-                  'Neither promo code controller nor state has promo code',
-                );
-              }
-              logger.d(
-                'Promo code in payment form is now updated to $promoCode',
-              );
-
-              // Here you tell the estimation bloc to refresh the estimate given
-              /// the promo code
-
-              final estimationBloc = context.read<TurboTopUpEstimationBloc>();
-              // final paymentFormBloc = context.read<PaymentFormBloc>();
-              estimationBloc.add(PromoCodeChanged(promoCode));
-            }
           });
         }
       },

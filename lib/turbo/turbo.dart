@@ -51,13 +51,14 @@ class Turbo extends Disposable {
   final TurboPaymentProvider _paymentProvider;
   final TurboSupportedCountriesRetriever _supportedCountriesRetriever;
   final Wallet _wallet;
-  // final TurboPromoCode _turboPromoCode;
 
   PriceEstimate _priceEstimate = PriceEstimate.zero();
   double? _currentAmount;
   String? _currentCurrency;
   FileSizeUnit? _currentDataUnit;
   String? _promoCode;
+
+  String? get promoCode => _promoCode;
 
   PaymentUserInformation? _paymentUserInformation;
 
@@ -94,7 +95,7 @@ class Turbo extends Disposable {
     required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
-    required String? promoCode, // TODO: make me be not required
+    required String? promoCode,
   }) async {
     _currentAmount = currentAmount;
     _currentCurrency = currentCurrency;
@@ -198,9 +199,6 @@ class Turbo extends Disposable {
 
     logger.d('Turbo disposed');
   }
-
-  // Future<double?> getPromoDiscountFactor(String promoCode) =>
-  //     _turboPromoCode.getPromoDiscountFactor(promoCode);
 }
 
 class TurboSessionManager extends Disposable {

@@ -22,23 +22,19 @@ class TurboTopupFlowShowingEstimationView extends TurboTopupFlowState {
 
 class TurboTopupFlowShowingPaymentFormView extends TurboTopupFlowState {
   final PriceEstimate priceEstimate;
-  final String? promoCode;
 
   const TurboTopupFlowShowingPaymentFormView({
     bool isMovingForward = true,
     required this.priceEstimate,
-    required this.promoCode,
   }) : super(isMovingForward);
 }
 
 class TurboTopupFlowShowingPaymentReviewView extends TurboTopupFlowState {
   final PriceEstimate priceEstimate;
-  final String? promoCode;
 
   const TurboTopupFlowShowingPaymentReviewView({
     bool isMovingForward = true,
     required this.priceEstimate,
-    required this.promoCode,
   }) : super(isMovingForward);
 }
 

@@ -16,7 +16,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
     this.turbo,
     PriceEstimate initialPriceEstimation, {
     this.mockExpirationTimeInSeconds,
-    required String? promoCode,
   }) : super(
           PaymentFormInitial(
             initialPriceEstimation,
@@ -24,7 +23,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
               turbo.maxQuoteExpirationDate,
               mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
             ),
-            promoCode: promoCode,
           ),
         ) {
     on<PaymentFormLoadSupportedCountries>(_handleLoadSupportedCountries);
@@ -42,7 +40,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
         turbo.maxQuoteExpirationDate,
         mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
       ),
-      promoCode: state.promoCode,
     ));
 
     try {
@@ -56,7 +53,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
           supportedCountries,
-          promoCode: state.promoCode,
         ),
       );
     } catch (e) {
@@ -69,7 +65,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             turbo.maxQuoteExpirationDate,
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
-          promoCode: state.promoCode,
         ),
       );
     }
@@ -87,7 +82,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
           mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
         ),
         (state as PaymentFormLoaded).supportedCountries,
-        promoCode: state.promoCode,
       ),
     );
 
@@ -102,7 +96,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
           (state as PaymentFormLoaded).supportedCountries,
-          promoCode: state.promoCode,
         ),
       );
     } catch (e, s) {
@@ -115,7 +108,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             turbo.maxQuoteExpirationDate,
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
-          promoCode: state.promoCode,
         ),
       );
     }
@@ -140,12 +132,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
         ),
         stateAsLoaded.supportedCountries,
         isFetchingPromoCode: true,
-        promoCode: stateAsLoaded.promoCode,
       ),
     );
 
     try {
-      // Here you tell turbo to update the promo code
       final refreshedPriceEstimate = await turbo.refreshPriceEstimate(
         promoCode: promoCode,
       );
@@ -165,7 +155,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
           (state as PaymentFormLoaded).supportedCountries,
           isPromoCodeInvalid: isInvalid,
           isFetchingPromoCode: false,
-          promoCode: stateAsLoaded.promoCode,
         ),
       );
     } on PaymentServiceInvalidPromoCode catch (_) {
@@ -180,7 +169,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
           (state as PaymentFormLoaded).supportedCountries,
           isPromoCodeInvalid: true,
           isFetchingPromoCode: false,
-          promoCode: stateAsLoaded.promoCode,
         ),
       );
     } catch (e) {
@@ -196,7 +184,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
           isPromoCodeInvalid: false,
           isFetchingPromoCode: false,
           errorFetchingPromoCode: true,
-          promoCode: stateAsLoaded.promoCode,
         ),
       );
     }
