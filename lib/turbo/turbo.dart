@@ -122,6 +122,8 @@ class Turbo extends Disposable {
       'Cannot refresh price estimate without first computing it',
     );
 
+    _promoCode = promoCode;
+
     _priceEstimate = await _priceEstimator.computePriceEstimate(
       currentAmount: _currentAmount!,
       currentCurrency: _currentCurrency!,

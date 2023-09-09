@@ -118,9 +118,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
     Emitter<PaymentFormState> emit,
   ) async {
     final promoCode = event.promoCode;
-
-    logger.d('Updating promo code to $promoCode.');
-
     final stateAsLoaded = state as PaymentFormLoaded;
 
     emit(
@@ -140,10 +137,8 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
         promoCode: promoCode,
       );
 
-      logger.d(
-          '[PAYMENT FORM BLOC] Promo code updated to $promoCode. - $refreshedPriceEstimate');
-
-      final isInvalid = refreshedPriceEstimate.estimate.adjustments.isEmpty;
+      final isInvalid = promoCode != null &&
+          refreshedPriceEstimate.estimate.adjustments.isEmpty;
 
       emit(
         PaymentFormLoaded(
@@ -152,7 +147,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             turbo.maxQuoteExpirationDate,
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
-          (state as PaymentFormLoaded).supportedCountries,
+          stateAsLoaded.supportedCountries,
           isPromoCodeInvalid: isInvalid,
           isFetchingPromoCode: false,
         ),
@@ -166,7 +161,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             turbo.maxQuoteExpirationDate,
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
-          (state as PaymentFormLoaded).supportedCountries,
+          stateAsLoaded.supportedCountries,
           isPromoCodeInvalid: true,
           isFetchingPromoCode: false,
         ),
@@ -180,7 +175,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             turbo.maxQuoteExpirationDate,
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
-          (state as PaymentFormLoaded).supportedCountries,
+          stateAsLoaded.supportedCountries,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: false,
           errorFetchingPromoCode: true,

@@ -37,12 +37,10 @@ class DataUnitChanged extends TopupEstimationEvent {
 }
 
 class PromoCodeChanged extends TopupEstimationEvent {
-  final String? promoCode;
-
-  const PromoCodeChanged(this.promoCode);
+  const PromoCodeChanged();
 
   @override
-  List<Object?> get props => [promoCode];
+  List<Object?> get props => [];
 }
 
 class AddCreditsClicked extends TopupEstimationEvent {

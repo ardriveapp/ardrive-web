@@ -49,7 +49,6 @@ class TurboTopupFlowBloc
             TurboTopupFlowShowingPaymentReviewView(
               isMovingForward: _currentStep <= event.stepNumber,
               priceEstimate: turbo.currentPriceEstimate,
-              // promoCode: promoCode,
             ),
           );
         } else if (event is TurboTopUpShowSuccessView) {

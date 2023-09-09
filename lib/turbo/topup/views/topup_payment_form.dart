@@ -655,7 +655,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           onTap: () {
             setState(() {
               _promoCodeController.clear();
-              estimationBloc.add(const PromoCodeChanged(null));
+              estimationBloc.add(const PromoCodeChanged());
               paymentFormBloc.add(const PaymentFormUpdatePromoCode(null));
             });
           },
@@ -685,6 +685,19 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           setState(() {
             _promoCodeInvalid = state.isPromoCodeInvalid;
             _errorFetchingPromoCode = state.errorFetchingPromoCode;
+
+            final isFetchingPromoCode = state.isFetchingPromoCode;
+
+            if (_promoCodeInvalid) {
+              _promoCodeController.clear();
+            }
+
+            if (!_promoCodeInvalid &&
+                !_errorFetchingPromoCode &&
+                !isFetchingPromoCode) {
+              final estimationBloc = context.read<TurboTopUpEstimationBloc>();
+              estimationBloc.add(const PromoCodeChanged());
+            }
           });
         }
       },
@@ -776,11 +789,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     }
 
     final paymentFormBloc = context.read<PaymentFormBloc>();
-    final estimationBloc = context.read<TurboTopUpEstimationBloc>();
-
-    // Here you set the promo code to the bloc
     paymentFormBloc.add(PaymentFormUpdatePromoCode(_promoCodeController.text));
-    estimationBloc.add(PromoCodeChanged(_promoCodeController.text));
   }
 
   InputBorder _getBorder(Color color) {

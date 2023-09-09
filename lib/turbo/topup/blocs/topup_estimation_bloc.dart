@@ -88,19 +88,15 @@ class TurboTopUpEstimationBloc
             promoCode: turbo.promoCode,
           );
         } else if (event is PromoCodeChanged) {
-          final promoCode = event.promoCode;
+          final promoCode = turbo.promoCode;
           final stateAsLoaded = state as EstimationLoaded;
 
           logger.d('Recieved promo code: $promoCode');
 
           try {
-            await _computeAndUpdatePriceEstimate(
+            await _refreshEstimate(
               emit,
-              currentAmount: _currentAmount,
-              currentCurrency: currentCurrency,
-              currentDataUnit: currentDataUnit,
               promoCode: promoCode,
-              shouldRethrow: true,
             );
           } catch (e, s) {
             logger.e('error updating the promo code', e, s);
@@ -188,6 +184,41 @@ class TurboTopUpEstimationBloc
       }
 
       emit(EstimationLoadError());
+    }
+  }
+
+  Future<void> _refreshEstimate(
+    Emitter emit, {
+    required String? promoCode,
+  }) async {
+    emit(EstimationLoading());
+    try {
+      final priceEstimate = turbo.currentPriceEstimate;
+
+      final estimatedStorageForBalance =
+          await turbo.computeStorageEstimateForCredits(
+        credits: _balance,
+        outputDataUnit: currentDataUnit,
+      );
+
+      logger.i('selected amount: ${priceEstimate.priceInCurrency}');
+
+      emit(
+        EstimationLoaded(
+          balance: _balance,
+          estimatedStorageForBalance:
+              estimatedStorageForBalance.toStringAsFixed(2),
+          selectedAmount: priceEstimate.priceInCurrency,
+          creditsForSelectedAmount: priceEstimate.estimate.winstonCredits,
+          estimatedStorageForSelectedAmount:
+              priceEstimate.estimatedStorage.toStringAsFixed(2),
+          currencyUnit: currentCurrency,
+          dataUnit: currentDataUnit,
+        ),
+      );
+    } catch (e, s) {
+      logger.e('Error calculating the estimation', e, s);
+      rethrow;
     }
   }
 
