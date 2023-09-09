@@ -224,6 +224,20 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
       return null;
     }
 
-    return adjustments.first.humanReadableDiscountPercentage;
+    final adjustment = adjustments.first;
+    final adjustmentAmount = adjustment.adjustmentAmount;
+
+    if (adjustmentAmount == 0) {
+      return null;
+    }
+
+    // Get the absolute value of the adjustment
+    final adjustmentAmountAbs = adjustmentAmount.abs();
+
+    if (adjustmentAmount < 0) {
+      return '-\$${adjustmentAmountAbs.toStringAsFixed(2)}';
+    } else {
+      return '\$${adjustmentAmountAbs.toStringAsFixed(2)}';
+    }
   }
 }

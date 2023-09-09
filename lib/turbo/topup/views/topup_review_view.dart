@@ -322,7 +322,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                           if (state
                                               is PaymentReviewPaymentModelLoaded) {
                                             return Text(
-                                              '-\$${state.promoDiscount}',
+                                              state.promoDiscount!,
                                               style: ArDriveTypography.body
                                                   .buttonNormalRegular()
                                                   .copyWith(
