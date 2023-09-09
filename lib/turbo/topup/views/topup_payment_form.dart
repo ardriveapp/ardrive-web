@@ -251,7 +251,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                             ? state.priceEstimate.estimate
                                     .actualPaymentAmount! /
                                 100
-                            : state.priceEstimate.priceInCurrency / 100;
+                            : state.priceEstimate.priceInCurrency;
                     return RichText(
                       text: TextSpan(
                         children: [
