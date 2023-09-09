@@ -711,7 +711,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
 
               // Here you tell the estimation bloc to refresh the estimate given
               /// the promo code
+
               final estimationBloc = context.read<TurboTopUpEstimationBloc>();
+              // final paymentFormBloc = context.read<PaymentFormBloc>();
               estimationBloc.add(PromoCodeChanged(promoCode));
             }
           });
@@ -805,9 +807,11 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     }
 
     final paymentFormBloc = context.read<PaymentFormBloc>();
+    final estimationBloc = context.read<TurboTopUpEstimationBloc>();
 
     // Here you set the promo code to the bloc
     paymentFormBloc.add(PaymentFormUpdatePromoCode(_promoCodeController.text));
+    estimationBloc.add(PromoCodeChanged(_promoCodeController.text));
   }
 
   InputBorder _getBorder(Color color) {
