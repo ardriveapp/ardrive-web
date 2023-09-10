@@ -351,7 +351,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                   context
                       .read<TurboTopupFlowBloc>()
                       .add(const TurboTopUpShowEstimationView());
-                  // Here you have to reset the promo code
                 },
                 child: Text(
                   appLocalizationsOf(context).back,

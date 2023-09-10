@@ -153,7 +153,6 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
         ),
       );
     } on PaymentServiceInvalidPromoCode catch (_) {
-      logger.d('Invalid promo code: $promoCode.');
       emit(
         PaymentFormLoaded(
           state.priceEstimate,

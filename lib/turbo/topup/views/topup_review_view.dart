@@ -237,12 +237,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                   height: 40,
                                 ),
                                 const Divider(),
-                                // HOLA, MATI
                                 if (paymentReviewBlocState
                                         is PaymentReviewPaymentModelLoaded &&
                                     paymentReviewBlocState.promoDiscount !=
                                         null) ...[
-                                  // HERE, Mati
                                   Row(
                                     children: [
                                       Text(

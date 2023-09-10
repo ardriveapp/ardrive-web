@@ -11,7 +11,6 @@ class PaymentModel {
   // top up quote
   final TopUpQuote topUpQuote;
 
-  // adjustments
   final List<Adjustment> adjustments;
 
   PaymentModel({
@@ -86,7 +85,7 @@ class Adjustment extends Equatable {
     required this.adjustmentAmount,
   });
 
-  String? get humanReadableDiscountPercentage {
+  String get humanReadableDiscountPercentage {
     final discountPercentage = 100 - (operatorMagnitude * 100);
     return discountPercentage.toStringAsFixed(0);
   }
