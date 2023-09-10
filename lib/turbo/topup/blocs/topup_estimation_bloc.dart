@@ -212,7 +212,7 @@ class TurboTopUpEstimationBloc
           dataUnit: currentDataUnit,
         ),
       );
-    } catch (e, s) {
+    } catch (e, _) {
       rethrow;
     }
   }

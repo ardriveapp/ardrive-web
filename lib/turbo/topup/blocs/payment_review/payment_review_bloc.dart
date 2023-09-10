@@ -115,8 +115,8 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     );
   }
 
-  void _emitPaymentReviewLoadingQuote(Emitter emi) {
-    emi(
+  void _emitPaymentReviewLoadingQuote(Emitter emit) {
+    emit(
       PaymentReviewLoadingQuote(
         credits: _getCreditsFromPaymentModel(),
         subTotal: _getSubTotalFromPaymentModel(),
