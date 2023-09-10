@@ -4,7 +4,6 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
-import 'package:ardrive/turbo/turbo_promo_code.dart';
 import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -33,8 +32,6 @@ class MockPaymentProvider extends Mock implements TurboPaymentProvider {}
 
 class MockPaymentModel extends Mock implements PaymentModel {}
 
-class MockTurboPromoCode extends Mock implements TurboPromoCode {}
-
 class MockTurboSupportedCountriesRetriever extends Mock
     implements TurboSupportedCountriesRetriever {}
 
@@ -48,12 +45,12 @@ void main() {
     destinationAddress: 'destinationAddress',
     destinationAddressType: 'address',
     paymentAmount: 100,
+    quotedPaymentAmount: null,
     paymentProvider: 'stripe',
     quoteExpirationDate: DateTime.now().toIso8601String(),
     quoteId: 'quoteId',
     winstonCreditAmount: '5000',
   );
-  final mockTurboPromoCode = MockTurboPromoCode();
 
   group('initializeStripe', () {
     test('should use the stripePublishableKey from config', () {
@@ -95,6 +92,7 @@ void main() {
       registerFallbackValue(PaymentModel(
         paymentSession: mockPaymentSession,
         topUpQuote: mockTopUpQuote,
+        adjustments: [],
       ));
     });
     group('getBalance', () {
@@ -111,7 +109,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -141,7 +138,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -171,30 +167,33 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
       });
 
       test('calls priceEstimator.computePriceEstimate once', () async {
         final mockPriceEstimate = PriceEstimate(
-          credits: BigInt.from(100),
+          estimate: PriceForFiat(
+            winc: BigInt.from(100),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
           estimatedStorage: 1,
           priceInCurrency: 1,
-          promoDiscountFactor: 0,
         );
 
         when(() => mockPriceEstimator.computePriceEstimate(
               currentAmount: 100,
               currentDataUnit: FileSizeUnit.gigabytes,
               currentCurrency: 'usd',
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate);
 
         final priceEstimate = await turbo.computePriceEstimate(
           currentAmount: 100,
           currentDataUnit: FileSizeUnit.gigabytes,
           currentCurrency: 'usd',
-          promoDiscountFactor: 0,
+          promoCode: null,
         );
 
         expect(priceEstimate, equals(mockPriceEstimate));
@@ -202,7 +201,7 @@ void main() {
               currentAmount: 100,
               currentDataUnit: FileSizeUnit.gigabytes,
               currentCurrency: 'usd',
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).called(1);
       });
     });
@@ -221,7 +220,6 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -262,24 +260,31 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
       });
 
       test('priceEstimate updates when price quote expires', () async {
         fakeAsync((async) async {
           final mockPriceEstimate1 = PriceEstimate(
-            credits: BigInt.from(100),
+            estimate: PriceForFiat(
+              winc: BigInt.from(100),
+              adjustments: const [],
+              actualPaymentAmount: null,
+              quotedPaymentAmount: null,
+            ),
             estimatedStorage: 1,
             priceInCurrency: 1,
-            promoDiscountFactor: 0,
           );
 
           final mockPriceEstimate2 = PriceEstimate(
-            credits: BigInt.from(200),
+            estimate: PriceForFiat(
+              winc: BigInt.from(200),
+              adjustments: const [],
+              actualPaymentAmount: null,
+              quotedPaymentAmount: null,
+            ),
             estimatedStorage: 2,
             priceInCurrency: 2,
-            promoDiscountFactor: 0,
           );
 
           late PriceEstimate priceEstimate;
@@ -292,7 +297,7 @@ void main() {
                 currentAmount: 100,
                 currentDataUnit: FileSizeUnit.gigabytes,
                 currentCurrency: 'usd',
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenAnswer((_) async => mockPriceEstimate1);
 
           async.elapse(const Duration(minutes: 5));
@@ -305,7 +310,7 @@ void main() {
                 currentAmount: 100,
                 currentDataUnit: FileSizeUnit.gigabytes,
                 currentCurrency: 'usd',
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenAnswer((_) async => mockPriceEstimate2);
 
           async.elapse(const Duration(minutes: 5));
@@ -318,10 +323,14 @@ void main() {
           () async {
         fakeAsync((async) async {
           final mockPriceEstimate = PriceEstimate(
-            credits: BigInt.from(0),
+            estimate: PriceForFiat(
+              winc: BigInt.from(0),
+              adjustments: const [],
+              actualPaymentAmount: null,
+              quotedPaymentAmount: null,
+            ),
             estimatedStorage: 0,
             priceInCurrency: 0,
-            promoDiscountFactor: 0,
           );
 
           late PriceEstimate priceEstimate;
@@ -334,7 +343,7 @@ void main() {
                 currentAmount: 0,
                 currentDataUnit: FileSizeUnit.gigabytes,
                 currentCurrency: 'usd',
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenAnswer((_) async => mockPriceEstimate);
 
           async.elapse(const Duration(minutes: 5));
@@ -347,7 +356,7 @@ void main() {
                 currentAmount: 0,
                 currentDataUnit: FileSizeUnit.gigabytes,
                 currentCurrency: 'usd',
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenAnswer((_) async => mockPriceEstimate);
 
           async.elapse(const Duration(minutes: 5));
@@ -371,7 +380,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -412,23 +420,26 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
       });
 
       test('calls sessionManager.refresh once', () async {
         final mockPriceEstimate = PriceEstimate(
-          credits: BigInt.from(100),
+          estimate: PriceForFiat(
+            winc: BigInt.from(100),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
           estimatedStorage: 1,
           priceInCurrency: 1,
-          promoDiscountFactor: 0,
         );
 
         when(() => mockPriceEstimator.computePriceEstimate(
               currentAmount: 100,
               currentDataUnit: FileSizeUnit.gigabytes,
               currentCurrency: 'usd',
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate);
 
         /// calculates the price estimate first
@@ -436,7 +447,7 @@ void main() {
           currentAmount: 100,
           currentDataUnit: FileSizeUnit.gigabytes,
           currentCurrency: 'usd',
-          promoDiscountFactor: 0,
+          promoCode: null,
         );
 
         await turbo.refreshPriceEstimate();
@@ -446,7 +457,7 @@ void main() {
               currentAmount: 100,
               currentDataUnit: FileSizeUnit.gigabytes,
               currentCurrency: 'usd',
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).called(2);
       });
 
@@ -471,7 +482,6 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
 
         expect(turbo.currentPriceEstimate, PriceEstimate.zero());
@@ -490,34 +500,41 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
 
         final mockPriceEstimate100 = PriceEstimate(
-          credits: BigInt.from(100),
+          estimate: PriceForFiat(
+            winc: BigInt.from(100),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
           estimatedStorage: 1,
           priceInCurrency: 1,
-          promoDiscountFactor: 0,
         );
         final mockPriceEstimate200 = PriceEstimate(
-          credits: BigInt.from(200),
+          estimate: PriceForFiat(
+            winc: BigInt.from(200),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
           estimatedStorage: 2,
           priceInCurrency: 2,
-          promoDiscountFactor: 0,
         );
 
         when(() => mockPriceEstimator.computePriceEstimate(
               currentAmount: 100,
               currentDataUnit: FileSizeUnit.gigabytes,
               currentCurrency: 'usd',
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate100);
 
         final computedPriceEstimate = await turbo.computePriceEstimate(
           currentAmount: 100,
           currentDataUnit: FileSizeUnit.gigabytes,
           currentCurrency: 'usd',
-          promoDiscountFactor: 0,
+          promoCode: null,
         );
 
         expect(turbo.currentPriceEstimate, computedPriceEstimate);
@@ -527,7 +544,7 @@ void main() {
               currentAmount: 200,
               currentDataUnit: FileSizeUnit.gigabytes,
               currentCurrency: 'usd',
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate200);
 
         final refreshedPriceEstimate = await turbo.refreshPriceEstimate();
@@ -551,7 +568,6 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
 
         expect(() => turbo.maxQuoteExpirationDate, throwsA(isA<Exception>()));
@@ -572,14 +588,17 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
 
         final mockPriceEstimate100 = PriceEstimate(
-          credits: BigInt.from(100),
+          estimate: PriceForFiat(
+            winc: BigInt.from(100),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
           estimatedStorage: 1,
           priceInCurrency: 1,
-          promoDiscountFactor: 0,
         );
 
         when(() => mockPriceEstimator.maxQuoteExpirationTime)
@@ -589,14 +608,14 @@ void main() {
               currentAmount: 100,
               currentDataUnit: FileSizeUnit.gigabytes,
               currentCurrency: 'usd',
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate100);
 
         await turbo.computePriceEstimate(
           currentAmount: 100,
           currentDataUnit: FileSizeUnit.gigabytes,
           currentCurrency: 'usd',
-          promoDiscountFactor: 0,
+          promoCode: null,
         );
 
         turbo.maxQuoteExpirationDate;
@@ -620,7 +639,6 @@ void main() {
           priceEstimator: mockPriceEstimator,
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -670,7 +688,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
 
         expect(() => turbo.paymentUserInformation, throwsException);
@@ -692,7 +709,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: MockPaymentProvider(),
-          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -729,6 +745,7 @@ void main() {
         paymentModel = PaymentModel(
           paymentSession: mockPaymentSession,
           topUpQuote: mockTopUpQuote,
+          adjustments: [],
         );
 
         when(
@@ -757,7 +774,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
-          turboPromoCode: mockTurboPromoCode,
         );
 
         // must to set before doing the payment
@@ -790,7 +806,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
-          turboPromoCode: mockTurboPromoCode,
         );
 
         // must to set before doing the payment
@@ -822,7 +837,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
-          turboPromoCode: mockTurboPromoCode,
         );
 
         // must to set before doing the payment
@@ -850,7 +864,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
-          turboPromoCode: mockTurboPromoCode,
         );
 
         expect(() async => await turbo.confirmPayment(), throwsException);
@@ -881,7 +894,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
-          turboPromoCode: mockTurboPromoCode,
         );
 
         // ONLY SET THE PAYMENT USER INFO, NOT THE PAYMENT INTENT
@@ -906,7 +918,6 @@ void main() {
           priceEstimator: MockTurboPriceEstimator(),
           wallet: MockWallet(),
           paymentProvider: mockPaymentProvider,
-          turboPromoCode: mockTurboPromoCode,
         );
       });
 
@@ -919,7 +930,7 @@ void main() {
         final paymentIntent = PaymentModel(
           topUpQuote: mockTopUpQuote,
           paymentSession: mockPaymentSession,
-          // Add other necessary properties for the PaymentModel
+          adjustments: [],
         );
         when(() => mockPaymentProvider.createPaymentIntent(
               amount: amount,
@@ -1109,6 +1120,7 @@ void main() {
       turboPriceEstimator = TurboPriceEstimator(
         paymentService: mockPaymentService,
         costCalculator: mockTurboCostCalculator,
+        wallet: null,
       );
     });
 
@@ -1117,16 +1129,23 @@ void main() {
       const currentAmount = 1.0;
       const currentCurrency = 'USD';
       const currentDataUnit = FileSizeUnit.gigabytes;
-      const currentPromoDiscountFactor = 0.1;
 
       final expectedCredits = BigInt.from(100);
       const expectedEstimatedStorage = 1.0;
-      const expectedPromoDiscountFactor = 0.1;
 
       when(() => mockPaymentService.getPriceForFiat(
             currency: currentCurrency,
             amount: currentAmount * 100,
-          )).thenAnswer((_) async => expectedCredits);
+            promoCode: null,
+            wallet: null,
+          )).thenAnswer(
+        (_) async => PriceForFiat(
+          winc: expectedCredits,
+          adjustments: const [],
+          actualPaymentAmount: null,
+          quotedPaymentAmount: null,
+        ),
+      );
 
       when(() => mockTurboCostCalculator.getCostOfOneGB())
           .thenAnswer((_) async => expectedCredits);
@@ -1136,14 +1155,13 @@ void main() {
         currentAmount: currentAmount,
         currentCurrency: currentCurrency,
         currentDataUnit: currentDataUnit,
-        promoDiscountFactor: currentPromoDiscountFactor,
+        promoCode: null,
       );
 
       // Verify the result
-      expect(priceEstimate.credits, expectedCredits);
+      expect(priceEstimate.estimate.winstonCredits, expectedCredits);
       expect(priceEstimate.priceInCurrency, currentAmount);
       expect(priceEstimate.estimatedStorage, expectedEstimatedStorage);
-      expect(priceEstimate.promoDiscountFactor, expectedPromoDiscountFactor);
     });
 
     group('computeStorageEstimateForCredits', () {
