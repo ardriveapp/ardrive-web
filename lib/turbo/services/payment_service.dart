@@ -5,6 +5,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
+import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
 class PaymentService {
@@ -240,7 +241,7 @@ class PaymentServiceInvalidPromoCode implements PaymentServiceException {
   String get message => 'Invalid promo code: "$promoCode"';
 }
 
-class PriceForFiat {
+class PriceForFiat extends Equatable {
   final BigInt winc;
   final int? actualPaymentAmount;
   final int? quotedPaymentAmount;
@@ -270,7 +271,7 @@ class PriceForFiat {
 
   BigInt get winstonCredits => winc;
 
-  PriceForFiat({
+  const PriceForFiat({
     required this.winc,
     required this.actualPaymentAmount,
     required this.quotedPaymentAmount,
@@ -283,4 +284,20 @@ class PriceForFiat {
         quotedPaymentAmount: 0,
         adjustments: const [],
       );
+
+  @override
+  String toString() {
+    return 'PriceForFiat{winc: $winc,'
+        ' actualPaymentAmount: $actualPaymentAmount,'
+        ' quotedPaymentAmount: $quotedPaymentAmount,'
+        ' adjustments: $adjustments}';
+  }
+
+  @override
+  List<Object> get props => [
+        winc,
+        actualPaymentAmount ?? '',
+        quotedPaymentAmount ?? '',
+        adjustments,
+      ];
 }

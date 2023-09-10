@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'payment_model.g.dart';
@@ -70,14 +71,14 @@ class TopUpQuote {
 }
 
 @JsonSerializable()
-class Adjustment {
+class Adjustment extends Equatable {
   final String name;
   final String description;
   final double operatorMagnitude;
   final String operator;
   final int adjustmentAmount;
 
-  Adjustment({
+  const Adjustment({
     required this.name,
     required this.description,
     required this.operatorMagnitude,
@@ -93,4 +94,18 @@ class Adjustment {
   factory Adjustment.fromJson(Map<String, dynamic> json) =>
       _$AdjustmentFromJson(json);
   Map<String, dynamic> toJson() => _$AdjustmentToJson(this);
+
+  @override
+  String toString() {
+    return 'Adjustment{name: $name, description: $description, operatorMagnitude: $operatorMagnitude, operator: $operator, adjustmentAmount: $adjustmentAmount}';
+  }
+
+  @override
+  List<Object> get props => [
+        name,
+        description,
+        operatorMagnitude,
+        operator,
+        adjustmentAmount,
+      ];
 }

@@ -20,13 +20,13 @@ class PriceEstimate extends Equatable {
 
   @override
   String toString() {
-    return 'PriceEstimate{credits: ${estimate.winstonCredits},'
+    return 'PriceEstimate{estimate: $estimate,'
         ' priceInCurrency: $priceInCurrency,'
-        ' estimatedStorage: $estimatedStorage,';
+        ' estimatedStorage: $estimatedStorage}';
   }
 
   @override
-  List<Object?> get props => [
+  List<Object> get props => [
         estimate,
         priceInCurrency,
         estimatedStorage,
