@@ -1,4 +1,6 @@
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
+import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -16,10 +18,14 @@ void main() {
     setUp(() {
       mockTurbo = MockTurbo();
       initialPriceEstimate = PriceEstimate(
-        credits: BigInt.from(10),
+        estimate: PriceForFiat(
+          winc: BigInt.from(10),
+          adjustments: const [],
+          actualPaymentAmount: null,
+          quotedPaymentAmount: null,
+        ),
         priceInCurrency: 10,
         estimatedStorage: 1,
-        promoDiscountFactor: 0,
       );
       when(() => mockTurbo.maxQuoteExpirationDate).thenAnswer(
           (invocation) => DateTime.now().add(const Duration(days: 1)));
@@ -34,10 +40,14 @@ void main() {
       setUp(() {
         mockTurbo = MockTurbo();
         final initialPriceEstimate = PriceEstimate(
-          credits: BigInt.from(10),
+          estimate: PriceForFiat(
+            winc: BigInt.from(10),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
           priceInCurrency: 10,
           estimatedStorage: 1,
-          promoDiscountFactor: 0,
         );
         when(() => mockTurbo.maxQuoteExpirationDate).thenAnswer(
             (invocation) => DateTime.now().add(const Duration(days: 1)));
@@ -49,10 +59,14 @@ void main() {
         build: () {
           when(() => mockTurbo.refreshPriceEstimate()).thenAnswer(
             (_) async => PriceEstimate(
-              credits: BigInt.from(15),
+              estimate: PriceForFiat(
+                winc: BigInt.from(15),
+                adjustments: const [],
+                actualPaymentAmount: null,
+                quotedPaymentAmount: null,
+              ),
               priceInCurrency: 15,
               estimatedStorage: 1.5,
-              promoDiscountFactor: 0,
             ),
           );
           when(() => mockTurbo.getSupportedCountries())
@@ -138,16 +152,22 @@ void main() {
       'BANANA': 0.1,
       'MANZANA': 0.2,
     };
-    const errorPromoCode = 'ERROR';
+    late PriceEstimate initialPriceEstimate;
+    // PriceEstimate? estimateInState;
 
     setUp(() {
       mockTurbo = MockTurbo();
-      final initialPriceEstimate = PriceEstimate(
-        credits: BigInt.from(10),
+      initialPriceEstimate = PriceEstimate(
+        estimate: PriceForFiat(
+          winc: BigInt.from(10),
+          adjustments: const [],
+          actualPaymentAmount: null,
+          quotedPaymentAmount: null,
+        ),
         priceInCurrency: 10,
         estimatedStorage: 1,
-        promoDiscountFactor: 0,
       );
+
       when(() => mockTurbo.maxQuoteExpirationDate).thenAnswer(
           (invocation) => DateTime.now().add(const Duration(days: 1)));
       paymentFormBloc = PaymentFormBloc(
@@ -160,19 +180,50 @@ void main() {
     blocTest<PaymentFormBloc, PaymentFormState>(
       'is accordingly being updated depending on the promo code entered',
       build: () {
-        when(() => mockTurbo.getPromoDiscountFactor(any()))
-            .thenAnswer((invocation) async {
-          final promoCode = invocation.positionalArguments[0] as String;
-          if (validPromoCodes.containsKey(promoCode)) {
-            return validPromoCodes[promoCode];
+        when(() => mockTurbo.refreshPriceEstimate(
+            promoCode: any(named: 'promoCode'))).thenAnswer((_) async {
+          final promoCode = _.namedArguments[#promoCode] as String?;
+          final isValidPromoCode = validPromoCodes.containsKey(promoCode);
+          final discountFactor = validPromoCodes[promoCode];
+
+          if (promoCode == 'NETWORK ERROR') {
+            throw Exception();
+          }
+
+          if (isValidPromoCode) {
+            final quotedAmount = (initialPriceEstimate.priceInCurrency).floor();
+            final magnitude = (100 - (100 * discountFactor!)) / 100;
+            final adjustmentAmount = (quotedAmount * discountFactor).floor();
+            final actualAmount = quotedAmount - adjustmentAmount;
+
+            final estimate = PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: magnitude,
+                  operator: 'multiply',
+                  adjustmentAmount: adjustmentAmount,
+                )
+              ],
+              actualPaymentAmount: actualAmount,
+              quotedPaymentAmount: quotedAmount,
+            );
+
+            final priceEstimate = PriceEstimate(
+              estimate: estimate,
+              priceInCurrency: 10,
+              estimatedStorage: 1,
+            );
+
+            // estimateInState = priceEstimate;
+
+            return priceEstimate;
           } else {
-            // invalid promo code
-            return 0.0;
+            throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
           }
         });
-
-        when(() => mockTurbo.getPromoDiscountFactor(errorPromoCode))
-            .thenThrow(Exception());
 
         return paymentFormBloc;
       },
@@ -188,60 +239,264 @@ void main() {
       },
       act: (bloc) async {
         bloc.add(const PaymentFormUpdatePromoCode('BANANA'));
-        bloc.add(const PaymentFormUpdatePromoCode(errorPromoCode));
+        bloc.add(const PaymentFormUpdatePromoCode(''));
+        bloc.add(const PaymentFormUpdatePromoCode('NETWORK ERROR'));
+        bloc.add(const PaymentFormUpdatePromoCode(''));
         bloc.add(const PaymentFormUpdatePromoCode('MANZANA'));
       },
       expect: () => [
+        // Fetching for BANANA
         PaymentFormLoaded(
-          initialPriceEstimate,
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [],
+              actualPaymentAmount: null,
+              quotedPaymentAmount: null,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
           1234,
           const [],
-          promoDiscountFactor: 0,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: true,
           errorFetchingPromoCode: false,
         ),
+        // Valid result for BANANA
         PaymentFormLoaded(
-          initialPriceEstimate,
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: 0.9,
+                  operator: 'multiply',
+                  adjustmentAmount: 1,
+                )
+              ],
+              actualPaymentAmount: 9,
+              quotedPaymentAmount: 10,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
           1234,
           const [],
-          promoDiscountFactor: 0.1,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: false,
           errorFetchingPromoCode: false,
         ),
+
+        // Fetching for empty
         PaymentFormLoaded(
-          initialPriceEstimate,
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: 0.9,
+                  operator: 'multiply',
+                  adjustmentAmount: 1,
+                )
+              ],
+              actualPaymentAmount: 9,
+              quotedPaymentAmount: 10,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
           1234,
           const [],
-          promoDiscountFactor: 0,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: true,
           errorFetchingPromoCode: false,
         ),
+        // Invalid result for empty
         PaymentFormLoaded(
-          initialPriceEstimate,
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: 0.9,
+                  operator: 'multiply',
+                  adjustmentAmount: 1,
+                )
+              ],
+              actualPaymentAmount: 9,
+              quotedPaymentAmount: 10,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
           1234,
           const [],
-          promoDiscountFactor: 0,
+          isPromoCodeInvalid: true,
+          isFetchingPromoCode: false,
+          errorFetchingPromoCode: false,
+        ),
+
+        // Fetching for ERROR
+        PaymentFormLoaded(
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: 0.9,
+                  operator: 'multiply',
+                  adjustmentAmount: 1,
+                )
+              ],
+              actualPaymentAmount: 9,
+              quotedPaymentAmount: 10,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
+          1234,
+          const [],
+          isPromoCodeInvalid: false,
+          isFetchingPromoCode: true,
+          errorFetchingPromoCode: false,
+        ),
+        // Error while fetching for ERROR
+        PaymentFormLoaded(
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: 0.9,
+                  operator: 'multiply',
+                  adjustmentAmount: 1,
+                )
+              ],
+              actualPaymentAmount: 9,
+              quotedPaymentAmount: 10,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
+          1234,
+          const [],
           isPromoCodeInvalid: false,
           isFetchingPromoCode: false,
           errorFetchingPromoCode: true,
         ),
+
+        // Fetching for empty
         PaymentFormLoaded(
-          initialPriceEstimate,
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: 0.9,
+                  operator: 'multiply',
+                  adjustmentAmount: 1,
+                )
+              ],
+              actualPaymentAmount: 9,
+              quotedPaymentAmount: 10,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
           1234,
           const [],
-          promoDiscountFactor: 0,
           isPromoCodeInvalid: false,
           isFetchingPromoCode: true,
           errorFetchingPromoCode: false,
         ),
+        // Invalid result for empty
         PaymentFormLoaded(
-          initialPriceEstimate,
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: 0.9,
+                  operator: 'multiply',
+                  adjustmentAmount: 1,
+                )
+              ],
+              actualPaymentAmount: 9,
+              quotedPaymentAmount: 10,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
           1234,
           const [],
-          promoDiscountFactor: 0.2,
+          isPromoCodeInvalid: true,
+          isFetchingPromoCode: false,
+          errorFetchingPromoCode: false,
+        ),
+
+        // Fetching for MANZANA
+        PaymentFormLoaded(
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: 0.9,
+                  operator: 'multiply',
+                  adjustmentAmount: 1,
+                )
+              ],
+              actualPaymentAmount: 9,
+              quotedPaymentAmount: 10,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
+          1234,
+          const [],
+          isPromoCodeInvalid: false,
+          isFetchingPromoCode: true,
+          errorFetchingPromoCode: false,
+        ),
+        // Valid result for MANZANA
+        PaymentFormLoaded(
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: 0.8,
+                  operator: 'multiply',
+                  adjustmentAmount: 2,
+                )
+              ],
+              actualPaymentAmount: 8,
+              quotedPaymentAmount: 10,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
+          1234,
+          const [],
           isPromoCodeInvalid: false,
           isFetchingPromoCode: false,
           errorFetchingPromoCode: false,
