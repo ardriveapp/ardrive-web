@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -29,10 +30,14 @@ void main() {
         build: () => TurboTopUpEstimationBloc(turbo: mockTurbo),
         act: (bloc) async {
           final mockPriceEstimate = PriceEstimate(
-            credits: BigInt.from(10),
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [],
+              actualPaymentAmount: null,
+              quotedPaymentAmount: null,
+            ),
             priceInCurrency: 10,
             estimatedStorage: 1,
-            promoDiscountFactor: 0,
           );
 
           when(() => mockTurbo.getBalance())
@@ -41,7 +46,7 @@ void main() {
                 currentAmount: 0,
                 currentCurrency: 'usd',
                 currentDataUnit: FileSizeUnit.gigabytes,
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenAnswer((_) async => mockPriceEstimate);
           when(() => mockTurbo.computeStorageEstimateForCredits(
                 credits: BigInt.from(10),
@@ -96,7 +101,7 @@ void main() {
                   currentAmount: any(named: 'currentAmount'),
                   currentCurrency: any(named: 'currentCurrency'),
                   currentDataUnit: any(named: 'currentDataUnit'),
-                  promoDiscountFactor: 0,
+                  promoCode: null,
                 )).thenThrow(Exception());
           },
           expect: () => [
@@ -115,10 +120,14 @@ void main() {
             when(() => mockTurbo.onPriceEstimateChanged)
                 .thenAnswer((_) => const Stream.empty());
             final mockPriceEstimate = PriceEstimate(
-              credits: BigInt.from(10),
+              estimate: PriceForFiat(
+                winc: BigInt.from(10),
+                adjustments: const [],
+                actualPaymentAmount: null,
+                quotedPaymentAmount: null,
+              ),
               priceInCurrency: 10,
               estimatedStorage: 1,
-              promoDiscountFactor: 0,
             );
 
             when(() => mockTurbo.getBalance())
@@ -127,7 +136,7 @@ void main() {
                   currentAmount: 0,
                   currentCurrency: 'usd',
                   currentDataUnit: FileSizeUnit.gigabytes,
-                  promoDiscountFactor: 0,
+                  promoCode: null,
                 )).thenAnswer((_) async => mockPriceEstimate);
             when(() => mockTurbo.computeStorageEstimateForCredits(
                   credits: BigInt.from(10),
@@ -153,10 +162,14 @@ void main() {
         when(() => mockTurbo.onPriceEstimateChanged)
             .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
-          credits: BigInt.from(10),
+          estimate: PriceForFiat(
+            winc: BigInt.from(10),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
           priceInCurrency: 10,
           estimatedStorage: 1,
-          promoDiscountFactor: 0,
         );
 
         when(() => mockTurbo.getBalance())
@@ -165,13 +178,13 @@ void main() {
               currentAmount: 0,
               currentCurrency: 'usd',
               currentDataUnit: FileSizeUnit.gigabytes,
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate);
         when(() => mockTurbo.computePriceEstimate(
               currentAmount: 0,
               currentCurrency: 'eur',
               currentDataUnit: FileSizeUnit.gigabytes,
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate);
         when(() => mockTurbo.computeStorageEstimateForCredits(
               credits: BigInt.from(10),
@@ -211,10 +224,14 @@ void main() {
           when(() => mockTurbo.onPriceEstimateChanged)
               .thenAnswer((_) => const Stream.empty());
           final mockPriceEstimate = PriceEstimate(
-            credits: BigInt.from(10),
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [],
+              actualPaymentAmount: null,
+              quotedPaymentAmount: null,
+            ),
             priceInCurrency: 10,
             estimatedStorage: 1,
-            promoDiscountFactor: 0,
           );
 
           when(() => mockTurbo.getBalance())
@@ -223,13 +240,13 @@ void main() {
                 currentAmount: 0,
                 currentCurrency: 'usd',
                 currentDataUnit: FileSizeUnit.gigabytes,
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenAnswer((_) async => mockPriceEstimate);
           when(() => mockTurbo.computePriceEstimate(
                 currentAmount: 0,
                 currentCurrency: 'eur',
                 currentDataUnit: FileSizeUnit.gigabytes,
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenThrow(Exception());
           when(() => mockTurbo.computeStorageEstimateForCredits(
                 credits: BigInt.from(10),
@@ -271,10 +288,14 @@ void main() {
         when(() => mockTurbo.onPriceEstimateChanged)
             .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
-          credits: BigInt.from(10),
+          estimate: PriceForFiat(
+            winc: BigInt.from(10),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
           priceInCurrency: 10,
           estimatedStorage: 1,
-          promoDiscountFactor: 0,
         );
 
         when(() => mockTurbo.getBalance())
@@ -284,7 +305,7 @@ void main() {
               currentAmount: 0,
               currentCurrency: 'usd',
               currentDataUnit: FileSizeUnit.gigabytes,
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate);
         when(() => mockTurbo.computeStorageEstimateForCredits(
               credits: BigInt.from(10),
@@ -296,7 +317,7 @@ void main() {
               currentAmount: 0,
               currentCurrency: 'usd',
               currentDataUnit: FileSizeUnit.kilobytes,
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate);
 
         when(() => mockTurbo.computeStorageEstimateForCredits(
@@ -339,10 +360,14 @@ void main() {
           when(() => mockTurbo.onPriceEstimateChanged)
               .thenAnswer((_) => const Stream.empty());
           final mockPriceEstimate = PriceEstimate(
-            credits: BigInt.from(10),
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [],
+              actualPaymentAmount: null,
+              quotedPaymentAmount: null,
+            ),
             priceInCurrency: 10,
             estimatedStorage: 1,
-            promoDiscountFactor: 0,
           );
 
           when(() => mockTurbo.getBalance())
@@ -352,7 +377,7 @@ void main() {
                 currentAmount: 0,
                 currentCurrency: 'usd',
                 currentDataUnit: FileSizeUnit.gigabytes,
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenAnswer((_) async => mockPriceEstimate);
           when(() => mockTurbo.computeStorageEstimateForCredits(
                 credits: BigInt.from(10),
@@ -364,7 +389,7 @@ void main() {
                 currentAmount: 0,
                 currentCurrency: 'usd',
                 currentDataUnit: FileSizeUnit.kilobytes,
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenThrow((_) => Exception());
         },
         act: (bloc) async {
@@ -400,16 +425,24 @@ void main() {
         when(() => mockTurbo.onPriceEstimateChanged)
             .thenAnswer((_) => const Stream.empty());
         final mockPriceEstimate = PriceEstimate(
-          credits: BigInt.from(10),
+          estimate: PriceForFiat(
+            winc: BigInt.from(10),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
           priceInCurrency: 0,
           estimatedStorage: 1,
-          promoDiscountFactor: 0,
         );
         final mockPriceEstimate100 = PriceEstimate(
-          credits: BigInt.from(10),
+          estimate: PriceForFiat(
+            winc: BigInt.from(10),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
           priceInCurrency: 100,
           estimatedStorage: 1,
-          promoDiscountFactor: 0,
         );
 
         when(() => mockTurbo.getBalance())
@@ -418,7 +451,7 @@ void main() {
               currentAmount: 0,
               currentCurrency: 'usd',
               currentDataUnit: FileSizeUnit.gigabytes,
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate);
         when(() => mockTurbo.computeStorageEstimateForCredits(
               credits: BigInt.from(10),
@@ -430,7 +463,7 @@ void main() {
               currentAmount: 100,
               currentCurrency: 'usd',
               currentDataUnit: FileSizeUnit.gigabytes,
-              promoDiscountFactor: 0,
+              promoCode: null,
             )).thenAnswer((_) async => mockPriceEstimate100);
         when(() => mockTurbo.computeStorageEstimateForCredits(
               credits: BigInt.from(10),
@@ -470,10 +503,14 @@ void main() {
           when(() => mockTurbo.onPriceEstimateChanged)
               .thenAnswer((_) => const Stream.empty());
           final mockPriceEstimate = PriceEstimate(
-            credits: BigInt.from(10),
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [],
+              actualPaymentAmount: null,
+              quotedPaymentAmount: null,
+            ),
             priceInCurrency: 0,
             estimatedStorage: 1,
-            promoDiscountFactor: 0,
           );
           when(() => mockTurbo.getBalance())
               .thenAnswer((_) async => BigInt.from(10));
@@ -481,7 +518,7 @@ void main() {
                 currentAmount: 0,
                 currentCurrency: 'usd',
                 currentDataUnit: FileSizeUnit.gigabytes,
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenAnswer((_) async => mockPriceEstimate);
           when(() => mockTurbo.computeStorageEstimateForCredits(
                 credits: BigInt.from(10),
@@ -493,7 +530,7 @@ void main() {
                 currentAmount: 100,
                 currentCurrency: 'usd',
                 currentDataUnit: FileSizeUnit.gigabytes,
-                promoDiscountFactor: 0,
+                promoCode: null,
               )).thenThrow(Exception());
         },
         act: (bloc) async {
