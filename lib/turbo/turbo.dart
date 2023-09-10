@@ -298,14 +298,14 @@ class TurboBalanceRetriever {
 
 class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
   TurboPriceEstimator({
-    required Wallet wallet,
+    required Wallet? wallet,
     required this.paymentService,
     required this.costCalculator,
   }) : _wallet = wallet {
     _startOnPriceEstimateChange();
   }
 
-  final Wallet _wallet;
+  final Wallet? _wallet;
   final PaymentService paymentService;
   final TurboCostCalculator costCalculator;
   String? _promoCode;
@@ -321,7 +321,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
     required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
-    String? promoCode,
+    required String? promoCode,
   }) async {
     final double correctAmount = currentAmount * 100;
     _setPromoCode(promoCode);
