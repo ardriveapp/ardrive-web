@@ -86,7 +86,9 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
     );
 
     try {
-      final priceEstimate = await turbo.refreshPriceEstimate();
+      final priceEstimate = await turbo.refreshPriceEstimate(
+        promoCode: turbo.promoCode,
+      );
 
       emit(
         PaymentFormQuoteLoaded(
