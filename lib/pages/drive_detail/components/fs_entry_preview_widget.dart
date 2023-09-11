@@ -265,7 +265,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                           });
                         },
                         icon: const Icon(Icons.fast_rewind_outlined, size: 24)),
-                    IconButton.filled(
+                    MaterialButton(
                       onPressed: () {
                         setState(() {
                           final value = _videoPlayerController.value;
@@ -284,9 +284,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                           }
                         });
                       },
-                      icon: _videoPlayerController.value.isPlaying
-                          ? const Icon(Icons.pause_outlined, size: 24)
-                          : const Icon(Icons.play_arrow_outlined, size: 24),
+                      color: colors.themeAccentBrand,
+                      shape: const CircleBorder(),
+                      child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: (_videoPlayerController.value.isPlaying)
+                              ? const Icon(Icons.pause_outlined, size: 32)
+                              : const Icon(Icons.play_arrow_outlined,
+                                  size: 32)),
                     ),
                     IconButton(
                         onPressed: () {
@@ -497,7 +502,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                                                 });
                                               }))
                                     ]))),
-                            IconButton.filled(
+                            MaterialButton(
                               onPressed: () {
                                 setState(() {
                                   if (player.playerState.processingState ==
@@ -513,12 +518,17 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                                   }
                                 });
                               },
-                              icon: (player.playerState.processingState ==
-                                          ProcessingState.completed ||
-                                      !player.playing)
-                                  ? const Icon(Icons.play_arrow_outlined,
-                                      size: 24)
-                                  : const Icon(Icons.pause_outlined, size: 24),
+                              color: colors.themeAccentBrand,
+                              shape: const CircleBorder(),
+                              child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: (player.playerState.processingState ==
+                                              ProcessingState.completed ||
+                                          !player.playing)
+                                      ? const Icon(Icons.play_arrow_outlined,
+                                          size: 32)
+                                      : const Icon(Icons.pause_outlined,
+                                          size: 32)),
                             ),
                             Expanded(
                                 child: Align(
