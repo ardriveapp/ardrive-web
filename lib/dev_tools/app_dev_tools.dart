@@ -233,6 +233,19 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    ArDriveDevToolOption enableAudioPreviewOption = ArDriveDevToolOption(
+      name: 'enableAudioPreview',
+      value: settings.enableAudioPreview,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            settings.copyWith(enableAudioPreview: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
     ArDriveDevToolOption enablePinsOption = ArDriveDevToolOption(
       name: 'enablePins',
       value: settings.enablePins,
@@ -336,6 +349,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       enableQuickSyncAuthoringOption,
       enableMultipleFileDownloadOption,
       enableVideoPreviewOption,
+      enableAudioPreviewOption,
       enableSeedPhreaseLogin,
       enablePinsOption,
       allowedDataItemSizeForTurboOption,

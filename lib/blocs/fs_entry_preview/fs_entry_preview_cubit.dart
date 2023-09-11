@@ -208,7 +208,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   void _previewAudio(
       bool isPrivate, FileDataTableItem selectedItem, previewUrl) {
-    if (_configService.config.enableVideoPreview) {
+    if (_configService.config.enableAudioPreview) {
       if (isPrivate) {
         emit(FsEntryPreviewUnavailable());
         return;
