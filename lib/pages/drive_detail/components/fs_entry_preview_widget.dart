@@ -437,8 +437,6 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                         Text(widget.filename,
                             style: ArDriveTypography.body
                                 .smallBold700(color: colors.themeFgDefault)),
-                        const SizedBox(height: 4),
-                        const Text('metadata'),
                         const SizedBox(height: 8),
                         Slider(
                             value: min(
@@ -476,20 +474,29 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    if (player.duration != null) {
-                                      final newPosition = player.position -
-                                          const Duration(seconds: 15);
-                                      player.seek(newPosition >= Duration.zero
-                                          ? newPosition
-                                          : Duration.zero);
-                                    }
-                                  });
-                                },
-                                icon: const Icon(Icons.fast_rewind_outlined,
-                                    size: 24)),
+                            Expanded(
+                                child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Row(children: [
+                                      IconButton(
+                                          onPressed: () {
+                                            // setState(() {
+                                            // });
+                                          },
+                                          icon: const Icon(
+                                              Icons.volume_up_outlined,
+                                              size: 24)),
+                                      Expanded(
+                                          child: Slider(
+                                              value: player.volume,
+                                              min: 0.0,
+                                              max: 1.0,
+                                              onChanged: (v) {
+                                                setState(() {
+                                                  player.setVolume(v);
+                                                });
+                                              }))
+                                    ]))),
                             IconButton.filled(
                               onPressed: () {
                                 setState(() {
@@ -513,20 +520,17 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                                       size: 24)
                                   : const Icon(Icons.pause_outlined, size: 24),
                             ),
-                            IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    if (player.duration != null) {
-                                      final newPosition = player.position +
-                                          const Duration(seconds: 15);
-                                      player.seek(newPosition > player.duration!
-                                          ? player.duration!
-                                          : newPosition);
-                                    }
-                                  });
-                                },
-                                icon: const Icon(Icons.fast_forward_outlined,
-                                    size: 24))
+                            Expanded(
+                                child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: IconButton(
+                                        onPressed: () {
+                                          // setState(() {
+                                          // });
+                                        },
+                                        icon: const Icon(
+                                            Icons.settings_outlined,
+                                            size: 24)))),
                           ],
                         )
                       ])
