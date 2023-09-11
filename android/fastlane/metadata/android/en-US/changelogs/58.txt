@@ -1,1 +1,1 @@
-- Users can now buy credits with discount using promotional codes
+- Adds the ability to apply promo codes to Turbo top ups
