@@ -51,9 +51,12 @@ class Turbo extends Disposable {
   final Wallet _wallet;
 
   PriceEstimate _priceEstimate = PriceEstimate.zero();
-  int? _currentAmount;
+  double? _currentAmount;
   String? _currentCurrency;
   FileSizeUnit? _currentDataUnit;
+  String? _promoCode;
+
+  String? get promoCode => _promoCode;
 
   PaymentUserInformation? _paymentUserInformation;
 
@@ -87,24 +90,34 @@ class Turbo extends Disposable {
   }
 
   Future<PriceEstimate> computePriceEstimate({
-    required int currentAmount,
+    required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
+    required String? promoCode,
   }) async {
     _currentAmount = currentAmount;
     _currentCurrency = currentCurrency;
     _currentDataUnit = currentDataUnit;
+    _promoCode = promoCode;
 
-    _priceEstimate = await _priceEstimator.computePriceEstimate(
-      currentAmount: currentAmount,
-      currentCurrency: currentCurrency,
-      currentDataUnit: currentDataUnit,
-    );
+    try {
+      _priceEstimate = await _priceEstimator.computePriceEstimate(
+        currentAmount: currentAmount,
+        currentCurrency: currentCurrency,
+        currentDataUnit: currentDataUnit,
+        promoCode: promoCode,
+      );
+    } catch (e) {
+      _promoCode = null;
+      rethrow;
+    }
 
     return _priceEstimate;
   }
 
-  Future<PriceEstimate> refreshPriceEstimate() async {
+  Future<PriceEstimate> refreshPriceEstimate({
+    String? promoCode,
+  }) async {
     assert(
       _currentAmount != null &&
           _currentCurrency != null &&
@@ -112,11 +125,19 @@ class Turbo extends Disposable {
       'Cannot refresh price estimate without first computing it',
     );
 
-    _priceEstimate = await _priceEstimator.computePriceEstimate(
-      currentAmount: _currentAmount!,
-      currentCurrency: _currentCurrency!,
-      currentDataUnit: _currentDataUnit!,
-    );
+    _promoCode = promoCode;
+
+    try {
+      _priceEstimate = await _priceEstimator.computePriceEstimate(
+        currentAmount: _currentAmount!,
+        currentCurrency: _currentCurrency!,
+        currentDataUnit: _currentDataUnit!,
+        promoCode: promoCode ?? _promoCode,
+      );
+    } catch (e) {
+      _promoCode = null;
+      rethrow;
+    }
 
     return _priceEstimate;
   }
@@ -139,13 +160,15 @@ class Turbo extends Disposable {
   DateTime? get quoteExpirationDate => _quoteExpirationDate;
 
   Future<PaymentModel> createPaymentIntent({
-    required int amount,
+    required double amount,
     required String currency,
+    String? promoCode,
   }) async {
     _currentPaymentIntent = await _paymentProvider.createPaymentIntent(
       amount: amount,
       currency: currency,
       wallet: _wallet,
+      promoCode: promoCode ?? _promoCode,
     );
 
     _quoteExpirationDate = DateTime.parse(
@@ -285,34 +308,45 @@ class TurboBalanceRetriever {
 
 class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
   TurboPriceEstimator({
+    required Wallet? wallet,
     required this.paymentService,
     required this.costCalculator,
-  }) {
+  }) : _wallet = wallet {
     _startOnPriceEstimateChange();
   }
 
+  final Wallet? _wallet;
   final PaymentService paymentService;
   final TurboCostCalculator costCalculator;
+  String? _promoCode;
 
   DateTime? _maxQuoteExpirationTime;
   DateTime? get maxQuoteExpirationTime => _maxQuoteExpirationTime;
 
+  void _setPromoCode(String? promoCode) {
+    _promoCode = promoCode;
+  }
+
   Future<PriceEstimate> computePriceEstimate({
-    required int currentAmount,
+    required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
+    required String? promoCode,
   }) async {
-    try {
-      final int correctAmount = currentAmount * 100;
+    final double correctAmount = currentAmount * 100;
+    _setPromoCode(promoCode);
 
+    try {
       final priceEstimate = await paymentService.getPriceForFiat(
+        wallet: _wallet,
         currency: currentCurrency,
         amount: correctAmount,
+        promoCode: _promoCode,
       );
 
       final estimatedStorageForSelectedAmount =
           await computeStorageEstimateForCredits(
-        credits: priceEstimate,
+        credits: priceEstimate.winstonCredits,
         outputDataUnit: currentDataUnit,
       );
 
@@ -320,7 +354,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
           DateTime.now().add(const Duration(minutes: 4, seconds: 55));
 
       final price = PriceEstimate(
-        credits: priceEstimate,
+        estimate: priceEstimate,
         priceInCurrency: currentAmount,
         estimatedStorage: estimatedStorageForSelectedAmount,
       );
@@ -330,6 +364,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
       return price;
     } catch (e) {
       logger.e('Error computing price estimate', e);
+      _setPromoCode(null);
       rethrow;
     }
   }
@@ -338,13 +373,14 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
   Future<double?> convertForUSD(BigInt value) async {
     // 1 dolar
     final priceEstimate = await paymentService.getPriceForFiat(
+      wallet: null,
       currency: 'usd',
       amount: 100,
     );
 
     logger.d('Price estimate for 1 dolar: $priceEstimate');
 
-    return value / priceEstimate;
+    return value / priceEstimate.winstonCredits;
   }
 
   Future<double> computeStorageEstimateForCredits({
@@ -378,6 +414,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
         currentAmount: 0,
         currentCurrency: 'usd',
         currentDataUnit: FileSizeUnit.gigabytes,
+        promoCode: _promoCode,
       );
 
       _priceEstimateController.add(priceEstimate);
@@ -394,8 +431,9 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
 abstract class TurboPaymentProvider {
   Future<PaymentModel> createPaymentIntent({
     required String currency,
-    required int amount,
+    required double amount,
     required Wallet wallet,
+    String? promoCode,
   });
 
   Future<PaymentStatus> confirmPayment({
@@ -416,8 +454,9 @@ class StripePaymentProvider implements TurboPaymentProvider {
   @override
   Future<PaymentModel> createPaymentIntent({
     required String currency,
-    required int amount,
+    required double amount,
     required Wallet wallet,
+    String? promoCode,
   }) async {
     final correctAmount = amount * 100;
 
@@ -425,6 +464,7 @@ class StripePaymentProvider implements TurboPaymentProvider {
       currency: currency,
       amount: correctAmount,
       wallet: wallet,
+      promoCode: promoCode,
     );
   }
 
