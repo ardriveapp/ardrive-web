@@ -19,12 +19,10 @@ class TurboTopUpEstimationBloc
 
   FileSizeUnit _currentDataUnit = FileSizeUnit.gigabytes;
   String _currentCurrency = 'usd';
-
-  // initialize with 0
-  int _currentAmount = 0;
+  double _currentAmount = 0;
 
   String get currentCurrency => _currentCurrency;
-  int get currentAmount => _currentAmount;
+  double get currentAmount => _currentAmount;
   FileSizeUnit get currentDataUnit => _currentDataUnit;
   late BigInt _balance;
 
@@ -51,6 +49,7 @@ class TurboTopUpEstimationBloc
               currentAmount: 0,
               currentCurrency: currentCurrency,
               currentDataUnit: currentDataUnit,
+              promoCode: turbo.promoCode,
               shouldRethrow: true,
             );
           } catch (e, s) {
@@ -66,6 +65,7 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
+            promoCode: turbo.promoCode,
           );
         } else if (event is CurrencyUnitChanged) {
           _currentCurrency = event.currencyUnit;
@@ -75,6 +75,7 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
+            promoCode: turbo.promoCode,
           );
         } else if (event is DataUnitChanged) {
           _currentDataUnit = event.dataUnit;
@@ -84,7 +85,31 @@ class TurboTopUpEstimationBloc
             currentAmount: _currentAmount,
             currentCurrency: currentCurrency,
             currentDataUnit: currentDataUnit,
+            promoCode: turbo.promoCode,
           );
+        } else if (event is PromoCodeChanged) {
+          final promoCode = turbo.promoCode;
+          final stateAsLoaded = state as EstimationLoaded;
+
+          try {
+            await _refreshEstimate(
+              emit,
+              promoCode: promoCode,
+            );
+          } catch (e, s) {
+            logger.e('error updating the promo code', e, s);
+            emit(EstimationLoaded(
+              balance: stateAsLoaded.balance,
+              estimatedStorageForBalance:
+                  stateAsLoaded.estimatedStorageForBalance,
+              selectedAmount: stateAsLoaded.selectedAmount,
+              creditsForSelectedAmount: stateAsLoaded.creditsForSelectedAmount,
+              estimatedStorageForSelectedAmount:
+                  stateAsLoaded.estimatedStorageForSelectedAmount,
+              currencyUnit: stateAsLoaded.currencyUnit,
+              dataUnit: stateAsLoaded.dataUnit,
+            ));
+          }
         } else if (event is FetchPriceEstimate) {
           final estimatedStorageForBalance =
               await turbo.computeStorageEstimateForCredits(
@@ -98,7 +123,8 @@ class TurboTopUpEstimationBloc
               estimatedStorageForBalance:
                   estimatedStorageForBalance.toStringAsFixed(2),
               selectedAmount: event.priceEstimate.priceInCurrency,
-              creditsForSelectedAmount: event.priceEstimate.credits,
+              creditsForSelectedAmount:
+                  event.priceEstimate.estimate.winstonCredits,
               estimatedStorageForSelectedAmount:
                   event.priceEstimate.estimatedStorage.toStringAsFixed(2),
               currencyUnit: currentCurrency,
@@ -112,9 +138,10 @@ class TurboTopUpEstimationBloc
 
   Future<void> _computeAndUpdatePriceEstimate(
     Emitter emit, {
-    required int currentAmount,
+    required double currentAmount,
     required String currentCurrency,
     required FileSizeUnit currentDataUnit,
+    required String? promoCode,
     bool shouldRethrow = false,
   }) async {
     try {
@@ -123,6 +150,7 @@ class TurboTopUpEstimationBloc
         currentAmount: currentAmount,
         currentCurrency: currentCurrency,
         currentDataUnit: currentDataUnit,
+        promoCode: promoCode,
       );
 
       final estimatedStorageForBalance =
@@ -139,7 +167,7 @@ class TurboTopUpEstimationBloc
           estimatedStorageForBalance:
               estimatedStorageForBalance.toStringAsFixed(2),
           selectedAmount: priceEstimate.priceInCurrency,
-          creditsForSelectedAmount: priceEstimate.credits,
+          creditsForSelectedAmount: priceEstimate.estimate.winstonCredits,
           estimatedStorageForSelectedAmount:
               priceEstimate.estimatedStorage.toStringAsFixed(2),
           currencyUnit: currentCurrency,
@@ -154,6 +182,38 @@ class TurboTopUpEstimationBloc
       }
 
       emit(EstimationLoadError());
+    }
+  }
+
+  Future<void> _refreshEstimate(
+    Emitter emit, {
+    required String? promoCode,
+  }) async {
+    emit(EstimationLoading());
+    try {
+      final priceEstimate = turbo.currentPriceEstimate;
+
+      final estimatedStorageForBalance =
+          await turbo.computeStorageEstimateForCredits(
+        credits: _balance,
+        outputDataUnit: currentDataUnit,
+      );
+
+      emit(
+        EstimationLoaded(
+          balance: _balance,
+          estimatedStorageForBalance:
+              estimatedStorageForBalance.toStringAsFixed(2),
+          selectedAmount: priceEstimate.priceInCurrency,
+          creditsForSelectedAmount: priceEstimate.estimate.winstonCredits,
+          estimatedStorageForSelectedAmount:
+              priceEstimate.estimatedStorage.toStringAsFixed(2),
+          currencyUnit: currentCurrency,
+          dataUnit: currentDataUnit,
+        ),
+      );
+    } catch (e, _) {
+      rethrow;
     }
   }
 

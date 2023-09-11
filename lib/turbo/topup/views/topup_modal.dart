@@ -32,6 +32,7 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
   );
 
   final priceEstimator = TurboPriceEstimator(
+    wallet: context.read<ArDriveAuth>().currentUser!.wallet,
     paymentService: context.read<PaymentService>(),
     costCalculator: costCalculator,
   );

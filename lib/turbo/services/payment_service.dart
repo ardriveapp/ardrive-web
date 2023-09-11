@@ -5,6 +5,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
+import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
 class PaymentService {
@@ -35,15 +36,53 @@ class PaymentService {
     return price;
   }
 
-  Future<BigInt> getPriceForFiat({
-    required int amount,
+  Future<PriceForFiat> getPriceForFiat({
+    required Wallet? wallet,
+    required double amount,
     required String currency,
+    String? promoCode,
   }) async {
     final acceptedStatusCodes = [200, 202, 204];
+    late Map<String, dynamic> headers;
 
-    final result = await httpClient.get(
-      url: '$turboPaymentUri/v1/price/$currency/$amount',
+    if (wallet != null) {
+      final nonce = const Uuid().v4();
+      final publicKey = await wallet.getOwner();
+      final signature = await signNonceAndData(
+        nonce: nonce,
+        wallet: wallet,
+      );
+
+      headers = {
+        'x-nonce': nonce,
+        'x-signature': signature,
+        'x-public-key': publicKey,
+      };
+    } else {
+      headers = {};
+    }
+
+    final urlParams = promoCode != null && promoCode.isNotEmpty
+        ? '?promoCode=$promoCode'
+        : '';
+
+    final result = await httpClient
+        .get(
+            url: '$turboPaymentUri/v1/price/$currency/$amount$urlParams',
+            headers: headers)
+        .onError(
+      (ArDriveHTTPException error, stackTrace) {
+        if (error.statusCode == 400) {
+          logger.d('Invalid promo code: $promoCode');
+          throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
+        }
+        throw PaymentServiceException(
+          'Turbo price fetch failed with status code ${error.statusCode}',
+        );
+      },
     );
+
+    logger.d('Turbo price fetch status code: ${result.statusCode}');
 
     if (!acceptedStatusCodes.contains(result.statusCode)) {
       throw PaymentServiceException(
@@ -51,9 +90,21 @@ class PaymentService {
       );
     }
 
-    final price = BigInt.parse((json.decode(result.data)['winc']));
+    final parsedData = json.decode(result.data);
 
-    return price;
+    final winc = BigInt.parse(parsedData['winc']);
+    final int? actualPaymentAmount = parsedData['actualPaymentAmount'];
+    final int? quotedPaymentAmount = parsedData['quotedPaymentAmount'];
+    final adjustments = ((parsedData['adjustments'] ?? const []) as List)
+        .map((e) => Adjustment.fromJson(e))
+        .toList();
+
+    return PriceForFiat(
+      winc: winc,
+      actualPaymentAmount: actualPaymentAmount,
+      quotedPaymentAmount: quotedPaymentAmount,
+      adjustments: adjustments,
+    );
   }
 
   Future<BigInt> getBalance({
@@ -90,8 +141,9 @@ class PaymentService {
 
   Future<PaymentModel> getPaymentIntent({
     required Wallet wallet,
-    required int amount,
+    required double amount,
     String currency = 'usd',
+    String? promoCode,
   }) async {
     final nonce = const Uuid().v4();
     final walletAddress = await wallet.getAddress();
@@ -101,9 +153,13 @@ class PaymentService {
       wallet: wallet,
     );
 
+    final urlParams = promoCode != null && promoCode.isNotEmpty
+        ? '?promoCode=$promoCode'
+        : '';
+
     final result = await httpClient.get(
       url:
-          '$turboPaymentUri/v1/top-up/payment-intent/$walletAddress/$currency/$amount',
+          '$turboPaymentUri/v1/top-up/payment-intent/$walletAddress/$currency/$amount$urlParams',
       headers: {
         'x-nonce': nonce,
         'x-signature': signature,
@@ -138,8 +194,9 @@ class DontUsePaymentService implements PaymentService {
   @override
   Future<PaymentModel> getPaymentIntent({
     required Wallet wallet,
-    required int amount,
+    required double amount,
     String currency = 'usd',
+    String? promoCode,
   }) async {
     throw UnimplementedError();
   }
@@ -151,9 +208,11 @@ class DontUsePaymentService implements PaymentService {
   bool get useTurboPayment => false;
 
   @override
-  Future<BigInt> getPriceForFiat({
-    required int amount,
+  Future<PriceForFiat> getPriceForFiat({
+    required wallet,
+    required double amount,
     required String currency,
+    String? promoCode,
   }) =>
       throw UnimplementedError();
 
@@ -171,4 +230,74 @@ class PaymentServiceException implements Exception {
   final String message;
 
   PaymentServiceException([this.message = '']);
+}
+
+class PaymentServiceInvalidPromoCode implements PaymentServiceException {
+  final String? promoCode;
+
+  PaymentServiceInvalidPromoCode({required this.promoCode});
+
+  @override
+  String get message => 'Invalid promo code: "$promoCode"';
+}
+
+class PriceForFiat extends Equatable {
+  final BigInt winc;
+  final int? actualPaymentAmount;
+  final int? quotedPaymentAmount;
+  final List<Adjustment> adjustments;
+
+  String? get humanReadableDiscountPercentage {
+    if (adjustments.isEmpty) {
+      return null;
+    }
+
+    return adjustments.first.humanReadableDiscountPercentage;
+  }
+
+  double? get promoDiscountFactor {
+    if (adjustments.isEmpty) {
+      return null;
+    }
+
+    final adjustmentMagnitude = adjustments.first.operatorMagnitude;
+
+    // Multiplying by 100 and then dividing by 100 is a workaround for
+    /// floating point precision issues.
+    final factor = (100 - (adjustmentMagnitude * 100)) / 100;
+
+    return factor;
+  }
+
+  BigInt get winstonCredits => winc;
+
+  const PriceForFiat({
+    required this.winc,
+    required this.actualPaymentAmount,
+    required this.quotedPaymentAmount,
+    required this.adjustments,
+  });
+
+  factory PriceForFiat.zero() => PriceForFiat(
+        winc: BigInt.zero,
+        actualPaymentAmount: 0,
+        quotedPaymentAmount: 0,
+        adjustments: const [],
+      );
+
+  @override
+  String toString() {
+    return 'PriceForFiat{winc: $winc,'
+        ' actualPaymentAmount: $actualPaymentAmount,'
+        ' quotedPaymentAmount: $quotedPaymentAmount,'
+        ' adjustments: $adjustments}';
+  }
+
+  @override
+  List<Object> get props => [
+        winc,
+        actualPaymentAmount ?? '',
+        quotedPaymentAmount ?? '',
+        adjustments,
+      ];
 }
