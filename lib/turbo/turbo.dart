@@ -100,12 +100,17 @@ class Turbo extends Disposable {
     _currentDataUnit = currentDataUnit;
     _promoCode = promoCode;
 
-    _priceEstimate = await _priceEstimator.computePriceEstimate(
-      currentAmount: currentAmount,
-      currentCurrency: currentCurrency,
-      currentDataUnit: currentDataUnit,
-      promoCode: promoCode,
-    );
+    try {
+      _priceEstimate = await _priceEstimator.computePriceEstimate(
+        currentAmount: currentAmount,
+        currentCurrency: currentCurrency,
+        currentDataUnit: currentDataUnit,
+        promoCode: promoCode,
+      );
+    } catch (e) {
+      _promoCode = null;
+      rethrow;
+    }
 
     return _priceEstimate;
   }
@@ -122,12 +127,17 @@ class Turbo extends Disposable {
 
     _promoCode = promoCode;
 
-    _priceEstimate = await _priceEstimator.computePriceEstimate(
-      currentAmount: _currentAmount!,
-      currentCurrency: _currentCurrency!,
-      currentDataUnit: _currentDataUnit!,
-      promoCode: promoCode ?? _promoCode,
-    );
+    try {
+      _priceEstimate = await _priceEstimator.computePriceEstimate(
+        currentAmount: _currentAmount!,
+        currentCurrency: _currentCurrency!,
+        currentDataUnit: _currentDataUnit!,
+        promoCode: promoCode ?? _promoCode,
+      );
+    } catch (e) {
+      _promoCode = null;
+      rethrow;
+    }
 
     return _priceEstimate;
   }
@@ -298,14 +308,14 @@ class TurboBalanceRetriever {
 
 class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
   TurboPriceEstimator({
-    required Wallet? wallet,
+    required Wallet wallet,
     required this.paymentService,
     required this.costCalculator,
   }) : _wallet = wallet {
     _startOnPriceEstimateChange();
   }
 
-  final Wallet? _wallet;
+  final Wallet _wallet;
   final PaymentService paymentService;
   final TurboCostCalculator costCalculator;
   String? _promoCode;
@@ -354,6 +364,7 @@ class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
       return price;
     } catch (e) {
       logger.e('Error computing price estimate', e);
+      _setPromoCode(null);
       rethrow;
     }
   }
