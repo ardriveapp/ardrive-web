@@ -493,10 +493,15 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           ),
           const SizedBox(height: 16),
           Row(children: [promoCodeLabel()]),
-          Row(children: [
-            promoCodeWidget(theme),
-            const Flexible(child: SizedBox()),
-          ]),
+          ScreenTypeLayout.builder(
+            mobile: (context) => Row(children: [
+              promoCodeWidget(theme),
+            ]),
+            desktop: (context) => Row(children: [
+              promoCodeWidget(theme),
+              const Flexible(child: SizedBox()),
+            ]),
+          ),
           const SizedBox(
             height: 16,
           ),
