@@ -24,7 +24,7 @@ void main() async {
 
   DriveDao mockDriveDao = MockDriveDao();
   ArweaveService mockArweaveService = MockArweaveService();
-  ArDriveCrypto mockCrypto = MockArDriveCrypto();
+  late ArDriveCrypto mockCrypto;
   DownloadService mockDownloadService = MockDownloadService();
   ARFSRepository mockARFSRepository = MockARFSRepository();
   ARFSRepository mockARFSRepositoryPrivate = MockARFSRepository();
@@ -79,10 +79,6 @@ void main() async {
         .thenAnswer((_) async => SecretKey([]));
     when(() => mockDownloadService.download(any()))
         .thenAnswer((_) async => Uint8List(0));
-    when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
-        .thenAnswer((_) async => Uint8List(0));
-    when(() => mockCrypto.decryptTransactionData(
-        decryptionFailureTransaction, any(), any())).thenThrow(Exception());
     when(() => mockArweaveService.getTransactionDetails(any()))
         .thenAnswer((invocation) async => MockTransactionCommonMixin());
     when(() => mockArweaveService.getTransactionDetails('decryptionFailure'))
@@ -95,6 +91,11 @@ void main() async {
     late MultipleDownloadBloc multipleDownloadBloc;
     group('[$groupLabel] -', () {
       setUp(() {
+        mockCrypto = MockArDriveCrypto();
+        when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
+            .thenAnswer((_) async => Uint8List(0));
+        when(() => mockCrypto.decryptTransactionData(
+            decryptionFailureTransaction, any(), any())).thenThrow(Exception());
         multipleDownloadBloc = createMultipleDownloadBloc(
           arfsRepository: arfsRepository,
         );
@@ -588,6 +589,65 @@ void main() async {
             isA<MultipleDownloadFailure>().having((s) => s.reason, 'reason',
                 FileDownloadFailureReason.unknownError),
           ],
+        );
+
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'Test should work with only pins',
+          build: () => multipleDownloadBloc,
+          setUp: () {
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+          },
+          act: (bloc) => bloc.add(StartDownload([
+            createMockFileDataTableItem(pinnedDataOwnerAddress: 'test1'),
+          ])),
+          expect: () => [
+            isA<MultipleDownloadInProgress>()
+                .having(
+                  (s) => s.files.length,
+                  'files.length',
+                  1,
+                )
+                .having((s) => s.currentFileIndex, 'currentFileIndex', 0),
+            isA<MultipleDownloadFinishedWithSuccess>()
+                .having((s) => s.skippedFiles.length, 'skippedFiles.length', 0),
+          ],
+          verify: (bloc) {
+            verifyZeroInteractions(mockCrypto);
+          },
+        );
+
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'Test should work with a mix of private files and pins',
+          build: () => multipleDownloadBloc,
+          setUp: () {
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+          },
+          act: (bloc) => bloc.add(StartDownload([
+            createMockFileDataTableItem(pinnedDataOwnerAddress: 'test1'),
+            createMockFileDataTableItem(),
+          ])),
+          expect: () => [
+            isA<MultipleDownloadInProgress>()
+                .having(
+                  (s) => s.files.length,
+                  'files.length',
+                  2,
+                )
+                .having((s) => s.currentFileIndex, 'currentFileIndex', 0),
+            isA<MultipleDownloadInProgress>()
+                .having(
+                  (s) => s.files.length,
+                  'files.length',
+                  2,
+                )
+                .having((s) => s.currentFileIndex, 'currentFileIndex', 1),
+            isA<MultipleDownloadFinishedWithSuccess>()
+                .having((s) => s.skippedFiles.length, 'skippedFiles.length', 0),
+          ],
+          verify: (bloc) {
+            verify(() => mockCrypto.decryptTransactionData(any(), any(), any()))
+                .called(1);
+          },
         );
       }
     });
