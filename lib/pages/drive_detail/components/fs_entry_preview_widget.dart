@@ -50,6 +50,29 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   }
 }
 
+String getTimeString(Duration duration) {
+  int durSeconds = duration.inSeconds;
+  const hour = 60 * 60;
+  const minute = 60;
+
+  final hours = (durSeconds / hour).floor();
+  final minutes = ((durSeconds % hour) / minute).floor();
+  final seconds = durSeconds % minute;
+
+  String timeString = '';
+
+  if (hours > 0) {
+    timeString = '${hours.floor()}:';
+  }
+
+  timeString +=
+      hours > 0 ? minutes.toString().padLeft(2, '0') : minutes.toString();
+  timeString += ':';
+  timeString += seconds.toString().padLeft(2, '0');
+
+  return timeString;
+}
+
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
   final String filename;
@@ -110,29 +133,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
       }
     });
-  }
-
-  String getTimeString(Duration duration) {
-    int durSeconds = duration.inSeconds;
-    const hour = 60 * 60;
-    const minute = 60;
-
-    final hours = (durSeconds / hour).floor();
-    final minutes = ((durSeconds % hour) / minute).floor();
-    final seconds = durSeconds % minute;
-
-    String timeString = '';
-
-    if (hours > 0) {
-      timeString = '${hours.floor()}:';
-    }
-
-    timeString +=
-        hours > 0 ? minutes.toString().padLeft(2, '0') : minutes.toString();
-    timeString += ':';
-    timeString += seconds.toString().padLeft(2, '0');
-
-    return timeString;
   }
 
   void goFullScreen() {
@@ -368,31 +368,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   @override
   void dispose() {
     logger.d('Disposing audio player');
+    player.stop();
     player.dispose();
     super.dispose();
-  }
-
-  String getTimeString(Duration duration) {
-    int durSeconds = duration.inSeconds;
-    const hour = 60 * 60;
-    const minute = 60;
-
-    final hours = (durSeconds / hour).floor();
-    final minutes = ((durSeconds % hour) / minute).floor();
-    final seconds = durSeconds % minute;
-
-    String timeString = '';
-
-    if (hours > 0) {
-      timeString = '${hours.floor()}:';
-    }
-
-    timeString +=
-        hours > 0 ? minutes.toString().padLeft(2, '0') : minutes.toString();
-    timeString += ':';
-    timeString += seconds.toString().padLeft(2, '0');
-
-    return timeString;
   }
 
   @override
@@ -443,29 +421,42 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                             style: ArDriveTypography.body
                                 .smallBold700(color: colors.themeFgDefault)),
                         const SizedBox(height: 8),
-                        Slider(
-                            value: min(
-                                player.position.inMilliseconds.toDouble(),
-                                player.duration?.inMilliseconds.toDouble() ??
-                                    0),
-                            min: 0.0,
-                            max:
-                                player.duration?.inMilliseconds.toDouble() ?? 0,
-                            onChangeStart: (v) {
-                              setState(() {
-                                player.pause();
-                              });
-                            },
-                            onChanged: (v) {
-                              setState(() {
-                                player.seek(Duration(milliseconds: v.toInt()));
-                              });
-                            },
-                            onChangeEnd: (v) {
-                              setState(() {
-                                player.play();
-                              });
-                            }),
+                        SliderTheme(
+                            data: SliderThemeData(
+                                trackHeight: 4,
+                                trackShape:
+                                    _NoAdditionalHeightRoundedRectSliderTrackShape(),
+                                inactiveTrackColor: colors.themeBgSubtle,
+                                overlayShape: SliderComponentShape.noOverlay,
+                                thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 8,
+                                )),
+                            child: Slider(
+                                value: min(
+                                  player.position.inMilliseconds.toDouble(),
+                                  player.duration?.inMilliseconds.toDouble() ??
+                                      0,
+                                ),
+                                min: 0.0,
+                                max: player.duration?.inMilliseconds
+                                        .toDouble() ??
+                                    0,
+                                onChangeStart: (v) {
+                                  setState(() {
+                                    player.pause();
+                                  });
+                                },
+                                onChanged: (v) {
+                                  setState(() {
+                                    player.seek(
+                                        Duration(milliseconds: v.toInt()));
+                                  });
+                                },
+                                onChangeEnd: (v) {
+                                  setState(() {
+                                    player.play();
+                                  });
+                                })),
                         const SizedBox(height: 4),
                         Row(
                           children: [
@@ -492,15 +483,33 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                                               Icons.volume_up_outlined,
                                               size: 24)),
                                       Expanded(
-                                          child: Slider(
-                                              value: player.volume,
-                                              min: 0.0,
-                                              max: 1.0,
-                                              onChanged: (v) {
-                                                setState(() {
-                                                  player.setVolume(v);
-                                                });
-                                              }))
+                                          child: SliderTheme(
+                                              data: SliderThemeData(
+                                                  trackHeight: 4,
+                                                  trackShape:
+                                                      _NoAdditionalHeightRoundedRectSliderTrackShape(),
+                                                  inactiveTrackColor:
+                                                      colors.themeBgSubtle,
+                                                  activeTrackColor:
+                                                      colors.themeFgDefault,
+                                                  overlayShape:
+                                                      SliderComponentShape
+                                                          .noOverlay,
+                                                  thumbColor:
+                                                      colors.themeFgDefault,
+                                                  thumbShape:
+                                                      const RoundSliderThumbShape(
+                                                    enabledThumbRadius: 8,
+                                                  )),
+                                              child: Slider(
+                                                  value: player.volume,
+                                                  min: 0.0,
+                                                  max: 1.0,
+                                                  onChanged: (v) {
+                                                    setState(() {
+                                                      player.setVolume(v);
+                                                    });
+                                                  })))
                                     ]))),
                             MaterialButton(
                               onPressed: () {
@@ -521,14 +530,21 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                               color: colors.themeAccentBrand,
                               shape: const CircleBorder(),
                               child: Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: (player.playerState.processingState ==
-                                              ProcessingState.completed ||
-                                          !player.playing)
-                                      ? const Icon(Icons.play_arrow_outlined,
-                                          size: 32)
-                                      : const Icon(Icons.pause_outlined,
-                                          size: 32)),
+                                padding: const EdgeInsets.all(8),
+                                child: (player.playerState.processingState ==
+                                            ProcessingState.completed ||
+                                        !player.playing)
+                                    ? Icon(
+                                        Icons.play_arrow_outlined,
+                                        size: 32,
+                                        color: colors.themeFgOnAccent,
+                                      )
+                                    : Icon(
+                                        Icons.pause_outlined,
+                                        size: 32,
+                                        color: colors.themeFgOnAccent,
+                                      ),
+                              ),
                             ),
                             Expanded(
                                 child: Align(
@@ -545,5 +561,34 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                         )
                       ])
                     ])));
+  }
+}
+
+class _NoAdditionalHeightRoundedRectSliderTrackShape
+    extends RoundedRectSliderTrackShape {
+  @override
+  void paint(
+    PaintingContext context,
+    Offset offset, {
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required Animation<double> enableAnimation,
+    required TextDirection textDirection,
+    required Offset thumbCenter,
+    Offset? secondaryOffset,
+    bool isDiscrete = false,
+    bool isEnabled = false,
+    double additionalActiveTrackHeight = 2,
+  }) {
+    super.paint(context, offset,
+        parentBox: parentBox,
+        sliderTheme: sliderTheme,
+        enableAnimation: enableAnimation,
+        textDirection: textDirection,
+        thumbCenter: thumbCenter,
+        secondaryOffset: secondaryOffset,
+        isDiscrete: isDiscrete,
+        isEnabled: isEnabled,
+        additionalActiveTrackHeight: 0);
   }
 }
