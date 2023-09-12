@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/core/upload/metadata_generator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/app/app_info_services.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
@@ -15,10 +19,12 @@ import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../utils/filesize.dart';
 import 'enums/conflicting_files_actions.dart';
 
 part 'upload_state.dart';
@@ -294,9 +300,22 @@ class UploadCubit extends Cubit<UploadState> {
     return FolderPrepareResult(files: filesToUpload, foldersByPath: folders);
   }
 
+  Future<void> uploadUsingOrchestrator() {
+    return _uploadUsingOrchestrator(files.first.ioFile);
+  }
+
   Future<void> prepareUploadPlanAndCostEstimates({
     UploadActions? uploadAction,
   }) async {
+    // for (var file in files) {
+    //   logger.d(
+    //       'File: ${file.ioFile.name}, parentFolderId: ${file.parentFolderId}');
+
+    //   _uploadUsingOrchestrator(file.ioFile);
+    // }
+
+    // return;
+
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     if (await _profileCubit.checkIfWalletMismatch()) {
@@ -596,4 +615,296 @@ class UploadCubit extends Cubit<UploadState> {
 
     return uploader;
   }
+
+  Future _uploadUsingOrchestrator(IOFile file) async {
+    final orchestrator = UploadOrchestrator(
+      turbo: _turbo,
+      metadataGenerator: ARFSUploadMetadataGenerator(
+        tagsGenerator: ARFSTagsGenetator(
+          appInfoServices: AppInfoServices(),
+          entity: EntityType.file,
+        ),
+      ),
+    );
+
+    logger.d('Uploading file: ${file.name}');
+
+    for (final file in files) {
+      await orchestrator.uploadFileStream(
+        file: file.ioFile,
+        args: ARFSUploadMetadataArgs(
+          isPrivate: false,
+          driveId: driveId,
+          parentFolderId: parentFolderId,
+        ),
+        wallet: _auth.currentUser!.wallet,
+      );
+
+      // for (var tag in metadata.tags) {
+      //   logger.d('Tag: ${tag.name} - ${tag.value}');
+      // }
+
+      // logger.d('Metadata: ${metadata.toString()}');
+    }
+  }
+}
+
+class UploadOrchestrator {
+  final ARFSUploadMetadataGenerator _metadataGenerator;
+  final TurboUploadService _turbo;
+
+  UploadOrchestrator({
+    required ARFSUploadMetadataGenerator metadataGenerator,
+    required TurboUploadService turbo,
+  })  : _turbo = turbo,
+        _metadataGenerator = metadataGenerator;
+
+  Future<void> uploadFileStream({
+    required IOFile file,
+    required ARFSUploadMetadataArgs args,
+    required Wallet wallet,
+  }) async {
+    logger.d('Uploading file: ${file.name}');
+
+    final stopwatch = Stopwatch()..start();
+
+    final metadata = await _metadataGenerator.generateMetadata(
+      file,
+      args,
+    );
+
+    logger.d('Metadata generated: $metadata');
+
+    for (var metadatatag in metadata.tags) {
+      logger.d('Metadata tag: ${metadatatag.name} - ${metadatatag.value}');
+    }
+
+    final dataStreamGenerator = file.openReadStream;
+
+    final fileLength = await file.length;
+
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    final fileDataItemEither = createDataItemTaskEither(
+      wallet: wallet,
+      dataStream: dataStreamGenerator,
+      dataStreamSize: fileLength,
+      tags: [
+        createTag('App-Name', 'ArDrive-App'),
+        createTag('App-Platform', 'Web'),
+        createTag('App-Version', '2.8.1'),
+        createTag('Unix-Time', now.toString()),
+        createTag('Content-Type', file.contentType),
+      ],
+    );
+
+    final fileDataItemResult = await fileDataItemEither.run();
+
+    late String dataTxId;
+
+    fileDataItemResult.match((l) => logger.e('dataTX deu ruim', l),
+        (fileDataItem) {
+      dataTxId = fileDataItem.id;
+      logger.d('stopwatch elapsed: ${stopwatch.elapsed.inSeconds} seconds');
+    });
+
+    final metadataJson = metadata.toJson()
+      ..putIfAbsent('dataTxId', () => dataTxId);
+
+    final metadataBytes = utf8
+        .encode(jsonEncode(metadataJson))
+        .map((e) => Uint8List.fromList([e]));
+
+    logger.d('Metadata generated: ${metadataJson.toString()}');
+
+    logger.d('File length in bytes: $fileLength');
+
+    final metadataFile = DataItemFile(
+        dataSize: metadataBytes.length,
+        streamGenerator: () => Stream.fromIterable(metadataBytes),
+        tags: metadata.tags.map((e) => createTag(e.name, e.value)).toList());
+
+    final dataItemFile = DataItemFile(
+      dataSize: fileLength,
+      streamGenerator: dataStreamGenerator,
+      tags: [
+        createTag('App-Name', 'ArDrive-App'),
+        createTag('App-Platform', 'Web'),
+        createTag('App-Version', '2.8.1'),
+        createTag('Unix-Time', now.toString()),
+        createTag('Content-Type', file.contentType),
+      ],
+    );
+
+    final createBundledDataItem = createBundledDataItemTaskEither(
+      dataItemFiles: [
+        metadataFile,
+        dataItemFile,
+      ],
+      wallet: wallet,
+      tags: [
+        createTag('App-Name', 'ArDrive-App'),
+        createTag('App-Platform', 'Web'),
+        createTag('App-Version', '2.8.1'),
+        createTag('Unix-Time', now.toString()),
+        createTag('Tip-Type', 'data upload'),
+      ],
+    );
+
+    final bundledDataItem = await createBundledDataItem.run();
+
+    bundledDataItem.match((l) => logger.e('bundled date item deu ruim'),
+        (bdi) async {
+      logger.d('Bundled Data Item');
+      logger.d('ID: ${bdi.id}');
+
+      // log stopwatch
+      logger.d('stopwatch elapsed: ${stopwatch.elapsed.inSeconds} seconds');
+
+      await _turbo.postWithHttp(
+        dataItem: bdi,
+        wallet: wallet,
+      );
+
+      stopwatch.stop();
+
+      logger.d(
+          'Upload took: ${stopwatch.elapsed.inSeconds} seconds to run for a file of size ${filesize(await file.length)}');
+    });
+  }
+
+  // Future<ARFSUploadMetadata> uploadFile(
+  //   IOFile file,
+  //   ARFSUploadMetadataArgs args,
+  //   Wallet wallet,
+  // ) async {
+  //   final stopwatch = Stopwatch()..start();
+
+  //   final metadata = await _metadataGenerator.generateMetadata(
+  //     file,
+  //     args,
+  //   );
+
+  //   final dataStreamGenerator = file.openReadStream;
+
+  //   // logger.d('Metadata generated: $metadata');
+
+  //   // for (var tag in metadata.tags) {
+  //   //   logger.d('Tag: ${tag.name} - ${tag.value}');
+  //   // }
+
+  //   logger.d('Data stream size: ${await file.length}');
+
+  //   logger.d('Uploading metadata...');
+
+  //   final metadataBytes = utf8.encode(jsonEncode(metadata.toJson()));
+
+  //   final metadataDataItemTaskEither = createDataItemTaskEither(
+  //     wallet: wallet,
+  //     tags: metadata.tags.map((e) => createTag(e.name, e.value)).toList(),
+  //     dataStream: () => Stream.fromIterable([metadataBytes]),
+  //     dataStreamSize: metadataBytes.length,
+  //   );
+
+  //   // logger.d('Metadata data item task created');
+
+  //   // logger.d('Running metadata data item task...');
+
+  //   // final metadataDataItemTask = await metadataDataItemTaskEither.run();
+
+  //   // logger.d('Metadata data item task finished');
+
+  //   // logger.d('Matching metadata data item task...');
+
+  //   // metadataDataItemTask.match((l) => print('deu ruim'), (metadataDataItem) {
+  //   //   print(metadataDataItem.id);
+  //   //   print(metadataDataItem.dataSize);
+  //   // });
+
+  //   // logger.d('Creating file data item task...');
+
+  //   // logger.d('Creating file tags...');
+
+  //   final fileTags = [
+  //     createTag('App-Name', 'ArDrive-App'),
+  //     createTag('App-Platform', 'Web'),
+  //     createTag('App-Version', '2.8.1'),
+  //     createTag('Unix-Time', '1693427590'),
+  //     createTag('Content-Type', file.contentType),
+  //   ];
+
+  //   // logger.d('File tags created');
+
+  //   // logger.d('Running file data item task...');
+
+  //   final fileDataItemTaskEither = createDataItemTaskEither(
+  //     wallet: wallet,
+  //     tags: fileTags,
+  //     dataStream: dataStreamGenerator,
+  //     dataStreamSize: await file.length,
+  //   );
+
+  //   // logger.d('File data item task finished');
+
+  //   // logger.d('Matching file data item task...');
+
+  //   // final fileDataItemTask = await fileDataItemTaskEither.run();
+  //   // fileDataItemTask.match((l) => print('deu ruim'), (fileDataItem) {
+  //   //   print(fileDataItem.id);
+  //   //   print(fileDataItem.dataSize);
+  //   // });
+
+  //   // logger.d('Creating data bundle task...');
+
+  //   // logger.d('Running data bundle task...');
+
+  //   final dataBundleTaskEither = createDataBundleTaskEither([
+  //     metadataDataItemTaskEither,
+  //     fileDataItemTaskEither,
+  //   ]);
+
+  //   // logger.d('Data bundle task finished');
+
+  //   // logger.d('Matching data bundle task...');
+
+  //   final bdiTags = [
+  //     createTag('App-Name', 'ArDrive-App'),
+  //     createTag('App-Platform', 'Web'),
+  //     createTag('App-Version', '2.8.1'),
+  //     createTag('Unix-Time', '1693422910'),
+  //   ];
+
+  //   // logger.d('Creating bundled data item task...');
+
+  //   // logger.d('Running bundled data item task...');
+
+  //   final bdiTaskEither = createBundledDataItemTaskEither(
+  //     wallet: wallet,
+  //     dataBundleTaskEither: dataBundleTaskEither,
+  //     tags: bdiTags,
+  //   );
+
+  //   // logger.d('Bundled data item task finished');
+
+  //   final bdiTask = await bdiTaskEither.run();
+
+  //   bdiTask.match((l) => print('deu ruim'), (bdi) async {
+  //     logger.d('Bundled Data Item');
+
+  //     print(bdi.id);
+  //     print(bdi.dataItemSize);
+  //     print(bdi.dataSize);
+
+  //     _turbo.postDataItemStream(
+  //       dataItemStream: bdi.streamGenerator(),
+  //       wallet: wallet,
+  //     );
+
+  //     stopwatch.stop();
+  //     logger.d(
+  //         'Upload took: ${stopwatch.elapsed.inSeconds} seconds to run for a file of size ${filesize(await file.length)}');
+  //   });
+
+  //   return metadata;
+  // }
 }

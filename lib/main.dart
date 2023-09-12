@@ -15,6 +15,7 @@ import 'package:ardrive/pst/contract_oracle.dart';
 import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
+import 'package:ardrive/services/app/app_info_services.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
@@ -62,6 +63,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final localStore = await LocalKeyValueStore.getInstance();
+
+  AppInfoServices().loadAppInfo();
 
   configService = ConfigService(
     appFlavors: AppFlavors(EnvFetcher()),

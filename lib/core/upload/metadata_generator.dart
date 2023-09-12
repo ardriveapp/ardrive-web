@@ -146,7 +146,8 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
   // TODO: Review entity.dart file
   @override
   List<Tag> generateTags(ARFSTagsArgs arguments) {
-    return _appTags + _entityTags(_entity, arguments) + _uTags;
+    return _appTags + _entityTags(_entity, arguments);
+    // + _uTags;
   }
 
   List<Tag> _entityTags(
@@ -160,6 +161,8 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
     final driveId = Tag(EntityTag.driveId, arguments.driveId!);
 
     tags.add(driveId);
+
+    tags.add(Tag(EntityTag.contentType, 'application/json'));
 
     switch (_entity) {
       case arfs.EntityType.file:
@@ -200,8 +203,10 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
       EntityTag.unixTime,
       (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
     );
+    final appName = Tag(EntityTag.appName, 'ArDrive-App');
 
     return [
+      appName,
       appVersion,
       appPlatform,
       arfsTag,
@@ -209,14 +214,14 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
     ];
   }
 
-  List<Tag> get _uTags {
-    return [
-      Tag(EntityTag.appName, 'SmartWeaveAction'),
-      Tag(EntityTag.appVersion, '0.3.0'),
-      Tag(EntityTag.input, '{"function":"mint"}'),
-      Tag(EntityTag.contract, 'KTzTXT_ANmF84fWEKHzWURD1LWd9QaFR9yfYUwH2Lxw'),
-    ];
-  }
+  // List<Tag> get _uTags {
+  //   return [
+  //     Tag(EntityTag.appName, 'SmartWeaveAction'),
+  //     Tag(EntityTag.appVersion, '0.3.0'),
+  //     Tag(EntityTag.input, '{"function":"mint"}'),
+  //     Tag(EntityTag.contract, 'KTzTXT_ANmF84fWEKHzWURD1LWd9QaFR9yfYUwH2Lxw'),
+  //   ];
+  // }
 }
 
 class ARFSUploadMetadataArgsValidator {
