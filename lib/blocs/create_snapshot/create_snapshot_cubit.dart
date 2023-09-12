@@ -530,7 +530,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       if (_uploadMethod == UploadMethod.ar) {
         await _arweave.postTx(_preparedTx!);
       } else {
-        turboService.postDataItem(
+        await turboService.postDataItem(
           dataItem: _preparedDataItem!,
           wallet: (_profileCubit.state as ProfileLoggedIn).wallet,
         );
