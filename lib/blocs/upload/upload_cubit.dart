@@ -72,7 +72,9 @@ class UploadCubit extends Cubit<UploadState> {
       }
 
       emit((state as UploadReady).copyWith(
-          uploadMethod: method, isButtonToUploadEnabled: isButtonEnabled));
+        uploadMethod: method,
+        isButtonToUploadEnabled: isButtonEnabled,
+      ));
     }
   }
 

@@ -920,11 +920,14 @@ class ArweaveService {
     Entity entity,
     Wallet wallet, {
     SecretKey? key,
+    bool skipSignature = false,
   }) async {
     final item = await entity.asDataItem(key);
     item.setOwner(await wallet.getOwner());
 
-    await item.sign(wallet);
+    if (!skipSignature) {
+      await item.sign(wallet);
+    }
 
     return item;
   }

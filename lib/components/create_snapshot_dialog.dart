@@ -1,11 +1,17 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
-import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/html/html_util.dart';
@@ -14,8 +20,6 @@ import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../utils/usd_upload_cost_to_string.dart';
 
 Future<void> promptToCreateSnapshot(
   BuildContext context,
@@ -31,6 +35,13 @@ Future<void> promptToCreateSnapshot(
         profileCubit: context.read<ProfileCubit>(),
         pst: context.read<PstService>(),
         tabVisibility: TabVisibilitySingleton(),
+        auth: context.read<ArDriveAuth>(),
+        paymentService: context.read<PaymentService>(),
+        turboBalanceRetriever: TurboBalanceRetriever(
+          paymentService: context.read<PaymentService>(),
+        ),
+        appConfig: context.read<ConfigService>().config,
+        turboService: context.read<TurboUploadService>(),
       ),
       child: CreateSnapshotDialog(
         drive: drive,
@@ -364,31 +375,6 @@ Widget _confirmDialog(
                       ),
                       style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
-                    const Divider(),
-                    const SizedBox(height: 16),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: appLocalizationsOf(context).cost(
-                              state.arUploadCost,
-                            ),
-                          ),
-                          if (state.usdUploadCost != null)
-                            TextSpan(
-                              text: usdUploadCostToString(
-                                state.usdUploadCost!,
-                              ),
-                            )
-                          else
-                            TextSpan(
-                              text:
-                                  ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
-                            ),
-                        ],
-                        style: ArDriveTypography.body.buttonNormalRegular(),
-                      ),
-                    ),
                     Text.rich(
                       TextSpan(
                         children: [
@@ -400,6 +386,27 @@ Widget _confirmDialog(
                         ],
                         style: ArDriveTypography.body.buttonNormalRegular(),
                       ),
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    // TODO: is free thanks to turbo
+                    PaymentMethodSelector(
+                      uploadMethod: state.uploadMethod,
+                      costEstimateTurbo: state.costEstimateTurbo,
+                      costEstimateAr: state.costEstimateAr,
+                      hasNoTurboBalance: state.hasNoTurboBalance,
+                      isTurboUploadPossible: true,
+                      arBalance: state.arBalance,
+                      turboCredits: state.turboCredits,
+                      onTurboTopupSucess: () {
+                        // TODO -
+                      },
+                      onArSelect: () {
+                        createSnapshotCubit.setUploadMethod(UploadMethod.ar);
+                      },
+                      onTurboSelect: () {
+                        createSnapshotCubit.setUploadMethod(UploadMethod.turbo);
+                      },
                     ),
                   ],
                 ),

@@ -2,15 +2,22 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show BytesBuilder;
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/pst/pst.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
@@ -18,7 +25,6 @@ import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
 import 'package:arweave/arweave.dart';
-import 'package:arweave/utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,10 +35,15 @@ part 'create_snapshot_state.dart';
 
 class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   final ArweaveService _arweave;
+  final PaymentService _paymentService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final PstService _pst;
   final TabVisibilitySingleton _tabVisibility;
+  final TurboBalanceRetriever turboBalanceRetriever;
+  final ArDriveAuth auth;
+  final AppConfig appConfig;
+  final TurboUploadService turboService;
   @visibleForTesting
   bool throwOnDataComputingForTesting;
   @visibleForTesting
@@ -44,7 +55,21 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late String _ownerAddress;
   late Range _range;
   late int _currentHeight;
-  late Transaction _preparedTx;
+  Uint8List? data;
+  DataItem? _preparedDataItem;
+  Transaction? _preparedTx;
+
+  UploadMethod _uploadMethod = UploadMethod.ar;
+  UploadCostEstimate _costEstimateAr = UploadCostEstimate.zero();
+  UploadCostEstimate _costEstimateTurbo = UploadCostEstimate.zero();
+  bool _hasNoTurboBalance = false;
+  String _arBalance = '';
+  String _turboCredits = '';
+  bool _isButtonToUploadEnabled = false;
+  bool _isTurboUploadPossible = true;
+  bool _sufficentCreditsBalance = false;
+  bool _sufficientArBalance = false;
+  bool _isFreeThanksToTurbo = false;
 
   bool _wasSnapshotDataComputingCanceled = false;
 
@@ -53,14 +78,20 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   CreateSnapshotCubit({
     required ArweaveService arweave,
+    required PaymentService paymentService,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required PstService pst,
     required TabVisibilitySingleton tabVisibility,
+    required this.turboBalanceRetriever,
+    required this.auth,
+    required this.appConfig,
+    required this.turboService,
     this.throwOnDataComputingForTesting = false,
     this.throwOnSignTxForTesting = false,
     this.returnWithoutSigningForTesting = false,
   })  : _arweave = arweave,
+        _paymentService = paymentService,
         _profileCubit = profileCubit,
         _driveDao = driveDao,
         _pst = pst,
@@ -98,15 +129,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _setupSnapshotEntityWithBlob(data);
 
-    await _prepareAndSignTx(
-      _snapshotEntity!,
-      data,
+    await _computeCost();
+
+    await _emitConfirming(
+      dataSize: data.length,
     );
-
-    final costResult = await _computeCostAndCheckBalance();
-    if (costResult == null) return;
-
-    await _emitConfirming(costResult, data.length);
   }
 
   bool _wasCancelled() {
@@ -180,7 +207,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> _prepareAndSignTx(
     SnapshotEntity snapshotEntity,
-    Uint8List data,
+    // Uint8List data,
   ) async {
     logger.i('About to prepare and sign snapshot transaction');
 
@@ -191,10 +218,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     ));
 
     await prepareTx(isArConnectProfile);
-    await _pst.addCommunityTipToTx(_preparedTx);
+    // await _pst.addCommunityTipToTx(_preparedDataItem); // Turbo should be the one setting the tip, right?
     await signTx(isArConnectProfile);
 
-    snapshotEntity.txId = _preparedTx.id;
+    if (_uploadMethod == UploadMethod.ar) {
+      snapshotEntity.txId = _preparedTx!.id;
+    } else {
+      snapshotEntity.txId = _preparedDataItem!.id;
+    }
   }
 
   @visibleForTesting
@@ -207,13 +238,29 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
-      _preparedTx = await _arweave.prepareEntityTx(
-        _snapshotEntity!,
-        wallet,
-        null,
-        // We'll sign it just after adding the tip
-        skipSignature: true,
-      );
+      if (_uploadMethod == UploadMethod.ar) {
+        _preparedTx = await _arweave.prepareEntityTx(
+          _snapshotEntity!,
+          wallet,
+          null,
+          // We'll sign it just after adding the tip
+          skipSignature: true,
+        );
+      } else {
+        _preparedDataItem = await _arweave.prepareEntityDataItem(
+          _snapshotEntity!,
+          wallet,
+          // We'll sign it just after adding the tip
+          skipSignature: true,
+        );
+      }
+
+      // _preparedDataItem = await _arweave.prepareEntityDataItem(
+      //   _snapshotEntity!,
+      //   wallet,
+      //   // We'll sign it just after adding the tip
+      //   skipSignature: true,
+      // );
     } catch (e) {
       final isTabFocused = _tabVisibility.isTabFocused();
       if (isArConnectProfile && !isTabFocused) {
@@ -249,7 +296,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         return;
       }
 
-      await _preparedTx.sign(wallet);
+      if (_uploadMethod == UploadMethod.ar) {
+        await _preparedTx!.sign(wallet);
+      } else {
+        await _preparedDataItem!.sign(wallet);
+      }
     } catch (e) {
       final isTabFocused = _tabVisibility.isTabFocused();
       if (isArConnectProfile && !isTabFocused) {
@@ -323,37 +374,110 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _snapshotEntity = snapshotEntity;
   }
 
-  Future<BigInt?> _computeCostAndCheckBalance() async {
-    final totalCost = _preparedTx.reward + _preparedTx.quantity;
+  Future<void> _computeCost() async {
+    final profileState = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profileState.wallet;
 
-    final profile = _profileCubit.state as ProfileLoggedIn;
-    final walletBalance = profile.walletBalance;
+    UploadCostEstimateCalculatorForAR costCalculatorForAr =
+        UploadCostEstimateCalculatorForAR(
+      arweaveService: _arweave,
+      pstService: _pst,
+      arCostToUsd: ConvertArToUSD(arweave: _arweave),
+    );
 
-    if (walletBalance < totalCost) {
-      emit(CreateSnapshotInsufficientBalance(
-        walletBalance: walletBalance.toString(),
-        arCost: winstonToAr(totalCost),
-      ));
-      return null;
-    }
+    final turboCostCalc = TurboCostCalculator(paymentService: _paymentService);
+    TurboUploadCostCalculator costCalculatorForTurbo =
+        TurboUploadCostCalculator(
+      turboCostCalculator: turboCostCalc,
+      priceEstimator: TurboPriceEstimator(
+        wallet: wallet,
+        paymentService: _paymentService,
+        costCalculator: turboCostCalc,
+      ),
+    );
 
-    return totalCost;
+    _costEstimateAr = await costCalculatorForAr.calculateCost(
+      totalSize: _snapshotEntity!.data!.length,
+    );
+    _costEstimateTurbo = await costCalculatorForTurbo.calculateCost(
+      totalSize: _snapshotEntity!.data!.length,
+    );
+
+    final turboBalance =
+        await turboBalanceRetriever.getBalance(wallet).catchError((e) {
+      logger.e('Error while retrieving turbo balance', e);
+      return BigInt.zero;
+    });
+    _hasNoTurboBalance = turboBalance == BigInt.zero;
+    _turboCredits = convertCreditsToLiteralString(turboBalance);
+    _arBalance = convertCreditsToLiteralString(auth.currentUser!.walletBalance);
+
+    bool sufficientBalanceToPayWithAR =
+        profileState.walletBalance >= _costEstimateAr.totalCost;
+    bool sufficientBalanceToPayWithTurbo =
+        _costEstimateTurbo.totalCost <= turboBalance;
+
+    _sufficientArBalance = sufficientBalanceToPayWithAR;
+    _sufficentCreditsBalance = sufficientBalanceToPayWithTurbo;
+
+    bool isTurboEnabled = appConfig.useTurboUpload;
+    _isTurboUploadPossible =
+        isTurboEnabled && _costEstimateTurbo.totalCost <= turboBalance;
   }
 
-  Future<void> _emitConfirming(
-    BigInt totalCost,
-    int dataSize,
-  ) async {
-    final arUploadCost = winstonToAr(totalCost);
-
-    final double? usdUploadCost = await ConvertArToUSD(arweave: _arweave)
-        .convertForUSD(double.parse(arUploadCost));
-
+  Future<void> _emitConfirming({
+    required int
+        dataSize, // TODO: pass the correct value depending on v2 vs dataitem
+  }) async {
     emit(ConfirmingSnapshotCreation(
       snapshotSize: dataSize,
-      arUploadCost: arUploadCost,
-      usdUploadCost: usdUploadCost,
+      costEstimateAr: _costEstimateAr,
+      costEstimateTurbo: _costEstimateTurbo,
+      hasNoTurboBalance: _hasNoTurboBalance,
+      isTurboUploadPossible: _isTurboUploadPossible,
+      arBalance: _arBalance,
+      turboCredits: _turboCredits,
+      uploadMethod: _uploadMethod,
+      isButtonToUploadEnabled: _isButtonToUploadEnabled,
+      sufficientBalanceToPayWithAr: _sufficientArBalance,
+      sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
+      isFreeThanksToTurbo: _isFreeThanksToTurbo,
     ));
+  }
+
+  void setUploadMethod(UploadMethod method) {
+    logger.d('Upload method set to $method');
+    _uploadMethod = method;
+
+    _refreshIsButtonEnabled();
+  }
+
+  void _refreshIsButtonEnabled() {
+    _isButtonToUploadEnabled = false;
+    if (state is ConfirmingSnapshotCreation) {
+      final stateAsConfirming = state as ConfirmingSnapshotCreation;
+      logger.d('Sufficient Balance To Pay With AR: $_sufficientArBalance');
+
+      if (_uploadMethod == UploadMethod.ar && _sufficientArBalance) {
+        logger.d('Enabling button for AR payment method');
+        _isButtonToUploadEnabled = true;
+      } else if (_uploadMethod == UploadMethod.turbo &&
+          stateAsConfirming.isTurboUploadPossible &&
+          _sufficentCreditsBalance) {
+        logger.d('Enabling button for Turbo payment method');
+        _isButtonToUploadEnabled = true;
+      } else if (stateAsConfirming.isFreeThanksToTurbo) {
+        logger.d('Enabling button for free upload using Turbo');
+        _isButtonToUploadEnabled = true;
+      } else {
+        logger.d('Disabling button');
+      }
+
+      emit(stateAsConfirming.copyWith(
+        uploadMethod: _uploadMethod,
+        isButtonToUploadEnabled: _isButtonToUploadEnabled,
+      ));
+    }
   }
 
   Future<Uint8List> _jsonMetadataOfTxId(String txId) async {
@@ -396,10 +520,21 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       return;
     }
 
+    await _prepareAndSignTx(
+      _snapshotEntity!,
+    );
+
     try {
       emit(UploadingSnapshot());
 
-      await _arweave.postTx(_preparedTx);
+      if (_uploadMethod == UploadMethod.ar) {
+        await _arweave.postTx(_preparedTx!);
+      } else {
+        turboService.postDataItem(
+          dataItem: _preparedDataItem!,
+          wallet: (_profileCubit.state as ProfileLoggedIn).wallet,
+        );
+      }
 
       emit(SnapshotUploadSuccess());
     } catch (err, stacktrace) {
