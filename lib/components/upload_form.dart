@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
+import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
@@ -24,7 +25,6 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:arweave/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -342,7 +342,8 @@ class _UploadFormState extends State<UploadForm> {
             _uploadMethod = state.uploadMethod;
 
             logger.d(
-                ' is button to upload enabled: ${state.isButtonToUploadEnabled}');
+              ' is button to upload enabled: ${state.isButtonToUploadEnabled}',
+            );
 
             final v2Files = state.uploadPlanForAR.fileV2UploadHandles.values
                 .map((e) => e)
@@ -495,130 +496,31 @@ class _UploadFormState extends State<UploadForm> {
                       height: 8,
                     ),
                   },
-                  if (!state.isFreeThanksToTurbo) ...[
-                    Text(
-                      'Payment method:',
-                      style: ArDriveTypography.body.buttonLargeBold(),
-                    ),
-                    const SizedBox(
-                      height: 8,
-                    ),
-                    ArDriveRadioButtonGroup(
-                      size: 15,
-                      onChanged: (index, value) {
-                        switch (index) {
-                          case 0:
-                            if (value) {
-                              context
-                                  .read<UploadCubit>()
-                                  .setUploadMethod(UploadMethod.ar);
-                            }
-                            break;
-
-                          case 1:
-                            if (value) {
-                              context
-                                  .read<UploadCubit>()
-                                  .setUploadMethod(UploadMethod.turbo);
-                            }
-                            break;
-                        }
+                  if (!state.isFreeThanksToTurbo)
+                    PaymentMethodSelector(
+                      uploadMethod: state.uploadMethod,
+                      costEstimateTurbo: state.costEstimateTurbo,
+                      costEstimateAr: state.costEstimateAr,
+                      hasNoTurboBalance: state.isZeroBalance,
+                      isTurboUploadPossible: state.isTurboUploadPossible,
+                      arBalance: state.arBalance,
+                      turboCredits: state.turboCredits,
+                      onArSelect: () {
+                        context
+                            .read<UploadCubit>()
+                            .setUploadMethod(UploadMethod.ar);
                       },
-                      options: [
-                        RadioButtonOptions(
-                          value: state.uploadMethod == UploadMethod.ar,
-                          // TODO: Localization
-                          text:
-                              'Cost: ${winstonToAr(state.costEstimateAr.totalCost)} AR',
-                          textStyle: ArDriveTypography.body.buttonLargeBold(),
-                        ),
-                        if (state.costEstimateTurbo != null &&
-                            state.isTurboUploadPossible)
-                          RadioButtonOptions(
-                            value: state.uploadMethod == UploadMethod.turbo,
-                            // TODO: Localization
-                            text: state.isZeroBalance
-                                ? ''
-                                : 'Cost: ${winstonToAr(state.costEstimateTurbo!.totalCost)} Credits',
-                            textStyle: ArDriveTypography.body.buttonLargeBold(),
-                            content: state.isZeroBalance
-                                ? GestureDetector(
-                                    onTap: () {
-                                      showTurboModal(context, onSuccess: () {
-                                        context
-                                            .read<UploadCubit>()
-                                            .startUploadPreparation(
-                                              isRetryingToPayWithTurbo: true,
-                                            );
-                                      });
-                                    },
-                                    child: ArDriveClickArea(
-                                      child: RichText(
-                                        text: TextSpan(
-                                          children: [
-                                            TextSpan(
-                                              text: 'Use Turbo Credits',
-                                              style: ArDriveTypography.body
-                                                  .buttonLargeBold(
-                                                    color:
-                                                        ArDriveTheme.of(context)
-                                                            .themeData
-                                                            .colors
-                                                            .themeFgDefault,
-                                                  )
-                                                  .copyWith(
-                                                    decoration: TextDecoration
-                                                        .underline,
-                                                  ),
-                                            ),
-                                            TextSpan(
-                                              text: ' for faster uploads.',
-                                              style: ArDriveTypography.body
-                                                  .buttonLargeBold(
-                                                color: ArDriveTheme.of(context)
-                                                    .themeData
-                                                    .colors
-                                                    .themeFgDefault,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                : null,
-                          )
-                      ],
-                      builder: (index, radioButton) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          radioButton,
-                          Padding(
-                            padding: const EdgeInsets.only(left: 24.0),
-                            child: Text(
-                              index == 0
-                                  ? 'Wallet Balance: ${state.arBalance} AR'
-                                  : 'Turbo Balance: ${state.turboCredits} Credits',
-                              style: ArDriveTypography.body.buttonNormalBold(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgMuted,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      onTurboSelect: () {
+                        context
+                            .read<UploadCubit>()
+                            .setUploadMethod(UploadMethod.turbo);
+                      },
+                      onTurboTopupSucess: () {
+                        context.read<UploadCubit>().startUploadPreparation(
+                              isRetryingToPayWithTurbo: true,
+                            );
+                      },
                     ),
-                    const SizedBox(
-                      height: 16,
-                    ),
-                    _getInsufficientBalanceMessage(
-                      sufficentCreditsBalance: state.sufficentCreditsBalance,
-                      sufficientArBalance: state.sufficientArBalance,
-                    ),
-                  ]
                 ],
               ),
               actions: [
@@ -857,7 +759,7 @@ class _UploadFormState extends State<UploadForm> {
         sufficientArBalance) {
       return GestureDetector(
         onTap: () {
-          showTurboModal(context, onSuccess: () {
+          showTurboTopupModal(context, onSuccess: () {
             context.read<UploadCubit>().startUploadPreparation(
                   isRetryingToPayWithTurbo: true,
                 );
@@ -907,7 +809,7 @@ class _UploadFormState extends State<UploadForm> {
     } else if (!sufficentCreditsBalance && !sufficientArBalance) {
       return GestureDetector(
         onTap: () {
-          showTurboModal(context, onSuccess: () {
+          showTurboTopupModal(context, onSuccess: () {
             context.read<UploadCubit>().startUploadPreparation(
                   isRetryingToPayWithTurbo: true,
                 );

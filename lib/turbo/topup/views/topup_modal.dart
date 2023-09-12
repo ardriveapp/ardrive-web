@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
-void showTurboModal(BuildContext context, {Function()? onSuccess}) {
+void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
   final activityTracker = context.read<ActivityTracker>();
   final sessionManager = TurboSessionManager();
 
@@ -281,7 +281,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             Navigator.of(modalContext).pop();
             Navigator.of(context).pop();
 
-            showTurboModal(parentContext);
+            showTurboTopupModal(parentContext);
           },
         ),
       ),
