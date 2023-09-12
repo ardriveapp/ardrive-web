@@ -336,6 +336,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   late AudioPlayer player;
   LoadState _loadState = LoadState.loading;
   bool _isVolumeSliderVisible = false;
+  bool _wasPlaying = false;
 
   @override
   void initState() {
@@ -377,8 +378,6 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   @override
   Widget build(BuildContext context) {
     var colors = ArDriveTheme.of(context).themeData.colors;
-
-    player.duration;
 
     var currentTime = getTimeString(player.position);
     var duration =
@@ -444,7 +443,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                                     0,
                                 onChangeStart: (v) {
                                   setState(() {
-                                    player.pause();
+                                    _wasPlaying = player.playing;
+                                    if (_wasPlaying) {
+                                      player.pause();
+                                    }
                                   });
                                 },
                                 onChanged: (v) {
@@ -455,7 +457,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                                 },
                                 onChangeEnd: (v) {
                                   setState(() {
-                                    player.play();
+                                    if (_wasPlaying) {
+                                      player.play();
+                                    }
                                   });
                                 })),
                         const SizedBox(height: 4),
@@ -610,9 +614,9 @@ class _VolumeSliderWidgetState extends State<VolumeSliderWidget> {
                         trackShape:
                             _NoAdditionalHeightRoundedRectSliderTrackShape(),
                         inactiveTrackColor: colors.themeBgSubtle,
-                        activeTrackColor: colors.themeFgDefault,
+                        activeTrackColor: colors.themeFgMuted,
                         overlayShape: SliderComponentShape.noOverlay,
-                        thumbColor: colors.themeFgDefault,
+                        thumbColor: colors.themeFgMuted,
                         thumbShape: const RoundSliderThumbShape(
                           enabledThumbRadius: 8,
                         )),
