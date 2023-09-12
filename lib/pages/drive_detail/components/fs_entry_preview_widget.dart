@@ -335,6 +335,7 @@ enum LoadState { loading, loaded, failed }
 class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   late AudioPlayer player;
   LoadState _loadState = LoadState.loading;
+  bool _isVolumeSliderVisible = false;
 
   @override
   void initState() {
@@ -466,101 +467,170 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                                child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Row(children: [
-                                      IconButton(
-                                          onPressed: () {
-                                            // setState(() {
-                                            // });
+                        MouseRegion(
+                            onExit: (event) {
+                              setState(() {
+                                _isVolumeSliderVisible = false;
+                              });
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                    child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: VolumeSliderWidget(
+                                          volume: player.volume,
+                                          setVolume: (v) {
+                                            setState(() {
+                                              player.setVolume(v);
+                                            });
                                           },
-                                          icon: const Icon(
-                                              Icons.volume_up_outlined,
-                                              size: 24)),
-                                      Expanded(
-                                          child: SliderTheme(
-                                              data: SliderThemeData(
-                                                  trackHeight: 4,
-                                                  trackShape:
-                                                      _NoAdditionalHeightRoundedRectSliderTrackShape(),
-                                                  inactiveTrackColor:
-                                                      colors.themeBgSubtle,
-                                                  activeTrackColor:
-                                                      colors.themeFgDefault,
-                                                  overlayShape:
-                                                      SliderComponentShape
-                                                          .noOverlay,
-                                                  thumbColor:
-                                                      colors.themeFgDefault,
-                                                  thumbShape:
-                                                      const RoundSliderThumbShape(
-                                                    enabledThumbRadius: 8,
-                                                  )),
-                                              child: Slider(
-                                                  value: player.volume,
-                                                  min: 0.0,
-                                                  max: 1.0,
-                                                  onChanged: (v) {
-                                                    setState(() {
-                                                      player.setVolume(v);
-                                                    });
-                                                  })))
-                                    ]))),
-                            MaterialButton(
-                              onPressed: () {
-                                setState(() {
-                                  if (player.playerState.processingState ==
-                                          ProcessingState.completed ||
-                                      !player.playing) {
-                                    if (player.position == player.duration) {
-                                      player.stop();
-                                      player.seek(Duration.zero);
-                                    }
-                                    player.play();
-                                  } else {
-                                    player.pause();
-                                  }
-                                });
-                              },
-                              color: colors.themeAccentBrand,
-                              shape: const CircleBorder(),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: (player.playerState.processingState ==
-                                            ProcessingState.completed ||
-                                        !player.playing)
-                                    ? Icon(
-                                        Icons.play_arrow_outlined,
-                                        size: 32,
-                                        color: colors.themeFgOnAccent,
-                                      )
-                                    : Icon(
-                                        Icons.pause_outlined,
-                                        size: 32,
-                                        color: colors.themeFgOnAccent,
-                                      ),
-                              ),
-                            ),
-                            Expanded(
-                                child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: IconButton(
-                                        onPressed: () {
-                                          // setState(() {
-                                          // });
-                                        },
-                                        icon: const Icon(
-                                            Icons.settings_outlined,
-                                            size: 24)))),
-                          ],
-                        )
+                                          sliderVisible: _isVolumeSliderVisible,
+                                          setSliderVisible: (v) {
+                                            setState(() {
+                                              _isVolumeSliderVisible = v;
+                                            });
+                                          },
+                                        ))),
+                                MaterialButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      if (player.playerState.processingState ==
+                                              ProcessingState.completed ||
+                                          !player.playing) {
+                                        if (player.position ==
+                                            player.duration) {
+                                          player.stop();
+                                          player.seek(Duration.zero);
+                                        }
+                                        player.play();
+                                      } else {
+                                        player.pause();
+                                      }
+                                    });
+                                  },
+                                  color: colors.themeAccentBrand,
+                                  shape: const CircleBorder(),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8),
+                                    child:
+                                        (player.playerState.processingState ==
+                                                    ProcessingState.completed ||
+                                                !player.playing)
+                                            ? Icon(
+                                                Icons.play_arrow_outlined,
+                                                size: 32,
+                                                color: colors.themeFgOnAccent,
+                                              )
+                                            : Icon(
+                                                Icons.pause_outlined,
+                                                size: 32,
+                                                color: colors.themeFgOnAccent,
+                                              ),
+                                  ),
+                                ),
+                                Expanded(
+                                    child: Align(
+                                        alignment: Alignment.centerRight,
+                                        child: IconButton(
+                                            onPressed: () {
+                                              // setState(() {
+                                              // });
+                                            },
+                                            icon: const Icon(
+                                                Icons.settings_outlined,
+                                                size: 24)))),
+                              ],
+                            ))
                       ])
                     ])));
+  }
+}
+
+class VolumeSliderWidget extends StatefulWidget {
+  const VolumeSliderWidget({
+    Key? key,
+    required this.volume,
+    required this.setVolume,
+    required this.sliderVisible,
+    required this.setSliderVisible,
+  }) : super(key: key);
+
+  final double volume;
+  final Function(double) setVolume;
+  final bool sliderVisible;
+  final Function(bool) setSliderVisible;
+
+  @override
+  State<VolumeSliderWidget> createState() => _VolumeSliderWidgetState();
+}
+
+class _VolumeSliderWidgetState extends State<VolumeSliderWidget> {
+  double _lastVolume = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    var colors = ArDriveTheme.of(context).themeData.colors;
+
+    bool isMuted = widget.volume <= 0;
+
+    return Row(children: [
+      MouseRegion(
+        onEnter: (event) {
+          widget.setSliderVisible(true);
+        },
+        child: IconButton(
+            onPressed: () {
+              setState(() {
+                if (isMuted) {
+                  widget.setVolume(_lastVolume);
+                } else {
+                  if (widget.volume > 0) {
+                    _lastVolume = widget.volume;
+                    widget.setVolume(0);
+                  }
+                }
+              });
+            },
+            icon: Icon(
+              isMuted ? Icons.volume_off_outlined : Icons.volume_up_outlined,
+              size: 24,
+            )),
+      ),
+      Expanded(
+          child: ClipRect(
+              child: AnimatedSlide(
+                  offset: Offset(widget.sliderVisible ? 0 : -1, 0),
+                  duration: const Duration(milliseconds: 100),
+                  child: SliderTheme(
+                    data: SliderThemeData(
+                        trackHeight: 4,
+                        trackShape:
+                            _NoAdditionalHeightRoundedRectSliderTrackShape(),
+                        inactiveTrackColor: colors.themeBgSubtle,
+                        activeTrackColor: colors.themeFgDefault,
+                        overlayShape: SliderComponentShape.noOverlay,
+                        thumbColor: colors.themeFgDefault,
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 8,
+                        )),
+                    child: Slider(
+                      value: widget.volume,
+                      min: 0.0,
+                      max: 1.0,
+                      onChanged: (v) {
+                        widget.setVolume(v);
+                      },
+                      onChangeStart: (v) {
+                        setState(() {
+                          _lastVolume = v;
+                        });
+                      },
+                    ),
+                  ))))
+    ]);
   }
 }
 
