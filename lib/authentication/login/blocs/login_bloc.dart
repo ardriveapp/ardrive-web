@@ -216,7 +216,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     try {
       emit(LoginLoading());
 
-      await _arConnectService.connect();
+      final hasPermissions = await _arConnectService.checkPermissions();
+      if (!hasPermissions) {
+        await _arConnectService.connect();
+      }
 
       if (!(await _arConnectService.checkPermissions())) {
         throw Exception('ArConnect permissions not granted');
