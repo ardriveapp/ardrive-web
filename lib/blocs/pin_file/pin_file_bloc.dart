@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
@@ -28,6 +29,8 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
   final TurboUploadService _turboUploadService;
   final ProfileCubit _profileCubit;
   final FileIdResolver _fileIdResolver;
+  final ArDriveCrypto _crypto;
+
   final nameTextController = TextEditingController();
   final DriveID _driveId;
   final FolderID _parentFolderId;
@@ -40,6 +43,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     required FileIdResolver fileIdResolver,
     required DriveID driveID,
     required FolderID parentFolderId,
+    required ArDriveCrypto crypto,
   })  : _fileIdResolver = fileIdResolver,
         _arweave = arweave,
         _driveDao = driveDao,
@@ -47,6 +51,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         _profileCubit = profileCubit,
         _driveId = driveID,
         _parentFolderId = parentFolderId,
+        _crypto = crypto,
         super(const PinFileInitial()) {
     nameTextController.text = '';
 
@@ -294,6 +299,14 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     );
 
     await _driveDao.transaction(() async {
+      final driveKey = await _driveDao.getDriveKey(
+        _driveId,
+        profileState.cipherKey,
+      );
+      final fileKey = driveKey != null
+          ? await _crypto.deriveFileKey(driveKey, newFileEntity.id!)
+          : null;
+
       final parentFolder = await _driveDao
           .folderById(driveId: _driveId, folderId: _parentFolderId)
           .getSingle();
@@ -302,7 +315,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         final fileDataItem = await _arweave.prepareEntityDataItem(
           newFileEntity,
           profileState.wallet,
-          // TODO: key
+          key: fileKey,
         );
 
         await _turboUploadService.postDataItem(
@@ -314,7 +327,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         final fileDataItem = await _arweave.prepareEntityTx(
           newFileEntity,
           profileState.wallet,
-          null, // TODO: key
+          fileKey,
         );
 
         await _arweave.postTx(fileDataItem);

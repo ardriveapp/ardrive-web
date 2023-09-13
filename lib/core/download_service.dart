@@ -4,7 +4,7 @@ import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 
 abstract class DownloadService {
-  Future<Uint8List> download(String fileId);
+  Future<Uint8List> download(String fileId, bool isManifest);
   factory DownloadService(ArweaveService arweaveService) =>
       _DownloadService(arweaveService);
 }
@@ -15,9 +15,12 @@ class _DownloadService implements DownloadService {
   final ArweaveService _arweave;
 
   @override
-  Future<Uint8List> download(String fileTxId) async {
-    final dataRes = await ArDriveHTTP()
-        .getAsBytes('${_arweave.client.api.gatewayUrl.origin}/$fileTxId');
+  Future<Uint8List> download(String fileTxId, bool isManifest) async {
+    final urlString = isManifest
+        ? '${_arweave.client.api.gatewayUrl.origin}/raw/$fileTxId'
+        : '${_arweave.client.api.gatewayUrl.origin}/$fileTxId';
+
+    final dataRes = await ArDriveHTTP().getAsBytes(urlString);
 
     if (dataRes.statusCode == 200) {
       return dataRes.data;
