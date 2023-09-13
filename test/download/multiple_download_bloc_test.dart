@@ -77,7 +77,7 @@ void main() async {
         .thenAnswer((_) async => SecretKey([]));
     when(() => mockDriveDao.getFileKey(any(), any()))
         .thenAnswer((_) async => SecretKey([]));
-    when(() => mockDownloadService.download(any()))
+    when(() => mockDownloadService.download(any(), any()))
         .thenAnswer((_) async => Uint8List(0));
     when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
         .thenAnswer((_) async => Uint8List(0));
@@ -232,10 +232,10 @@ void main() async {
           'should emit Failure with fileNotFound when file is not available',
           build: () {
             final secondFileFailureService = MockDownloadService();
-            when(() => secondFileFailureService.download(any()))
+            when(() => secondFileFailureService.download(any(), any()))
                 .thenAnswer((_) async => Uint8List(0));
-            when(() => secondFileFailureService.download('fail')).thenThrow(
-                ArDriveHTTPException(
+            when(() => secondFileFailureService.download('fail', any()))
+                .thenThrow(ArDriveHTTPException(
                     exception: Exception(),
                     retryAttempts: 8,
                     statusCode: 400,
@@ -275,10 +275,10 @@ void main() async {
           'should emit Failure with networkConnectionError when status code is not 400',
           build: () {
             final secondFileFailureService = MockDownloadService();
-            when(() => secondFileFailureService.download(any()))
+            when(() => secondFileFailureService.download(any(), any()))
                 .thenAnswer((_) async => Uint8List(0));
-            when(() => secondFileFailureService.download('fail')).thenThrow(
-                ArDriveHTTPException(
+            when(() => secondFileFailureService.download('fail', any()))
+                .thenThrow(ArDriveHTTPException(
                     exception: Exception(),
                     retryAttempts: 8,
                     statusCode: 404,
@@ -319,9 +319,9 @@ void main() async {
           build: () {
             var failedOnce = false;
             final secondFileFailureService = MockDownloadService();
-            when(() => secondFileFailureService.download(any()))
+            when(() => secondFileFailureService.download(any(), any()))
                 .thenAnswer((_) async => Uint8List(0));
-            when(() => secondFileFailureService.download('fail'))
+            when(() => secondFileFailureService.download('fail', any()))
                 .thenAnswer((_) async {
               if (!failedOnce) {
                 failedOnce = true;
@@ -395,9 +395,9 @@ void main() async {
           build: () {
             var failedOnce = false;
             final secondFileFailureService = MockDownloadService();
-            when(() => secondFileFailureService.download(any()))
+            when(() => secondFileFailureService.download(any(), any()))
                 .thenAnswer((_) async => Uint8List(0));
-            when(() => secondFileFailureService.download('fail'))
+            when(() => secondFileFailureService.download('fail', any()))
                 .thenAnswer((_) async {
               if (!failedOnce) {
                 failedOnce = true;
@@ -471,13 +471,13 @@ void main() async {
           'should end Bloc after cancellation',
           build: () {
             final secondFileCancelService = MockDownloadService();
-            when(() => secondFileCancelService.download(any()))
+            when(() => secondFileCancelService.download(any(), any()))
                 .thenAnswer((_) async => Uint8List(0));
 
             final bloc = createMultipleDownloadBloc(
                 downloadService: secondFileCancelService);
 
-            when(() => secondFileCancelService.download('cancel'))
+            when(() => secondFileCancelService.download('cancel', any()))
                 .thenAnswer((_) async {
               bloc.add(const CancelDownload());
               return Uint8List(0);

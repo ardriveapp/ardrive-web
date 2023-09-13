@@ -5,6 +5,7 @@ import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/download/download_utils.dart';
+import 'package:ardrive/entities/constants.dart' as constants;
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -175,7 +176,8 @@ class MultipleDownloadBloc
         if (file is MultiDownloadFile) {
           // TODO: Use cancelable streaming downloading once it is available in
           // ArDriveHTTP
-          final dataBytes = await _downloadService.download(file.txId);
+          final dataBytes = await _downloadService.download(
+              file.txId, file.contentType == constants.ContentType.manifest);
 
           if (_canceled) {
             logger.d('User cancelled multi-file downloading.');

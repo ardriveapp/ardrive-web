@@ -9,10 +9,11 @@ class MultiDownloadFile extends MultiDownloadItem {
   final String fileId;
   final String fileName;
   final String txId;
+  final String? contentType;
   final int size;
 
-  MultiDownloadFile(
-      this.driveId, this.fileId, this.fileName, this.txId, this.size);
+  MultiDownloadFile(this.driveId, this.fileId, this.fileName, this.txId,
+      this.size, this.contentType);
 }
 
 class MultiDownloadFolder extends MultiDownloadItem {
@@ -37,8 +38,13 @@ Future<List<MultiDownloadItem>> convertFolderToMultidownloadFileList(
   }
 
   for (final file in folderNode.files.values) {
-    multiDownloadFileList.add(MultiDownloadFile(file.driveId, file.id,
-        '$folderPath${file.name}', file.dataTxId, file.size));
+    multiDownloadFileList.add(MultiDownloadFile(
+        file.driveId,
+        file.id,
+        '$folderPath${file.name}',
+        file.dataTxId,
+        file.size,
+        file.dataContentType));
   }
 
   return multiDownloadFileList;
@@ -67,8 +73,8 @@ Future<List<MultiDownloadItem>> convertSelectionToMultiDownloadFileList(
           driveDao, folderNode,
           path: path));
     } else if (item is FileDataTableItem) {
-      multiDownloadFileList.add(MultiDownloadFile(
-          item.driveId, item.id, item.name, item.dataTxId, item.size!));
+      multiDownloadFileList.add(MultiDownloadFile(item.driveId, item.id,
+          item.name, item.dataTxId, item.size!, item.contentType));
     }
   }
 
