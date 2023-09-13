@@ -119,7 +119,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
-    final dataBytes = await _downloadService.download(_file.txId);
+    final dataBytes = await _downloadService.download(
+        _file.txId, _file.contentType == constants.ContentType.manifest);
 
     if (drive.drivePrivacy == DrivePrivacy.private) {
       SecretKey? driveKey;
