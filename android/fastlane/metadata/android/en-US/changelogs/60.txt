@@ -1,0 +1,2 @@
+- Shifts ARFS version filtering from GraphQL queries to client-side
+- Removes the limit of 100 drives on the sync process
