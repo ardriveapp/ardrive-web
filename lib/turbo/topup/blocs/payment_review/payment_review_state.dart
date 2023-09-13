@@ -17,7 +17,17 @@ class PaymentReviewLoading extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.promoDiscount,
   });
+
+  @override
+  List<Object> get props => [
+        quoteExpirationDate,
+        total,
+        subTotal ?? '',
+        credits,
+        promoDiscount ?? '',
+      ];
 }
 
 class PaymentReviewLoadingPaymentModel extends PaymentReviewState {
@@ -26,14 +36,16 @@ class PaymentReviewLoadingPaymentModel extends PaymentReviewState {
 
 class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
   final String total;
-  final String subTotal;
+  final String? subTotal;
   final String credits;
+  final String? promoDiscount;
   final DateTime quoteExpirationDate;
 
   const PaymentReviewPaymentModelLoaded({
     required this.total,
     required this.subTotal,
     required this.credits,
+    required this.promoDiscount,
     required this.quoteExpirationDate,
   });
 
@@ -42,15 +54,25 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
     String? subTotal,
     String? credits,
     DateTime? quoteExpirationDate,
-    PaymentUserInformation? userInformation,
+    String? promoDiscount,
   }) {
     return PaymentReviewPaymentModelLoaded(
       total: total ?? this.total,
       subTotal: subTotal ?? this.subTotal,
       credits: credits ?? this.credits,
       quoteExpirationDate: quoteExpirationDate ?? this.quoteExpirationDate,
+      promoDiscount: promoDiscount ?? this.promoDiscount,
     );
   }
+
+  @override
+  List<Object> get props => [
+        total,
+        subTotal ?? '',
+        credits,
+        promoDiscount ?? '',
+        quoteExpirationDate,
+      ];
 }
 
 class PaymentReviewLoadingQuote extends PaymentReviewPaymentModelLoaded {
@@ -59,7 +81,17 @@ class PaymentReviewLoadingQuote extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.promoDiscount,
   });
+
+  @override
+  List<Object> get props => [
+        quoteExpirationDate,
+        total,
+        subTotal ?? '',
+        credits,
+        promoDiscount ?? '',
+      ];
 }
 
 class PaymentReviewQuoteLoaded extends PaymentReviewPaymentModelLoaded {
@@ -68,7 +100,17 @@ class PaymentReviewQuoteLoaded extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.promoDiscount,
   });
+
+  @override
+  List<Object> get props => [
+        quoteExpirationDate,
+        total,
+        subTotal ?? '',
+        credits,
+        promoDiscount ?? '',
+      ];
 }
 
 class PaymentReviewQuoteError extends PaymentReviewPaymentModelLoaded {
@@ -79,7 +121,18 @@ class PaymentReviewQuoteError extends PaymentReviewPaymentModelLoaded {
     required super.subTotal,
     required super.credits,
     required super.quoteExpirationDate,
+    required super.promoDiscount,
   });
+
+  @override
+  List<Object> get props => [
+        errorType,
+        total,
+        subTotal ?? '',
+        credits,
+        quoteExpirationDate,
+        promoDiscount ?? '',
+      ];
 }
 
 class PaymentReviewPaymentSuccess extends PaymentReviewPaymentModelLoaded {
@@ -88,7 +141,17 @@ class PaymentReviewPaymentSuccess extends PaymentReviewPaymentModelLoaded {
     required super.total,
     required super.subTotal,
     required super.credits,
+    required super.promoDiscount,
   });
+
+  @override
+  List<Object> get props => [
+        quoteExpirationDate,
+        total,
+        subTotal ?? '',
+        credits,
+        promoDiscount ?? '',
+      ];
 }
 
 class PaymentReviewError extends PaymentReviewState {
@@ -96,6 +159,11 @@ class PaymentReviewError extends PaymentReviewState {
   const PaymentReviewError({
     required this.errorType,
   });
+
+  @override
+  List<Object> get props => [
+        errorType,
+      ];
 }
 
 class PaymentReviewPaymentError extends PaymentReviewPaymentModelLoaded {
@@ -107,11 +175,27 @@ class PaymentReviewPaymentError extends PaymentReviewPaymentModelLoaded {
     required super.subTotal,
     required super.credits,
     required this.errorType,
+    required super.promoDiscount,
   });
+
+  @override
+  List<Object> get props => [
+        quoteExpirationDate,
+        total,
+        subTotal ?? '',
+        credits,
+        errorType,
+        promoDiscount ?? '',
+      ];
 }
 
 class PaymentReviewErrorLoadingPaymentModel extends PaymentReviewError {
   const PaymentReviewErrorLoadingPaymentModel({
     required super.errorType,
   });
+
+  @override
+  List<Object> get props => [
+        errorType,
+      ];
 }

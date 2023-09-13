@@ -1,4 +1,5 @@
 import 'package:ardrive/turbo/models/payment_user_information.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
@@ -12,7 +13,7 @@ class MockTurbo extends Mock implements Turbo {}
 
 void main() {
   final mockPaymentUserInformation = PaymentUserInformation.create(
-    name: 'naem',
+    name: 'name',
     country: 'country',
     userAcceptedToReceiveEmails: false,
   );
@@ -26,15 +27,18 @@ void main() {
     id: 'paymentIntentId',
   );
 
+  final mockDate = DateTime(1234).toIso8601String();
+
   final mockTopUpQuote = TopUpQuote(
     currencyType: 'usd',
     destinationAddress: 'destinationAddress',
     destinationAddressType: 'address',
-    paymentAmount: 100,
+    paymentAmount: 1000,
+    quotedPaymentAmount: 1000,
     paymentProvider: 'stripe',
-    quoteExpirationDate: DateTime.now().toIso8601String(),
+    quoteExpirationDate: mockDate,
     quoteId: 'quoteId',
-    winstonCreditAmount: '5000',
+    winstonCreditAmount: '10000000000000',
   );
 
   group('PaymentReviewBloc', () {
@@ -46,9 +50,15 @@ void main() {
       setUp(() {
         mockTurbo = MockTurbo();
         mockPriceEstimate = PriceEstimate(
-            priceInCurrency: 100,
-            credits: BigInt.from(100),
-            estimatedStorage: 1);
+          priceInCurrency: 100,
+          estimate: PriceForFiat(
+            winc: BigInt.from(10000000000000),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
+          estimatedStorage: 1,
+        );
         paymentReviewBloc = PaymentReviewBloc(
           mockTurbo,
           mockPriceEstimate,
@@ -70,6 +80,7 @@ void main() {
               PaymentModel(
                 paymentSession: mockPaymentSession,
                 topUpQuote: mockTopUpQuote,
+                adjustments: [],
               ),
             ),
           );
@@ -79,16 +90,18 @@ void main() {
           );
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
-              (invocation) => DateTime.now().add(const Duration(minutes: 5)));
+            (invocation) => DateTime(1234).add(const Duration(minutes: 5)),
+          );
         },
         expect: () => [
           const PaymentReviewLoadingPaymentModel(),
           // You should adjust the expected states and the returned values to your specific use case.
           PaymentReviewPaymentModelLoaded(
-            quoteExpirationDate: DateTime.now(),
+            quoteExpirationDate: DateTime(1234).add(const Duration(minutes: 5)),
             total: '10.00',
             subTotal: '10.00',
-            credits: '10',
+            credits: '10.0000',
+            promoDiscount: null,
           ),
         ],
       );
@@ -124,9 +137,15 @@ void main() {
       setUp(() {
         mockTurbo = MockTurbo();
         mockPriceEstimate = PriceEstimate(
-            priceInCurrency: 100,
-            credits: BigInt.from(100),
-            estimatedStorage: 1);
+          priceInCurrency: 100,
+          estimate: PriceForFiat(
+            winc: BigInt.from(100),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
+          estimatedStorage: 1,
+        );
         paymentReviewBloc = PaymentReviewBloc(
           mockTurbo,
           mockPriceEstimate,
@@ -150,8 +169,10 @@ void main() {
           ).thenAnswer(
             (invocation) => Future.value(
               PaymentModel(
-                  paymentSession: mockPaymentSession,
-                  topUpQuote: mockTopUpQuote),
+                paymentSession: mockPaymentSession,
+                topUpQuote: mockTopUpQuote,
+                adjustments: [],
+              ),
             ),
           );
           when(() => mockTurbo.paymentUserInformation).thenReturn(
@@ -196,8 +217,10 @@ void main() {
           ).thenAnswer(
             (invocation) => Future.value(
               PaymentModel(
-                  paymentSession: mockPaymentSession,
-                  topUpQuote: mockTopUpQuote),
+                paymentSession: mockPaymentSession,
+                topUpQuote: mockTopUpQuote,
+                adjustments: [],
+              ),
             ),
           );
           when(() => mockTurbo.paymentUserInformation).thenReturn(
@@ -237,8 +260,10 @@ void main() {
           ).thenAnswer(
             (invocation) => Future.value(
               PaymentModel(
-                  paymentSession: mockPaymentSession,
-                  topUpQuote: mockTopUpQuote),
+                paymentSession: mockPaymentSession,
+                topUpQuote: mockTopUpQuote,
+                adjustments: [],
+              ),
             ),
           );
           when(() => mockTurbo.paymentUserInformation).thenReturn(
@@ -278,8 +303,10 @@ void main() {
           ).thenAnswer(
             (invocation) => Future.value(
               PaymentModel(
-                  paymentSession: mockPaymentSession,
-                  topUpQuote: mockTopUpQuote),
+                paymentSession: mockPaymentSession,
+                topUpQuote: mockTopUpQuote,
+                adjustments: [],
+              ),
             ),
           );
           when(() => mockTurbo.paymentUserInformation).thenReturn(
@@ -308,9 +335,15 @@ void main() {
       setUp(() {
         mockTurbo = MockTurbo();
         mockPriceEstimate = PriceEstimate(
-            priceInCurrency: 100,
-            credits: BigInt.from(100),
-            estimatedStorage: 1);
+          priceInCurrency: 100,
+          estimate: PriceForFiat(
+            winc: BigInt.from(100),
+            adjustments: const [],
+            actualPaymentAmount: null,
+            quotedPaymentAmount: null,
+          ),
+          estimatedStorage: 1,
+        );
         paymentReviewBloc = PaymentReviewBloc(
           mockTurbo,
           mockPriceEstimate,
@@ -335,6 +368,7 @@ void main() {
               PaymentModel(
                 paymentSession: mockPaymentSession,
                 topUpQuote: mockTopUpQuote,
+                adjustments: [],
               ),
             ),
           );
@@ -364,8 +398,10 @@ void main() {
           ).thenAnswer(
             (invocation) => Future.value(
               PaymentModel(
-                  paymentSession: mockPaymentSession,
-                  topUpQuote: mockTopUpQuote),
+                paymentSession: mockPaymentSession,
+                topUpQuote: mockTopUpQuote,
+                adjustments: [],
+              ),
             ),
           );
           bloc.add(PaymentReviewLoadPaymentModel());
