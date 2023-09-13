@@ -1,1 +1,1 @@
-- Removes the ARFS version filter on GraphQL queries
+- Shifts ARFS version filtering from GraphQL queries to client-side
