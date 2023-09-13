@@ -38,7 +38,7 @@ class MultipleDownloadBloc
   final List<MultiDownloadItem> _skippedFiles = [];
   SecretKey? _driveKey;
 
-  late ARFSDriveEntity _drive;
+  ARFSDriveEntity? _drive;
   late ZipEncoder _zipEncoder;
   late OutputStream _outputStream;
   late List<MultiDownloadItem> _files;
@@ -90,37 +90,39 @@ class MultipleDownloadBloc
       return;
     }
 
-    MultiDownloadFile? firstFile =
-        _files.firstWhereOrNull((element) => element is MultiDownloadFile)
-            as MultiDownloadFile?;
+    MultiDownloadFile? firstOwnedFile = _files.firstWhereOrNull((element) =>
+        element is MultiDownloadFile &&
+        element.pinnedDataOwnerAddress == null) as MultiDownloadFile?;
 
-    if (firstFile != null) {
-      _drive = await _arfsRepository.getDriveById(firstFile.driveId);
+    if (firstOwnedFile != null) {
+      _drive = await _arfsRepository.getDriveById(firstOwnedFile.driveId);
+    }
 
-      if (await isSizeAboveDownloadSizeLimit(
-          _files, _drive.drivePrivacy == DrivePrivacy.public,
-          deviceInfo: _deviceInfo)) {
-        emit(
-          const MultipleDownloadFailure(
-            FileDownloadFailureReason.fileAboveLimit,
-          ),
+    bool hasPrivateFiles =
+        _drive != null && _drive!.drivePrivacy == DrivePrivacy.private;
+
+    if (await isSizeAboveDownloadSizeLimit(_files, hasPrivateFiles,
+        deviceInfo: _deviceInfo)) {
+      emit(
+        const MultipleDownloadFailure(
+          FileDownloadFailureReason.fileAboveLimit,
+        ),
+      );
+      return;
+    }
+
+    if (_drive?.drivePrivacy == DrivePrivacy.private) {
+      if (_cipherKey != null) {
+        _driveKey = await _driveDao.getDriveKey(
+          _drive!.driveId,
+          _cipherKey!,
         );
-        return;
+      } else {
+        _driveKey = await _driveDao.getDriveKeyFromMemory(_drive!.driveId);
       }
 
-      if (_drive.drivePrivacy == DrivePrivacy.private) {
-        if (_cipherKey != null) {
-          _driveKey = await _driveDao.getDriveKey(
-            _drive.driveId,
-            _cipherKey!,
-          );
-        } else {
-          _driveKey = await _driveDao.getDriveKeyFromMemory(_drive.driveId);
-        }
-
-        if (_driveKey == null) {
-          throw StateError('Drive Key not found');
-        }
+      if (_driveKey == null) {
+        throw StateError('Drive Key not found');
       }
     } else {
       _driveKey = null;
@@ -186,7 +188,7 @@ class MultipleDownloadBloc
 
           Uint8List outputBytes;
 
-          if (_driveKey != null) {
+          if (file.pinnedDataOwnerAddress == null && _driveKey != null) {
             final fileKey = await _driveDao.getFileKey(file.fileId, _driveKey!);
             final dataTx = await (_arweave.getTransactionDetails(file.txId));
 

@@ -41,6 +41,19 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
         '${_arweave.client.api.gatewayUrl.origin}/${revision.dataTxId}');
 
     if (fileKey != null) {
+      final isPinFile = revision.pinnedDataOwnerAddress != null;
+      if (isPinFile) {
+        emit(
+          FileDownloadSuccess(
+            bytes: dataRes.data,
+            fileName: revision.name,
+            mimeType: revision.contentType ?? lookupMimeType(revision.name),
+            lastModified: revision.lastModifiedDate,
+          ),
+        );
+        return;
+      }
+
       final dataTx = await (_arweave.getTransactionDetails(revision.dataTxId!));
 
       if (dataTx != null) {
