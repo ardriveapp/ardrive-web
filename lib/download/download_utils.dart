@@ -9,10 +9,19 @@ class MultiDownloadFile extends MultiDownloadItem {
   final String fileId;
   final String fileName;
   final String txId;
+  final String? contentType;
   final int size;
+  final String? pinnedDataOwnerAddress;
 
-  MultiDownloadFile(
-      this.driveId, this.fileId, this.fileName, this.txId, this.size);
+  MultiDownloadFile({
+    required this.driveId,
+    required this.fileId,
+    required this.fileName,
+    required this.txId,
+    required this.size,
+    this.contentType,
+    this.pinnedDataOwnerAddress,
+  });
 }
 
 class MultiDownloadFolder extends MultiDownloadItem {
@@ -37,8 +46,15 @@ Future<List<MultiDownloadItem>> convertFolderToMultidownloadFileList(
   }
 
   for (final file in folderNode.files.values) {
-    multiDownloadFileList.add(MultiDownloadFile(file.driveId, file.id,
-        '$folderPath${file.name}', file.dataTxId, file.size));
+    multiDownloadFileList.add(MultiDownloadFile(
+      driveId: file.driveId,
+      fileId: file.id,
+      fileName: '$folderPath${file.name}',
+      txId: file.dataTxId,
+      size: file.size,
+      contentType: file.dataContentType,
+      pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
+    ));
   }
 
   return multiDownloadFileList;
@@ -68,7 +84,14 @@ Future<List<MultiDownloadItem>> convertSelectionToMultiDownloadFileList(
           path: path));
     } else if (item is FileDataTableItem) {
       multiDownloadFileList.add(MultiDownloadFile(
-          item.driveId, item.id, item.name, item.dataTxId, item.size!));
+        driveId: item.driveId,
+        fileId: item.id,
+        fileName: item.name,
+        txId: item.dataTxId,
+        size: item.size!,
+        contentType: item.contentType,
+        pinnedDataOwnerAddress: item.pinnedDataOwnerAddress,
+      ));
     }
   }
 
