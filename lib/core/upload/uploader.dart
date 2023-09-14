@@ -372,6 +372,10 @@ class UploadPaymentEvaluator {
       turboBalance = BigInt.zero;
     }
 
+    if (turboBalance == BigInt.zero) {
+      isTurboAvailableToUploadAllFiles = false;
+    }
+
     final arBundleSizes = await sizeUtils
         .getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles);
     final arFileSizes = await sizeUtils

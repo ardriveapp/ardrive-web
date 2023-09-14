@@ -393,8 +393,6 @@ void main() {
         });
       });
 
-      /// Tests `isTurboAvailable`
-      ///
       group('testing turbo eligibility', () {
         setUp(() {
           when(() => uploadPlan.fileV2UploadHandles).thenReturn({});
@@ -549,6 +547,8 @@ void main() {
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
           when(() => turboBalanceRetriever.getBalance(any()))
               .thenThrow(Exception('error'));
+          when(() => turboBalanceRetriever.getBalance(any()))
+              .thenAnswer((_) async => BigInt.zero);
 
           final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
             uploadPlanForAR: uploadPlan,
@@ -575,6 +575,8 @@ void main() {
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
           when(() => turboUploadCostCalculator.calculateCost(
               totalSize: any(named: 'totalSize'))).thenThrow(Exception());
+          when(() => turboBalanceRetriever.getBalance(any()))
+              .thenAnswer((_) async => BigInt.from(500));
 
           final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
             uploadPlanForAR: uploadPlan,
