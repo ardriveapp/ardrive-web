@@ -18,7 +18,6 @@ class AppConfig {
   final bool enableSyncFromSnapshot;
   final bool enableSeedPhraseLogin;
   final String stripePublishableKey;
-  final bool enablePins;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -35,7 +34,6 @@ class AppConfig {
     this.enableSyncFromSnapshot = true,
     this.enableSeedPhraseLogin = true,
     required this.stripePublishableKey,
-    this.enablePins = false,
   });
 
   AppConfig copyWith({
@@ -53,7 +51,6 @@ class AppConfig {
     bool? enableSyncFromSnapshot,
     bool? enableSeedPhraseLogin,
     String? stripePublishableKey,
-    bool? enablePins,
   }) {
     return AppConfig(
       defaultArweaveGatewayUrl:
@@ -79,7 +76,6 @@ class AppConfig {
       enableSeedPhraseLogin:
           enableSeedPhraseLogin ?? this.enableSeedPhraseLogin,
       stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
-      enablePins: enablePins ?? this.enablePins,
     );
   }
 

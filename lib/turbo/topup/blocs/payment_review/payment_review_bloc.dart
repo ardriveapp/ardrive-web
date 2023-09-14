@@ -1,4 +1,3 @@
-import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
@@ -61,7 +60,8 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   }
 
   Future<void> _handlePaymentReviewRefreshQuote(
-      Emitter<PaymentReviewState> emit) async {
+    Emitter<PaymentReviewState> emit,
+  ) async {
     try {
       _emitPaymentReviewLoadingQuote(emit);
 
@@ -74,7 +74,8 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   }
 
   Future<void> _handlePaymentReviewLoadPaymentModel(
-      Emitter<PaymentReviewState> emit) async {
+    Emitter<PaymentReviewState> emit,
+  ) async {
     try {
       _emitPaymentReviewLoadingPaymentModel(emit);
 
@@ -109,17 +110,19 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         credits: _getCreditsFromPaymentModel(),
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
 
-  void _emitPaymentReviewLoadingQuote(Emitter emi) {
-    emi(
+  void _emitPaymentReviewLoadingQuote(Emitter emit) {
+    emit(
       PaymentReviewLoadingQuote(
         credits: _getCreditsFromPaymentModel(),
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
         quoteExpirationDate: _quoteExpirationDate!,
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -131,6 +134,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
         quoteExpirationDate: _quoteExpirationDate!,
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -142,6 +146,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
         quoteExpirationDate: _quoteExpirationDate!,
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -154,6 +159,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         credits: _getCreditsFromPaymentModel(),
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -166,6 +172,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         credits: _getCreditsFromPaymentModel(),
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -177,6 +184,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         subTotal: _getSubTotalFromPaymentModel(),
         total: _getTotalFromPaymentModel(),
         quoteExpirationDate: _quoteExpirationDate!,
+        promoDiscount: _getPromoDiscountFromModel(),
       ),
     );
   }
@@ -198,9 +206,38 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
   String _getCreditsFromPaymentModel() => convertCreditsToLiteralString(
       BigInt.from(int.parse(_paymentModel!.topUpQuote.winstonCreditAmount)));
 
-  String _getSubTotalFromPaymentModel() =>
-      (_paymentModel!.topUpQuote.paymentAmount / 100).toStringAsFixed(2);
+  String? _getSubTotalFromPaymentModel() {
+    if (_paymentModel!.topUpQuote.quotedPaymentAmount == null) return null;
+    return (_paymentModel!.topUpQuote.quotedPaymentAmount! / 100)
+        .toStringAsFixed(2);
+  }
 
-  String _getTotalFromPaymentModel() =>
-      (_paymentModel!.topUpQuote.paymentAmount / 100).toStringAsFixed(2);
+  String _getTotalFromPaymentModel() {
+    final total = _paymentModel!.topUpQuote.paymentAmount / 100;
+
+    return total.toStringAsFixed(2);
+  }
+
+  String? _getPromoDiscountFromModel() {
+    final adjustments = _paymentModel!.adjustments;
+    if (adjustments.isEmpty) {
+      return null;
+    }
+
+    final adjustment = adjustments.first;
+    final adjustmentAmount = adjustment.adjustmentAmount / 100;
+
+    if (adjustmentAmount == 0) {
+      return null;
+    }
+
+    // Get the absolute value of the adjustment
+    final adjustmentAmountAbs = adjustmentAmount.abs();
+
+    if (adjustmentAmount < 0) {
+      return '-\$${adjustmentAmountAbs.toStringAsFixed(2)}';
+    } else {
+      return '\$${adjustmentAmountAbs.toStringAsFixed(2)}';
+    }
+  }
 }

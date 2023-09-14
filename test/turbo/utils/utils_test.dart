@@ -14,9 +14,9 @@ void main() {
 
   group('convertWinstonToAR', () {
     test('converts winston to AR as double', () {
-      expect(convertWinstonToAR(BigInt.from(5000000000000)), 5.0);
-      expect(convertWinstonToAR(BigInt.from(1234567890000)), 1.23456789);
-      expect(convertWinstonToAR(BigInt.from(0)), 0.0);
+      expect(convertWinstonToAr(BigInt.from(5000000000000)), 5.0);
+      expect(convertWinstonToAr(BigInt.from(1234567890000)), 1.23456789);
+      expect(convertWinstonToAr(BigInt.from(0)), 0.0);
     });
   });
 }

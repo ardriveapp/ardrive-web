@@ -114,7 +114,7 @@ void main() {
     setUp(() {
       when(() => mockARFSRepository.getDriveById(any()))
           .thenAnswer((_) async => mockDrivePrivate);
-      when(() => mockDownloadService.download(any()))
+      when(() => mockDownloadService.download(any(), any()))
           .thenAnswer((invocation) => Future.value(Uint8List(100)));
       when(() => mockDriveDao.getFileKey(any(), any()))
           .thenAnswer((invocation) => Future.value(SecretKey([])));
@@ -342,7 +342,7 @@ void main() {
         /// Using a public drive
         when(() => mockARFSRepository.getDriveById(any()))
             .thenAnswer((_) async => mockDrivePublic);
-        when(() => mockDownloadService.download(any()))
+        when(() => mockDownloadService.download(any(), any()))
             .thenThrow((invocation) => Exception());
       },
       act: (bloc) {
@@ -466,7 +466,7 @@ void main() {
               ],
           verify: (bloc) {
             /// public files on mobile should not call these functions
-            verifyNever(() => mockDownloadService.download(any()));
+            verifyNever(() => mockDownloadService.download(any(), any()));
             verifyNever(() => mockDriveDao.getFileKey(any(), any()));
             verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
             verifyNever(
@@ -508,7 +508,7 @@ void main() {
               ],
           verify: (bloc) {
             /// public files on mobile should not call these functions
-            verifyNever(() => mockDownloadService.download(any()));
+            verifyNever(() => mockDownloadService.download(any(), any()));
             verifyNever(() => mockDriveDao.getFileKey(any(), any()));
             verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
             verifyNever(
@@ -589,7 +589,7 @@ void main() {
           verifyNever(() => mockArDriveDownloader.cancelDownload());
 
           /// public files on mobile should not call these functions
-          verifyNever(() => mockDownloadService.download(any()));
+          verifyNever(() => mockDownloadService.download(any(), any()));
           verifyNever(() => mockDriveDao.getFileKey(any(), any()));
           verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
           verifyNever(

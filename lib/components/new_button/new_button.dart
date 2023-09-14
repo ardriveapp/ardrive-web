@@ -405,9 +405,7 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.newFolder,
             icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
           ),
-          if (context.read<ConfigService>().config.enablePins &&
-              drive != null &&
-              drive?.privacy == 'public')
+          if (drive != null)
             ArDriveNewButtonItem(
               name: appLocalizationsOf(context).newFilePin,
               icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
@@ -491,9 +489,7 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.newFolder,
             icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
           ),
-          if (context.read<ConfigService>().config.enablePins &&
-              drive != null &&
-              drive?.privacy == 'public')
+          if (drive != null)
             ArDriveNewButtonItem(
               name: appLocalizationsOf(context).newFilePin,
               icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),

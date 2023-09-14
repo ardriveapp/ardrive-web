@@ -1,7 +1,10 @@
 String convertCreditsToLiteralString(BigInt credits) {
-  return convertWinstonToAR(credits).toStringAsFixed(4);
+  final creditsAsAr = convertWinstonToAr(credits);
+  final creditsString = creditsAsAr.toStringAsFixed(4);
+
+  return creditsString;
 }
 
-double convertWinstonToAR(BigInt winston) {
+double convertWinstonToAr(BigInt winston) {
   return winston / BigInt.from(1000000000000);
 }

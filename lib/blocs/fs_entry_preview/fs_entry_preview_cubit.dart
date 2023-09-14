@@ -113,7 +113,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   }
 
   Future<Uint8List?> _getPreviewData(
-      FileDataTableItem file, String previewUrl) async {
+    FileDataTableItem file,
+    String previewUrl,
+  ) async {
     final dataTx = await _getTxDetails(file);
 
     if (dataTx == null) {
@@ -123,7 +125,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     final dataRes = await ArDriveHTTP().getAsBytes(previewUrl);
 
-    if (_fileKey != null) {
+    final isPinFile = file.pinnedDataOwnerAddress != null;
+
+    if (_fileKey != null && !isPinFile) {
       if (file.size! >= previewMaxFileSize) {
         emit(FsEntryPreviewUnavailable());
         return null;
@@ -278,6 +282,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         case DrivePrivacy.private:
           final profile = _profileCubit.state;
           SecretKey? driveKey;
+
+          final isPinFile = file.pinnedDataOwnerAddress != null;
+
+          if (isPinFile) {
+            emit(
+              FsEntryPreviewImage(imageBytes: dataBytes, previewUrl: dataUrl),
+            );
+            break;
+          }
 
           if (profile is ProfileLoggedIn) {
             driveKey = await _driveDao.getDriveKey(
