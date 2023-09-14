@@ -1,0 +1,1 @@
+- Let users log in with new ArConnect version
