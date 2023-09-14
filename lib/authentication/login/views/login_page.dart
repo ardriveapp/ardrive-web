@@ -17,6 +17,7 @@ import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/io_utils.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/split_localizations.dart';
@@ -207,6 +208,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       listener: (context, state) {
         if (state is LoginFailure) {
           // TODO: Verify if the error is `NoConnectionException` and show an appropriate message after validating with UI/UX
+
+          logger.e('Login Failure', state.error);
 
           if (state.error is WalletMismatchException) {
             showAnimatedDialog(
