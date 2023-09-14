@@ -45,7 +45,7 @@ class PaymentService {
     final acceptedStatusCodes = [200, 202, 204];
     late Map<String, dynamic> headers;
 
-    if (wallet != null) {
+    if (wallet != null && promoCode != null) {
       final nonce = const Uuid().v4();
       final publicKey = await wallet.getOwner();
       final signature = await signNonceAndData(

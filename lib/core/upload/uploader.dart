@@ -366,8 +366,7 @@ class UploadPaymentEvaluator {
           e,
           stacktrace,
         );
-        isTurboAvailableToUploadAllFiles = false;
-        turboBalance = BigInt.zero;
+        rethrow;
       }
     } else {
       turboBalance = BigInt.zero;
