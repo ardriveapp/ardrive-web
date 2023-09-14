@@ -389,25 +389,38 @@ Widget _confirmDialog(
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
-                    // TODO: is free thanks to turbo
-                    PaymentMethodSelector(
-                      uploadMethod: state.uploadMethod,
-                      costEstimateTurbo: state.costEstimateTurbo,
-                      costEstimateAr: state.costEstimateAr,
-                      hasNoTurboBalance: state.hasNoTurboBalance,
-                      isTurboUploadPossible: true,
-                      arBalance: state.arBalance,
-                      turboCredits: state.turboCredits,
-                      onTurboTopupSucess: () {
-                        // TODO -
-                      },
-                      onArSelect: () {
-                        createSnapshotCubit.setUploadMethod(UploadMethod.ar);
-                      },
-                      onTurboSelect: () {
-                        createSnapshotCubit.setUploadMethod(UploadMethod.turbo);
-                      },
-                    ),
+                    if (state.isFreeThanksToTurbo) ...{
+                      Text(
+                        appLocalizationsOf(context).freeTurboTransaction,
+                        style: ArDriveTypography.body.buttonNormalRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault,
+                        ),
+                      ),
+                    } else ...{
+                      PaymentMethodSelector(
+                        uploadMethod: state.uploadMethod,
+                        costEstimateTurbo: state.costEstimateTurbo,
+                        costEstimateAr: state.costEstimateAr,
+                        hasNoTurboBalance: state.hasNoTurboBalance,
+                        isTurboUploadPossible: true,
+                        arBalance: state.arBalance,
+                        turboCredits: state.turboCredits,
+                        onTurboTopupSucess: () {
+                          createSnapshotCubit
+                              .setUploadMethod(UploadMethod.turbo);
+                        },
+                        onArSelect: () {
+                          createSnapshotCubit.setUploadMethod(UploadMethod.ar);
+                        },
+                        onTurboSelect: () {
+                          createSnapshotCubit
+                              .setUploadMethod(UploadMethod.turbo);
+                        },
+                      ),
+                    }
                   ],
                 ),
               ),

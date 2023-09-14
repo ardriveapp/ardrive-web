@@ -65,6 +65,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   bool _hasNoTurboBalance = false;
   String _arBalance = '';
   String _turboCredits = '';
+  BigInt _turboBalance = BigInt.zero;
   bool _isButtonToUploadEnabled = false;
   bool _isTurboUploadPossible = true;
   bool _sufficentCreditsBalance = false;
@@ -130,6 +131,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _setupSnapshotEntityWithBlob(data);
 
     await _computeCost();
+    await _computeBalanceEstimate();
+    _computeIsSufficientBalance();
+    _computeIsTurboEnabled();
+    _computeIsFreeThanksToTurbo();
 
     await _emitConfirming(
       dataSize: data.length,
@@ -254,13 +259,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           skipSignature: true,
         );
       }
-
-      // _preparedDataItem = await _arweave.prepareEntityDataItem(
-      //   _snapshotEntity!,
-      //   wallet,
-      //   // We'll sign it just after adding the tip
-      //   skipSignature: true,
-      // );
     } catch (e) {
       final isTabFocused = _tabVisibility.isTabFocused();
       if (isArConnectProfile && !isTabFocused) {
@@ -402,33 +400,49 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _costEstimateTurbo = await costCalculatorForTurbo.calculateCost(
       totalSize: _snapshotEntity!.data!.length,
     );
+  }
+
+  Future<void> _computeBalanceEstimate() async {
+    final profileState = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profileState.wallet;
 
     final turboBalance =
         await turboBalanceRetriever.getBalance(wallet).catchError((e) {
       logger.e('Error while retrieving turbo balance', e);
       return BigInt.zero;
     });
+
+    _turboBalance = turboBalance;
     _hasNoTurboBalance = turboBalance == BigInt.zero;
     _turboCredits = convertCreditsToLiteralString(turboBalance);
     _arBalance = convertCreditsToLiteralString(auth.currentUser!.walletBalance);
+  }
+
+  void _computeIsTurboEnabled() async {
+    bool isTurboEnabled = appConfig.useTurboUpload;
+    _isTurboUploadPossible = isTurboEnabled && _sufficentCreditsBalance;
+  }
+
+  void _computeIsSufficientBalance() {
+    final profileState = _profileCubit.state as ProfileLoggedIn;
 
     bool sufficientBalanceToPayWithAR =
         profileState.walletBalance >= _costEstimateAr.totalCost;
     bool sufficientBalanceToPayWithTurbo =
-        _costEstimateTurbo.totalCost <= turboBalance;
+        _costEstimateTurbo.totalCost <= _turboBalance;
 
     _sufficientArBalance = sufficientBalanceToPayWithAR;
     _sufficentCreditsBalance = sufficientBalanceToPayWithTurbo;
-
-    bool isTurboEnabled = appConfig.useTurboUpload;
-    _isTurboUploadPossible =
-        isTurboEnabled && _costEstimateTurbo.totalCost <= turboBalance;
   }
 
-  Future<void> _emitConfirming({
-    required int
-        dataSize, // TODO: pass the correct value depending on v2 vs dataitem
-  }) async {
+  void _computeIsFreeThanksToTurbo() {
+    final allowedDataItemSizeForTurbo = appConfig.allowedDataItemSizeForTurbo;
+    final isFreeThanksToTurbo =
+        _snapshotEntity!.data!.length <= allowedDataItemSizeForTurbo;
+    _isFreeThanksToTurbo = isFreeThanksToTurbo;
+  }
+
+  Future<void> _emitConfirming({required int dataSize}) async {
     emit(ConfirmingSnapshotCreation(
       snapshotSize: dataSize,
       costEstimateAr: _costEstimateAr,
@@ -530,9 +544,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       if (_uploadMethod == UploadMethod.ar) {
         await _arweave.postTx(_preparedTx!);
       } else {
-        await turboService.postDataItem(
+        await _postTurboDataItem(
           dataItem: _preparedDataItem!,
-          wallet: (_profileCubit.state as ProfileLoggedIn).wallet,
         );
       }
 
@@ -541,6 +554,19 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       logger.e('Error while posting the snapshot transaction', err, stacktrace);
       emit(SnapshotUploadFailure());
     }
+  }
+
+  Future<void> _postTurboDataItem({required DataItem dataItem}) async {
+    final profile = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profile.wallet;
+
+    final addr = await wallet.getAddress();
+    logger.d('Posting snapshot transaction with $addr');
+
+    await turboService.postDataItem(
+      dataItem: dataItem,
+      wallet: wallet,
+    );
   }
 
   void cancelSnapshotCreation() {
