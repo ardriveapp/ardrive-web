@@ -1,5 +1,7 @@
 part of '../drive_detail_page.dart';
 
+const List<double> _speedOptions = [.25, .5, .75, 1, 1.25, 1.5, 1.75, 2];
+
 class FsEntryPreviewWidget extends StatefulWidget {
   const FsEntryPreviewWidget({
     Key? key,
@@ -337,6 +339,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   LoadState _loadState = LoadState.loading;
   bool _isVolumeSliderVisible = false;
   bool _wasPlaying = false;
+  MenuController _menuController = MenuController();
 
   @override
   void initState() {
@@ -411,161 +414,194 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
             //     ? const Center(
             //         child: Text('Failed to load audio'),
             //       )
-            : Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                child: Column(children: [
-                  Expanded(
-                    child: Stack(
-                      fit: StackFit.expand,
-                      alignment: Alignment.center,
-                      children: [
-                        Container(color: Colors.black),
-                        Align(
+            //     :
+            : Column(children: [
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    alignment: Alignment.center,
+                    children: [
+                      Container(color: colors.themeBgSubtle),
+                      Align(
                           alignment: Alignment.center,
-                          child: ArDriveIcons.music(
-                              size: 100, color: colors.themeFgMuted),
-                        ),
-                        Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Padding(
-                              padding: const EdgeInsets.only(bottom: 20),
-                              child: Text('No Preview Available',
-                                  style: ArDriveTypography.body.smallBold700(
-                                      color: colors.themeBgSubtle))),
-                        ),
-                      ],
-                    ),
+                          child: FittedBox(
+                            fit: BoxFit.contain,
+                            child: ArDriveIcons.music(
+                                size: 100, color: colors.themeFgMuted),
+                          )),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Column(children: [
-                    Text(widget.filename,
-                        style: ArDriveTypography.body
-                            .smallBold700(color: colors.themeFgDefault)),
-                    const SizedBox(height: 8),
-                    SliderTheme(
-                        data: SliderThemeData(
-                            trackHeight: 4,
-                            trackShape:
-                                _NoAdditionalHeightRoundedRectSliderTrackShape(),
-                            inactiveTrackColor: colors.themeBgSubtle,
-                            overlayShape: SliderComponentShape.noOverlay,
-                            thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 8,
-                            )),
-                        child: Slider(
-                            value: min(
-                              player.position.inMilliseconds.toDouble(),
-                              player.duration?.inMilliseconds.toDouble() ?? 0,
-                            ),
-                            min: 0.0,
-                            max:
+                ),
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                    child: Column(children: [
+                      Text(widget.filename,
+                          style: ArDriveTypography.body
+                              .smallBold700(color: colors.themeFgDefault)),
+                      const SizedBox(height: 8),
+                      SliderTheme(
+                          data: SliderThemeData(
+                              trackHeight: 4,
+                              trackShape:
+                                  _NoAdditionalHeightRoundedRectSliderTrackShape(),
+                              inactiveTrackColor: colors.themeBgSubtle,
+                              overlayShape: SliderComponentShape.noOverlay,
+                              thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 8,
+                              )),
+                          child: Slider(
+                              value: min(
+                                player.position.inMilliseconds.toDouble(),
                                 player.duration?.inMilliseconds.toDouble() ?? 0,
-                            onChangeStart: (v) {
-                              setState(() {
-                                _wasPlaying = player.playing;
-                                if (_wasPlaying) {
-                                  player.pause();
-                                }
-                              });
-                            },
-                            onChanged: (v) {
-                              setState(() {
-                                player.seek(Duration(milliseconds: v.toInt()));
-                              });
-                            },
-                            onChangeEnd: (v) {
-                              setState(() {
-                                if (_wasPlaying) {
-                                  player.play();
-                                }
-                              });
-                            })),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(currentTime),
-                        const Expanded(child: SizedBox.shrink()),
-                        Text(duration)
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    MouseRegion(
-                        onExit: (event) {
-                          setState(() {
-                            _isVolumeSliderVisible = false;
-                          });
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                                child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: VolumeSliderWidget(
-                                      volume: player.volume,
-                                      setVolume: (v) {
-                                        setState(() {
-                                          player.setVolume(v);
-                                        });
-                                      },
-                                      sliderVisible: _isVolumeSliderVisible,
-                                      setSliderVisible: (v) {
-                                        setState(() {
-                                          _isVolumeSliderVisible = v;
-                                        });
-                                      },
-                                    ))),
-                            MaterialButton(
-                              onPressed: () {
+                              ),
+                              min: 0.0,
+                              max: player.duration?.inMilliseconds.toDouble() ??
+                                  0,
+                              onChangeStart: (v) {
                                 setState(() {
-                                  if (player.playerState.processingState ==
-                                          ProcessingState.completed ||
-                                      !player.playing) {
-                                    if (player.position == player.duration) {
-                                      player.stop();
-                                      player.seek(Duration.zero);
-                                    }
-                                    player.play();
-                                  } else {
+                                  _wasPlaying = player.playing;
+                                  if (_wasPlaying) {
                                     player.pause();
                                   }
                                 });
                               },
-                              color: colors.themeAccentBrand,
-                              shape: const CircleBorder(),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: (player.playerState.processingState ==
-                                            ProcessingState.completed ||
-                                        !player.playing)
-                                    ? Icon(
-                                        Icons.play_arrow_outlined,
-                                        size: 32,
-                                        color: colors.themeFgOnAccent,
-                                      )
-                                    : Icon(
-                                        Icons.pause_outlined,
-                                        size: 32,
-                                        color: colors.themeFgOnAccent,
-                                      ),
-                              ),
-                            ),
-                            Expanded(
-                                child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: IconButton(
-                                        onPressed: () {
-                                          // setState(() {
-                                          // });
+                              onChanged: (v) {
+                                setState(() {
+                                  player
+                                      .seek(Duration(milliseconds: v.toInt()));
+                                });
+                              },
+                              onChangeEnd: (v) {
+                                setState(() {
+                                  if (_wasPlaying) {
+                                    player.play();
+                                  }
+                                });
+                              })),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(currentTime),
+                          const Expanded(child: SizedBox.shrink()),
+                          Text(duration)
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      MouseRegion(
+                          onExit: (event) {
+                            setState(() {
+                              _isVolumeSliderVisible = false;
+                            });
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                  child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: VolumeSliderWidget(
+                                        volume: player.volume,
+                                        setVolume: (v) {
+                                          setState(() {
+                                            player.setVolume(v);
+                                          });
                                         },
-                                        icon: const Icon(
-                                            Icons.settings_outlined,
-                                            size: 24)))),
-                          ],
-                        ))
-                  ])
-                ])));
+                                        sliderVisible: _isVolumeSliderVisible,
+                                        setSliderVisible: (v) {
+                                          setState(() {
+                                            _isVolumeSliderVisible = v;
+                                          });
+                                        },
+                                      ))),
+                              MaterialButton(
+                                onPressed: () {
+                                  setState(() {
+                                    if (player.playerState.processingState ==
+                                            ProcessingState.completed ||
+                                        !player.playing) {
+                                      if (player.position == player.duration) {
+                                        player.stop();
+                                        player.seek(Duration.zero);
+                                      }
+                                      player.play();
+                                    } else {
+                                      player.pause();
+                                    }
+                                  });
+                                },
+                                color: colors.themeAccentBrand,
+                                shape: const CircleBorder(),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: (player.playerState.processingState ==
+                                              ProcessingState.completed ||
+                                          !player.playing)
+                                      ? Icon(
+                                          Icons.play_arrow_outlined,
+                                          size: 32,
+                                          color: colors.themeFgOnAccent,
+                                        )
+                                      : Icon(
+                                          Icons.pause_outlined,
+                                          size: 32,
+                                          color: colors.themeFgOnAccent,
+                                        ),
+                                ),
+                              ),
+                              Expanded(
+                                  child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: ScreenTypeLayout.builder(
+                                          desktop: (context) => MenuAnchor(
+                                                menuChildren: [
+                                                  ..._speedOptions.map((v) {
+                                                    return ListTile(
+                                                      tileColor:
+                                                          colors.themeBgSurface,
+                                                      onTap: () {
+                                                        setState(() {
+                                                          player.setSpeed(v);
+                                                          _menuController
+                                                              .close();
+                                                        });
+                                                      },
+                                                      title: Text(
+                                                        '$v',
+                                                        style: ArDriveTypography
+                                                            .body
+                                                            .buttonNormalBold(
+                                                                color: colors
+                                                                    .themeFgDefault),
+                                                      ),
+                                                    );
+                                                  })
+                                                ],
+                                                controller: _menuController,
+                                                child: IconButton(
+                                                    onPressed: () {
+                                                      _menuController.open();
+                                                    },
+                                                    icon: const Icon(
+                                                        Icons.settings_outlined,
+                                                        size: 24)),
+                                              ),
+                                          mobile: (context) => IconButton(
+                                              onPressed: () {
+                                                _displaySpeedOptionsModal(
+                                                    context, (v) {
+                                                  setState(() {
+                                                    player.setSpeed(v);
+                                                  });
+                                                });
+                                              },
+                                              icon: const Icon(
+                                                  Icons.settings_outlined,
+                                                  size: 24))))),
+                            ],
+                          ))
+                    ]))
+              ]));
   }
 }
 
@@ -681,4 +717,47 @@ class _NoAdditionalHeightRoundedRectSliderTrackShape
         isEnabled: isEnabled,
         additionalActiveTrackHeight: 0);
   }
+}
+
+void _displaySpeedOptionsModal(
+  BuildContext context,
+  Function(double) setPlaybackSpeed,
+) {
+  final colors = ArDriveTheme.of(context).themeData.colors;
+  final dropDownTheme = ArDriveTheme.of(context).themeData.dropdownTheme;
+
+  showModalBottomSheet(
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(8),
+        topRight: Radius.circular(8),
+      ),
+    ),
+    context: context,
+    builder: (context) {
+      return ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(8),
+          topRight: Radius.circular(8),
+        ),
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: _speedOptions.length,
+          itemBuilder: (context, index) {
+            final speed = _speedOptions[index];
+            return ListTile(
+              tileColor: dropDownTheme.backgroundColor,
+              hoverColor: dropDownTheme.hoverColor,
+              textColor: colors.themeFgDefault,
+              onTap: () {
+                setPlaybackSpeed(speed);
+                Navigator.of(context).pop();
+              },
+              title: Text('$speed'),
+            );
+          },
+        ),
+      );
+    },
+  );
 }
