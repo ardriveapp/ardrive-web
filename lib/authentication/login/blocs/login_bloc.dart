@@ -26,6 +26,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ArDriveAuth _arDriveAuth;
   final ArConnectService _arConnectService;
 
+  bool ignoreNextWaletSwitch = false;
+
   @visibleForTesting
   String? lastKnownWalletAddress;
 
@@ -216,9 +218,20 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     try {
       emit(LoginLoading());
 
-      await _arConnectService.connect();
+      bool hasPermissions = await _arConnectService.checkPermissions();
+      if (!hasPermissions) {
+        try {
+          // If we have partial permissions, we're gonna disconnect before
+          /// re-connecting again.
+          ignoreNextWaletSwitch = true;
+          await _arConnectService.disconnect();
+        } catch (_) {}
 
-      if (!(await _arConnectService.checkPermissions())) {
+        await _arConnectService.connect();
+      }
+
+      hasPermissions = await _arConnectService.checkPermissions();
+      if (!hasPermissions) {
         throw Exception('ArConnect permissions not granted');
       }
 
@@ -300,6 +313,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     onArConnectWalletSwitch(() {
+      if (ignoreNextWaletSwitch) {
+        ignoreNextWaletSwitch = false;
+        return;
+      }
+
       logger.i('ArConnect wallet switched');
       // ignore: invalid_use_of_visible_for_testing_member
       emit(const LoginFailure(WalletMismatchException()));
