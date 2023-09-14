@@ -521,6 +521,13 @@ class _UploadFormState extends State<UploadForm> {
                             );
                       },
                     ),
+                  const SizedBox(
+                    height: 16,
+                  ),
+                  _getInsufficientBalanceMessage(
+                    sufficientArBalance: state.sufficientArBalance,
+                    sufficentCreditsBalance: state.sufficentCreditsBalance,
+                  ),
                 ],
               ),
               actions: [
