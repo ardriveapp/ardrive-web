@@ -334,12 +334,15 @@ class AudioPlayerWidget extends StatefulWidget {
 
 enum LoadState { loading, loaded, failed }
 
-class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
+class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
+    with AutomaticKeepAliveClientMixin {
   late AudioPlayer player;
   LoadState _loadState = LoadState.loading;
   bool _isVolumeSliderVisible = false;
   bool _wasPlaying = false;
-  MenuController _menuController = MenuController();
+  final _menuController = MenuController();
+  StreamSubscription<Duration>? _positionListener;
+  StreamSubscription<PlayerState>? _playStateListener;
 
   @override
   void initState() {
@@ -348,11 +351,11 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     player.setUrl(widget.audioUrl).then((value) {
       setState(() {
         _loadState = LoadState.loaded;
-        player.positionStream.listen((event) {
+        _positionListener = player.positionStream.listen((event) {
           setState(() {});
         });
 
-        player.playerStateStream.listen((event) {
+        _playStateListener = player.playerStateStream.listen((event) {
           // logger.d('Player state: $event');
           if (event.processingState == ProcessingState.completed) {
             player.stop();
@@ -374,12 +377,15 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   void dispose() {
     logger.d('Disposing audio player');
     player.stop();
+    _playStateListener?.cancel();
+    _positionListener?.cancel();
     player.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     var colors = ArDriveTheme.of(context).themeData.colors;
 
     var currentTime = getTimeString(player.position);
@@ -392,12 +398,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
           if (mounted) {
             setState(
               () {
-                // if (_videoPlayerController.value.isInitialized) {
-                //   _isPlaying = info.visibleFraction > 0.5;
-                //   _isPlaying
-                //       ? _videoPlayerController.play()
-                //       : _videoPlayerController.pause();
-                // }
+                if (player.playing && info.visibleFraction < 0.5) {
+                  player.pause();
+                }
               },
             );
           }
@@ -426,8 +429,21 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                           alignment: Alignment.center,
                           child: FittedBox(
                             fit: BoxFit.contain,
-                            child: ArDriveIcons.music(
-                                size: 100, color: colors.themeFgMuted),
+                            child: _loadState == LoadState.failed
+                                ? Column(
+                                    children: [
+                                      const Icon(Icons.error_outline_outlined,
+                                          size: 20),
+                                      // FIXME: localization
+                                      Text('Could not load file',
+                                          style: ArDriveTypography.body
+                                              .smallBold700(
+                                                  color: colors.themeFgMuted)
+                                              .copyWith(fontSize: 13)),
+                                    ],
+                                  )
+                                : ArDriveIcons.music(
+                                    size: 100, color: colors.themeFgMuted),
                           )),
                     ],
                   ),
@@ -445,39 +461,51 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                               trackShape:
                                   _NoAdditionalHeightRoundedRectSliderTrackShape(),
                               inactiveTrackColor: colors.themeBgSubtle,
+                              disabledThumbColor: colors.themeAccentBrand,
+                              disabledInactiveTrackColor: colors.themeBgSubtle,
                               overlayShape: SliderComponentShape.noOverlay,
                               thumbShape: const RoundSliderThumbShape(
                                 enabledThumbRadius: 8,
                               )),
                           child: Slider(
-                              value: min(
-                                player.position.inMilliseconds.toDouble(),
-                                player.duration?.inMilliseconds.toDouble() ?? 0,
-                              ),
+                              value: _loadState == LoadState.failed
+                                  ? 0
+                                  : min(
+                                      player.position.inMilliseconds.toDouble(),
+                                      player.duration?.inMilliseconds
+                                              .toDouble() ??
+                                          0,
+                                    ),
                               min: 0.0,
                               max: player.duration?.inMilliseconds.toDouble() ??
                                   0,
-                              onChangeStart: (v) {
-                                setState(() {
-                                  _wasPlaying = player.playing;
-                                  if (_wasPlaying) {
-                                    player.pause();
-                                  }
-                                });
-                              },
-                              onChanged: (v) {
-                                setState(() {
-                                  player
-                                      .seek(Duration(milliseconds: v.toInt()));
-                                });
-                              },
-                              onChangeEnd: (v) {
-                                setState(() {
-                                  if (_wasPlaying) {
-                                    player.play();
-                                  }
-                                });
-                              })),
+                              onChangeStart: _loadState == LoadState.failed
+                                  ? null
+                                  : (v) {
+                                      setState(() {
+                                        _wasPlaying = player.playing;
+                                        if (_wasPlaying) {
+                                          player.pause();
+                                        }
+                                      });
+                                    },
+                              onChanged: _loadState == LoadState.failed
+                                  ? null
+                                  : (v) {
+                                      setState(() {
+                                        player.seek(
+                                            Duration(milliseconds: v.toInt()));
+                                      });
+                                    },
+                              onChangeEnd: _loadState == LoadState.failed
+                                  ? null
+                                  : (v) {
+                                      setState(() {
+                                        if (_wasPlaying) {
+                                          player.play();
+                                        }
+                                      });
+                                    })),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -500,37 +528,47 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                               Expanded(
                                   child: Align(
                                       alignment: Alignment.centerLeft,
-                                      child: VolumeSliderWidget(
-                                        volume: player.volume,
-                                        setVolume: (v) {
-                                          setState(() {
-                                            player.setVolume(v);
-                                          });
-                                        },
-                                        sliderVisible: _isVolumeSliderVisible,
-                                        setSliderVisible: (v) {
-                                          setState(() {
-                                            _isVolumeSliderVisible = v;
-                                          });
-                                        },
+                                      child: ScreenTypeLayout.builder(
+                                        mobile: (context) =>
+                                            const SizedBox.shrink(),
+                                        desktop: (context) =>
+                                            VolumeSliderWidget(
+                                          volume: player.volume,
+                                          setVolume: (v) {
+                                            setState(() {
+                                              player.setVolume(v);
+                                            });
+                                          },
+                                          sliderVisible: _isVolumeSliderVisible,
+                                          setSliderVisible: (v) {
+                                            setState(() {
+                                              _isVolumeSliderVisible = v;
+                                            });
+                                          },
+                                        ),
                                       ))),
                               MaterialButton(
-                                onPressed: () {
-                                  setState(() {
-                                    if (player.playerState.processingState ==
-                                            ProcessingState.completed ||
-                                        !player.playing) {
-                                      if (player.position == player.duration) {
-                                        player.stop();
-                                        player.seek(Duration.zero);
-                                      }
-                                      player.play();
-                                    } else {
-                                      player.pause();
-                                    }
-                                  });
-                                },
+                                onPressed: _loadState == LoadState.failed
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          if (player.playerState
+                                                      .processingState ==
+                                                  ProcessingState.completed ||
+                                              !player.playing) {
+                                            if (player.position ==
+                                                player.duration) {
+                                              player.stop();
+                                              player.seek(Duration.zero);
+                                            }
+                                            player.play();
+                                          } else {
+                                            player.pause();
+                                          }
+                                        });
+                                      },
                                 color: colors.themeAccentBrand,
+                                disabledColor: colors.themeAccentDisabled,
                                 shape: const CircleBorder(),
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
@@ -603,6 +641,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                     ]))
               ]));
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 class VolumeSliderWidget extends StatefulWidget {
