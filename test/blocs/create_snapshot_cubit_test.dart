@@ -1,6 +1,12 @@
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
+import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/types/winston.dart';
+import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -11,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../test_utils/utils.dart';
+import '../turbo/turbo_test.dart';
 
 Future<Transaction> fakePrepareTransaction(invocation) async {
   final entity = invocation.positionalArguments[0] as SnapshotEntity;
@@ -28,6 +35,10 @@ Future<Transaction> fakePrepareTransaction(invocation) async {
   return transaction;
 }
 
+class MockAppConfig extends Mock implements AppConfig {}
+
+class MockTurboUploadService extends Mock implements TurboUploadService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -40,6 +51,11 @@ void main() {
       final pst = MockPstService();
       final tabVisibility = MockTabVisibilitySingleton();
       final testWallet = getTestWallet();
+      final appConfig = MockAppConfig();
+      final auth = MockArDriveAuth();
+      final paymentService = MockPaymentService();
+      final turboBalanceRetriever = MockTurboBalanceRetriever();
+      final turboService = MockTurboUploadService();
 
       setUpAll(() async {
         registerFallbackValue(SnapshotEntity());
@@ -51,7 +67,8 @@ void main() {
       });
 
       setUp(() async {
-        // mocks the getSegmentedTransactionsFromDrive method of ardrive
+        registerFallbackValue(BigInt.one);
+
         when(
           () => arweave.getSegmentedTransactionsFromDrive(
             any(),
@@ -125,6 +142,42 @@ void main() {
           (_) => Future.value(stubArToUsdFactor),
         );
 
+        when(() => arweave.getPrice(byteSize: any(named: 'byteSize')))
+            .thenAnswer((invocation) async => BigInt.one);
+
+        when(() => pst.getPSTFee(any()))
+            .thenAnswer((invocation) async => Winston(BigInt.one));
+
+        when(() => paymentService.getPriceForBytes(
+                byteSize: any(named: 'byteSize')))
+            .thenAnswer((invocation) async => BigInt.one);
+
+        when(() => paymentService.getPriceForFiat(
+              wallet: null,
+              amount: any(named: 'amount'),
+              currency: any(named: 'currency'),
+            )).thenAnswer((invocation) async => PriceForFiat.zero());
+
+        when(() => turboBalanceRetriever.getBalance(any()))
+            .thenAnswer((invocation) async => BigInt.one);
+
+        final MockWallet wallet = MockWallet();
+        const address = 'addr';
+        final cipher = SecretKey([1, 2, 3, 4, 5]);
+
+        when(() => auth.currentUser).thenAnswer((invocation) => User(
+              password: 'password',
+              wallet: wallet,
+              walletAddress: address,
+              walletBalance: BigInt.one,
+              cipherKey: cipher,
+              profileType: ProfileType.json,
+            ));
+
+        when(() => appConfig.allowedDataItemSizeForTurbo)
+            .thenAnswer((invocation) => 100);
+        when(() => appConfig.useTurboUpload).thenAnswer((invocation) => true);
+
         // mocks PackageInfo
         PackageInfo.setMockInitialValues(
           appName: 'appName',
@@ -143,6 +196,11 @@ void main() {
           driveDao: driveDao,
           tabVisibility: tabVisibility,
           pst: pst,
+          auth: auth,
+          appConfig: appConfig,
+          paymentService: paymentService,
+          turboBalanceRetriever: turboBalanceRetriever,
+          turboService: turboService,
         ),
         expect: () => [],
       );
@@ -155,6 +213,11 @@ void main() {
           driveDao: driveDao,
           tabVisibility: tabVisibility,
           pst: pst,
+          auth: auth,
+          appConfig: appConfig,
+          paymentService: paymentService,
+          turboBalanceRetriever: turboBalanceRetriever,
+          turboService: turboService,
         ),
         act: (cubit) => cubit.confirmDriveAndHeighRange(
           'driveId',
@@ -165,8 +228,6 @@ void main() {
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
           ),
-          PreparingAndSigningTransaction(isArConnectProfile: false),
-          // can't check for the actual value because it contains a signed transaction
           isA<ConfirmingSnapshotCreation>(),
         ],
       );
@@ -179,6 +240,11 @@ void main() {
           driveDao: driveDao,
           tabVisibility: tabVisibility,
           pst: pst,
+          auth: auth,
+          appConfig: appConfig,
+          paymentService: paymentService,
+          turboBalanceRetriever: turboBalanceRetriever,
+          turboService: turboService,
         ),
         act: (cubit) => cubit
             .confirmDriveAndHeighRange(
@@ -191,9 +257,8 @@ void main() {
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
           ),
-          PreparingAndSigningTransaction(isArConnectProfile: false),
-          // can't check for the actual value because it contains a signed transaction
           isA<ConfirmingSnapshotCreation>(),
+          PreparingAndSigningTransaction(isArConnectProfile: false),
           UploadingSnapshot(),
           SnapshotUploadSuccess(),
         ],
@@ -208,6 +273,11 @@ void main() {
           tabVisibility: tabVisibility,
           pst: pst,
           throwOnDataComputingForTesting: true,
+          auth: auth,
+          appConfig: appConfig,
+          paymentService: paymentService,
+          turboBalanceRetriever: turboBalanceRetriever,
+          turboService: turboService,
         ),
         act: (cubit) => cubit.confirmDriveAndHeighRange(
           'driveId',
@@ -230,6 +300,11 @@ void main() {
           driveDao: driveDao,
           tabVisibility: tabVisibility,
           pst: pst,
+          auth: auth,
+          appConfig: appConfig,
+          paymentService: paymentService,
+          turboBalanceRetriever: turboBalanceRetriever,
+          turboService: turboService,
         ),
         act: (cubit) => cubit.confirmDriveAndHeighRange(
           'driveId',
@@ -240,7 +315,6 @@ void main() {
             driveId: 'driveId',
             range: Range(start: 0, end: 85),
           ),
-          PreparingAndSigningTransaction(isArConnectProfile: false),
           isA<ConfirmingSnapshotCreation>(),
         ],
       );
@@ -254,6 +328,11 @@ void main() {
           tabVisibility: tabVisibility,
           pst: pst,
           throwOnDataComputingForTesting: true,
+          auth: auth,
+          appConfig: appConfig,
+          paymentService: paymentService,
+          turboBalanceRetriever: turboBalanceRetriever,
+          turboService: turboService,
         ),
         act: (cubit) => cubit.confirmDriveAndHeighRange(
           'driveId',
@@ -276,6 +355,11 @@ void main() {
           driveDao: driveDao,
           tabVisibility: tabVisibility,
           pst: pst,
+          auth: auth,
+          appConfig: appConfig,
+          paymentService: paymentService,
+          turboBalanceRetriever: turboBalanceRetriever,
+          turboService: turboService,
         ),
         act: (cubit) async {
           await Future.wait([
@@ -355,6 +439,11 @@ void main() {
             driveDao: driveDao,
             tabVisibility: tabVisibility,
             pst: pst,
+            auth: auth,
+            appConfig: appConfig,
+            paymentService: paymentService,
+            turboBalanceRetriever: turboBalanceRetriever,
+            turboService: turboService,
           ),
           act: (cubit) async {
             await cubit.confirmDriveAndHeighRange(
@@ -367,7 +456,6 @@ void main() {
               driveId: 'driveId',
               range: Range(start: 0, end: 1),
             ),
-            PreparingAndSigningTransaction(isArConnectProfile: true),
             isA<ConfirmingSnapshotCreation>(),
           ],
         );
@@ -381,6 +469,11 @@ void main() {
             tabVisibility: tabVisibility,
             pst: pst,
             throwOnSignTxForTesting: true,
+            auth: auth,
+            appConfig: appConfig,
+            paymentService: paymentService,
+            turboBalanceRetriever: turboBalanceRetriever,
+            turboService: turboService,
           ),
           act: (cubit) async {
             Future.delayed(const Duration(milliseconds: 8)).then((_) {
