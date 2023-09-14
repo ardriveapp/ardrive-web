@@ -434,8 +434,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                                     children: [
                                       const Icon(Icons.error_outline_outlined,
                                           size: 20),
-                                      // FIXME: localization
-                                      Text('Could not load file',
+                                      Text(
+                                          appLocalizationsOf(context)
+                                              .couldNotLoadFile,
                                           style: ArDriveTypography.body
                                               .smallBold700(
                                                   color: colors.themeFgMuted)

@@ -310,6 +310,10 @@
   "@costUpload": {
     "description": "Cost"
   },
+  "couldNotLoadFile": "Could not load file",
+  "@couldNotLoadFile": {
+    "description": "Message shown when user can not load audio or media files for playback"
+  },
   "country": "Country",
   "@country": {},
   "create": "Create",
@@ -1216,7 +1220,7 @@
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
   },
-  "multiDownloadCompleteWithSkippedFiles": "Download Complete with {numSkippedFiles} skipped file(s)",
+  "multiDownloadCompleteWithSkippedFiles": "Download complete with {numSkippedFiles} skipped file(s)",
   "@multiDownloadCompleteWithSkippedFiles": {
     "description": "Title to modal shown when user completes multi-file download and has skipped files. "
   },
