@@ -187,8 +187,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
               case 'audio':
                 _previewAudio(
-                  drive.isPrivate,
-                  selectedItem as FileDataTableItem,
+                  (selectedItem as FileDataTableItem).pinnedDataOwnerAddress ==
+                          null &&
+                      drive.isPrivate,
+                  selectedItem,
                   previewUrl,
                 );
                 break;
