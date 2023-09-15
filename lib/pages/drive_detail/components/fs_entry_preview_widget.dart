@@ -91,6 +91,9 @@ class VideoPlayerWidget extends StatefulWidget {
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   late VideoPlayerController _videoPlayerController;
   late VideoPlayer _videoPlayer;
+  bool _isVolumeSliderVisible = false;
+  bool _wasPlaying = false;
+  final _menuController = MenuController();
 
   @override
   void initState() {
@@ -203,41 +206,52 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 Text(widget.filename,
                     style: ArDriveTypography.body
                         .smallBold700(color: colors.themeFgDefault)),
-                const SizedBox(height: 4),
-                const Text('metadata'),
                 const SizedBox(height: 8),
-                Slider(
-                    value: min(videoValue.position.inMilliseconds.toDouble(),
-                        videoValue.duration.inMilliseconds.toDouble()),
-                    min: 0.0,
-                    max: videoValue.duration.inMilliseconds.toDouble(),
-                    onChangeStart: (v) {
-                      setState(() {
-                        if (_videoPlayerController.value.duration >
-                            Duration.zero) {
-                          _videoPlayerController.pause();
-                        }
-                      });
-                    },
-                    onChanged: (v) {
-                      setState(() {
-                        if (_videoPlayerController.value.duration >
-                            Duration.zero) {
-                          _videoPlayerController
-                              .seekTo(Duration(milliseconds: v.toInt()));
-                        }
-                      });
-                    },
-                    onChangeEnd: (v) {
-                      setState(() {
-                        if (_videoPlayerController.value.duration >
-                            Duration.zero) {
-                          // _videoPlayerController
-                          //     .seekTo(Duration(milliseconds: v.toInt()));
-                          _videoPlayerController.play();
-                        }
-                      });
-                    }),
+                SliderTheme(
+                    data: SliderThemeData(
+                        trackHeight: 4,
+                        trackShape:
+                            _NoAdditionalHeightRoundedRectSliderTrackShape(),
+                        inactiveTrackColor: colors.themeBgSubtle,
+                        disabledThumbColor: colors.themeAccentBrand,
+                        disabledInactiveTrackColor: colors.themeBgSubtle,
+                        overlayShape: SliderComponentShape.noOverlay,
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 8,
+                        )),
+                    child: Slider(
+                        value: min(
+                            videoValue.position.inMilliseconds.toDouble(),
+                            videoValue.duration.inMilliseconds.toDouble()),
+                        min: 0.0,
+                        max: videoValue.duration.inMilliseconds.toDouble(),
+                        onChangeStart: (v) {
+                          setState(() {
+                            if (_videoPlayerController.value.duration >
+                                Duration.zero) {
+                              _videoPlayerController.pause();
+                            }
+                          });
+                        },
+                        onChanged: (v) {
+                          setState(() {
+                            if (_videoPlayerController.value.duration >
+                                Duration.zero) {
+                              _videoPlayerController
+                                  .seekTo(Duration(milliseconds: v.toInt()));
+                            }
+                          });
+                        },
+                        onChangeEnd: (v) {
+                          setState(() {
+                            if (_videoPlayerController.value.duration >
+                                Duration.zero) {
+                              // _videoPlayerController
+                              //     .seekTo(Duration(milliseconds: v.toInt()));
+                              _videoPlayerController.play();
+                            }
+                          });
+                        })),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -247,72 +261,124 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    IconButton(
+                MouseRegion(
+                  onExit: (event) {
+                    setState(() {
+                      _isVolumeSliderVisible = false;
+                    });
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                          child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: ScreenTypeLayout.builder(
+                                mobile: (context) => const SizedBox.shrink(),
+                                desktop: (context) => VolumeSliderWidget(
+                                  volume: _videoPlayerController.value.volume,
+                                  setVolume: (v) {
+                                    setState(() {
+                                      _videoPlayerController.setVolume(v);
+                                    });
+                                  },
+                                  sliderVisible: _isVolumeSliderVisible,
+                                  setSliderVisible: (v) {
+                                    setState(() {
+                                      _isVolumeSliderVisible = v;
+                                    });
+                                  },
+                                ),
+                              ))),
+                      MaterialButton(
                         onPressed: () {
                           setState(() {
-                            if (!_videoPlayerController.value.isInitialized ||
-                                _videoPlayerController.value.isBuffering ||
-                                _videoPlayerController.value.duration <=
-                                    Duration.zero) {
+                            final value = _videoPlayerController.value;
+                            if (!value.isInitialized ||
+                                value.isBuffering ||
+                                value.duration <= Duration.zero) {
                               return;
                             }
-                            final videoValue = _videoPlayerController.value;
-                            final newPosition = videoValue.position -
-                                const Duration(seconds: 15);
-                            _videoPlayerController.seekTo(newPosition);
+                            if (_videoPlayerController.value.isPlaying) {
+                              _videoPlayerController.pause();
+                            } else {
+                              if (value.position >= value.duration) {
+                                _videoPlayerController.seekTo(Duration.zero);
+                              }
+                              _videoPlayerController.play();
+                            }
                           });
                         },
-                        icon: const Icon(Icons.fast_rewind_outlined, size: 24)),
-                    MaterialButton(
-                      onPressed: () {
-                        setState(() {
-                          final value = _videoPlayerController.value;
-                          if (!value.isInitialized ||
-                              value.isBuffering ||
-                              value.duration <= Duration.zero) {
-                            return;
-                          }
-                          if (_videoPlayerController.value.isPlaying) {
-                            _videoPlayerController.pause();
-                          } else {
-                            if (value.position >= value.duration) {
-                              _videoPlayerController.seekTo(Duration.zero);
-                            }
-                            _videoPlayerController.play();
-                          }
-                        });
-                      },
-                      color: colors.themeAccentBrand,
-                      shape: const CircleBorder(),
-                      child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: (_videoPlayerController.value.isPlaying)
-                              ? const Icon(Icons.pause_outlined, size: 32)
-                              : const Icon(Icons.play_arrow_outlined,
-                                  size: 32)),
-                    ),
-                    IconButton(
-                        onPressed: () {
-                          setState(() {
-                            if (!_videoPlayerController.value.isInitialized ||
-                                _videoPlayerController.value.isBuffering ||
-                                _videoPlayerController.value.duration <=
-                                    Duration.zero) {
-                              return;
-                            }
-                            final videoValue = _videoPlayerController.value;
-                            final newPosition = videoValue.position +
-                                const Duration(seconds: 15);
-
-                            _videoPlayerController.seekTo(newPosition);
-                          });
-                        },
-                        icon: const Icon(Icons.fast_forward_outlined, size: 24))
-                  ],
+                        color: colors.themeAccentBrand,
+                        shape: const CircleBorder(),
+                        child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: (_videoPlayerController.value.isPlaying)
+                                ? const Icon(Icons.pause_outlined, size: 32)
+                                : const Icon(Icons.play_arrow_outlined,
+                                    size: 32)),
+                      ),
+                      Expanded(
+                          child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ScreenTypeLayout.builder(
+                                desktop: (context) => MenuAnchor(
+                                      menuChildren: [
+                                        ..._speedOptions.map((v) {
+                                          return ListTile(
+                                            tileColor: colors.themeBgSurface,
+                                            onTap: () {
+                                              setState(() {
+                                                _videoPlayerController
+                                                    .setPlaybackSpeed(v);
+                                                _menuController.close();
+                                              });
+                                            },
+                                            title: Text(
+                                              '$v',
+                                              style: ArDriveTypography.body
+                                                  .buttonNormalBold(
+                                                      color: colors
+                                                          .themeFgDefault),
+                                            ),
+                                          );
+                                        })
+                                      ],
+                                      controller: _menuController,
+                                      child: IconButton(
+                                          onPressed: () {
+                                            _menuController.open();
+                                          },
+                                          icon: const Icon(
+                                              Icons.settings_outlined,
+                                              size: 24)),
+                                    ),
+                                mobile: (context) => IconButton(
+                                    onPressed: () {
+                                      _displaySpeedOptionsModal(context, (v) {
+                                        setState(() {
+                                          _videoPlayerController
+                                              .setPlaybackSpeed(v);
+                                        });
+                                      });
+                                    },
+                                    icon: const Icon(Icons.settings_outlined,
+                                        size: 24))),
+                            IconButton(
+                                onPressed: () {
+                                  goFullScreen();
+                                },
+                                icon: const Icon(Icons.fullscreen_outlined,
+                                    size: 24))
+                          ],
+                        ),
+                      ))
+                    ],
+                  ),
                 )
               ])
             ])));
