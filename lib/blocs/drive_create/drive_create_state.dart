@@ -6,7 +6,18 @@ abstract class DriveCreateState extends Equatable {
   List<Object> get props => [];
 }
 
-class DriveCreateInitial extends DriveCreateState {}
+class DriveCreateInitial extends DriveCreateState {
+  final DrivePrivacy privacy;
+
+  DriveCreateInitial({required this.privacy});
+
+  DriveCreateInitial copyWith({DrivePrivacy? privacy}) {
+    return DriveCreateInitial(privacy: privacy ?? this.privacy);
+  }
+
+  @override
+  List<Object> get props => [privacy];
+}
 
 class DriveCreateZeroBalance extends DriveCreateState {}
 

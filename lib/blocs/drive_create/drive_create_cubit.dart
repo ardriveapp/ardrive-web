@@ -1,5 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
+    show DrivePrivacy;
+import 'package:ardrive/entities/constants.dart' as constants;
+import 'package:ardrive/entities/drive_entity.dart';
+import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -15,7 +19,9 @@ part 'drive_create_state.dart';
 class DriveCreateCubit extends Cubit<DriveCreateState> {
   final form = FormGroup({
     'privacy': FormControl<String>(
-        value: DrivePrivacy.private, validators: [Validators.required]),
+      value: DrivePrivacy.private.name,
+      validators: [Validators.required],
+    ),
   });
 
   final ArweaveService _arweave;
@@ -35,7 +41,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
-        super(DriveCreateInitial());
+        super(DriveCreateInitial(privacy: DrivePrivacy.private));
+
+  void onPrivacyChanged() {
+    final privacy = form.control('privacy').value == DrivePrivacy.private.name
+        ? DrivePrivacy.private
+        : DrivePrivacy.public;
+    emit((state as DriveCreateInitial).copyWith(privacy: privacy));
+  }
 
   Future<void> submit(
     String driveName,
@@ -72,8 +85,8 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         name: driveName,
         rootFolderId: createRes.rootFolderId,
         privacy: drivePrivacy,
-        authMode: drivePrivacy == DrivePrivacy.private
-            ? DriveAuthMode.password
+        authMode: drivePrivacy == constants.DrivePrivacy.private
+            ? constants.DriveAuthMode.password
             : null,
       );
 
