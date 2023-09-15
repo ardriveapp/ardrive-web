@@ -279,6 +279,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
   ) async {
     final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
     final profileState = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profileState.wallet;
 
     emit(PinFileCreating(
       id: stateAsPinFileFieldsValid.id,
@@ -314,9 +315,20 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       if (_turboUploadService.useTurboUpload) {
         final fileDataItem = await _arweave.prepareEntityDataItem(
           newFileEntity,
-          profileState.wallet,
+          wallet,
           key: fileKey,
+          skipSignature: true,
         );
+
+        if (fileKey == null) {
+          // If file is public
+          fileDataItem.addTag(
+            'Pinned-Data-Owner',
+            stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
+          );
+        }
+
+        fileDataItem.sign(wallet);
 
         await _turboUploadService.postDataItem(
           dataItem: fileDataItem,
@@ -326,9 +338,20 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       } else {
         final fileDataItem = await _arweave.prepareEntityTx(
           newFileEntity,
-          profileState.wallet,
+          wallet,
           fileKey,
+          skipSignature: true,
         );
+
+        if (fileKey == null) {
+          // If file is public
+          fileDataItem.addTag(
+            'Pinned-Data-Owner',
+            stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
+          );
+        }
+
+        fileDataItem.sign(wallet);
 
         await _arweave.postTx(fileDataItem);
         newFileEntity.txId = fileDataItem.id;
