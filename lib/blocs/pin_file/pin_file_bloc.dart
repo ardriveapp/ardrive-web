@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/entities/file_entity.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
@@ -320,11 +319,15 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           skipSignature: true,
         );
 
+        fileDataItem.addTag(
+          EntityTag.arFsPin,
+          'true',
+        );
         if (fileKey == null) {
           // If file is public
           fileDataItem.addTag(
-            'Pinned-Data-Owner',
-            stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
+            EntityTag.pinnedDataTx,
+            newFileEntity.dataTxId!,
           );
         }
 
@@ -343,11 +346,15 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           skipSignature: true,
         );
 
+        fileDataItem.addTag(
+          EntityTag.arFsPin,
+          'true',
+        );
         if (fileKey == null) {
           // If file is public
           fileDataItem.addTag(
-            'Pinned-Data-Owner',
-            stateAsPinFileFieldsValid.pinnedDataOwnerAddress,
+            EntityTag.pinnedDataTx,
+            newFileEntity.dataTxId!,
           );
         }
 
