@@ -356,7 +356,6 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
         });
 
         _playStateListener = player.playerStateStream.listen((event) {
-          // logger.d('Player state: $event');
           if (event.processingState == ProcessingState.completed) {
             player.stop();
           }
@@ -413,11 +412,6 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                   child: CircularProgressIndicator(),
                 ),
               )
-            // : _loadState == LoadState.failed
-            //     ? const Center(
-            //         child: Text('Failed to load audio'),
-            //       )
-            //     :
             : Column(children: [
                 Expanded(
                   child: Stack(
