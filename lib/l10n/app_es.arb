@@ -1490,7 +1490,7 @@
   "@rename": {
     "description": "The action of renaming; imperative form"
   },
-  "renameDrive": "Renombrar Unidad",
+  "renameDrive": "Renombrar unidad",
   "@renameDrive": {
     "description": "The action of renaming a drive"
   },
