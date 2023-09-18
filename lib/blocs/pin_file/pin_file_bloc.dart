@@ -312,6 +312,8 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           .folderById(driveId: _driveId, folderId: _parentFolderId)
           .getSingle();
 
+      final isAPublicPin = fileKey == null;
+
       if (_turboUploadService.useTurboUpload) {
         final fileDataItem = await _arweave.prepareEntityDataItem(
           newFileEntity,
@@ -320,12 +322,11 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           skipSignature: true,
         );
 
-        fileDataItem.addTag(
-          EntityTag.arFsPin,
-          'true',
-        );
-        if (fileKey == null) {
-          // If file is public
+        if (isAPublicPin) {
+          fileDataItem.addTag(
+            EntityTag.arFsPin,
+            'true',
+          );
           fileDataItem.addTag(
             EntityTag.pinnedDataTx,
             newFileEntity.dataTxId!,
@@ -347,12 +348,11 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           skipSignature: true,
         );
 
-        fileDataItem.addTag(
-          EntityTag.arFsPin,
-          'true',
-        );
-        if (fileKey == null) {
-          // If file is public
+        if (isAPublicPin) {
+          fileDataItem.addTag(
+            EntityTag.arFsPin,
+            'true',
+          );
           fileDataItem.addTag(
             EntityTag.pinnedDataTx,
             newFileEntity.dataTxId!,
