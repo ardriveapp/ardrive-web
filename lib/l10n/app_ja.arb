@@ -22,6 +22,10 @@
   "@addSomeFiles": {
     "description": "Empty folder"
   },
+  "advanced": "詳細",
+  "@advanced": {
+    "description": "The advanced options"
+  },
   "aggreeToTerms_body": "ArDriveのサービス利用規約とプライバシーポリシー同意する",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
@@ -40,6 +44,8 @@
   },
   "amount": "金額",
   "@amount": {},
+  "anErrorOccuredWhileDownloadingYourFiles": "ファイルのダウンロード中にエラーが発生しました。もう一度試してください。",
+  "@anErrorOccuredWhileDownloadingYourFiles": {},
   "anErrorOccuredWhileDownloadingYourKeyfile": "ウォレットキーファイルのダウンロード中にエラーが発生しました。もう一度お試しください。",
   "@anErrorOccuredWhileDownloadingYourKeyfile": {},
   "anyFilesWillOutliveYou": "ここにアップロードされたファイルはすべて、あなたの死後も存在し続けますす!",
@@ -330,7 +336,7 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "マニフェストを作成する",
+  "createManifest": "新規マニフェスト",
   "@createManifest": {
     "description": "To create a manifest"
   },
@@ -346,7 +352,7 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "スナップショットを作成する",
+  "createSnapshot": "新規スナップショット",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
@@ -685,6 +691,14 @@
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
+  "failedToCreatePin": "ピンの作成に失敗しました。後で再試行してください。",
+  "@failedToCreatePin": {
+    "description": "The pin could not be created"
+  },
+  "failedToRetrieveFileInfromation": "ファイル情報の取得に失敗しました",
+  "@failedToRetrieveFileInfromation": {
+    "description": "Explains that there was an error while retrieving the file infromation"
+  },
   "failedToSyncDrive": "ドライブのコンテンツの同期に失敗しました。",
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
@@ -710,6 +724,10 @@
       }
     }
   },
+  "fileDoesExistButIsInvalid": "提供されたファイルは破損しており、ピン留めできません。",
+  "@fileDoesExistButIsInvalid": {
+    "description": "Explains that the file does exist, but some of its properties make it invalid"
+  },
   "fileDownloadFailed": "ファイルのダウンロードが失敗しました",
   "@fileDownloadFailed": {
     "description": "Could not export the CSV data"
@@ -733,6 +751,10 @@
   "fileID": "ファイルID",
   "@fileID": {
     "description": "The Entity-ID tag of files"
+  },
+  "fileIsNotPublic": "提供されたIDはプライベートファイル用であり、ピン留めできません。",
+  "@fileIsNotPublic": {
+    "description": "Warning explaining that the file is not public"
   },
   "fileName": "ファイル名",
   "@fileName": {
@@ -795,6 +817,10 @@
   "@fileSystem": {
     "description": "Button label to select a file from file system"
   },
+  "fileType": "ファイルタイプ",
+  "@fileType": {
+    "description": "The MIME type of the file"
+  },
   "fileWasCreatedWithName": "このファイルは{fileName}という名前で作成されました。",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
@@ -812,6 +838,10 @@
   "fileWasMoved": "このファイルは移動されました。",
   "@fileWasMoved": {
     "description": "File activity (journal): moved"
+  },
+  "fileWasPinnedToTheDrive": "ファイルがドライブにピン留めされました。",
+  "@fileWasPinnedToTheDrive": {
+    "description": "File activity (journal): was pinned"
   },
   "fileWasRenamed": "このファイルは{fileName}という名前に変更されました。",
   "@fileWasRenamed": {
@@ -955,6 +985,8 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
+  "helpCenter": "ヘルプセンター",
+  "@helpCenter": {},
   "howAreConversionsDetermined": "コンバージョンはどのようにして決定されるのですか？",
   "@howAreConversionsDetermined": {},
   "howDoesKeyfileLoginWork": "キーファイルとシードフレーズによるログインはどのように行われるのですか？",
@@ -1184,6 +1216,18 @@
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
   },
+  "multiDownloadCompleteWithSkippedFiles": "{numSkippedFiles}のファイルをスキップしてダウンロード完了",
+  "@multiDownloadCompleteWithSkippedFiles": {
+    "description": "Title to modal shown when user completes multi-file download and has skipped files. "
+  },
+  "multiDownloadDownloadingFilesProgress": "{totalNumFiles}のうち{currentFileNum} のファイルをダウンロード中…",
+  "@multiDownloadDownloadingFilesProgress": {
+    "description": "Title to modal shown when user is downloading multiple file.  "
+  },
+  "multiDownloadErrorTryAgain": "ファイルのダウンロード中にエラーが発生しました。再試行してください。",
+  "@multiDownloadErrorTryAgain": {
+    "description": "Error message to show user when an error has occurred downloading a file within a set of multi-file downloads."
+  },
   "name": "名前",
   "@name": {
     "description": "Name of certain entity"
@@ -1298,6 +1342,8 @@
   "@orContinueWith": {
     "description": "text to continue with ar connect"
   },
+  "ourChannels": "私たちのチャンネル：",
+  "@ourChannels": {},
   "password": "パスワード",
   "@password": {
     "description": "Label for the 'password' input"
@@ -1335,6 +1381,10 @@
   "personalDrivesEmphasized": "個人用ドライブ",
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
+  },
+  "pinFailedToUpload": "ピンのアップロードに失敗しました",
+  "@pinFailedToUpload": {
+    "description": "Explains that pin creation has failed"
   },
   "pleaseAcceptTheTermsToContinue": "続行するには利用規約に同意してください。",
   "@pleaseAcceptTheTermsToContinue": {
@@ -1411,6 +1461,16 @@
   "publicDrives": "パブリックドライブ",
   "@publicDrives": {
     "description": "Public drives accordion title"
+  },
+  "quoteUpdatesIn": "{timer}で見積もり更新",
+  "@quoteUpdatesIn": {
+    "description": "Indicates the time left for the next update of the quote",
+    "placeholders": {
+      "timer": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
   },
   "recreateFolderEmphasized": "フォルダの再作成",
   "@recreateFolderEmphasized": {
@@ -1496,6 +1556,8 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "share": "共有する",
+  "@share": {},
   "sharedDrives": "共有ドライブ",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
@@ -1528,6 +1590,20 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
+  "shareLogsDescription": "ArDriveチームとあなたのログを共有して、アプリの改善にご協力ください。ログはお使いのデバイスにダウンロードして、電子メール、Discordで共有したり、サポートチケットに追加したりできます。",
+  "@shareLogsDescription": {},
+  "shareLogsEmailBody": "ArDriveのユーザーログが添付されています。",
+  "@shareLogsEmailBody": {},
+  "shareLogsEmailSubject": "ArDriveログ",
+  "@shareLogsEmailSubject": {},
+  "shareLogsNativeShareSubject": "ARドライブログ",
+  "@shareLogsNativeShareSubject": {},
+  "shareLogsNativeShareText": "ARDriveのユーザーログが添付されています。",
+  "@shareLogsNativeShareText": {},
+  "shareLogsText": "共有ログ",
+  "@shareLogsText": {},
+  "shareLogsWithEmailText": "電子メールを送信する",
+  "@shareLogsWithEmailText": {},
   "sharePendingFile": "共有しようとしているファイルは現在保留中であり、現時点では共有できません。",
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
@@ -1692,6 +1768,20 @@
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
+  "turboCustomAmount": "カスタム量（最小 {min} ～ 最大 {max}）",
+  "@turboCustomAmount": {
+    "description": "Describes the range of credits the user can choose",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "$10,000"
+      },
+      "min": {
+        "type": "String",
+        "example": "$5"
+      }
+    }
+  },
   "turboErrorMessageEstimationInformationFailed": "情報の読み込みに失敗しました。もう一度お試しください。",
   "@turboErrorMessageEstimationInformationFailed": {},
   "turboErrorMessageFetchPaymentIntentFailed": "支払い処理が現在利用できません。後でもう一度お試しください。",
@@ -1704,6 +1794,20 @@
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "決済に失敗しました。カード情報を確認して、もう一度やり直してください。",
   "@turboErrorMessageUnknown": {},
+  "turboPleaseEnterAmountBetween": "{min} ～ {max} の間の量を入力してください",
+  "@turboPleaseEnterAmountBetween": {
+    "description": "Error message for when the given amount is not in range",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "$10,000"
+      },
+      "min": {
+        "type": "String",
+        "example": "$5"
+      }
+    }
+  },
   "unableToFetchEstimateAtThisTime": "現在、見積もりを取ることができません。",
   "@unableToFetchEstimateAtThisTime": {},
   "unableToUpdateQuote": "見積もりを更新できません。もう一度お試しください。",

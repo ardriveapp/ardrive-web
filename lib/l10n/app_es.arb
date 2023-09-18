@@ -22,6 +22,10 @@
   "@addSomeFiles": {
     "description": "Empty folder"
   },
+  "advanced": "Avanzadas",
+  "@advanced": {
+    "description": "The advanced options"
+  },
   "aggreeToTerms_body": "Acepto los términos de servicio y la política de privacidad de ArDrive.",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
@@ -40,6 +44,8 @@
   },
   "amount": "Cantidad",
   "@amount": {},
+  "anErrorOccuredWhileDownloadingYourFiles": "Se ha producido un error al descargar los archivos. Por favor, inténtalo de nuevo.",
+  "@anErrorOccuredWhileDownloadingYourFiles": {},
   "anErrorOccuredWhileDownloadingYourKeyfile": "Se ha producido un error al descargar el archivo de claves de su monedero. Inténtalo de nuevo.",
   "@anErrorOccuredWhileDownloadingYourKeyfile": {},
   "anyFilesWillOutliveYou": "¡Los archivos que cargues aquí existirán para siempre!",
@@ -330,7 +336,7 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "Crear manifiesto",
+  "createManifest": "Nuevo manifiesto",
   "@createManifest": {
     "description": "To create a manifest"
   },
@@ -346,7 +352,7 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "Crear instantánea",
+  "createSnapshot": "Nueva captura",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
@@ -685,6 +691,14 @@
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
+  "failedToCreatePin": "No se ha podido crear el anclaje. Vuelve a intentarlo más tarde.",
+  "@failedToCreatePin": {
+    "description": "The pin could not be created"
+  },
+  "failedToRetrieveFileInfromation": "No se ha podido recuperar la información del archivo",
+  "@failedToRetrieveFileInfromation": {
+    "description": "Explains that there was an error while retrieving the file infromation"
+  },
   "failedToSyncDrive": "No se pudo sincronizar el contenido de la unidad.",
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
@@ -710,6 +724,10 @@
       }
     }
   },
+  "fileDoesExistButIsInvalid": "El archivo proporcionado está dañado y no se puede anclar.",
+  "@fileDoesExistButIsInvalid": {
+    "description": "Explains that the file does exist, but some of its properties make it invalid"
+  },
   "fileDownloadFailed": "La descarga del archivo ha fallado",
   "@fileDownloadFailed": {
     "description": "Could not export the CSV data"
@@ -733,6 +751,10 @@
   "fileID": "ID del archivo",
   "@fileID": {
     "description": "The Entity-ID tag of files"
+  },
+  "fileIsNotPublic": "La ID proporcionada es para un archivo privado y no puede anclarse.",
+  "@fileIsNotPublic": {
+    "description": "Warning explaining that the file is not public"
   },
   "fileName": "Nombre del archivo",
   "@fileName": {
@@ -795,6 +817,10 @@
   "@fileSystem": {
     "description": "Button label to select a file from file system"
   },
+  "fileType": "Tipo de archivo",
+  "@fileType": {
+    "description": "The MIME type of the file"
+  },
   "fileWasCreatedWithName": "El archivo fue creado con el nombre: \"{fileName}\".",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
@@ -812,6 +838,10 @@
   "fileWasMoved": "El archivo fue movido.",
   "@fileWasMoved": {
     "description": "File activity (journal): moved"
+  },
+  "fileWasPinnedToTheDrive": "Archivo anclado a la unidad.",
+  "@fileWasPinnedToTheDrive": {
+    "description": "File activity (journal): was pinned"
   },
   "fileWasRenamed": "El archivo fue renombrado a: \"{fileName}\".",
   "@fileWasRenamed": {
@@ -955,6 +985,8 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
+  "helpCenter": "Centro de ayuda",
+  "@helpCenter": {},
   "howAreConversionsDetermined": "¿Cómo se calculan las conversiones?",
   "@howAreConversionsDetermined": {},
   "howDoesKeyfileLoginWork": "¿Cómo funcionan el archivo de claves y la frase de recuperación de inicio de sesión?",
@@ -1148,7 +1180,7 @@
   "@monthlyCharges": {
     "description": "Payment philosophy"
   },
-  "moreInfo": "Más información",
+  "moreInfo": "Más Información",
   "@moreInfo": {
     "description": "More info"
   },
@@ -1183,6 +1215,18 @@
   "movingItemsEmphasized": "Moviendo elementos",
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
+  },
+  "multiDownloadCompleteWithSkippedFiles": "Descarga completa con {numSkippedFiles} archivo(s) omitido(s)",
+  "@multiDownloadCompleteWithSkippedFiles": {
+    "description": "Title to modal shown when user completes multi-file download and has skipped files. "
+  },
+  "multiDownloadDownloadingFilesProgress": "Descargando archivo(s)... {currentFileNum} de {totalNumFiles}",
+  "@multiDownloadDownloadingFilesProgress": {
+    "description": "Title to modal shown when user is downloading multiple file.  "
+  },
+  "multiDownloadErrorTryAgain": "Ha habido un error al descargar tu(s) archivo(s). Inténtalo de nuevo.",
+  "@multiDownloadErrorTryAgain": {
+    "description": "Error message to show user when an error has occurred downloading a file within a set of multi-file downloads."
   },
   "name": "Nombre",
   "@name": {
@@ -1298,6 +1342,8 @@
   "@orContinueWith": {
     "description": "text to continue with ar connect"
   },
+  "ourChannels": "Nuestros canales:",
+  "@ourChannels": {},
   "password": "Contraseña",
   "@password": {
     "description": "Label for the 'password' input"
@@ -1335,6 +1381,10 @@
   "personalDrivesEmphasized": "UNIDADES PERSONALES",
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
+  },
+  "pinFailedToUpload": "No se ha podido cargar el anclaje",
+  "@pinFailedToUpload": {
+    "description": "Explains that pin creation has failed"
   },
   "pleaseAcceptTheTermsToContinue": "Acepta los términos y condiciones para continuar.",
   "@pleaseAcceptTheTermsToContinue": {
@@ -1412,6 +1462,16 @@
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
+  "quoteUpdatesIn": "El presupuesto se actualiza en {timer}",
+  "@quoteUpdatesIn": {
+    "description": "Indicates the time left for the next update of the quote",
+    "placeholders": {
+      "timer": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
+  },
   "recreateFolderEmphasized": "RECREAR CARPETA",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
@@ -1430,7 +1490,7 @@
   "@rename": {
     "description": "The action of renaming; imperative form"
   },
-  "renameDrive": "Renombrar unidad",
+  "renameDrive": "Renombrar Unidad",
   "@renameDrive": {
     "description": "The action of renaming a drive"
   },
@@ -1496,6 +1556,8 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "share": "Compartir",
+  "@share": {},
   "sharedDrives": "Discos compartidos",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
@@ -1528,11 +1590,25 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
+  "shareLogsDescription": "Puedes compartir tus registros con el equipo de ArDrive para ayudarnos a mejorar la aplicación. Puedes descargar los registros en tu dispositivo y compartirlos con nosotros por correo electrónico, Discord o añadirlos a un tique de asistencia.",
+  "@shareLogsDescription": {},
+  "shareLogsEmailBody": "Se adjuntan los registros de usuario de ArDrive.",
+  "@shareLogsEmailBody": {},
+  "shareLogsEmailSubject": "Registros de ArDrive",
+  "@shareLogsEmailSubject": {},
+  "shareLogsNativeShareSubject": "Registros de ArDrive",
+  "@shareLogsNativeShareSubject": {},
+  "shareLogsNativeShareText": "Se adjuntan los registros de usuario de ArDrive.",
+  "@shareLogsNativeShareText": {},
+  "shareLogsText": "Compartir registros",
+  "@shareLogsText": {},
+  "shareLogsWithEmailText": "Enviar correo electrónico",
+  "@shareLogsWithEmailText": {},
   "sharePendingFile": "El archivo que intentas compartir sigue pendiente y no puede ser compartido en este momento.",
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
   },
-  "showMenu": "Mostrar menú",
+  "showMenu": "Mostrar Menú",
   "@showMenu": {
     "description": "show menu text"
   },
@@ -1692,6 +1768,20 @@
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
+  "turboCustomAmount": "Importe personalizado  (mín. {min} - máx. {max})",
+  "@turboCustomAmount": {
+    "description": "Describes the range of credits the user can choose",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "$10,000"
+      },
+      "min": {
+        "type": "String",
+        "example": "$5"
+      }
+    }
+  },
   "turboErrorMessageEstimationInformationFailed": "Error al cargar la información. Inténtalo de nuevo.",
   "@turboErrorMessageEstimationInformationFailed": {},
   "turboErrorMessageFetchPaymentIntentFailed": "El procesador de pagos no está disponible. Inténtalo de nuevo más tarde.",
@@ -1704,6 +1794,20 @@
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "No se ha podido realizar el pago. Comprueba la información de su tarjeta e inténtalo de nuevo.",
   "@turboErrorMessageUnknown": {},
+  "turboPleaseEnterAmountBetween": "Introduce un importe entre {min} y {max}",
+  "@turboPleaseEnterAmountBetween": {
+    "description": "Error message for when the given amount is not in range",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "$10,000"
+      },
+      "min": {
+        "type": "String",
+        "example": "$5"
+      }
+    }
+  },
   "unableToFetchEstimateAtThisTime": "No se puede obtener la estimación en este momento.",
   "@unableToFetchEstimateAtThisTime": {},
   "unableToUpdateQuote": "No se ha podido actualizar el presupuesto. Inténtalo de nuevo.",
