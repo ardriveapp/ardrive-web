@@ -352,7 +352,7 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "Nueva captura",
+  "createSnapshot": "Nueva instantánea",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
@@ -1180,7 +1180,7 @@
   "@monthlyCharges": {
     "description": "Payment philosophy"
   },
-  "moreInfo": "Más Información",
+  "moreInfo": "Más información",
   "@moreInfo": {
     "description": "More info"
   },
@@ -1608,7 +1608,7 @@
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
   },
-  "showMenu": "Mostrar Menú",
+  "showMenu": "Mostrar menú",
   "@showMenu": {
     "description": "show menu text"
   },
@@ -1768,7 +1768,7 @@
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
-  "turboCustomAmount": "Importe personalizado  (mín. {min} - máx. {max})",
+  "turboCustomAmount": "Importe personalizado (mín. {min} - máx. {max})",
   "@turboCustomAmount": {
     "description": "Describes the range of credits the user can choose",
     "placeholders": {
