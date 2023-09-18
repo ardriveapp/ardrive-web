@@ -190,19 +190,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             );
           }
         },
-        child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Column(children: [
-              Expanded(
-                  child: AspectRatio(
-                      aspectRatio: _videoPlayerController.value.aspectRatio,
-                      child: TapRegion(
-                          onTapInside: (v) {
-                            goFullScreen();
-                          },
-                          child: _videoPlayer))),
-              const SizedBox(height: 8),
-              Column(children: [
+        child: Column(children: [
+          Expanded(
+              child: AspectRatio(
+                  aspectRatio: _videoPlayerController.value.aspectRatio,
+                  child: _videoPlayer)),
+          const SizedBox(height: 8),
+          Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              child: Column(children: [
                 Text(widget.filename,
                     style: ArDriveTypography.body
                         .smallBold700(color: colors.themeFgDefault)),
@@ -380,8 +376,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     ],
                   ),
                 )
-              ])
-            ])));
+              ]))
+        ]));
   }
 }
 
