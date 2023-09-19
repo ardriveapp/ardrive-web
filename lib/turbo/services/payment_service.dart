@@ -207,7 +207,7 @@ Map<String, dynamic> _signatureHeadersForGetPriceForFiat({
 }
 
 String _urlParamsForGetPriceForFiat({
-  String? promoCode,
+  required String? promoCode,
 }) {
   final urlParams =
       promoCode != null && promoCode.isNotEmpty ? '?promoCode=$promoCode' : '';
