@@ -74,8 +74,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
               ],
             );
           } else {
-            final stateAsInitial = state as DriveCreateInitial;
-            final privacy = stateAsInitial.privacy;
+            final privacy = state.privacy;
 
             return ArDriveStandardModal(
               title: appLocalizationsOf(context).createDriveEmphasized,
