@@ -73,7 +73,7 @@ class PaymentService {
         .onError(
       (ArDriveHTTPException error, stackTrace) {
         if (error.statusCode == 400) {
-          logger.d('Invalid promo code: $promoCode');
+          logger.e('Invalid promo code: $promoCode');
           throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
         }
         throw PaymentServiceException(
@@ -81,8 +81,6 @@ class PaymentService {
         );
       },
     );
-
-    logger.d('Turbo price fetch status code: ${result.statusCode}');
 
     if (!acceptedStatusCodes.contains(result.statusCode)) {
       throw PaymentServiceException(
