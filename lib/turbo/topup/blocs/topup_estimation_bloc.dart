@@ -97,7 +97,7 @@ class TurboTopUpEstimationBloc
               promoCode: promoCode,
             );
           } catch (e, s) {
-            logger.e('error updating the promo code', e, s);
+            logger.e('Failed to refresh estimate', e, s);
             emit(EstimationLoaded(
               balance: stateAsLoaded.balance,
               estimatedStorageForBalance:
