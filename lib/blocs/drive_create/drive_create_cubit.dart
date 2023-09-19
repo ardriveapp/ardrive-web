@@ -41,13 +41,13 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
-        super(const DriveCreateInitial(privacy: DrivePrivacy.private));
+        super(DriveCreateInitial(privacy: DrivePrivacy.private));
 
   void onPrivacyChanged() {
     final privacy = form.control('privacy').value == DrivePrivacy.private.name
         ? DrivePrivacy.private
         : DrivePrivacy.public;
-    emit(state.copyWith(privacy: privacy));
+    emit((state as DriveCreateInitial).copyWith(privacy: privacy));
   }
 
   Future<void> submit(
@@ -55,18 +55,18 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   ) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     if (await _profileCubit.logoutIfWalletMismatch()) {
-      emit(DriveCreateWalletMismatch(privacy: state.privacy));
+      emit(DriveCreateWalletMismatch());
       return;
     }
 
     final minimumWalletBalance = BigInt.from(10000000);
     if (profile.walletBalance <= minimumWalletBalance &&
         !_turboUploadService.useTurboUpload) {
-      emit(DriveCreateZeroBalance(privacy: state.privacy));
+      emit(DriveCreateZeroBalance());
       return;
     }
 
-    emit(DriveCreateInProgress(privacy: state.privacy));
+    emit(DriveCreateInProgress());
 
     try {
       final String drivePrivacy = form.control('privacy').value;
@@ -153,12 +153,12 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       addError(err);
     }
 
-    emit(DriveCreateSuccess(privacy: state.privacy));
+    emit(DriveCreateSuccess());
   }
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(DriveCreateFailure(privacy: state.privacy));
+    emit(DriveCreateFailure());
     super.onError(error, stackTrace);
 
     logger.e('Failed to create drive', error, stackTrace);
