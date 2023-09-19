@@ -50,6 +50,7 @@ class PaymentService {
       amount: amount,
       currency: currency,
       turboPaymentUri: turboPaymentUri,
+      promoCode: promoCode,
     );
 
     return _parseHttpResponseForPriceForFiat(result);
@@ -153,7 +154,7 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
   required double amount,
   required String currency,
   required Uri turboPaymentUri,
-  String? promoCode,
+  required String? promoCode,
 }) async {
   final acceptedStatusCodes = [200, 202, 204];
   final String urlParams = _urlParamsForGetPriceForFiat(promoCode: promoCode);
