@@ -43,7 +43,7 @@ class PaymentService {
     String? promoCode,
   }) async {
     final Map<String, dynamic> signatureHeaders =
-        _signatureHeadersForGetPriceForFiat(wallet: wallet);
+        await _signatureHeadersForGetPriceForFiat(wallet: wallet);
     final result = await _requestPriceForFiat(
       httpClient,
       signatureHeaders: signatureHeaders,
@@ -150,7 +150,7 @@ PriceForFiat _parseHttpResponseForPriceForFiat(
 
 Future<ArDriveHTTPResponse> _requestPriceForFiat(
   ArDriveHTTP httpClient, {
-  required signatureHeaders,
+  required Map<String, dynamic> signatureHeaders,
   required double amount,
   required String currency,
   required Uri turboPaymentUri,
@@ -171,7 +171,7 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
         throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
       }
       throw PaymentServiceException(
-        'Turbo price fetch failed with status code ${error.statusCode}',
+        'Turbo price fetch failed with exception: $error',
       );
     },
   );
@@ -185,16 +185,16 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
   return result;
 }
 
-Map<String, dynamic> _signatureHeadersForGetPriceForFiat({
+Future<Map<String, dynamic>> _signatureHeadersForGetPriceForFiat({
   required Wallet? wallet,
-}) {
+}) async {
   if (wallet == null) {
     return {};
   }
 
   final nonce = const Uuid().v4();
-  final publicKey = wallet.getOwner();
-  final signature = signNonceAndData(
+  final publicKey = await wallet.getOwner();
+  final signature = await signNonceAndData(
     nonce: nonce,
     wallet: wallet,
   );
@@ -266,6 +266,11 @@ class PaymentServiceException implements Exception {
   final String message;
 
   PaymentServiceException([this.message = '']);
+
+  @override
+  String toString() {
+    return 'PaymentServiceException{message: $message}';
+  }
 }
 
 class PaymentServiceInvalidPromoCode implements PaymentServiceException {
