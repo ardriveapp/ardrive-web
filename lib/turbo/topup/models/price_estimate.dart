@@ -12,6 +12,8 @@ class PriceEstimate extends Equatable {
     required this.estimatedStorage,
   });
 
+  bool get hasPromoCodeApplied => estimate.adjustments.isNotEmpty;
+
   factory PriceEstimate.zero() => PriceEstimate(
         estimate: PriceForFiat.zero(),
         priceInCurrency: 0,

@@ -9,6 +9,8 @@ abstract class PaymentFormState extends Equatable {
   final PriceEstimate priceEstimate;
   final int quoteExpirationTimeInSeconds;
 
+  bool get hasPromoCodeApplied => priceEstimate.hasPromoCodeApplied;
+
   @override
   List<Object> get props => [
         priceEstimate,

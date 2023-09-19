@@ -616,8 +616,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   Widget promoCodeWidget(ArDriveTextFieldTheme theme) {
     return BlocBuilder<PaymentFormBloc, PaymentFormState>(
         builder: (context, state) {
-      final hasPromoCodeApplied =
-          state.priceEstimate.estimate.adjustments.isNotEmpty;
+      final hasPromoCodeApplied = state.hasPromoCodeApplied;
 
       return Expanded(
         child: hasPromoCodeApplied
