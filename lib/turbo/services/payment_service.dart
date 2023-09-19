@@ -290,20 +290,6 @@ class PriceForFiat extends Equatable {
     return adjustments.first.humanReadableDiscountPercentage;
   }
 
-  double? get promoDiscountFactor {
-    if (adjustments.isEmpty) {
-      return null;
-    }
-
-    final adjustmentMagnitude = adjustments.first.operatorMagnitude;
-
-    // Multiplying by 100 and then dividing by 100 is a workaround for
-    /// floating point precision issues.
-    final factor = (100 - (adjustmentMagnitude * 100)) / 100;
-
-    return factor;
-  }
-
   BigInt get winstonCredits => winc;
 
   const PriceForFiat({

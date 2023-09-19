@@ -36,21 +36,6 @@ class PaymentFormLoaded extends PaymentFormState {
   final bool isFetchingPromoCode;
   final bool errorFetchingPromoCode;
 
-  double? get promoDiscountFactor {
-    if (priceEstimate.estimate.adjustments.isEmpty) {
-      return null;
-    }
-
-    final adjustment = priceEstimate.estimate.adjustments.first;
-    final adjustmentMagnitude = adjustment.operatorMagnitude;
-
-    // Multiplying by 100 and then dividing by 100 is a workaround for
-    /// floating point precision issues.
-    final factor = (100 - (adjustmentMagnitude * 100)) / 100;
-
-    return factor;
-  }
-
   const PaymentFormLoaded(
     super.priceEstimate,
     super.quoteExpirationTime,
