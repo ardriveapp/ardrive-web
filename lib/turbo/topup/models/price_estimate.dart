@@ -15,6 +15,10 @@ class PriceEstimate extends Equatable {
   bool get hasPromoCodeApplied => estimate.adjustments.isNotEmpty;
   String? get humanReadableDiscountPercentage =>
       estimate.humanReadableDiscountPercentage;
+  double get paymentAmount => hasPromoCodeApplied
+      ? estimate.actualPaymentAmount! / 100
+      : priceInCurrency;
+  BigInt get winstonCredits => estimate.winstonCredits;
 
   factory PriceEstimate.zero() => PriceEstimate(
         estimate: PriceForFiat.zero(),

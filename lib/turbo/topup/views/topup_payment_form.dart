@@ -237,24 +237,18 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
                     return Text(
-                      '${convertCreditsToLiteralString(state.priceEstimate.estimate.winstonCredits)} Credits',
+                      '${convertCreditsToLiteralString(state.winstonCredits)} Credits',
                       style: ArDriveTypography.body.leadBold(),
                     );
                   },
                 ),
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
-                    final actualPaymentAmount = state
-                            .priceEstimate.estimate.adjustments.isNotEmpty
-                        ? state.priceEstimate.estimate.actualPaymentAmount! /
-                            100
-                        : state.priceEstimate.priceInCurrency;
                     return RichText(
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text:
-                                '\$${(actualPaymentAmount).toStringAsFixed(2)}',
+                            text: '\$${state.paymentAmount}',
                             style: ArDriveTypography.body.captionBold(
                               color: ArDriveTheme.of(context)
                                   .themeData

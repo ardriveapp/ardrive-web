@@ -12,6 +12,8 @@ abstract class PaymentFormState extends Equatable {
   bool get hasPromoCodeApplied => priceEstimate.hasPromoCodeApplied;
   String? get humanReadableDiscountPercentage =>
       priceEstimate.humanReadableDiscountPercentage;
+  String get paymentAmount => priceEstimate.paymentAmount.toStringAsFixed(2);
+  BigInt get winstonCredits => priceEstimate.winstonCredits;
 
   @override
   List<Object> get props => [
