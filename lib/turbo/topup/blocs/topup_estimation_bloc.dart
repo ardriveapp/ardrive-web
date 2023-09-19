@@ -190,31 +190,28 @@ class TurboTopUpEstimationBloc
     required String? promoCode,
   }) async {
     emit(EstimationLoading());
-    try {
-      final priceEstimate = turbo.currentPriceEstimate;
 
-      final estimatedStorageForBalance =
-          await turbo.computeStorageEstimateForCredits(
-        credits: _balance,
-        outputDataUnit: currentDataUnit,
-      );
+    final priceEstimate = turbo.currentPriceEstimate;
 
-      emit(
-        EstimationLoaded(
-          balance: _balance,
-          estimatedStorageForBalance:
-              estimatedStorageForBalance.toStringAsFixed(2),
-          selectedAmount: priceEstimate.priceInCurrency,
-          creditsForSelectedAmount: priceEstimate.estimate.winstonCredits,
-          estimatedStorageForSelectedAmount:
-              priceEstimate.estimatedStorage.toStringAsFixed(2),
-          currencyUnit: currentCurrency,
-          dataUnit: currentDataUnit,
-        ),
-      );
-    } catch (e, _) {
-      rethrow;
-    }
+    final estimatedStorageForBalance =
+        await turbo.computeStorageEstimateForCredits(
+      credits: _balance,
+      outputDataUnit: currentDataUnit,
+    );
+
+    emit(
+      EstimationLoaded(
+        balance: _balance,
+        estimatedStorageForBalance:
+            estimatedStorageForBalance.toStringAsFixed(2),
+        selectedAmount: priceEstimate.priceInCurrency,
+        creditsForSelectedAmount: priceEstimate.estimate.winstonCredits,
+        estimatedStorageForSelectedAmount:
+            priceEstimate.estimatedStorage.toStringAsFixed(2),
+        currencyUnit: currentCurrency,
+        dataUnit: currentDataUnit,
+      ),
+    );
   }
 
   Future<void> _getBalance() async {
