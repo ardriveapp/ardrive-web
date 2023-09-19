@@ -13,6 +13,8 @@ class PriceEstimate extends Equatable {
   });
 
   bool get hasPromoCodeApplied => estimate.adjustments.isNotEmpty;
+  String? get humanReadableDiscountPercentage =>
+      estimate.humanReadableDiscountPercentage;
 
   factory PriceEstimate.zero() => PriceEstimate(
         estimate: PriceForFiat.zero(),

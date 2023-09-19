@@ -10,6 +10,8 @@ abstract class PaymentFormState extends Equatable {
   final int quoteExpirationTimeInSeconds;
 
   bool get hasPromoCodeApplied => priceEstimate.hasPromoCodeApplied;
+  String? get humanReadableDiscountPercentage =>
+      priceEstimate.humanReadableDiscountPercentage;
 
   @override
   List<Object> get props => [

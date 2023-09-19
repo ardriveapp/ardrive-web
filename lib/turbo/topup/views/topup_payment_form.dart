@@ -262,12 +262,10 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                                   .themeFgMuted,
                             ),
                           ),
-                          if (state.priceEstimate.estimate
-                                  .humanReadableDiscountPercentage !=
-                              null)
+                          if (state.hasPromoCodeApplied)
                             TextSpan(
                               text:
-                                  ' (${state.priceEstimate.estimate.humanReadableDiscountPercentage}% discount applied)', // TODO: localize
+                                  ' (${state.humanReadableDiscountPercentage}% discount applied)', // TODO: localize
                               style: ArDriveTypography.body.buttonNormalRegular(
                                 color: ArDriveTheme.of(context)
                                     .themeData
