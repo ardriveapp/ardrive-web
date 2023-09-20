@@ -333,7 +333,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           );
         }
 
-        fileDataItem.sign(wallet);
+        await fileDataItem.sign(wallet);
 
         await _turboUploadService.postDataItem(
           dataItem: fileDataItem,
@@ -359,7 +359,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           );
         }
 
-        fileDataItem.sign(wallet);
+        await fileDataItem.sign(wallet);
 
         await _arweave.postTx(fileDataItem);
         newFileEntity.txId = fileDataItem.id;
