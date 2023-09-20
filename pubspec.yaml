@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-4554_detach_icon
+      ref: v1.9.2
   artemis: ^7.0.0-beta.13
   arweave:
     git:
