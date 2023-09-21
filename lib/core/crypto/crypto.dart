@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart' hide Cipher;
@@ -21,6 +22,9 @@ final pbkdf2 = Pbkdf2(
 );
 
 final hkdf = Hkdf(hmac: Hmac(sha256), outputLength: keyByteLength);
+
+// TODO: Decouple this class from the TransactionCommonMixin, Transaction, and DataItem classes.
+// and implement it on the `ardrive_crypto` package.
 
 class ArDriveCrypto {
   Future<ProfileKeyDerivationResult> deriveProfileKey(String password,

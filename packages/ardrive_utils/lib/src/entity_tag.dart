@@ -1,4 +1,4 @@
-// move for the ARFS package
+// TODO: move for the ARFS package
 class EntityTag {
   static const appName = 'App-Name';
   static const appPlatform = 'App-Platform';

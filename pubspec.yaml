@@ -40,6 +40,12 @@ dependencies:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
       ref: v1.9.1
+  ardrive_utils:
+    path: ./packages/ardrive_utils
+  arconnect:
+    path: ./packages/arconnect
+  ardrive_crypto:
+    path: ./packages/ardrive_crypto
   artemis: ^7.0.0-beta.13
   arweave:
     path: ../arweave-dart

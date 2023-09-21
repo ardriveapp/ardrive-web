@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -80,7 +81,7 @@ class FileEntity extends EntityWithCustomMetadata {
   }) async {
     try {
       Map<String, dynamic>? entityJson;
-      if (driveKey == null && fileKey == null) {
+    if (driveKey == null && fileKey == null) {
         entityJson = json.decode(utf8.decode(data));
       } else {
         fileKey ??= await crypto.deriveFileKey(
@@ -131,7 +132,7 @@ class FileEntity extends EntityWithCustomMetadata {
 
     tx
       ..addArFsTag()
-      ..addTag(EntityTag.entityType, EntityType.file)
+      ..addTag(EntityTag.entityType, EntityTypeTag.file)
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.parentFolderId, parentFolderId!)
       ..addTag(EntityTag.fileId, id!);

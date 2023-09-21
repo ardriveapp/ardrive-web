@@ -2,6 +2,7 @@ name: arconnect
 description: A new Flutter package project.
 version: 0.0.1
 homepage:
+publish_to: none
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -14,6 +15,7 @@ dependencies:
     path: ../../../arweave-dart
   ardrive_utils:
     path: ../ardrive_utils
+  js: ^0.6.7
 
 dev_dependencies:
   flutter_test:

@@ -1,8 +1,7 @@
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart' as arfs;
 import 'package:ardrive/core/upload/upload_metadata.dart';
-import 'package:ardrive/entities/constants.dart';
-import 'package:ardrive/services/app/app_info_services.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:uuid/uuid.dart';
 

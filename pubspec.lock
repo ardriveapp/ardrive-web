@@ -57,6 +57,20 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.3.8"
+  arconnect:
+    dependency: "direct main"
+    description:
+      path: "packages/arconnect"
+      relative: true
+    source: path
+    version: "0.0.1"
+  ardrive_crypto:
+    dependency: "direct main"
+    description:
+      path: "packages/ardrive_crypto"
+      relative: true
+    source: path
+    version: "0.0.1"
   ardrive_http:
     dependency: "direct main"
     description:
@@ -84,6 +98,13 @@ packages:
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.9.1"
+  ardrive_utils:
+    dependency: "direct main"
+    description:
+      path: "packages/ardrive_utils"
+      relative: true
+    source: path
+    version: "0.0.1"
   args:
     dependency: transitive
     description:
@@ -2008,10 +2029,10 @@ packages:
     dependency: "direct main"
     description:
       name: universal_html
-      sha256: a5cc5a84188e5d3e58f3ed77fe3dd4575dc1f68aa7c89e51b5b4105b9aab3b9d
+      sha256: "56536254004e24d9d8cfdb7dbbf09b74cf8df96729f38a2f5c238163e3d58971"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.3"
+    version: "2.2.4"
   universal_io:
     dependency: transitive
     description:
@@ -2212,6 +2233,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.0"
+  webcrypto:
+    dependency: transitive
+    description:
+      name: webcrypto
+      sha256: a3cc45ce5efa053435505a958d32785f7497a684a859e6910d805ddf094f903f
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.3"
   webdriver:
     dependency: transitive
     description:
@@ -2261,5 +2290,5 @@ packages:
     source: hosted
     version: "3.1.2"
 sdks:
-  dart: ">=3.0.0 <4.0.0"
+  dart: ">=3.0.2 <4.0.0"
   flutter: ">=3.10.0"

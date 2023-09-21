@@ -114,7 +114,7 @@ class _UploadFormState extends State<UploadForm> {
         nonce: Uint8List(1),
       );
 
-      print('driveKey: ${await driveKey.extract()..toString()}');
+      // print('driveKey: ${await driveKey.extract()..toString()}');
     }
 
     controller = await uploader.upload(
@@ -260,8 +260,8 @@ class _UploadFormState extends State<UploadForm> {
 
     final keyData = Uint8List.fromList(await fileKey.extractBytes());
 
-    final impl =
-        await cipherStreamEncryptImpl(Cipher.aes256ctr, keyData: keyData);
+    // final impl =
+    // await cipherStreamEncryptImpl(Cipher.aes256ctr, keyData: keyData);
 
     final cipherIv = decodeBase64ToBytes('5_JZjWhjVK2zHsx9');
 

@@ -2,12 +2,11 @@
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_flavors.dart';
-import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -89,7 +88,7 @@ void main() {
       act: (bloc) async {
         bloc.form.value = {
           'name': validDriveName,
-          'privacy': DrivePrivacy.public,
+          'privacy': DrivePrivacyTag.public,
         };
         await bloc.submit('');
       },
@@ -106,7 +105,7 @@ void main() {
       act: (bloc) async {
         bloc.form.value = {
           'name': validDriveName,
-          'privacy': DrivePrivacy.private,
+          'privacy': DrivePrivacyTag.private,
         };
         await bloc.submit('');
       },

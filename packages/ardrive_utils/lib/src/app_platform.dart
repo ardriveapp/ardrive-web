@@ -1,6 +1,3 @@
-// ignore_for_file: constant_identifier_names
-// ignore_for_file: depend_on_referenced_packages
-
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform, visibleForTesting;
@@ -55,4 +52,5 @@ class AppPlatform {
   }
 }
 
+// ignore: constant_identifier_names
 enum SystemPlatform { Android, iOS, Web, unknown }

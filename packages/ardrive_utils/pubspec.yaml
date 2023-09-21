@@ -2,6 +2,7 @@ name: ardrive_utils
 description: A new Flutter package project.
 version: 0.0.1
 homepage:
+publish_to: none
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -12,10 +13,11 @@ dependencies:
   flutter:
     sdk: flutter
   package_info_plus: ^3.1.2
-  platform: ^3.1.2
+  platform: ^3.1.0
   universal_html: ^2.2.4
   arweave:
     path: ../../../arweave-dart
+  js: ^0.6.7
 
 dev_dependencies:
   flutter_test:

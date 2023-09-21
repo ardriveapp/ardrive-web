@@ -2,6 +2,7 @@ name: ardrive_crypto
 description: A new Flutter package project.
 version: 0.0.1
 homepage:
+publish_to: none
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -14,8 +15,11 @@ dependencies:
     path: ../../../arweave-dart
   ardrive_utils:
     path: ../ardrive_utils 
-  uuid: ^4.0.0
+  uuid: ^3.0.4
   webcrypto: ^0.5.3
+  async: ^2.11.0
+  cryptography: ^2.5.0
+  convert: ^3.1.1
 
 dev_dependencies:
   flutter_test:

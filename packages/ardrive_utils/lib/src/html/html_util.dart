@@ -22,6 +22,7 @@ class TabVisibilitySingleton {
       implementation.onTabGetsFocused(onFocus);
 }
 
+// TODO: Move this code to the arconnect package.
 void onArConnectWalletSwitch(Function onWalletSwitch) =>
     implementation.onWalletSwitch(onWalletSwitch);
 

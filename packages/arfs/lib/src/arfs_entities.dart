@@ -1,5 +1,8 @@
+// ignore_for_file: unused_element
+
 import 'package:ardrive_utils/ardrive_utils.dart';
 
+// TODO: use this class on ardrive_app
 abstract class ARFSEntity {
   ARFSEntity({
     required this.appName,
@@ -105,7 +108,6 @@ class _ARFSFileEntity extends ARFSFileEntity {
     required super.appName,
     required super.appVersion,
     required super.arFS,
-    super.contentType,
     required super.driveId,
     required super.entityType,
     required super.name,
@@ -115,7 +117,6 @@ class _ARFSFileEntity extends ARFSFileEntity {
     required super.parentFolderId,
     required super.size,
     required super.id,
-    super.dataTxId,
     required super.pinnedDataOwnerAddress,
   });
 }

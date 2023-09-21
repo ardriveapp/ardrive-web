@@ -1,9 +1,9 @@
-import 'package:ardrive/entities/entities.dart';
 import 'package:collection/collection.dart' show IterableExtension;
-
-import 'graphql_api.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 
 export 'graphql_api.dart';
+
+import 'graphql_api.dart';
 
 extension TransactionMixinExtensions on TransactionCommonMixin {
   String? getTag(String tagName) =>
