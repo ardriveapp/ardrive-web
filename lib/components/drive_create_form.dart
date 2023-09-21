@@ -111,7 +111,21 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                       ReactiveDropdownField(
                         formControlName: 'privacy',
                         decoration: InputDecoration(
-                          labelText: appLocalizationsOf(context).privacy,
+                          label: Text(
+                            appLocalizationsOf(context).privacy,
+                            style: ArDriveTheme.of(context)
+                                .themeData
+                                .textFieldTheme
+                                .inputTextStyle
+                                .copyWith(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgDisabled,
+                                  fontSize: 16,
+                                ),
+                          ),
+                          focusedBorder: InputBorder.none,
                         ),
                         showErrors: (control) =>
                             control.dirty && control.invalid,

@@ -79,11 +79,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.9.2"
-      resolved-ref: f8fb1bf502541e46caeb6e7e6270e2c488d7e126
+      ref: "v1.10.0"
+      resolved-ref: "72cd21de7cbd52067924cefac579cdb9d7ef39b7"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.9.2"
+    version: "1.10.0"
   args:
     dependency: transitive
     description:
