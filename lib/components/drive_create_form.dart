@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
@@ -73,6 +74,8 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
               ],
             );
           } else {
+            final privacy = state.privacy;
+
             return ArDriveStandardModal(
               title: appLocalizationsOf(context).createDriveEmphasized,
               content: SizedBox(
@@ -130,17 +133,35 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                             kValidationMessages(appLocalizationsOf(context)),
                         items: [
                           DropdownMenuItem(
-                            value: 'public',
+                            value: DrivePrivacy.public.name,
                             child: Text(appLocalizationsOf(context).public),
                           ),
                           DropdownMenuItem(
-                            value: 'private',
+                            value: DrivePrivacy.private.name,
                             child: Text(
                               appLocalizationsOf(context).private,
                             ),
                           )
                         ],
+                        onChanged: (_) {
+                          context.read<DriveCreateCubit>().onPrivacyChanged();
+                        },
                       ),
+                      const SizedBox(height: 32),
+                      Row(children: [
+                        if (privacy == DrivePrivacy.private)
+                          Flexible(
+                              child: Text(
+                            appLocalizationsOf(context)
+                                .drivePrivacyDescriptionPrivate,
+                          ))
+                        else
+                          Flexible(
+                              child: Text(
+                            appLocalizationsOf(context)
+                                .drivePrivacyDescriptionPublic,
+                          ))
+                      ]),
                     ],
                   ),
                 ),

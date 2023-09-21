@@ -379,9 +379,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                               );
                                             },
                                             content: _buildItem(
-                                                appLocalizationsOf(context)
-                                                    .detachDrive,
-                                                ArDriveIcons.triangle()),
+                                              appLocalizationsOf(context)
+                                                  .detachDrive,
+                                              ArDriveIcons.detach(),
+                                            ),
                                           ),
                                       ],
                                       child: HoverWidget(
