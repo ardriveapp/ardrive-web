@@ -141,30 +141,33 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void goFullScreen() {
-    final fsController =
-        VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-    fsController.initialize().then((_) {
-      fsController.seekTo(_videoPlayerController.value.position);
-      fsController.play();
-    });
+    bool wasPlaying = _videoPlayerController.value.isPlaying;
+    if (wasPlaying) {
+      _videoPlayerController.pause();
+    }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (context) => Scaffold(
-          body: Center(
-            child: TapRegion(
-                onTapInside: (v) {
-                  _videoPlayerController.seekTo(fsController.value.position);
+    Navigator.of(context).push(PageRouteBuilder(
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return Scaffold(
+            body: Center(
+              child: FullScreenVideoPlayerWidget(
+                filename: widget.filename,
+                videoUrl: widget.videoUrl,
+                initialPosition: _videoPlayerController.value.position,
+                initialIsPlaying: wasPlaying,
+                onClose: (position, isPlaying) {
+                  _videoPlayerController.seekTo(position);
+                  if (isPlaying) {
+                    _videoPlayerController.play();
+                  }
                   Navigator.of(context).pop();
                 },
-                child: AspectRatio(
-                    aspectRatio: _videoPlayerController.value.aspectRatio,
-                    child: VideoPlayer(fsController))),
-          ),
-        ),
-      ),
-    );
+              ),
+            ),
+          );
+        }));
   }
 
   @override
@@ -180,12 +183,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           if (mounted) {
             setState(
               () {
-                // if (_videoPlayerController.value.isInitialized) {
-                //   _isPlaying = info.visibleFraction > 0.5;
-                //   _isPlaying
-                //       ? _videoPlayerController.play()
-                //       : _videoPlayerController.pause();
-                // }
+                if (info.visibleFraction < 0.5 &&
+                    _videoPlayerController.value.isPlaying) {
+                  _videoPlayerController.pause();
+                }
               },
             );
           }
@@ -225,7 +226,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                           setState(() {
                             if (_videoPlayerController.value.duration >
                                 Duration.zero) {
-                              _videoPlayerController.pause();
+                              _wasPlaying =
+                                  _videoPlayerController.value.isPlaying;
+                              if (_wasPlaying) {
+                                _videoPlayerController.pause();
+                              }
                             }
                           });
                         },
@@ -241,7 +246,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                         onChangeEnd: (v) {
                           setState(() {
                             if (_videoPlayerController.value.duration >
-                                Duration.zero) {
+                                    Duration.zero &&
+                                _wasPlaying) {
                               // _videoPlayerController
                               //     .seekTo(Duration(milliseconds: v.toInt()));
                               _videoPlayerController.play();
@@ -378,6 +384,399 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 )
               ]))
         ]));
+  }
+}
+
+class FullScreenVideoPlayerWidget extends StatefulWidget {
+  final String videoUrl;
+  final String filename;
+  final Duration initialPosition;
+  final bool initialIsPlaying;
+  final Function(Duration, bool) onClose;
+
+  const FullScreenVideoPlayerWidget(
+      {Key? key,
+      required this.filename,
+      required this.videoUrl,
+      required this.initialPosition,
+      required this.initialIsPlaying,
+      required this.onClose})
+      : super(key: key);
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _FullScreenVideoPlayerWidgetState createState() =>
+      _FullScreenVideoPlayerWidgetState();
+}
+
+class _FullScreenVideoPlayerWidgetState
+    extends State<FullScreenVideoPlayerWidget> {
+  late VideoPlayerController _videoPlayerController;
+  late VideoPlayer _videoPlayer;
+  bool _wasPlaying = false;
+  bool _isVolumeSliderVisible = false;
+  final _menuController = MenuController();
+  bool _controlsVisible = true;
+  Timer? _hideControlsTimer;
+
+  @override
+  void initState() {
+    logger.d('Initializing video player: ${widget.videoUrl}');
+    super.initState();
+    _videoPlayerController =
+        VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+    _videoPlayerController.initialize().then((_) {
+      _videoPlayerController.seekTo(widget.initialPosition);
+      if (widget.initialIsPlaying) {
+        _videoPlayerController.play();
+      }
+    });
+    _videoPlayerController.addListener(_listener);
+    _videoPlayer =
+        VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
+
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+  }
+
+  void _listener() {
+    setState(() {
+      if (_videoPlayerController.value.hasError) {
+        logger.d('>>> ${_videoPlayerController.value.errorDescription}');
+
+        // FIXME: This is a hack to deal with Chrome having problems on pressing
+        // play after pause rapidly. Also happens when a video reaches its end
+        // and a user plays it again right away.
+        // The error message is:
+        // "The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22"
+        // A better fix is required but putting this in for now.
+        _videoPlayerController.removeListener(_listener);
+        _videoPlayerController.dispose();
+
+        _videoPlayerController =
+            VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+        _videoPlayerController.initialize();
+        _videoPlayerController.addListener(_listener);
+
+        _videoPlayer =
+            VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+
+    logger.d('Disposing video player');
+    _videoPlayerController.removeListener(_listener);
+    _videoPlayerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    var videoValue = _videoPlayerController.value;
+    var currentTime = getTimeString(videoValue.position);
+    var duration = getTimeString(videoValue.duration);
+
+    return Scaffold(
+        body: Center(
+            child: Stack(
+      fit: StackFit.expand,
+      children: [
+        AspectRatio(
+          aspectRatio: _videoPlayerController.value.aspectRatio,
+          child: MouseRegion(
+            onHover: (event) {
+              setState(() {
+                _controlsVisible = true;
+                _hideControlsTimer?.cancel();
+                _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+                  setState(() {
+                    _controlsVisible = false;
+                  });
+                });
+              });
+            },
+            onExit: (event) {
+              setState(() {
+                _hideControlsTimer?.cancel();
+              });
+            },
+            // FIXME: research why this does not work
+            cursor: _controlsVisible
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.none,
+            child: TapRegion(
+              onTapInside: (event) {
+                setState(() {
+                  _hideControlsTimer?.cancel();
+                  _controlsVisible = !_controlsVisible;
+                  if (_controlsVisible) {
+                    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+                      setState(() {
+                        _controlsVisible = false;
+                      });
+                    });
+                  }
+                });
+              },
+              child: _videoPlayer,
+            ),
+          ),
+        ),
+        AnimatedOpacity(
+            opacity: _controlsVisible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Column(
+              children: [
+                const Expanded(child: SizedBox.shrink()),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                  color: colors.themeBgCanvas,
+                  child: Column(children: [
+                    Text(widget.filename,
+                        style: ArDriveTypography.body
+                            .smallBold700(color: colors.themeFgDefault)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(currentTime),
+                        const SizedBox(width: 8),
+                        Expanded(
+                            child: SliderTheme(
+                                data: SliderThemeData(
+                                    trackHeight: 4,
+                                    trackShape:
+                                        _NoAdditionalHeightRoundedRectSliderTrackShape(),
+                                    inactiveTrackColor: colors.themeBgSubtle,
+                                    disabledThumbColor: colors.themeAccentBrand,
+                                    disabledInactiveTrackColor:
+                                        colors.themeBgSubtle,
+                                    overlayShape:
+                                        SliderComponentShape.noOverlay,
+                                    thumbShape: const RoundSliderThumbShape(
+                                      enabledThumbRadius: 8,
+                                    )),
+                                child: Slider(
+                                    value: min(
+                                        videoValue.position.inMilliseconds
+                                            .toDouble(),
+                                        videoValue.duration.inMilliseconds
+                                            .toDouble()),
+                                    min: 0.0,
+                                    max: videoValue.duration.inMilliseconds
+                                        .toDouble(),
+                                    onChangeStart: (v) {
+                                      setState(() {
+                                        if (_videoPlayerController
+                                                .value.duration >
+                                            Duration.zero) {
+                                          _wasPlaying = _videoPlayerController
+                                              .value.isPlaying;
+                                          if (_wasPlaying) {
+                                            _videoPlayerController.pause();
+                                          }
+                                        }
+                                      });
+                                    },
+                                    onChanged: (v) {
+                                      setState(() {
+                                        if (_videoPlayerController
+                                                .value.duration >
+                                            Duration.zero) {
+                                          _videoPlayerController.seekTo(
+                                              Duration(
+                                                  milliseconds: v.toInt()));
+                                        }
+                                      });
+                                    },
+                                    onChangeEnd: (v) {
+                                      setState(() {
+                                        if (_videoPlayerController
+                                                    .value.duration >
+                                                Duration.zero &&
+                                            _wasPlaying) {
+                                          // _videoPlayerController
+                                          //     .seekTo(Duration(milliseconds: v.toInt()));
+                                          _videoPlayerController.play();
+                                        }
+                                      });
+                                    }))),
+                        const SizedBox(width: 8),
+                        Text(duration)
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    MouseRegion(
+                      onExit: (event) {
+                        setState(() {
+                          _isVolumeSliderVisible = false;
+                        });
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                              child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: ScreenTypeLayout.builder(
+                                    mobile: (context) =>
+                                        const SizedBox.shrink(),
+                                    desktop: (context) => Row(
+                                      children: [
+                                        SizedBox(
+                                            width: 200,
+                                            child: VolumeSliderWidget(
+                                              volume: _videoPlayerController
+                                                  .value.volume,
+                                              setVolume: (v) {
+                                                setState(() {
+                                                  _videoPlayerController
+                                                      .setVolume(v);
+                                                });
+                                              },
+                                              sliderVisible:
+                                                  _isVolumeSliderVisible,
+                                              setSliderVisible: (v) {
+                                                setState(() {
+                                                  _isVolumeSliderVisible = v;
+                                                });
+                                              },
+                                            )),
+                                        const Expanded(
+                                            child: SizedBox.shrink()),
+                                      ],
+                                    ),
+                                  ))),
+                          IconButton.outlined(
+                              onPressed: () {
+                                setState(() {
+                                  _videoPlayerController.seekTo(
+                                      _videoPlayerController.value.position -
+                                          const Duration(seconds: 10));
+                                });
+                              },
+                              icon: const Icon(Icons.replay_10, size: 24)),
+                          MaterialButton(
+                            onPressed: () {
+                              setState(() {
+                                final value = _videoPlayerController.value;
+                                if (!value.isInitialized ||
+                                    value.isBuffering ||
+                                    value.duration <= Duration.zero) {
+                                  return;
+                                }
+                                if (_videoPlayerController.value.isPlaying) {
+                                  _videoPlayerController.pause();
+                                } else {
+                                  if (value.position >= value.duration) {
+                                    _videoPlayerController
+                                        .seekTo(Duration.zero);
+                                  }
+                                  _videoPlayerController.play();
+                                }
+                              });
+                            },
+                            color: colors.themeAccentBrand,
+                            shape: const CircleBorder(),
+                            child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: (_videoPlayerController.value.isPlaying)
+                                    ? const Icon(Icons.pause_outlined, size: 32)
+                                    : const Icon(Icons.play_arrow_outlined,
+                                        size: 32)),
+                          ),
+                          IconButton.outlined(
+                              onPressed: () {
+                                setState(() {
+                                  _videoPlayerController.seekTo(
+                                      _videoPlayerController.value.position +
+                                          const Duration(seconds: 10));
+                                });
+                              },
+                              icon: const Icon(Icons.forward_10, size: 24)),
+                          Expanded(
+                              child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                ScreenTypeLayout.builder(
+                                    desktop: (context) => MenuAnchor(
+                                          menuChildren: [
+                                            ..._speedOptions.map((v) {
+                                              return ListTile(
+                                                tileColor:
+                                                    colors.themeBgSurface,
+                                                onTap: () {
+                                                  setState(() {
+                                                    _videoPlayerController
+                                                        .setPlaybackSpeed(v);
+                                                    _menuController.close();
+                                                  });
+                                                },
+                                                title: Text(
+                                                  '$v',
+                                                  style: ArDriveTypography.body
+                                                      .buttonNormalBold(
+                                                          color: colors
+                                                              .themeFgDefault),
+                                                ),
+                                              );
+                                            })
+                                          ],
+                                          controller: _menuController,
+                                          child: IconButton(
+                                              onPressed: () {
+                                                _menuController.open();
+                                              },
+                                              icon: const Icon(
+                                                  Icons.settings_outlined,
+                                                  size: 24)),
+                                        ),
+                                    mobile: (context) => IconButton(
+                                        onPressed: () {
+                                          _displaySpeedOptionsModal(context,
+                                              (v) {
+                                            setState(() {
+                                              _videoPlayerController
+                                                  .setPlaybackSpeed(v);
+                                            });
+                                          });
+                                        },
+                                        icon: const Icon(
+                                            Icons.settings_outlined,
+                                            size: 24))),
+                                IconButton(
+                                    onPressed: () {
+                                      widget.onClose(
+                                          _videoPlayerController.value.position,
+                                          _videoPlayerController
+                                              .value.isPlaying);
+                                    },
+                                    icon: const Icon(
+                                        Icons.fullscreen_exit_outlined,
+                                        size: 24))
+                              ],
+                            ),
+                          ))
+                        ],
+                      ),
+                    )
+                  ]),
+                ),
+              ],
+            )),
+      ],
+    )));
   }
 }
 
