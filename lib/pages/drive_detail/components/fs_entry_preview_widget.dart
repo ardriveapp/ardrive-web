@@ -162,7 +162,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   if (isPlaying) {
                     _videoPlayerController.play();
                   }
-                  Navigator.of(context).pop();
                 },
               ),
             ),
@@ -193,12 +192,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         },
         child: Column(children: [
           Expanded(
-              child: AspectRatio(
-                  aspectRatio: _videoPlayerController.value.aspectRatio,
-                  child: _videoPlayer)),
-          const SizedBox(height: 8),
+              child: Center(
+                  child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Container(color: Colors.black),
+              Center(
+                  child: AspectRatio(
+                      aspectRatio: _videoPlayerController.value.aspectRatio,
+                      child: _videoPlayer)),
+            ],
+          ))),
           Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
               child: Column(children: [
                 Text(widget.filename,
                     style: ArDriveTypography.body
@@ -248,8 +254,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                             if (_videoPlayerController.value.duration >
                                     Duration.zero &&
                                 _wasPlaying) {
-                              // _videoPlayerController
-                              //     .seekTo(Duration(milliseconds: v.toInt()));
                               _videoPlayerController.play();
                             }
                           });
@@ -277,7 +281,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                           child: Align(
                               alignment: Alignment.centerLeft,
                               child: ScreenTypeLayout.builder(
-                                mobile: (context) => const SizedBox.shrink(),
+                                mobile: (context) => IconButton(
+                                    onPressed: () {
+                                      goFullScreen();
+                                    },
+                                    icon: const Icon(Icons.fullscreen_outlined,
+                                        size: 24)),
                                 desktop: (context) => VolumeSliderWidget(
                                   volume: _videoPlayerController.value.volume,
                                   setVolume: (v) {
@@ -317,9 +326,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                         child: Padding(
                             padding: const EdgeInsets.all(8),
                             child: (_videoPlayerController.value.isPlaying)
-                                ? const Icon(Icons.pause_outlined, size: 32)
-                                : const Icon(Icons.play_arrow_outlined,
-                                    size: 32)),
+                                ? Icon(
+                                    Icons.pause_outlined,
+                                    size: 32,
+                                    color: colors.themeFgOnAccent,
+                                  )
+                                : Icon(
+                                    Icons.play_arrow_outlined,
+                                    size: 32,
+                                    color: colors.themeFgOnAccent,
+                                  )),
                       ),
                       Expanded(
                           child: Align(
@@ -370,12 +386,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                                     },
                                     icon: const Icon(Icons.settings_outlined,
                                         size: 24))),
-                            IconButton(
-                                onPressed: () {
-                                  goFullScreen();
-                                },
-                                icon: const Icon(Icons.fullscreen_outlined,
-                                    size: 24))
+                            ScreenTypeLayout.builder(
+                              desktop: (context) => IconButton(
+                                  onPressed: () {
+                                    goFullScreen();
+                                  },
+                                  icon: const Icon(Icons.fullscreen_outlined,
+                                      size: 24)),
+                              mobile: (context) => const SizedBox.shrink(),
+                            )
                           ],
                         ),
                       ))
@@ -412,7 +431,7 @@ class FullScreenVideoPlayerWidget extends StatefulWidget {
 class _FullScreenVideoPlayerWidgetState
     extends State<FullScreenVideoPlayerWidget> {
   late VideoPlayerController _videoPlayerController;
-  late VideoPlayer _videoPlayer;
+  VideoPlayer? _videoPlayer;
   bool _wasPlaying = false;
   bool _isVolumeSliderVisible = false;
   final _menuController = MenuController();
@@ -426,19 +445,34 @@ class _FullScreenVideoPlayerWidgetState
     _videoPlayerController =
         VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
     _videoPlayerController.initialize().then((_) {
-      _videoPlayerController.seekTo(widget.initialPosition);
-      if (widget.initialIsPlaying) {
-        _videoPlayerController.play();
-      }
+      _videoPlayerController.seekTo(widget.initialPosition).then((_) {
+        if (widget.initialIsPlaying) {
+          _videoPlayerController.play().then((_) {
+            setState(() {
+              _videoPlayer = VideoPlayer(_videoPlayerController,
+                  key: const Key('videoPlayer'));
+            });
+          });
+        } else {
+          _videoPlayer = VideoPlayer(_videoPlayerController,
+              key: const Key('videoPlayer'));
+        }
+      });
     });
     _videoPlayerController.addListener(_listener);
-    _videoPlayer =
-        VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
 
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeRight,
       DeviceOrientation.landscapeLeft,
     ]);
+
+    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _controlsVisible = false;
+        });
+      }
+    });
   }
 
   void _listener() {
@@ -472,6 +506,11 @@ class _FullScreenVideoPlayerWidgetState
       DeviceOrientation.portraitUp,
     ]);
 
+    // Calling onClose() here to work when user hits close zoom button or hits
+    // system back button on Android.
+    widget.onClose(_videoPlayerController.value.position,
+        _videoPlayerController.value.isPlaying);
+
     logger.d('Disposing video player');
     _videoPlayerController.removeListener(_listener);
     _videoPlayerController.dispose();
@@ -490,45 +529,59 @@ class _FullScreenVideoPlayerWidgetState
             child: Stack(
       fit: StackFit.expand,
       children: [
-        AspectRatio(
+        Container(color: Colors.black),
+        Center(
+            child: AspectRatio(
           aspectRatio: _videoPlayerController.value.aspectRatio,
-          child: MouseRegion(
-            onHover: (event) {
+          child: _videoPlayer ?? const SizedBox.shrink(),
+        )),
+        MouseRegion(
+          onHover: (event) {
+            if (!AppPlatform.isMobile) {
               setState(() {
                 _controlsVisible = true;
                 _hideControlsTimer?.cancel();
                 _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-                  setState(() {
-                    _controlsVisible = false;
-                  });
-                });
-              });
-            },
-            onExit: (event) {
-              setState(() {
-                _hideControlsTimer?.cancel();
-              });
-            },
-            // FIXME: research why this does not work
-            cursor: _controlsVisible
-                ? SystemMouseCursors.click
-                : SystemMouseCursors.none,
-            child: TapRegion(
-              onTapInside: (event) {
-                setState(() {
-                  _hideControlsTimer?.cancel();
-                  _controlsVisible = !_controlsVisible;
-                  if (_controlsVisible) {
-                    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-                      setState(() {
-                        _controlsVisible = false;
-                      });
+                  if (mounted) {
+                    setState(() {
+                      _controlsVisible = false;
                     });
                   }
                 });
-              },
-              child: _videoPlayer,
-            ),
+              });
+            }
+          },
+          onExit: (event) {
+            if (!AppPlatform.isMobile) {
+              if (mounted) {
+                setState(() {
+                  _hideControlsTimer?.cancel();
+                });
+              }
+            }
+          },
+          // FIXME: research why this does not work
+          cursor: _controlsVisible
+              ? SystemMouseCursors.click
+              : SystemMouseCursors.none,
+          child: TapRegion(
+            onTapInside: (event) {
+              setState(() {
+                _hideControlsTimer?.cancel();
+                _controlsVisible = !_controlsVisible;
+
+                if (_controlsVisible) {
+                  _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+                    if (mounted) {
+                      setState(() {
+                        _controlsVisible = false;
+                      });
+                    }
+                  });
+                }
+              });
+            },
+            child: Container(color: Colors.black.withOpacity(0.0)),
           ),
         ),
         AnimatedOpacity(
@@ -628,8 +681,13 @@ class _FullScreenVideoPlayerWidgetState
                               child: Align(
                                   alignment: Alignment.centerLeft,
                                   child: ScreenTypeLayout.builder(
-                                    mobile: (context) =>
-                                        const SizedBox.shrink(),
+                                    mobile: (context) => IconButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        icon: const Icon(
+                                            Icons.fullscreen_exit_outlined,
+                                            size: 24)),
                                     desktop: (context) => Row(
                                       children: [
                                         SizedBox(
@@ -690,9 +748,16 @@ class _FullScreenVideoPlayerWidgetState
                             child: Padding(
                                 padding: const EdgeInsets.all(8),
                                 child: (_videoPlayerController.value.isPlaying)
-                                    ? const Icon(Icons.pause_outlined, size: 32)
-                                    : const Icon(Icons.play_arrow_outlined,
-                                        size: 32)),
+                                    ? Icon(
+                                        Icons.pause_outlined,
+                                        size: 32,
+                                        color: colors.themeFgOnAccent,
+                                      )
+                                    : Icon(
+                                        Icons.play_arrow_outlined,
+                                        size: 32,
+                                        color: colors.themeFgOnAccent,
+                                      )),
                           ),
                           IconButton.outlined(
                               onPressed: () {
@@ -755,16 +820,16 @@ class _FullScreenVideoPlayerWidgetState
                                         icon: const Icon(
                                             Icons.settings_outlined,
                                             size: 24))),
-                                IconButton(
-                                    onPressed: () {
-                                      widget.onClose(
-                                          _videoPlayerController.value.position,
-                                          _videoPlayerController
-                                              .value.isPlaying);
-                                    },
-                                    icon: const Icon(
-                                        Icons.fullscreen_exit_outlined,
-                                        size: 24))
+                                ScreenTypeLayout.builder(
+                                  desktop: (context) => IconButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      icon: const Icon(
+                                          Icons.fullscreen_exit_outlined,
+                                          size: 24)),
+                                  mobile: (context) => const SizedBox.shrink(),
+                                )
                               ],
                             ),
                           ))
