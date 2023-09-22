@@ -28,7 +28,6 @@ class UploadPlan {
     required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
     required Map<String, FolderDataItemUploadHandle>
         folderDataItemUploadHandles,
-    // required Map<String, UploadHandle> snapshotUploadHandles,
     required TurboUploadService turboUploadService,
     required int maxDataItemCount,
   }) async {

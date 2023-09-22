@@ -212,7 +212,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> _prepareAndSignTx(
     SnapshotEntity snapshotEntity,
-    // Uint8List data,
   ) async {
     logger.i('About to prepare and sign snapshot transaction');
 
@@ -223,7 +222,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     ));
 
     await prepareTx(isArConnectProfile);
-    // await _pst.addCommunityTipToTx(_preparedDataItem); // Turbo should be the one setting the tip, right?
     await signTx(isArConnectProfile);
 
     if (_uploadMethod == UploadMethod.ar) {
@@ -560,8 +558,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
 
-    final addr = await wallet.getAddress();
-    logger.d('Posting snapshot transaction with $addr');
+    logger.d('Posting snapshot transaction for drive $_driveId');
 
     await turboService.postDataItem(
       dataItem: dataItem,
