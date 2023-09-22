@@ -159,8 +159,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                 videoUrl: widget.videoUrl,
                 initialPosition: _videoPlayerController.value.position,
                 initialIsPlaying: wasPlaying,
-                onClose: (position, isPlaying) {
+                initialVolume: _videoPlayerController.value.volume,
+                onClose: (position, isPlaying, volume) {
                   _videoPlayerController.seekTo(position);
+                  _videoPlayerController.setVolume(volume);
                   if (isPlaying) {
                     _videoPlayerController.play();
                   }
@@ -433,7 +435,8 @@ class FullScreenVideoPlayerWidget extends StatefulWidget {
   final String filename;
   final Duration initialPosition;
   final bool initialIsPlaying;
-  final Function(Duration, bool) onClose;
+  final double initialVolume;
+  final Function(Duration, bool, double) onClose;
 
   const FullScreenVideoPlayerWidget(
       {Key? key,
@@ -441,6 +444,7 @@ class FullScreenVideoPlayerWidget extends StatefulWidget {
       required this.videoUrl,
       required this.initialPosition,
       required this.initialIsPlaying,
+      required this.initialVolume,
       required this.onClose})
       : super(key: key);
 
@@ -469,6 +473,7 @@ class _FullScreenVideoPlayerWidgetState
         VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
     _videoPlayerController.initialize().then((_) {
       _videoPlayerController.seekTo(widget.initialPosition).then((_) {
+        _videoPlayerController.setVolume(widget.initialVolume);
         if (widget.initialIsPlaying) {
           _lastPlayVideoAction = _videoPlayerController.play().then((_) {
             setState(() {
@@ -489,13 +494,15 @@ class _FullScreenVideoPlayerWidgetState
       DeviceOrientation.landscapeLeft,
     ]);
 
-    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          _controlsVisible = false;
-        });
-      }
-    });
+    if (!AppPlatform.isMobile) {
+      _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _controlsVisible = false;
+          });
+        }
+      });
+    }
   }
 
   void _listener() {
@@ -531,8 +538,11 @@ class _FullScreenVideoPlayerWidgetState
 
     // Calling onClose() here to work when user hits close zoom button or hits
     // system back button on Android.
-    widget.onClose(_videoPlayerController.value.position,
-        _videoPlayerController.value.isPlaying);
+    widget.onClose(
+      _videoPlayerController.value.position,
+      _videoPlayerController.value.isPlaying,
+      _videoPlayerController.value.volume,
+    );
 
     logger.d('Disposing video player');
     _videoPlayerController.removeListener(_listener);
@@ -593,7 +603,7 @@ class _FullScreenVideoPlayerWidgetState
                 _hideControlsTimer?.cancel();
                 _controlsVisible = !_controlsVisible;
 
-                if (_controlsVisible) {
+                if (_controlsVisible && !AppPlatform.isMobile) {
                   _hideControlsTimer = Timer(const Duration(seconds: 3), () {
                     if (mounted) {
                       setState(() {
