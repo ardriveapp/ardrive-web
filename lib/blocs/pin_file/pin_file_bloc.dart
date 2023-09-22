@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/entities/file_entity.dart';
+import 'package:ardrive/entities/entities.dart' show EntityTag, FileEntity;
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
@@ -279,6 +279,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
   ) async {
     final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
     final profileState = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profileState.wallet;
 
     emit(PinFileCreating(
       id: stateAsPinFileFieldsValid.id,
@@ -311,12 +312,28 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           .folderById(driveId: _driveId, folderId: _parentFolderId)
           .getSingle();
 
+      final isAPublicPin = fileKey == null;
+
       if (_turboUploadService.useTurboUpload) {
         final fileDataItem = await _arweave.prepareEntityDataItem(
           newFileEntity,
-          profileState.wallet,
+          wallet,
           key: fileKey,
+          skipSignature: true,
         );
+
+        if (isAPublicPin) {
+          fileDataItem.addTag(
+            EntityTag.arFsPin,
+            'true',
+          );
+          fileDataItem.addTag(
+            EntityTag.pinnedDataTx,
+            newFileEntity.dataTxId!,
+          );
+        }
+
+        await fileDataItem.sign(wallet);
 
         await _turboUploadService.postDataItem(
           dataItem: fileDataItem,
@@ -326,9 +343,23 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       } else {
         final fileDataItem = await _arweave.prepareEntityTx(
           newFileEntity,
-          profileState.wallet,
+          wallet,
           fileKey,
+          skipSignature: true,
         );
+
+        if (isAPublicPin) {
+          fileDataItem.addTag(
+            EntityTag.arFsPin,
+            'true',
+          );
+          fileDataItem.addTag(
+            EntityTag.pinnedDataTx,
+            newFileEntity.dataTxId!,
+          );
+        }
+
+        await fileDataItem.sign(wallet);
 
         await _arweave.postTx(fileDataItem);
         newFileEntity.txId = fileDataItem.id;

@@ -523,6 +523,14 @@
   "@driveName": {
     "description": "The name of certain drive"
   },
+  "drivePrivacyDescriptionPrivate": "Private Drives offer state-of-the-art security, you control access.",
+  "@drivePrivacyDescriptionPrivate": {
+    "description": "Explains private drives."
+  },
+  "drivePrivacyDescriptionPublic": "Public Drives are discoverable, others can find and view the contents.",
+  "@drivePrivacyDescriptionPublic": {
+    "description": "Explains public drives."
+  },
   "driveRoot": "Drive root",
   "@driveRoot": {
     "description": "The folder entity that is at the top of the folder hierarchy"
