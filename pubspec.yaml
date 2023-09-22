@@ -42,6 +42,8 @@ dependencies:
       ref: v1.9.1
   ardrive_utils:
     path: ./packages/ardrive_utils
+  ardrive_uploader:
+    path: ./packages/ardrive_uploader
   arconnect:
     path: ./packages/arconnect
   ardrive_crypto:

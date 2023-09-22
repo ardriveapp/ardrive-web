@@ -157,6 +157,7 @@ class BundleUploadHandle implements UploadHandle {
     for (var folder in folderDataItemUploadHandles) {
       await folder.writeFolderToDatabase(driveDao: driveDao);
     }
+    
     for (var file in fileDataItemUploadHandles) {
       await file.writeFileEntityToDatabase(
         bundledInTxId: bundleId,

@@ -62,13 +62,21 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
     required super.bundleTags,
   });
 
+  String? _dataTxId;
+
+  set setDataTxId(String dataTxId) => _dataTxId = dataTxId;
+
+  String? get dataTxId => _dataTxId;
+
   // without dataTxId
+  // TODO: validate dataTxId
   @override
   Map<String, dynamic> toJson() => {
         'name': name,
         'size': size,
         'lastModifiedDate': lastModifiedDate.millisecondsSinceEpoch,
         'dataContentType': dataContentType,
+        'dataTxId': dataTxId,
       };
 }
 
@@ -79,6 +87,7 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
   final List<Tag> dataItemTags;
   final List<Tag> bundleTags;
   final bool isPrivate;
+  String? _metadataTxId;
 
   ARFSUploadMetadata({
     required this.name,
@@ -88,6 +97,9 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
     required this.id,
     required this.isPrivate,
   });
+
+  set setMetadataTxId(String metadataTxId) => _metadataTxId = metadataTxId;
+  String? get metadataTxId => _metadataTxId;
 
   Map<String, dynamic> toJson();
 

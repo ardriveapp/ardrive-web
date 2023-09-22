@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -14,6 +15,7 @@ import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -448,6 +450,77 @@ class UploadCubit extends Cubit<UploadState> {
     logger.i(
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
+    if (_uploadMethod == UploadMethod.turbo && !uploadFolders) {
+      final ardriveUploader = ArDriveUploader(
+        metadataGenerator: ARFSUploadMetadataGenerator(
+          tagsGenerator: ARFSTagsGenetator(
+            appInfoServices: AppInfoServices(),
+          ),
+        ),
+      );
+
+      for (var file in files) {
+        final private = _targetDrive.isPrivate;
+        final driveKey = private
+            ? await _driveDao.getDriveKey(
+                _targetDrive.id, _auth.currentUser!.cipherKey)
+            : null;
+
+        final uploadController = await ardriveUploader.upload(
+          file: files.first.ioFile,
+          args: ARFSUploadMetadataArgs(
+            isPrivate: _targetDrive.isPrivate,
+            driveId: _targetDrive.id,
+            parentFolderId: _targetFolder.id,
+            privacy: _targetDrive.isPrivate ? 'private' : 'public',
+          ),
+          wallet: _auth.currentUser!.wallet,
+          driveKey: driveKey,
+        );
+
+        print('Upload controller: $uploadController');
+
+        uploadController.onDone((metadata) async {
+          logger.d('Upload finished');
+          logger.d(metadata.toString());
+          unawaited(_profileCubit.refreshBalance());
+          emit(UploadComplete());
+          final fileMetadata = metadata as ARFSFileUploadMetadata;
+
+          final entity = FileEntity(
+            dataContentType: fileMetadata.dataContentType,
+            dataTxId: fileMetadata.dataTxId,
+            driveId: fileMetadata.driveId,
+            id: fileMetadata.id,
+            lastModifiedDate: fileMetadata.lastModifiedDate,
+            name: fileMetadata.name,
+            parentFolderId: fileMetadata.parentFolderId,
+            size: fileMetadata.size,
+            // TODO: pinnedDataOwnerAddress
+          );
+          if (fileMetadata.metadataTxId == null) {
+            logger.e('Metadata tx id is null');
+            throw Exception('Metadata tx id is null');
+          }
+
+          entity.txId = fileMetadata.metadataTxId!;
+
+          await _driveDao.transaction(() async {
+            // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
+            final filePath = '${_targetFolder.path}/${file.getIdentifier()}';
+            await _driveDao.writeFileEntity(entity, filePath);
+            await _driveDao.insertFileRevision(
+              entity.toRevisionCompanion(
+                performedAction: RevisionAction.create,
+              ),
+            );
+          });
+        });
+
+        return;
+      }
+    }
+
     final uploader = _getUploader();
 
     await for (final progress in uploader.uploadFromHandles(
@@ -529,7 +602,7 @@ class UploadCubit extends Cubit<UploadState> {
     super.onError(error, stackTrace);
   }
 
-  ArDriveUploader _getUploader() {
+  ArDriveUploaderFromHandles _getUploader() {
     final wallet = _auth.currentUser!.wallet;
 
     final turboUploader = TurboUploader(_turbo, wallet);
@@ -546,7 +619,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     final v2Uploader = FileV2Uploader(_arweave.client, _arweave);
 
-    final uploader = ArDriveUploader(
+    final uploader = ArDriveUploaderFromHandles(
       bundleUploader: bundleUploader,
       fileV2Uploader: v2Uploader,
       prepareBundle: (handle) async {

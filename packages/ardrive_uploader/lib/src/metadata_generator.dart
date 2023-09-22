@@ -140,6 +140,36 @@ class ARFSUploadMetadataArgs {
   final String? privacy;
   final bool isPrivate;
 
+  factory ARFSUploadMetadataArgs.file({
+    required String driveId,
+    required String parentFolderId,
+    required bool isPrivate,
+  }) {
+    return ARFSUploadMetadataArgs(
+      driveId: driveId,
+      parentFolderId: parentFolderId,
+      isPrivate: isPrivate,
+    );
+  }
+
+  factory ARFSUploadMetadataArgs.folder({
+    required String driveId,
+    required bool isPrivate,
+  }) {
+    return ARFSUploadMetadataArgs(
+      driveId: driveId,
+      isPrivate: isPrivate,
+    );
+  }
+
+  factory ARFSUploadMetadataArgs.drive({
+    required bool isPrivate,
+  }) {
+    return ARFSUploadMetadataArgs(
+      isPrivate: isPrivate,
+    );
+  }
+
   ARFSUploadMetadataArgs({
     required this.isPrivate,
     this.driveId,

@@ -53,7 +53,7 @@ class _UploadFormState extends State<UploadForm> {
   IOFile? walletFile;
   IOFile? file;
   IOFile? decryptedFile;
-  UploadController controller = UploadController();
+  UploadController? controller;
   final driveIdController = TextEditingController();
   final passwordController = TextEditingController();
   final parentFolderIdController = TextEditingController();
@@ -113,8 +113,6 @@ class _UploadFormState extends State<UploadForm> {
         info: utf8.encode(password),
         nonce: Uint8List(1),
       );
-
-      // print('driveKey: ${await driveKey.extract()..toString()}');
     }
 
     controller = await uploader.upload(
@@ -127,12 +125,6 @@ class _UploadFormState extends State<UploadForm> {
       ),
       wallet: wallet,
     );
-
-    controller.progressStream.listen((event) {
-      setState(() {
-        _statusText = 'Uploading file... ${event.toStringAsFixed(2)}%';
-      });
-    });
 
     setState(() {
       _statusText = 'File uploaded';
@@ -218,7 +210,7 @@ class _UploadFormState extends State<UploadForm> {
           child: const Text("Decrypt file"),
         ),
         StreamBuilder<double>(
-            stream: controller.progressStream,
+            stream: controller?.progressStream,
             builder: (context, snapshot) {
               return Text(snapshot.data?.toStringAsFixed(2) ?? '');
             })
