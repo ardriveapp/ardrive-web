@@ -176,6 +176,19 @@ class UploadInProgress extends UploadState {
   List<Object?> get props => [uploadPlan, _equatableBust];
 }
 
+class UploadInProgressUsingNewUploader extends UploadState {
+  final List<UploadFileWithProgress> filesWithProgress;
+  final double totalProgress;
+
+  UploadInProgressUsingNewUploader({
+    required this.filesWithProgress,
+    required this.totalProgress,
+  });
+
+  @override
+  List<Object?> get props => [filesWithProgress, totalProgress];
+}
+
 class UploadFailure extends UploadState {
   final UploadErrors error;
 
@@ -203,4 +216,27 @@ enum UploadWarningReason {
 enum UploadErrors {
   turboTimeout,
   unknown,
+}
+
+class UploadFileWithProgress extends Equatable {
+  final UploadFile file;
+  final double progress;
+
+  const UploadFileWithProgress({
+    required this.file,
+    required this.progress,
+  });
+
+  UploadFileWithProgress copyWith({
+    UploadFile? file,
+    double? progress,
+  }) {
+    return UploadFileWithProgress(
+      file: file ?? this.file,
+      progress: progress ?? this.progress,
+    );
+  }
+
+  @override
+  List<Object?> get props => [file, progress];
 }

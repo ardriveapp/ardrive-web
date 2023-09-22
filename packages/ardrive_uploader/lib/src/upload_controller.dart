@@ -12,17 +12,15 @@ abstract class UploadController {
   void onDone(Function(ARFSUploadMetadata metadata) callback);
   void onError(Function() callback);
   void updateProgress(double progress);
-  abstract final Function(double)? onProgressChange;
+  void onProgressChange(Function(double progress) callback);
 
   factory UploadController(
     ARFSUploadMetadata metadata,
-    StreamController<double> progressStream, [
-    void Function(double)? onProgressChange,
-  ]) {
+    StreamController<double> progressStream,
+  ) {
     return _UploadController(
       metadata: metadata,
       progressStream: progressStream,
-      onProgressChange: onProgressChange,
     );
   }
 }
@@ -33,7 +31,6 @@ class _UploadController implements UploadController {
   _UploadController({
     required this.metadata,
     required StreamController<double> progressStream,
-    this.onProgressChange,
   }) : _progressStream = progressStream {
     init();
   }
@@ -49,9 +46,7 @@ class _UploadController implements UploadController {
     subscription = _progressStream.stream.listen(
       (event) {
         print('Progress on subscriptiobn: $event');
-        if (onProgressChange != null) {
-          onProgressChange!(event);
-        }
+        _onProgressChange!(event);
       },
       onDone: () {
         print('Done');
@@ -97,6 +92,15 @@ class _UploadController implements UploadController {
     // TODO: implement onError
   }
 
+  @override
+  void onProgressChange(Function(double progress) callback) {
+    _onProgressChange = callback;
+  }
+
+  void Function(double progress)? _onProgressChange = (progress) {
+    print('Progress: $progress');
+  };
+
   void Function(ARFSUploadMetadata metadata) _onDone =
       (ARFSUploadMetadata metadata) {
     print('Upload Finished');
@@ -104,7 +108,4 @@ class _UploadController implements UploadController {
 
   @override
   final ARFSUploadMetadata metadata;
-
-  @override
-  final Function(double)? onProgressChange;
 }

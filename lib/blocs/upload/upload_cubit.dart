@@ -450,6 +450,7 @@ class UploadCubit extends Cubit<UploadState> {
     logger.i(
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
+    // UPLOAD USING THE NEW UPLOADER
     if (_uploadMethod == UploadMethod.turbo && !uploadFolders) {
       final ardriveUploader = ArDriveUploader(
         metadataGenerator: ARFSUploadMetadataGenerator(
@@ -459,7 +460,28 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
 
-      for (var file in files) {
+      List<UploadFileWithProgress> filesWithProgress = [];
+
+      for (int i = 0; i < files.length; i++) {
+        final file = files[i];
+
+        final fileWithProgress =
+            UploadFileWithProgress(file: file, progress: 0);
+        filesWithProgress.add(fileWithProgress);
+
+        if (state is UploadInProgressUsingNewUploader) {
+          emit(UploadInProgressUsingNewUploader(
+            filesWithProgress: filesWithProgress,
+            totalProgress: (state as UploadInProgressUsingNewUploader)
+                .totalProgress, // TODO: calcualte total progress
+          ));
+        } else {
+          emit(UploadInProgressUsingNewUploader(
+            filesWithProgress: filesWithProgress,
+            totalProgress: 0, // TODO: calcualte total progress
+          ));
+        }
+
         final private = _targetDrive.isPrivate;
         final driveKey = private
             ? await _driveDao.getDriveKey(
@@ -467,7 +489,7 @@ class UploadCubit extends Cubit<UploadState> {
             : null;
 
         final uploadController = await ardriveUploader.upload(
-          file: files.first.ioFile,
+          file: files[i].ioFile,
           args: ARFSUploadMetadataArgs(
             isPrivate: _targetDrive.isPrivate,
             driveId: _targetDrive.id,
@@ -478,14 +500,35 @@ class UploadCubit extends Cubit<UploadState> {
           driveKey: driveKey,
         );
 
+        uploadController.onProgressChange((progress) {
+          print('fileWithProgress: ${fileWithProgress.progress}');
+
+          filesWithProgress[i] = fileWithProgress.copyWith(
+            progress: progress,
+          );
+
+          // progress of all files
+          double totalProgress =
+              filesWithProgress.map((e) => e.progress).reduce((a, b) => a + b) /
+                  files.length;
+
+          emit(UploadInProgressUsingNewUploader(
+            filesWithProgress: filesWithProgress,
+            totalProgress: totalProgress, // TODO: calcualte total progress
+          ));
+
+          logger.d('Updating progress on web app: $progress');
+        });
+
         print('Upload controller: $uploadController');
 
         uploadController.onDone((metadata) async {
           logger.d('Upload finished');
           logger.d(metadata.toString());
           unawaited(_profileCubit.refreshBalance());
-          emit(UploadComplete());
           final fileMetadata = metadata as ARFSFileUploadMetadata;
+
+          print('fileMetadata: $fileMetadata');
 
           final entity = FileEntity(
             dataContentType: fileMetadata.dataContentType,
@@ -498,6 +541,7 @@ class UploadCubit extends Cubit<UploadState> {
             size: fileMetadata.size,
             // TODO: pinnedDataOwnerAddress
           );
+
           if (fileMetadata.metadataTxId == null) {
             logger.e('Metadata tx id is null');
             throw Exception('Metadata tx id is null');
@@ -516,10 +560,10 @@ class UploadCubit extends Cubit<UploadState> {
             );
           });
         });
-
-        return;
       }
     }
+
+    return;
 
     final uploader = _getUploader();
 

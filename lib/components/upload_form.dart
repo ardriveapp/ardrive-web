@@ -662,6 +662,8 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               ),
             );
+          } else if (state is UploadInProgressUsingNewUploader) {
+            return _uploadUsingNewUploader(state: state);
           } else if (state is UploadInProgress) {
             final numberOfFilesInBundles =
                 state.uploadPlan.bundleUploadHandles.isNotEmpty
@@ -847,6 +849,75 @@ class _UploadFormState extends State<UploadForm> {
           return const SizedBox();
         },
       );
+
+  Widget _uploadUsingNewUploader({
+    required UploadInProgressUsingNewUploader state,
+  }) {
+    print('upload in progress');
+    final files = state.filesWithProgress;
+    return ArDriveStandardModal(
+      title:
+          '${appLocalizationsOf(context).uploadingNFiles(state.filesWithProgress.length)} ${(state.totalProgress * 100).toStringAsFixed(2)}%',
+      content: SizedBox(
+        width: kMediumDialogWidth,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 256),
+          child: Scrollbar(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: files.length,
+              itemBuilder: (BuildContext context, int index) {
+                final file = files[index];
+                return Column(
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                file.file.ioFile.name,
+                                style: ArDriveTypography.body.buttonNormalBold(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgDefault,
+                                ),
+                              ),
+                              Text(
+                                filesize(file.file.ioFile.length),
+                                style: ArDriveTypography.body.buttonNormalBold(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgDefault,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      subtitle: Text(
+                        '${filesize(((file.file.ioFile.length as int) * file.progress).ceil())}/${filesize(file.file.ioFile.length)}',
+                        style: ArDriveTypography.body.buttonNormalRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgOnDisabled,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _getInsufficientBalanceMessage({
     required bool sufficientArBalance,

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:arconnect/arconnect.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
@@ -13,6 +12,7 @@ import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -86,6 +86,8 @@ class _ArDriveUploader implements ArDriveUploader {
       file,
       args,
     );
+
+    print('Creating a new upload controller');
 
     final uploadController = UploadController(
       metadata,
@@ -654,6 +656,27 @@ class TurboStreamedUpload implements StreamedUpload<DataItemResult, Response> {
         );
       },
     );
+
+    if (kIsWeb) {
+      await _turbo
+          .uploadStreamWithFetchClient(
+              wallet: wallet,
+              headers: {
+                'x-nonce': nonce,
+                'x-address': publicKey,
+                'x-signature': signature,
+              },
+              dataItem: handle,
+              size: handle.dataItemSize,
+              onSendProgress: (progress) {
+                controller.updateProgress(progress);
+              })
+          .then((value) {
+        controller.close();
+      });
+
+      throw UnimplementedError();
+    }
 
     // gets the streamed request
     final streamedRequest = _turbo
