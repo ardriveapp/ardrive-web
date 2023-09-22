@@ -1,0 +1,4 @@
+- Integrates new translations.
+- Corrects buttons being overflowed on the modals.
+- Makes the Pricacy field of the “Create New Drive” modal not change color when focused.
+- Replaces the duplicate “More Info” button with Detach Drive on Mobile.

@@ -1,0 +1,3 @@
+- Adds an explanation for the privacy of drives on the Create Drive Modal
+- Starts tagging public pins with new GQL Tags: ArFS-Pin and Pinned-Data-Tx
+- Updates the icon for the Detach Drive option

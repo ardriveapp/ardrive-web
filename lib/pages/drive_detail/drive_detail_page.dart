@@ -382,9 +382,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                               );
                                             },
                                             content: _buildItem(
-                                                appLocalizationsOf(context)
-                                                    .detachDrive,
-                                                ArDriveIcons.triangle()),
+                                              appLocalizationsOf(context)
+                                                  .detachDrive,
+                                              ArDriveIcons.detach(),
+                                            ),
                                           ),
                                       ],
                                       child: HoverWidget(
@@ -863,22 +864,15 @@ class MobileFolderNavigation extends StatelessWidget {
                         context.read<ProfileCubit>().state is ProfileLoggedIn)
                       ArDriveDropdownItem(
                         onClick: () {
-                          final bloc = context.read<DriveDetailCubit>();
-
-                          bloc.selectDataItem(
-                            DriveDataTableItemMapper.fromDrive(
-                              state.currentDrive,
-                              (_) => null,
-                              0,
-                              isOwner,
-                            ),
+                          showDetachDriveDialog(
+                            context: context,
+                            driveID: state.currentDrive.id,
+                            driveName: state.currentDrive.name,
                           );
                         },
                         content: _buildItem(
-                          appLocalizationsOf(context).moreInfo,
-                          ArDriveIcons.info(
-                            size: defaultIconSize,
-                          ),
+                          appLocalizationsOf(context).detachDrive,
+                          ArDriveIcons.detach(),
                         ),
                       ),
                   ],
