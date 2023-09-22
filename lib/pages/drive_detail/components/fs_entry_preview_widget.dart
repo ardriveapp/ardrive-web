@@ -95,6 +95,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   bool _isVolumeSliderVisible = false;
   bool _wasPlaying = false;
   final _menuController = MenuController();
+  Future<void> _lastPlayVideoAction = Future.value();
 
   @override
   void initState() {
@@ -172,6 +173,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     var colors = ArDriveTheme.of(context).themeData.colors;
     var videoValue = _videoPlayerController.value;
     var currentTime = getTimeString(videoValue.position);
@@ -179,15 +182,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
 
     return VisibilityDetector(
         key: const Key('video-player'),
-        onVisibilityChanged: (VisibilityInfo info) {
+        onVisibilityChanged: (VisibilityInfo info) async {
           if (mounted) {
+            if (info.visibleFraction < 0.5 &&
+                _videoPlayerController.value.isPlaying) {
+              await _lastPlayVideoAction;
+              _videoPlayerController.pause();
+            }
             setState(
-              () {
-                if (info.visibleFraction < 0.5 &&
-                    _videoPlayerController.value.isPlaying) {
-                  _videoPlayerController.pause();
-                }
-              },
+              () {},
             );
           }
         },
@@ -229,33 +232,44 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                             videoValue.duration.inMilliseconds.toDouble()),
                         min: 0.0,
                         max: videoValue.duration.inMilliseconds.toDouble(),
-                        onChangeStart: (v) {
+                        onChangeStart: (v) async {
+                          await _lastPlayVideoAction;
+
                           setState(() {
                             if (_videoPlayerController.value.duration >
                                 Duration.zero) {
                               _wasPlaying =
                                   _videoPlayerController.value.isPlaying;
                               if (_wasPlaying) {
-                                _videoPlayerController.pause();
+                                _videoPlayerController.pause().catchError((e) {
+                                  logger.d('Error pausing video: $e');
+                                });
                               }
                             }
                           });
                         },
-                        onChanged: (v) {
+                        onChanged: (v) async {
+                          await _lastPlayVideoAction;
                           setState(() {
+                            final milliseconds = v.toInt();
+
                             if (_videoPlayerController.value.duration >
                                 Duration.zero) {
                               _videoPlayerController
-                                  .seekTo(Duration(milliseconds: v.toInt()));
+                                  .seekTo(Duration(milliseconds: milliseconds));
                             }
                           });
                         },
-                        onChangeEnd: (v) {
+                        onChangeEnd: (v) async {
+                          await _lastPlayVideoAction;
                           setState(() {
                             if (_videoPlayerController.value.duration >
                                     Duration.zero &&
                                 _wasPlaying) {
-                              _videoPlayerController.play();
+                              _lastPlayVideoAction =
+                                  _videoPlayerController.play().catchError((e) {
+                                logger.d('Error playing video: $e');
+                              });
                             }
                           });
                         })),
@@ -304,7 +318,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                 ),
                               ))),
                       MaterialButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          await _lastPlayVideoAction;
                           setState(() {
                             final value = _videoPlayerController.value;
                             if (!value.isInitialized ||
@@ -318,7 +333,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               if (value.position >= value.duration) {
                                 _videoPlayerController.seekTo(Duration.zero);
                               }
-                              _videoPlayerController.play();
+                              _lastPlayVideoAction =
+                                  _videoPlayerController.play().catchError((e) {
+                                logger.d('Error playing video: $e');
+                              });
                             }
                           });
                         },
@@ -441,6 +459,7 @@ class _FullScreenVideoPlayerWidgetState
   final _menuController = MenuController();
   bool _controlsVisible = true;
   Timer? _hideControlsTimer;
+  Future<void> _lastPlayVideoAction = Future.value();
 
   @override
   void initState() {
@@ -451,7 +470,7 @@ class _FullScreenVideoPlayerWidgetState
     _videoPlayerController.initialize().then((_) {
       _videoPlayerController.seekTo(widget.initialPosition).then((_) {
         if (widget.initialIsPlaying) {
-          _videoPlayerController.play().then((_) {
+          _lastPlayVideoAction = _videoPlayerController.play().then((_) {
             setState(() {
               _videoPlayer = VideoPlayer(_videoPlayerController,
                   key: const Key('videoPlayer'));
@@ -630,7 +649,8 @@ class _FullScreenVideoPlayerWidgetState
                                     min: 0.0,
                                     max: videoValue.duration.inMilliseconds
                                         .toDouble(),
-                                    onChangeStart: (v) {
+                                    onChangeStart: (v) async {
+                                      await _lastPlayVideoAction;
                                       setState(() {
                                         if (_videoPlayerController
                                                 .value.duration >
@@ -643,7 +663,8 @@ class _FullScreenVideoPlayerWidgetState
                                         }
                                       });
                                     },
-                                    onChanged: (v) {
+                                    onChanged: (v) async {
+                                      await _lastPlayVideoAction;
                                       setState(() {
                                         if (_videoPlayerController
                                                 .value.duration >
@@ -654,15 +675,19 @@ class _FullScreenVideoPlayerWidgetState
                                         }
                                       });
                                     },
-                                    onChangeEnd: (v) {
+                                    onChangeEnd: (v) async {
+                                      await _lastPlayVideoAction;
                                       setState(() {
                                         if (_videoPlayerController
                                                     .value.duration >
                                                 Duration.zero &&
                                             _wasPlaying) {
-                                          // _videoPlayerController
-                                          //     .seekTo(Duration(milliseconds: v.toInt()));
-                                          _videoPlayerController.play();
+                                          _lastPlayVideoAction =
+                                              _videoPlayerController
+                                                  .play()
+                                                  .catchError((e) {
+                                            logger.d('Error playing video: $e');
+                                          });
                                         }
                                       });
                                     }))),
@@ -728,7 +753,8 @@ class _FullScreenVideoPlayerWidgetState
                               },
                               icon: const Icon(Icons.replay_10, size: 24)),
                           MaterialButton(
-                            onPressed: () {
+                            onPressed: () async {
+                              await _lastPlayVideoAction;
                               setState(() {
                                 final value = _videoPlayerController.value;
                                 if (!value.isInitialized ||
@@ -743,7 +769,11 @@ class _FullScreenVideoPlayerWidgetState
                                     _videoPlayerController
                                         .seekTo(Duration.zero);
                                   }
-                                  _videoPlayerController.play();
+                                  _lastPlayVideoAction = _videoPlayerController
+                                      .play()
+                                      .catchError((e) {
+                                    logger.d('Error playing video: $e');
+                                  });
                                 }
                               });
                             },
