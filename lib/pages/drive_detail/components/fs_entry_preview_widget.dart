@@ -88,7 +88,8 @@ class VideoPlayerWidget extends StatefulWidget {
   _VideoPlayerWidgetState createState() => _VideoPlayerWidgetState();
 }
 
-class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
+class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
+    with AutomaticKeepAliveClientMixin {
   late VideoPlayerController _videoPlayerController;
   late VideoPlayer _videoPlayer;
   bool _isVolumeSliderVisible = false;
@@ -404,6 +405,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               ]))
         ]));
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 class FullScreenVideoPlayerWidget extends StatefulWidget {
