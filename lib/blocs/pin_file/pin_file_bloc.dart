@@ -2,13 +2,15 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
-import 'package:ardrive/entities/file_entity.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/entities.dart' show FileEntity;
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +30,8 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
   final TurboUploadService _turboUploadService;
   final ProfileCubit _profileCubit;
   final FileIdResolver _fileIdResolver;
+  final ArDriveCrypto _crypto;
+
   final nameTextController = TextEditingController();
   final DriveID _driveId;
   final FolderID _parentFolderId;
@@ -40,6 +44,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     required FileIdResolver fileIdResolver,
     required DriveID driveID,
     required FolderID parentFolderId,
+    required ArDriveCrypto crypto,
   })  : _fileIdResolver = fileIdResolver,
         _arweave = arweave,
         _driveDao = driveDao,
@@ -47,6 +52,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         _profileCubit = profileCubit,
         _driveId = driveID,
         _parentFolderId = parentFolderId,
+        _crypto = crypto,
         super(const PinFileInitial()) {
     nameTextController.text = '';
 
@@ -274,6 +280,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
   ) async {
     final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
     final profileState = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profileState.wallet;
 
     emit(PinFileCreating(
       id: stateAsPinFileFieldsValid.id,
@@ -294,16 +301,40 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     );
 
     await _driveDao.transaction(() async {
+      final driveKey = await _driveDao.getDriveKey(
+        _driveId,
+        profileState.cipherKey,
+      );
+      final fileKey = driveKey != null
+          ? await _crypto.deriveFileKey(driveKey, newFileEntity.id!)
+          : null;
+
       final parentFolder = await _driveDao
           .folderById(driveId: _driveId, folderId: _parentFolderId)
           .getSingle();
 
+      final isAPublicPin = fileKey == null;
+
       if (_turboUploadService.useTurboUpload) {
         final fileDataItem = await _arweave.prepareEntityDataItem(
           newFileEntity,
-          profileState.wallet,
-          // TODO: key
+          wallet,
+          key: fileKey,
+          skipSignature: true,
         );
+
+        if (isAPublicPin) {
+          fileDataItem.addTag(
+            EntityTag.arFsPin,
+            'true',
+          );
+          fileDataItem.addTag(
+            EntityTag.pinnedDataTx,
+            newFileEntity.dataTxId!,
+          );
+        }
+
+        await fileDataItem.sign(wallet);
 
         await _turboUploadService.postDataItem(
           dataItem: fileDataItem,
@@ -313,9 +344,23 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
       } else {
         final fileDataItem = await _arweave.prepareEntityTx(
           newFileEntity,
-          profileState.wallet,
-          null, // TODO: key
+          wallet,
+          fileKey,
+          skipSignature: true,
         );
+
+        if (isAPublicPin) {
+          fileDataItem.addTag(
+            EntityTag.arFsPin,
+            'true',
+          );
+          fileDataItem.addTag(
+            EntityTag.pinnedDataTx,
+            newFileEntity.dataTxId!,
+          );
+        }
+
+        await fileDataItem.sign(wallet);
 
         await _arweave.postTx(fileDataItem);
         newFileEntity.txId = fileDataItem.id;

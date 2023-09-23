@@ -93,11 +93,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.9.1"
-      resolved-ref: c240bab3c61efec613832ce5636226aff2a18d63
+      ref: "v1.10.0"
+      resolved-ref: "72cd21de7cbd52067924cefac579cdb9d7ef39b7"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.9.1"
+    version: "1.10.0"
   ardrive_uploader:
     dependency: "direct main"
     description:
@@ -138,9 +138,11 @@ packages:
   arweave:
     dependency: "direct main"
     description:
-      path: "../arweave-dart"
-      relative: true
-    source: path
+      path: "."
+      ref: "7183b84930711693a13b547af7d54d0fda78ebf0"
+      resolved-ref: "7183b84930711693a13b547af7d54d0fda78ebf0"
+      url: "https://github.com/ardriveapp/arweave-dart.git"
+    source: git
     version: "3.7.0"
   async:
     dependency: "direct main"

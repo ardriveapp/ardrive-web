@@ -31,6 +31,9 @@ class EntityTag {
   static const blockEnd = 'Block-End';
   static const dataStart = 'Data-Start';
   static const dataEnd = 'Data-End';
+
+  static const pinnedDataTx = 'Pinned-Data-Tx';
+  static const arFsPin = 'ArFS-Pin';
 }
 
 class ContentTypeTag {

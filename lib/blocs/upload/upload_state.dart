@@ -179,14 +179,16 @@ class UploadInProgress extends UploadState {
 class UploadInProgressUsingNewUploader extends UploadState {
   final List<UploadFileWithProgress> filesWithProgress;
   final double totalProgress;
+  final Key? equatableBust;
 
   UploadInProgressUsingNewUploader({
     required this.filesWithProgress,
     required this.totalProgress,
+    this.equatableBust,
   });
 
   @override
-  List<Object?> get props => [filesWithProgress, totalProgress];
+  List<Object?> get props => [filesWithProgress, totalProgress, equatableBust];
 }
 
 class UploadFailure extends UploadState {
@@ -220,23 +222,28 @@ enum UploadErrors {
 
 class UploadFileWithProgress extends Equatable {
   final UploadFile file;
-  final double progress;
+  final ArDriveUploadProgress? progress;
+  final bool isProgressAvailable;
 
   const UploadFileWithProgress({
     required this.file,
-    required this.progress,
+    this.progress,
+    required this.isProgressAvailable,
   });
 
   UploadFileWithProgress copyWith({
     UploadFile? file,
-    double? progress,
+    ArDriveUploadProgress? progress,
+    bool? isProgressAvailable,
   }) {
     return UploadFileWithProgress(
       file: file ?? this.file,
       progress: progress ?? this.progress,
+      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
     );
   }
 
   @override
-  List<Object?> get props => [file, progress];
+  List<Object?> get props =>
+      [file, progress?.progress, progress?.status, isProgressAvailable];
 }

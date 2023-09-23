@@ -12,7 +12,9 @@ dependencies:
   flutter:
     sdk: flutter
   arweave:
-    path: ../../../arweave-dart
+    git:
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: PE-4318
   ardrive_utils:
     path: ../ardrive_utils 
   uuid: ^3.0.4

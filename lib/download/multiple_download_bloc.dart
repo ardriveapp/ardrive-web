@@ -5,6 +5,7 @@ import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/download/download_utils.dart';
+import 'package:ardrive/entities/constants.dart' as constants;
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -37,7 +38,7 @@ class MultipleDownloadBloc
   final List<MultiDownloadItem> _skippedFiles = [];
   SecretKey? _driveKey;
 
-  late ARFSDriveEntity _drive;
+  ARFSDriveEntity? _drive;
   late ZipEncoder _zipEncoder;
   late OutputStream _outputStream;
   late List<MultiDownloadItem> _files;
@@ -89,37 +90,39 @@ class MultipleDownloadBloc
       return;
     }
 
-    MultiDownloadFile? firstFile =
-        _files.firstWhereOrNull((element) => element is MultiDownloadFile)
-            as MultiDownloadFile?;
+    MultiDownloadFile? firstOwnedFile = _files.firstWhereOrNull((element) =>
+        element is MultiDownloadFile &&
+        element.pinnedDataOwnerAddress == null) as MultiDownloadFile?;
 
-    if (firstFile != null) {
-      _drive = await _arfsRepository.getDriveById(firstFile.driveId);
+    if (firstOwnedFile != null) {
+      _drive = await _arfsRepository.getDriveById(firstOwnedFile.driveId);
+    }
 
-      if (await isSizeAboveDownloadSizeLimit(
-          _files, _drive.drivePrivacy == DrivePrivacy.public,
-          deviceInfo: _deviceInfo)) {
-        emit(
-          const MultipleDownloadFailure(
-            FileDownloadFailureReason.fileAboveLimit,
-          ),
+    bool hasPrivateFiles =
+        _drive != null && _drive!.drivePrivacy == DrivePrivacy.private;
+
+    if (await isSizeAboveDownloadSizeLimit(_files, hasPrivateFiles,
+        deviceInfo: _deviceInfo)) {
+      emit(
+        const MultipleDownloadFailure(
+          FileDownloadFailureReason.fileAboveLimit,
+        ),
+      );
+      return;
+    }
+
+    if (_drive?.drivePrivacy == DrivePrivacy.private) {
+      if (_cipherKey != null) {
+        _driveKey = await _driveDao.getDriveKey(
+          _drive!.driveId,
+          _cipherKey!,
         );
-        return;
+      } else {
+        _driveKey = await _driveDao.getDriveKeyFromMemory(_drive!.driveId);
       }
 
-      if (_drive.drivePrivacy == DrivePrivacy.private) {
-        if (_cipherKey != null) {
-          _driveKey = await _driveDao.getDriveKey(
-            _drive.driveId,
-            _cipherKey!,
-          );
-        } else {
-          _driveKey = await _driveDao.getDriveKeyFromMemory(_drive.driveId);
-        }
-
-        if (_driveKey == null) {
-          throw StateError('Drive Key not found');
-        }
+      if (_driveKey == null) {
+        throw StateError('Drive Key not found');
       }
     } else {
       _driveKey = null;
@@ -175,7 +178,8 @@ class MultipleDownloadBloc
         if (file is MultiDownloadFile) {
           // TODO: Use cancelable streaming downloading once it is available in
           // ArDriveHTTP
-          final dataBytes = await _downloadService.download(file.txId);
+          final dataBytes = await _downloadService.download(
+              file.txId, file.contentType == constants.ContentType.manifest);
 
           if (_canceled) {
             logger.d('User cancelled multi-file downloading.');
@@ -184,7 +188,7 @@ class MultipleDownloadBloc
 
           Uint8List outputBytes;
 
-          if (_driveKey != null) {
+          if (file.pinnedDataOwnerAddress == null && _driveKey != null) {
             final fileKey = await _driveDao.getFileKey(file.fileId, _driveKey!);
             final dataTx = await (_arweave.getTransactionDetails(file.txId));
 

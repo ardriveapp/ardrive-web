@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
@@ -24,6 +27,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:arweave/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -137,6 +141,12 @@ class UploadForm extends StatefulWidget {
 class _UploadFormState extends State<UploadForm> {
   final _scrollController = ScrollController();
   UploadMethod? _uploadMethod;
+
+  @override
+  initState() {
+    super.initState();
+    startRandomMessageStream();
+  }
 
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
@@ -853,71 +863,170 @@ class _UploadFormState extends State<UploadForm> {
   Widget _uploadUsingNewUploader({
     required UploadInProgressUsingNewUploader state,
   }) {
-    print('upload in progress');
     final files = state.filesWithProgress;
     return ArDriveStandardModal(
       title:
           '${appLocalizationsOf(context).uploadingNFiles(state.filesWithProgress.length)} ${(state.totalProgress * 100).toStringAsFixed(2)}%',
-      content: SizedBox(
-        width: kMediumDialogWidth,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 256),
-          child: Scrollbar(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: files.length,
-              itemBuilder: (BuildContext context, int index) {
-                final file = files[index];
-                return Column(
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+      content: Column(
+        children: [
+          SizedBox(
+            width: kMediumDialogWidth,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 256),
+              child: Scrollbar(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: files.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final file = files[index];
+
+                    String progressText;
+                    String status = '';
+                    if (file.progress != null) {
+                      switch (file.progress!.status) {
+                        case UploadStatus.notStarted:
+                          status = 'Not started';
+                          break;
+                        case UploadStatus.inProgress:
+                          status = 'In progress';
+                          break;
+                        case UploadStatus.paused:
+                          status = 'Paused';
+                          break;
+                        case UploadStatus.bundling:
+                          status = 'Bundling';
+                          break;
+                        case UploadStatus.encryting:
+                          status = 'Encrypting';
+                          break;
+                        case UploadStatus.complete:
+                          status = 'Complete';
+                          break;
+                        case UploadStatus.failed:
+                          status = 'Failed';
+                          break;
+                        case UploadStatus.preparationDone:
+                          status = 'Preparation done';
+                          break;
+                      }
+                    }
+
+                    if (file.isProgressAvailable && file.progress != null) {
+                      progressText =
+                          '${filesize(((file.file.ioFile.length as int) * file.progress!.progress).ceil())}/${filesize(file.file.ioFile.length)}';
+                    } else {
+                      progressText =
+                          'Your upload is in progress, but for large files the progress it not available. Please wait...';
+                    }
+
+                    return Column(
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                file.file.ioFile.name,
-                                style: ArDriveTypography.body.buttonNormalBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgDefault,
+                              Row(
+                                children: [
+                                  Text(
+                                    file.file.ioFile.name,
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault,
+                                    ),
+                                  ),
+                                  Text(
+                                    filesize(file.file.ioFile.length),
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AnimatedSwitcher(
+                                duration: const Duration(seconds: 1),
+                                child: Text(
+                                  status,
+                                  style:
+                                      ArDriveTypography.body.buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgOnDisabled,
+                                  ),
                                 ),
                               ),
                               Text(
-                                filesize(file.file.ioFile.length),
-                                style: ArDriveTypography.body.buttonNormalBold(
+                                progressText,
+                                style:
+                                    ArDriveTypography.body.buttonNormalRegular(
                                   color: ArDriveTheme.of(context)
                                       .themeData
                                       .colors
-                                      .themeFgDefault,
+                                      .themeFgOnDisabled,
                                 ),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                      subtitle: Text(
-                        '${filesize(((file.file.ioFile.length as int) * file.progress).ceil())}/${filesize(file.file.ioFile.length)}',
-                        style: ArDriveTypography.body.buttonNormalRegular(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgOnDisabled,
                         ),
-                      ),
-                    ),
-                  ],
-                );
-              },
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
           ),
-        ),
+          // const SizedBox(
+          //   height: 45,
+          // ),
+          // StreamBuilder<String>(
+          //   stream: randomMessageController.stream,
+          //   builder: (context, snapshot) {
+          //     return Text(
+          //       snapshot.data ?? '',
+          //       style: ArDriveTypography.body.buttonLargeBold(
+          //         color:
+          //             ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+          //       ),
+          //     );
+          //   },
+          // ),
+        ],
       ),
     );
   }
+
+  void startRandomMessageStream() async {
+    final random = Random();
+    while (true) {
+      final index = random.nextInt(arDriveFacts.length);
+      randomMessageController.add(arDriveFacts[index]);
+      await Future.delayed(const Duration(seconds: 5));
+    }
+  }
+
+  final StreamController<String> randomMessageController =
+      StreamController<String>.broadcast();
+
+  static const List<String> arDriveFacts = [
+    "ArDrive lets you store your data forever!",
+    "Your data is encrypted and only you can access it.",
+    "Pay once, store forever. No subscription fees.",
+    "ArDrive is built on top of Arweave's blockchain protocol.",
+    "Benefit from decentralized storage without the hassle.",
+  ];
 
   Widget _getInsufficientBalanceMessage({
     required bool sufficientArBalance,

@@ -2,29 +2,82 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:fetch_client/fetch_client.dart';
 import 'package:http/http.dart' as http;
 
-class TurboUploadService {
+class TurboUploadServiceImpl implements TurboUploadService {
   final Uri turboUploadUri;
 
   /// We are using Dio directly here. In the future we must adapt our ArDriveHTTP to support
   /// streaming uploads.
   // ArDriveHTTP httpClient;
 
-  TurboUploadService({
+  TurboUploadServiceImpl({
     required this.turboUploadUri,
   });
 
-  /// We are using Dio directly here. In the future we must adapt our ArDriveHTTP to support
-  /// streaming uploads.
-  /// This is a temporary solution.
-  Future<Response> postStream({
+  @override
+  Future<dynamic> postStream({
     required DataItemResult dataItem,
     required Wallet wallet,
-    Function(double)? onSendProgress,
+    Function(double p1)? onSendProgress,
+    required int size,
+    required Map<String, dynamic> headers,
+    required UploadController controller,
+  }) {
+    // max of 500mib
+    if (dataItem.dataItemSize <= 1024 * 1024 * 500) {
+      _isPossibleGetProgress = true;
+
+      controller.isPossibleGetProgress = true;
+
+      print(
+          'Sending request to turbo. Is possible get progress: ${controller.isPossibleGetProgress}');
+
+      controller.updateProgress(
+        ArDriveUploadProgress(
+          0,
+          UploadStatus.inProgress,
+          dataItem.dataItemSize,
+          true,
+        ),
+      );
+
+      return _uploadWithDio(
+        dataItem: dataItem,
+        wallet: wallet,
+        onSendProgress: onSendProgress,
+        size: size,
+        headers: headers,
+      );
+    }
+
+    controller.updateProgress(
+      ArDriveUploadProgress(
+        0,
+        UploadStatus.inProgress,
+        dataItem.dataItemSize,
+        false,
+      ),
+    );
+
+    return _uploadStreamWithFetchClient(
+      dataItem: dataItem,
+      wallet: wallet,
+      onSendProgress: onSendProgress,
+      size: size,
+      headers: headers,
+    );
+  }
+
+  Future<Response> _uploadWithDio({
+    required DataItemResult dataItem,
+    required Wallet wallet,
+    Function(double p1)? onSendProgress,
     required int size,
     required Map<String, dynamic> headers,
   }) async {
@@ -33,7 +86,7 @@ class TurboUploadService {
     int dataItemSize = 0;
 
     await for (final data in dataItem.streamGenerator()) {
-      size += data.length;
+      dataItemSize += data.length;
     }
 
     final dio = Dio();
@@ -48,7 +101,7 @@ class TurboUploadService {
         headers: {
           // stream
           Headers.contentTypeHeader: 'application/octet-stream',
-          Headers.contentLengthHeader: size, // Set the content-length.
+          Headers.contentLengthHeader: dataItemSize, // Set the content-length.
         }..addAll(headers),
       ),
     );
@@ -58,7 +111,7 @@ class TurboUploadService {
     return response;
   }
 
-  Future<FetchResponse> uploadStreamWithFetchClient({
+  Future<FetchResponse> _uploadStreamWithFetchClient({
     required DataItemResult dataItem,
     required Wallet wallet,
     Function(double)? onSendProgress,
@@ -73,15 +126,10 @@ class TurboUploadService {
       dataItemSize += data.length;
     }
 
-    int uploaded = 0;
-
     StreamTransformer<Uint8List, Uint8List> createPassthroughTransformer() {
       return StreamTransformer.fromHandlers(
         handleData: (Uint8List data, EventSink<Uint8List> sink) {
           sink.add(data);
-          uploaded += data.length;
-          onSendProgress?.call(uploaded / dataItemSize);
-          print('Uploaded: $uploaded / $dataItemSize');
         },
         handleError: (Object error, StackTrace stackTrace, EventSink sink) {
           sink.addError(error, stackTrace);
@@ -135,6 +183,11 @@ class TurboUploadService {
 
     return response;
   }
+
+  @override
+  bool get isPossibleGetProgress => _isPossibleGetProgress;
+
+  bool _isPossibleGetProgress = false;
 }
 
 class TurboUploadExceptions implements Exception {}

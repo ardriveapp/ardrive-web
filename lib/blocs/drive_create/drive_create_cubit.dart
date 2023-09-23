@@ -1,5 +1,8 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
+    show DrivePrivacy;
+import 'package:ardrive/entities/drive_entity.dart';
+import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -36,25 +39,32 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
-        super(DriveCreateInitial());
+        super(const DriveCreateInitial(privacy: DrivePrivacy.private));
+
+  void onPrivacyChanged() {
+    final privacy = form.control('privacy').value == DrivePrivacy.private.name
+        ? DrivePrivacy.private
+        : DrivePrivacy.public;
+    emit(state.copyWith(privacy: privacy));
+  }
 
   Future<void> submit(
     String driveName,
   ) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     if (await _profileCubit.logoutIfWalletMismatch()) {
-      emit(DriveCreateWalletMismatch());
+      emit(DriveCreateWalletMismatch(privacy: state.privacy));
       return;
     }
 
     final minimumWalletBalance = BigInt.from(10000000);
     if (profile.walletBalance <= minimumWalletBalance &&
         !_turboUploadService.useTurboUpload) {
-      emit(DriveCreateZeroBalance());
+      emit(DriveCreateZeroBalance(privacy: state.privacy));
       return;
     }
 
-    emit(DriveCreateInProgress());
+    emit(DriveCreateInProgress(privacy: state.privacy));
 
     try {
       final String drivePrivacy = form.control('privacy').value;
@@ -141,12 +151,12 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       addError(err);
     }
 
-    emit(DriveCreateSuccess());
+    emit(DriveCreateSuccess(privacy: state.privacy));
   }
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(DriveCreateFailure());
+    emit(DriveCreateFailure(privacy: state.privacy));
     super.onError(error, stackTrace);
 
     logger.e('Failed to create drive', error, stackTrace);

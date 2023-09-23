@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:ardrive_uploader/src/arfs_upload_metadata.dart';
+import '../ardrive_uploader.dart';
 
 // TODO: Review this file
 abstract class UploadController {
@@ -11,12 +11,15 @@ abstract class UploadController {
   void onCancel();
   void onDone(Function(ARFSUploadMetadata metadata) callback);
   void onError(Function() callback);
-  void updateProgress(double progress);
-  void onProgressChange(Function(double progress) callback);
+  void updateProgress(ArDriveUploadProgress progress);
+  void onProgressChange(Function(ArDriveUploadProgress progress) callback);
+
+  bool get isPossibleGetProgress;
+  set isPossibleGetProgress(bool value);
 
   factory UploadController(
     ARFSUploadMetadata metadata,
-    StreamController<double> progressStream,
+    StreamController<ArDriveUploadProgress> progressStream,
   ) {
     return _UploadController(
       metadata: metadata,
@@ -26,11 +29,11 @@ abstract class UploadController {
 }
 
 class _UploadController implements UploadController {
-  final StreamController<double> _progressStream;
+  final StreamController<ArDriveUploadProgress> _progressStream;
 
   _UploadController({
     required this.metadata,
-    required StreamController<double> progressStream,
+    required StreamController<ArDriveUploadProgress> progressStream,
   }) : _progressStream = progressStream {
     init();
   }
@@ -45,11 +48,11 @@ class _UploadController implements UploadController {
 
     subscription = _progressStream.stream.listen(
       (event) {
-        print('Progress on subscriptiobn: $event');
         _onProgressChange!(event);
+        print('Progress: ${event.progress}');
       },
       onDone: () {
-        print('Done');
+        print('Done upload');
         _onDone(metadata);
         subscription.cancel();
       },
@@ -82,9 +85,14 @@ class _UploadController implements UploadController {
   }
 
   @override
-  void updateProgress(double progress) {
-    print('updating Progress: $progress');
-    _progressStream.add(progress);
+  void updateProgress(ArDriveUploadProgress progress) {
+    print('Update progress: ${progress.status}');
+    if (_isPossibleGetProgress) {
+      _progressStream.add(progress);
+    } else {
+      _progressStream.add(
+          ArDriveUploadProgress(0, progress.status, progress.totalSize, false));
+    }
   }
 
   @override
@@ -93,13 +101,12 @@ class _UploadController implements UploadController {
   }
 
   @override
-  void onProgressChange(Function(double progress) callback) {
+  void onProgressChange(Function(ArDriveUploadProgress progress) callback) {
     _onProgressChange = callback;
   }
 
-  void Function(double progress)? _onProgressChange = (progress) {
-    print('Progress: $progress');
-  };
+  void Function(ArDriveUploadProgress progress)? _onProgressChange =
+      (progress) {};
 
   void Function(ARFSUploadMetadata metadata) _onDone =
       (ARFSUploadMetadata metadata) {
@@ -108,4 +115,12 @@ class _UploadController implements UploadController {
 
   @override
   final ARFSUploadMetadata metadata;
+
+  @override
+  bool get isPossibleGetProgress => _isPossibleGetProgress;
+
+  @override
+  set isPossibleGetProgress(bool value) => _isPossibleGetProgress = value;
+
+  bool _isPossibleGetProgress = true;
 }

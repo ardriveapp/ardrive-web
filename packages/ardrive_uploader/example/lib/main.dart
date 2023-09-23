@@ -58,6 +58,7 @@ class _UploadFormState extends State<UploadForm> {
   final passwordController = TextEditingController();
   final parentFolderIdController = TextEditingController();
   String dropdownValue = 'public';
+  final _streamController = StreamController<double>();
 
   Future<String> pickWallet() async {
     final walletFile =
@@ -125,6 +126,9 @@ class _UploadFormState extends State<UploadForm> {
       ),
       wallet: wallet,
     );
+    controller?.onProgressChange((progress) {
+      _streamController.add(progress);
+    });
 
     setState(() {
       _statusText = 'File uploaded';
@@ -210,7 +214,7 @@ class _UploadFormState extends State<UploadForm> {
           child: const Text("Decrypt file"),
         ),
         StreamBuilder<double>(
-            stream: controller?.progressStream,
+            stream: _streamController.stream,
             builder: (context, snapshot) {
               return Text(snapshot.data?.toStringAsFixed(2) ?? '');
             })

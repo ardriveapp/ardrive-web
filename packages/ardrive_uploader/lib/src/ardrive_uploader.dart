@@ -1,25 +1,54 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:arconnect/arconnect.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_uploader/src/turbo_upload_service.dart';
-import 'package:ardrive_uploader/src/upload_controller.dart';
+import 'package:ardrive_uploader/src/streamed_upload.dart';
+import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
 
+enum UploadStatus {
+  /// The upload is not started yet
+  notStarted,
+
+  /// The upload is in progress
+  inProgress,
+
+  /// The upload is paused
+  paused,
+
+  bundling,
+
+  preparationDone,
+
+  encryting,
+
+  /// The upload is complete
+  complete,
+
+  /// The upload has failed
+  failed,
+}
+
 class ArDriveUploadProgress {
   final double progress;
+  final int totalSize;
+  final UploadStatus status;
+  final bool progressAvailable;
 
-  ArDriveUploadProgress(this.progress);
+  ArDriveUploadProgress(
+    this.progress,
+    this.status,
+    this.totalSize,
+    this.progressAvailable,
+  );
 }
 
 // tools
@@ -65,13 +94,15 @@ class _ArDriveUploader implements ArDriveUploader {
     // TODO: pass the turboUploadUri as a parameter
   })  : _dataBundler = dataBundler,
         _metadataGenerator = metadataGenerator,
-        _uploadStreamer = TurboStreamedUpload(
-          TurboUploadService(
-            turboUploadUri: Uri.parse('https://upload.ardrive.dev'),
+        _streamedUpload = TurboStreamedUpload(
+          TurboUploadServiceImpl(
+            turboUploadUri: Uri.parse(
+              'https://upload.ardrive.dev',
+            ),
           ),
         );
 
-  final StreamedUpload _uploadStreamer;
+  final StreamedUpload _streamedUpload;
   final DataBundler _dataBundler;
   final ARFSUploadMetadataGenerator _metadataGenerator;
 
@@ -91,25 +122,35 @@ class _ArDriveUploader implements ArDriveUploader {
 
     final uploadController = UploadController(
       metadata,
-      StreamController<double>(),
+      StreamController<ArDriveUploadProgress>(),
     );
 
     /// Creation of the data bundle
-    final bdi = await _dataBundler.createDataBundle(
-      file: file,
-      metadata: metadata,
-      wallet: wallet,
-      driveKey: driveKey,
-    );
+    _dataBundler
+        .createDataBundle(
+            file: file,
+            metadata: metadata,
+            wallet: wallet,
+            driveKey: driveKey,
+            controller: uploadController)
+        .then((bdi) {
+      print('Data bundle created');
 
-    print('Data bundle created');
+      uploadController.updateProgress(ArDriveUploadProgress(
+          0,
+          UploadStatus.preparationDone,
+          bdi.dataItemSize,
+          uploadController.isPossibleGetProgress));
 
-    print('Starting to send data bundle to network');
+      print('Starting to send data bundle to network');
 
-    _uploadStreamer.send(bdi, wallet, uploadController).then((value) {
-      print('Upload complete');
-    }).catchError((err) {
-      uploadController.onError(() => print('Error: $err'));
+      _streamedUpload.send(bdi, wallet, uploadController).then((value) {
+        print('Upload complete');
+      }).catchError((err) {
+        uploadController.onError(() => print('Error: $err'));
+      });
+
+      print('Upload started');
     });
 
     return uploadController;
@@ -122,22 +163,26 @@ abstract class DataBundler<T> {
     required T metadata,
     required Wallet wallet,
     SecretKey? driveKey,
+    required UploadController controller,
   });
 }
 
 // TODO: temporary solution to the issue with the data items
 class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
   @override
-  Future<DataItemResult> createDataBundle(
-      {required IOFile file,
-      required ARFSUploadMetadata metadata,
-      required Wallet wallet,
-      SecretKey? driveKey}) {
+  Future<DataItemResult> createDataBundle({
+    required IOFile file,
+    required ARFSUploadMetadata metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    required UploadController controller,
+  }) {
     return _createBundleStable(
       file: file,
       metadata: metadata,
       wallet: wallet,
       driveKey: driveKey,
+      controller: controller,
     );
   }
 
@@ -146,7 +191,16 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     required ARFSUploadMetadata metadata,
     required Wallet wallet,
     SecretKey? driveKey,
+    required UploadController controller,
   }) async {
+    if (driveKey != null) {
+      controller.updateProgress(
+          ArDriveUploadProgress(0, UploadStatus.encryting, 0, true));
+    } else {
+      controller.updateProgress(
+          ArDriveUploadProgress(0, UploadStatus.bundling, 0, true));
+    }
+
     final dataGenerator = await _dataGenerator(
       dataStream: file.openReadStream,
       fileLength: await file.length,
@@ -340,6 +394,7 @@ class ARFSDataBundler implements DataBundler<ARFSUploadMetadata> {
     required ARFSUploadMetadata metadata,
     required Wallet wallet,
     SecretKey? driveKey,
+    required UploadController controller,
   }) async {
     throw UnimplementedError();
     // print('Starting to generate data item');
@@ -434,6 +489,8 @@ class ARFSDataBundler implements DataBundler<ARFSUploadMetadata> {
 //       ).flatMap((dataItem) => TaskEither.of(dataItem));
 //     });
 
+// TODO: Review this
+// ignore: unused_element
 Future<List<DataItemResult>> _generateMetadataDataItem({
   required ARFSUploadMetadata metadata,
   required Stream<Uint8List> Function() dataStream,
@@ -537,8 +594,7 @@ DataItemFile _generateFileDataItem({
   required int fileLength,
   Uint8List? cipherIv,
 }) {
-  final tags =
-      metadata.dataItemTags.map((e) => createTag(e.name, e.value)).toList();
+  final tags = metadata.dataItemTags;
 
   if (cipherIv != null) {
     tags.add(Tag(EntityTag.cipher, encodeBytesToBase64(cipherIv)));
@@ -547,7 +603,7 @@ DataItemFile _generateFileDataItem({
   final dataItemFile = DataItemFile(
     dataSize: fileLength,
     streamGenerator: dataStream,
-    tags: metadata.dataItemTags.map((e) => createTag(e.name, e.value)).toList(),
+    tags: tags.map((e) => createTag(e.name, e.value)).toList(),
   );
 
   return dataItemFile;
@@ -613,90 +669,4 @@ Future<(Stream<Uint8List> Function() generator, Uint8List? cipherIv)>
       'Data generator complete. Elapsed time: ${stopwatch.elapsedMilliseconds} ms');
 
   return (dataGenerator, cipherIv);
-}
-
-abstract class StreamedUpload<T, R> {
-  Future<R> send(
-    T handle,
-    Wallet wallet,
-    UploadController controller,
-  );
-}
-
-class TurboStreamedUpload implements StreamedUpload<DataItemResult, Response> {
-  final TurboUploadService _turbo;
-  final TabVisibilitySingleton _tabVisibility;
-
-  TurboStreamedUpload(
-    this._turbo, {
-    TabVisibilitySingleton? tabVisibilitySingleton,
-  }) : _tabVisibility = tabVisibilitySingleton ?? TabVisibilitySingleton();
-
-  @override
-  Future<Response> send(
-    handle,
-    Wallet wallet,
-    UploadController controller,
-  ) async {
-    final nonce = const Uuid().v4();
-
-    final publicKey = await safeArConnectAction<String>(
-      _tabVisibility,
-      (_) async {
-        return wallet.getOwner();
-      },
-    );
-
-    final signature = await safeArConnectAction<String>(
-      _tabVisibility,
-      (_) async {
-        return signNonceAndData(
-          nonce: nonce,
-          wallet: wallet,
-        );
-      },
-    );
-
-    if (kIsWeb) {
-      await _turbo
-          .uploadStreamWithFetchClient(
-              wallet: wallet,
-              headers: {
-                'x-nonce': nonce,
-                'x-address': publicKey,
-                'x-signature': signature,
-              },
-              dataItem: handle,
-              size: handle.dataItemSize,
-              onSendProgress: (progress) {
-                controller.updateProgress(progress);
-              })
-          .then((value) {
-        controller.close();
-      });
-
-      throw UnimplementedError();
-    }
-
-    // gets the streamed request
-    final streamedRequest = _turbo
-        .postStream(
-            wallet: wallet,
-            headers: {
-              'x-nonce': nonce,
-              'x-address': publicKey,
-              'x-signature': signature,
-            },
-            dataItem: handle,
-            size: handle.dataItemSize,
-            onSendProgress: (progress) {
-              controller.updateProgress(progress);
-            })
-        .then((value) {
-      controller.close();
-      return value;
-    });
-
-    return streamedRequest;
-  }
 }
