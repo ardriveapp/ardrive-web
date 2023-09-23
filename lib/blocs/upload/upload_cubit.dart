@@ -490,11 +490,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     List<UploadFileWithProgress> filesWithProgress = [];
 
-    int totalSize = 0;
-
     for (int i = 0; i < files.length; i++) {
-      totalSize += files[i].ioFile.length as int;
-
       if (state is UploadInProgressUsingNewUploader) {
         emit(
           UploadInProgressUsingNewUploader(
@@ -532,9 +528,6 @@ class UploadCubit extends Cubit<UploadState> {
 
       final file = files[i];
 
-      print(
-          'File: ${file.ioFile.name} and the progress is ${uploadController.isPossibleGetProgress}');
-
       final fileWithProgress = UploadFileWithProgress(
         file: file,
         isProgressAvailable: uploadController.isPossibleGetProgress,
@@ -544,9 +537,9 @@ class UploadCubit extends Cubit<UploadState> {
 
       // If the progress is not available, it won't never be called.
       uploadController.onProgressChange((progress) {
-        if (progress.status == UploadStatus.preparationDone) {
-          totalSize += progress.totalSize;
-        }
+        // if (progress.status == UploadStatus.preparationDone) {
+        //   totalSize += progress.totalSize;
+        // }
 
         logger
             .d('Progress: ${progress.progress} and status ${progress.status}');

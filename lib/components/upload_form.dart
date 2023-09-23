@@ -1021,11 +1021,11 @@ class _UploadFormState extends State<UploadForm> {
       StreamController<String>.broadcast();
 
   static const List<String> arDriveFacts = [
-    "ArDrive lets you store your data forever!",
-    "Your data is encrypted and only you can access it.",
-    "Pay once, store forever. No subscription fees.",
+    'ArDrive lets you store your data forever!',
+    'Your data is encrypted and only you can access it.',
+    'Pay once, store forever. No subscription fees.',
     "ArDrive is built on top of Arweave's blockchain protocol.",
-    "Benefit from decentralized storage without the hassle.",
+    'Benefit from decentralized storage without the hassle.',
   ];
 
   Widget _getInsufficientBalanceMessage({

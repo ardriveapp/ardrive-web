@@ -127,7 +127,7 @@ class _UploadFormState extends State<UploadForm> {
       wallet: wallet,
     );
     controller?.onProgressChange((progress) {
-      _streamController.add(progress);
+      _streamController.add(progress.progress);
     });
 
     setState(() {
