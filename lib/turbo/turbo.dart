@@ -306,7 +306,7 @@ class TurboBalanceRetriever {
   }
 }
 
-class TurboPriceEstimator extends Disposable with ConvertForUSD<BigInt> {
+class TurboPriceEstimator extends Disposable implements ConvertForUSD<BigInt> {
   TurboPriceEstimator({
     required Wallet? wallet,
     required this.paymentService,
