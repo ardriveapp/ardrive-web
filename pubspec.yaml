@@ -7,7 +7,7 @@ version: 2.15.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
-  flutter: 3.10.0
+  flutter: 3.10.2
 
 # https://pub.dev/packages/script_runner
 script_runner:
