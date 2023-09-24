@@ -18,7 +18,7 @@ script_runner:
     linux: /bin/sh
   line_length: 80
   scripts:
-    - generate_uploader_code: cd packages/ardrive_uploader/lib/ && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
+    - generate_uploader_code: cd packages/ardrive_uploader/lib/ && flutter pub run build_runner build ardrive_uploader --delete-conflicting-outputs --build-filter="lib/*.dart"
     - setup: flutter clean && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
     - test: flutter test
     - check-db: lefthook/database_checker.sh
