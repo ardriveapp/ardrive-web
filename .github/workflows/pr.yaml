@@ -40,6 +40,8 @@ jobs:
 
       - name: Build app
         run: |
+          cd packages/ardrive_uploader/lib/
+          dart run build_runner build --delete-conflicting-outputs
           scr setup
           flutter config --enable-web
           flutter build web --dart-define=environment=development --release
