@@ -40,7 +40,6 @@ jobs:
 
       - name: Build app
         run: |
-          scr generate_uploader_code
           scr setup
           flutter config --enable-web
           flutter build web --dart-define=environment=development --release

@@ -1,11 +1,7 @@
 import 'package:arweave/arweave.dart';
-import 'package:json_annotation/json_annotation.dart';
-
-part 'arfs_upload_metadata.g.dart';
 
 abstract class UploadMetadata {}
 
-@JsonSerializable()
 class ARFSDriveUploadMetadata extends ARFSUploadMetadata {
   ARFSDriveUploadMetadata({
     required super.entityMetadataTags,
@@ -16,11 +12,13 @@ class ARFSDriveUploadMetadata extends ARFSUploadMetadata {
     required super.bundleTags,
   });
 
+  // TODO: implement toJson
   @override
-  Map<String, dynamic> toJson() => _$ARFSDriveUploadMetadataToJson(this);
+  Map<String, dynamic> toJson() {
+    throw UnimplementedError();
+  }
 }
 
-@JsonSerializable()
 class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
   final String driveId;
   final String? parentFolderId;
@@ -36,11 +34,13 @@ class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
     required super.bundleTags,
   });
 
+  // TODO: implement toJson
   @override
-  Map<String, dynamic> toJson() => _$ARFSFolderUploadMetatadataToJson(this);
+  Map<String, dynamic> toJson() {
+    throw UnimplementedError();
+  }
 }
 
-@JsonSerializable()
 class ARFSFileUploadMetadata extends ARFSUploadMetadata {
   final int size;
   final DateTime lastModifiedDate;
