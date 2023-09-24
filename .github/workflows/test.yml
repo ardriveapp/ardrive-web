@@ -24,7 +24,7 @@ jobs:
 
       - name: Build app
         run: |
-          src generate_uploader_code
+          scr generate_uploader_code
           scr setup
 
       - name: Lint
