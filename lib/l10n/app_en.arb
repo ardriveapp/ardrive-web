@@ -1302,6 +1302,10 @@
   "@noOneWillSee": {
     "description": "Indicates that private content won't reach to the wrong hands"
   },
+  "normal": "Normal",
+  "@normal": {
+    "description": "Menu entry for \"Normal\" speed playback on Audio and Video previews."
+  },
   "noSubscriptions": "No subscriptions are needed!",
   "@noSubscriptions": {
     "description": "Payment philosophy"
