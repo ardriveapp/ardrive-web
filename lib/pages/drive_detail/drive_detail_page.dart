@@ -42,6 +42,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:synchronized/synchronized.dart';
 import 'package:timeago/timeago.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';

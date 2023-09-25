@@ -95,7 +95,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   bool _isVolumeSliderVisible = false;
   bool _wasPlaying = false;
   final _menuController = MenuController();
-  Future<void> _lastPlayVideoAction = Future.value();
+  final Lock _lock = Lock();
 
   @override
   void initState() {
@@ -122,12 +122,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
       if (_videoPlayerController.value.hasError) {
         logger.d('>>> ${_videoPlayerController.value.errorDescription}');
 
-        // FIXME: This is a hack to deal with Chrome having problems on pressing
-        // play after pause rapidly. Also happens when a video reaches its end
-        // and a user plays it again right away.
-        // The error message is:
-        // "The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22"
-        // A better fix is required but putting this in for now.
+        // In case of emergency, reinitialize the video player.
         _videoPlayerController.removeListener(_listener);
         _videoPlayerController.dispose();
 
@@ -145,7 +140,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   void goFullScreen() {
     bool wasPlaying = _videoPlayerController.value.isPlaying;
     if (wasPlaying) {
-      _videoPlayerController.pause();
+      _videoPlayerController.pause().catchError((error) {
+        logger.d('Error pausing video: $error');
+      });
     }
 
     Navigator.of(context).push(PageRouteBuilder(
@@ -160,11 +157,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                 initialPosition: _videoPlayerController.value.position,
                 initialIsPlaying: wasPlaying,
                 initialVolume: _videoPlayerController.value.volume,
-                onClose: (position, isPlaying, volume) {
+                onClose: (position, isPlaying, volume) async {
                   _videoPlayerController.seekTo(position);
                   _videoPlayerController.setVolume(volume);
                   if (isPlaying) {
-                    _videoPlayerController.play();
+                    await _lock.synchronized(() async {
+                      await _videoPlayerController.play().catchError((e) {
+                        logger.d('Error playing video: $e');
+                      });
+                    });
                   }
                 },
               ),
@@ -188,8 +189,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
           if (mounted) {
             if (info.visibleFraction < 0.5 &&
                 _videoPlayerController.value.isPlaying) {
-              await _lastPlayVideoAction;
-              _videoPlayerController.pause();
+              await _lock.synchronized(() async {
+                await _videoPlayerController.pause().catchError((error) {
+                  logger.d('Error pausing video: $error');
+                });
+              });
             }
             setState(
               () {},
@@ -235,23 +239,23 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                         min: 0.0,
                         max: videoValue.duration.inMilliseconds.toDouble(),
                         onChangeStart: (v) async {
-                          await _lastPlayVideoAction;
-
-                          setState(() {
-                            if (_videoPlayerController.value.duration >
-                                Duration.zero) {
-                              _wasPlaying =
-                                  _videoPlayerController.value.isPlaying;
-                              if (_wasPlaying) {
-                                _videoPlayerController.pause().catchError((e) {
+                          if (_videoPlayerController.value.duration >
+                              Duration.zero) {
+                            _wasPlaying =
+                                _videoPlayerController.value.isPlaying;
+                            if (_wasPlaying) {
+                              await _lock.synchronized(() async {
+                                await _videoPlayerController
+                                    .pause()
+                                    .catchError((e) {
                                   logger.d('Error pausing video: $e');
                                 });
-                              }
+                              });
+                              setState(() {});
                             }
-                          });
+                          }
                         },
                         onChanged: (v) async {
-                          await _lastPlayVideoAction;
                           setState(() {
                             final milliseconds = v.toInt();
 
@@ -263,17 +267,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           });
                         },
                         onChangeEnd: (v) async {
-                          await _lastPlayVideoAction;
-                          setState(() {
-                            if (_videoPlayerController.value.duration >
-                                    Duration.zero &&
-                                _wasPlaying) {
-                              _lastPlayVideoAction =
-                                  _videoPlayerController.play().catchError((e) {
+                          if (_videoPlayerController.value.duration >
+                                  Duration.zero &&
+                              _wasPlaying) {
+                            await _lock.synchronized(() async {
+                              await _videoPlayerController
+                                  .play()
+                                  .catchError((e) {
                                 logger.d('Error playing video: $e');
                               });
-                            }
-                          });
+                            });
+                            setState(() {});
+                          }
                         })),
                 const SizedBox(height: 4),
                 Row(
@@ -321,26 +326,34 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               ))),
                       MaterialButton(
                         onPressed: () async {
-                          await _lastPlayVideoAction;
-                          setState(() {
-                            final value = _videoPlayerController.value;
-                            if (!value.isInitialized ||
-                                value.isBuffering ||
-                                value.duration <= Duration.zero) {
-                              return;
+                          final value = _videoPlayerController.value;
+                          if (!value.isInitialized ||
+                              value.isBuffering ||
+                              value.duration <= Duration.zero) {
+                            return;
+                          }
+                          if (value.isPlaying) {
+                            await _lock.synchronized(() async {
+                              await _videoPlayerController
+                                  .pause()
+                                  .catchError((e) {
+                                logger.d('Error pausing video: $e');
+                              });
+                            });
+                          } else {
+                            if (value.position >= value.duration) {
+                              _videoPlayerController.seekTo(Duration.zero);
                             }
-                            if (_videoPlayerController.value.isPlaying) {
-                              _videoPlayerController.pause();
-                            } else {
-                              if (value.position >= value.duration) {
-                                _videoPlayerController.seekTo(Duration.zero);
-                              }
-                              _lastPlayVideoAction =
-                                  _videoPlayerController.play().catchError((e) {
+
+                            await _lock.synchronized(() async {
+                              await _videoPlayerController
+                                  .play()
+                                  .catchError((e) {
                                 logger.d('Error playing video: $e');
                               });
-                            }
-                          });
+                            });
+                            setState(() {});
+                          }
                         },
                         color: colors.themeAccentBrand,
                         shape: const CircleBorder(),
@@ -463,7 +476,7 @@ class _FullScreenVideoPlayerWidgetState
   final _menuController = MenuController();
   bool _controlsVisible = true;
   Timer? _hideControlsTimer;
-  Future<void> _lastPlayVideoAction = Future.value();
+  final Lock _lock = Lock();
 
   @override
   void initState() {
@@ -475,11 +488,13 @@ class _FullScreenVideoPlayerWidgetState
       _videoPlayerController.seekTo(widget.initialPosition).then((_) {
         _videoPlayerController.setVolume(widget.initialVolume);
         if (widget.initialIsPlaying) {
-          _lastPlayVideoAction = _videoPlayerController.play().then((_) {
+          _videoPlayerController.play().then((_) {
             setState(() {
               _videoPlayer = VideoPlayer(_videoPlayerController,
                   key: const Key('videoPlayer'));
             });
+          }).catchError((e) {
+            logger.d('Error playing video: $e');
           });
         } else {
           _videoPlayer = VideoPlayer(_videoPlayerController,
@@ -508,12 +523,7 @@ class _FullScreenVideoPlayerWidgetState
       if (_videoPlayerController.value.hasError) {
         logger.d('>>> ${_videoPlayerController.value.errorDescription}');
 
-        // FIXME: This is a hack to deal with Chrome having problems on pressing
-        // play after pause rapidly. Also happens when a video reaches its end
-        // and a user plays it again right away.
-        // The error message is:
-        // "The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22"
-        // A better fix is required but putting this in for now.
+        // In case of emergency, reinitialize the video player.
         _videoPlayerController.removeListener(_listener);
         _videoPlayerController.dispose();
 
@@ -681,50 +691,54 @@ class _FullScreenVideoPlayerWidgetState
                                                 .duration.inMilliseconds
                                                 .toDouble(),
                                             onChangeStart: (v) async {
-                                              await _lastPlayVideoAction;
-                                              setState(() {
-                                                if (_videoPlayerController
-                                                        .value.duration >
-                                                    Duration.zero) {
-                                                  _wasPlaying =
-                                                      _videoPlayerController
-                                                          .value.isPlaying;
-                                                  if (_wasPlaying) {
+                                              if (_videoPlayerController
+                                                      .value.duration >
+                                                  Duration.zero) {
+                                                _wasPlaying =
                                                     _videoPlayerController
-                                                        .pause();
-                                                  }
+                                                        .value.isPlaying;
+                                                if (_wasPlaying) {
+                                                  await _lock
+                                                      .synchronized(() async {
+                                                    await _videoPlayerController
+                                                        .pause()
+                                                        .catchError((e) {
+                                                      logger.d(
+                                                          'Error pausing video: $e');
+                                                    });
+
+                                                    setState(() {});
+                                                  });
                                                 }
-                                              });
+                                              }
                                             },
                                             onChanged: (v) async {
-                                              await _lastPlayVideoAction;
-                                              setState(() {
-                                                if (_videoPlayerController
-                                                        .value.duration >
-                                                    Duration.zero) {
-                                                  _videoPlayerController.seekTo(
-                                                      Duration(
-                                                          milliseconds:
-                                                              v.toInt()));
-                                                }
-                                              });
+                                              if (_videoPlayerController
+                                                      .value.duration >
+                                                  Duration.zero) {
+                                                _videoPlayerController.seekTo(
+                                                    Duration(
+                                                        milliseconds:
+                                                            v.toInt()));
+                                                setState(() {});
+                                              }
                                             },
                                             onChangeEnd: (v) async {
-                                              await _lastPlayVideoAction;
-                                              setState(() {
-                                                if (_videoPlayerController
-                                                            .value.duration >
-                                                        Duration.zero &&
-                                                    _wasPlaying) {
-                                                  _lastPlayVideoAction =
-                                                      _videoPlayerController
-                                                          .play()
-                                                          .catchError((e) {
+                                              if (_videoPlayerController
+                                                          .value.duration >
+                                                      Duration.zero &&
+                                                  _wasPlaying) {
+                                                await _lock
+                                                    .synchronized(() async {
+                                                  await _videoPlayerController
+                                                      .play()
+                                                      .catchError((e) {
                                                     logger.d(
                                                         'Error playing video: $e');
                                                   });
-                                                }
-                                              });
+                                                });
+                                                setState(() {});
+                                              }
                                             }))),
                                 const SizedBox(width: 8),
                                 Text(duration)
@@ -794,32 +808,35 @@ class _FullScreenVideoPlayerWidgetState
                                           size: 24)),
                                   MaterialButton(
                                     onPressed: () async {
-                                      await _lastPlayVideoAction;
-                                      setState(() {
-                                        final value =
-                                            _videoPlayerController.value;
-                                        if (!value.isInitialized ||
-                                            value.isBuffering ||
-                                            value.duration <= Duration.zero) {
-                                          return;
+                                      final value =
+                                          _videoPlayerController.value;
+                                      if (!value.isInitialized ||
+                                          value.isBuffering ||
+                                          value.duration <= Duration.zero) {
+                                        return;
+                                      }
+                                      if (value.isPlaying) {
+                                        await _lock.synchronized(() async {
+                                          await _videoPlayerController
+                                              .pause()
+                                              .catchError((e) {
+                                            logger.d('Error pausing video: $e');
+                                          });
+                                        });
+                                      } else {
+                                        if (value.position >= value.duration) {
+                                          _videoPlayerController
+                                              .seekTo(Duration.zero);
                                         }
-                                        if (_videoPlayerController
-                                            .value.isPlaying) {
-                                          _videoPlayerController.pause();
-                                        } else {
-                                          if (value.position >=
-                                              value.duration) {
-                                            _videoPlayerController
-                                                .seekTo(Duration.zero);
-                                          }
-                                          _lastPlayVideoAction =
-                                              _videoPlayerController
-                                                  .play()
-                                                  .catchError((e) {
+                                        await _lock.synchronized(() async {
+                                          await _videoPlayerController
+                                              .play()
+                                              .catchError((e) {
                                             logger.d('Error playing video: $e');
                                           });
-                                        }
-                                      });
+                                        });
+                                      }
+                                      setState(() {});
                                     },
                                     color: colors.themeAccentBrand,
                                     shape: const CircleBorder(),
