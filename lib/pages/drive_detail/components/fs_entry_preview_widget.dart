@@ -1213,7 +1213,11 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                                                         });
                                                       },
                                                       title: Text(
-                                                        '$v',
+                                                        v == 1.0
+                                                            ? appLocalizationsOf(
+                                                                    context)
+                                                                .normal
+                                                            : '$v',
                                                         style: ArDriveTypography
                                                             .body
                                                             .buttonNormalBold(
@@ -1402,7 +1406,8 @@ void _displaySpeedOptionsModal(
                 setPlaybackSpeed(speed);
                 Navigator.of(context).pop();
               },
-              title: Text('$speed'),
+              title: Text(
+                  speed == 1.0 ? appLocalizationsOf(context).normal : '$speed'),
             );
           },
         ),
