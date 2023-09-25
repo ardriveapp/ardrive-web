@@ -74,6 +74,7 @@ abstract class ArDriveUploader {
 
   factory ArDriveUploader({
     ARFSUploadMetadataGenerator? metadataGenerator,
+    required Uri turboUploadUri,
   }) {
     metadataGenerator ??= ARFSUploadMetadataGenerator(
       tagsGenerator: ARFSTagsGenetator(
@@ -81,6 +82,7 @@ abstract class ArDriveUploader {
       ),
     );
     return _ArDriveUploader(
+      turboUploadUri: turboUploadUri,
       dataBundler: ARFSDataBundlerStable(),
       metadataGenerator: metadataGenerator,
     );
@@ -91,14 +93,13 @@ class _ArDriveUploader implements ArDriveUploader {
   _ArDriveUploader({
     required DataBundler dataBundler,
     required ARFSUploadMetadataGenerator metadataGenerator,
+    required Uri turboUploadUri,
     // TODO: pass the turboUploadUri as a parameter
   })  : _dataBundler = dataBundler,
         _metadataGenerator = metadataGenerator,
         _streamedUpload = TurboStreamedUpload(
           TurboUploadServiceImpl(
-            turboUploadUri: Uri.parse(
-              'https://upload.ardrive.dev',
-            ),
+            turboUploadUri: turboUploadUri,
           ),
         );
 
