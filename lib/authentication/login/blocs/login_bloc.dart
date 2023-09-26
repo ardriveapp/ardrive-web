@@ -338,7 +338,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       // ignore: invalid_use_of_visible_for_testing_member
       emit(const LoginFailure(WalletMismatchException()));
 
-      _arDriveAuth.logout();
+      await _arDriveAuth.logout();
 
       // ignore: invalid_use_of_visible_for_testing_member
       emit(const LoginInitial(true));
