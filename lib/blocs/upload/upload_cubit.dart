@@ -561,8 +561,6 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    double totalProgress = 0;
-
     List<UploadProgress> filesWithProgress = [];
 
     for (int i = 0; i < files.length; i++) {
