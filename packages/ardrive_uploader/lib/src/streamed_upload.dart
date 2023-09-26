@@ -7,7 +7,7 @@ import 'package:uuid/uuid.dart';
 
 abstract class StreamedUpload<T, R> {
   Future<R> send(
-    T handle,
+    UploadTask handle,
     Wallet wallet,
     UploadController controller,
   );
@@ -50,35 +50,41 @@ class TurboStreamedUpload implements StreamedUpload<DataItemResult, dynamic> {
     print(
         'Sending request to turbo. Is possible get progress: ${controller.isPossibleGetProgress}');
 
+    handle = handle.copyWith(status: UploadStatus.inProgress);
+    controller.updateProgress(task: handle);
+
+    // TODO: set if its possible to get the progress. Check the turbo web impl
+
     // gets the streamed request
     final streamedRequest = _turbo
         .postStream(
-            controller: controller,
             wallet: wallet,
             headers: {
               'x-nonce': nonce,
               'x-address': publicKey,
               'x-signature': signature,
             },
-            dataItem: handle,
-            size: handle.dataItemSize,
+            dataItem: handle.dataItem!.dataItemResult,
+            size: handle.dataItem!.dataItemResult.dataItemSize,
             onSendProgress: (progress) {
-              controller.updateProgress(
-                ArDriveUploadProgress(
-                  progress,
-                  UploadStatus.inProgress,
-                  handle.dataItemSize,
-                  controller.isPossibleGetProgress,
-                ),
-              );
+              handle.progress = progress;
+              controller.updateProgress(task: handle);
+
+              if (progress == 1) {
+                handle.status = UploadStatus.complete;
+                controller.updateProgress(task: handle);
+              }
             })
-        .then((value) {
+        .then((value) async {
       print('Turbo response: ${value.statusCode}');
-      controller.updateProgress(ArDriveUploadProgress(1, UploadStatus.complete,
-          handle.dataItemSize, controller.isPossibleGetProgress));
-      controller.close();
+
+      controller.updateProgress(
+        task: handle,
+      );
 
       return value;
+    }).catchError((e) {
+      print(e.toString());
     });
 
     return streamedRequest;

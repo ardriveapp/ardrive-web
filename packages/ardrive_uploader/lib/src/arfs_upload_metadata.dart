@@ -37,7 +37,9 @@ class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
   // TODO: implement toJson
   @override
   Map<String, dynamic> toJson() {
-    throw UnimplementedError();
+    return {
+      'name': name,
+    };
   }
 }
 
