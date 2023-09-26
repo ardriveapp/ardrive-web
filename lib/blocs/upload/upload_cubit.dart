@@ -488,6 +488,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   // TODO: Finish the implementation for uploading folders.
   // It should be addressed after the new uploader is implemented and tested.
+  // ignore: unused_element
   Future<void> _uploadFolderUsingArDriveUploader() async {
     final ardriveUploader = ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
@@ -497,25 +498,6 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       ),
     );
-
-    List<UploadProgress> filesWithProgress = [];
-
-    if (state is UploadInProgressUsingNewUploader) {
-      emit(
-        UploadInProgressUsingNewUploader(
-          uploadProgressList: filesWithProgress,
-          totalProgress: (state as UploadInProgressUsingNewUploader)
-              .totalProgress, // TODO: calcualte total progress
-        ),
-      );
-    } else {
-      emit(
-        UploadInProgressUsingNewUploader(
-          uploadProgressList: filesWithProgress,
-          totalProgress: 0, // TODO: calcualte total progress
-        ),
-      );
-    }
 
     final private = _targetDrive.isPrivate;
     final driveKey = private
@@ -541,7 +523,7 @@ class UploadCubit extends Cubit<UploadState> {
         UploadInProgressUsingNewUploader(
           totalProgress: progress.progress,
           equatableBust: UniqueKey(),
-          uploadProgressList: [progress],
+          progress: progress,
         ),
       );
     });
@@ -561,107 +543,104 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    List<UploadProgress> filesWithProgress = [];
+    final private = _targetDrive.isPrivate;
+    final driveKey = private
+        ? await _driveDao.getDriveKey(
+            _targetDrive.id, _auth.currentUser!.cipherKey)
+        : null;
 
-    for (int i = 0; i < files.length; i++) {
-      final private = _targetDrive.isPrivate;
-      final driveKey = private
-          ? await _driveDao.getDriveKey(
-              _targetDrive.id, _auth.currentUser!.cipherKey)
-          : null;
+    List<(ARFSUploadMetadataArgs, IOFile)> uploadFiles = [];
 
-      final revisionAction =
-          conflictingFiles.containsKey(files[i].getIdentifier())
-              ? RevisionAction.uploadNewVersion
-              : RevisionAction.create;
+    for (var file in files) {
+      final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
+          ? RevisionAction.uploadNewVersion
+          : RevisionAction.create;
 
-      final uploadController = await ardriveUploader.upload(
-        file: files[i].ioFile,
-        args: ARFSUploadMetadataArgs(
-          isPrivate: _targetDrive.isPrivate,
-          driveId: _targetDrive.id,
-          parentFolderId: _targetFolder.id,
-          privacy: _targetDrive.isPrivate ? 'private' : 'public',
-          entityId: revisionAction == RevisionAction.uploadNewVersion
-              ? conflictingFiles[files[i].getIdentifier()]
-              : null,
-        ),
-        wallet: _auth.currentUser!.wallet,
-        driveKey: driveKey,
+      final args = ARFSUploadMetadataArgs(
+        isPrivate: _targetDrive.isPrivate,
+        driveId: _targetDrive.id,
+        parentFolderId: _targetFolder.id,
+        privacy: _targetDrive.isPrivate ? 'private' : 'public',
+        entityId: revisionAction == RevisionAction.uploadNewVersion
+            ? conflictingFiles[file.getIdentifier()]
+            : null,
       );
 
-      // File to upload
-      final file = files[i];
+      uploadFiles.add((args, file.ioFile));
+    }
 
-      uploadController.onProgressChange((progress) {
-        if (filesWithProgress.length < i + 1) {
-          filesWithProgress.add(UploadProgress(
-            progress: 0,
-            totalSize: progress.totalSize,
-            task: progress.task,
-          ));
-        } else {
-          filesWithProgress[i] = UploadProgress(
-            progress: progress.progress,
-            totalSize: progress.totalSize,
-            task: progress.task,
-          );
-        }
+    /// Creates the uploader and starts the upload.
+    final uploadController = await ardriveUploader.uploadFiles(
+      files: uploadFiles,
+      wallet: _auth.currentUser!.wallet,
+      driveKey: driveKey,
+    );
 
-        emit(
-          UploadInProgressUsingNewUploader(
-            uploadProgressList: filesWithProgress,
-            totalProgress: progress.progress,
-            equatableBust: UniqueKey(),
-          ),
-        );
-      });
+    uploadController.onProgressChange((progress) {
+      emit(
+        UploadInProgressUsingNewUploader(
+          progress: progress,
+          totalProgress: progress.progress,
+          equatableBust: UniqueKey(),
+        ),
+      );
+    });
 
-      uploadController.onDone((tasks) async {
-        logger.d(tasks.toString());
-        unawaited(_profileCubit.refreshBalance());
-        // Single file only
-        // TODO: abstract to the database interface.
-        // TODO: improve API for finishing a file upload.
-        final fileMetadata =
-            tasks.first.dataItem!.contents.first as ARFSFileUploadMetadata;
+    uploadController.onDone((tasks) async {
+      logger.d(tasks.toString());
+      unawaited(_profileCubit.refreshBalance());
+      // Single file only
+      // TODO: abstract to the database interface.
+      // TODO: improve API for finishing a file upload.
+      for (var task in tasks) {
+        final metadatas = task.dataItem!.contents;
 
-        final entity = FileEntity(
-          dataContentType: fileMetadata.dataContentType,
-          dataTxId: fileMetadata.dataTxId,
-          driveId: fileMetadata.driveId,
-          id: fileMetadata.id,
-          lastModifiedDate: fileMetadata.lastModifiedDate,
-          name: fileMetadata.name,
-          parentFolderId: fileMetadata.parentFolderId,
-          size: fileMetadata.size,
-          // TODO: pinnedDataOwnerAddress
-        );
+        for (var metadata in metadatas) {
+          if (metadata is ARFSFileUploadMetadata) {
+            final fileMetadata = metadata;
 
-        if (fileMetadata.metadataTxId == null) {
-          logger.e('Metadata tx id is null');
-          throw Exception('Metadata tx id is null');
-        }
+            final revisionAction =
+                conflictingFiles.containsKey(fileMetadata.name)
+                    ? RevisionAction.uploadNewVersion
+                    : RevisionAction.create;
 
-        entity.txId = fileMetadata.metadataTxId!;
+            final entity = FileEntity(
+              dataContentType: fileMetadata.dataContentType,
+              dataTxId: fileMetadata.dataTxId,
+              driveId: fileMetadata.driveId,
+              id: fileMetadata.id,
+              lastModifiedDate: fileMetadata.lastModifiedDate,
+              name: fileMetadata.name,
+              parentFolderId: fileMetadata.parentFolderId,
+              size: fileMetadata.size,
+              // TODO: pinnedDataOwnerAddress
+            );
 
-        await _driveDao.transaction(() async {
-          // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
-          final filePath = '${_targetFolder.path}/${file.getIdentifier()}';
-          await _driveDao.writeFileEntity(entity, filePath);
-          await _driveDao.insertFileRevision(
-            entity.toRevisionCompanion(
-              performedAction: revisionAction,
-            ),
-          );
-        });
+            if (fileMetadata.metadataTxId == null) {
+              logger.e('Metadata tx id is null');
+              throw Exception('Metadata tx id is null');
+            }
 
-        // all files are uploaded
-        if (filesWithProgress.every((element) => element.progress == 1)) {
+            entity.txId = fileMetadata.metadataTxId!;
+
+            await _driveDao.transaction(() async {
+              // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
+              // TODO: Changed this logic. PLEASE REVIEW IT.
+              final filePath = '${_targetFolder.path}/${metadata.name}';
+              await _driveDao.writeFileEntity(entity, filePath);
+              await _driveDao.insertFileRevision(
+                entity.toRevisionCompanion(
+                  performedAction: revisionAction,
+                ),
+              );
+            });
+          }
+
+          // all files are uploaded
           emit(UploadComplete());
         }
-      });
-    }
+      }
+    });
   }
 
   Future<void> skipLargeFilesAndCheckForConflicts() async {
