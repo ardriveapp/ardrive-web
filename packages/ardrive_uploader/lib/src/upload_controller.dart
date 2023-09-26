@@ -75,8 +75,6 @@ class _UploadTask implements UploadTask {
 
 // TODO: Review this file
 abstract class UploadController {
-  abstract final ARFSUploadMetadata metadata;
-
   abstract final List<UploadTask> tasks;
 
   Future<void> close();
@@ -94,11 +92,9 @@ abstract class UploadController {
   set isPossibleGetProgress(bool value);
 
   factory UploadController(
-    ARFSUploadMetadata metadata,
     StreamController<UploadProgress> progressStream,
   ) {
     return _UploadController(
-      metadata: metadata,
       progressStream: progressStream,
     );
   }
@@ -108,7 +104,6 @@ class _UploadController implements UploadController {
   final StreamController<UploadProgress> _progressStream;
 
   _UploadController({
-    required this.metadata,
     required StreamController<UploadProgress> progressStream,
   }) : _progressStream = progressStream {
     init();
@@ -220,9 +215,6 @@ class _UploadController implements UploadController {
   void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {
     print('Upload Finished');
   };
-
-  @override
-  final ARFSUploadMetadata metadata;
 
   @override
   bool get isPossibleGetProgress => _isPossibleGetProgress;

@@ -54,6 +54,20 @@ class UploadProgress {
       task: task ?? this.task,
     );
   }
+
+  int getNumberOfItems() {
+    if (task.isEmpty) {
+      return 0;
+    }
+
+    return task.map((e) {
+      if (e.dataItem == null) {
+        return 0;
+      }
+
+      return e.dataItem!.contents.length;
+    }).reduce((value, element) => value + element);
+  }
 }
 
 // tools
@@ -61,6 +75,14 @@ abstract class ArDriveUploader {
   Future<UploadController> upload({
     required IOFile file,
     required ARFSUploadMetadataArgs args,
+    required Wallet wallet,
+    SecretKey? driveKey,
+  }) {
+    throw UnimplementedError();
+  }
+
+  Future<UploadController> uploadFiles({
+    required List<(ARFSUploadMetadataArgs, IOFile)> files,
     required Wallet wallet,
     SecretKey? driveKey,
   }) {
@@ -129,7 +151,6 @@ class _ArDriveUploader implements ArDriveUploader {
     print('Creating a new upload controller');
 
     final uploadController = UploadController(
-      metadata,
       StreamController<UploadProgress>(),
     );
 
@@ -209,7 +230,6 @@ class _ArDriveUploader implements ArDriveUploader {
     print('Creating a new upload controller');
 
     final uploadController = UploadController(
-      metadata,
       StreamController<UploadProgress>(),
     );
 
@@ -247,6 +267,155 @@ class _ArDriveUploader implements ArDriveUploader {
     });
 
     return uploadController;
+  }
+
+  @override
+  Future<UploadController> uploadFiles({
+    required List<(ARFSUploadMetadataArgs, IOFile)> files,
+    required Wallet wallet,
+    SecretKey? driveKey,
+  }) async {
+    print('Creating a new upload controller');
+
+    final uploadController = UploadController(
+      StreamController<UploadProgress>(),
+    );
+
+    /// Attaches the upload controller to the upload service
+    _uploadFiles(files: files, wallet: wallet, controller: uploadController);
+
+    return uploadController;
+  }
+
+  // TODO: broken logic.
+  Future _uploadFiles({
+    required List<(ARFSUploadMetadataArgs, IOFile)> files,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    required UploadController controller,
+  }) async {
+    List<Future<void>> activeUploads = [];
+    int totalSize = 0; // size accumulator
+
+    for (int i = 0; i < files.length; i++) {
+      int fileSize = await files[i].$2.length;
+
+      if (fileSize >= 500 * 1024 * 1024) {
+        // File size is >= 500MiB
+
+        // Wait for ongoing uploads to complete
+        await Future.wait(activeUploads);
+        totalSize = 0; // Reset the accumulator
+        activeUploads.clear(); // Clear the active uploads
+      } else {
+        while (activeUploads.length >= 25 ||
+            totalSize + fileSize >= 500 * 1024 * 1024) {
+          await Future.any(activeUploads); // Wait for at least one to complete
+          // Recalculate totalSize and remove completed futures
+          totalSize = 0;
+          var remainingFutures = <Future<void>>[];
+          for (var future in activeUploads) {
+            remainingFutures.add(future.whenComplete(() {
+              totalSize -= fileSize; // Subtract the size of the completed file
+              remainingFutures.remove(future);
+            }));
+            // Add the size of the corresponding file to totalSize
+            // This part will depend on how you keep track of file sizes
+          }
+          activeUploads = remainingFutures;
+        }
+        totalSize += fileSize; // Add to the accumulator
+      }
+
+      // Existing logic to start upload
+      late Future<void> uploadFuture;
+
+      uploadFuture = _uploadSingleFile(
+        file: files[i].$2,
+        wallet: wallet,
+        driveKey: driveKey,
+        uploadController: controller,
+        uploadTask: UploadTask(
+          status: UploadStatus.notStarted,
+        ),
+        args: files[i].$1,
+      ).then((value) {
+        // activeUploads.remove(uploadFuture);
+      });
+
+      activeUploads.add(uploadFuture);
+    }
+
+    // Wait for any remaining uploads to complete
+    await Future.wait(activeUploads);
+  }
+
+  Future _uploadSingleFile({
+    required IOFile file,
+    required UploadController uploadController,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    required UploadTask uploadTask,
+    ARFSUploadMetadataArgs? args,
+  }) async {
+    final metadata = await _metadataGenerator.generateMetadata(
+      file,
+      args,
+    );
+
+    uploadTask = uploadTask.copyWith(
+      status: UploadStatus.bundling,
+    );
+
+    final createDataBundle = _dataBundler.createDataBundle(
+      file: file,
+      metadata: metadata,
+      wallet: wallet,
+      driveKey: driveKey,
+      onStartBundling: () {
+        uploadTask = uploadTask.copyWith(
+          status: UploadStatus.bundling,
+        );
+        uploadController.updateProgress(
+          task: uploadTask,
+        );
+      },
+      onStartEncryption: () {
+        uploadTask = uploadTask.copyWith(
+          status: UploadStatus.encryting,
+        );
+        uploadController.updateProgress(
+          task: uploadTask,
+        );
+      },
+    );
+
+    final bdi = await createDataBundle;
+
+    uploadTask = uploadTask.copyWith(
+      dataItem: DataItemResultWithContents(
+        contents: [metadata],
+        dataItemResult: bdi,
+      ),
+      status: UploadStatus.preparationDone,
+    );
+
+    print('BDI id: ${bdi.id}');
+
+    uploadController.updateProgress(
+      task: uploadTask,
+    );
+
+    print('Starting to send data bundle to network');
+
+    final value = await _streamedUpload
+        .send(uploadTask, wallet, uploadController)
+        .then((value) {})
+        .catchError((err) {
+      uploadController.onError(() => print('Error: $err'));
+    });
+
+    return value;
   }
 }
 
