@@ -172,6 +172,8 @@ class _ArDriveUploader implements ArDriveUploader {
         status: UploadStatus.preparationDone,
       );
 
+      print('BDI id: ${bdi.id}');
+
       uploadController.updateProgress(
         task: uploadTask,
       );

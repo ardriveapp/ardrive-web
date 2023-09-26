@@ -83,7 +83,7 @@ abstract class UploadController {
   void cancel();
   void onCancel();
   // TODO: Return a list of tasks.
-  void onDone(Function(ARFSUploadMetadata metadata) callback);
+  void onDone(Function(List<UploadTask> tasks) callback);
   void onError(Function() callback);
   void updateProgress({
     UploadTask? task,
@@ -123,7 +123,6 @@ class _UploadController implements UploadController {
 
     subscription = _progressStream.stream.listen(
       (event) async {
-        print('Progress: ${event.progress}');
         _onProgressChange!(event);
 
         if (_uploadProgress.progress == 1) {
@@ -133,7 +132,7 @@ class _UploadController implements UploadController {
       },
       onDone: () {
         print('Done upload');
-        _onDone(metadata);
+        _onDone(tasks);
         subscription.cancel();
       },
       onError: (err) {
@@ -158,7 +157,7 @@ class _UploadController implements UploadController {
   void onCancel() {}
 
   @override
-  void onDone(Function(ARFSUploadMetadata metadata) callback) {
+  void onDone(Function(List<UploadTask> tasks) callback) {
     _onDone = callback;
   }
 
@@ -218,8 +217,7 @@ class _UploadController implements UploadController {
 
   void Function(UploadProgress progress)? _onProgressChange = (progress) {};
 
-  void Function(ARFSUploadMetadata metadata) _onDone =
-      (ARFSUploadMetadata metadata) {
+  void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {
     print('Upload Finished');
   };
 
@@ -251,9 +249,6 @@ class _UploadController implements UploadController {
       }
     }
 
-    print('Total uploaded: $totalProgress');
-    print('Total size: ${totalSize(tasks)}');
-
     return (totalSize(tasks) == 0) ? 0.0 : totalProgress / totalSize(tasks);
   }
 
@@ -265,8 +260,6 @@ class _UploadController implements UploadController {
         totalSize += task.dataItem!.dataItemResult.dataItemSize;
       }
     }
-
-    print('Total size: $totalSize');
 
     return totalSize;
   }

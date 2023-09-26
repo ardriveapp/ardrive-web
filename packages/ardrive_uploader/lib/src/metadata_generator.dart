@@ -44,7 +44,13 @@ class ARFSUploadMetadataGenerator
       throw ArgumentError('arguments must not be null');
     }
 
-    final id = const Uuid().v4();
+    String id;
+    if (arguments.entityId != null) {
+      id = arguments.entityId!;
+      print('reusing id: $id');
+    } else {
+      id = const Uuid().v4();
+    }
 
     if (entity is IOFile) {
       ARFSUploadMetadataArgsValidator.validate(arguments, EntityType.file);
@@ -139,26 +145,33 @@ class ARFSUploadMetadataArgs {
   final String? parentFolderId;
   final String? privacy;
   final bool isPrivate;
+  final String? entityId;
 
   factory ARFSUploadMetadataArgs.file({
     required String driveId,
     required String parentFolderId,
     required bool isPrivate,
+    String? entityId,
   }) {
     return ARFSUploadMetadataArgs(
       driveId: driveId,
       parentFolderId: parentFolderId,
       isPrivate: isPrivate,
+      entityId: entityId,
     );
   }
 
   factory ARFSUploadMetadataArgs.folder({
     required String driveId,
     required bool isPrivate,
+    String? parentFolderId,
+    String? entityId,
   }) {
     return ARFSUploadMetadataArgs(
       driveId: driveId,
       isPrivate: isPrivate,
+      entityId: entityId,
+      parentFolderId: parentFolderId,
     );
   }
 
@@ -175,6 +188,7 @@ class ARFSUploadMetadataArgs {
     this.driveId,
     this.parentFolderId,
     this.privacy,
+    this.entityId,
   });
 }
 

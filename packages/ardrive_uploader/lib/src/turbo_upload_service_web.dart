@@ -34,9 +34,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
       // TODO: Add this to the task instead of the controller
       // controller.isPossibleGetProgress = true;
 
-      // print(
-      // 'Sending request to turbo. Is possible get progress: ${controller.isPossibleGetProgress}');
-
       return _uploadWithDio(
         dataItem: dataItem,
         wallet: wallet,

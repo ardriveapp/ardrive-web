@@ -572,6 +572,11 @@ class UploadCubit extends Cubit<UploadState> {
               _targetDrive.id, _auth.currentUser!.cipherKey)
           : null;
 
+      final revisionAction =
+          conflictingFiles.containsKey(files[i].getIdentifier())
+              ? RevisionAction.uploadNewVersion
+              : RevisionAction.create;
+
       final uploadController = await ardriveUploader.upload(
         file: files[i].ioFile,
         args: ARFSUploadMetadataArgs(
@@ -579,6 +584,9 @@ class UploadCubit extends Cubit<UploadState> {
           driveId: _targetDrive.id,
           parentFolderId: _targetFolder.id,
           privacy: _targetDrive.isPrivate ? 'private' : 'public',
+          entityId: revisionAction == RevisionAction.uploadNewVersion
+              ? conflictingFiles[files[i].getIdentifier()]
+              : null,
         ),
         wallet: _auth.currentUser!.wallet,
         driveKey: driveKey,
@@ -611,10 +619,14 @@ class UploadCubit extends Cubit<UploadState> {
         );
       });
 
-      uploadController.onDone((metadata) async {
-        logger.d(metadata.toString());
+      uploadController.onDone((tasks) async {
+        logger.d(tasks.toString());
         unawaited(_profileCubit.refreshBalance());
-        final fileMetadata = metadata as ARFSFileUploadMetadata;
+        // Single file only
+        // TODO: abstract to the database interface.
+        // TODO: improve API for finishing a file upload.
+        final fileMetadata =
+            tasks.first.dataItem!.contents.first as ARFSFileUploadMetadata;
 
         final entity = FileEntity(
           dataContentType: fileMetadata.dataContentType,
@@ -641,17 +653,13 @@ class UploadCubit extends Cubit<UploadState> {
           await _driveDao.writeFileEntity(entity, filePath);
           await _driveDao.insertFileRevision(
             entity.toRevisionCompanion(
-              performedAction: RevisionAction.create,
+              performedAction: revisionAction,
             ),
           );
         });
 
-        if (!uploadController.isPossibleGetProgress) {
-          // adds the 100% for this file.
-          totalProgress += 1 / filesWithProgress.length;
-        }
-
-        if (totalProgress == 1) {
+        // all files are uploaded
+        if (filesWithProgress.every((element) => element.progress == 1)) {
           emit(UploadComplete());
         }
       });
