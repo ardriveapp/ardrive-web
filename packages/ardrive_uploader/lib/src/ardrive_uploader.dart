@@ -1,18 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
-import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
-import 'package:flutter/foundation.dart';
-import 'package:fpdart/fpdart.dart';
-import 'package:uuid/uuid.dart';
 
 enum UploadStatus {
   /// The upload is not started yet
@@ -37,34 +32,43 @@ enum UploadStatus {
   failed,
 }
 
-class ArDriveUploadProgress {
+class UploadProgress {
   final double progress;
   final int totalSize;
-  final UploadStatus status;
-  final bool progressAvailable;
+  final List<UploadTask> task;
 
-  ArDriveUploadProgress(
-    this.progress,
-    this.status,
-    this.totalSize,
-    this.progressAvailable,
-  );
+  UploadProgress({
+    required this.progress,
+    required this.totalSize,
+    required this.task,
+  });
+
+  UploadProgress copyWith({
+    double? progress,
+    int? totalSize,
+    List<UploadTask>? task,
+  }) {
+    return UploadProgress(
+      progress: progress ?? this.progress,
+      totalSize: totalSize ?? this.totalSize,
+      task: task ?? this.task,
+    );
+  }
 }
 
 // tools
 abstract class ArDriveUploader {
-  // TODO: implement the emition of these events
-  // step of upload
-  // creation of metadata
-  // creation of the data item
-  // encryption of data item
-  // creation of bundle
-  // upload of bundle
-  //
-  // progress
-
   Future<UploadController> upload({
     required IOFile file,
+    required ARFSUploadMetadataArgs args,
+    required Wallet wallet,
+    SecretKey? driveKey,
+  }) {
+    throw UnimplementedError();
+  }
+
+  Future<UploadController> uploadEntity({
+    required IOEntity entity,
     required ARFSUploadMetadataArgs args,
     required Wallet wallet,
     SecretKey? driveKey,
@@ -83,7 +87,9 @@ abstract class ArDriveUploader {
     );
     return _ArDriveUploader(
       turboUploadUri: turboUploadUri,
-      dataBundler: ARFSDataBundlerStable(),
+      dataBundler: ARFSDataBundlerStable(
+        metadataGenerator,
+      ),
       metadataGenerator: metadataGenerator,
     );
   }
@@ -107,6 +113,7 @@ class _ArDriveUploader implements ArDriveUploader {
   final DataBundler _dataBundler;
   final ARFSUploadMetadataGenerator _metadataGenerator;
 
+  /// STABLE.
   @override
   Future<UploadController> upload({
     required IOFile file,
@@ -123,551 +130,130 @@ class _ArDriveUploader implements ArDriveUploader {
 
     final uploadController = UploadController(
       metadata,
-      StreamController<ArDriveUploadProgress>(),
+      StreamController<UploadProgress>(),
     );
 
-    /// Creation of the data bundle
-    _dataBundler
-        .createDataBundle(
-            file: file,
-            metadata: metadata,
-            wallet: wallet,
-            driveKey: driveKey,
-            controller: uploadController)
-        .then((bdi) {
-      print('Data bundle created');
+    var uploadTask = UploadTask(
+      status: UploadStatus.notStarted,
+    );
 
-      uploadController.updateProgress(ArDriveUploadProgress(
-          0,
-          UploadStatus.preparationDone,
-          bdi.dataItemSize,
-          uploadController.isPossibleGetProgress));
+    uploadController.updateProgress(task: uploadTask);
+
+    /// Creation of the data bundle
+    final createDataBundle = _dataBundler.createDataBundle(
+      file: file,
+      metadata: metadata,
+      wallet: wallet,
+      driveKey: driveKey,
+      onStartBundling: () {
+        uploadTask = uploadTask.copyWith(
+          status: UploadStatus.bundling,
+        );
+        uploadController.updateProgress(
+          task: uploadTask,
+        );
+      },
+      onStartEncryption: () {
+        uploadTask = uploadTask.copyWith(
+          status: UploadStatus.encryting,
+        );
+        uploadController.updateProgress(
+          task: uploadTask,
+        );
+      },
+    );
+
+    createDataBundle.then((bdi) {
+      uploadTask = uploadTask.copyWith(
+        dataItem: DataItemResultWithContents(
+          contents: [metadata],
+          dataItemResult: bdi,
+        ),
+        status: UploadStatus.preparationDone,
+      );
+
+      uploadController.updateProgress(
+        task: uploadTask,
+      );
 
       print('Starting to send data bundle to network');
 
-      _streamedUpload.send(bdi, wallet, uploadController).then((value) {
+      _streamedUpload.send(uploadTask, wallet, uploadController).then((value) {
         print('Upload complete');
       }).catchError((err) {
         uploadController.onError(() => print('Error: $err'));
       });
+    });
 
-      print('Upload started');
+    print('Upload started');
+
+    return uploadController;
+  }
+
+  @override
+  Future<UploadController> uploadEntity({
+    required IOEntity entity,
+    required ARFSUploadMetadataArgs args,
+    required Wallet wallet,
+    SecretKey? driveKey,
+  }) async {
+    // TODO: Start the implementation only for folders by now.
+    // FIXME: only works for folders
+    final metadata = await _metadataGenerator.generateMetadata(
+      entity,
+      args,
+    );
+
+    print('Creating a new upload controller');
+
+    final uploadController = UploadController(
+      metadata,
+      StreamController<UploadProgress>(),
+    );
+
+    /// Creation of the data bundle
+    _dataBundler
+        .createDataBundleForEntity(
+      entity: entity,
+      metadata: metadata,
+      wallet: wallet,
+      driveKey: driveKey,
+      driveId: args.driveId!,
+    )
+        .then((dataItems) {
+      print('BDIs created');
+
+      for (var dataItem in dataItems) {
+        final uploadTask = UploadTask(dataItemResult: dataItem);
+
+        print('BDI id: ${dataItem.dataItemResult.id}');
+
+        uploadTask.status = UploadStatus.preparationDone;
+        // TODO: the upload controller should emit the send sending the tasks
+        uploadController.updateProgress(
+          task: uploadTask,
+        );
+
+        _streamedUpload
+            .send(uploadTask, wallet, uploadController)
+            .then((value) {
+          print('Upload complete');
+        }).catchError((err) {
+          uploadController.onError(() => print('Error: $err'));
+        });
+      }
     });
 
     return uploadController;
   }
 }
 
-abstract class DataBundler<T> {
-  Future<DataItemResult> createDataBundle({
-    required IOFile file,
-    required T metadata,
-    required Wallet wallet,
-    SecretKey? driveKey,
-    required UploadController controller,
+class DataItemResultWithContents {
+  final DataItemResult dataItemResult;
+  final List<ARFSUploadMetadata> contents;
+
+  DataItemResultWithContents({
+    required this.dataItemResult,
+    required this.contents,
   });
-}
-
-// TODO: temporary solution to the issue with the data items
-class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
-  @override
-  Future<DataItemResult> createDataBundle({
-    required IOFile file,
-    required ARFSUploadMetadata metadata,
-    required Wallet wallet,
-    SecretKey? driveKey,
-    required UploadController controller,
-  }) {
-    return _createBundleStable(
-      file: file,
-      metadata: metadata,
-      wallet: wallet,
-      driveKey: driveKey,
-      controller: controller,
-    );
-  }
-
-  Future<DataItemResult> _createBundleStable({
-    required IOFile file,
-    required ARFSUploadMetadata metadata,
-    required Wallet wallet,
-    SecretKey? driveKey,
-    required UploadController controller,
-  }) async {
-    if (driveKey != null) {
-      controller.updateProgress(
-          ArDriveUploadProgress(0, UploadStatus.encryting, 0, true));
-    } else {
-      controller.updateProgress(
-          ArDriveUploadProgress(0, UploadStatus.bundling, 0, true));
-    }
-
-    final dataGenerator = await _dataGenerator(
-      dataStream: file.openReadStream,
-      fileLength: await file.length,
-      metadata: metadata,
-      wallet: wallet,
-      driveKey: driveKey,
-    );
-
-    print('Data item generated');
-
-    print('Starting to generate metadata data item');
-
-    final metadataDataItem = await _generateMetadataDataItem(
-      metadata: metadata,
-      dataStream: dataGenerator.$1,
-      fileLength: await file.length,
-      wallet: wallet,
-      driveKey: driveKey,
-    );
-
-    print('Metadata data item generated');
-
-    print('Starting to generate file data item');
-
-    final fileDataItem = _generateFileDataItem(
-      metadata: metadata,
-      dataStream: dataGenerator.$1,
-      fileLength: await file.length,
-      cipherIv: dataGenerator.$2,
-    );
-
-    print('File data item generated');
-
-    for (var tag in metadata.dataItemTags) {
-      print('Data item tag: ${tag.name} - ${tag.value}');
-    }
-
-    for (var tag in metadata.entityMetadataTags) {
-      print('Metadata tag: ${tag.name} - ${tag.value}');
-    }
-
-    final stopwatch = Stopwatch()..start();
-
-    print('Starting to create bundled data item');
-
-    final createBundledDataItem = createBundledDataItemTaskEither(
-      dataItemFiles: [
-        metadataDataItem,
-        fileDataItem,
-      ],
-      wallet: wallet,
-      tags: metadata.bundleTags.map((e) => createTag(e.name, e.value)).toList(),
-    );
-
-    final bundledDataItem = await createBundledDataItem.run();
-
-    return bundledDataItem.match((l) {
-      // TODO: handle error
-      print('Error: $l');
-      print(StackTrace.current);
-      throw l;
-    }, (bdi) async {
-      print('Bundled data item created. ID: ${bdi.id}');
-      print('Bundled data item size: ${bdi.dataItemSize} bytes');
-      print(
-          'The creation of the bundled data item took ${stopwatch.elapsedMilliseconds} ms');
-      return bdi;
-    });
-  }
-
-  Future<DataItemFile> _generateMetadataDataItem({
-    required ARFSUploadMetadata metadata,
-    required Stream<Uint8List> Function() dataStream,
-    required int fileLength,
-    required Wallet wallet,
-    SecretKey? driveKey,
-  }) async {
-    final stopwatch = Stopwatch()..start(); // Start timer
-
-    print('Initializing metadata data item generator...');
-
-    Stream<Uint8List> Function() metadataGenerator;
-
-    print('Creating DataItem...');
-    final fileDataItemEither = createDataItemTaskEither(
-        wallet: wallet,
-        dataStream: dataStream,
-        dataStreamSize: fileLength,
-        tags: metadata.dataItemTags
-            .map((e) => createTag(e.name, e.value))
-            .toList());
-
-    final fileDataItemResult = await fileDataItemEither.run();
-
-    late String dataTxId;
-
-    fileDataItemResult.match((l) {
-      print('Error: $l');
-      print(StackTrace.current);
-    }, (fileDataItem) {
-      dataTxId = fileDataItem.id;
-      print('fileDataItemResult lenght: ${fileDataItem.dataSize} bytes');
-      print('file length: $fileLength bytes');
-
-      print('Data item created. ID: ${fileDataItem.id}');
-      print('Data item size: ${fileDataItem.dataSize} bytes');
-
-      metadata as ARFSFileUploadMetadata;
-      metadata.setDataTxId = fileDataItem.id;
-    });
-
-    final metadataJson = metadata.toJson()
-      ..putIfAbsent('dataTxId', () => dataTxId);
-
-    final metadataBytes = utf8
-        .encode(jsonEncode(metadataJson))
-        .map((e) => Uint8List.fromList([e]));
-
-    if (driveKey != null) {
-      print('DriveKey is not null. Starting metadata encryption...');
-
-      final driveKeyData = Uint8List.fromList(await driveKey.extractBytes());
-
-      final implMetadata = await cipherStreamEncryptImpl(Cipher.aes256ctr,
-          keyData: driveKeyData);
-
-      final encryptMetadataStreamResult =
-          await implMetadata.encryptStreamGenerator(
-        () => Stream.fromIterable(metadataBytes),
-        metadataBytes.length,
-      );
-
-      print('Metadata encryption complete');
-
-      final metadataCipherIv = encryptMetadataStreamResult.nonce;
-
-      metadataGenerator = encryptMetadataStreamResult.streamGenerator;
-
-      metadata.entityMetadataTags
-          .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv)));
-    } else {
-      print('DriveKey is null. Skipping metadata encryption.');
-      metadataGenerator = () => Stream.fromIterable(metadataBytes);
-    }
-
-    // TODO: remove this when we fix the issue with the method that returns the
-    //
-    final metadataTask = createDataItemTaskEither(
-      wallet: wallet,
-      dataStream: () => Stream.fromIterable(metadataBytes),
-      dataStreamSize: metadataBytes.length,
-      tags: metadata.entityMetadataTags
-          .map((e) => createTag(e.name, e.value))
-          .toList(),
-    ).flatMap((metadataDataItem) => TaskEither.of(metadataDataItem));
-
-    final metadataTaskEither = await metadataTask.run();
-
-    metadataTaskEither.match((l) {
-      print('Error: $l');
-      print(StackTrace.current);
-      throw l;
-    }, (metadataDataItem) {
-      print('Metadata data item created. ID: ${metadataDataItem.id}');
-      metadata.setMetadataTxId = metadataDataItem.id;
-      return metadataDataItem;
-    });
-
-    print('Metadata size: ${metadataBytes.length} bytes');
-
-    final metadataFile = DataItemFile(
-      dataSize: metadataBytes.length,
-      streamGenerator: metadataGenerator,
-      tags: metadata.entityMetadataTags
-          .map((e) => createTag(e.name, e.value))
-          .toList(),
-    );
-
-    print(
-        'Metadata data item generator complete. Elapsed time: ${stopwatch.elapsedMilliseconds} ms');
-
-    return metadataFile;
-  }
-}
-
-// TODO: fix the issue on bundle creation. After this, this class should be the default.
-class ARFSDataBundler implements DataBundler<ARFSUploadMetadata> {
-  @override
-  Future<DataItemResult> createDataBundle({
-    required IOFile file,
-    required ARFSUploadMetadata metadata,
-    required Wallet wallet,
-    SecretKey? driveKey,
-    required UploadController controller,
-  }) async {
-    throw UnimplementedError();
-    // print('Starting to generate data item');
-
-    // final dataGenerator = await _dataGenerator(
-    //   dataStream: file.openReadStream,
-    //   fileLength: await file.length,
-    //   metadata: metadata,
-    //   wallet: wallet,
-    //   driveKey: driveKey,
-    // );
-
-    // print('Data item generated');
-
-    // print('Starting to generate metadata data item');
-
-    // final metadataDataItem = await _generateMetadataDataItem(
-    //   metadata: metadata,
-    //   dataStream: dataGenerator.$1,
-    //   fileLength: await file.length,
-    //   wallet: wallet,
-    //   driveKey: driveKey,
-    // );
-
-    // print('Starting to create bundled data item');
-
-    // final createBdi = createBDITaskEither(
-    //   TaskEither.of(metadataDataItem),
-    //   metadata,
-    //   wallet,
-    // );
-
-    // return (await createBdi.run()).match((l) {
-    //   throw l;
-    // }, (bdi) => bdi);
-  }
-}
-
-// TODO: add the DataItemError
-// TaskEither<StreamTransactionError, List<DataItemResult>>
-//     createDataItemsForFileTaskEither({
-//   required IOFile file,
-//   required ARFSUploadMetadata metadata,
-//   required Wallet wallet,
-//   required Stream<Uint8List> Function() dataStreamGenerator,
-//   required int fileLength,
-//   SecretKey? driveKey,
-// }) =>
-//         createDataItemTaskEither(
-//           wallet: wallet,
-//           dataStream: dataStreamGenerator,
-//           dataStreamSize: fileLength,
-//           tags: metadata.dataItemTags
-//               .map((e) => createTag(e.name, e.value))
-//               .toList(),
-//         ).flatMap((dataTxDataItem) {
-//           metadata as ARFSFileUploadMetadata;
-//           metadata.setDataTxId = dataTxDataItem.id;
-//           final metadataJson = metadata.toJson();
-
-//           final metadataBytes = utf8
-//               .encode(jsonEncode(metadataJson))
-//               .map((e) => Uint8List.fromList([e]));
-
-//           return createDataItemTaskEither(
-//             wallet: wallet,
-//             dataStream: () => Stream.fromIterable(metadataBytes),
-//             dataStreamSize: metadataBytes.length,
-//             tags: metadata.entityMetadataTags
-//                 .map((e) => createTag(e.name, e.value))
-//                 .toList(),
-//           ).flatMap((metadataDataItem) =>
-//               TaskEither.of([metadataDataItem, dataTxDataItem]));
-//         });
-
-// TODO: add the DataItemError
-// TaskEither<StreamTransactionError, DataItemResult> createBDITaskEither(
-//   TaskEither<StreamTransactionError, List<DataItemResult>> dataItems,
-//   ARFSUploadMetadata metadata,
-//   Wallet wallet,
-// ) =>
-//     createDataBundleTaskEither(dataItems).flatMap((dataBundle) {
-//       final dataBundleStream = dataBundle.stream;
-//       final dataBundleSize = dataBundle.dataBundleStreamSize;
-
-//       return createDataItemTaskEither(
-//         wallet: wallet,
-//         dataStream: dataBundleStream,
-//         dataStreamSize: dataBundleSize,
-//         tags:
-//             metadata.bundleTags.map((e) => createTag(e.name, e.value)).toList(),
-//       ).flatMap((dataItem) => TaskEither.of(dataItem));
-//     });
-
-// TODO: Review this
-// ignore: unused_element
-Future<List<DataItemResult>> _generateMetadataDataItem({
-  required ARFSUploadMetadata metadata,
-  required Stream<Uint8List> Function() dataStream,
-  required int fileLength,
-  required Wallet wallet,
-  SecretKey? driveKey,
-}) async {
-  print('Creating DataItem...');
-  final fileDataItemEither = createDataItemTaskEither(
-      wallet: wallet,
-      dataStream: dataStream,
-      dataStreamSize: fileLength,
-      tags: metadata.dataItemTags
-          .map((e) => createTag(e.name, e.value))
-          .toList());
-
-  final fileDataItemResultEither = await fileDataItemEither.run();
-  late DataItemResult fileDataItemResult;
-
-  late String dataTxId;
-
-  fileDataItemResultEither.match((l) {
-    print('Error: $l');
-    print(StackTrace.current);
-    throw l;
-  }, (fileDataItem) {
-    fileDataItemResult = fileDataItem;
-    dataTxId = fileDataItem.id;
-    print('fileDataItemResult lenght: ${fileDataItem.dataSize} bytes');
-    print('file length: $fileLength bytes');
-
-    print('Data item created. ID: ${fileDataItem.id}');
-  });
-
-  // TODO: Abstract for other types of metadata
-
-  metadata as ARFSFileUploadMetadata;
-
-  metadata.setDataTxId = dataTxId;
-
-  print(metadata.dataTxId);
-
-  final metadataJson = metadata.toJson();
-
-  final metadataBytes =
-      utf8.encode(jsonEncode(metadataJson)).map((e) => Uint8List.fromList([e]));
-
-  if (driveKey != null) {
-    print('DriveKey is not null. Starting metadata encryption...');
-
-    final driveKeyData = Uint8List.fromList(await driveKey.extractBytes());
-
-    final implMetadata =
-        await cipherStreamEncryptImpl(Cipher.aes256ctr, keyData: driveKeyData);
-
-    final encryptMetadataStreamResult =
-        await implMetadata.encryptStreamGenerator(
-      () => Stream.fromIterable(metadataBytes),
-      metadataBytes.length,
-    );
-
-    print('Metadata encryption complete');
-
-    final metadataCipherIv = encryptMetadataStreamResult.nonce;
-
-    metadata.entityMetadataTags
-        .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv)));
-  } else {
-    print('DriveKey is null. Skipping metadata encryption.');
-  }
-
-  print('Metadata size: ${metadataBytes.length} bytes');
-
-  final metadataTask = createDataItemTaskEither(
-    wallet: wallet,
-    dataStream: () => Stream.fromIterable(metadataBytes),
-    dataStreamSize: metadataBytes.length,
-    tags: metadata.entityMetadataTags
-        .map((e) => createTag(e.name, e.value))
-        .toList(),
-  ).flatMap((metadataDataItem) => TaskEither.of(metadataDataItem));
-
-  final metadataTaskResult = await metadataTask.run();
-
-  final metadataDataItem = metadataTaskResult.match((l) {
-    print('Error: $l');
-    print(StackTrace.current);
-    throw l;
-  }, (metadataDataItem) {
-    print('Metadata data item created. ID: ${metadataDataItem.id}');
-    metadata.setMetadataTxId = metadataDataItem.id;
-    return metadataDataItem;
-  });
-
-  return [metadataDataItem, fileDataItemResult];
-}
-
-DataItemFile _generateFileDataItem({
-  required ARFSUploadMetadata metadata,
-  required Stream<Uint8List> Function() dataStream,
-  required int fileLength,
-  Uint8List? cipherIv,
-}) {
-  final tags = metadata.dataItemTags;
-
-  if (cipherIv != null) {
-    tags.add(Tag(EntityTag.cipher, encodeBytesToBase64(cipherIv)));
-  }
-
-  final dataItemFile = DataItemFile(
-    dataSize: fileLength,
-    streamGenerator: dataStream,
-    tags: tags.map((e) => createTag(e.name, e.value)).toList(),
-  );
-
-  return dataItemFile;
-}
-
-Future<(Stream<Uint8List> Function() generator, Uint8List? cipherIv)>
-    _dataGenerator({
-  required ARFSUploadMetadata metadata,
-  required Stream<Uint8List> Function() dataStream,
-  required int fileLength,
-  required Wallet wallet,
-  SecretKey? driveKey,
-}) async {
-  final stopwatch = Stopwatch()..start(); // Start timer
-
-  print('Initializing data generator...');
-
-  Stream<Uint8List> Function() dataGenerator;
-  Uint8List? cipherIv;
-
-  if (driveKey != null) {
-    print('DriveKey is not null. Starting encryption...');
-
-    // Derive a file key from the user's drive key and the file id.
-    // We don't salt here since the file id is already random enough but
-    // we can salt in the future in cases where the user might want to revoke a file key they shared.
-    final fileIdBytes = Uint8List.fromList(Uuid.parse(metadata.id));
-    print('File ID bytes generated: ${fileIdBytes.length} bytes');
-
-    final kdf = Hkdf(hmac: Hmac(Sha256()), outputLength: keyByteLength);
-    print('KDF initialized');
-
-    final fileKey = await kdf.deriveKey(
-      secretKey: driveKey,
-      info: fileIdBytes,
-      nonce: Uint8List(1),
-    );
-
-    print('File key derived');
-
-    final keyData = Uint8List.fromList(await fileKey.extractBytes());
-    print('Key data extracted');
-
-    final impl =
-        await cipherStreamEncryptImpl(Cipher.aes256ctr, keyData: keyData);
-    print('Cipher impl ready');
-
-    final encryptStreamResult = await impl.encryptStreamGenerator(
-      dataStream,
-      fileLength,
-    );
-
-    print('Stream encryption complete');
-
-    cipherIv = encryptStreamResult.nonce;
-    dataGenerator = encryptStreamResult.streamGenerator;
-  } else {
-    print('DriveKey is null. Skipping encryption.');
-    dataGenerator = dataStream;
-  }
-
-  print(
-      'Data generator complete. Elapsed time: ${stopwatch.elapsedMilliseconds} ms');
-
-  return (dataGenerator, cipherIv);
 }

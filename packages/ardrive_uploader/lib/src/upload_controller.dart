@@ -1,25 +1,101 @@
 import 'dart:async';
 
+import 'package:uuid/uuid.dart';
+
 import '../ardrive_uploader.dart';
+
+abstract class UploadTask {
+  abstract final String id;
+  abstract final DataItemResultWithContents? dataItem;
+  abstract double progress;
+  abstract bool isProgressAvailable;
+  abstract UploadStatus status;
+
+  factory UploadTask({
+    DataItemResultWithContents? dataItemResult,
+    bool isProgressAvailable = true,
+    UploadStatus status = UploadStatus.notStarted,
+  }) {
+    return _UploadTask(
+      dataItemResult,
+      isProgressAvailable: isProgressAvailable,
+      status,
+      const Uuid().v4(),
+    );
+  }
+
+  // copyWith
+  UploadTask copyWith({
+    DataItemResultWithContents? dataItem,
+    double? progress,
+    bool? isProgressAvailable,
+    UploadStatus? status,
+  });
+}
+
+class _UploadTask implements UploadTask {
+  @override
+  final DataItemResultWithContents? dataItem;
+
+  @override
+  double progress = 0;
+
+  @override
+  final String id;
+
+  @override
+  bool isProgressAvailable = true;
+
+  _UploadTask(
+    this.dataItem,
+    this.status,
+    this.id, {
+    this.isProgressAvailable = true,
+  });
+
+  @override
+  UploadStatus status;
+
+  @override
+  UploadTask copyWith({
+    DataItemResultWithContents? dataItem,
+    double? progress,
+    bool? isProgressAvailable,
+    UploadStatus? status,
+    String? id,
+  }) {
+    return _UploadTask(
+      dataItem ?? this.dataItem,
+      status ?? this.status,
+      id ?? this.id,
+      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
+    );
+  }
+}
 
 // TODO: Review this file
 abstract class UploadController {
   abstract final ARFSUploadMetadata metadata;
 
-  void close();
+  abstract final List<UploadTask> tasks;
+
+  Future<void> close();
   void cancel();
   void onCancel();
+  // TODO: Return a list of tasks.
   void onDone(Function(ARFSUploadMetadata metadata) callback);
   void onError(Function() callback);
-  void updateProgress(ArDriveUploadProgress progress);
-  void onProgressChange(Function(ArDriveUploadProgress progress) callback);
+  void updateProgress({
+    UploadTask? task,
+  });
+  void onProgressChange(Function(UploadProgress progress) callback);
 
   bool get isPossibleGetProgress;
   set isPossibleGetProgress(bool value);
 
   factory UploadController(
     ARFSUploadMetadata metadata,
-    StreamController<ArDriveUploadProgress> progressStream,
+    StreamController<UploadProgress> progressStream,
   ) {
     return _UploadController(
       metadata: metadata,
@@ -29,17 +105,16 @@ abstract class UploadController {
 }
 
 class _UploadController implements UploadController {
-  final StreamController<ArDriveUploadProgress> _progressStream;
+  final StreamController<UploadProgress> _progressStream;
 
   _UploadController({
     required this.metadata,
-    required StreamController<ArDriveUploadProgress> progressStream,
+    required StreamController<UploadProgress> progressStream,
   }) : _progressStream = progressStream {
     init();
   }
 
   bool _isCanceled = false;
-
   bool get isCanceled => _isCanceled;
 
   void init() {
@@ -47,9 +122,14 @@ class _UploadController implements UploadController {
     late StreamSubscription subscription;
 
     subscription = _progressStream.stream.listen(
-      (event) {
-        _onProgressChange!(event);
+      (event) async {
         print('Progress: ${event.progress}');
+        _onProgressChange!(event);
+
+        if (_uploadProgress.progress == 1) {
+          await close();
+          return;
+        }
       },
       onDone: () {
         print('Done upload');
@@ -64,8 +144,8 @@ class _UploadController implements UploadController {
   }
 
   @override
-  void close() {
-    _progressStream.close();
+  Future<void> close() async {
+    await _progressStream.close();
   }
 
   @override
@@ -75,9 +155,7 @@ class _UploadController implements UploadController {
   }
 
   @override
-  void onCancel() {
-    // _onCancel();
-  }
+  void onCancel() {}
 
   @override
   void onDone(Function(ARFSUploadMetadata metadata) callback) {
@@ -85,15 +163,48 @@ class _UploadController implements UploadController {
   }
 
   @override
-  void updateProgress(ArDriveUploadProgress progress) {
-    print('Update progress: ${progress.status}');
-    if (_isPossibleGetProgress) {
-      _progressStream.add(progress);
-    } else {
-      _progressStream.add(
-          ArDriveUploadProgress(0, progress.status, progress.totalSize, false));
+  void updateProgress({
+    UploadTask? task,
+  }) {
+    if (_progressStream.isClosed) {
+      return;
     }
+
+    if (task != null) {
+      final index = tasks.indexWhere(
+        (element) => element.id == task.id,
+      );
+
+      print('Index: $index');
+
+      if (index == -1) {
+        tasks.add(task);
+      } else {
+        tasks[index] = task;
+      }
+
+      _uploadProgress = _uploadProgress.copyWith(
+        task: tasks,
+        progress: calculateTotalProgress(tasks),
+        totalSize: totalSize(tasks),
+      );
+
+      _progressStream.add(
+        // TODO:
+        _uploadProgress,
+      );
+    }
+
+    print('Progress: ${_uploadProgress.progress}');
+
+    return;
   }
+
+  UploadProgress _uploadProgress = UploadProgress(
+    progress: 0,
+    totalSize: 0,
+    task: [],
+  );
 
   @override
   void onError(Function() callback) {
@@ -101,12 +212,11 @@ class _UploadController implements UploadController {
   }
 
   @override
-  void onProgressChange(Function(ArDriveUploadProgress progress) callback) {
+  void onProgressChange(Function(UploadProgress progress) callback) {
     _onProgressChange = callback;
   }
 
-  void Function(ArDriveUploadProgress progress)? _onProgressChange =
-      (progress) {};
+  void Function(UploadProgress progress)? _onProgressChange = (progress) {};
 
   void Function(ARFSUploadMetadata metadata) _onDone =
       (ARFSUploadMetadata metadata) {
@@ -123,4 +233,41 @@ class _UploadController implements UploadController {
   set isPossibleGetProgress(bool value) => _isPossibleGetProgress = value;
 
   bool _isPossibleGetProgress = true;
+
+  @override
+  final List<UploadTask> tasks = [];
+
+  double calculateTotalProgress(List<UploadTask> tasks) {
+    double totalProgress = 0.0;
+
+    for (var task in tasks) {
+      if (task.dataItem == null) {
+        continue;
+      }
+
+      if (task.isProgressAvailable) {
+        totalProgress +=
+            (task.progress * task.dataItem!.dataItemResult.dataItemSize);
+      }
+    }
+
+    print('Total uploaded: $totalProgress');
+    print('Total size: ${totalSize(tasks)}');
+
+    return (totalSize(tasks) == 0) ? 0.0 : totalProgress / totalSize(tasks);
+  }
+
+  int totalSize(List<UploadTask> tasks) {
+    int totalSize = 0;
+
+    for (var task in tasks) {
+      if (task.dataItem != null) {
+        totalSize += task.dataItem!.dataItemResult.dataItemSize;
+      }
+    }
+
+    print('Total size: $totalSize');
+
+    return totalSize;
+  }
 }

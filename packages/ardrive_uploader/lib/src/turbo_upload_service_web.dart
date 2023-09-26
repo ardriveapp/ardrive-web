@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
@@ -27,25 +26,16 @@ class TurboUploadServiceImpl implements TurboUploadService {
     Function(double p1)? onSendProgress,
     required int size,
     required Map<String, dynamic> headers,
-    required UploadController controller,
   }) {
     // max of 500mib
     if (dataItem.dataItemSize <= 1024 * 1024 * 500) {
       _isPossibleGetProgress = true;
 
-      controller.isPossibleGetProgress = true;
+      // TODO: Add this to the task instead of the controller
+      // controller.isPossibleGetProgress = true;
 
-      print(
-          'Sending request to turbo. Is possible get progress: ${controller.isPossibleGetProgress}');
-
-      controller.updateProgress(
-        ArDriveUploadProgress(
-          0,
-          UploadStatus.inProgress,
-          dataItem.dataItemSize,
-          true,
-        ),
-      );
+      // print(
+      // 'Sending request to turbo. Is possible get progress: ${controller.isPossibleGetProgress}');
 
       return _uploadWithDio(
         dataItem: dataItem,
@@ -55,15 +45,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
         headers: headers,
       );
     }
-
-    controller.updateProgress(
-      ArDriveUploadProgress(
-        0,
-        UploadStatus.inProgress,
-        dataItem.dataItemSize,
-        false,
-      ),
-    );
 
     return _uploadStreamWithFetchClient(
       dataItem: dataItem,

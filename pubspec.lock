@@ -84,11 +84,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-4417-export-logs
-      resolved-ref: "136d27ae8290ce771a264a068484276b7df68027"
+      ref: PE-3699-uploads-large-files-for-public-drives
+      resolved-ref: "3a60e4693b766ed4354568be080344b80603b6f7"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
-    version: "1.3.0"
+    version: "1.4.0"
   ardrive_ui:
     dependency: "direct main"
     description:

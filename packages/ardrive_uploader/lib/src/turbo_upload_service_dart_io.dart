@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
@@ -26,7 +25,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
     Function(double)? onSendProgress,
     required int size,
     required Map<String, dynamic> headers,
-    required UploadController controller,
   }) async {
     final url = '$turboUploadUri/v1/tx';
 
@@ -38,18 +36,10 @@ class TurboUploadServiceImpl implements TurboUploadService {
 
     final dio = Dio();
 
-    controller.updateProgress(
-      ArDriveUploadProgress(
-        0,
-        UploadStatus.inProgress,
-        dataItemSize,
-        true,
-      ),
-    );
-
     final response = await dio.post(
       url,
       onSendProgress: (sent, total) {
+        print('Sent: $sent, total: $total');
         onSendProgress?.call(sent / total);
       },
       data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.

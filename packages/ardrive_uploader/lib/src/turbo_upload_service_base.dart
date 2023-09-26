@@ -1,4 +1,3 @@
-import 'package:ardrive_uploader/src/upload_controller.dart';
 import 'package:arweave/arweave.dart';
 
 export 'package:ardrive_uploader/src/turbo_upload_service_dart_io.dart'
@@ -11,7 +10,6 @@ abstract class TurboUploadService {
     Function(double p1)? onSendProgress,
     required int size,
     required Map<String, dynamic> headers,
-    required UploadController controller,
   });
 
   bool get isPossibleGetProgress;
