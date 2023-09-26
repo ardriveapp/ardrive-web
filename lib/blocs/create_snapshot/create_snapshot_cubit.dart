@@ -135,6 +135,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _computeIsSufficientBalance();
     _computeIsTurboEnabled();
     _computeIsFreeThanksToTurbo();
+    _computeIsButtonEnabled();
 
     await _emitConfirming(
       dataSize: data.length,
@@ -461,34 +462,35 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     logger.d('Upload method set to $method');
     _uploadMethod = method;
 
-    _refreshIsButtonEnabled();
-  }
-
-  void _refreshIsButtonEnabled() {
-    _isButtonToUploadEnabled = false;
+    _computeIsButtonEnabled();
     if (state is ConfirmingSnapshotCreation) {
       final stateAsConfirming = state as ConfirmingSnapshotCreation;
-      logger.d('Sufficient Balance To Pay With AR: $_sufficientArBalance');
+      emit(
+        stateAsConfirming.copyWith(
+          uploadMethod: method,
+          isButtonToUploadEnabled: _isButtonToUploadEnabled,
+        ),
+      );
+    }
+  }
 
-      if (_uploadMethod == UploadMethod.ar && _sufficientArBalance) {
-        logger.d('Enabling button for AR payment method');
-        _isButtonToUploadEnabled = true;
-      } else if (_uploadMethod == UploadMethod.turbo &&
-          stateAsConfirming.isTurboUploadPossible &&
-          _sufficentCreditsBalance) {
-        logger.d('Enabling button for Turbo payment method');
-        _isButtonToUploadEnabled = true;
-      } else if (stateAsConfirming.isFreeThanksToTurbo) {
-        logger.d('Enabling button for free upload using Turbo');
-        _isButtonToUploadEnabled = true;
-      } else {
-        logger.d('Disabling button');
-      }
+  void _computeIsButtonEnabled() {
+    _isButtonToUploadEnabled = false;
 
-      emit(stateAsConfirming.copyWith(
-        uploadMethod: _uploadMethod,
-        isButtonToUploadEnabled: _isButtonToUploadEnabled,
-      ));
+    logger.d('Sufficient Balance To Pay With AR: $_sufficientArBalance');
+    if (_uploadMethod == UploadMethod.ar && _sufficientArBalance) {
+      logger.d('Enabling button for AR payment method');
+      _isButtonToUploadEnabled = true;
+    } else if (_uploadMethod == UploadMethod.turbo &&
+        _isTurboUploadPossible &&
+        _sufficentCreditsBalance) {
+      logger.d('Enabling button for Turbo payment method');
+      _isButtonToUploadEnabled = true;
+    } else if (_isFreeThanksToTurbo) {
+      logger.d('Enabling button for free upload using Turbo');
+      _isButtonToUploadEnabled = true;
+    } else {
+      logger.d('Disabling button');
     }
   }
 
