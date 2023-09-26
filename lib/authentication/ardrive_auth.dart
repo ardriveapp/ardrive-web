@@ -216,29 +216,30 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
     try {
       if (_currentUser != null) {
-        if (currentUser.profileType == ProfileType.arConnect) {
-          try {
-            await _arConnectService.disconnect();
-          } catch (e) {
-            logger.e('Failed to disconnect from ArConnect', e);
-          }
-        }
-
-        _secureKeyValueStore.remove('password');
-        _secureKeyValueStore.remove('biometricEnabled');
-
+        await _secureKeyValueStore.remove('password');
+        await _secureKeyValueStore.remove('biometricEnabled');
         currentUser = null;
         firstPrivateDriveTxId = null;
-
+        await _disconnectFromArConnecct();
         _userStreamController.add(null);
       }
 
       await _databaseHelpers.deleteAllTables();
-
       (await _metadataCache).clear();
     } catch (e) {
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');
+    }
+  }
+
+  Future<void> _disconnectFromArConnecct() async {
+    final hasArConnectPermissions = await _arConnectService.checkPermissions();
+    if (hasArConnectPermissions) {
+      try {
+        await _arConnectService.disconnect();
+      } catch (e) {
+        logger.e('Failed to disconnect from ArConnect', e);
+      }
     }
   }
 
