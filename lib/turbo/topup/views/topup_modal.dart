@@ -32,7 +32,7 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
   );
 
   final priceEstimator = TurboPriceEstimator(
-    wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+    wallet: context.read<ArDriveAuth>().currentUser.wallet,
     paymentService: context.read<PaymentService>(),
     costCalculator: costCalculator,
   );
@@ -51,7 +51,7 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
     balanceRetriever: balanceRetriever,
     priceEstimator: priceEstimator,
     paymentProvider: turboPaymentProvider,
-    wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+    wallet: context.read<ArDriveAuth>().currentUser.wallet,
     supportedCountriesRetriever: turboSupportedCountriesRetriever,
   );
 

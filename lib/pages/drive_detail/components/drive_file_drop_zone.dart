@@ -128,7 +128,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
                   ),
                   turboUploadCostCalculator: TurboUploadCostCalculator(
                     priceEstimator: TurboPriceEstimator(
-                      wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+                      wallet: context.read<ArDriveAuth>().currentUser.wallet,
                       costCalculator: TurboCostCalculator(
                         paymentService: context.read<PaymentService>(),
                       ),
