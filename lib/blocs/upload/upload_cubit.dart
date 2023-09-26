@@ -80,6 +80,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   List<UploadFile> files = [];
+  IOFolder? folder;
   Map<String, WebFolder> foldersByPath = {};
 
   /// Map of conflicting file ids keyed by their file names.
@@ -100,6 +101,7 @@ class UploadCubit extends Cubit<UploadState> {
     required UploadFileChecker uploadFileChecker,
     required ArDriveAuth auth,
     required ArDriveUploadPreparationManager arDriveUploadManager,
+    this.folder,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
         _uploadFileChecker = uploadFileChecker,
@@ -453,6 +455,12 @@ class UploadCubit extends Cubit<UploadState> {
 
     // UPLOAD USING THE NEW UPLOADER
     if (_uploadMethod == UploadMethod.turbo && !uploadFolders) {
+      // TODO: implement upload folders using the new uploader
+      // if (uploadFolders) {
+      //   logger.i('Uploading folder using the new uploader');
+      //   await _uploadFolderUsingArDriveUploader();
+      //   return;
+      // }
       await _uploadUsingArDriveUploader();
       return;
     }
@@ -478,6 +486,71 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
+  // TODO: Finish the implementation for uploading folders.
+  // It should be addressed after the new uploader is implemented and tested.
+  Future<void> _uploadFolderUsingArDriveUploader() async {
+    final ardriveUploader = ArDriveUploader(
+      turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
+      metadataGenerator: ARFSUploadMetadataGenerator(
+        tagsGenerator: ARFSTagsGenetator(
+          appInfoServices: AppInfoServices(),
+        ),
+      ),
+    );
+
+    List<UploadProgress> filesWithProgress = [];
+
+    if (state is UploadInProgressUsingNewUploader) {
+      emit(
+        UploadInProgressUsingNewUploader(
+          uploadProgressList: filesWithProgress,
+          totalProgress: (state as UploadInProgressUsingNewUploader)
+              .totalProgress, // TODO: calcualte total progress
+        ),
+      );
+    } else {
+      emit(
+        UploadInProgressUsingNewUploader(
+          uploadProgressList: filesWithProgress,
+          totalProgress: 0, // TODO: calcualte total progress
+        ),
+      );
+    }
+
+    final private = _targetDrive.isPrivate;
+    final driveKey = private
+        ? await _driveDao.getDriveKey(
+            _targetDrive.id, _auth.currentUser!.cipherKey)
+        : null;
+
+    final uploadController = await ardriveUploader.uploadEntity(
+      entity: folder!,
+      args: ARFSUploadMetadataArgs(
+        isPrivate: _targetDrive.isPrivate,
+        driveId: _targetDrive.id,
+        parentFolderId: _targetFolder.id,
+        privacy: _targetDrive.isPrivate ? 'private' : 'public',
+      ),
+      wallet: _auth.currentUser!.wallet,
+      driveKey: driveKey,
+    );
+
+    // If the progress is not available, it won't never be called.
+    uploadController.onProgressChange((progress) {
+      emit(
+        UploadInProgressUsingNewUploader(
+          totalProgress: progress.progress,
+          equatableBust: UniqueKey(),
+          uploadProgressList: [progress],
+        ),
+      );
+    });
+
+    uploadController.onDone((metadata) async {
+      // TODO: Implement the insertion of folder and files into the database.
+    });
+  }
+
   Future<void> _uploadUsingArDriveUploader() async {
     final ardriveUploader = ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
@@ -490,26 +563,9 @@ class UploadCubit extends Cubit<UploadState> {
 
     double totalProgress = 0;
 
-    List<UploadFileWithProgress> filesWithProgress = [];
+    List<UploadProgress> filesWithProgress = [];
 
     for (int i = 0; i < files.length; i++) {
-      if (state is UploadInProgressUsingNewUploader) {
-        emit(
-          UploadInProgressUsingNewUploader(
-            filesWithProgress: filesWithProgress,
-            totalProgress: (state as UploadInProgressUsingNewUploader)
-                .totalProgress, // TODO: calcualte total progress
-          ),
-        );
-      } else {
-        emit(
-          UploadInProgressUsingNewUploader(
-            filesWithProgress: filesWithProgress,
-            totalProgress: 0, // TODO: calcualte total progress
-          ),
-        );
-      }
-
       final private = _targetDrive.isPrivate;
       final driveKey = private
           ? await _driveDao.getDriveKey(
@@ -528,36 +584,28 @@ class UploadCubit extends Cubit<UploadState> {
         driveKey: driveKey,
       );
 
+      // File to upload
       final file = files[i];
 
-      final fileWithProgress = UploadFileWithProgress(
-        file: file,
-        isProgressAvailable: uploadController.isPossibleGetProgress,
-      );
-
-      filesWithProgress.add(fileWithProgress);
-
-      // If the progress is not available, it won't never be called.
       uploadController.onProgressChange((progress) {
-        // if (progress.status == UploadStatus.preparationDone) {
-        //   totalSize += progress.totalSize;
-        // }
-
-        logger
-            .d('Progress: ${progress.progress} and status ${progress.status}');
-
-        filesWithProgress[i] = fileWithProgress.copyWith(
-          progress: progress,
-          isProgressAvailable: progress.progressAvailable,
-        );
-
-        totalProgress = calculateTotalPercentage(
-            filesWithProgress.map((e) => e.progress!).toList());
+        if (filesWithProgress.length < i + 1) {
+          filesWithProgress.add(UploadProgress(
+            progress: 0,
+            totalSize: progress.totalSize,
+            task: progress.task,
+          ));
+        } else {
+          filesWithProgress[i] = UploadProgress(
+            progress: progress.progress,
+            totalSize: progress.totalSize,
+            task: progress.task,
+          );
+        }
 
         emit(
           UploadInProgressUsingNewUploader(
-            filesWithProgress: filesWithProgress,
-            totalProgress: totalProgress,
+            uploadProgressList: filesWithProgress,
+            totalProgress: progress.progress,
             equatableBust: UniqueKey(),
           ),
         );
@@ -600,7 +648,7 @@ class UploadCubit extends Cubit<UploadState> {
 
         if (!uploadController.isPossibleGetProgress) {
           // adds the 100% for this file.
-          totalProgress += 1 / files.length;
+          totalProgress += 1 / filesWithProgress.length;
         }
 
         if (totalProgress == 1) {
@@ -739,16 +787,16 @@ class UploadCubit extends Cubit<UploadState> {
   }
 }
 
-double calculateTotalPercentage(List<ArDriveUploadProgress> progressList) {
-  double totalProgress = 0;
-  int totalSize = 0;
+// double calculateTotalPercentage(List<UploadProgress> progressList) {
+//   double totalProgress = 0;
+//   int totalSize = 0;
 
-  for (var item in progressList) {
-    totalProgress += item.progress * item.totalSize;
-    totalSize += item.totalSize;
-  }
+//   for (var item in progressList) {
+//     totalProgress += item.progress * item.totalSize;
+//     totalSize += item.totalSize;
+//   }
 
-  if (totalSize == 0) return 0.0; // Avoid division by zero
+//   if (totalSize == 0) return 0.0; // Avoid division by zero
 
-  return totalProgress / totalSize;
-}
+//   return totalProgress / totalSize;
+// }
