@@ -135,7 +135,6 @@ class UploadForm extends StatefulWidget {
 
 class _UploadFormState extends State<UploadForm> {
   final _scrollController = ScrollController();
-  UploadMethod? _uploadMethod;
 
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
@@ -337,8 +336,6 @@ class _UploadFormState extends State<UploadForm> {
                     : 0;
             final numberOfV2Files =
                 state.uploadPlanForAR.fileV2UploadHandles.length;
-
-            _uploadMethod = state.uploadMethod;
 
             logger.d(
               ' is button to upload enabled: ${state.isButtonToUploadEnabled}',
