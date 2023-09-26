@@ -914,7 +914,7 @@ class _UploadFormState extends State<UploadForm> {
 
                     if (progress.totalSize > 0 && task.dataItem != null) {
                       progressText =
-                          '${filesize(((task.dataItem!.dataItemResult.dataItemSize) * task.progress).ceil())}/${filesize(task.dataItem!.dataItemResult.dataItemSize)}';
+                          '${filesize(((task.dataItem!.dataItemSize) * task.progress).ceil())}/${filesize(task.dataItem!.dataItemSize)}';
                     } else {
                       progressText =
                           'Your upload is in progress, but for large files the progress it not available. Please wait...';
@@ -922,8 +922,8 @@ class _UploadFormState extends State<UploadForm> {
 
                     return Column(
                       children: [
-                        if (task.dataItem != null)
-                          for (var file in task.dataItem!.contents)
+                        if (task.content != null)
+                          for (var file in task.content!)
                             ListTile(
                               contentPadding: EdgeInsets.zero,
                               title: Column(

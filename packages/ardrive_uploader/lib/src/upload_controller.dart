@@ -1,41 +1,32 @@
 import 'dart:async';
 
+import 'package:arweave/arweave.dart';
 import 'package:uuid/uuid.dart';
 
 import '../ardrive_uploader.dart';
 
-abstract class UploadTask {
+abstract class _UploadTask<T> {
   abstract final String id;
-  abstract final DataItemResultWithContents? dataItem;
+  abstract final DataItemResult? dataItem;
+  abstract final List<ARFSUploadMetadata>? content;
   abstract double progress;
   abstract bool isProgressAvailable;
   abstract UploadStatus status;
 
-  factory UploadTask({
-    DataItemResultWithContents? dataItemResult,
-    bool isProgressAvailable = true,
-    UploadStatus status = UploadStatus.notStarted,
-  }) {
-    return _UploadTask(
-      dataItemResult,
-      isProgressAvailable: isProgressAvailable,
-      status,
-      const Uuid().v4(),
-    );
-  }
-
-  // copyWith
   UploadTask copyWith({
-    DataItemResultWithContents? dataItem,
+    DataItemResult? dataItem,
     double? progress,
     bool? isProgressAvailable,
     UploadStatus? status,
   });
 }
 
-class _UploadTask implements UploadTask {
+class UploadTask implements _UploadTask<ARFSUploadMetadata> {
   @override
-  final DataItemResultWithContents? dataItem;
+  final DataItemResult? dataItem;
+
+  @override
+  final List<ARFSUploadMetadata>? content;
 
   @override
   double progress = 0;
@@ -46,29 +37,32 @@ class _UploadTask implements UploadTask {
   @override
   bool isProgressAvailable = true;
 
-  _UploadTask(
+  UploadTask({
     this.dataItem,
-    this.status,
-    this.id, {
     this.isProgressAvailable = true,
-  });
+    this.status = UploadStatus.notStarted,
+    this.content,
+    String? id,
+  }) : id = id ?? const Uuid().v4();
 
   @override
   UploadStatus status;
 
   @override
   UploadTask copyWith({
-    DataItemResultWithContents? dataItem,
+    DataItemResult? dataItem,
     double? progress,
     bool? isProgressAvailable,
     UploadStatus? status,
     String? id,
+    List<ARFSUploadMetadata>? content,
   }) {
-    return _UploadTask(
-      dataItem ?? this.dataItem,
-      status ?? this.status,
-      id ?? this.id,
+    return UploadTask(
+      dataItem: dataItem ?? this.dataItem,
+      content: content ?? this.content,
+      id: id ?? this.id,
       isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
+      status: status ?? this.status,
     );
   }
 }
@@ -236,8 +230,7 @@ class _UploadController implements UploadController {
       }
 
       if (task.isProgressAvailable) {
-        totalProgress +=
-            (task.progress * task.dataItem!.dataItemResult.dataItemSize);
+        totalProgress += (task.progress * task.dataItem!.dataItemSize);
       }
     }
 
@@ -249,7 +242,7 @@ class _UploadController implements UploadController {
 
     for (var task in tasks) {
       if (task.dataItem != null) {
-        totalSize += task.dataItem!.dataItemResult.dataItemSize;
+        totalSize += task.dataItem!.dataItemSize;
       }
     }
 

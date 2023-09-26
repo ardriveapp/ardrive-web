@@ -61,11 +61,11 @@ class UploadProgress {
     }
 
     return task.map((e) {
-      if (e.dataItem == null) {
+      if (e.content == null) {
         return 0;
       }
 
-      return e.dataItem!.contents.length;
+      return e.content!.length;
     }).reduce((value, element) => value + element);
   }
 }
@@ -154,9 +154,8 @@ class _ArDriveUploader implements ArDriveUploader {
       StreamController<UploadProgress>(),
     );
 
-    var uploadTask = UploadTask(
-      status: UploadStatus.notStarted,
-    );
+    var uploadTask =
+        UploadTask(status: UploadStatus.notStarted, content: [metadata]);
 
     uploadController.updateProgress(task: uploadTask);
 
@@ -186,10 +185,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
     createDataBundle.then((bdi) {
       uploadTask = uploadTask.copyWith(
-        dataItem: DataItemResultWithContents(
-          contents: [metadata],
-          dataItemResult: bdi,
-        ),
+        dataItem: bdi,
         status: UploadStatus.preparationDone,
       );
 
@@ -246,7 +242,10 @@ class _ArDriveUploader implements ArDriveUploader {
       print('BDIs created');
 
       for (var dataItem in dataItems) {
-        final uploadTask = UploadTask(dataItemResult: dataItem);
+        final uploadTask = UploadTask(
+          dataItem: dataItem.dataItemResult,
+          content: dataItem.contents,
+        );
 
         print('BDI id: ${dataItem.dataItemResult.id}');
 
@@ -363,7 +362,9 @@ class _ArDriveUploader implements ArDriveUploader {
       args,
     );
 
+    // adds the metadata of the file to the upload task
     uploadTask = uploadTask.copyWith(
+      content: [metadata],
       status: UploadStatus.bundling,
     );
 
@@ -393,10 +394,7 @@ class _ArDriveUploader implements ArDriveUploader {
     final bdi = await createDataBundle;
 
     uploadTask = uploadTask.copyWith(
-      dataItem: DataItemResultWithContents(
-        contents: [metadata],
-        dataItemResult: bdi,
-      ),
+      dataItem: bdi,
       status: UploadStatus.preparationDone,
     );
 

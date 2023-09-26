@@ -64,8 +64,8 @@ class TurboStreamedUpload implements StreamedUpload<DataItemResult, dynamic> {
               'x-address': publicKey,
               'x-signature': signature,
             },
-            dataItem: handle.dataItem!.dataItemResult,
-            size: handle.dataItem!.dataItemResult.dataItemSize,
+            dataItem: handle.dataItem!,
+            size: handle.dataItem!.dataItemSize,
             onSendProgress: (progress) {
               handle.progress = progress;
               controller.updateProgress(task: handle);

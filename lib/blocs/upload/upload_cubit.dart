@@ -593,51 +593,53 @@ class UploadCubit extends Cubit<UploadState> {
       // TODO: abstract to the database interface.
       // TODO: improve API for finishing a file upload.
       for (var task in tasks) {
-        final metadatas = task.dataItem!.contents;
+        final metadatas = task.content;
 
-        for (var metadata in metadatas) {
-          if (metadata is ARFSFileUploadMetadata) {
-            final fileMetadata = metadata;
+        if (metadatas != null) {
+          for (var metadata in metadatas) {
+            if (metadata is ARFSFileUploadMetadata) {
+              final fileMetadata = metadata;
 
-            final revisionAction =
-                conflictingFiles.containsKey(fileMetadata.name)
-                    ? RevisionAction.uploadNewVersion
-                    : RevisionAction.create;
+              final revisionAction =
+                  conflictingFiles.containsKey(fileMetadata.name)
+                      ? RevisionAction.uploadNewVersion
+                      : RevisionAction.create;
 
-            final entity = FileEntity(
-              dataContentType: fileMetadata.dataContentType,
-              dataTxId: fileMetadata.dataTxId,
-              driveId: fileMetadata.driveId,
-              id: fileMetadata.id,
-              lastModifiedDate: fileMetadata.lastModifiedDate,
-              name: fileMetadata.name,
-              parentFolderId: fileMetadata.parentFolderId,
-              size: fileMetadata.size,
-              // TODO: pinnedDataOwnerAddress
-            );
+              final entity = FileEntity(
+                dataContentType: fileMetadata.dataContentType,
+                dataTxId: fileMetadata.dataTxId,
+                driveId: fileMetadata.driveId,
+                id: fileMetadata.id,
+                lastModifiedDate: fileMetadata.lastModifiedDate,
+                name: fileMetadata.name,
+                parentFolderId: fileMetadata.parentFolderId,
+                size: fileMetadata.size,
+                // TODO: pinnedDataOwnerAddress
+              );
 
-            if (fileMetadata.metadataTxId == null) {
-              logger.e('Metadata tx id is null');
-              throw Exception('Metadata tx id is null');
+              if (fileMetadata.metadataTxId == null) {
+                logger.e('Metadata tx id is null');
+                throw Exception('Metadata tx id is null');
+              }
+
+              entity.txId = fileMetadata.metadataTxId!;
+
+              await _driveDao.transaction(() async {
+                // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
+                // TODO: Changed this logic. PLEASE REVIEW IT.
+                final filePath = '${_targetFolder.path}/${metadata.name}';
+                await _driveDao.writeFileEntity(entity, filePath);
+                await _driveDao.insertFileRevision(
+                  entity.toRevisionCompanion(
+                    performedAction: revisionAction,
+                  ),
+                );
+              });
             }
 
-            entity.txId = fileMetadata.metadataTxId!;
-
-            await _driveDao.transaction(() async {
-              // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
-              // TODO: Changed this logic. PLEASE REVIEW IT.
-              final filePath = '${_targetFolder.path}/${metadata.name}';
-              await _driveDao.writeFileEntity(entity, filePath);
-              await _driveDao.insertFileRevision(
-                entity.toRevisionCompanion(
-                  performedAction: revisionAction,
-                ),
-              );
-            });
+            // all files are uploaded
+            emit(UploadComplete());
           }
-
-          // all files are uploaded
-          emit(UploadComplete());
         }
       }
     });
