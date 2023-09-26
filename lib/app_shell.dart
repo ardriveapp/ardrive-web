@@ -32,8 +32,8 @@ class AppShellState extends State<AppShell> {
   bool _showProfileOverlay = false;
   bool _showWalletSwitchDialog = true;
   @override
-  Widget build(BuildContext context) => BlocBuilder<ProfileCubit, ProfileState>(
-        builder: (context, state) {
+  Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
+        builder: (context, _) {
           onArConnectWalletSwitch(() {
             context
                 .read<ProfileCubit>()
