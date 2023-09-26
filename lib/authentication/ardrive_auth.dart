@@ -26,7 +26,7 @@ abstract class ArDriveAuth {
   Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
   Future<void> logout();
-  User? get currentUser;
+  User get currentUser;
   Stream<User?> onAuthStateChanged();
   Future<bool> isBiometricsEnabled();
 

@@ -77,7 +77,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleUnlockUserWithBiometricsEvent(
-      UnLockWithBiometrics event, Emitter<LoginState> emit) async {
+    UnLockWithBiometrics event,
+    Emitter<LoginState> emit,
+  ) async {
     final previousState = state;
 
     try {
@@ -107,7 +109,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleAddWalletFileEvent(
-      AddWalletFile event, Emitter<LoginState> emit) async {
+    AddWalletFile event,
+    Emitter<LoginState> emit,
+  ) async {
     final previousState = state;
 
     try {
@@ -130,7 +134,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleLoginWithPasswordEvent(
-      LoginWithPassword event, Emitter<LoginState> emit) async {
+    LoginWithPassword event,
+    Emitter<LoginState> emit,
+  ) async {
     final previousState = state;
 
     try {
@@ -150,7 +156,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleCheckIfUserIsLoggedInEvent(
-      CheckIfUserIsLoggedIn event, Emitter<LoginState> emit) async {
+    CheckIfUserIsLoggedIn event,
+    Emitter<LoginState> emit,
+  ) async {
     emit(LoginLoading());
 
     if (await _arDriveAuth.isUserLoggedIn()) {
@@ -172,7 +180,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleUnlockUserWithPasswordEvent(
-      UnlockUserWithPassword event, Emitter<LoginState> emit) async {
+    UnlockUserWithPassword event,
+    Emitter<LoginState> emit,
+  ) async {
     final previousState = state;
 
     emit(LoginLoading());
@@ -192,7 +202,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleCreatePasswordEvent(
-      CreatePassword event, Emitter<LoginState> emit) async {
+    CreatePassword event,
+    Emitter<LoginState> emit,
+  ) async {
     final previousState = state;
 
     emit(LoginLoading());
@@ -212,7 +224,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleAddWalletFromArConnectEvent(
-      AddWalletFromArConnect event, Emitter<LoginState> emit) async {
+    AddWalletFromArConnect event,
+    Emitter<LoginState> emit,
+  ) async {
     final previousState = state;
 
     try {
@@ -343,7 +357,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleEnterSeedPhrase(
-      EnterSeedPhrase event, Emitter<LoginState> emit) async {
+    EnterSeedPhrase event,
+    Emitter<LoginState> emit,
+  ) async {
     emit(LoginEnterSeedPhrase());
   }
 
@@ -358,7 +374,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleAddWalletFromCompleterEvent(
-      AddWalletFromCompleter event, Emitter<LoginState> emit) async {
+    AddWalletFromCompleter event,
+    Emitter<LoginState> emit,
+  ) async {
     profileType = ProfileType.json;
 
     Completer<Wallet> completer = event.walletCompleter;
@@ -380,14 +398,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _handleCreateNewWalletEvent(
-      CreateNewWallet event, Emitter<LoginState> emit) async {
+    CreateNewWallet event,
+    Emitter<LoginState> emit,
+  ) async {
     profileType = ProfileType.json;
     final mnemonic = bip39.generateMnemonic();
     emit(LoginCreateNewWallet(mnemonic));
   }
 
   Future<void> _handleCompleteWalletGenerationEvent(
-      CompleteWalletGeneration event, Emitter<LoginState> emit) async {
+    CompleteWalletGeneration event,
+    Emitter<LoginState> emit,
+  ) async {
     final previousState = state;
     final wallet = event.wallet;
 

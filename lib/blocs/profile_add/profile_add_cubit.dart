@@ -52,7 +52,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     return arconnect.isExtensionPresent();
   }
 
-  ProfileType? getProfileType() => _profileType;
+  ProfileType getProfileType() => _profileType;
 
   Future<void> promptForWallet() async {
     if (_profileType == ProfileType.arConnect) {
