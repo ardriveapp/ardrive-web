@@ -209,6 +209,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
 
       metadata.entityMetadataTags
           .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv)));
+      metadata.entityMetadataTags.add(Tag(EntityTag.cipher, Cipher.aes256ctr));
     } else {
       print('DriveKey is null. Skipping metadata encryption.');
       metadataGenerator = () => Stream.fromIterable(metadataBytes);
@@ -349,8 +350,11 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
 
         metadataStreamGenerator = encryptMetadataStreamResult.streamGenerator;
 
+        // TODO: REVIEW
         metadata.entityMetadataTags.add(
             Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv)));
+        metadata.entityMetadataTags
+            .add(Tag(EntityTag.cipher, Cipher.aes256ctr));
       } else {
         print('DriveKey is null. Skipping metadata encryption.');
         metadataStreamGenerator = () => Stream.fromIterable(metadataBytes);
@@ -517,6 +521,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
 
       metadata.entityMetadataTags
           .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv)));
+      metadata.entityMetadataTags.add(Tag(EntityTag.cipher, Cipher.aes256ctr));
     } else {
       print('DriveKey is null. Skipping metadata encryption.');
       metadataStreamGenerator = () => Stream.fromIterable(metadataBytes);
@@ -630,7 +635,9 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     final tags = metadata.dataItemTags;
 
     if (cipherIv != null) {
+      // TODO: REVIEW THIS
       tags.add(Tag(EntityTag.cipher, encodeBytesToBase64(cipherIv)));
+      tags.add(Tag(EntityTag.cipherIv, Cipher.aes256ctr));
     }
 
     final dataItemFile = DataItemFile(
