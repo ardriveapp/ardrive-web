@@ -3,6 +3,7 @@ import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 abstract class StreamedUpload<T, R> {
@@ -47,11 +48,13 @@ class TurboStreamedUpload implements StreamedUpload<DataItemResult, dynamic> {
       },
     );
 
-    print(
-        'Sending request to turbo. Is possible get progress: ${controller.isPossibleGetProgress}');
-
     handle = handle.copyWith(status: UploadStatus.inProgress);
     controller.updateProgress(task: handle);
+
+    if (kIsWeb && handle.dataItem!.dataItemSize > 1024 * 1024 * 500) {
+      handle.isProgressAvailable = false;
+      controller.updateProgress(task: handle);
+    }
 
     // TODO: set if its possible to get the progress. Check the turbo web impl
 
@@ -77,6 +80,11 @@ class TurboStreamedUpload implements StreamedUpload<DataItemResult, dynamic> {
             })
         .then((value) async {
       print('Turbo response: ${value.statusCode}');
+
+      if (!handle.isProgressAvailable) {
+        print('Progress is not available, setting to 1');
+        handle.progress = 1;
+      }
 
       controller.updateProgress(
         task: handle,

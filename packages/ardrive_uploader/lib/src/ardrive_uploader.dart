@@ -294,58 +294,75 @@ class _ArDriveUploader implements ArDriveUploader {
     required UploadController controller,
   }) async {
     List<Future<void>> activeUploads = [];
-    int totalSize = 0; // size accumulator
+    List<ARFSUploadMetadata> contents = [];
+    List<UploadTask> tasks = [];
+    int totalSize = 0;
+
+    for (var f in files) {
+      final metadata = await _metadataGenerator.generateMetadata(
+        f.$2,
+        f.$1,
+      );
+
+      final uploadTask = UploadTask(
+        status: UploadStatus.notStarted,
+        content: [metadata],
+      );
+
+      tasks.add(uploadTask);
+
+      controller.updateProgress(task: uploadTask);
+
+      contents.add(metadata);
+    }
 
     for (int i = 0; i < files.length; i++) {
       int fileSize = await files[i].$2.length;
 
-      if (fileSize >= 500 * 1024 * 1024) {
-        // File size is >= 500MiB
+      while (activeUploads.length >= 25 ||
+          totalSize + fileSize >= 500 * 1024 * 1024) {
+        await Future.any(activeUploads);
 
-        // Wait for ongoing uploads to complete
-        await Future.wait(activeUploads);
-        totalSize = 0; // Reset the accumulator
-        activeUploads.clear(); // Clear the active uploads
-      } else {
-        while (activeUploads.length >= 25 ||
-            totalSize + fileSize >= 500 * 1024 * 1024) {
-          await Future.any(activeUploads); // Wait for at least one to complete
-          // Recalculate totalSize and remove completed futures
-          totalSize = 0;
-          var remainingFutures = <Future<void>>[];
-          for (var future in activeUploads) {
-            remainingFutures.add(future.whenComplete(() {
-              totalSize -= fileSize; // Subtract the size of the completed file
-              remainingFutures.remove(future);
-            }));
-            // Add the size of the corresponding file to totalSize
-            // This part will depend on how you keep track of file sizes
-          }
-          activeUploads = remainingFutures;
+        // Remove completed uploads and update totalSize
+        int recalculatedSize = 0;
+        List<Future<void>> ongoingUploads = [];
+
+        for (var f in activeUploads) {
+          // You need to figure out how to get the file size for the ongoing upload here
+          // Add its size to recalculatedSize
+          int ongoingFileSize = await files[i].$2.length;
+          recalculatedSize += ongoingFileSize;
+
+          ongoingUploads.add(f);
         }
-        totalSize += fileSize; // Add to the accumulator
+
+        activeUploads = ongoingUploads;
+        totalSize = recalculatedSize;
       }
 
-      // Existing logic to start upload
-      late Future<void> uploadFuture;
+      totalSize += fileSize;
 
-      uploadFuture = _uploadSingleFile(
+      Future<void> uploadFuture = _uploadSingleFile(
         file: files[i].$2,
+        uploadController: controller,
         wallet: wallet,
         driveKey: driveKey,
-        uploadController: controller,
-        uploadTask: UploadTask(
-          status: UploadStatus.notStarted,
-        ),
-        args: files[i].$1,
-      ).then((value) {
-        // activeUploads.remove(uploadFuture);
+        metadata: contents[i],
+        uploadTask: tasks[i],
+      );
+
+      uploadFuture.then((_) {
+        activeUploads.remove(uploadFuture);
+        totalSize -= fileSize;
+      }).catchError((error) {
+        activeUploads.remove(uploadFuture);
+        totalSize -= fileSize;
+        // TODO: Handle error
       });
 
       activeUploads.add(uploadFuture);
     }
 
-    // Wait for any remaining uploads to complete
     await Future.wait(activeUploads);
   }
 
@@ -355,19 +372,8 @@ class _ArDriveUploader implements ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadTask uploadTask,
-    ARFSUploadMetadataArgs? args,
+    required ARFSUploadMetadata metadata,
   }) async {
-    final metadata = await _metadataGenerator.generateMetadata(
-      file,
-      args,
-    );
-
-    // adds the metadata of the file to the upload task
-    uploadTask = uploadTask.copyWith(
-      content: [metadata],
-      status: UploadStatus.bundling,
-    );
-
     final createDataBundle = _dataBundler.createDataBundle(
       file: file,
       metadata: metadata,

@@ -576,7 +576,24 @@ class UploadCubit extends Cubit<UploadState> {
       driveKey: driveKey,
     );
 
+    List<UploadTask> completedTasks = [];
+
     uploadController.onProgressChange((progress) {
+      final newCompletedTasks = progress.task.where(
+        (element) =>
+            element.status == UploadStatus.complete &&
+            !completedTasks.contains(element),
+      );
+
+      for (var element in newCompletedTasks) {
+        completedTasks.add(element);
+        // TODO: Save as the file is finished the upload
+        // _saveEntityOnDB(element);
+        for (var metadata in element.content!) {
+          logger.d(metadata.metadataTxId ?? 'METADATA IS NULL');
+        }
+      }
+
       emit(
         UploadInProgressUsingNewUploader(
           progress: progress,
@@ -587,62 +604,64 @@ class UploadCubit extends Cubit<UploadState> {
     });
 
     uploadController.onDone((tasks) async {
-      logger.d(tasks.toString());
-      unawaited(_profileCubit.refreshBalance());
-      // Single file only
-      // TODO: abstract to the database interface.
-      // TODO: improve API for finishing a file upload.
       for (var task in tasks) {
-        final metadatas = task.content;
-
-        if (metadatas != null) {
-          for (var metadata in metadatas) {
-            if (metadata is ARFSFileUploadMetadata) {
-              final fileMetadata = metadata;
-
-              final revisionAction =
-                  conflictingFiles.containsKey(fileMetadata.name)
-                      ? RevisionAction.uploadNewVersion
-                      : RevisionAction.create;
-
-              final entity = FileEntity(
-                dataContentType: fileMetadata.dataContentType,
-                dataTxId: fileMetadata.dataTxId,
-                driveId: fileMetadata.driveId,
-                id: fileMetadata.id,
-                lastModifiedDate: fileMetadata.lastModifiedDate,
-                name: fileMetadata.name,
-                parentFolderId: fileMetadata.parentFolderId,
-                size: fileMetadata.size,
-                // TODO: pinnedDataOwnerAddress
-              );
-
-              if (fileMetadata.metadataTxId == null) {
-                logger.e('Metadata tx id is null');
-                throw Exception('Metadata tx id is null');
-              }
-
-              entity.txId = fileMetadata.metadataTxId!;
-
-              await _driveDao.transaction(() async {
-                // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
-                // TODO: Changed this logic. PLEASE REVIEW IT.
-                final filePath = '${_targetFolder.path}/${metadata.name}';
-                await _driveDao.writeFileEntity(entity, filePath);
-                await _driveDao.insertFileRevision(
-                  entity.toRevisionCompanion(
-                    performedAction: revisionAction,
-                  ),
-                );
-              });
-            }
-
-            // all files are uploaded
-            emit(UploadComplete());
-          }
-        }
+        unawaited(_saveEntityOnDB(task));
       }
     });
+  }
+
+  Future _saveEntityOnDB(UploadTask task) async {
+    unawaited(_profileCubit.refreshBalance());
+    // Single file only
+    // TODO: abstract to the database interface.
+    // TODO: improve API for finishing a file upload.
+    final metadatas = task.content;
+
+    if (metadatas != null) {
+      for (var metadata in metadatas) {
+        if (metadata is ARFSFileUploadMetadata) {
+          final fileMetadata = metadata;
+
+          final revisionAction = conflictingFiles.containsKey(fileMetadata.name)
+              ? RevisionAction.uploadNewVersion
+              : RevisionAction.create;
+
+          final entity = FileEntity(
+            dataContentType: fileMetadata.dataContentType,
+            dataTxId: fileMetadata.dataTxId,
+            driveId: fileMetadata.driveId,
+            id: fileMetadata.id,
+            lastModifiedDate: fileMetadata.lastModifiedDate,
+            name: fileMetadata.name,
+            parentFolderId: fileMetadata.parentFolderId,
+            size: fileMetadata.size,
+            // TODO: pinnedDataOwnerAddress
+          );
+
+          if (fileMetadata.metadataTxId == null) {
+            logger.e('Metadata tx id is null');
+            throw Exception('Metadata tx id is null');
+          }
+
+          entity.txId = fileMetadata.metadataTxId!;
+
+          await _driveDao.transaction(() async {
+            // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
+            // TODO: Changed this logic. PLEASE REVIEW IT.
+            final filePath = '${_targetFolder.path}/${metadata.name}';
+            await _driveDao.writeFileEntity(entity, filePath);
+            await _driveDao.insertFileRevision(
+              entity.toRevisionCompanion(
+                performedAction: revisionAction,
+              ),
+            );
+          });
+        }
+
+        // all files are uploaded
+        emit(UploadComplete());
+      }
+    }
   }
 
   Future<void> skipLargeFilesAndCheckForConflicts() async {

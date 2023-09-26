@@ -82,9 +82,6 @@ abstract class UploadController {
   });
   void onProgressChange(Function(UploadProgress progress) callback);
 
-  bool get isPossibleGetProgress;
-  set isPossibleGetProgress(bool value);
-
   factory UploadController(
     StreamController<UploadProgress> progressStream,
   ) {
@@ -211,30 +208,28 @@ class _UploadController implements UploadController {
   };
 
   @override
-  bool get isPossibleGetProgress => _isPossibleGetProgress;
-
-  @override
-  set isPossibleGetProgress(bool value) => _isPossibleGetProgress = value;
-
-  bool _isPossibleGetProgress = true;
-
-  @override
   final List<UploadTask> tasks = [];
 
+  // CALCULATE BASED ON TOTAL SIZE NOT ONLY ON THE NUMBER OF TASKS
   double calculateTotalProgress(List<UploadTask> tasks) {
-    double totalProgress = 0.0;
+    // double totalProgress = 0.0;
 
-    for (var task in tasks) {
-      if (task.dataItem == null) {
-        continue;
-      }
+    // for (var task in tasks) {
+    //   if (task.dataItem == null) {
+    //     totalProgress += 0;
+    //     continue;
+    //   }
 
-      if (task.isProgressAvailable) {
-        totalProgress += (task.progress * task.dataItem!.dataItemSize);
-      }
-    }
+    //   if (task.isProgressAvailable) {
+    //     totalProgress += (task.progress * task.dataItem!.dataItemSize);
+    //   }
+    // }
 
-    return (totalSize(tasks) == 0) ? 0.0 : totalProgress / totalSize(tasks);
+    // return (totalSize(tasks) == 0) ? 0.0 : totalProgress / totalSize(tasks);
+    return tasks
+            .map((e) => e.progress)
+            .reduce((value, element) => value + element) /
+        tasks.length;
   }
 
   int totalSize(List<UploadTask> tasks) {

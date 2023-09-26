@@ -912,7 +912,7 @@ class _UploadFormState extends State<UploadForm> {
                         break;
                     }
 
-                    if (progress.totalSize > 0 && task.dataItem != null) {
+                    if (task.isProgressAvailable && task.dataItem != null) {
                       progressText =
                           '${filesize(((task.dataItem!.dataItemSize) * task.progress).ceil())}/${filesize(task.dataItem!.dataItemSize)}';
                     } else {
