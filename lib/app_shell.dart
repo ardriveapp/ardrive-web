@@ -38,9 +38,9 @@ class AppShellState extends State<AppShell> {
             context
                 .read<ProfileCubit>()
                 .isCurrentProfileArConnect()
-                .then((isCurrentProdileArConnect) {
+                .then((isCurrentProfileArConnect) {
               if (_showWalletSwitchDialog) {
-                if (isCurrentProdileArConnect) {
+                if (isCurrentProfileArConnect) {
                   showDialog(
                     context: context,
                     builder: (context) => const WalletSwitchDialog(),
