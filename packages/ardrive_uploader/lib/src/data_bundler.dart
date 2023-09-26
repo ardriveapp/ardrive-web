@@ -77,9 +77,9 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       driveKey: driveKey,
     );
 
-    print('Data item generated');
+    // print('Data item generated');
 
-    print('Starting to generate metadata data item');
+    // print('Starting to generate metadata data item');
 
     final metadataDataItem = await _generateMetadataDataItem(
       metadata: metadata,
@@ -89,9 +89,9 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       driveKey: driveKey,
     );
 
-    print('Metadata data item generated');
+    // print('Metadata data item generated');
 
-    print('Starting to generate file data item');
+    // print('Starting to generate file data item');
 
     final fileDataItem = _generateFileDataItem(
       metadata: metadata,
@@ -100,19 +100,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       cipherIv: dataGenerator.$2,
     );
 
-    print('File data item generated');
-
-    for (var tag in metadata.dataItemTags) {
-      print('Data item tag: ${tag.name} - ${tag.value}');
-    }
-
-    for (var tag in metadata.entityMetadataTags) {
-      print('Metadata tag: ${tag.name} - ${tag.value}');
-    }
-
-    final stopwatch = Stopwatch()..start();
-
-    print('Starting to create bundled data item');
+    // print('Starting to create bundled data item');
 
     final createBundledDataItem = createBundledDataItemTaskEither(
       dataItemFiles: [
@@ -131,10 +119,10 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       print(StackTrace.current);
       throw l;
     }, (bdi) async {
-      print('Bundled data item created. ID: ${bdi.id}');
-      print('Bundled data item size: ${bdi.dataItemSize} bytes');
-      print(
-          'The creation of the bundled data item took ${stopwatch.elapsedMilliseconds} ms');
+      // print('Bundled data item created. ID: ${bdi.id}');
+      // print('Bundled data item size: ${bdi.dataItemSize} bytes');
+      // print(
+      //     'The creation of the bundled data item took ${stopwatch.elapsedMilliseconds} ms');
       return bdi;
     });
   }
@@ -146,13 +134,11 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     required Wallet wallet,
     SecretKey? driveKey,
   }) async {
-    final stopwatch = Stopwatch()..start(); // Start timer
-
-    print('Initializing metadata data item generator...');
+    // print('Initializing metadata data item generator...');
 
     Stream<Uint8List> Function() metadataGenerator;
 
-    print('Creating DataItem...');
+    // print('Creating DataItem...');
     final fileDataItemEither = createDataItemTaskEither(
         wallet: wallet,
         dataStream: dataStream,
@@ -170,11 +156,11 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       print(StackTrace.current);
     }, (fileDataItem) {
       dataTxId = fileDataItem.id;
-      print('fileDataItemResult lenght: ${fileDataItem.dataSize} bytes');
-      print('file length: $fileLength bytes');
+      // print('fileDataItemResult lenght: ${fileDataItem.dataSize} bytes');
+      // print('file length: $fileLength bytes');
 
-      print('Data item created. ID: ${fileDataItem.id}');
-      print('Data item size: ${fileDataItem.dataSize} bytes');
+      // print('Data item created. ID: ${fileDataItem.id}');
+      // print('Data item size: ${fileDataItem.dataSize} bytes');
 
       metadata as ARFSFileUploadMetadata;
       metadata.setDataTxId = fileDataItem.id;
@@ -188,7 +174,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
         .map((e) => Uint8List.fromList([e]));
 
     if (driveKey != null) {
-      print('DriveKey is not null. Starting metadata encryption...');
+      // print('DriveKey is not null. Starting metadata encryption...');
 
       final driveKeyData = Uint8List.fromList(await driveKey.extractBytes());
 
@@ -201,7 +187,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
         metadataBytes.length,
       );
 
-      print('Metadata encryption complete');
+      // print('Metadata encryption complete');
 
       final metadataCipherIv = encryptMetadataStreamResult.nonce;
 
@@ -211,7 +197,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
           .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv)));
       metadata.entityMetadataTags.add(Tag(EntityTag.cipher, Cipher.aes256ctr));
     } else {
-      print('DriveKey is null. Skipping metadata encryption.');
+      // print('DriveKey is null. Skipping metadata encryption.');
       metadataGenerator = () => Stream.fromIterable(metadataBytes);
     }
 
@@ -233,12 +219,12 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       print(StackTrace.current);
       throw l;
     }, (metadataDataItem) {
-      print('Metadata data item created. ID: ${metadataDataItem.id}');
+      // print('Metadata data item created. ID: ${metadataDataItem.id}');
       metadata.setMetadataTxId = metadataDataItem.id;
       return metadataDataItem;
     });
 
-    print('Metadata size: ${metadataBytes.length} bytes');
+    // print('Metadata size: ${metadataBytes.length} bytes');
 
     final metadataFile = DataItemFile(
       dataSize: metadataBytes.length,
@@ -248,8 +234,8 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
           .toList(),
     );
 
-    print(
-        'Metadata data item generator complete. Elapsed time: ${stopwatch.elapsedMilliseconds} ms');
+    // print(
+    //     'Metadata data item generator complete. Elapsed time: ${stopwatch.elapsedMilliseconds} ms');
 
     return metadataFile;
   }

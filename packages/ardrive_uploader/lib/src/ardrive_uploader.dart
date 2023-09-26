@@ -35,23 +35,32 @@ enum UploadStatus {
 class UploadProgress {
   final double progress;
   final int totalSize;
+  final int totalUploaded;
   final List<UploadTask> task;
+
+  DateTime? startTime;
 
   UploadProgress({
     required this.progress,
     required this.totalSize,
     required this.task,
+    required this.totalUploaded,
+    this.startTime,
   });
 
   UploadProgress copyWith({
     double? progress,
     int? totalSize,
     List<UploadTask>? task,
+    int? totalUploaded,
+    DateTime? startTime,
   }) {
     return UploadProgress(
+      startTime: startTime ?? this.startTime,
       progress: progress ?? this.progress,
       totalSize: totalSize ?? this.totalSize,
       task: task ?? this.task,
+      totalUploaded: totalUploaded ?? this.totalUploaded,
     );
   }
 
@@ -67,6 +76,42 @@ class UploadProgress {
 
       return e.content!.length;
     }).reduce((value, element) => value + element);
+  }
+
+  int tasksContentLength() {
+    int totalUploaded = 0;
+
+    for (var t in task) {
+      if (t.content != null) {
+        totalUploaded += t.content!.length;
+      }
+    }
+
+    return totalUploaded;
+  }
+
+  int tasksContentCompleted() {
+    int totalUploaded = 0;
+
+    for (var t in task) {
+      if (t.content != null) {
+        if (t.status == UploadStatus.complete) {
+          totalUploaded += t.content!.length;
+        }
+      }
+    }
+
+    return totalUploaded;
+  }
+
+  double calculateUploadSpeed() {
+    if (startTime == null) return 0.0;
+
+    final elapsedTime = DateTime.now().difference(startTime!).inSeconds;
+
+    if (elapsedTime == 0) return 0.0;
+
+    return (totalUploaded / elapsedTime).toDouble(); // Assuming speed in MB/s
   }
 }
 
@@ -148,8 +193,6 @@ class _ArDriveUploader implements ArDriveUploader {
       args,
     );
 
-    print('Creating a new upload controller');
-
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
     );
@@ -189,22 +232,22 @@ class _ArDriveUploader implements ArDriveUploader {
         status: UploadStatus.preparationDone,
       );
 
-      print('BDI id: ${bdi.id}');
+      // print('BDI id: ${bdi.id}');
 
       uploadController.updateProgress(
         task: uploadTask,
       );
 
-      print('Starting to send data bundle to network');
+      // print('Starting to send data bundle to network');
 
       _streamedUpload.send(uploadTask, wallet, uploadController).then((value) {
-        print('Upload complete');
+        // print('Upload complete');
       }).catchError((err) {
         uploadController.onError(() => print('Error: $err'));
       });
     });
 
-    print('Upload started');
+    // print('Upload started');
 
     return uploadController;
   }
@@ -223,7 +266,7 @@ class _ArDriveUploader implements ArDriveUploader {
       args,
     );
 
-    print('Creating a new upload controller');
+    // print('Creating a new upload controller');
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
@@ -239,7 +282,7 @@ class _ArDriveUploader implements ArDriveUploader {
       driveId: args.driveId!,
     )
         .then((dataItems) {
-      print('BDIs created');
+      // print('BDIs created');
 
       for (var dataItem in dataItems) {
         final uploadTask = UploadTask(
@@ -247,7 +290,7 @@ class _ArDriveUploader implements ArDriveUploader {
           content: dataItem.contents,
         );
 
-        print('BDI id: ${dataItem.dataItemResult.id}');
+        // print('BDI id: ${dataItem.dataItemResult.id}');
 
         uploadTask.status = UploadStatus.preparationDone;
         // TODO: the upload controller should emit the send sending the tasks
@@ -258,7 +301,7 @@ class _ArDriveUploader implements ArDriveUploader {
         _streamedUpload
             .send(uploadTask, wallet, uploadController)
             .then((value) {
-          print('Upload complete');
+          // print('Upload complete');
         }).catchError((err) {
           uploadController.onError(() => print('Error: $err'));
         });
@@ -274,7 +317,7 @@ class _ArDriveUploader implements ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
   }) async {
-    print('Creating a new upload controller');
+    // print('Creating a new upload controller');
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
@@ -319,7 +362,7 @@ class _ArDriveUploader implements ArDriveUploader {
     for (int i = 0; i < files.length; i++) {
       int fileSize = await files[i].$2.length;
 
-      while (activeUploads.length >= 25 ||
+      while (activeUploads.length >= 50 ||
           totalSize + fileSize >= 500 * 1024 * 1024) {
         await Future.any(activeUploads);
 

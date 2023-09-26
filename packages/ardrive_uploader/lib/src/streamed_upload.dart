@@ -79,8 +79,6 @@ class TurboStreamedUpload implements StreamedUpload<DataItemResult, dynamic> {
               }
             })
         .then((value) async {
-      print('Turbo response: ${value.statusCode}');
-
       if (!handle.isProgressAvailable) {
         print('Progress is not available, setting to 1');
         handle.progress = 1;

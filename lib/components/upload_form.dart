@@ -1010,6 +1010,41 @@ class _UploadFormState extends State<UploadForm> {
           //     );
           //   },
           // ),
+          const SizedBox(
+            height: 24,
+          ),
+          Text(
+            'Total uploaded: ${filesize(state.progress.totalUploaded)} of ${filesize(state.progress.totalSize)}',
+            style: ArDriveTypography.body
+                .buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault)
+                .copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(
+            height: 24,
+          ),
+          Text(
+            'Files uploaded: ${state.progress.tasksContentCompleted()} of ${state.progress.tasksContentLength()}',
+            style: ArDriveTypography.body
+                .buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault)
+                .copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(
+            height: 24,
+          ),
+          Text(
+            'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
+            style: ArDriveTypography.body.buttonLargeBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgDefault),
+          ),
         ],
       ),
     );

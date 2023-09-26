@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:arweave/arweave.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 
 import '../ardrive_uploader.dart';
@@ -69,7 +70,7 @@ class UploadTask implements _UploadTask<ARFSUploadMetadata> {
 
 // TODO: Review this file
 abstract class UploadController {
-  abstract final List<UploadTask> tasks;
+  abstract final Map<String, UploadTask> tasks;
 
   Future<void> close();
   void cancel();
@@ -103,12 +104,16 @@ class _UploadController implements UploadController {
   bool _isCanceled = false;
   bool get isCanceled => _isCanceled;
 
+  DateTime? _start;
   void init() {
     _isCanceled = false;
     late StreamSubscription subscription;
 
-    subscription = _progressStream.stream.listen(
+    subscription =
+        _progressStream.stream.debounceTime(Duration(milliseconds: 50)).listen(
       (event) async {
+        _start ??= DateTime.now();
+
         _onProgressChange!(event);
 
         if (_uploadProgress.progress == 1) {
@@ -118,7 +123,7 @@ class _UploadController implements UploadController {
       },
       onDone: () {
         print('Done upload');
-        _onDone(tasks);
+        _onDone(tasks.values.toList());
         subscription.cancel();
       },
       onError: (err) {
@@ -156,31 +161,20 @@ class _UploadController implements UploadController {
     }
 
     if (task != null) {
-      final index = tasks.indexWhere(
-        (element) => element.id == task.id,
-      );
+      tasks[task.id] = task;
 
-      print('Index: $index');
-
-      if (index == -1) {
-        tasks.add(task);
-      } else {
-        tasks[index] = task;
-      }
+      final taskList = tasks.values.toList();
 
       _uploadProgress = _uploadProgress.copyWith(
-        task: tasks,
-        progress: calculateTotalProgress(tasks),
-        totalSize: totalSize(tasks),
+        task: taskList,
+        progress: calculateTotalProgress(taskList),
+        totalSize: totalSize(taskList),
+        totalUploaded: totalUploaded(taskList),
+        startTime: _start,
       );
 
-      _progressStream.add(
-        // TODO:
-        _uploadProgress,
-      );
+      _progressStream.add(_uploadProgress);
     }
-
-    print('Progress: ${_uploadProgress.progress}');
 
     return;
   }
@@ -189,6 +183,7 @@ class _UploadController implements UploadController {
     progress: 0,
     totalSize: 0,
     task: [],
+    totalUploaded: 0,
   );
 
   @override
@@ -208,7 +203,7 @@ class _UploadController implements UploadController {
   };
 
   @override
-  final List<UploadTask> tasks = [];
+  final Map<String, UploadTask> tasks = {};
 
   // CALCULATE BASED ON TOTAL SIZE NOT ONLY ON THE NUMBER OF TASKS
   double calculateTotalProgress(List<UploadTask> tasks) {
@@ -230,6 +225,18 @@ class _UploadController implements UploadController {
             .map((e) => e.progress)
             .reduce((value, element) => value + element) /
         tasks.length;
+  }
+
+  int totalUploaded(List<UploadTask> tasks) {
+    int totalUploaded = 0;
+
+    for (var task in tasks) {
+      if (task.dataItem != null) {
+        totalUploaded += (task.progress * task.dataItem!.dataItemSize).toInt();
+      }
+    }
+
+    return totalUploaded;
   }
 
   int totalSize(List<UploadTask> tasks) {
