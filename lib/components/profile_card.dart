@@ -236,22 +236,21 @@ class _ProfileCardState extends State<ProfileCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              if (!isStandalone)
-                SizedBox(
-                  width: 50,
-                  child: Text(
-                    'AR:',
-                    style: ArDriveTypography.body.captionRegular().copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
-                        ),
-                  ),
+              SizedBox(
+                width: isStandalone ? 40 : 50,
+                child: Text(
+                  'AR:',
+                  style: ArDriveTypography.body.captionRegular().copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
                 ),
+              ),
               if (walletAddress.isNotEmpty)
                 TruncatedAddress(
                   walletAddress: walletAddress,
                   fontSize: 18,
-                  offsetStart: isStandalone ? 8 : 6,
+                  offsetStart: 6,
                   offsetEnd: 6,
                 ),
               const Spacer(),
@@ -294,7 +293,7 @@ class _ProfileCardState extends State<ProfileCard> {
                   walletAddress: ethereumAddress,
                   fontSize: 18,
                   addressType: AddressType.ethereum,
-                  offsetStart: 8,
+                  offsetStart: 6,
                   offsetEnd: 6,
                 ),
               const Spacer(),
