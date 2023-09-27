@@ -152,6 +152,12 @@ class _ProfileCardState extends State<ProfileCard> {
           const SizedBox(height: 8),
           if (isEthereum) ...[
             _buildEthereumAddressRow(context, state),
+            const SizedBox(height: 8),
+            const Divider(
+              height: 21,
+              indent: 16,
+              endIndent: 16,
+            ),
           ],
           _buildWalletAddressRow(context, state),
           if (state.wallet is! ArConnectWallet) ...[
@@ -218,6 +224,8 @@ class _ProfileCardState extends State<ProfileCard> {
 
   Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
     final walletAddress = state.walletAddress;
+    final isStandalone =
+        state.profileSource.type == ProfileSourceType.standalone;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -226,13 +234,27 @@ class _ProfileCardState extends State<ProfileCard> {
         children: [
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
+              if (!isStandalone)
+                SizedBox(
+                  width: 50,
+                  child: Text(
+                    'AR:',
+                    style: ArDriveTypography.body.captionRegular().copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                        ),
+                  ),
+                ),
               if (walletAddress.isNotEmpty)
                 TruncatedAddress(
                   walletAddress: walletAddress,
                   fontSize: 18,
+                  offsetStart: isStandalone ? 8 : 6,
+                  offsetEnd: 6,
                 ),
+              const Spacer(),
               CopyButton(
                 size: 24,
                 text: walletAddress,
@@ -245,8 +267,6 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
-  // Placeholder for Ethereum address display
-  // TODO: Redesign how this looks
   Widget _buildEthereumAddressRow(BuildContext context, ProfileLoggedIn state) {
     final ethereumAddress = state.profileSource.address;
 
@@ -257,21 +277,27 @@ class _ProfileCardState extends State<ProfileCard> {
         children: [
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Text(
-                'Eth:',
-                style: ArDriveTypography.body.captionRegular().copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18,
-                    ),
+              SizedBox(
+                width: 50,
+                child: Text(
+                  'ETH:',
+                  style: ArDriveTypography.body.captionRegular().copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                ),
               ),
               if (ethereumAddress != null)
                 TruncatedAddress(
                   walletAddress: ethereumAddress,
                   fontSize: 18,
                   addressType: AddressType.ethereum,
+                  offsetStart: 8,
+                  offsetEnd: 6,
                 ),
+              const Spacer(),
               CopyButton(
                 size: 24,
                 text: ethereumAddress ?? '',
