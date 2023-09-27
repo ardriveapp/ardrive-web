@@ -78,9 +78,7 @@ abstract class UploadController {
   // TODO: Return a list of tasks.
   void onDone(Function(List<UploadTask> tasks) callback);
   void onError(Function() callback);
-  void updateProgress({
-    UploadTask? task,
-  });
+  void updateProgress({UploadTask? task});
   void onProgressChange(Function(UploadProgress progress) callback);
 
   factory UploadController(
@@ -105,6 +103,7 @@ class _UploadController implements UploadController {
   bool get isCanceled => _isCanceled;
 
   DateTime? _start;
+
   void init() {
     _isCanceled = false;
     late StreamSubscription subscription;
@@ -163,8 +162,10 @@ class _UploadController implements UploadController {
     if (task != null) {
       tasks[task.id] = task;
 
+      // TODO: Check how to improve this
       final taskList = tasks.values.toList();
 
+      // TODO: Check how to improve this
       _uploadProgress = _uploadProgress.copyWith(
         task: taskList,
         progress: calculateTotalProgress(taskList),

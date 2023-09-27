@@ -578,37 +578,41 @@ class UploadCubit extends Cubit<UploadState> {
 
     List<UploadTask> completedTasks = [];
 
-    uploadController.onProgressChange((progress) {
-      final newCompletedTasks = progress.task.where(
-        (element) =>
-            element.status == UploadStatus.complete &&
-            !completedTasks.contains(element),
-      );
+    uploadController.onProgressChange(
+      (progress) {
+        final newCompletedTasks = progress.task.where(
+          (element) =>
+              element.status == UploadStatus.complete &&
+              !completedTasks.contains(element),
+        );
 
-      for (var element in newCompletedTasks) {
-        completedTasks.add(element);
-        // TODO: Save as the file is finished the upload
-        // _saveEntityOnDB(element);
-        for (var metadata in element.content!) {
-          logger.d(metadata.metadataTxId ?? 'METADATA IS NULL');
+        for (var element in newCompletedTasks) {
+          completedTasks.add(element);
+          // TODO: Save as the file is finished the upload
+          // _saveEntityOnDB(element);
+          for (var metadata in element.content!) {
+            logger.d(metadata.metadataTxId ?? 'METADATA IS NULL');
+          }
         }
-      }
 
-      emit(
-        UploadInProgressUsingNewUploader(
-          progress: progress,
-          totalProgress: progress.progress,
-          equatableBust: UniqueKey(),
-        ),
-      );
-    });
+        emit(
+          UploadInProgressUsingNewUploader(
+            progress: progress,
+            totalProgress: progress.progress,
+            equatableBust: UniqueKey(),
+          ),
+        );
+      },
+    );
 
-    uploadController.onDone((tasks) async {
-      for (var task in tasks) {
-        unawaited(_saveEntityOnDB(task));
-      }
-      unawaited(_profileCubit.refreshBalance());
-    });
+    uploadController.onDone(
+      (tasks) async {
+        for (var task in tasks) {
+          unawaited(_saveEntityOnDB(task));
+        }
+        unawaited(_profileCubit.refreshBalance());
+      },
+    );
   }
 
   Future _saveEntityOnDB(UploadTask task) async {
@@ -785,7 +789,7 @@ class UploadCubit extends Cubit<UploadState> {
         if (!hasEmittedError) {
           addError(error);
           hasEmittedError = true;
-      }
+        }
       },
     );
 

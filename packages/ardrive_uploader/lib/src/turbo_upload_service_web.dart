@@ -100,6 +100,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
 
     int dataItemSize = 0;
 
+    // TODO: remove after fixing the issue with the size of the upload
     await for (final data in dataItem.streamGenerator()) {
       dataItemSize += data.length;
     }

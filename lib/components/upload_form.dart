@@ -949,7 +949,9 @@ class _UploadFormState extends State<UploadForm> {
                                     : null,
                                 contentPadding: EdgeInsets.zero,
                                 title: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisSize: MainAxisSize.max,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Flexible(
                                       flex: 1,
@@ -969,7 +971,7 @@ class _UploadFormState extends State<UploadForm> {
                                     Flexible(
                                       flex: 1,
                                       child: Row(
-                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisSize: MainAxisSize.max,
                                         children: [
                                           Flexible(
                                             flex: 2,
@@ -992,7 +994,7 @@ class _UploadFormState extends State<UploadForm> {
                                           ),
                                           Flexible(
                                             child: Text(
-                                              '${(task.progress * 100).toStringAsFixed(2)}%',
+                                              '${(task.progress * 100).toInt()}%',
                                               style: ArDriveTypography.body
                                                   .buttonNormalBold(
                                                 color: ArDriveTheme.of(context)
@@ -1105,22 +1107,7 @@ class _UploadFormState extends State<UploadForm> {
             style: ArDriveTypography.body.buttonNormalBold(
                 color:
                     ArDriveTheme.of(context).themeData.colors.themeFgDefault),
-          )
-          // const SizedBox(
-          //   height: 45,
-          // ),
-          // StreamBuilder<String>(
-          //   stream: randomMessageController.stream,
-          //   builder: (context, snapshot) {
-          //     return Text(
-          //       snapshot.data ?? '',
-          //       style: ArDriveTypography.body.buttonLargeBold(
-          //         color:
-          //             ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-          //       ),
-          //     );
-          //   },
-          // ),
+          ),
         ],
       ),
     );
