@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -15,6 +16,7 @@ import '../../../test_utils/utils.dart';
 void main() {
   late ArDriveAuth mockArDriveAuth;
   late ArConnectService mockArConnectService;
+  late EthereumProviderService mockEthereumProviderService;
 
   final wallet = getTestWallet();
 
@@ -24,11 +26,15 @@ void main() {
   setUp(() {
     mockArDriveAuth = MockArDriveAuth();
     mockArConnectService = MockArConnectService();
+    mockEthereumProviderService = MockEthereumProviderService();
   });
 
   group('AddWalletFile', () {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+
+      when(() => mockEthereumProviderService.isExtensionPresent())
           .thenAnswer((_) => false);
     });
 
@@ -38,6 +44,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -62,6 +69,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -87,6 +95,9 @@ void main() {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
           .thenAnswer((_) => false);
+
+      when(() => mockEthereumProviderService.isExtensionPresent())
+          .thenAnswer((_) => false);
     });
 
     final loggedUser = User(
@@ -103,6 +114,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -130,6 +142,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -160,6 +173,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -197,6 +211,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -228,6 +243,9 @@ void main() {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
           .thenAnswer((_) => false);
+
+      when(() => mockEthereumProviderService.isExtensionPresent())
+          .thenAnswer((_) => false);
     });
 
     blocTest(
@@ -236,6 +254,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -257,6 +276,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -290,6 +310,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -315,6 +336,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -324,17 +346,23 @@ void main() {
 
         when(() => mockArConnectService.isExtensionPresent())
             .thenAnswer((invocation) => false);
+
+        when(() => mockEthereumProviderService.isExtensionPresent())
+            .thenAnswer((invocation) => false);
       },
       act: (bloc) async {
         bloc.add(const CheckIfUserIsLoggedIn());
       },
-      expect: () => [LoginLoading(), const LoginInitial(false)],
+      expect: () => [LoginLoading(), const LoginInitial(false, false)],
     );
   });
 
   group('UnlockUserWithPassword', () {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+
+      when(() => mockEthereumProviderService.isExtensionPresent())
           .thenAnswer((_) => false);
     });
 
@@ -353,6 +381,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -376,6 +405,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -406,6 +436,9 @@ void main() {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
           .thenAnswer((_) => false);
+
+      when(() => mockEthereumProviderService.isExtensionPresent())
+          .thenAnswer((_) => false);
     });
 
     final loggedUser = User(
@@ -423,6 +456,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -449,6 +483,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -483,6 +518,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -512,6 +548,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -549,6 +586,9 @@ void main() {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
           .thenAnswer((_) => false);
+
+      when(() => mockEthereumProviderService.isExtensionPresent())
+          .thenAnswer((_) => false);
     });
 
     blocTest(
@@ -557,6 +597,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -581,6 +622,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -606,6 +648,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -634,6 +677,9 @@ void main() {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
           .thenAnswer((_) => false);
+
+      when(() => mockEthereumProviderService.isExtensionPresent())
+          .thenAnswer((_) => false);
     });
 
     blocTest(
@@ -642,6 +688,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -653,11 +700,13 @@ void main() {
             .thenAnswer((invocation) => false);
         when(() => mockArConnectService.disconnect())
             .thenAnswer((invocation) => Future.value(null));
+        when(() => mockEthereumProviderService.isExtensionPresent())
+            .thenAnswer((_) => false);
       },
       act: (bloc) async {
         bloc.add(const ForgetWallet());
       },
-      expect: () => [const LoginInitial(false)],
+      expect: () => [const LoginInitial(false, false)],
     );
     blocTest(
       'should emit the initial login state and not call logout when user is not logged in',
@@ -665,6 +714,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -677,18 +727,24 @@ void main() {
 
         when(() => mockArConnectService.disconnect())
             .thenAnswer((invocation) => Future.value(null));
+
+        when(() => mockEthereumProviderService.isExtensionPresent())
+            .thenAnswer((_) => false);
       },
       act: (bloc) async {
         bloc.add(const ForgetWallet());
       },
       verify: (bloc) => verifyNever(() => mockArDriveAuth.logout()),
-      expect: () => [const LoginInitial(false)],
+      expect: () => [const LoginInitial(false, false)],
     );
   });
 
   group('testing ArDriveAuth FinishOnboarding event', () {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+
+      when(() => mockEthereumProviderService.isExtensionPresent())
           .thenAnswer((_) => false);
     });
 
@@ -698,6 +754,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       act: (bloc) async {
@@ -711,6 +768,9 @@ void main() {
   group('testing LoginBloc UnLockWithBiometrics event', () {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+
+      when(() => mockEthereumProviderService.isExtensionPresent())
           .thenAnswer((_) => false);
     });
 
@@ -729,6 +789,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
@@ -754,6 +815,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
         );
       },
       setUp: () {
