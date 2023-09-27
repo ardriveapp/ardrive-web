@@ -9,8 +9,10 @@ import 'package:cryptography/cryptography.dart';
 
 abstract class EthereumWallet extends Wallet {
   Future<String> deriveArdriveSeedphrase() async {
-    const message = 'Login to ArDrive';
-    final messageData = utf8.encode(message) as Uint8List;
+    // TODO: Decide on the message for the Ethereum wallet to sign
+    const messageText = 'Login to ArDrive';
+
+    final messageData = utf8.encode(messageText) as Uint8List;
     final signature = await sign(messageData);
 
     final signatureSha256 = await sha256.hash(signature);
