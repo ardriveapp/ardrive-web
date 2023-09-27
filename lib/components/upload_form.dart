@@ -34,6 +34,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/upload/upload_handles/bundle_upload_handle.dart';
+import '../pages/drive_detail/components/drive_explorer_item_tile.dart';
 
 Future<void> promptToUpload(
   BuildContext context, {
@@ -867,26 +868,28 @@ class _UploadFormState extends State<UploadForm> {
   }) {
     final progress = state.progress;
     return ArDriveStandardModal(
+      width: kLargeDialogWidth,
       title:
           '${appLocalizationsOf(context).uploadingNFiles(state.progress.getNumberOfItems())} ${(state.totalProgress * 100).toStringAsFixed(2)}%',
       content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: kMediumDialogWidth,
+            width: kLargeDialogWidth,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 256),
+              constraints: const BoxConstraints(maxHeight: 256 * 1.5),
               child: Container(
-                decoration: BoxDecoration(
-                  // rounded border
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgOnDisabled,
-                    width: 2,
-                  ),
-                ),
+                // decoration: BoxDecoration(
+                //   // rounded border
+                //   borderRadius: BorderRadius.circular(8),
+                //   border: Border.all(
+                //     color: ArDriveTheme.of(context)
+                //         .themeData
+                //         .colors
+                //         .themeFgOnDisabled,
+                //     width: 1.5,
+                //   ),
+                // ),
                 padding: const EdgeInsets.all(8),
                 child: Scrollbar(
                   child: ListView.builder(
@@ -938,40 +941,96 @@ class _UploadFormState extends State<UploadForm> {
                           if (task.content != null)
                             for (var file in task.content!)
                               ListTile(
+                                leading: file is ARFSFileUploadMetadata
+                                    ? getIconForContentType(
+                                        file.dataContentType,
+                                        size: 24,
+                                      )
+                                    : null,
                                 contentPadding: EdgeInsets.zero,
-                                title: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                title: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          file.name,
-                                          style: ArDriveTypography.body
-                                              .buttonNormalBold(
-                                            color: ArDriveTheme.of(context)
-                                                .themeData
-                                                .colors
-                                                .themeFgDefault,
-                                          ),
-                                        ),
-                                        // TODO: get the correct size
-                                        // Text(
-                                        //   filesize(
-                                        //     task.dataItem!.dataItemResult
-                                        //         .dataItemSize,
-                                        //   ),
-                                        //   style: ArDriveTypography.body
-                                        //       .buttonNormalBold(
-                                        //     color: ArDriveTheme.of(context)
-                                        //         .themeData
-                                        //         .colors
-                                        //         .themeFgDefault,
-                                        //   ),
-                                        // ),
-                                      ],
+                                    Flexible(
+                                      flex: 1,
+                                      child: Text(
+                                        file.name,
+                                        style: ArDriveTypography.body
+                                            .buttonNormalBold(
+                                              color: ArDriveTheme.of(context)
+                                                  .themeData
+                                                  .colors
+                                                  .themeFgDefault,
+                                            )
+                                            .copyWith(
+                                                fontWeight: FontWeight.bold),
+                                      ),
                                     ),
+                                    Flexible(
+                                      flex: 1,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Flexible(
+                                            flex: 2,
+                                            child: ArDriveProgressBar(
+                                              height: 4,
+                                              indicatorColor: task.progress == 1
+                                                  ? ArDriveTheme.of(context)
+                                                      .themeData
+                                                      .colors
+                                                      .themeSuccessDefault
+                                                  : ArDriveTheme.of(context)
+                                                      .themeData
+                                                      .colors
+                                                      .themeFgDefault,
+                                              percentage: task.progress,
+                                            ),
+                                          ),
+                                          const SizedBox(
+                                            width: 8,
+                                          ),
+                                          Flexible(
+                                            child: Text(
+                                              '${(task.progress * 100).toStringAsFixed(2)}%',
+                                              style: ArDriveTypography.body
+                                                  .buttonNormalBold(
+                                                color: ArDriveTheme.of(context)
+                                                    .themeData
+                                                    .colors
+                                                    .themeFgDefault,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // TODO: get the correct size
+                                    // Text(
+                                    //   filesize(
+                                    //     task.dataItem!.dataItemResult
+                                    //         .dataItemSize,
+                                    //   ),
+                                    //   style: ArDriveTypography.body
+                                    //       .buttonNormalBold(
+                                    //     color: ArDriveTheme.of(context)
+                                    //         .themeData
+                                    //         .colors
+                                    //         .themeFgDefault,
+                                    //   ),
+                                    // ),
                                   ],
                                 ),
+                                // trailing: Text(
+                                //   progressText,
+                                //   style: ArDriveTypography.body
+                                //       .buttonNormalRegular(
+                                //     color: ArDriveTheme.of(context)
+                                //         .themeData
+                                //         .colors
+                                //         .themeFgOnDisabled,
+                                //   ),
+                                // ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -1001,6 +1060,15 @@ class _UploadFormState extends State<UploadForm> {
                                   ],
                                 ),
                               ),
+                          Divider(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgSubtle
+                                .withOpacity(0.5),
+                            thickness: 0.5,
+                            height: 8,
+                          )
                         ],
                       );
                     },
@@ -1009,6 +1077,35 @@ class _UploadFormState extends State<UploadForm> {
               ),
             ),
           ),
+          SizedBox(
+            height: 8,
+          ),
+          Text(
+            'Total uploaded: ${filesize(state.progress.totalUploaded)} of ${filesize(state.progress.totalSize)}',
+            style: ArDriveTypography.body
+                .buttonNormalBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault)
+                .copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            'Files uploaded: ${state.progress.tasksContentCompleted()} of ${state.progress.tasksContentLength()}',
+            style: ArDriveTypography.body
+                .buttonNormalBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault)
+                .copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
+            style: ArDriveTypography.body.buttonNormalBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgDefault),
+          )
           // const SizedBox(
           //   height: 45,
           // ),
@@ -1024,41 +1121,6 @@ class _UploadFormState extends State<UploadForm> {
           //     );
           //   },
           // ),
-          const SizedBox(
-            height: 24,
-          ),
-          Text(
-            'Total uploaded: ${filesize(state.progress.totalUploaded)} of ${filesize(state.progress.totalSize)}',
-            style: ArDriveTypography.body
-                .buttonLargeBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault)
-                .copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(
-            height: 24,
-          ),
-          Text(
-            'Files uploaded: ${state.progress.tasksContentCompleted()} of ${state.progress.tasksContentLength()}',
-            style: ArDriveTypography.body
-                .buttonLargeBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault)
-                .copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(
-            height: 24,
-          ),
-          Text(
-            'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
-            style: ArDriveTypography.body.buttonLargeBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDefault),
-          ),
         ],
       ),
     );
