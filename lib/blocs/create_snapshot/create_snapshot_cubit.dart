@@ -72,7 +72,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   bool _sufficientArBalance = false;
   bool _isFreeThanksToTurbo = false;
 
-  bool get _useTruboUpload =>
+  bool get _useTurboUpload =>
       _uploadMethod == UploadMethod.turbo || _isFreeThanksToTurbo;
 
   bool _wasSnapshotDataComputingCanceled = false;
@@ -228,7 +228,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     await prepareTx(isArConnectProfile);
     await signTx(isArConnectProfile);
 
-    if (_useTruboUpload) {
+    if (_useTurboUpload) {
       snapshotEntity.txId = _preparedDataItem!.id;
     } else {
       snapshotEntity.txId = _preparedTx!.id;
@@ -245,7 +245,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
-      if (_useTruboUpload) {
+      if (_useTurboUpload) {
         _preparedDataItem = await _arweave.prepareEntityDataItem(
           _snapshotEntity!,
           wallet,
@@ -296,7 +296,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         return;
       }
 
-      if (_useTruboUpload) {
+      if (_useTurboUpload) {
         await _preparedDataItem!.sign(wallet);
       } else {
         await _preparedTx!.sign(wallet);
@@ -544,7 +544,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     try {
       emit(UploadingSnapshot());
 
-      if (_useTruboUpload) {
+      if (_useTurboUpload) {
         await _postTurboDataItem(
           dataItem: _preparedDataItem!,
         );
