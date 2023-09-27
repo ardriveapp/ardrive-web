@@ -1,0 +1,2 @@
+- New Audio Preview available when selecting audio files
+- Prevent synchronization when creating new Snapshots
