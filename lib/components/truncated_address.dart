@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 class TruncatedAddress extends StatelessWidget {
   final String walletAddress;
   final double? fontSize;
+  final Color? color;
   final int offsetStart;
   final int offsetEnd;
   final AddressType addressType;
@@ -15,6 +16,7 @@ class TruncatedAddress extends StatelessWidget {
     Key? key,
     required this.walletAddress,
     this.fontSize,
+    this.color,
     this.offsetStart = 6,
     this.offsetEnd = 5,
     this.addressType = AddressType.arweave,
@@ -44,7 +46,7 @@ class TruncatedAddress extends StatelessWidget {
             offsetStart: offsetStart,
             offsetEnd: offsetEnd,
           ),
-          style: ArDriveTypography.body.captionRegular().copyWith(
+          style: ArDriveTypography.body.captionRegular(color: color).copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize: fontSize,
                 decoration: TextDecoration.underline,

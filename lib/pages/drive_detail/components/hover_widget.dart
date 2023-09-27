@@ -101,7 +101,7 @@ class ArDriveIconButton extends StatelessWidget {
     this.tooltip,
   });
 
-  final ArDriveIcon icon;
+  final Widget icon;
   final Function()? onPressed;
   final double size;
   final String? tooltip;

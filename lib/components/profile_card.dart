@@ -2,7 +2,6 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/truncated_address.dart';
-import 'package:ardrive/entities/address_type.dart';
 import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
@@ -160,11 +159,6 @@ class _ProfileCardState extends State<ProfileCard> {
             ),
           ],
           _buildWalletAddressRow(context, state),
-          if (state.wallet is! ArConnectWallet) ...[
-            const SizedBox(height: 8),
-            _buildDownloadWalletRow(context),
-            const SizedBox(height: 8),
-          ],
           const Divider(
             height: 21,
             indent: 16,
@@ -194,13 +188,15 @@ class _ProfileCardState extends State<ProfileCard> {
                 },
                 child: Text(
                   appLocalizationsOf(context).leaveFeedback,
-                  style: ArDriveTypography.body.captionRegular().copyWith(
+                  style: ArDriveTypography.body
+                      .captionRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgSubtle)
+                      .copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 18,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgMuted,
                         decoration: TextDecoration.underline,
                       ),
                 ),
@@ -224,36 +220,50 @@ class _ProfileCardState extends State<ProfileCard> {
 
   Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
     final walletAddress = state.walletAddress;
-    final isStandalone =
-        state.profileSource.type == ProfileSourceType.standalone;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(
-                width: isStandalone ? 40 : 50,
-                child: Text(
-                  'AR:',
-                  style: ArDriveTypography.body.captionRegular().copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                      ),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    child: Text(
+                      'AR:',
+                      style: ArDriveTypography.body.captionRegular().copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                    ),
+                  ),
+                  TruncatedAddress(
+                    walletAddress: walletAddress,
+                    fontSize: 14,
+                    color:
+                        ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                    offsetStart: 8,
+                    offsetEnd: 8,
+                  ),
+                ],
               ),
-              if (walletAddress.isNotEmpty)
-                TruncatedAddress(
-                  walletAddress: walletAddress,
-                  fontSize: 18,
-                  offsetStart: 6,
-                  offsetEnd: 6,
-                ),
               const Spacer(),
+              if (state.wallet is! ArConnectWallet)
+                DownloadKeyfileButton(
+                  onPressed: () {
+                    setState(() {
+                      _showProfileCard = false;
+                    });
+                    showDownloadWalletModal(context);
+                  },
+                  size: 18,
+                ),
+              const SizedBox(width: 8),
               CopyButton(
                 size: 24,
                 text: walletAddress,
@@ -267,39 +277,43 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildEthereumAddressRow(BuildContext context, ProfileLoggedIn state) {
-    final ethereumAddress = state.profileSource.address;
+    final walletAddess = state.profileSource.address!;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 50,
-                child: Text(
-                  'ETH:',
-                  style: ArDriveTypography.body.captionRegular().copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                      ),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    child: Text(
+                      'ETH:',
+                      style: ArDriveTypography.body.captionRegular().copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                    ),
+                  ),
+                  TruncatedAddress(
+                    walletAddress: walletAddess,
+                    fontSize: 14,
+                    color:
+                        ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                    offsetStart: 8,
+                    offsetEnd: 8,
+                  ),
+                ],
               ),
-              if (ethereumAddress != null)
-                TruncatedAddress(
-                  walletAddress: ethereumAddress,
-                  fontSize: 18,
-                  addressType: AddressType.ethereum,
-                  offsetStart: 6,
-                  offsetEnd: 6,
-                ),
               const Spacer(),
               CopyButton(
                 size: 24,
-                text: ethereumAddress ?? '',
+                text: walletAddess,
                 showCopyText: false,
               ),
             ],
@@ -365,10 +379,13 @@ class _ProfileCardState extends State<ProfileCard> {
           ),
           Text(
             '$walletBalance AR',
-            style: ArDriveTypography.body.captionRegular().copyWith(
+            style: ArDriveTypography.body
+                .captionRegular(
+                    color:
+                        ArDriveTheme.of(context).themeData.colors.themeFgSubtle)
+                .copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 18,
-                  color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                 ),
           ),
         ],
@@ -462,6 +479,50 @@ class __LogoutButtonState extends State<_LogoutButton> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class DownloadKeyfileButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final double size;
+  final double padding;
+  final Widget? child;
+  final int positionY;
+  final int positionX;
+
+  const DownloadKeyfileButton({
+    Key? key,
+    required this.onPressed,
+    this.size = 20,
+    this.padding = 4,
+    this.child,
+    this.positionY = 40,
+    this.positionX = 20,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (child != null) {
+      return GestureDetector(
+        onTap: onPressed,
+        child: HoverWidget(
+          hoverScale: 1,
+          child: child!,
+        ),
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: ArDriveIconButton(
+        tooltip: appLocalizationsOf(context).downloadWalletKeyfile,
+        onPressed: onPressed,
+        icon: Padding(
+          padding: EdgeInsets.all(padding),
+          child: ArDriveIcons.arrowDownload(size: size),
         ),
       ),
     );
