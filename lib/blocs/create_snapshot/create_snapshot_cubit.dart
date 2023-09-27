@@ -72,6 +72,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   bool _sufficientArBalance = false;
   bool _isFreeThanksToTurbo = false;
 
+  bool get _useTruboUpload =>
+      _uploadMethod == UploadMethod.turbo || _isFreeThanksToTurbo;
+
   bool _wasSnapshotDataComputingCanceled = false;
 
   SnapshotItemToBeCreated? _itemToBeCreated;
@@ -225,10 +228,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     await prepareTx(isArConnectProfile);
     await signTx(isArConnectProfile);
 
-    if (_uploadMethod == UploadMethod.ar) {
-      snapshotEntity.txId = _preparedTx!.id;
-    } else {
+    if (_useTruboUpload) {
       snapshotEntity.txId = _preparedDataItem!.id;
+    } else {
+      snapshotEntity.txId = _preparedTx!.id;
     }
   }
 
@@ -242,18 +245,18 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
-      if (_uploadMethod == UploadMethod.ar) {
-        _preparedTx = await _arweave.prepareEntityTx(
+      if (_useTruboUpload) {
+        _preparedDataItem = await _arweave.prepareEntityDataItem(
           _snapshotEntity!,
           wallet,
-          null,
           // We'll sign it just after adding the tip
           skipSignature: true,
         );
       } else {
-        _preparedDataItem = await _arweave.prepareEntityDataItem(
+        _preparedTx = await _arweave.prepareEntityTx(
           _snapshotEntity!,
           wallet,
+          null,
           // We'll sign it just after adding the tip
           skipSignature: true,
         );
@@ -293,10 +296,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         return;
       }
 
-      if (_uploadMethod == UploadMethod.ar) {
-        await _preparedTx!.sign(wallet);
-      } else {
+      if (_useTruboUpload) {
         await _preparedDataItem!.sign(wallet);
+      } else {
+        await _preparedTx!.sign(wallet);
       }
     } catch (e) {
       final isTabFocused = _tabVisibility.isTabFocused();
@@ -541,12 +544,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     try {
       emit(UploadingSnapshot());
 
-      if (_uploadMethod == UploadMethod.ar) {
-        await _arweave.postTx(_preparedTx!);
-      } else {
+      if (_useTruboUpload) {
         await _postTurboDataItem(
           dataItem: _preparedDataItem!,
         );
+      } else {
+        await _arweave.postTx(_preparedTx!);
       }
 
       emit(SnapshotUploadSuccess());
