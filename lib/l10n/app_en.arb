@@ -310,6 +310,10 @@
   "@costUpload": {
     "description": "Cost"
   },
+  "couldNotLoadFile": "Could not load file",
+  "@couldNotLoadFile": {
+    "description": "Message shown when user can not load audio or media files for playback"
+  },
   "country": "Country",
   "@country": {},
   "create": "Create",
@@ -518,6 +522,14 @@
   "driveName": "Drive name",
   "@driveName": {
     "description": "The name of certain drive"
+  },
+  "drivePrivacyDescriptionPrivate": "Private Drives offer state-of-the-art security, you control access.",
+  "@drivePrivacyDescriptionPrivate": {
+    "description": "Explains private drives."
+  },
+  "drivePrivacyDescriptionPublic": "Public Drives are discoverable, others can find and view the contents.",
+  "@drivePrivacyDescriptionPublic": {
+    "description": "Explains public drives."
   },
   "driveRoot": "Drive root",
   "@driveRoot": {
@@ -1216,7 +1228,7 @@
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
   },
-  "multiDownloadCompleteWithSkippedFiles": "Download Complete with {numSkippedFiles} skipped file(s)",
+  "multiDownloadCompleteWithSkippedFiles": "Download complete with {numSkippedFiles} skipped file(s)",
   "@multiDownloadCompleteWithSkippedFiles": {
     "description": "Title to modal shown when user completes multi-file download and has skipped files. "
   },
@@ -1289,6 +1301,10 @@
   "noOneWillSee": "No one will see what you don’t want them to.",
   "@noOneWillSee": {
     "description": "Indicates that private content won't reach to the wrong hands"
+  },
+  "normal": "Normal",
+  "@normal": {
+    "description": "Menu entry for \"Normal\" speed playback on Audio and Video previews."
   },
   "noSubscriptions": "No subscriptions are needed!",
   "@noSubscriptions": {

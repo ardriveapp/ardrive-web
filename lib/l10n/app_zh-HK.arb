@@ -22,6 +22,10 @@
   "@addSomeFiles": {
     "description": "Empty folder"
   },
+  "advanced": "進階",
+  "@advanced": {
+    "description": "The advanced options"
+  },
   "aggreeToTerms_body": "我同意 ArDrive 的使用及私隱條例",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
@@ -40,6 +44,8 @@
   },
   "amount": "金額",
   "@amount": {},
+  "anErrorOccuredWhileDownloadingYourFiles": "下載檔案時發生錯誤。請再試一次。",
+  "@anErrorOccuredWhileDownloadingYourFiles": {},
   "anErrorOccuredWhileDownloadingYourKeyfile": "下載你的銀包密鑰文件時發生錯誤。請再試一次。",
   "@anErrorOccuredWhileDownloadingYourKeyfile": {},
   "anyFilesWillOutliveYou": "所有上載到這裏的檔案, 都會比你於這地球上存在得更耐 !",
@@ -330,7 +336,7 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "建立資訊清單",
+  "createManifest": "開新清單",
   "@createManifest": {
     "description": "To create a manifest"
   },
@@ -346,7 +352,7 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "建立快照",
+  "createSnapshot": "開新快照",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
@@ -685,6 +691,14 @@
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
+  "failedToCreatePin": "無法創建萬字夾。請稍後再試。",
+  "@failedToCreatePin": {
+    "description": "The pin could not be created"
+  },
+  "failedToRetrieveFileInfromation": "無法擷取檔案資訊",
+  "@failedToRetrieveFileInfromation": {
+    "description": "Explains that there was an error while retrieving the file infromation"
+  },
   "failedToSyncDrive": "未能同步檔案盤的內容。",
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
@@ -710,6 +724,10 @@
       }
     }
   },
+  "fileDoesExistButIsInvalid": "該檔案已損壞，無法置頂。",
+  "@fileDoesExistButIsInvalid": {
+    "description": "Explains that the file does exist, but some of its properties make it invalid"
+  },
   "fileDownloadFailed": "檔案下載失敗",
   "@fileDownloadFailed": {
     "description": "Could not export the CSV data"
@@ -733,6 +751,10 @@
   "fileID": "檔案識別碼",
   "@fileID": {
     "description": "The Entity-ID tag of files"
+  },
+  "fileIsNotPublic": "所提供的ID是私人檔案的 ID，無法置頂。",
+  "@fileIsNotPublic": {
+    "description": "Warning explaining that the file is not public"
   },
   "fileName": "檔案用名",
   "@fileName": {
@@ -795,6 +817,10 @@
   "@fileSystem": {
     "description": "Button label to select a file from file system"
   },
+  "fileType": "檔案類型",
+  "@fileType": {
+    "description": "The MIME type of the file"
+  },
   "fileWasCreatedWithName": "此檔案與 {fileName} 的用名重覆。",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
@@ -812,6 +838,10 @@
   "fileWasMoved": "此檔案已被移動。",
   "@fileWasMoved": {
     "description": "File activity (journal): moved"
+  },
+  "fileWasPinnedToTheDrive": "檔案已置頂到硬碟。",
+  "@fileWasPinnedToTheDrive": {
+    "description": "File activity (journal): was pinned"
   },
   "fileWasRenamed": "此檔案已被重新命名為 {fileName} 。",
   "@fileWasRenamed": {
@@ -955,6 +985,8 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
+  "helpCenter": "幫助中心",
+  "@helpCenter": {},
   "howAreConversionsDetermined": "轉換率是如何決定的？",
   "@howAreConversionsDetermined": {},
   "howDoesKeyfileLoginWork": "密鑰文件和助記詞登入如何運作？\n",
@@ -1184,6 +1216,18 @@
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
   },
+  "multiDownloadCompleteWithSkippedFiles": "下載完成，有 {numSkippedFiles} 個檔案未下載",
+  "@multiDownloadCompleteWithSkippedFiles": {
+    "description": "Title to modal shown when user completes multi-file download and has skipped files. "
+  },
+  "multiDownloadDownloadingFilesProgress": "正在下載檔案...共 {totalNumFiles} 個檔案中的第 {currentFileNum} 個",
+  "@multiDownloadDownloadingFilesProgress": {
+    "description": "Title to modal shown when user is downloading multiple file.  "
+  },
+  "multiDownloadErrorTryAgain": "下載您的檔案時發生錯誤。請重試。",
+  "@multiDownloadErrorTryAgain": {
+    "description": "Error message to show user when an error has occurred downloading a file within a set of multi-file downloads."
+  },
   "name": "名字",
   "@name": {
     "description": "Name of certain entity"
@@ -1298,6 +1342,8 @@
   "@orContinueWith": {
     "description": "text to continue with ar connect"
   },
+  "ourChannels": "我們的聯絡渠道：",
+  "@ourChannels": {},
   "password": "密碼",
   "@password": {
     "description": "Label for the 'password' input"
@@ -1335,6 +1381,10 @@
   "personalDrivesEmphasized": "個人檔案盤",
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
+  },
+  "pinFailedToUpload": "上傳萬字夾失敗",
+  "@pinFailedToUpload": {
+    "description": "Explains that pin creation has failed"
   },
   "pleaseAcceptTheTermsToContinue": "請接受合約條款以繼續。",
   "@pleaseAcceptTheTermsToContinue": {
@@ -1411,6 +1461,16 @@
   "publicDrives": "公開硬碟",
   "@publicDrives": {
     "description": "Public drives accordion title"
+  },
+  "quoteUpdatesIn": "報價在{timer}後更新",
+  "@quoteUpdatesIn": {
+    "description": "Indicates the time left for the next update of the quote",
+    "placeholders": {
+      "timer": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
   },
   "recreateFolderEmphasized": "重新建立資料夾",
   "@recreateFolderEmphasized": {
@@ -1496,6 +1556,8 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "share": "分享",
+  "@share": {},
   "sharedDrives": "共享的硬碟",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
@@ -1528,6 +1590,20 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
+  "shareLogsDescription": "您可以與 ArDrive 團隊分享你的日誌，以幫助我們改進應用程式。日誌可以下載到您的裝置並透過電子郵件、Discord 或添加到支援查詢與我們分享。",
+  "@shareLogsDescription": {},
+  "shareLogsEmailBody": "ArDrive 使用者日誌已附上。",
+  "@shareLogsEmailBody": {},
+  "shareLogsEmailSubject": "ArDrive 日誌",
+  "@shareLogsEmailSubject": {},
+  "shareLogsNativeShareSubject": "日誌",
+  "@shareLogsNativeShareSubject": {},
+  "shareLogsNativeShareText": "已附加 ARDrive 使用者記錄檔。",
+  "@shareLogsNativeShareText": {},
+  "shareLogsText": "分享日誌",
+  "@shareLogsText": {},
+  "shareLogsWithEmailText": "發送電子郵件",
+  "@shareLogsWithEmailText": {},
   "sharePendingFile": "您想分享的檔案仍待處理，目前尙無法分享。",
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
@@ -1692,6 +1768,20 @@
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
+  "turboCustomAmount": "自訂金額（最小{min} - 最大{max}）",
+  "@turboCustomAmount": {
+    "description": "Describes the range of credits the user can choose",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "$10,000"
+      },
+      "min": {
+        "type": "String",
+        "example": "$5"
+      }
+    }
+  },
   "turboErrorMessageEstimationInformationFailed": "加載信息時出錯。請再試一次。",
   "@turboErrorMessageEstimationInformationFailed": {},
   "turboErrorMessageFetchPaymentIntentFailed": "付款處理器現無法使用，請稍後再試",
@@ -1704,6 +1794,20 @@
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "未能成功付款。請檢查你的信用卡資料並重試。",
   "@turboErrorMessageUnknown": {},
+  "turboPleaseEnterAmountBetween": "請輸入介於{min}至{max}之間的金額",
+  "@turboPleaseEnterAmountBetween": {
+    "description": "Error message for when the given amount is not in range",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "$10,000"
+      },
+      "min": {
+        "type": "String",
+        "example": "$5"
+      }
+    }
+  },
   "unableToFetchEstimateAtThisTime": "目前無法獲取估算值。",
   "@unableToFetchEstimateAtThisTime": {},
   "unableToUpdateQuote": "無法更新報價。請再試一次。",
