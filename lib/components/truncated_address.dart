@@ -22,17 +22,21 @@ class TruncatedAddress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    late final String url;
+    switch (addressType) {
+      case AddressType.arweave:
+        url = 'https://viewblock.io/arweave/address/$walletAddress';
+        break;
+      case AddressType.ethereum:
+        url = 'https://etherscan.io/address/$walletAddress';
+        break;
+    }
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () {
-          openUrl(
-            url: addressType == AddressType.arweave
-                ? 'https://viewblock.io/arweave/address/$walletAddress'
-                : addressType == AddressType.ethereum
-                    ? 'https://etherscan.io/address/$walletAddress'
-                    : '#',
-          );
+          openUrl(url: url);
         },
         child: Text(
           truncateString(
