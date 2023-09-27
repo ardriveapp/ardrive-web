@@ -474,6 +474,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                           child: Padding(
                             padding: const EdgeInsets.only(top: 40),
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 if (widget.isArConnectAvailable) ...[
                                   ArDriveButton(
