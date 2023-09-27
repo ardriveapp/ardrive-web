@@ -110,7 +110,7 @@ class _UploadController implements UploadController {
     late StreamSubscription subscription;
 
     subscription =
-        _progressStream.stream.debounceTime(Duration(milliseconds: 50)).listen(
+        _progressStream.stream.debounceTime(Duration(milliseconds: 100)).listen(
       (event) async {
         _start ??= DateTime.now();
 

@@ -785,24 +785,10 @@ class UploadCubit extends Cubit<UploadState> {
         if (!hasEmittedError) {
           addError(error);
           hasEmittedError = true;
-        }
+      }
       },
     );
 
     return uploader;
   }
 }
-
-// double calculateTotalPercentage(List<UploadProgress> progressList) {
-//   double totalProgress = 0;
-//   int totalSize = 0;
-
-//   for (var item in progressList) {
-//     totalProgress += item.progress * item.totalSize;
-//     totalSize += item.totalSize;
-//   }
-
-//   if (totalSize == 0) return 0.0; // Avoid division by zero
-
-//   return totalProgress / totalSize;
-// }

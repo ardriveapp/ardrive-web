@@ -324,12 +324,16 @@ class _ArDriveUploader implements ArDriveUploader {
     );
 
     /// Attaches the upload controller to the upload service
-    _uploadFiles(files: files, wallet: wallet, controller: uploadController);
+    _uploadFiles(
+      files: files,
+      wallet: wallet,
+      controller: uploadController,
+      driveKey: driveKey,
+    );
 
     return uploadController;
   }
 
-  // TODO: broken logic.
   Future _uploadFiles({
     required List<(ARFSUploadMetadataArgs, IOFile)> files,
     required Wallet wallet,
