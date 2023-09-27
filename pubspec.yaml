@@ -104,8 +104,7 @@ dependencies:
   animations: ^2.0.7
   connectivity_plus: ^4.0.0
   archive: ^3.3.0
-  video_player: ^2.6.0
-  chewie: ^1.4.0
+  video_player: ^2.7.1
   lottie: ^2.3.0
   visibility_detector: ^0.4.0+2
   bip39: ^1.0.6
@@ -130,6 +129,7 @@ dependencies:
   chunked_uploader: ^1.1.0
   dio: ^5.3.2
   fetch_client: ^1.0.2
+  just_audio: ^0.9.34
 
 dependency_overrides:
   ardrive_io:
