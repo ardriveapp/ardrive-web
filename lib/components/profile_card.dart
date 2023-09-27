@@ -244,7 +244,7 @@ class _ProfileCardState extends State<ProfileCard> {
                   ),
                   TruncatedAddress(
                     walletAddress: walletAddress,
-                    fontSize: 14,
+                    fontSize: 16,
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
                     offsetStart: 8,
@@ -302,7 +302,7 @@ class _ProfileCardState extends State<ProfileCard> {
                   ),
                   TruncatedAddress(
                     walletAddress: walletAddess,
-                    fontSize: 14,
+                    fontSize: 16,
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
                     offsetStart: 8,
