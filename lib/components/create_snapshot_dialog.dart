@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -21,22 +22,24 @@ Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
 ) async {
-  return showAnimatedDialog(
-    context,
-    barrierDismissible: false,
-    content: BlocProvider(
-      create: (_) => CreateSnapshotCubit(
-        arweave: context.read<ArweaveService>(),
-        driveDao: context.read<DriveDao>(),
-        profileCubit: context.read<ProfileCubit>(),
-        pst: context.read<PstService>(),
-        tabVisibility: TabVisibilitySingleton(),
-      ),
-      child: CreateSnapshotDialog(
-        drive: drive,
-      ),
-    ),
-  );
+  return showModalDialog(
+      context,
+      () => showAnimatedDialog(
+            context,
+            barrierDismissible: false,
+            content: BlocProvider(
+              create: (_) => CreateSnapshotCubit(
+                arweave: context.read<ArweaveService>(),
+                driveDao: context.read<DriveDao>(),
+                profileCubit: context.read<ProfileCubit>(),
+                pst: context.read<PstService>(),
+                tabVisibility: TabVisibilitySingleton(),
+              ),
+              child: CreateSnapshotDialog(
+                drive: drive,
+              ),
+            ),
+          ));
 }
 
 class CreateSnapshotDialog extends StatelessWidget {
