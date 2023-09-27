@@ -35,6 +35,18 @@ Future<Transaction> fakePrepareTransaction(invocation) async {
   return transaction;
 }
 
+Future<DataItem> fakePrepareDataItem(invocation) async {
+  final entity = invocation.positionalArguments[0] as SnapshotEntity;
+  final wallet = invocation.positionalArguments[1] as Wallet;
+
+  final dataItem = await entity.asDataItem(null);
+  dataItem.setOwner(await wallet.getOwner());
+
+  await dataItem.sign(wallet);
+
+  return dataItem;
+}
+
 class MockAppConfig extends Mock implements AppConfig {}
 
 class MockTurboUploadService extends Mock implements TurboUploadService {}
@@ -62,6 +74,9 @@ void main() {
         registerFallbackValue(testWallet);
         registerFallbackValue(
           await getTestTransaction('test/fixtures/signed_v2_tx.json'),
+        );
+        registerFallbackValue(
+          await getTestDataItem('test/fixtures/signed_v2_tx.json'),
         );
         registerFallbackValue(Future.value());
       });
@@ -95,6 +110,12 @@ void main() {
             skipSignature: any(named: 'skipSignature'),
           ),
         ).thenAnswer(fakePrepareTransaction);
+
+        when(() => arweave.prepareEntityDataItem(
+              any(),
+              any(),
+              skipSignature: any(named: 'skipSignature'),
+            )).thenAnswer(fakePrepareDataItem);
 
         when(() => arweave.postTx(any())).thenAnswer(
           (_) async => Future<void>.value(),
@@ -177,6 +198,16 @@ void main() {
         when(() => appConfig.allowedDataItemSizeForTurbo)
             .thenAnswer((invocation) => 100);
         when(() => appConfig.useTurboUpload).thenAnswer((invocation) => true);
+
+        when(() => tabVisibility.isTabFocused())
+            .thenAnswer((invocation) => true);
+
+        when(
+          () => turboService.postDataItem(
+            dataItem: any(named: 'dataItem'),
+            wallet: any(named: 'wallet'),
+          ),
+        ).thenAnswer((invocation) => Future.value(null));
 
         // mocks PackageInfo
         PackageInfo.setMockInitialValues(
