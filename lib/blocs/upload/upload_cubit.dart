@@ -607,11 +607,11 @@ class UploadCubit extends Cubit<UploadState> {
       for (var task in tasks) {
         unawaited(_saveEntityOnDB(task));
       }
+      unawaited(_profileCubit.refreshBalance());
     });
   }
 
   Future _saveEntityOnDB(UploadTask task) async {
-    unawaited(_profileCubit.refreshBalance());
     // Single file only
     // TODO: abstract to the database interface.
     // TODO: improve API for finishing a file upload.
