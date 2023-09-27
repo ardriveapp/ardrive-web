@@ -7,5 +7,9 @@ CREATE TABLE profiles (
     keySalt BLOB NOT NULL,
     walletPublicKey TEXT NOT NULL,
     encryptedPublicKey BLOB NOT NULL,
-    profileType INTEGER NOT NULL
+    profileType INTEGER NOT NULL,
+
+    -- Added in schema v18
+    profileSourceType INTEGER,
+    profileSourceAddress TEXT
 );

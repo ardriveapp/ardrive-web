@@ -16,7 +16,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -27,7 +27,7 @@ class Database extends _$Database {
         onUpgrade: (Migrator m, int from, int to) async {
           logger.i('schema changed from $from to $to');
 
-          if (from == 16 && to == 17) {
+          if (from == 16 && to >= 17) {
             // Then we're adding the pin and custom fields columns
             logger.i('Migrating schema from v16 to v17');
 
@@ -57,7 +57,12 @@ class Database extends _$Database {
               fileRevisions,
               fileRevisions.pinnedDataOwnerAddress,
             );
-          } else if (from >= 1 && from < schemaVersion) {
+          }
+          if (from < 18 && to >= 18) {
+            await m.addColumn(profiles, profiles.profileSourceType);
+            await m.addColumn(profiles, profiles.profileSourceAddress);
+          }
+          if (from >= 1 && from < 16) {
             logger.i(
               'No strategy set for migration v$from to v$to'
               ' - Resetting database schema',
