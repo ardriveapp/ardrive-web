@@ -274,6 +274,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       final mnemonic = await ethereumWallet.deriveArdriveSeedphrase();
 
+      profileType = ProfileType.json;
+
       emit(const LoginGenerateWallet());
 
       final wallet = await generateWalletFromMnemonic(mnemonic);
