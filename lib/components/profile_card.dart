@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/truncated_address.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -116,6 +117,9 @@ class _ProfileCardState extends State<ProfileCard> {
     ProfileLoggedIn state, {
     required bool isMobile,
   }) {
+    final isEthereum =
+        state.profileSource.type == ProfileSourceType.ethereumSignature;
+
     return ArDriveCard(
       contentPadding: const EdgeInsets.all(0),
       width: 281,
@@ -145,6 +149,9 @@ class _ProfileCardState extends State<ProfileCard> {
               ],
             ),
           const SizedBox(height: 8),
+          if (isEthereum) ...[
+            _buildEthereumAddressRow(context, state),
+          ],
           _buildWalletAddressRow(context, state),
           if (state.wallet is! ArConnectWallet) ...[
             const SizedBox(height: 8),
@@ -228,6 +235,44 @@ class _ProfileCardState extends State<ProfileCard> {
               CopyButton(
                 size: 24,
                 text: walletAddress,
+                showCopyText: false,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Placeholder for Ethereum address display
+  // TODO: Redesign how this looks
+  Widget _buildEthereumAddressRow(BuildContext context, ProfileLoggedIn state) {
+    final ethereumAddress = state.profileSource.address;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'eth:',
+                style: ArDriveTypography.body.captionRegular().copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                    ),
+              ),
+              if (ethereumAddress != null)
+                TruncatedAddress(
+                  walletAddress: ethereumAddress,
+                  fontSize: 18,
+                ),
+              CopyButton(
+                size: 24,
+                text: ethereumAddress ?? '',
                 showCopyText: false,
               ),
             ],
