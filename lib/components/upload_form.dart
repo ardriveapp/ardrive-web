@@ -875,122 +875,136 @@ class _UploadFormState extends State<UploadForm> {
             width: kMediumDialogWidth,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 256),
-              child: Scrollbar(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: progress.task.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final task = progress.task[index];
+              child: Container(
+                decoration: BoxDecoration(
+                  // rounded border
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgOnDisabled,
+                    width: 2,
+                  ),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: Scrollbar(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: progress.task.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final task = progress.task[index];
 
-                    String progressText;
-                    String status = '';
+                      String progressText;
+                      String status = '';
 
-                    switch (task.status) {
-                      case UploadStatus.notStarted:
-                        status = 'Not started';
-                        break;
-                      case UploadStatus.inProgress:
-                        status = 'In progress';
-                        break;
-                      case UploadStatus.paused:
-                        status = 'Paused';
-                        break;
-                      case UploadStatus.bundling:
-                        status = 'Bundling';
-                        break;
-                      case UploadStatus.encryting:
-                        status = 'Encrypting';
-                        break;
-                      case UploadStatus.complete:
-                        status = 'Complete';
-                        break;
-                      case UploadStatus.failed:
-                        status = 'Failed';
-                        break;
-                      case UploadStatus.preparationDone:
-                        status = 'Preparation done';
-                        break;
-                    }
+                      switch (task.status) {
+                        case UploadStatus.notStarted:
+                          status = 'Not started';
+                          break;
+                        case UploadStatus.inProgress:
+                          status = 'In progress';
+                          break;
+                        case UploadStatus.paused:
+                          status = 'Paused';
+                          break;
+                        case UploadStatus.bundling:
+                          status = 'Bundling';
+                          break;
+                        case UploadStatus.encryting:
+                          status = 'Encrypting';
+                          break;
+                        case UploadStatus.complete:
+                          status = 'Complete';
+                          break;
+                        case UploadStatus.failed:
+                          status = 'Failed';
+                          break;
+                        case UploadStatus.preparationDone:
+                          status = 'Preparation done';
+                          break;
+                      }
 
-                    if (task.isProgressAvailable && task.dataItem != null) {
-                      progressText =
-                          '${filesize(((task.dataItem!.dataItemSize) * task.progress).ceil())}/${filesize(task.dataItem!.dataItemSize)}';
-                    } else {
-                      progressText =
-                          'Your upload is in progress, but for large files the progress it not available. Please wait...';
-                    }
+                      if (task.isProgressAvailable && task.dataItem != null) {
+                        progressText =
+                            '${filesize(((task.dataItem!.dataItemSize) * task.progress).ceil())}/${filesize(task.dataItem!.dataItemSize)}';
+                      } else {
+                        progressText =
+                            'Your upload is in progress, but for large files the progress it not available. Please wait...';
+                      }
 
-                    return Column(
-                      children: [
-                        if (task.content != null)
-                          for (var file in task.content!)
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        file.name,
+                      return Column(
+                        children: [
+                          if (task.content != null)
+                            for (var file in task.content!)
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          file.name,
+                                          style: ArDriveTypography.body
+                                              .buttonNormalBold(
+                                            color: ArDriveTheme.of(context)
+                                                .themeData
+                                                .colors
+                                                .themeFgDefault,
+                                          ),
+                                        ),
+                                        // TODO: get the correct size
+                                        // Text(
+                                        //   filesize(
+                                        //     task.dataItem!.dataItemResult
+                                        //         .dataItemSize,
+                                        //   ),
+                                        //   style: ArDriveTypography.body
+                                        //       .buttonNormalBold(
+                                        //     color: ArDriveTheme.of(context)
+                                        //         .themeData
+                                        //         .colors
+                                        //         .themeFgDefault,
+                                        //   ),
+                                        // ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    AnimatedSwitcher(
+                                      duration: const Duration(seconds: 1),
+                                      child: Text(
+                                        status,
                                         style: ArDriveTypography.body
                                             .buttonNormalBold(
                                           color: ArDriveTheme.of(context)
                                               .themeData
                                               .colors
-                                              .themeFgDefault,
+                                              .themeFgOnDisabled,
                                         ),
                                       ),
-                                      // TODO: get the correct size
-                                      // Text(
-                                      //   filesize(
-                                      //     task.dataItem!.dataItemResult
-                                      //         .dataItemSize,
-                                      //   ),
-                                      //   style: ArDriveTypography.body
-                                      //       .buttonNormalBold(
-                                      //     color: ArDriveTheme.of(context)
-                                      //         .themeData
-                                      //         .colors
-                                      //         .themeFgDefault,
-                                      //   ),
-                                      // ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AnimatedSwitcher(
-                                    duration: const Duration(seconds: 1),
-                                    child: Text(
-                                      status,
+                                    ),
+                                    Text(
+                                      progressText,
                                       style: ArDriveTypography.body
-                                          .buttonNormalBold(
+                                          .buttonNormalRegular(
                                         color: ArDriveTheme.of(context)
                                             .themeData
                                             .colors
                                             .themeFgOnDisabled,
                                       ),
                                     ),
-                                  ),
-                                  Text(
-                                    progressText,
-                                    style: ArDriveTypography.body
-                                        .buttonNormalRegular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgOnDisabled,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                      ],
-                    );
-                  },
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
