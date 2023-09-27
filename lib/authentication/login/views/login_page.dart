@@ -14,6 +14,7 @@ import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/io_utils.dart';
@@ -45,6 +46,7 @@ class _LoginPageState extends State<LoginPage> {
     return BlocProvider<LoginBloc>(
       create: (context) => LoginBloc(
         arConnectService: ArConnectService(),
+        ethereumProviderService: EthereumProviderService(),
         arDriveAuth: context.read<ArDriveAuth>(),
       )..add(const CheckIfUserIsLoggedIn()),
       child: BlocConsumer<LoginBloc, LoginState>(
@@ -280,6 +282,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           content = PromptWalletView(
             key: const Key('promptWalletView'),
             isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
+            isEthereumProviderAvailable:
+                (state as LoginInitial).isEthereumProviderAvailable,
           );
         }
 
@@ -303,9 +307,11 @@ class PromptWalletView extends StatefulWidget {
   const PromptWalletView({
     super.key,
     required this.isArConnectAvailable,
+    required this.isEthereumProviderAvailable,
   });
 
   final bool isArConnectAvailable;
+  final bool isEthereumProviderAvailable;
 
   @override
   State<PromptWalletView> createState() => _PromptWalletViewState();
@@ -423,7 +429,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                               )),
                     ),
                   ),
-                  if (widget.isArConnectAvailable) ...[
+                  if (widget.isArConnectAvailable ||
+                      widget.isEthereumProviderAvailable) ...[
                     const SizedBox(height: 40),
                     Row(
                       children: [
@@ -463,28 +470,55 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     ),
                     Row(
                       children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 40),
-                            child: ArDriveButton(
-                              icon: Padding(
-                                  padding: const EdgeInsets.only(right: 4),
-                                  child: ArDriveIcons.arconnectIcon1(
-                                    color: colors.themeFgDefault,
-                                  )),
-                              style: ArDriveButtonStyle.secondary,
-                              fontStyle: ArDriveTypography.body
-                                  .smallBold700(color: colors.themeFgDefault),
-                              onPressed: () {
-                                context
-                                    .read<LoginBloc>()
-                                    .add(const AddWalletFromArConnect());
-                              },
-                              // TODO: create/update localization key
-                              text: 'Login with ArConnect',
+                        if (widget.isArConnectAvailable) ...[
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 40),
+                              child: ArDriveButton(
+                                icon: Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: ArDriveIcons.arconnectIcon1(
+                                      color: colors.themeFgDefault,
+                                    )),
+                                style: ArDriveButtonStyle.secondary,
+                                fontStyle: ArDriveTypography.body
+                                    .smallBold700(color: colors.themeFgDefault),
+                                onPressed: () {
+                                  context
+                                      .read<LoginBloc>()
+                                      .add(const AddWalletFromArConnect());
+                                },
+                                // TODO: create/update localization key
+                                text: 'Login with ArConnect',
+                              ),
                             ),
                           ),
-                        ),
+                        ],
+                        if (widget.isEthereumProviderAvailable) ...[
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 40),
+                              child: ArDriveButton(
+                                // TODO: Use Ethereum/Metamask Icon
+                                icon: Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: ArDriveIcons.arconnectIcon1(
+                                      color: colors.themeFgDefault,
+                                    )),
+                                style: ArDriveButtonStyle.secondary,
+                                fontStyle: ArDriveTypography.body
+                                    .smallBold700(color: colors.themeFgDefault),
+                                onPressed: () {
+                                  context
+                                      .read<LoginBloc>()
+                                      .add(const AddWalletFromArConnect());
+                                },
+                                // TODO: create/update localization key
+                                text: 'Login with Ethereum Provider',
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],

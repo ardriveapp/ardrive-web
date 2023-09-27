@@ -5,6 +5,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -25,6 +26,7 @@ part 'login_state.dart';
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ArDriveAuth _arDriveAuth;
   final ArConnectService _arConnectService;
+  final EthereumProviderService _ethereumProviderService;
 
   bool ignoreNextWaletSwitch = false;
 
@@ -37,8 +39,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   LoginBloc({
     required ArDriveAuth arDriveAuth,
     required ArConnectService arConnectService,
+    required EthereumProviderService ethereumProviderService,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
+        _ethereumProviderService = ethereumProviderService,
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
@@ -168,7 +172,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    emit(LoginInitial(_arConnectService.isExtensionPresent()));
+    emit(LoginInitial(_arConnectService.isExtensionPresent(),
+        _ethereumProviderService.isExtensionPresent()));
   }
 
   Future<void> _handleUnlockUserWithPasswordEvent(
@@ -264,7 +269,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arConnectService.disconnect();
     }
 
-    emit(LoginInitial(_arConnectService.isExtensionPresent()));
+    emit(LoginInitial(_arConnectService.isExtensionPresent(),
+        _ethereumProviderService.isExtensionPresent()));
   }
 
   Future<void> _handleFinishOnboardingEvent(
@@ -325,7 +331,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       _arDriveAuth.logout();
 
       // ignore: invalid_use_of_visible_for_testing_member
-      emit(const LoginInitial(true));
+      emit(LoginInitial(true, _ethereumProviderService.isExtensionPresent()));
     });
   }
 
