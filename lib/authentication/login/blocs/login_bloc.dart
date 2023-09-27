@@ -14,7 +14,6 @@ import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'stub_web_wallet.dart' // stub implementation
@@ -61,6 +60,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleCreatePasswordEvent(event, emit);
     } else if (event is AddWalletFromArConnect) {
       await _handleAddWalletFromArConnectEvent(event, emit);
+    } else if (event is AddWalletFromEthereumProviderEvent) {
+      await _handleAddWalletFromEthereumProviderEvent(event, emit);
     } else if (event is ForgetWallet) {
       await _handleForgetWalletEvent(event, emit);
     } else if (event is FinishOnboarding) {
@@ -251,6 +252,33 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } else {
         emit(LoginOnBoarding(wallet));
       }
+    } catch (e) {
+      emit(LoginFailure(e));
+      emit(previousState);
+    }
+  }
+
+  Future<void> _handleAddWalletFromEthereumProviderEvent(
+      AddWalletFromEthereumProviderEvent event,
+      Emitter<LoginState> emit) async {
+    final previousState = state;
+
+    try {
+      emit(LoginLoading());
+
+      final ethereumWallet = await _ethereumProviderService.connect();
+
+      if (ethereumWallet == null) {
+        throw Exception('Ethereum wallet not connected');
+      }
+
+      final mnemonic = await ethereumWallet.deriveArdriveSeedphrase();
+
+      emit(const LoginGenerateWallet());
+
+      final wallet = await generateWalletFromMnemonic(mnemonic);
+
+      emit(LoginDownloadGeneratedWallet(mnemonic, wallet));
     } catch (e) {
       emit(LoginFailure(e));
       emit(previousState);

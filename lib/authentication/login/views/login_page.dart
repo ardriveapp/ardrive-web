@@ -509,9 +509,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                 fontStyle: ArDriveTypography.body
                                     .smallBold700(color: colors.themeFgDefault),
                                 onPressed: () {
-                                  context
-                                      .read<LoginBloc>()
-                                      .add(const AddWalletFromArConnect());
+                                  context.read<LoginBloc>().add(
+                                      const AddWalletFromEthereumProviderEvent());
                                 },
                                 // TODO: create/update localization key
                                 text: 'Login with Ethereum Provider',
