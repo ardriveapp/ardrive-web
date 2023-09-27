@@ -1,3 +1,4 @@
+import 'package:ardrive/entities/address_type.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -8,6 +9,7 @@ class TruncatedAddress extends StatelessWidget {
   final double? fontSize;
   final int offsetStart;
   final int offsetEnd;
+  final AddressType addressType;
 
   const TruncatedAddress({
     Key? key,
@@ -15,6 +17,7 @@ class TruncatedAddress extends StatelessWidget {
     this.fontSize,
     this.offsetStart = 6,
     this.offsetEnd = 5,
+    this.addressType = AddressType.arweave,
   }) : super(key: key);
 
   @override
@@ -24,7 +27,11 @@ class TruncatedAddress extends StatelessWidget {
       child: GestureDetector(
         onTap: () {
           openUrl(
-            url: 'https://viewblock.io/arweave/address/$walletAddress',
+            url: addressType == AddressType.arweave
+                ? 'https://viewblock.io/arweave/address/$walletAddress'
+                : addressType == AddressType.ethereum
+                    ? 'https://etherscan.io/address/$walletAddress'
+                    : '#',
           );
         },
         child: Text(
