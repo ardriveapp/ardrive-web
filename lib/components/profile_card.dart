@@ -323,41 +323,6 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
-  Widget _buildDownloadWalletRow(
-    BuildContext context,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 10.0, right: 15),
-      child: HoverWidget(
-        hoverScale: 1,
-        child: ArDriveClickArea(
-          child: GestureDetector(
-            onTap: () {
-              _showProfileCard = false;
-              setState(() {});
-              showDownloadWalletModal(context);
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    appLocalizationsOf(context).downloadWalletKeyfile,
-                    style: ArDriveTypography.body.captionRegular().copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
-                        ),
-                  ),
-                ),
-                ArDriveIcons.arrowDownload(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildBalanceRow(BuildContext context, ProfileLoggedIn state) {
     final walletBalance =
         double.tryParse(utils.winstonToAr(state.walletBalance))
