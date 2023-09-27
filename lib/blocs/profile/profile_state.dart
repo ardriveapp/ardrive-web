@@ -30,6 +30,8 @@ class ProfileLoggedIn extends ProfileAvailable {
 
   final String walletAddress;
 
+  final ProfileSource profileSource;
+
   /// The user's wallet balance in winston.
   final BigInt walletBalance;
 
@@ -42,6 +44,7 @@ class ProfileLoggedIn extends ProfileAvailable {
     required this.password,
     required this.wallet,
     required this.walletAddress,
+    required this.profileSource,
     required this.walletBalance,
     required this.cipherKey,
     required this.useTurbo,
@@ -52,6 +55,7 @@ class ProfileLoggedIn extends ProfileAvailable {
     String? password,
     Wallet? wallet,
     String? walletAddress,
+    ProfileSource? profileSource,
     BigInt? walletBalance,
     SecretKey? cipherKey,
     bool? useTurbo,
@@ -61,6 +65,7 @@ class ProfileLoggedIn extends ProfileAvailable {
         password: password ?? this.password,
         wallet: wallet ?? this.wallet,
         walletAddress: walletAddress ?? this.walletAddress,
+        profileSource: profileSource ?? this.profileSource,
         walletBalance: walletBalance ?? this.walletBalance,
         cipherKey: cipherKey ?? this.cipherKey,
         useTurbo: useTurbo ?? this.useTurbo,
@@ -79,6 +84,7 @@ class ProfileLoggedIn extends ProfileAvailable {
         password,
         wallet,
         walletAddress,
+        profileSource,
         walletBalance,
         cipherKey,
       ];

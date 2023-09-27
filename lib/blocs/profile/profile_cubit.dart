@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
@@ -156,12 +157,18 @@ class ProfileCubit extends Cubit<ProfileState> {
       }
     }();
 
+    final profileSource = ProfileSource(
+      type: ProfileSourceType.values[profile.details.profileSourceType ?? 0],
+      address: profile.details.profileSourceAddress,
+    );
+
     emit(
       ProfileLoggedIn(
         username: profile.details.username,
         password: password,
         wallet: wallet,
         walletAddress: walletAddress,
+        profileSource: profileSource,
         walletBalance: walletBalance,
         cipherKey: profile.key,
         useTurbo: _turboUploadService.useTurboUpload,
