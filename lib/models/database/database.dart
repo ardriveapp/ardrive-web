@@ -59,6 +59,9 @@ class Database extends _$Database {
             );
           }
           if (from < 18 && to >= 18) {
+            // Adding support for remembering source Ethereum address
+            logger.i('Migrating schema from v17 to v18');
+
             await m.addColumn(profiles, profiles.profileSourceType);
             await m.addColumn(profiles, profiles.profileSourceAddress);
           }
