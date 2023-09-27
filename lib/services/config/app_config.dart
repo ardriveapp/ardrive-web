@@ -13,6 +13,7 @@ class AppConfig {
   final bool enableQuickSyncAuthoring;
   final bool enableMultipleFileDownload;
   final bool enableVideoPreview;
+  final bool enableAudioPreview;
   final int autoSyncIntervalInSeconds;
   final bool enableSyncFromSnapshot;
   final bool enableSeedPhraseLogin;
@@ -28,6 +29,7 @@ class AppConfig {
     this.enableQuickSyncAuthoring = false,
     this.enableMultipleFileDownload = false,
     this.enableVideoPreview = false,
+    this.enableAudioPreview = false,
     this.autoSyncIntervalInSeconds = 5 * 60,
     this.enableSyncFromSnapshot = true,
     this.enableSeedPhraseLogin = true,
@@ -44,6 +46,7 @@ class AppConfig {
     bool? enableQuickSyncAuthoring,
     bool? enableMultipleFileDownload,
     bool? enableVideoPreview,
+    bool? enableAudioPreview,
     int? autoSyncIntervalInSeconds,
     bool? enableSyncFromSnapshot,
     bool? enableSeedPhraseLogin,
@@ -65,6 +68,7 @@ class AppConfig {
       enableQuickSyncAuthoring:
           enableQuickSyncAuthoring ?? this.enableQuickSyncAuthoring,
       enableVideoPreview: enableVideoPreview ?? this.enableVideoPreview,
+      enableAudioPreview: enableAudioPreview ?? this.enableAudioPreview,
       autoSyncIntervalInSeconds:
           autoSyncIntervalInSeconds ?? this.autoSyncIntervalInSeconds,
       enableSyncFromSnapshot:
