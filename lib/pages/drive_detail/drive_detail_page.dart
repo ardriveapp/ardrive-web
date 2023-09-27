@@ -268,7 +268,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     tooltip:
                                         appLocalizationsOf(context).showMenu,
                                     child: ArDriveDropdown(
-                                      width: 260,
                                       anchor: const Aligned(
                                         follower: Alignment.topRight,
                                         target: Alignment.bottomRight,
@@ -774,7 +773,6 @@ class MobileFolderNavigation extends StatelessWidget {
                     state.currentDrive.ownerAddress);
 
                 return ArDriveDropdown(
-                  width: 240,
                   anchor: const Aligned(
                     follower: Alignment.topRight,
                     target: Alignment.bottomRight,
