@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
@@ -34,6 +35,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   @visibleForTesting
   ProfileType? profileType;
+
+  @visibleForTesting
+  ProfileSource? profileSource;
 
   LoginBloc({
     required ArDriveAuth arDriveAuth,
@@ -119,6 +123,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(LoginLoading());
 
       profileType = ProfileType.json;
+      profileSource = ProfileSource(type: ProfileSourceType.standalone);
 
       final wallet =
           Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
@@ -147,6 +152,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit: emit,
         previousState: previousState,
         profileType: profileType!,
+        profileSource: profileSource!,
       );
     } catch (e) {
       emit(LoginFailure(e));
@@ -210,6 +216,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit: emit,
         previousState: previousState,
         profileType: profileType!,
+        profileSource: profileSource!,
       );
     } catch (e) {
       emit(LoginFailure(e));
@@ -244,6 +251,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final wallet = ArConnectWallet(_arConnectService);
 
       profileType = ProfileType.arConnect;
+      profileSource = ProfileSource(type: ProfileSourceType.standalone);
 
       lastKnownWalletAddress = await wallet.getAddress();
 
@@ -272,9 +280,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         throw Exception('Ethereum wallet not connected');
       }
 
+      final address = await ethereumWallet.getAddress();
       final mnemonic = await ethereumWallet.deriveArdriveSeedphrase();
 
       profileType = ProfileType.json;
+      profileSource = ProfileSource(
+        type: ProfileSourceType.ethereumSignature,
+        address: address,
+      );
 
       emit(const LoginGenerateWallet());
 
@@ -316,6 +329,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required Wallet wallet,
     required String password,
     required ProfileType profileType,
+    required ProfileSource profileSource,
     required LoginState previousState,
     required Emitter<LoginState> emit,
   }) async {
@@ -334,6 +348,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       wallet,
       password,
       profileType,
+      profileSource,
     );
 
     emit(LoginSuccess(user));
@@ -386,6 +401,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleAddWalletFromMnemonicEvent(
       AddWalletFromMnemonic event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
+    profileSource = ProfileSource(type: ProfileSourceType.standalone);
 
     emit(const LoginGenerateWallet());
 
@@ -396,6 +412,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleAddWalletFromCompleterEvent(
       AddWalletFromCompleter event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
+    profileSource = ProfileSource(type: ProfileSourceType.standalone);
 
     Completer<Wallet> completer = event.walletCompleter;
     Wallet wallet;
@@ -418,6 +435,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleCreateNewWalletEvent(
       CreateNewWallet event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
+    profileSource = ProfileSource(type: ProfileSourceType.standalone);
+
     final mnemonic = bip39.generateMnemonic();
     emit(LoginCreateNewWallet(mnemonic));
   }
@@ -428,6 +447,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final wallet = event.wallet;
 
     profileType = ProfileType.json;
+    // Wallet could be from Ethereum or Arweave wallet file
+    // profileSource = ProfileSource(type: ProfileSourceType.arweaveKey);
 
     try {
       if (await _arDriveAuth.userHasPassword(wallet)) {

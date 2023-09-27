@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/services.dart';
@@ -982,7 +983,8 @@ User getFakeUser() => User(
     walletAddress: 'walletAddress',
     walletBalance: BigInt.one,
     cipherKey: SecretKey([]),
-    profileType: ProfileType.arConnect);
+    profileType: ProfileType.arConnect,
+    profileSource: ProfileSource(type: ProfileSourceType.standalone));
 
 FolderEntry getFakeFolder() => FolderEntry(
       id: 'id',

@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/services/services.dart';
@@ -107,6 +108,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      profileSource: ProfileSource(type: ProfileSourceType.standalone),
     );
     blocTest(
       'should emit the event to show onboarding when user is not an existing one',
@@ -123,6 +125,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
+              ProfileSource(type: ProfileSourceType.standalone),
             )).thenAnswer((_) async => loggedUser);
       },
       act: (bloc) async {
@@ -151,6 +154,7 @@ void main() {
               any(),
               'password',
               ProfileType.arConnect,
+              ProfileSource(type: ProfileSourceType.standalone),
             )).thenAnswer((_) async => loggedUser);
 
         when(() => mockArConnectService.getWalletAddress())
@@ -182,6 +186,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
+              ProfileSource(type: ProfileSourceType.standalone),
             )).thenAnswer((_) async => loggedUser);
 
         when(() => mockArConnectService.getWalletAddress())
@@ -220,6 +225,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
+              ProfileSource(type: ProfileSourceType.standalone),
             )).thenThrow(Exception('some error'));
       },
       act: (bloc) async {
@@ -295,6 +301,7 @@ void main() {
               walletBalance: BigInt.one,
               cipherKey: SecretKey([]),
               profileType: ProfileType.json,
+              profileSource: ProfileSource(type: ProfileSourceType.standalone),
             ));
       },
       act: (bloc) async {
@@ -373,6 +380,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      profileSource: ProfileSource(type: ProfileSourceType.standalone),
     );
 
     blocTest(
@@ -448,6 +456,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      profileSource: ProfileSource(type: ProfileSourceType.standalone),
     );
 
     blocTest(
@@ -465,6 +474,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
+              ProfileSource(type: ProfileSourceType.standalone),
             )).thenAnswer((_) async => loggedUser);
       },
       act: (bloc) async {
@@ -492,6 +502,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
+              ProfileSource(type: ProfileSourceType.standalone),
             )).thenThrow(Exception('some error'));
       },
       act: (bloc) async {
@@ -526,6 +537,7 @@ void main() {
               any(),
               'password',
               ProfileType.arConnect,
+              ProfileSource(type: ProfileSourceType.standalone),
             )).thenAnswer((_) async => loggedUser);
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('some address'));
@@ -557,6 +569,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
+              ProfileSource(type: ProfileSourceType.standalone),
             )).thenThrow(Exception('some error'));
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('some another address'));
@@ -781,6 +794,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      profileSource: ProfileSource(type: ProfileSourceType.standalone),
     );
 
     blocTest(

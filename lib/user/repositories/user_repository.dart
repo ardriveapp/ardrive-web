@@ -1,3 +1,4 @@
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -11,6 +12,7 @@ abstract class UserRepository {
   Future<void> saveUser(
     String password,
     ProfileType profileType,
+    ProfileSource profileSource,
     Wallet wallet,
   );
   Future<void> deleteUser();
@@ -45,6 +47,11 @@ class _UserRepository implements UserRepository {
 
     final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],
+      profileSource: ProfileSource(
+        type: ProfileSourceType
+            .values[profileDetails.details.profileSourceType ?? 0],
+        address: profileDetails.details.walletPublicKey,
+      ),
       wallet: profileDetails.wallet,
       cipherKey: profileDetails.key,
       password: password,
@@ -60,8 +67,8 @@ class _UserRepository implements UserRepository {
   }
 
   @override
-  Future<void> saveUser(
-      String password, ProfileType profileType, Wallet wallet) async {
+  Future<void> saveUser(String password, ProfileType profileType,
+      ProfileSource profileSource, Wallet wallet) async {
     logger.d('Saving user');
 
     await _profileDao.addProfile(
@@ -70,6 +77,7 @@ class _UserRepository implements UserRepository {
       password,
       wallet,
       profileType,
+      profileSource,
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -12,6 +13,7 @@ abstract class User with EquatableMixin {
   late final BigInt walletBalance;
   late final SecretKey cipherKey;
   late final ProfileType profileType;
+  late final ProfileSource profileSource;
 
   factory User({
     required String password,
@@ -20,6 +22,7 @@ abstract class User with EquatableMixin {
     required BigInt walletBalance,
     required SecretKey cipherKey,
     required ProfileType profileType,
+    required ProfileSource profileSource,
   }) =>
       _User(
         password: password,
@@ -28,6 +31,7 @@ abstract class User with EquatableMixin {
         walletBalance: walletBalance,
         cipherKey: cipherKey,
         profileType: profileType,
+        profileSource: profileSource,
       );
 }
 
@@ -44,6 +48,8 @@ class _User implements User {
   late final SecretKey cipherKey;
   @override
   late final ProfileType profileType;
+  @override
+  late final ProfileSource profileSource;
 
   _User({
     required this.password,
@@ -52,6 +58,7 @@ class _User implements User {
     required this.walletBalance,
     required this.cipherKey,
     required this.profileType,
+    required ProfileSource profileSource,
   });
 
   @override
@@ -61,6 +68,7 @@ class _User implements User {
         walletBalance,
         cipherKey,
         profileType,
+        profileSource,
         wallet,
       ];
 

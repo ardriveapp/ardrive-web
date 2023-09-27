@@ -1,3 +1,4 @@
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -79,6 +80,7 @@ void main() {
         walletBalance: BigInt.zero,
         cipherKey: SecretKey([1, 2, 3]),
         profileType: ProfileType.json,
+        profileSource: ProfileSource(type: ProfileSourceType.standalone),
       );
 
       expect(result, isNotNull);
@@ -144,20 +146,22 @@ void main() {
         walletBalance: BigInt.zero,
         cipherKey: SecretKey([1, 2, 3]),
         profileType: ProfileType.json,
+        profileSource: ProfileSource(type: ProfileSourceType.standalone),
       );
 
-      when(() => mockProfileDao.addProfile(
-              'user.username', rightPassword, wallet, user.profileType))
+      when(() => mockProfileDao.addProfile('user.username', rightPassword,
+              wallet, user.profileType, user.profileSource))
           .thenAnswer((_) async => Future.value(SecretKey([1, 2, 3])));
 
       await userRepository.saveUser(
         rightPassword,
         user.profileType,
+        user.profileSource,
         user.wallet,
       );
 
-      verify(() => mockProfileDao.addProfile(
-          'user.username', rightPassword, wallet, user.profileType)).called(1);
+      verify(() => mockProfileDao.addProfile('user.username', rightPassword,
+          wallet, user.profileType, user.profileSource)).called(1);
     });
   });
 
@@ -184,7 +188,7 @@ void main() {
       verify(() => mockProfileDao.getDefaultProfile()).called(1);
       verify(() => mockProfileDao.deleteProfile()).called(1);
     });
-    
+
     test('should do nothing when there is no user ', () async {
       when(() => mockProfileDao.deleteProfile())
           .thenAnswer((_) async => Future.value());

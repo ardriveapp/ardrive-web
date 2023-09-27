@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/user/download_wallet/bloc/download_wallet_bloc.dart';
 import 'package:ardrive/user/user.dart';
@@ -37,6 +38,7 @@ void main() {
     walletBalance: BigInt.zero,
     cipherKey: SecretKey([1, 2, 3]),
     profileType: ProfileType.json,
+    profileSource: ProfileSource(type: ProfileSourceType.standalone),
   );
 
   blocTest<DownloadWalletBloc, DownloadWalletState>(
