@@ -95,7 +95,7 @@ dependencies:
   async: ^2.9.0
   animations: ^2.0.7
   connectivity_plus: ^4.0.0
-  archive: ^3.3.0
+  archive: ^3.3.8
   video_player: ^2.7.1
   lottie: ^2.3.0
   visibility_detector: ^0.4.0+2
