@@ -17,7 +17,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -136,7 +135,6 @@ class UploadForm extends StatefulWidget {
 
 class _UploadFormState extends State<UploadForm> {
   final _scrollController = ScrollController();
-  UploadMethod? _uploadMethod;
 
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
@@ -339,8 +337,6 @@ class _UploadFormState extends State<UploadForm> {
             final numberOfV2Files =
                 state.uploadPlanForAR.fileV2UploadHandles.length;
 
-            _uploadMethod = state.uploadMethod;
-
             logger.d(
               ' is button to upload enabled: ${state.isButtonToUploadEnabled}',
             );
@@ -496,37 +492,32 @@ class _UploadFormState extends State<UploadForm> {
                       height: 8,
                     ),
                   },
-                  if (!state.isFreeThanksToTurbo)
-                    PaymentMethodSelector(
-                      uploadMethod: state.uploadMethod,
-                      costEstimateTurbo: state.costEstimateTurbo,
-                      costEstimateAr: state.costEstimateAr,
-                      hasNoTurboBalance: state.isZeroBalance,
-                      isTurboUploadPossible: state.isTurboUploadPossible,
-                      arBalance: state.arBalance,
-                      turboCredits: state.turboCredits,
-                      onArSelect: () {
-                        context
-                            .read<UploadCubit>()
-                            .setUploadMethod(UploadMethod.ar);
-                      },
-                      onTurboSelect: () {
-                        context
-                            .read<UploadCubit>()
-                            .setUploadMethod(UploadMethod.turbo);
-                      },
-                      onTurboTopupSucess: () {
-                        context.read<UploadCubit>().startUploadPreparation(
-                              isRetryingToPayWithTurbo: true,
-                            );
-                      },
-                    ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  _getInsufficientBalanceMessage(
+                  PaymentMethodSelector(
+                    uploadMethod: state.uploadMethod,
+                    costEstimateTurbo: state.costEstimateTurbo,
+                    costEstimateAr: state.costEstimateAr,
+                    hasNoTurboBalance: state.isZeroBalance,
+                    isTurboUploadPossible: state.isTurboUploadPossible,
+                    arBalance: state.arBalance,
                     sufficientArBalance: state.sufficientArBalance,
+                    turboCredits: state.turboCredits,
                     sufficentCreditsBalance: state.sufficentCreditsBalance,
+                    isFreeThanksToTurbo: state.isFreeThanksToTurbo,
+                    onArSelect: () {
+                      context
+                          .read<UploadCubit>()
+                          .setUploadMethod(UploadMethod.ar);
+                    },
+                    onTurboSelect: () {
+                      context
+                          .read<UploadCubit>()
+                          .setUploadMethod(UploadMethod.turbo);
+                    },
+                    onTurboTopupSucess: () {
+                      context.read<UploadCubit>().startUploadPreparation(
+                            isRetryingToPayWithTurbo: true,
+                          );
+                    },
                   ),
                 ],
               ),
@@ -756,114 +747,4 @@ class _UploadFormState extends State<UploadForm> {
           return const SizedBox();
         },
       );
-
-  Widget _getInsufficientBalanceMessage({
-    required bool sufficientArBalance,
-    required bool sufficentCreditsBalance,
-  }) {
-    if (_uploadMethod == UploadMethod.turbo &&
-        !sufficentCreditsBalance &&
-        sufficientArBalance) {
-      return GestureDetector(
-        onTap: () {
-          showTurboTopupModal(context, onSuccess: () {
-            context.read<UploadCubit>().startUploadPreparation(
-                  isRetryingToPayWithTurbo: true,
-                );
-          });
-        },
-        child: ArDriveClickArea(
-          child: Text.rich(
-            TextSpan(
-              text: 'Insufficient Credit balance for purchase. ',
-              style: ArDriveTypography.body.captionBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
-              ),
-              children: [
-                TextSpan(
-                  text: 'Add Credits',
-                  style: ArDriveTypography.body
-                      .captionBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeErrorDefault,
-                      )
-                      .copyWith(decoration: TextDecoration.underline),
-                ),
-                TextSpan(
-                  text: ' to use Turbo.',
-                  style: ArDriveTypography.body.captionBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeErrorDefault,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else if (_uploadMethod == UploadMethod.ar && !sufficientArBalance) {
-      return Text(
-        'Insufficient AR balance for purchase.',
-        style: ArDriveTypography.body.captionBold(
-          color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
-        ),
-      );
-    } else if (!sufficentCreditsBalance && !sufficientArBalance) {
-      return GestureDetector(
-        onTap: () {
-          showTurboTopupModal(context, onSuccess: () {
-            context.read<UploadCubit>().startUploadPreparation(
-                  isRetryingToPayWithTurbo: true,
-                );
-          });
-        },
-        child: ArDriveClickArea(
-          child: RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text:
-                      'Insufficient balance to pay for this upload. You can either',
-                  style: ArDriveTypography.body.captionBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeErrorDefault,
-                  ),
-                ),
-                TextSpan(
-                  text: ' add Turbo credits to your profile',
-                  style: ArDriveTypography.body
-                      .captionBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeErrorDefault,
-                      )
-                      .copyWith(
-                        decoration: TextDecoration.underline,
-                      ),
-                ),
-                TextSpan(
-                  text: ' or use AR',
-                  style: ArDriveTypography.body.captionBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeErrorDefault,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    return const SizedBox();
-  }
 }

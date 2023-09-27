@@ -12,7 +12,10 @@ class PaymentMethodSelector extends StatelessWidget {
   final bool hasNoTurboBalance;
   final bool isTurboUploadPossible;
   final String arBalance;
+  final bool sufficientArBalance;
   final String turboCredits;
+  final bool sufficentCreditsBalance;
+  final bool isFreeThanksToTurbo;
   final void Function() onTurboTopupSucess;
   final void Function() onArSelect;
   final void Function() onTurboSelect;
@@ -25,7 +28,10 @@ class PaymentMethodSelector extends StatelessWidget {
     required this.hasNoTurboBalance,
     required this.isTurboUploadPossible,
     required this.arBalance,
+    required this.sufficientArBalance,
     required this.turboCredits,
+    required this.sufficentCreditsBalance,
+    required this.isFreeThanksToTurbo,
     required this.onTurboTopupSucess,
     required this.onArSelect,
     required this.onTurboSelect,
@@ -33,7 +39,15 @@ class PaymentMethodSelector extends StatelessWidget {
 
   @override
   Widget build(context) {
-    return _buildContent(context);
+    return Column(
+      children: [
+        if (!isFreeThanksToTurbo) ...[
+          _buildContent(context),
+          const SizedBox(height: 16),
+          _getInsufficientBalanceMessage(context: context),
+        ],
+      ],
+    );
   }
 
   Widget _buildContent(BuildContext context) {
@@ -145,5 +159,110 @@ class PaymentMethodSelector extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Widget _getInsufficientBalanceMessage({
+    required BuildContext context,
+  }) {
+    if (uploadMethod == UploadMethod.turbo &&
+        !sufficentCreditsBalance &&
+        sufficientArBalance) {
+      return GestureDetector(
+        onTap: () {
+          showTurboTopupModal(context, onSuccess: () {
+            onTurboTopupSucess();
+          });
+        },
+        child: ArDriveClickArea(
+          child: Text.rich(
+            TextSpan(
+              text: 'Insufficient Credit balance for purchase. ',
+              style: ArDriveTypography.body.captionBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+              ),
+              children: [
+                TextSpan(
+                  text: 'Add Credits',
+                  style: ArDriveTypography.body
+                      .captionBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeErrorDefault,
+                      )
+                      .copyWith(decoration: TextDecoration.underline),
+                ),
+                TextSpan(
+                  text: ' to use Turbo.',
+                  style: ArDriveTypography.body.captionBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeErrorDefault,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else if (uploadMethod == UploadMethod.ar && !sufficientArBalance) {
+      return Text(
+        'Insufficient AR balance for purchase.',
+        style: ArDriveTypography.body.captionBold(
+          color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+        ),
+      );
+    } else if (!sufficentCreditsBalance && !sufficientArBalance) {
+      return GestureDetector(
+        onTap: () {
+          showTurboTopupModal(context, onSuccess: () {
+            onTurboTopupSucess();
+          });
+        },
+        child: ArDriveClickArea(
+          child: RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text:
+                      'Insufficient balance to pay for this upload. You can either',
+                  style: ArDriveTypography.body.captionBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeErrorDefault,
+                  ),
+                ),
+                TextSpan(
+                  text: ' add Turbo credits to your profile',
+                  style: ArDriveTypography.body
+                      .captionBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeErrorDefault,
+                      )
+                      .copyWith(
+                        decoration: TextDecoration.underline,
+                      ),
+                ),
+                TextSpan(
+                  text: ' or use AR',
+                  style: ArDriveTypography.body.captionBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeErrorDefault,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return const SizedBox();
   }
 }

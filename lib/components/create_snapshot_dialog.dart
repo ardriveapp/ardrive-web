@@ -407,7 +407,11 @@ Widget _confirmDialog(
                         hasNoTurboBalance: state.hasNoTurboBalance,
                         isTurboUploadPossible: true,
                         arBalance: state.arBalance,
+                        sufficientArBalance: state.sufficientBalanceToPayWithAr,
                         turboCredits: state.turboCredits,
+                        sufficentCreditsBalance:
+                            state.sufficientBalanceToPayWithTurbo,
+                        isFreeThanksToTurbo: false,
                         onTurboTopupSucess: () {
                           createSnapshotCubit
                               .setUploadMethod(UploadMethod.turbo);
@@ -444,6 +448,7 @@ Widget _confirmDialog(
             await createSnapshotCubit.confirmSnapshotCreation(),
           },
           title: appLocalizationsOf(context).uploadEmphasized,
+          isEnable: state.isButtonToUploadEnabled,
         ),
       }
     ],
