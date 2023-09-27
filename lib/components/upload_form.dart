@@ -1077,7 +1077,7 @@ class _UploadFormState extends State<UploadForm> {
               ),
             ),
           ),
-          SizedBox(
+          const SizedBox(
             height: 8,
           ),
           Text(
