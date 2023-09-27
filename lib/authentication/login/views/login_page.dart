@@ -470,54 +470,60 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     ),
                     Row(
                       children: [
-                        if (widget.isArConnectAvailable) ...[
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 40),
-                              child: ArDriveButton(
-                                icon: Padding(
-                                    padding: const EdgeInsets.only(right: 4),
-                                    child: ArDriveIcons.arconnectIcon1(
-                                      color: colors.themeFgDefault,
-                                    )),
-                                style: ArDriveButtonStyle.secondary,
-                                fontStyle: ArDriveTypography.body
-                                    .smallBold700(color: colors.themeFgDefault),
-                                onPressed: () {
-                                  context
-                                      .read<LoginBloc>()
-                                      .add(const AddWalletFromArConnect());
-                                },
-                                // TODO: create/update localization key
-                                text: 'Login with ArConnect',
-                              ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 40),
+                            child: Column(
+                              children: [
+                                if (widget.isArConnectAvailable) ...[
+                                  ArDriveButton(
+                                    icon: Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 4),
+                                        child: ArDriveIcons.arconnectIcon1(
+                                          color: colors.themeFgDefault,
+                                        )),
+                                    style: ArDriveButtonStyle.secondary,
+                                    fontStyle: ArDriveTypography.body
+                                        .smallBold700(
+                                            color: colors.themeFgDefault),
+                                    onPressed: () {
+                                      context
+                                          .read<LoginBloc>()
+                                          .add(const AddWalletFromArConnect());
+                                    },
+                                    // TODO: create/update localization key
+                                    text: 'Login with ArConnect',
+                                  ),
+                                ],
+                                if (widget.isArConnectAvailable &&
+                                    widget.isEthereumProviderAvailable)
+                                  const SizedBox(height: 16),
+                                if (widget.isEthereumProviderAvailable) ...[
+                                  ArDriveButton(
+                                    // TODO: Use Ethereum/Metamask Icon
+                                    icon: Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 4),
+                                        child: ArDriveIcons.arconnectIcon1(
+                                          color: colors.themeFgDefault,
+                                        )),
+                                    style: ArDriveButtonStyle.secondary,
+                                    fontStyle: ArDriveTypography.body
+                                        .smallBold700(
+                                            color: colors.themeFgDefault),
+                                    onPressed: () {
+                                      context.read<LoginBloc>().add(
+                                          const AddWalletFromEthereumProviderEvent());
+                                    },
+                                    // TODO: create/update localization key
+                                    text: 'Login with Ethereum',
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                        ],
-                        if (widget.isEthereumProviderAvailable) ...[
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 40),
-                              child: ArDriveButton(
-                                // TODO: Use Ethereum/Metamask Icon
-                                icon: Padding(
-                                    padding: const EdgeInsets.only(right: 4),
-                                    child: ArDriveIcons.arconnectIcon1(
-                                      color: colors.themeFgDefault,
-                                    )),
-                                style: ArDriveButtonStyle.secondary,
-                                fontStyle: ArDriveTypography.body
-                                    .smallBold700(color: colors.themeFgDefault),
-                                onPressed: () {
-                                  context.read<LoginBloc>().add(
-                                      const AddWalletFromEthereumProviderEvent());
-                                },
-                                // TODO: create/update localization key
-                                text: 'Login with Ethereum Provider',
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ],
                     ),
                   ],
