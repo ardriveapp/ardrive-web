@@ -429,13 +429,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               nameOnCardTextField(),
             ],
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              countryTextField(theme),
-            ],
-          ),
-          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(bottom: 4, right: 16),
             child: Align(
@@ -490,6 +483,13 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 });
               },
             ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              countryTextField(theme),
+            ],
           ),
           const SizedBox(height: 16),
           Row(children: [promoCodeLabel()]),
