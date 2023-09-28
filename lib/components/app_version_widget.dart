@@ -1,5 +1,4 @@
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +19,6 @@ class AppVersionWidget extends StatelessWidget {
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         final info = snapshot.data;
         if (info == null) {
-          logger.d('PackageInfo is null');
           return const SizedBox(
             height: 32,
             width: 32,
@@ -28,7 +26,6 @@ class AppVersionWidget extends StatelessWidget {
         }
         final literalVersion =
             kIsWeb ? info.version : '${info.version}+${info.buildNumber}';
-        logger.d('Version: $literalVersion');
         return Text(
           appLocalizationsOf(context).appVersion(literalVersion),
           style: ArDriveTypography.body.buttonNormalRegular(
