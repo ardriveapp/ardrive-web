@@ -430,13 +430,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               nameOnCardTextField(),
             ],
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              countryTextField(theme),
-            ],
-          ),
-          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(bottom: 4, right: 16),
             child: Align(
@@ -491,6 +484,13 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 });
               },
             ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              countryTextField(theme),
+            ],
           ),
           const SizedBox(height: 16),
           Row(children: [promoCodeLabel()]),
@@ -1018,11 +1018,29 @@ class InputDropdownMenu<T extends InputDropdownItem> extends StatefulWidget {
 class _InputDropdownMenuState<T extends InputDropdownItem>
     extends State<InputDropdownMenu<T>> {
   T? _selectedItem;
+  final GlobalKey _childKey = GlobalKey();
+  double? _childWidth;
+  double get childWidth => _childWidth ?? 200;
+
+  void _refreshChildWidth() {
+    final currentContext = _childKey.currentContext;
+    if (currentContext == null) {
+      return;
+    }
+
+    final RenderBox renderBox =
+        _childKey.currentContext!.findRenderObject() as RenderBox;
+
+    setState(() {
+      _childWidth = renderBox.size.width;
+    });
+  }
 
   @override
   initState() {
     super.initState();
     _selectedItem = widget.selectedItem;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshChildWidth());
   }
 
   @override
@@ -1032,13 +1050,12 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
         showScrollbars: true,
         onClick: widget.onClick,
         maxHeight: 275,
-        width: 200,
         anchor: widget.anchor,
         items: widget.items
             .map(
               (e) => ArDriveDropdownItem(
                 content: Container(
-                  width: 200,
+                  width: _childWidth,
                   alignment: Alignment.center,
                   height: 44,
                   color: widget.backgroundColor ??
@@ -1072,6 +1089,7 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
             )
             .toList(),
         child: Column(
+          key: _childKey,
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
