@@ -52,6 +52,19 @@ class ARFSUploadMetadataGenerator
       id = const Uuid().v4();
     }
 
+    String contentType;
+
+    if (arguments.isPrivate) {
+      contentType = 'application/octet-stream';
+    } else {
+      if (entity is IOFile) {
+        contentType = entity.contentType;
+      } else {
+        // folders and drives are always json
+        contentType = 'application/json';
+      }
+    }
+
     if (entity is IOFile) {
       ARFSUploadMetadataArgsValidator.validate(arguments, EntityType.file);
 
@@ -63,7 +76,7 @@ class ARFSUploadMetadataGenerator
           parentFolderId: arguments.parentFolderId,
           entityId: id,
           entity: EntityType.file,
-          contentType: file.contentType,
+          contentType: contentType,
         ),
       );
 
@@ -91,7 +104,7 @@ class ARFSUploadMetadataGenerator
           parentFolderId: arguments.parentFolderId,
           entityId: id,
           entity: EntityType.folder,
-          contentType: 'application/json',
+          contentType: contentType,
         ),
       );
 
@@ -120,12 +133,20 @@ class ARFSUploadMetadataGenerator
   }) async {
     final id = const Uuid().v4();
 
+    String contentType;
+
+    if (isPrivate) {
+      contentType = 'application/octet-stream';
+    } else {
+      contentType = 'application/json';
+    }
+
     final tags = _tagsGenerator.generateTags(
       ARFSTagsArgs(
         isPrivate: isPrivate,
         entityId: id,
         entity: EntityType.drive,
-        contentType: 'application/json',
+        contentType: contentType,
       ),
     );
 

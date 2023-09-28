@@ -34,7 +34,6 @@ class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
     required super.bundleTags,
   });
 
-  // TODO: implement toJson
   @override
   Map<String, dynamic> toJson() {
     return {
