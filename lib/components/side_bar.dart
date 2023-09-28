@@ -10,6 +10,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/foundation.dart';
@@ -463,7 +464,7 @@ class _AppSideBarState extends State<AppSideBar> {
         return HoverWidget(
           child: GestureDetector(
             onTap: () {
-              showAnimatedDialog(
+              showArDriveDialog(
                 context,
                 content: ArDriveStandardModal(
                   hasCloseButton: true,

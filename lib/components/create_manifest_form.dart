@@ -18,13 +18,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../utils/show_general_dialog.dart';
 import 'components.dart';
 
 Future<void> promptToCreateManifest(
   BuildContext context, {
   required Drive drive,
 }) {
-  return showAnimatedDialog(
+  return showArDriveDialog(
     context,
     content: BlocProvider(
       create: (context) => CreateManifestCubit(
