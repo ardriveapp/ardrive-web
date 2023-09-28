@@ -220,7 +220,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         await _secureKeyValueStore.remove('biometricEnabled');
         currentUser = null;
         firstPrivateDriveTxId = null;
-        await _disconnectFromArConnecct();
+        await _disconnectFromArConnect();
         _userStreamController.add(null);
       }
 
@@ -232,7 +232,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     }
   }
 
-  Future<void> _disconnectFromArConnecct() async {
+  Future<void> _disconnectFromArConnect() async {
     final hasArConnectPermissions = await _arConnectService.checkPermissions();
     if (hasArConnectPermissions) {
       try {
