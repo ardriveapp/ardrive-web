@@ -120,7 +120,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   void _listener() {
     setState(() {
       if (_videoPlayerController.value.hasError) {
-        logger.d('>>> ${_videoPlayerController.value.errorDescription}');
+        logger.e('>>> ${_videoPlayerController.value.errorDescription}');
 
         // In case of emergency, reinitialize the video player.
         _videoPlayerController.removeListener(_listener);
@@ -141,7 +141,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     bool wasPlaying = _videoPlayerController.value.isPlaying;
     if (wasPlaying) {
       _videoPlayerController.pause().catchError((error) {
-        logger.d('Error pausing video: $error');
+        logger.e('Error pausing video: $error');
       });
     }
 
@@ -163,7 +163,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                   if (isPlaying) {
                     await _lock.synchronized(() async {
                       await _videoPlayerController.play().catchError((e) {
-                        logger.d('Error playing video: $e');
+                        logger.e('Error playing video: $e');
                       });
                     });
                   }
@@ -191,7 +191,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                 _videoPlayerController.value.isPlaying) {
               await _lock.synchronized(() async {
                 await _videoPlayerController.pause().catchError((error) {
-                  logger.d('Error pausing video: $error');
+                  logger.e('Error pausing video: $error');
                 });
               });
             }
@@ -248,7 +248,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                 await _videoPlayerController
                                     .pause()
                                     .catchError((e) {
-                                  logger.d('Error pausing video: $e');
+                                  logger.e('Error pausing video: $e');
                                 });
                               });
                               setState(() {});
@@ -274,7 +274,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               await _videoPlayerController
                                   .play()
                                   .catchError((e) {
-                                logger.d('Error playing video: $e');
+                                logger.e('Error playing video: $e');
                               });
                             });
                             setState(() {});
@@ -337,7 +337,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               await _videoPlayerController
                                   .pause()
                                   .catchError((e) {
-                                logger.d('Error pausing video: $e');
+                                logger.e('Error pausing video: $e');
                               });
                             });
                           } else {
@@ -349,7 +349,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               await _videoPlayerController
                                   .play()
                                   .catchError((e) {
-                                logger.d('Error playing video: $e');
+                                logger.e('Error playing video: $e');
                               });
                             });
                             setState(() {});
@@ -494,7 +494,7 @@ class _FullScreenVideoPlayerWidgetState
                   key: const Key('videoPlayer'));
             });
           }).catchError((e) {
-            logger.d('Error playing video: $e');
+            logger.e('Error playing video: $e');
           });
         } else {
           _videoPlayer = VideoPlayer(_videoPlayerController,
@@ -521,7 +521,7 @@ class _FullScreenVideoPlayerWidgetState
   void _listener() {
     setState(() {
       if (_videoPlayerController.value.hasError) {
-        logger.d('>>> ${_videoPlayerController.value.errorDescription}');
+        logger.e('>>> ${_videoPlayerController.value.errorDescription}');
 
         // In case of emergency, reinitialize the video player.
         _videoPlayerController.removeListener(_listener);
@@ -703,7 +703,7 @@ class _FullScreenVideoPlayerWidgetState
                                                     await _videoPlayerController
                                                         .pause()
                                                         .catchError((e) {
-                                                      logger.d(
+                                                      logger.e(
                                                           'Error pausing video: $e');
                                                     });
 
@@ -733,7 +733,7 @@ class _FullScreenVideoPlayerWidgetState
                                                   await _videoPlayerController
                                                       .play()
                                                       .catchError((e) {
-                                                    logger.d(
+                                                    logger.e(
                                                         'Error playing video: $e');
                                                   });
                                                 });
@@ -820,7 +820,7 @@ class _FullScreenVideoPlayerWidgetState
                                           await _videoPlayerController
                                               .pause()
                                               .catchError((e) {
-                                            logger.d('Error pausing video: $e');
+                                            logger.e('Error pausing video: $e');
                                           });
                                         });
                                       } else {
@@ -832,7 +832,7 @@ class _FullScreenVideoPlayerWidgetState
                                           await _videoPlayerController
                                               .play()
                                               .catchError((e) {
-                                            logger.d('Error playing video: $e');
+                                            logger.e('Error playing video: $e');
                                           });
                                         });
                                       }
@@ -993,7 +993,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
         });
       });
     }).catchError((e) {
-      logger.d('Error setting audio url: $e');
+      logger.e('Error setting audio url: $e');
       setState(() {
         _loadState = LoadState.failed;
       });
