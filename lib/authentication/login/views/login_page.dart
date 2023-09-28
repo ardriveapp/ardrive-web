@@ -106,10 +106,15 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                     // verify theme light
                     Resources.images.login.gridImage,
                   ),
-                  const Positioned(
+                  Positioned(
                     bottom: 16,
                     left: 16,
-                    child: AppVersionWidget(),
+                    child: AppVersionWidget(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
                   ),
                 ],
               ),
@@ -146,7 +151,12 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                   bottom: 16,
                   child: SizedBox(
                     width: MediaQuery.of(context).size.width - 32,
-                    child: const AppVersionWidget(),
+                    child: AppVersionWidget(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
                   ),
                 ),
               ],

@@ -6,7 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class AppVersionWidget extends StatelessWidget {
-  const AppVersionWidget({Key? key}) : super(key: key);
+  final Color color;
+
+  const AppVersionWidget({
+    Key? key,
+    this.color = Colors.grey,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +32,7 @@ class AppVersionWidget extends StatelessWidget {
         return Text(
           appLocalizationsOf(context).appVersion(literalVersion),
           style: ArDriveTypography.body.buttonNormalRegular(
-            color: Colors.grey,
+            color: color,
           ),
           textAlign: TextAlign.center,
         );
