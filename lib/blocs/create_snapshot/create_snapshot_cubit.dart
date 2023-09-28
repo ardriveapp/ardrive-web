@@ -423,12 +423,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     if (state is ConfirmingSnapshotCreation) {
       final stateAsConfirming = state as ConfirmingSnapshotCreation;
-      logger.d('Refreshing turbo balance...');
-      logger.d('Turbo balance: $_turboCredits - ($_turboBalance)');
-      logger.d('Has no turbo balance: $_hasNoTurboBalance');
-      logger
-          .d('Sufficient balance to pay with turbo: $_sufficentCreditsBalance');
-      logger.d('Upload method: $_uploadMethod');
       emit(
         stateAsConfirming.copyWith(
           turboCredits: _turboCredits,
