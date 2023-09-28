@@ -8,6 +8,7 @@ import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub implementation
     if (dart.library.html) 'package:ardrive/authentication/login/blocs/web_wallet.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -99,10 +100,25 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         child: Row(
           children: [
             Expanded(
-              child: _buildIllustration(
-                  context,
-                  // verify theme light
-                  Resources.images.login.gridImage),
+              child: Stack(
+                children: [
+                  _buildIllustration(
+                    context,
+                    // verify theme light
+                    Resources.images.login.gridImage,
+                  ),
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    child: AppVersionWidget(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
+                  ),
+                ],
+              ),
             ),
             Expanded(
               child: FractionallySizedBox(
@@ -123,7 +139,29 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               horizontal: 16,
               vertical: 8,
             ),
-            child: Center(child: _buildContent(context)),
+            child: Stack(
+              children: [
+                Center(
+                  child: Column(
+                    children: [
+                      _buildContent(context),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  bottom: 16,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width - 32,
+                    child: AppVersionWidget(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
