@@ -357,7 +357,7 @@ class UploadPaymentEvaluator {
       /// If we can't get the balance, turbo won't be available
       try {
         turboBalance =
-            await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
+            await _turboBalanceRetriever.getBalance(_auth.currentUser.wallet);
 
         logger.i('Turbo balance: $turboBalance');
       } catch (e, stacktrace) {
