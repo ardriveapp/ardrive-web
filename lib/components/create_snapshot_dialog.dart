@@ -3,7 +3,6 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -11,6 +10,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -22,24 +22,22 @@ Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
 ) async {
-  return showModalDialog(
-      context,
-      () => showAnimatedDialog(
-            context,
-            barrierDismissible: false,
-            content: BlocProvider(
-              create: (_) => CreateSnapshotCubit(
-                arweave: context.read<ArweaveService>(),
-                driveDao: context.read<DriveDao>(),
-                profileCubit: context.read<ProfileCubit>(),
-                pst: context.read<PstService>(),
-                tabVisibility: TabVisibilitySingleton(),
-              ),
-              child: CreateSnapshotDialog(
-                drive: drive,
-              ),
-            ),
-          ));
+  return showArDriveDialog(
+    context,
+    barrierDismissible: false,
+    content: BlocProvider(
+      create: (_) => CreateSnapshotCubit(
+        arweave: context.read<ArweaveService>(),
+        driveDao: context.read<DriveDao>(),
+        profileCubit: context.read<ProfileCubit>(),
+        pst: context.read<PstService>(),
+        tabVisibility: TabVisibilitySingleton(),
+      ),
+      child: CreateSnapshotDialog(
+        drive: drive,
+      ),
+    ),
+  );
 }
 
 class CreateSnapshotDialog extends StatelessWidget {

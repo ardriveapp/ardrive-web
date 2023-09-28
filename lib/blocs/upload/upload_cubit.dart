@@ -321,7 +321,7 @@ class UploadCubit extends Cubit<UploadState> {
     try {
       final uploadPreparation = await _arDriveUploadManager.prepareUpload(
         params: UploadParams(
-          user: _auth.currentUser!,
+          user: _auth.currentUser,
           files: files,
           targetFolder: _targetFolder,
           targetDrive: _targetDrive,
@@ -351,7 +351,7 @@ class UploadCubit extends Cubit<UploadState> {
         'UploadPlan For AR: ${uploadPreparation.uploadPaymentInfo.arCostEstimate.toString()}\n'
         'UploadPlan For Turbo: ${uploadPreparation.uploadPlansPreparation.uploadPlanForTurbo.toString()}\n'
         'Turbo Balance: ${uploadPreparation.uploadPaymentInfo.turboBalance}\n'
-        'AR Balance: ${_auth.currentUser!.walletBalance}\n'
+        'AR Balance: ${_auth.currentUser.walletBalance}\n'
         'Is Turbo Upload Possible: ${paymentInfo.isUploadEligibleToTurbo}\n'
         'Is Zero Balance: $isTurboZeroBalance\n',
       );
@@ -396,7 +396,7 @@ class UploadCubit extends Cubit<UploadState> {
           costEstimateTurbo: paymentInfo.turboCostEstimate,
           credits: literalBalance,
           arBalance:
-              convertCreditsToLiteralString(_auth.currentUser!.walletBalance),
+              convertCreditsToLiteralString(_auth.currentUser.walletBalance),
           uploadIsPublic: _targetDrive.isPublic,
           sufficientArBalance:
               profile.walletBalance >= paymentInfo.arCostEstimate.totalCost,
@@ -530,7 +530,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   ArDriveUploader _getUploader() {
-    final wallet = _auth.currentUser!.wallet;
+    final wallet = _auth.currentUser.wallet;
 
     final turboUploader = TurboUploader(_turbo, wallet);
     final arweaveUploader = ArweaveBundleUploader(_arweave.client);
@@ -558,7 +558,7 @@ class UploadCubit extends Cubit<UploadState> {
           arweaveService: _arweave,
           turboUploadService: _turbo,
           pstService: _pst,
-          wallet: _auth.currentUser!.wallet,
+          wallet: _auth.currentUser.wallet,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
           useTurbo: _uploadMethod == UploadMethod.turbo,
         );

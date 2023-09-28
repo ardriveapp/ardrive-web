@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.16.0
+version: 2.17.0
 
 environment:
   sdk: '>=2.18.5 <3.0.0'
@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: v1.10.0
+      ref: v1.11.0
   artemis: ^7.0.0-beta.13
   arweave:
     git:
@@ -118,6 +118,7 @@ dependencies:
   tuple: ^2.0.2
   share_plus: ^6.3.4
   flutter_email_sender: ^6.0.1
+  provider: ^6.0.5
   just_audio: ^0.9.34
 
 dependency_overrides:

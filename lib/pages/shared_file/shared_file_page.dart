@@ -7,6 +7,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,7 +32,7 @@ class SharedFilePage extends StatelessWidget {
         },
         listener: (context, state) {
           if (state is SharedFileKeyInvalid) {
-            showAnimatedDialog(
+            showArDriveDialog(
               context,
               content: ArDriveStandardModal(
                 title: appLocalizationsOf(context).error,

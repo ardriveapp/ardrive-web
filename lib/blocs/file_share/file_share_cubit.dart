@@ -45,9 +45,6 @@ class FileShareCubit extends Cubit<FileShareState> {
     if (dataTxStatus == TransactionStatus.failed) {
       emit(FileShareLoadedFailedFile());
       return;
-    } else if (dataTxStatus == TransactionStatus.pending) {
-      emit(FileShareLoadedPendingFile());
-      return;
     }
 
     late Uri fileShareLink;
@@ -87,6 +84,7 @@ class FileShareCubit extends Cubit<FileShareState> {
         fileName: file.name,
         fileShareLink: fileShareLink,
         isPublicFile: drive.isPublic,
+        isPending: dataTxStatus == TransactionStatus.pending,
       ),
     );
   }

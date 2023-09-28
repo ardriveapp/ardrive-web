@@ -3,6 +3,7 @@ import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,7 +15,7 @@ Future<void> promptToShareFile({
   required String driveId,
   required String fileId,
 }) =>
-    showAnimatedDialog(
+    showArDriveDialog(
       context,
       content: BlocProvider<FileShareCubit>(
         create: (_) => FileShareCubit(
@@ -58,9 +59,35 @@ class FileShareDialogState extends State<FileShareDialog> {
                 const Center(child: CircularProgressIndicator())
               else if (state is FileShareLoadedFailedFile)
                 Text(appLocalizationsOf(context).shareFailedFile)
-              else if (state is FileShareLoadedPendingFile)
-                Text(appLocalizationsOf(context).sharePendingFile)
               else if (state is FileShareLoadSuccess) ...{
+                if (state.isPending)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Row(
+                      children: [
+                        ArDriveIcons.triangle(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeWarningEmphasis,
+                        ),
+                        const SizedBox(
+                          width: 8,
+                        ),
+                        Flexible(
+                          child: Text(
+                            'Warning: This file is currently pending and may not be immediately accessible.',
+                            style: ArDriveTypography.body.buttonNormalBold(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeWarningEmphasis,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [

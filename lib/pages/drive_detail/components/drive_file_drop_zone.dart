@@ -15,6 +15,7 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -66,7 +67,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
                       ),
                   onError: (e) async {
                     if (e is DropzoneWrongInputException) {
-                      await showAnimatedDialog(
+                      await showArDriveDialog(
                         context,
                         content: ArDriveStandardModal(
                           title: appLocalizationsOf(context).error,
@@ -115,7 +116,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
       // ignore: use_build_context_synchronously
       await showCongestionDependentModalDialog(
         context,
-        () => showAnimatedDialog(
+        () => showArDriveDialog(
           context,
           content: BlocProvider<UploadCubit>(
             create: (context) => UploadCubit(
@@ -128,7 +129,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
                   ),
                   turboUploadCostCalculator: TurboUploadCostCalculator(
                     priceEstimator: TurboPriceEstimator(
-                      wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+                      wallet: context.read<ArDriveAuth>().currentUser.wallet,
                       costCalculator: TurboCostCalculator(
                         paymentService: context.read<PaymentService>(),
                       ),
