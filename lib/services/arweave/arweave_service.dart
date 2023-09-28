@@ -6,6 +6,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
@@ -215,7 +216,11 @@ class ArweaveService {
         ),
       );
 
-      yield driveEntityHistoryQuery.data!.transactions.edges;
+      yield driveEntityHistoryQuery.data!.transactions.edges
+          .where((element) => doesTagsContainValidArFSVersion(
+                element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
+              ))
+          .toList();
 
       cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
           ? driveEntityHistoryQuery.data!.transactions.edges.last.cursor
@@ -430,27 +435,54 @@ class ArweaveService {
     String userAddress, {
     int maxRetries = defaultMaxRetries,
   }) async {
-    final userDriveEntitiesQuery = await _graphQLRetry.execute(
-      UserDriveEntitiesQuery(
-        variables: UserDriveEntitiesArguments(owner: userAddress),
-      ),
-      maxAttempts: maxRetries,
-    );
+    List<TransactionCommonMixin> drives = [];
+    String cursor = '';
 
-    return userDriveEntitiesQuery.data!.transactions.edges
-        .map((e) => e.node)
-        .fold<Map<String?, TransactionCommonMixin>>(
-          {},
-          (map, tx) {
-            final driveId = tx.getTag('Drive-Id');
-            if (!map.containsKey(driveId)) {
-              map[driveId] = tx;
-            }
-            return map;
-          },
-        )
-        .values
-        .toList();
+    while (true) {
+      final userDriveEntitiesQuery = await _graphQLRetry.execute(
+        UserDriveEntitiesQuery(
+          variables: UserDriveEntitiesArguments(
+            owner: userAddress,
+            after: cursor,
+          ),
+        ),
+        maxAttempts: maxRetries,
+      );
+
+      final queryEdges = userDriveEntitiesQuery.data!.transactions.edges;
+      final filteredEdges = queryEdges.where(
+        (element) => doesTagsContainValidArFSVersion(
+          element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
+        ),
+      );
+
+      cursor = queryEdges.isNotEmpty ? queryEdges.last.cursor : '';
+
+      final drivesInThisPage = filteredEdges
+          .map((e) => e.node)
+          .fold<Map<String?, TransactionCommonMixin>>(
+            {},
+            (map, tx) {
+              final driveId = tx.getTag('Drive-Id');
+              if (!map.containsKey(driveId)) {
+                map[driveId] = tx;
+              }
+              return map;
+            },
+          )
+          .values
+          .toList();
+
+      drives.addAll(drivesInThisPage);
+
+      final hasNextPage =
+          userDriveEntitiesQuery.data!.transactions.pageInfo.hasNextPage;
+      if (!hasNextPage) {
+        break;
+      }
+    }
+
+    return drives;
   }
 
   Future<String?> getFirstPrivateDriveTxId(
@@ -476,14 +508,8 @@ class ArweaveService {
     String password,
   ) async {
     try {
-      final userDriveEntitiesQuery = await _graphQLRetry.execute(
-          UserDriveEntitiesQuery(
-              variables: UserDriveEntitiesArguments(
-                  owner: await wallet.getAddress())));
-
-      final driveTxs = userDriveEntitiesQuery.data!.transactions.edges
-          .map((e) => e.node)
-          .toList();
+      final userAddress = await wallet.getAddress();
+      final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
 
       final driveResponses = await retry(
           () async => await Future.wait(
@@ -554,46 +580,61 @@ class ArweaveService {
     SecretKey? driveKey,
     int maxRetries = defaultMaxRetries,
   ]) async {
-    final firstOwnerQuery = await _graphQLRetry.execute(
-      FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
-      ),
-      maxAttempts: maxRetries,
-    );
-
-    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+    final driveOwner = await getOwnerForDriveEntityWithId(driveId);
+    if (driveOwner == null) {
       return null;
     }
 
-    final driveOwner =
-        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
-
-    final latestDriveQuery = await _graphQLRetry.execute(
-      LatestDriveEntityWithIdQuery(
-        variables: LatestDriveEntityWithIdArguments(
-            driveId: driveId, owner: driveOwner),
-      ),
-      maxAttempts: maxRetries,
-    );
-
-    final queryEdges = latestDriveQuery.data!.transactions.edges;
-    if (queryEdges.isEmpty) {
-      return null;
-    }
-
-    final fileTx = queryEdges.first.node;
-    final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
-
-    try {
-      return await DriveEntity.fromTransaction(
-          fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
-    } on EntityTransactionParseException catch (parseException) {
-      logger.e(
-        'Failed to parse transaction '
-        'with id ${parseException.transactionId}',
-        parseException,
+    String cursor = '';
+    while (true) {
+      final latestDriveQuery = await _graphQLRetry.execute(
+        LatestDriveEntityWithIdQuery(
+          variables: LatestDriveEntityWithIdArguments(
+            driveId: driveId,
+            owner: driveOwner,
+            after: cursor,
+          ),
+        ),
+        maxAttempts: maxRetries,
       );
-      return null;
+
+      final queryEdges = latestDriveQuery.data!.transactions.edges;
+      if (queryEdges.isEmpty) {
+        return null;
+      }
+
+      final filteredEdges = queryEdges.where(
+        (element) => doesTagsContainValidArFSVersion(
+          element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
+        ),
+      );
+
+      final hasNextPage =
+          latestDriveQuery.data!.transactions.pageInfo.hasNextPage;
+
+      if (filteredEdges.isEmpty) {
+        if (hasNextPage) {
+          cursor = latestDriveQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
+      }
+
+      final fileTx = filteredEdges.first.node;
+      final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+
+      try {
+        return await DriveEntity.fromTransaction(
+            fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
+      } on EntityTransactionParseException catch (parseException) {
+        logger.e(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+          parseException,
+        );
+        return null;
+      }
     }
   }
 
@@ -605,18 +646,10 @@ class ArweaveService {
   ///
   /// Returns `null` if no valid drive is found.
   Future<Privacy?> getDrivePrivacyForId(String driveId) async {
-    final firstOwnerQuery = await _gql.execute(
-      FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
-      ),
-    );
-
-    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+    final driveOwner = await getOwnerForDriveEntityWithId(driveId);
+    if (driveOwner == null) {
       return null;
     }
-
-    final driveOwner =
-        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
     final latestDriveQuery = await _graphQLRetry.execute(
         LatestDriveEntityWithIdQuery(
@@ -642,45 +675,99 @@ class ArweaveService {
   /// Returns `null` if no valid file is found.
 
   Future<Privacy?> getFilePrivacyForId(String fileId) async {
-    final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
-        variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
-
-    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+    final fileOwner = await getOwnerForFileEntityWithId(fileId);
+    if (fileOwner == null) {
       return null;
     }
 
-    final fileOwner =
-        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
+    String cursor = '';
 
-    final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
-        variables:
-            LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
+    while (true) {
+      final latestFileQuery = await _gql.execute(
+        LatestFileEntityWithIdQuery(
+          variables: LatestFileEntityWithIdArguments(
+            fileId: fileId,
+            owner: fileOwner,
+            after: cursor,
+          ),
+        ),
+      );
 
-    final queryEdges = latestFileQuery.data!.transactions.edges;
+      final queryEdges = latestFileQuery.data!.transactions.edges;
 
-    if (queryEdges.isEmpty) {
-      return null;
+      if (queryEdges.isEmpty) {
+        return null;
+      }
+
+      final filteredEdges = queryEdges.where(
+        (element) => doesTagsContainValidArFSVersion(
+          element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
+        ),
+      );
+
+      final hasNextPage =
+          latestFileQuery.data!.transactions.pageInfo.hasNextPage;
+
+      if (filteredEdges.isEmpty) {
+        if (hasNextPage) {
+          cursor = latestFileQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
+      }
+
+      final fileTx = filteredEdges.first.node;
+
+      return fileTx.getTag(EntityTag.cipherIv) != null
+          ? DrivePrivacy.private
+          : DrivePrivacy.public;
     }
-
-    final fileTx = queryEdges.first.node;
-
-    return fileTx.getTag(EntityTag.cipherIv) != null
-        ? DrivePrivacy.private
-        : DrivePrivacy.public;
   }
 
   /// Gets the owner of the drive sorted by blockheight.
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
   Future<String?> getOwnerForDriveEntityWithId(String driveId) async {
-    final firstOwnerQuery = await _graphQLRetry.execute(
+    String cursor = '';
+
+    while (true) {
+      final firstOwnerQuery = await _graphQLRetry.execute(
         FirstDriveEntityWithIdOwnerQuery(
-            variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+          variables: FirstDriveEntityWithIdOwnerArguments(
+            driveId: driveId,
+            after: cursor,
+          ),
+        ),
+      );
 
-    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
-      return null;
+      if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+        return null;
+      }
+
+      final List<
+              FirstDriveEntityWithIdOwner$Query$TransactionConnection$TransactionEdge>
+          filteredEdges = firstOwnerQuery.data!.transactions.edges
+              .where(
+                (element) => doesTagsContainValidArFSVersion(
+                  element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
+                ),
+              )
+              .toList();
+
+      final hasNextPage =
+          firstOwnerQuery.data!.transactions.pageInfo.hasNextPage;
+
+      if (filteredEdges.isEmpty) {
+        if (hasNextPage) {
+          cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
+      }
+
+      return filteredEdges.first.node.owner.address;
     }
-
-    return firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
   }
 
   /// Gets any created private drive belonging to [profileId], as long as its unlockable with [password] when used with the [getSignatureFn]
@@ -719,43 +806,56 @@ class ArweaveService {
   /// Returns `null` if no valid file is found or the provided `fileKey` is incorrect.
   Future<FileEntity?> getLatestFileEntityWithId(String fileId,
       [SecretKey? fileKey]) async {
-    final firstOwnerQuery = await _graphQLRetry.execute(
-        FirstFileEntityWithIdOwnerQuery(
-            variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
-
-    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+    final fileOwner = await getOwnerForFileEntityWithId(fileId);
+    if (fileOwner == null) {
       return null;
     }
 
-    final fileOwner =
-        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
+    String cursor = '';
 
-    final latestFileQuery = await _graphQLRetry.execute(
+    while (true) {
+      final latestFileQuery = await _graphQLRetry.execute(
         LatestFileEntityWithIdQuery(
-            variables: LatestFileEntityWithIdArguments(
-                fileId: fileId, owner: fileOwner)));
-
-    final queryEdges = latestFileQuery.data!.transactions.edges;
-    if (queryEdges.isEmpty) {
-      return null;
-    }
-
-    final fileTx = queryEdges.first.node;
-    final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
-
-    try {
-      return await FileEntity.fromTransaction(
-        fileTx,
-        fileDataRes.bodyBytes,
-        fileKey: fileKey,
-        crypto: _crypto,
+          variables: LatestFileEntityWithIdArguments(
+            fileId: fileId,
+            owner: fileOwner,
+            after: cursor,
+          ),
+        ),
       );
-    } on EntityTransactionParseException catch (parseException) {
-      logger.e(
-        'Failed to parse transaction '
-        'with id ${parseException.transactionId}',
+
+      final queryEdges = latestFileQuery.data!.transactions.edges;
+      if (queryEdges.isEmpty) {
+        return null;
+      }
+
+      final filteredEdges = queryEdges.where(
+        (element) => doesTagsContainValidArFSVersion(
+          element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
+        ),
       );
-      return null;
+      if (filteredEdges.isEmpty) {
+        cursor = queryEdges.last.cursor;
+        continue;
+      }
+
+      final fileTx = filteredEdges.first.node;
+      final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+
+      try {
+        return await FileEntity.fromTransaction(
+          fileTx,
+          fileDataRes.bodyBytes,
+          fileKey: fileKey,
+          crypto: _crypto,
+        );
+      } on EntityTransactionParseException catch (parseException) {
+        logger.e(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+        );
+        return null;
+      }
     }
   }
 
@@ -765,16 +865,11 @@ class ArweaveService {
     int? lastBlockHeight;
     List<FileEntity> fileEntities = [];
 
-    final firstOwnerQuery = await _graphQLRetry.execute(
-        FirstFileEntityWithIdOwnerQuery(
-            variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
-
-    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+    final fileOwner = await getOwnerForFileEntityWithId(fileId);
+    if (fileOwner == null) {
       return null;
     }
 
-    final fileOwner =
-        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
     while (true) {
       // Get a page of 100 transactions
       final allFileEntitiesQuery = await _graphQLRetry.execute(
@@ -787,7 +882,15 @@ class ArweaveService {
           ),
         ),
       );
-      final queryEdges = allFileEntitiesQuery.data!.transactions.edges;
+      final List<
+              AllFileEntitiesWithId$Query$TransactionConnection$TransactionEdge>
+          queryEdges = allFileEntitiesQuery.data!.transactions.edges
+              .where(
+                (element) => doesTagsContainValidArFSVersion(
+                  element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
+                ),
+              )
+              .toList();
       if (queryEdges.isEmpty) {
         break;
       }
@@ -820,6 +923,51 @@ class ArweaveService {
     }
 
     return fileEntities.isEmpty ? null : fileEntities;
+  }
+
+  Future<String?> getOwnerForFileEntityWithId(
+    FileID fileId,
+  ) async {
+    FirstFileEntityWithIdOwner$Query;
+    String cursor = '';
+
+    while (true) {
+      final firstOwnerQuery = await _graphQLRetry.execute(
+        FirstFileEntityWithIdOwnerQuery(
+          variables: FirstFileEntityWithIdOwnerArguments(
+            fileId: fileId,
+            after: cursor,
+          ),
+        ),
+      );
+
+      if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+        return null;
+      }
+
+      final filteredEdges = firstOwnerQuery.data!.transactions.edges
+          .where(
+            (element) => doesTagsContainValidArFSVersion(
+              element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
+            ),
+          )
+          .toList();
+
+      final hasNextPage =
+          firstOwnerQuery.data!.transactions.pageInfo.hasNextPage;
+
+      if (filteredEdges.isEmpty) {
+        if (hasNextPage) {
+          cursor = firstOwnerQuery.data!.transactions.edges.last.cursor;
+          continue;
+        } else {
+          return null;
+        }
+      }
+
+      final fileOwner = filteredEdges.first.node.owner.address;
+      return fileOwner;
+    }
   }
 
   /// Returns the number of confirmations each specified transaction has as a map,
@@ -920,11 +1068,14 @@ class ArweaveService {
     Entity entity,
     Wallet wallet, {
     SecretKey? key,
+    bool skipSignature = false,
   }) async {
     final item = await entity.asDataItem(key);
     item.setOwner(await wallet.getOwner());
 
-    await item.sign(wallet);
+    if (!skipSignature) {
+      await item.sign(wallet);
+    }
 
     return item;
   }

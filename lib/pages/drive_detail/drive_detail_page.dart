@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -32,11 +35,11 @@ import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:chewie/chewie.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:video_player/video_player.dart';
@@ -116,8 +119,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             final hasFiles = state.folderInView.files.isNotEmpty;
 
             final canDownloadMultipleFiles = state.multiselect &&
-                state.currentDrive.isPublic &&
-                !state.hasFoldersSelected;
+                context.read<DriveDetailCubit>().selectedItems.isNotEmpty;
 
             return ScreenTypeLayout.builder(
               desktop: (context) => _desktopView(
@@ -197,7 +199,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   driveName: state.currentDrive.name,
                                 ),
                                 const Spacer(),
-                                if (state.multiselect && isDriveOwner)
+                                if (state.multiselect &&
+                                    context
+                                        .read<DriveDetailCubit>()
+                                        .selectedItems
+                                        .isNotEmpty &&
+                                    isDriveOwner)
                                   ArDriveIconButton(
                                     tooltip: appLocalizationsOf(context).move,
                                     icon: ArDriveIcons.move(),
@@ -220,17 +227,33 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   ArDriveIconButton(
                                     tooltip: 'Download selected files',
                                     icon: ArDriveIcons.download(),
-                                    onPressed: () {
-                                      final files = context
+                                    onPressed: () async {
+                                      final selectedItems = context
                                           .read<DriveDetailCubit>()
-                                          .selectedItems
-                                          .whereType<FileDataTableItem>()
-                                          .toList();
+                                          .selectedItems;
 
-                                      promptToDownloadMultipleFiles(
-                                        context,
-                                        items: files,
-                                      );
+                                      String zipName;
+
+                                      if (selectedItems.length == 1 &&
+                                          selectedItems[0]
+                                              is FolderDataTableItem) {
+                                        zipName = selectedItems[0].name;
+                                      } else {
+                                        final driveDetail = (context
+                                            .read<DriveDetailCubit>()
+                                            .state as DriveDetailLoadSuccess);
+
+                                        final currentFolder =
+                                            driveDetail.folderInView.folder;
+                                        zipName =
+                                            currentFolder.parentFolderId == null
+                                                ? driveDetail.currentDrive.name
+                                                : currentFolder.name;
+                                      }
+
+                                      promptToDownloadMultipleFiles(context,
+                                          selectedItems: selectedItems,
+                                          zipName: zipName);
                                     },
                                   ),
                                   const SizedBox(width: 8),
@@ -252,6 +275,29 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         target: Alignment.bottomRight,
                                       ),
                                       items: [
+                                        ArDriveDropdownItem(
+                                          onClick: () async {
+                                            final driveItem =
+                                                DriveDataTableItemMapper
+                                                    .fromDrive(
+                                                        state.currentDrive,
+                                                        (p0) => null,
+                                                        0,
+                                                        true);
+
+                                            promptToDownloadMultipleFiles(
+                                                context,
+                                                selectedItems: [driveItem],
+                                                zipName: driveItem.name);
+                                          },
+                                          content: ArDriveDropdownItemTile(
+                                            name: appLocalizationsOf(context)
+                                                .download,
+                                            icon: ArDriveIcons.download(
+                                              size: defaultIconSize,
+                                            ),
+                                          ),
+                                        ),
                                         if (isDriveOwner)
                                           ArDriveDropdownItem(
                                             onClick: () {
@@ -337,9 +383,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                               );
                                             },
                                             content: _buildItem(
-                                                appLocalizationsOf(context)
-                                                    .detachDrive,
-                                                ArDriveIcons.triangle()),
+                                              appLocalizationsOf(context)
+                                                  .detachDrive,
+                                              ArDriveIcons.detach(),
+                                            ),
                                           ),
                                       ],
                                       child: HoverWidget(
@@ -734,6 +781,21 @@ class MobileFolderNavigation extends StatelessWidget {
                     target: Alignment.bottomRight,
                   ),
                   items: [
+                    ArDriveDropdownItem(
+                        onClick: () async {
+                          final driveItem = DriveDataTableItemMapper.fromDrive(
+                              state.currentDrive, (p0) => null, 0, true);
+
+                          promptToDownloadMultipleFiles(context,
+                              selectedItems: [driveItem],
+                              zipName: driveItem.name);
+                        },
+                        content: ArDriveDropdownItemTile(
+                          name: appLocalizationsOf(context).download,
+                          icon: ArDriveIcons.download(
+                            size: defaultIconSize,
+                          ),
+                        )),
                     if (isOwner)
                       ArDriveDropdownItem(
                         onClick: () {
@@ -803,22 +865,15 @@ class MobileFolderNavigation extends StatelessWidget {
                         context.read<ProfileCubit>().state is ProfileLoggedIn)
                       ArDriveDropdownItem(
                         onClick: () {
-                          final bloc = context.read<DriveDetailCubit>();
-
-                          bloc.selectDataItem(
-                            DriveDataTableItemMapper.fromDrive(
-                              state.currentDrive,
-                              (_) => null,
-                              0,
-                              isOwner,
-                            ),
+                          showDetachDriveDialog(
+                            context: context,
+                            driveID: state.currentDrive.id,
+                            driveName: state.currentDrive.name,
                           );
                         },
                         content: _buildItem(
-                          appLocalizationsOf(context).moreInfo,
-                          ArDriveIcons.info(
-                            size: defaultIconSize,
-                          ),
+                          appLocalizationsOf(context).detachDrive,
+                          ArDriveIcons.detach(),
                         ),
                       ),
                   ],

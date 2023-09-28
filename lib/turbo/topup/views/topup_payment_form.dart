@@ -4,6 +4,7 @@ import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
+import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
@@ -28,9 +29,11 @@ class TurboPaymentFormView extends StatefulWidget {
 
 class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   CardFieldInputDetails? card;
-
   CountryItem? _selectedCountry;
+  bool _promoCodeInvalid = false;
+  bool _errorFetchingPromoCode = false;
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _promoCodeController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -235,19 +238,24 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
                     return Text(
-                      '${convertCreditsToLiteralString(state.priceEstimate.credits)} Credits',
+                      '${convertCreditsToLiteralString(state.priceEstimate.estimate.winstonCredits)} Credits',
                       style: ArDriveTypography.body.leadBold(),
                     );
                   },
                 ),
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
+                    final actualPaymentAmount = state
+                            .priceEstimate.estimate.adjustments.isNotEmpty
+                        ? state.priceEstimate.estimate.actualPaymentAmount! /
+                            100
+                        : state.priceEstimate.priceInCurrency;
                     return RichText(
                       text: TextSpan(
                         children: [
                           TextSpan(
                             text:
-                                '\$${state.priceEstimate.priceInCurrency.toStringAsFixed(2)}',
+                                '\$${(actualPaymentAmount).toStringAsFixed(2)}',
                             style: ArDriveTypography.body.captionBold(
                               color: ArDriveTheme.of(context)
                                   .themeData
@@ -255,6 +263,19 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                                   .themeFgMuted,
                             ),
                           ),
+                          if (state.priceEstimate.estimate
+                                  .humanReadableDiscountPercentage !=
+                              null)
+                            TextSpan(
+                              text:
+                                  ' (${state.priceEstimate.estimate.humanReadableDiscountPercentage}% discount applied)', // TODO: localize
+                              style: ArDriveTypography.body.buttonNormalRegular(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDisabled,
+                              ),
+                            ),
                         ],
                       ),
                     );
@@ -471,6 +492,17 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               },
             ),
           ),
+          const SizedBox(height: 16),
+          Row(children: [promoCodeLabel()]),
+          ScreenTypeLayout.builder(
+            mobile: (context) => Row(children: [
+              promoCodeWidget(theme),
+            ]),
+            desktop: (context) => Row(children: [
+              promoCodeWidget(theme),
+              const Flexible(child: SizedBox()),
+            ]),
+          ),
           const SizedBox(
             height: 16,
           ),
@@ -479,8 +511,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     );
   }
 
-  /// TextFields
-  ///
   Widget nameOnCardTextField() {
     return Expanded(
       child: ArDriveTextField(
@@ -573,6 +603,191 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         return const SizedBox();
       },
     );
+  }
+
+  Widget promoCodeLabel() {
+    return Text(
+      'Promo Code', // TODO: localize
+      style: ArDriveTypography.body.buttonNormalBold(
+        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+      ),
+    );
+  }
+
+  Widget promoCodeWidget(ArDriveTextFieldTheme theme) {
+    return BlocBuilder<PaymentFormBloc, PaymentFormState>(
+        builder: (context, state) {
+      final hasPromoCodeApplied =
+          state.priceEstimate.estimate.adjustments.isNotEmpty;
+
+      return Expanded(
+        child: hasPromoCodeApplied
+            ? promoCodeAppliedWidget(theme)
+            : promoCodeTextField(),
+      );
+    });
+  }
+
+  Widget promoCodeAppliedWidget(ArDriveTextFieldTheme theme) {
+    final paymentFormBloc = context.read<PaymentFormBloc>();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 48,
+            child: Align(
+              child: Text(
+                'Promo code successfully applied', // TODO: localize
+                style: ArDriveTypography.body.buttonNormalBold(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeSuccessDefault,
+                ),
+              ),
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _promoCodeController.clear();
+              paymentFormBloc.add(const PaymentFormUpdatePromoCode(null));
+            });
+          },
+          child: Tooltip(
+            message: 'Remove promo code', // TODO: localize
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: ArDriveIcons.closeCircle(
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .colors
+                    .themeSuccessDefault,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget promoCodeTextField() {
+    return BlocConsumer<PaymentFormBloc, PaymentFormState>(
+      listenWhen: (previous, current) => current is PaymentFormLoaded,
+      listener: (context, state) {
+        logger.d('PaymentFormBloc state: $state');
+        if (state is PaymentFormLoaded) {
+          setState(() {
+            _promoCodeInvalid = state.isPromoCodeInvalid;
+            _errorFetchingPromoCode = state.errorFetchingPromoCode;
+
+            final isFetchingPromoCode = state.isFetchingPromoCode;
+
+            if (_promoCodeInvalid) {
+              _promoCodeController.clear();
+            }
+
+            if (!_promoCodeInvalid &&
+                !_errorFetchingPromoCode &&
+                !isFetchingPromoCode) {
+              final estimationBloc = context.read<TurboTopUpEstimationBloc>();
+              estimationBloc.add(const PromoCodeChanged());
+            }
+          });
+        }
+      },
+      builder: (context, state) {
+        final promoCodeFetching =
+            state is PaymentFormLoaded ? state.isFetchingPromoCode : false;
+
+        return ArDriveTextField(
+          controller: _promoCodeController,
+          isFieldRequired: false,
+          useErrorMessageOffset: true,
+          isEnabled: !promoCodeFetching,
+          onChanged: (_) {
+            setState(() {
+              _promoCodeInvalid = false;
+              _errorFetchingPromoCode = false;
+            });
+          },
+          errorMessage: _getPromoCodeErrorMessage(),
+          showErrorMessage: _promoCodeInvalid || _errorFetchingPromoCode,
+          suffixIcon: _applyPromoCodeButton(promoCodeFetching),
+          inputFormatters: [
+            TextInputFormatter.withFunction((oldValue, newValue) {
+              return newValue.copyWith(
+                text: newValue.text.toUpperCase().replaceAll(' ', ''),
+                selection: newValue.selection,
+              );
+            }),
+          ],
+        );
+      },
+    );
+  }
+
+  String? _getPromoCodeErrorMessage() {
+    if (_errorFetchingPromoCode) {
+      return 'Error fetching the promo code'; // TODO: localize
+    }
+    if (_promoCodeInvalid) {
+      return 'Promo code is invalid or expired'; // TODO: localize
+    }
+
+    return null;
+  }
+
+  Widget _applyPromoCodeButton(bool promoCodeFetching) {
+    if (promoCodeFetching) {
+      return const SizedBox(
+        height: 18,
+        width: 18,
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
+    final isPromoCodeEmpty = _isPromoCodeTextFieldEmpty();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () => _applyPromoCode(),
+        child: MouseRegion(
+          cursor: isPromoCodeEmpty
+              ? SystemMouseCursors.basic
+              : SystemMouseCursors.click,
+          child: Text(
+            'Apply', // TODO: localize
+            style: ArDriveTypography.body.buttonNormalBold(
+              color: ArDriveTheme.of(context).themeData.colors.themeInputText,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _isPromoCodeTextFieldEmpty() {
+    return _promoCodeController.text.isEmpty;
+  }
+
+  void _applyPromoCode() async {
+    logger.d('Apply promo code clicked');
+
+    if (_isPromoCodeTextFieldEmpty()) {
+      logger.d('Promo code is empty');
+      return;
+    }
+
+    final paymentFormBloc = context.read<PaymentFormBloc>();
+    paymentFormBloc.add(PaymentFormUpdatePromoCode(_promoCodeController.text));
   }
 
   InputBorder _getBorder(Color color) {

@@ -12,3 +12,12 @@ class PaymentFormLoadSupportedCountries extends PaymentFormEvent {}
 class PaymentFormPrePopulateFields extends PaymentFormEvent {}
 
 class PaymentFormUpdateQuote extends PaymentFormEvent {}
+
+class PaymentFormUpdatePromoCode extends PaymentFormEvent {
+  const PaymentFormUpdatePromoCode(this.promoCode);
+
+  final String? promoCode;
+
+  @override
+  List<Object> get props => [promoCode ?? ''];
+}

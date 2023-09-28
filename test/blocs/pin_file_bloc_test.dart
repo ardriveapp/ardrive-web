@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/pin_file/pin_file_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -24,6 +25,7 @@ void main() {
     final TurboUploadService turboService = MockTurboUploadService();
     final ProfileCubit profileCubit = MockProfileCubit();
     final DriveDao driveDao = MockDriveDao();
+    final ArDriveCrypto crypto = MockArDriveCrypto();
 
     const String validName = 'Ñoquis con tuco 🍝😋';
     const String validTxId_1 = 'HelloHelloHelloHelloHelloHelloHelloH-+_ABCD';
@@ -121,6 +123,7 @@ void main() {
         driveDao: driveDao,
         driveID: stubDriveId,
         parentFolderId: stubFolderId,
+        crypto: crypto,
       ),
       act: (bloc) => bloc
         ..add(
@@ -140,6 +143,7 @@ void main() {
           driveDao: driveDao,
           driveID: stubDriveId,
           parentFolderId: stubFolderId,
+          crypto: crypto,
         ),
         act: (bloc) => bloc
           ..add(
@@ -179,6 +183,7 @@ void main() {
           driveDao: driveDao,
           driveID: stubDriveId,
           parentFolderId: stubFolderId,
+          crypto: crypto,
         ),
         act: (bloc) => bloc
           ..add(
@@ -218,6 +223,7 @@ void main() {
           driveDao: driveDao,
           driveID: stubDriveId,
           parentFolderId: stubFolderId,
+          crypto: crypto,
         ),
         act: (bloc) => bloc
           ..add(
@@ -257,6 +263,7 @@ void main() {
           driveDao: driveDao,
           driveID: stubDriveId,
           parentFolderId: stubFolderId,
+          crypto: crypto,
         ),
         act: (bloc) => bloc
           ..add(
@@ -296,6 +303,7 @@ void main() {
           driveDao: driveDao,
           driveID: stubDriveId,
           parentFolderId: stubFolderId,
+          crypto: crypto,
         ),
         act: (bloc) => bloc
           ..add(
@@ -327,6 +335,7 @@ void main() {
           driveDao: driveDao,
           driveID: stubDriveId,
           parentFolderId: stubFolderId,
+          crypto: crypto,
         ),
         seed: () => PinFileFieldsValid(
           id: validFileId_1,
@@ -392,6 +401,7 @@ void main() {
           driveDao: driveDao,
           driveID: stubDriveId,
           parentFolderId: stubFolderId,
+          crypto: crypto,
         ),
         seed: () => const PinFileNetworkCheckRunning(
           id: validFileId_1,

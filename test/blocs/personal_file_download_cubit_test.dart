@@ -17,39 +17,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/mocks.dart';
 
-class MockARFSFile extends ARFSFileEntity {
-  MockARFSFile({
-    required super.appName,
-    required super.appVersion,
-    required super.arFS,
-    required super.driveId,
-    required super.entityType,
-    required super.name,
-    required super.txId,
-    required super.unixTime,
-    required super.id,
-    required super.size,
-    required super.lastModifiedDate,
-    required super.parentFolderId,
-    super.contentType,
-  });
-}
-
-class MockARFSDrive extends ARFSDriveEntity {
-  MockARFSDrive({
-    required super.appName,
-    required super.appVersion,
-    required super.arFS,
-    required super.driveId,
-    required super.entityType,
-    required super.name,
-    required super.txId,
-    required super.unixTime,
-    required super.drivePrivacy,
-    required super.rootFolderId,
-  });
-}
-
 Stream<int> mockDownloadProgress() async* {
   yield 100;
 }
@@ -57,9 +24,6 @@ Stream<int> mockDownloadProgress() async* {
 Stream<int> mockDownloadInProgress() {
   return Stream<int>.periodic(const Duration(seconds: 1), (c) => c + 1).take(5);
 }
-
-class MockTransactionCommonMixin extends Mock
-    implements TransactionCommonMixin {}
 
 // TODO(@thiagocarvalhodev): Implemente tests related to ArDriveDownloader
 void main() {
@@ -71,79 +35,18 @@ void main() {
   late DownloadService mockDownloadService;
   late ARFSRepository mockARFSRepository;
 
-  MockARFSFile testFile = MockARFSFile(
-    appName: 'appName',
-    appVersion: 'appVersion',
-    arFS: 'arFS',
-    driveId: 'driveId',
-    entityType: EntityType.file,
-    name: 'name',
-    txId: 'txId',
-    unixTime: DateTime.now(),
-    id: 'id',
-    size: const MiB(2).size,
-    lastModifiedDate: DateTime.now(),
-    parentFolderId: 'parentFolderId',
-    contentType: 'text/plain',
-  );
+  MockARFSFile testFile = createMockFile(size: const MiB(2).size);
 
-  MockARFSFile testFileAboveLimit = MockARFSFile(
-    appName: 'appName',
-    appVersion: 'appVersion',
-    arFS: 'arFS',
-    driveId: 'driveId',
-    entityType: EntityType.file,
-    name: 'name',
-    txId: 'txId',
-    unixTime: DateTime.now(),
-    id: 'id',
-    size: const MiB(301).size, // above the current limit
-    lastModifiedDate: DateTime.now(),
-    parentFolderId: 'parentFolderId',
-    contentType: 'text/plain',
-  );
+  MockARFSFile testFileAboveLimit = createMockFile(size: const MiB(301).size);
 
-  MockARFSFile testFileUnderPrivateLimitAndAboveWarningLimit = MockARFSFile(
-    appName: 'appName',
-    appVersion: 'appVersion',
-    arFS: 'arFS',
-    driveId: 'driveId',
-    entityType: EntityType.file,
-    name: 'name',
-    txId: 'txId',
-    unixTime: DateTime.now(),
-    id: 'id',
-    size: const MiB(201).size, // above the current limit
-    lastModifiedDate: DateTime.now(),
-    parentFolderId: 'parentFolderId',
-    contentType: 'text/plain',
-  );
+  MockARFSFile testFileUnderPrivateLimitAndAboveWarningLimit =
+      createMockFile(size: const MiB(201).size);
 
-  MockARFSDrive mockDrivePrivate = MockARFSDrive(
-    appName: 'appName',
-    appVersion: 'appVersion',
-    arFS: 'arFS',
-    driveId: '',
-    entityType: EntityType.drive,
-    name: 'name',
-    txId: 'txId',
-    unixTime: DateTime.now(),
-    drivePrivacy: DrivePrivacy.private,
-    rootFolderId: 'rootFolderId',
-  );
+  MockARFSDrive mockDrivePrivate =
+      createMockDrive(drivePrivacy: DrivePrivacy.private);
 
-  MockARFSDrive mockDrivePublic = MockARFSDrive(
-    appName: 'appName',
-    appVersion: 'appVersion',
-    arFS: 'arFS',
-    driveId: '',
-    entityType: EntityType.drive,
-    name: 'name',
-    txId: 'txId',
-    unixTime: DateTime.now(),
-    drivePrivacy: DrivePrivacy.public,
-    rootFolderId: 'rootFolderId',
-  );
+  MockARFSDrive mockDrivePublic =
+      createMockDrive(drivePrivacy: DrivePrivacy.public);
 
   setUpAll(() {
     registerFallbackValue(SecretKey([]));
@@ -211,7 +114,7 @@ void main() {
     setUp(() {
       when(() => mockARFSRepository.getDriveById(any()))
           .thenAnswer((_) async => mockDrivePrivate);
-      when(() => mockDownloadService.download(any()))
+      when(() => mockDownloadService.download(any(), any()))
           .thenAnswer((invocation) => Future.value(Uint8List(100)));
       when(() => mockDriveDao.getFileKey(any(), any()))
           .thenAnswer((invocation) => Future.value(SecretKey([])));
@@ -439,7 +342,7 @@ void main() {
         /// Using a public drive
         when(() => mockARFSRepository.getDriveById(any()))
             .thenAnswer((_) async => mockDrivePublic);
-        when(() => mockDownloadService.download(any()))
+        when(() => mockDownloadService.download(any(), any()))
             .thenThrow((invocation) => Exception());
       },
       act: (bloc) {
@@ -563,7 +466,7 @@ void main() {
               ],
           verify: (bloc) {
             /// public files on mobile should not call these functions
-            verifyNever(() => mockDownloadService.download(any()));
+            verifyNever(() => mockDownloadService.download(any(), any()));
             verifyNever(() => mockDriveDao.getFileKey(any(), any()));
             verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
             verifyNever(
@@ -605,7 +508,7 @@ void main() {
               ],
           verify: (bloc) {
             /// public files on mobile should not call these functions
-            verifyNever(() => mockDownloadService.download(any()));
+            verifyNever(() => mockDownloadService.download(any(), any()));
             verifyNever(() => mockDriveDao.getFileKey(any(), any()));
             verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
             verifyNever(
@@ -686,7 +589,7 @@ void main() {
           verifyNever(() => mockArDriveDownloader.cancelDownload());
 
           /// public files on mobile should not call these functions
-          verifyNever(() => mockDownloadService.download(any()));
+          verifyNever(() => mockDownloadService.download(any(), any()));
           verifyNever(() => mockDriveDao.getFileKey(any(), any()));
           verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
           verifyNever(
