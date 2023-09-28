@@ -404,6 +404,42 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     );
   }
 
+  Future<void> refreshTurboBalance() async {
+    final profileState = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profileState.wallet;
+
+    final turboBalance =
+        await turboBalanceRetriever.getBalance(wallet).catchError((e) {
+      logger.e('Error while retrieving turbo balance', e);
+      return BigInt.zero;
+    });
+
+    _turboBalance = turboBalance;
+    _hasNoTurboBalance = turboBalance == BigInt.zero;
+    _turboCredits = convertCreditsToLiteralString(turboBalance);
+    _sufficentCreditsBalance = _costEstimateTurbo.totalCost <= _turboBalance;
+    _computeIsTurboEnabled();
+    _computeIsButtonEnabled();
+
+    if (state is ConfirmingSnapshotCreation) {
+      final stateAsConfirming = state as ConfirmingSnapshotCreation;
+      logger.d('Refreshing turbo balance...');
+      logger.d('Turbo balance: $_turboCredits - ($_turboBalance)');
+      logger.d('Has no turbo balance: $_hasNoTurboBalance');
+      logger
+          .d('Sufficient balance to pay with turbo: $_sufficentCreditsBalance');
+      logger.d('Upload method: $_uploadMethod');
+      emit(
+        stateAsConfirming.copyWith(
+          turboCredits: _turboCredits,
+          hasNoTurboBalance: _hasNoTurboBalance,
+          sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
+          uploadMethod: _uploadMethod,
+        ),
+      );
+    }
+  }
+
   Future<void> _computeBalanceEstimate() async {
     final profileState = _profileCubit.state as ProfileLoggedIn;
     final wallet = profileState.wallet;

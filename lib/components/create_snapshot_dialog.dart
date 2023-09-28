@@ -416,8 +416,7 @@ Widget _confirmDialog(
                             state.sufficientBalanceToPayWithTurbo,
                         isFreeThanksToTurbo: false,
                         onTurboTopupSucess: () {
-                          createSnapshotCubit
-                              .setUploadMethod(UploadMethod.turbo);
+                          createSnapshotCubit.refreshTurboBalance();
                         },
                         onArSelect: () {
                           createSnapshotCubit.setUploadMethod(UploadMethod.ar);
