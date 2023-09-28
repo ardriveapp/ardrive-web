@@ -247,8 +247,8 @@ class _ProfileCardState extends State<ProfileCard> {
                     fontSize: 16,
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-                    offsetStart: 8,
-                    offsetEnd: 8,
+                    offsetStart: 7,
+                    offsetEnd: 7,
                   ),
                 ],
               ),
@@ -305,8 +305,8 @@ class _ProfileCardState extends State<ProfileCard> {
                     fontSize: 16,
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-                    offsetStart: 8,
-                    offsetEnd: 8,
+                    offsetStart: 7,
+                    offsetEnd: 7,
                   ),
                 ],
               ),
