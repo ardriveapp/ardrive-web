@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -259,6 +260,7 @@ void main() {
           wallet: wallet,
           cipherKey: SecretKey(keyBytes),
           walletAddress: await wallet.getAddress(),
+          profileSource: ProfileSource(type: ProfileSourceType.standalone),
           walletBalance: BigInt.one,
           useTurbo: false,
         ),
