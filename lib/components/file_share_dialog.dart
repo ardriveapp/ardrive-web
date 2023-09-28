@@ -58,9 +58,35 @@ class FileShareDialogState extends State<FileShareDialog> {
                 const Center(child: CircularProgressIndicator())
               else if (state is FileShareLoadedFailedFile)
                 Text(appLocalizationsOf(context).shareFailedFile)
-              else if (state is FileShareLoadedPendingFile)
-                Text(appLocalizationsOf(context).sharePendingFile)
               else if (state is FileShareLoadSuccess) ...{
+                if (state.isPending)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Row(
+                      children: [
+                        ArDriveIcons.triangle(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeWarningEmphasis,
+                        ),
+                        const SizedBox(
+                          width: 8,
+                        ),
+                        Flexible(
+                          child: Text(
+                            'Warning: This file is currently pending and may not be immediately accessible.',
+                            style: ArDriveTypography.body.buttonNormalBold(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeWarningEmphasis,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
