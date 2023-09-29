@@ -1,5 +1,6 @@
 import 'dart:html';
 
+import 'package:js/js.dart';
 import 'package:webthree/browser.dart';
 
 import '../ethereum_provider_wallet.dart';
@@ -14,8 +15,24 @@ Ethereum _getProvider() {
   }
 }
 
+@JS()
+@anonymous
+class JSrawRequestParams {
+  external String get chainId;
+
+  external factory JSrawRequestParams({String chainId});
+}
+
 Future<EthereumProviderWallet?> connect() async {
   final eth = _getProvider();
+
+  // Ensure the user is on Ethereum chain before requesting account
+  await eth.rawRequest(
+    'wallet_switchEthereumChain',
+    params: [
+      JSrawRequestParams(chainId: '0x1'),
+    ],
+  );
 
   final credentials = await eth.requestAccount();
   if (!eth.isConnected()) {
