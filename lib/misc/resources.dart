@@ -85,6 +85,9 @@ class Login {
   final String latticeLarge = 'assets/images/login/lattice_large.svg';
   final String latticeLargeLight =
       'assets/images/login/lattice_large_light.svg';
+  final String arconnectLogoFlat =
+      'assets/images/login/arconnect_logo_flat.svg';
+  final String metamaskLogoFlat = 'assets/images/login/metamask_logo_flat.svg';
 }
 
 const String discord = 'Discord';
