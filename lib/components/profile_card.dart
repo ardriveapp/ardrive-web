@@ -456,7 +456,6 @@ class DownloadKeyfileButton extends StatelessWidget {
   final VoidCallback onPressed;
   final double size;
   final double padding;
-  final Widget? child;
   final int positionY;
   final int positionX;
 
@@ -465,32 +464,18 @@ class DownloadKeyfileButton extends StatelessWidget {
     required this.onPressed,
     this.size = 20,
     this.padding = 4,
-    this.child,
     this.positionY = 40,
     this.positionX = 20,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    if (child != null) {
-      return GestureDetector(
-        onTap: onPressed,
-        child: HoverWidget(
-          hoverScale: 1,
-          child: child!,
-        ),
-      );
-    }
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      child: ArDriveIconButton(
-        tooltip: appLocalizationsOf(context).downloadWalletKeyfile,
-        onPressed: onPressed,
-        icon: Padding(
-          padding: EdgeInsets.all(padding),
-          child: ArDriveIcons.arrowDownload(size: size),
-        ),
+    return ArDriveIconButton(
+      tooltip: appLocalizationsOf(context).downloadWalletKeyfile,
+      onPressed: onPressed,
+      icon: Padding(
+        padding: EdgeInsets.all(padding),
+        child: ArDriveIcons.arrowDownload(size: size),
       ),
     );
   }
