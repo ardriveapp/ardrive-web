@@ -518,7 +518,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                           const AddWalletFromEthereumProviderEvent());
                                     },
                                     // TODO: create/update localization key
-                                    text: 'Login with Ethereum',
+                                    text: 'Login with MetaMask',
                                   ),
                                 ],
                               ],
