@@ -875,4 +875,76 @@ void main() {
       ],
     );
   });
+
+  // group for test the AddWalletFromEthereumProviderEvent event
+  group('testing LoginBloc AddWalletFromEthereumProviderEvent event', () {
+    late MockEthereumProviderWallet mockEthereumProviderWallet;
+
+    setUp(() {
+      mockEthereumProviderWallet = MockEthereumProviderWallet();
+
+      when(() => mockEthereumProviderWallet.getAddress())
+          .thenAnswer((_) => Future.value('Test Eth Address'));
+
+      when(() => mockEthereumProviderWallet.deriveArdriveSeedphrase())
+          .thenAnswer((_) => Future.value('Test Seedphrase'));
+
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+
+      when(() => mockEthereumProviderService.isExtensionPresent())
+          .thenAnswer((_) => true);
+    });
+
+    blocTest(
+      'should emit the state to generate wallet',
+      build: () {
+        return LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+        );
+      },
+      setUp: () {
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((invocation) => Future.value(false));
+
+        when(() => mockEthereumProviderService.connect()).thenAnswer(
+            (invocation) => Future.value(mockEthereumProviderWallet));
+      },
+      act: (bloc) async {
+        bloc.add(const AddWalletFromEthereumProviderEvent());
+      },
+      expect: () => [
+        LoginLoading(),
+        const TypeMatcher<LoginGenerateWallet>(),
+      ],
+    );
+
+    blocTest(
+      'should emit a failure when ethereum connect returns null',
+      build: () {
+        return LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+        );
+      },
+      setUp: () {
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((invocation) => Future.value(false));
+
+        when(() => mockEthereumProviderService.connect())
+            .thenAnswer((invocation) => Future.value(null));
+      },
+      act: (bloc) async {
+        bloc.add(const AddWalletFromEthereumProviderEvent());
+      },
+      expect: () => [
+        LoginLoading(),
+        const TypeMatcher<LoginFailure>(),
+        LoginLoading(),
+      ],
+    );
+  });
 }

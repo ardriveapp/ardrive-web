@@ -295,6 +295,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       emit(LoginDownloadGeneratedWallet(mnemonic, wallet));
     } catch (e) {
+      logger.e('Failed to add wallet from Ethereum provider', e);
+
       emit(LoginFailure(e));
       emit(previousState);
     }
