@@ -16,8 +16,9 @@ abstract class EthereumWallet extends Wallet {
     final signature = await sign(messageData);
 
     final signatureSha256 = await sha256.hash(signature);
-    final signatureSha256Data = Uint8List.fromList(signatureSha256.bytes);
-    final signatureHex = hex.encode(signatureSha256Data);
+    // entropyToMnemonic expects hex encoding
+    final signatureHex = hex.encode(signatureSha256.bytes);
+
     final bip39Mnemonnic = bip39.entropyToMnemonic(signatureHex);
 
     return bip39Mnemonnic;
