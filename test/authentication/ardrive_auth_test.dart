@@ -142,7 +142,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
-      profileSource: ProfileSource(type: ProfileSourceType.standalone),
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     /// For this test we'll call the same method twice to validate if the
@@ -185,7 +185,7 @@ void main() {
       when(() => mockUserRepository.saveUser(
           'password',
           ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone),
+          const ProfileSource(type: ProfileSourceType.standalone),
           wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
@@ -193,9 +193,9 @@ void main() {
 
       // act
       await arDriveAuth.login(wallet, 'password', ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone));
+          const ProfileSource(type: ProfileSourceType.standalone));
       await arDriveAuth.login(wallet, 'password', ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone));
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       // assert
       verify(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
@@ -226,7 +226,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
-      profileSource: ProfileSource(type: ProfileSourceType.standalone),
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
     test(
         'should return the user when has private drives and login with sucess. ',
@@ -265,7 +265,7 @@ void main() {
       when(() => mockUserRepository.saveUser(
           'password',
           ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone),
+          const ProfileSource(type: ProfileSourceType.standalone),
           wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
@@ -273,7 +273,7 @@ void main() {
 
       // act
       final user = await arDriveAuth.login(wallet, 'password', ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone));
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       // assert
       expect(user, isNotNull);
@@ -328,7 +328,7 @@ void main() {
       when(() => mockUserRepository.saveUser(
           'password',
           ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone),
+          const ProfileSource(type: ProfileSourceType.standalone),
           wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
@@ -336,7 +336,7 @@ void main() {
 
       // act
       final user = await arDriveAuth.login(wallet, 'password', ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone));
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       // assert
       expect(user, isNotNull);
@@ -371,7 +371,7 @@ void main() {
       when(() => mockUserRepository.saveUser(
           'password',
           ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone),
+          const ProfileSource(type: ProfileSourceType.standalone),
           wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
@@ -379,7 +379,7 @@ void main() {
 
       // act
       final user = await arDriveAuth.login(wallet, 'password', ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone));
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       // assert
       expect(user, isNotNull);
@@ -418,7 +418,7 @@ void main() {
       when(() => mockUserRepository.saveUser(
           'password',
           ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone),
+          const ProfileSource(type: ProfileSourceType.standalone),
           wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
@@ -426,7 +426,7 @@ void main() {
 
       // act
       final user = await arDriveAuth.login(wallet, 'password', ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone));
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       // assert
       expect(user, isNotNull);
@@ -459,7 +459,7 @@ void main() {
       // assert
       expectLater(
           () => arDriveAuth.login(wallet, 'password', ProfileType.json,
-              ProfileSource(type: ProfileSourceType.standalone)),
+              const ProfileSource(type: ProfileSourceType.standalone)),
           throwsA(isA<AuthenticationFailedException>()));
     });
   });
@@ -472,7 +472,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
-      profileSource: ProfileSource(type: ProfileSourceType.standalone),
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     test('should return the user when password is correct', () async {
@@ -515,7 +515,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
-      profileSource: ProfileSource(type: ProfileSourceType.standalone),
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     test('should delete the current user and delete it when user is logged in',
@@ -581,7 +581,7 @@ void main() {
         walletBalance: BigInt.one,
         cipherKey: SecretKey([]),
         profileType: ProfileType.json,
-        profileSource: ProfileSource(type: ProfileSourceType.standalone),
+        profileSource: const ProfileSource(type: ProfileSourceType.standalone),
       );
       // arrange login
       when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
@@ -617,7 +617,7 @@ void main() {
       when(() => mockUserRepository.saveUser(
           'password',
           ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone),
+          const ProfileSource(type: ProfileSourceType.standalone),
           wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
@@ -634,7 +634,7 @@ void main() {
           .thenAnswer((invocation) async {});
 
       await arDriveAuth.login(wallet, 'password', ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone));
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       await arDriveAuth.logout();
 
@@ -661,7 +661,7 @@ void main() {
         walletBalance: BigInt.one,
         cipherKey: SecretKey([]),
         profileType: ProfileType.json,
-        profileSource: ProfileSource(type: ProfileSourceType.standalone),
+        profileSource: const ProfileSource(type: ProfileSourceType.standalone),
       );
       // arrange
       when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
@@ -688,7 +688,7 @@ void main() {
       when(() => mockUserRepository.saveUser(
           'password',
           ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone),
+          const ProfileSource(type: ProfileSourceType.standalone),
           wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
@@ -707,7 +707,7 @@ void main() {
         walletBalance: BigInt.one,
         cipherKey: SecretKey([]),
         profileType: ProfileType.json,
-        profileSource: ProfileSource(type: ProfileSourceType.standalone),
+        profileSource: const ProfileSource(type: ProfileSourceType.standalone),
       );
 
       // act
@@ -723,7 +723,7 @@ void main() {
       });
 
       await arDriveAuth.login(wallet, 'password', ProfileType.json,
-          ProfileSource(type: ProfileSourceType.standalone));
+          const ProfileSource(type: ProfileSourceType.standalone));
     });
 
     test('should change the state when user logs out', () async {
@@ -765,7 +765,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
-      profileSource: ProfileSource(type: ProfileSourceType.standalone),
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     test(

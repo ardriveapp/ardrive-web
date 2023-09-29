@@ -260,7 +260,8 @@ void main() {
           wallet: wallet,
           cipherKey: SecretKey(keyBytes),
           walletAddress: await wallet.getAddress(),
-          profileSource: ProfileSource(type: ProfileSourceType.standalone),
+          profileSource:
+              const ProfileSource(type: ProfileSourceType.standalone),
           walletBalance: BigInt.one,
           useTurbo: false,
         ),

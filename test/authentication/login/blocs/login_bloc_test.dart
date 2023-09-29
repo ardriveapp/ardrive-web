@@ -108,7 +108,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
-      profileSource: ProfileSource(type: ProfileSourceType.standalone),
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
     blocTest(
       'should emit the event to show onboarding when user is not an existing one',
@@ -125,11 +125,13 @@ void main() {
               any(),
               'password',
               ProfileType.json,
-              ProfileSource(type: ProfileSourceType.standalone),
+              const ProfileSource(type: ProfileSourceType.standalone),
             )).thenAnswer((_) async => loggedUser);
       },
       act: (bloc) async {
         bloc.profileType = ProfileType.json;
+        bloc.profileSource =
+            const ProfileSource(type: ProfileSourceType.standalone);
 
         bloc.add(LoginWithPassword(
           wallet: wallet,
@@ -154,7 +156,7 @@ void main() {
               any(),
               'password',
               ProfileType.arConnect,
-              ProfileSource(type: ProfileSourceType.standalone),
+              const ProfileSource(type: ProfileSourceType.standalone),
             )).thenAnswer((_) async => loggedUser);
 
         when(() => mockArConnectService.getWalletAddress())
@@ -163,6 +165,8 @@ void main() {
       act: (bloc) async {
         bloc.lastKnownWalletAddress = 'some address';
         bloc.profileType = ProfileType.arConnect;
+        bloc.profileSource =
+            const ProfileSource(type: ProfileSourceType.standalone);
 
         bloc.add(LoginWithPassword(
           wallet: wallet,
@@ -186,7 +190,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
-              ProfileSource(type: ProfileSourceType.standalone),
+              const ProfileSource(type: ProfileSourceType.standalone),
             )).thenAnswer((_) async => loggedUser);
 
         when(() => mockArConnectService.getWalletAddress())
@@ -201,6 +205,8 @@ void main() {
           password: 'password',
         ));
         bloc.profileType = ProfileType.arConnect;
+        bloc.profileSource =
+            const ProfileSource(type: ProfileSourceType.standalone);
       },
       expect: () => [
         const PromptPassword(),
@@ -225,7 +231,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
-              ProfileSource(type: ProfileSourceType.standalone),
+              const ProfileSource(type: ProfileSourceType.standalone),
             )).thenThrow(Exception('some error'));
       },
       act: (bloc) async {
@@ -301,7 +307,8 @@ void main() {
               walletBalance: BigInt.one,
               cipherKey: SecretKey([]),
               profileType: ProfileType.json,
-              profileSource: ProfileSource(type: ProfileSourceType.standalone),
+              profileSource:
+                  const ProfileSource(type: ProfileSourceType.standalone),
             ));
       },
       act: (bloc) async {
@@ -380,7 +387,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
-      profileSource: ProfileSource(type: ProfileSourceType.standalone),
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     blocTest(
@@ -403,6 +410,8 @@ void main() {
           password: 'password',
         ));
         bloc.profileType = ProfileType.json;
+        bloc.profileSource =
+            const ProfileSource(type: ProfileSourceType.standalone);
       },
       expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
     );
@@ -430,6 +439,8 @@ void main() {
           password: 'password',
         ));
         bloc.profileType = ProfileType.json;
+        bloc.profileSource =
+            const ProfileSource(type: ProfileSourceType.standalone);
       },
       expect: () => [
         const PromptPassword(),
@@ -456,7 +467,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
-      profileSource: ProfileSource(type: ProfileSourceType.standalone),
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     blocTest(
@@ -474,7 +485,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
-              ProfileSource(type: ProfileSourceType.standalone),
+              const ProfileSource(type: ProfileSourceType.standalone),
             )).thenAnswer((_) async => loggedUser);
       },
       act: (bloc) async {
@@ -483,6 +494,8 @@ void main() {
           password: 'password',
         ));
         bloc.profileType = ProfileType.json;
+        bloc.profileSource =
+            const ProfileSource(type: ProfileSourceType.standalone);
       },
       expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
     );
@@ -502,7 +515,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
-              ProfileSource(type: ProfileSourceType.standalone),
+              const ProfileSource(type: ProfileSourceType.standalone),
             )).thenThrow(Exception('some error'));
       },
       act: (bloc) async {
@@ -514,6 +527,8 @@ void main() {
           password: 'password',
         ));
         bloc.profileType = ProfileType.json;
+        bloc.profileSource =
+            const ProfileSource(type: ProfileSourceType.standalone);
       },
       expect: () => [
         const PromptPassword(),
@@ -537,7 +552,7 @@ void main() {
               any(),
               'password',
               ProfileType.arConnect,
-              ProfileSource(type: ProfileSourceType.standalone),
+              const ProfileSource(type: ProfileSourceType.standalone),
             )).thenAnswer((_) async => loggedUser);
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('some address'));
@@ -545,6 +560,8 @@ void main() {
       act: (bloc) async {
         bloc.lastKnownWalletAddress = 'some address';
         bloc.profileType = ProfileType.arConnect;
+        bloc.profileSource =
+            const ProfileSource(type: ProfileSourceType.standalone);
 
         bloc.add(CreatePassword(
           wallet: wallet,
@@ -569,7 +586,7 @@ void main() {
               any(),
               'password',
               ProfileType.json,
-              ProfileSource(type: ProfileSourceType.standalone),
+              const ProfileSource(type: ProfileSourceType.standalone),
             )).thenThrow(Exception('some error'));
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('some another address'));
@@ -577,6 +594,8 @@ void main() {
       act: (bloc) async {
         bloc.lastKnownWalletAddress = 'some address';
         bloc.profileType = ProfileType.arConnect;
+        bloc.profileSource =
+            const ProfileSource(type: ProfileSourceType.standalone);
         // when an error occurs we go back to the last state, so use it to test
         bloc.emit(const PromptPassword());
 
@@ -585,6 +604,8 @@ void main() {
           password: 'password',
         ));
         bloc.profileType = ProfileType.json;
+        bloc.profileSource =
+            const ProfileSource(type: ProfileSourceType.standalone);
       },
       expect: () => [
         const PromptPassword(),
@@ -794,7 +815,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
-      profileSource: ProfileSource(type: ProfileSourceType.standalone),
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     blocTest(

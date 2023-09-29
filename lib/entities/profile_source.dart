@@ -1,14 +1,19 @@
+import 'package:equatable/equatable.dart';
+
 enum ProfileSourceType {
   standalone,
   ethereumSignature,
 }
 
-class ProfileSource {
+class ProfileSource extends Equatable {
   final ProfileSourceType type;
   final String? address;
 
-  ProfileSource({
+  const ProfileSource({
     required this.type,
     this.address,
   });
+
+  @override
+  List<Object?> get props => [type, address];
 }
