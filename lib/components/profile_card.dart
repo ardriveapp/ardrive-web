@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/truncated_address.dart';
+import 'package:ardrive/entities/address_type.dart';
 import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
@@ -307,6 +308,7 @@ class _ProfileCardState extends State<ProfileCard> {
                         ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
                     offsetStart: 7,
                     offsetEnd: 7,
+                    addressType: AddressType.ethereum,
                   ),
                 ],
               ),
