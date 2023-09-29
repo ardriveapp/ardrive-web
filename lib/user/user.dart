@@ -58,7 +58,7 @@ class _User implements User {
     required this.walletBalance,
     required this.cipherKey,
     required this.profileType,
-    required ProfileSource profileSource,
+    required this.profileSource,
   });
 
   @override
