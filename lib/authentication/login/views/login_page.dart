@@ -479,10 +479,11 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                 if (widget.isArConnectAvailable) ...[
                                   ArDriveButton(
                                     icon: Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 4),
-                                        child: ArDriveIcons.arconnectIcon1(
-                                          color: colors.themeFgDefault,
+                                        padding: const EdgeInsets.only(
+                                            right: 4, top: 2),
+                                        child: SvgPicture.asset(
+                                          Resources
+                                              .images.login.arconnectLogoFlat,
                                         )),
                                     style: ArDriveButtonStyle.secondary,
                                     fontStyle: ArDriveTypography.body
@@ -504,10 +505,13 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                   ArDriveButton(
                                     // TODO: Use Ethereum/Metamask Icon
                                     icon: Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 4),
-                                        child: ArDriveIcons.arconnectIcon1(
-                                          color: colors.themeFgDefault,
+                                        padding: const EdgeInsets.only(
+                                          right: 4,
+                                          top: 2,
+                                        ),
+                                        child: SvgPicture.asset(
+                                          Resources
+                                              .images.login.metamaskLogoFlat,
                                         )),
                                     style: ArDriveButtonStyle.secondary,
                                     fontStyle: ArDriveTypography.body
