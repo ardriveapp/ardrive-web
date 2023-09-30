@@ -503,7 +503,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                   const SizedBox(height: 16),
                                 if (widget.isEthereumProviderAvailable) ...[
                                   ArDriveButton(
-                                    // TODO: Use Ethereum/Metamask Icon
                                     icon: Padding(
                                         padding: const EdgeInsets.only(
                                           right: 4,
