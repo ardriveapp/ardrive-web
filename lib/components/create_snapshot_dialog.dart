@@ -43,7 +43,7 @@ Future<void> promptToCreateSnapshot(
                 turboBalanceRetriever: TurboBalanceRetriever(
                   paymentService: context.read<PaymentService>(),
                 ),
-                appConfig: context.read<ConfigService>().config,
+                configService: context.read<ConfigService>(),
                 turboService: context.read<TurboUploadService>(),
               ),
               child: CreateSnapshotDialog(
