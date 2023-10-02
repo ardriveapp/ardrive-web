@@ -443,6 +443,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           hasNoTurboBalance: _hasNoTurboBalance,
           sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
           uploadMethod: _uploadMethod,
+          isButtonToUploadEnabled: _isButtonToUploadEnabled,
         ),
       );
     }
