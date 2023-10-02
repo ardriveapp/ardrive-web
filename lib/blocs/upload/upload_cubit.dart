@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -8,6 +9,7 @@ import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';
+import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -454,13 +456,13 @@ class UploadCubit extends Cubit<UploadState> {
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
     // UPLOAD USING THE NEW UPLOADER
-    if (_uploadMethod == UploadMethod.turbo && !uploadFolders) {
+    if (_uploadMethod == UploadMethod.turbo) {
       // TODO: implement upload folders using the new uploader
-      // if (uploadFolders) {
-      //   logger.i('Uploading folder using the new uploader');
-      //   await _uploadFolderUsingArDriveUploader();
-      //   return;
-      // }
+      if (uploadFolders) {
+        logger.i('Uploading folder using the new uploader');
+        await _uploadFolderUsingArDriveUploader();
+        return;
+      }
       await _uploadUsingArDriveUploader();
       return;
     }
@@ -486,6 +488,8 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
+  final List<ARFSUploadMetadata> _skipedMetadata = [];
+
   // TODO: Finish the implementation for uploading folders.
   // It should be addressed after the new uploader is implemented and tested.
   // ignore: unused_element
@@ -505,8 +509,43 @@ class UploadCubit extends Cubit<UploadState> {
             _targetDrive.id, _auth.currentUser!.cipherKey)
         : null;
 
+    late IOFolder folderWithConflictResolved;
+
+    if (kIsWeb) {
+      folderWithConflictResolved = IOFolderAdapter().fromIOFiles(
+        files.map((e) => e.ioFile as MutableIOFilePath).toList(),
+        useVirtualPath: false,
+      );
+    } else {
+      folderWithConflictResolved = await IOFolderAdapter()
+          .fromFileSystemDirectory(Directory(folder!.path));
+    }
+
     final uploadController = await ardriveUploader.uploadEntity(
-      entity: folder!,
+      entity: folderWithConflictResolved,
+      skipMetadataUpload: (metadata) {
+        if (metadata is ARFSFolderUploadMetatadata) {
+          bool shouldSkip;
+
+          final folderMetadata = metadata;
+
+          final existingFolderName = foldersByPath.values
+              .where((element) =>
+                  element.parentFolderId == folderMetadata.parentFolderId &&
+                  element.name == folderMetadata.name)
+              .isEmpty;
+
+          shouldSkip = existingFolderName;
+
+          if (shouldSkip) {
+            _skipedMetadata.add(metadata);
+          }
+
+          return shouldSkip;
+        }
+
+        return false;
+      },
       args: ARFSUploadMetadataArgs(
         isPrivate: _targetDrive.isPrivate,
         driveId: _targetDrive.id,
@@ -518,19 +557,34 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     // If the progress is not available, it won't never be called.
-    uploadController.onProgressChange((progress) {
-      emit(
-        UploadInProgressUsingNewUploader(
-          totalProgress: progress.progress,
-          equatableBust: UniqueKey(),
-          progress: progress,
-        ),
-      );
-    });
+    uploadController.onProgressChange(
+      (progress) {
+        emit(
+          UploadInProgressUsingNewUploader(
+            totalProgress: progress.progress,
+            equatableBust: UniqueKey(),
+            progress: progress,
+            controller: uploadController,
+          ),
+        );
+      },
+    );
 
-    uploadController.onDone((metadata) async {
-      // TODO: Implement the insertion of folder and files into the database.
-    });
+    uploadController.onDone(
+      (tasks) async {
+        unawaited(_saveFolderAndItsContentOnDB(tasks));
+
+        unawaited(_profileCubit.refreshBalance());
+      },
+    );
+  }
+
+  void retryUploads(UploadController controller) {
+    controller.retryFailedTasks(_auth.currentUser!.wallet);
+  }
+
+  void retryTask(UploadController controller, UploadTask task) {
+    controller.retryTask(task, _auth.currentUser!.wallet);
   }
 
   Future<void> _uploadUsingArDriveUploader() async {
@@ -599,6 +653,7 @@ class UploadCubit extends Cubit<UploadState> {
           UploadInProgressUsingNewUploader(
             progress: progress,
             totalProgress: progress.progress,
+            controller: uploadController,
             equatableBust: UniqueKey(),
           ),
         );
@@ -607,9 +662,23 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
-        for (var task in tasks) {
-          unawaited(_saveEntityOnDB(task));
+        if (tasks.any((element) => element.status == UploadStatus.failed)) {
+          final progress = state as UploadInProgressUsingNewUploader;
+          emit(
+            UploadInProgressUsingNewUploader(
+              progress: progress.progress,
+              totalProgress: progress.progress.progress,
+              controller: uploadController,
+              equatableBust: UniqueKey(),
+            ),
+          );
+          return;
         }
+
+        for (var task in tasks) {
+          await _saveEntityOnDB(task);
+        }
+
         unawaited(_profileCubit.refreshBalance());
       },
     );
@@ -660,12 +729,281 @@ class UploadCubit extends Cubit<UploadState> {
               ),
             );
           });
+        } else if (metadata is ARFSFolderUploadMetatadata) {
+          print('Folder metadata');
+          final folderMetadata = metadata;
+
+          final revisionAction =
+              conflictingFolders.contains(folderMetadata.name)
+                  ? RevisionAction.uploadNewVersion
+                  : RevisionAction.create;
+
+          final entity = FolderEntity(
+            driveId: folderMetadata.driveId,
+            id: folderMetadata.id,
+            name: folderMetadata.name,
+            parentFolderId: folderMetadata.parentFolderId,
+          );
+
+          await _driveDao.transaction(() async {
+            final id = await _driveDao.createFolder(
+              driveId: _targetFolder.id,
+              parentFolderId: folderMetadata.parentFolderId,
+              folderName: folderMetadata.name,
+              path: '${_targetFolder.path}/${metadata.name}',
+              folderId: folderMetadata.id,
+            );
+
+            logger.i('Folder created with id: $id');
+
+            entity.txId = metadata.metadataTxId!;
+
+            await _driveDao.insertFolderRevision(
+              entity.toRevisionCompanion(
+                performedAction: revisionAction,
+              ),
+            );
+          });
         }
 
         // all files are uploaded
         emit(UploadComplete());
       }
     }
+  }
+
+  Future _saveFolderAndItsContentOnDB(List<UploadTask> tasks) async {
+    // save each folder and its content
+    for (var folderUploadTask in tasks.where((element) => element.content!
+        .every((element) => element is ARFSFolderUploadMetatadata))) {
+      final metadatas = folderUploadTask.content;
+      for (var folderMetadata in metadatas!) {
+        folderMetadata as ARFSFolderUploadMetatadata;
+
+        final revisionAction = conflictingFolders.contains(folderMetadata.name)
+            ? RevisionAction.uploadNewVersion
+            : RevisionAction.create;
+
+        final entity = FolderEntity(
+          driveId: folderMetadata.driveId,
+          id: folderMetadata.id,
+          name: folderMetadata.name,
+          parentFolderId: folderMetadata.parentFolderId,
+        );
+
+        await _driveDao.transaction(() async {
+          final id = await _driveDao.createFolder(
+            driveId: folderMetadata.driveId,
+            parentFolderId: folderMetadata.parentFolderId,
+            folderName: folderMetadata.name,
+            path: '${_targetFolder.path}/${folderMetadata.name}',
+            folderId: folderMetadata.id,
+          );
+
+          logger.i('Folder created with id: $id');
+
+          entity.txId = folderMetadata.metadataTxId!;
+
+          await _driveDao.insertFolderRevision(
+            entity.toRevisionCompanion(
+              performedAction: revisionAction,
+            ),
+          );
+        });
+
+        // get all files in the folder
+        List<ARFSFileUploadMetadata> filesInFolder = [];
+
+        for (var task in tasks) {
+          final files = task.content?.where((element) =>
+              element is ARFSFileUploadMetadata &&
+              element.parentFolderId == folderMetadata.id);
+
+          if (files != null) {
+            filesInFolder.addAll(files.map((e) => e as ARFSFileUploadMetadata));
+          }
+        }
+
+        for (var fileMetadata in filesInFolder) {
+          final revisionAction = conflictingFiles.containsKey(fileMetadata.name)
+              ? RevisionAction.uploadNewVersion
+              : RevisionAction.create;
+
+          final entity = FileEntity(
+            dataContentType: fileMetadata.dataContentType,
+            dataTxId: fileMetadata.dataTxId,
+            driveId: fileMetadata.driveId,
+            id: fileMetadata.id,
+            lastModifiedDate: fileMetadata.lastModifiedDate,
+            name: fileMetadata.name,
+            parentFolderId: fileMetadata.parentFolderId,
+            size: fileMetadata.size,
+            // TODO: pinnedDataOwnerAddress
+          );
+
+          if (fileMetadata.metadataTxId == null) {
+            logger.e('Metadata tx id is null');
+            throw Exception('Metadata tx id is null');
+          }
+
+          entity.txId = fileMetadata.metadataTxId!;
+
+          await _driveDao.transaction(() async {
+            // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
+            // TODO: Changed this logic. PLEASE REVIEW IT.
+            final filePath =
+                '${_targetFolder.path}/${folderMetadata.name}/${fileMetadata.name}';
+            await _driveDao.writeFileEntity(entity, filePath);
+            await _driveDao.insertFileRevision(
+              entity.toRevisionCompanion(
+                performedAction: revisionAction,
+              ),
+            );
+          });
+        }
+      }
+    }
+
+    for (var task in tasks) {
+      for (var skipedMedata in _skipedMetadata) {
+        final files = task.content?.where((element) =>
+            element is ARFSFileUploadMetadata &&
+            element.parentFolderId == skipedMedata.id);
+
+        final filesInFolder = <ARFSFileUploadMetadata>[];
+
+        if (files != null) {
+          filesInFolder.addAll(files.map((e) => e as ARFSFileUploadMetadata));
+        }
+
+        for (var fileMetadata in filesInFolder) {
+          final revisionAction = conflictingFiles.containsKey(fileMetadata.name)
+              ? RevisionAction.uploadNewVersion
+              : RevisionAction.create;
+
+          final entity = FileEntity(
+            dataContentType: fileMetadata.dataContentType,
+            dataTxId: fileMetadata.dataTxId,
+            driveId: fileMetadata.driveId,
+            id: fileMetadata.id,
+            lastModifiedDate: fileMetadata.lastModifiedDate,
+            name: fileMetadata.name,
+            parentFolderId: fileMetadata.parentFolderId,
+            size: fileMetadata.size,
+            // TODO: pinnedDataOwnerAddress
+          );
+
+          if (fileMetadata.metadataTxId == null) {
+            logger.e('Metadata tx id is null');
+            throw Exception('Metadata tx id is null');
+          }
+
+          entity.txId = fileMetadata.metadataTxId!;
+
+          await _driveDao.transaction(() async {
+            // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
+            // TODO: Changed this logic. PLEASE REVIEW IT.
+            final filePath =
+                '${_targetFolder.path}/${skipedMedata.name}/${fileMetadata.name}';
+            print(filePath);
+            await _driveDao.writeFileEntity(entity, filePath);
+            await _driveDao.insertFileRevision(
+              entity.toRevisionCompanion(
+                performedAction: revisionAction,
+              ),
+            );
+          });
+        }
+      }
+    }
+
+    emit(UploadComplete());
+
+    // for (var task in tasks) {
+    //   final metadatas = task.content;
+
+    //   if (metadatas != null) {
+    //     for (var metadata in metadatas) {
+    //       if (metadata is ARFSFileUploadMetadata) {
+    //         final fileMetadata = metadata;
+
+    //         final revisionAction =
+    //             conflictingFiles.containsKey(fileMetadata.name)
+    //                 ? RevisionAction.uploadNewVersion
+    //                 : RevisionAction.create;
+
+    //         final entity = FileEntity(
+    //           dataContentType: fileMetadata.dataContentType,
+    //           dataTxId: fileMetadata.dataTxId,
+    //           driveId: fileMetadata.driveId,
+    //           id: fileMetadata.id,
+    //           lastModifiedDate: fileMetadata.lastModifiedDate,
+    //           name: fileMetadata.name,
+    //           parentFolderId: fileMetadata.parentFolderId,
+    //           size: fileMetadata.size,
+    //           // TODO: pinnedDataOwnerAddress
+    //         );
+
+    //         if (fileMetadata.metadataTxId == null) {
+    //           logger.e('Metadata tx id is null');
+    //           throw Exception('Metadata tx id is null');
+    //         }
+
+    //         entity.txId = fileMetadata.metadataTxId!;
+
+    //         await _driveDao.transaction(() async {
+    //           // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
+    //           // TODO: Changed this logic. PLEASE REVIEW IT.
+    //           final filePath = '${_targetFolder.path}/${metadata.name}';
+    //           await _driveDao.writeFileEntity(entity, filePath);
+    //           await _driveDao.insertFileRevision(
+    //             entity.toRevisionCompanion(
+    //               performedAction: revisionAction,
+    //             ),
+    //           );
+    //         });
+    //       } else if (metadata is ARFSFolderUploadMetatadata) {
+    //         print('Folder metadata');
+    //         final folderMetadata = metadata;
+
+    //         final revisionAction =
+    //             conflictingFolders.contains(folderMetadata.name)
+    //                 ? RevisionAction.uploadNewVersion
+    //                 : RevisionAction.create;
+
+    //         final entity = FolderEntity(
+    //           driveId: folderMetadata.driveId,
+    //           id: folderMetadata.id,
+    //           name: folderMetadata.name,
+    //           parentFolderId: folderMetadata.parentFolderId,
+    //         );
+
+    //         await _driveDao.transaction(() async {
+    //           final id = await _driveDao.createFolder(
+    //             driveId: _targetFolder.id,
+    //             parentFolderId: folderMetadata.parentFolderId,
+    //             folderName: folderMetadata.name,
+    //             path: '${_targetFolder.path}/${metadata.name}',
+    //             folderId: folderMetadata.id,
+    //           );
+
+    //           logger.i('Folder created with id: $id');
+
+    //           entity.txId = metadata.metadataTxId!;
+
+    //           await _driveDao.insertFolderRevision(
+    //             entity.toRevisionCompanion(
+    //               performedAction: revisionAction,
+    //             ),
+    //           );
+    //         });
+    //       }
+
+    //       // all files are uploaded
+    //       emit(UploadComplete());
+    //     }
+    //   }
+    // }
   }
 
   Future<void> skipLargeFilesAndCheckForConflicts() async {

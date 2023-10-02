@@ -140,6 +140,7 @@ abstract class ArDriveUploader {
     required ARFSUploadMetadataArgs args,
     required Wallet wallet,
     SecretKey? driveKey,
+    Function(ARFSUploadMetadata)? skipMetadataUpload,
   }) {
     throw UnimplementedError();
   }
@@ -165,7 +166,7 @@ abstract class ArDriveUploader {
 
 class _ArDriveUploader implements ArDriveUploader {
   _ArDriveUploader({
-    required DataBundler dataBundler,
+    required DataBundler<ARFSUploadMetadata> dataBundler,
     required ARFSUploadMetadataGenerator metadataGenerator,
     required Uri turboUploadUri,
     // TODO: pass the turboUploadUri as a parameter
@@ -178,7 +179,7 @@ class _ArDriveUploader implements ArDriveUploader {
         );
 
   final StreamedUpload _streamedUpload;
-  final DataBundler _dataBundler;
+  final DataBundler<ARFSUploadMetadata> _dataBundler;
   final ARFSUploadMetadataGenerator _metadataGenerator;
 
   /// STABLE.
@@ -196,6 +197,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
+      _streamedUpload,
     );
 
     var uploadTask =
@@ -259,6 +261,7 @@ class _ArDriveUploader implements ArDriveUploader {
     required ARFSUploadMetadataArgs args,
     required Wallet wallet,
     SecretKey? driveKey,
+    Function(ARFSUploadMetadata)? skipMetadataUpload,
   }) async {
     // TODO: Start the implementation only for folders by now.
     // FIXME: only works for folders
@@ -267,10 +270,9 @@ class _ArDriveUploader implements ArDriveUploader {
       args,
     );
 
-    // print('Creating a new upload controller');
-
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
+      _streamedUpload,
     );
 
     /// Creation of the data bundle
@@ -281,17 +283,14 @@ class _ArDriveUploader implements ArDriveUploader {
       wallet: wallet,
       driveKey: driveKey,
       driveId: args.driveId!,
+      skipMetadata: skipMetadataUpload,
     )
         .then((dataItems) {
-      // print('BDIs created');
-
       for (var dataItem in dataItems) {
         final uploadTask = UploadTask(
           dataItem: dataItem.dataItemResult,
           content: dataItem.contents,
         );
-
-        // print('BDI id: ${dataItem.dataItemResult.id}');
 
         uploadTask.status = UploadStatus.preparationDone;
         // TODO: the upload controller should emit the send sending the tasks
@@ -301,9 +300,8 @@ class _ArDriveUploader implements ArDriveUploader {
 
         _streamedUpload
             .send(uploadTask, wallet, uploadController)
-            .then((value) {
-          // print('Upload complete');
-        }).catchError((err) {
+            .then((value) {})
+            .catchError((err) {
           uploadController.onError(() => print('Error: $err'));
         });
       }
@@ -322,6 +320,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
+      _streamedUpload,
     );
 
     /// Attaches the upload controller to the upload service

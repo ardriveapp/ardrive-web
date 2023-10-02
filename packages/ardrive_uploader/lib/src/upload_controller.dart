@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:arweave/arweave.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
@@ -72,6 +73,9 @@ class UploadTask implements _UploadTask<ARFSUploadMetadata> {
 abstract class UploadController {
   abstract final Map<String, UploadTask> tasks;
 
+  Future<void> sendTasks();
+  Future<void> retryTask(UploadTask task, Wallet wallet);
+  Future<void> retryFailedTasks(Wallet wallet);
   Future<void> close();
   void cancel();
   void onCancel();
@@ -83,19 +87,24 @@ abstract class UploadController {
 
   factory UploadController(
     StreamController<UploadProgress> progressStream,
+    StreamedUpload streamedUpload,
   ) {
     return _UploadController(
       progressStream: progressStream,
+      streamedUpload: streamedUpload,
     );
   }
 }
 
 class _UploadController implements UploadController {
   final StreamController<UploadProgress> _progressStream;
+  final StreamedUpload _streamedUpload;
 
   _UploadController({
     required StreamController<UploadProgress> progressStream,
-  }) : _progressStream = progressStream {
+    required StreamedUpload streamedUpload,
+  })  : _progressStream = progressStream,
+        _streamedUpload = streamedUpload {
     init();
   }
 
@@ -122,6 +131,9 @@ class _UploadController implements UploadController {
       },
       onDone: () {
         print('Done upload');
+        for (var task in tasks.values) {
+          print('Task: ${task.id} - ${task.status}');
+        }
         _onDone(tasks.values.toList());
         subscription.cancel();
       },
@@ -250,5 +262,37 @@ class _UploadController implements UploadController {
     }
 
     return totalSize;
+  }
+
+  @override
+  Future<void> sendTasks() async {
+    // _streamedUpload.send();
+  }
+
+  @override
+  Future<void> retryFailedTasks(Wallet wallet) async {
+    final failedTasks =
+        tasks.values.where((e) => e.status == UploadStatus.failed).toList();
+
+    if (failedTasks.isEmpty) {
+      return Future.value();
+    }
+
+    for (var task in failedTasks) {
+      task.copyWith(status: UploadStatus.notStarted);
+
+      updateProgress(task: task);
+
+      _streamedUpload.send(task, wallet, this);
+    }
+  }
+
+  @override
+  Future<void> retryTask(UploadTask task, Wallet wallet) async {
+    task.copyWith(status: UploadStatus.notStarted);
+
+    updateProgress(task: task);
+
+    _streamedUpload.send(task, wallet, this);
   }
 }

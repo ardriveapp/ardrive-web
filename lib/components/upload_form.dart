@@ -937,6 +937,7 @@ class _UploadFormState extends State<UploadForm> {
                       }
 
                       return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           if (task.content != null)
                             for (var file in task.content!)
@@ -946,51 +947,94 @@ class _UploadFormState extends State<UploadForm> {
                                         file.dataContentType,
                                         size: 24,
                                       )
-                                    : null,
+                                    : file is ARFSFolderUploadMetatadata
+                                        ? getIconForContentType(
+                                            'folder',
+                                            size: 24,
+                                          )
+                                        : null,
                                 contentPadding: EdgeInsets.zero,
                                 title: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.max,
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Flexible(
                                       flex: 1,
-                                      child: Text(
-                                        file.name,
-                                        style: ArDriveTypography.body
-                                            .buttonNormalBold(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            file.name,
+                                            style: ArDriveTypography.body
+                                                .buttonNormalBold(
+                                                  color:
+                                                      ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeFgDefault,
+                                                )
+                                                .copyWith(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                          ),
+                                          AnimatedSwitcher(
+                                            duration:
+                                                const Duration(seconds: 1),
+                                            child: Text(
+                                              status,
+                                              style: ArDriveTypography.body
+                                                  .buttonNormalBold(
+                                                color: ArDriveTheme.of(context)
+                                                    .themeData
+                                                    .colors
+                                                    .themeFgOnDisabled,
+                                              ),
+                                            ),
+                                          ),
+                                          Text(
+                                            progressText,
+                                            style: ArDriveTypography.body
+                                                .buttonNormalRegular(
                                               color: ArDriveTheme.of(context)
                                                   .themeData
                                                   .colors
-                                                  .themeFgDefault,
-                                            )
-                                            .copyWith(
-                                                fontWeight: FontWeight.bold),
+                                                  .themeFgOnDisabled,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     Flexible(
                                       flex: 1,
                                       child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
                                         mainAxisSize: MainAxisSize.max,
                                         children: [
                                           Flexible(
                                             flex: 2,
                                             child: ArDriveProgressBar(
                                               height: 4,
-                                              indicatorColor: task.progress == 1
+                                              indicatorColor: task.status ==
+                                                      UploadStatus.failed
                                                   ? ArDriveTheme.of(context)
                                                       .themeData
                                                       .colors
-                                                      .themeSuccessDefault
-                                                  : ArDriveTheme.of(context)
-                                                      .themeData
-                                                      .colors
-                                                      .themeFgDefault,
+                                                      .themeErrorDefault
+                                                  : task.progress == 1
+                                                      ? ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeSuccessDefault
+                                                      : ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeFgDefault,
                                               percentage: task.progress,
                                             ),
-                                          ),
-                                          const SizedBox(
-                                            width: 8,
                                           ),
                                           Flexible(
                                             child: Text(
@@ -1004,9 +1048,31 @@ class _UploadFormState extends State<UploadForm> {
                                               ),
                                             ),
                                           ),
+                                          const SizedBox(
+                                            width: 8,
+                                          ),
+                                          if (task.status ==
+                                              UploadStatus.failed)
+                                            SizedBox(
+                                              height: 24,
+                                              child: ArDriveClickArea(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    context
+                                                        .read<UploadCubit>()
+                                                        .retryTask(
+                                                          state.controller,
+                                                          task,
+                                                        );
+                                                  },
+                                                  child: ArDriveIcons.refresh(),
+                                                ),
+                                              ),
+                                            )
                                         ],
                                       ),
                                     ),
+
                                     // TODO: get the correct size
                                     // Text(
                                     //   filesize(
@@ -1032,35 +1098,7 @@ class _UploadFormState extends State<UploadForm> {
                                 //         .colors
                                 //         .themeFgOnDisabled,
                                 //   ),
-                                // ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    AnimatedSwitcher(
-                                      duration: const Duration(seconds: 1),
-                                      child: Text(
-                                        status,
-                                        style: ArDriveTypography.body
-                                            .buttonNormalBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgOnDisabled,
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      progressText,
-                                      style: ArDriveTypography.body
-                                          .buttonNormalRegular(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeFgOnDisabled,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                // ),,
                               ),
                           Divider(
                             color: ArDriveTheme.of(context)

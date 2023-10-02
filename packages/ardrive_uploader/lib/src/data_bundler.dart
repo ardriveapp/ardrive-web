@@ -27,6 +27,7 @@ abstract class DataBundler<T> {
     required Wallet wallet,
     SecretKey? driveKey,
     required String driveId,
+    Function(T metadata)? skipMetadata,
   });
 }
 
@@ -69,6 +70,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       onStartBundling?.call();
     }
 
+    // returns the encrypted or not file read stream and the cipherIv if it was encrypted
     final dataGenerator = await _dataGenerator(
       dataStream: file.openReadStream,
       fileLength: await file.length,
@@ -89,7 +91,8 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       driveKey: driveKey,
     );
 
-    // print('Metadata data item generated');
+    print('Metadata data item generated');
+    print('metadata id: ${metadata.metadataTxId}');
 
     // print('Starting to generate file data item');
 
@@ -202,7 +205,6 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     }
 
     // TODO: remove this when we fix the issue with the method that returns the
-    //
     final metadataTask = createDataItemTaskEither(
       wallet: wallet,
       dataStream: () => Stream.fromIterable(metadataBytes),
@@ -219,7 +221,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       print(StackTrace.current);
       throw l;
     }, (metadataDataItem) {
-      // print('Metadata data item created. ID: ${metadataDataItem.id}');
+      print('Metadata data item created. ID: ${metadataDataItem.id}');
       metadata.setMetadataTxId = metadataDataItem.id;
       return metadataDataItem;
     });
@@ -247,6 +249,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     required Wallet wallet,
     SecretKey? driveKey,
     required String driveId,
+    Function(ARFSUploadMetadata metadata)? skipMetadata,
   }) async {
     // TODO: implement createDataBundleForEntities
     // TODO: implement the creation of the data bundle for entities, onyl for folders by now.
@@ -277,21 +280,16 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     // Generates for folders and files inside the folders.
 
     else if (entity is IOFolder) {
-      final subContent = await entity.listContent();
-
-      print('Subcontent length: ${subContent.length}');
-
-      for (var item in subContent) {
-        print(item.name);
-      }
-
       List<ARFSUploadMetadata> folderMetadatas = [];
       List<DataItemFile> folderDataItems = [];
       List<DataItemResultWithContents> dataItemsResult = [];
 
       /// Adds the Top level folder
       // TODO: REVIEW: on web it's not necessary to add the top level folder
-      if (!kIsWeb) folderMetadatas.add(metadata);
+      // if (!kIsWeb)
+      if (skipMetadata != null && !skipMetadata(metadata)) {
+        folderMetadatas.add(metadata);
+      }
 
       await _iterateThroughFolderSubContent(
         folderDataItems: folderDataItems,
@@ -306,7 +304,12 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
         wallet: wallet,
         driveKey: driveKey,
         topMetadata: metadata,
+        skipMetadata: skipMetadata,
       );
+
+      if (skipMetadata != null && skipMetadata(metadata)) {
+        return dataItemsResult;
+      }
 
       Stream<Uint8List> Function() metadataStreamGenerator;
 
@@ -354,6 +357,29 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
             .toList(),
       );
 
+      // TODO: Change it when update the arweave-dart package
+      // Currently we need to create the data item for the metadata first
+      // so we can get the tx id and add it to the metadata.
+      final metadataDataTaskEither = createDataItemTaskEither(
+          wallet: wallet,
+          dataStream: metadataStreamGenerator,
+          dataStreamSize: metadataBytes.length,
+          tags: metadata.dataItemTags
+              .map((e) => createTag(e.name, e.value))
+              .toList());
+
+      final metadataDataItemResult = await metadataDataTaskEither.run();
+
+      metadataDataItemResult.match((l) {
+        print('Error: $l');
+        print(StackTrace.current);
+        throw l;
+      }, (metadataDataItem) {
+        print('Metadata data item created. ID: ${metadataDataItem.id}');
+        metadata.setMetadataTxId = metadataDataItem.id;
+        return metadataDataItem;
+      });
+
       /// List of folders DataItems
       folderDataItems.insert(0, metadataFile);
 
@@ -381,6 +407,10 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
         return bdi;
       });
 
+      for (var folder in folderMetadatas) {
+        print('Folder metadata: ${folder.name}');
+      }
+
       /// All folders inside a single BDI, and the remaining files
       return [
         DataItemResultWithContents(
@@ -405,6 +435,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     required Wallet wallet,
     SecretKey? driveKey,
     required ARFSUploadMetadata topMetadata,
+    Function(ARFSUploadMetadata metadata)? skipMetadata,
   }) async {
     for (var entity in entites) {
       if (entity is IOFile) {
@@ -412,6 +443,10 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
           entity,
           args,
         );
+
+        if (skipMetadata != null && skipMetadata(fileMetadata)) {
+          continue;
+        }
 
         dataItemsResult.add(
           DataItemResultWithContents(
@@ -430,6 +465,10 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
           entity,
           args,
         );
+
+        if (skipMetadata != null && skipMetadata(folderMetadata)) {
+          continue;
+        }
 
         /// Add to the list of folders metadatas
         foldersMetadatas.add(folderMetadata);
@@ -464,6 +503,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
           wallet: wallet,
           driveKey: driveKey,
           topMetadata: topMetadata,
+          skipMetadata: skipMetadata,
         );
       } else {
         throw Exception('Invalid entity type');
@@ -651,12 +691,14 @@ class ARFSDataBundler implements DataBundler<ARFSUploadMetadata> {
   }
 
   @override
-  Future<List<DataItemResultWithContents>> createDataBundleForEntity(
-      {required IOEntity entity,
-      required ARFSUploadMetadata metadata,
-      required Wallet wallet,
-      SecretKey? driveKey,
-      required String driveId}) {
+  Future<List<DataItemResultWithContents>> createDataBundleForEntity({
+    required IOEntity entity,
+    required ARFSUploadMetadata metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    Function(ARFSUploadMetadata metadata)? skipMetadata,
+    required String driveId,
+  }) {
     // TODO: implement createDataBundleForEntity
     throw UnimplementedError();
   }

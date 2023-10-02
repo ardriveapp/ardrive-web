@@ -74,6 +74,8 @@ class ARFSUploadMetadataGenerator
 
       final folder = entity;
 
+      print('Generating a folder');
+
       return ARFSFolderUploadMetatadata(
         isPrivate: arguments.isPrivate,
         driveId: arguments.driveId!,

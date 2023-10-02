@@ -89,8 +89,10 @@ class TurboStreamedUpload implements StreamedUpload<DataItemResult, dynamic> {
       );
 
       return value;
-    }).catchError((e) {
+    }).onError((e, s) {
       print(e.toString());
+      handle.status = UploadStatus.failed;
+      controller.updateProgress(task: handle);
     });
 
     return streamedRequest;

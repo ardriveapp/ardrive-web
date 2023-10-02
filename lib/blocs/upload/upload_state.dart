@@ -178,12 +178,14 @@ class UploadInProgress extends UploadState {
 
 class UploadInProgressUsingNewUploader extends UploadState {
   final UploadProgress progress;
+  final UploadController controller;
   final double totalProgress;
   final Key? equatableBust;
 
   UploadInProgressUsingNewUploader({
     required this.progress,
     required this.totalProgress,
+    required this.controller,
     this.equatableBust,
   });
 
