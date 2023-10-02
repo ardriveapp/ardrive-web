@@ -408,6 +408,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final profileState = _profileCubit.state as ProfileLoggedIn;
     final wallet = profileState.wallet;
 
+    /// necessary to wait for backend update the balance
+    await Future.delayed(const Duration(seconds: 2));
+
     final turboBalance =
         await turboBalanceRetriever.getBalance(wallet).catchError((e) {
       logger.e('Error while retrieving turbo balance', e);
