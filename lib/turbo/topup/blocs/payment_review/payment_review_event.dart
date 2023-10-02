@@ -15,7 +15,7 @@ class PaymentReviewFinishPayment extends PaymentReviewEvent {
   const PaymentReviewFinishPayment({
     this.email,
     this.userAcceptedToReceiveEmails = false,
-    required this.dryRun,
+    this.dryRun = false,
   });
 
   @override
