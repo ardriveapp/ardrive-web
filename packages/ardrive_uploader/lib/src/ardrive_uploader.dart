@@ -234,41 +234,79 @@ class _ArDriveUploader implements ArDriveUploader {
       _turboStreamedUpload,
     );
 
-    /// Creation of the data bundle
-    _dataBundler
-        .createDataBundleForEntity(
-      entity: entity,
-      metadata: metadata,
-      wallet: wallet,
-      driveKey: driveKey,
-      driveId: args.driveId!,
-      skipMetadata: skipMetadataUpload,
-    )
-        .then((dataItems) {
-      for (var dataItem in dataItems) {
-        // TODO: verify if we are uploading for D2N or Turbo
-        final uploadTask = UploadTask(
-          dataItem: DataItemUploadTask(
-            data: dataItem.dataItemResult,
-            size: dataItem.dataItemResult.dataSize,
-          ),
-          content: dataItem.contents,
-        );
+    List<DataResultWithContents<dynamic>> dataItems;
 
-        uploadTask.status = UploadStatus.preparationDone;
-        // TODO: the upload controller should emit the send sending the tasks
-        uploadController.updateProgress(
-          task: uploadTask,
-        );
+    if (type == UploadType.turbo) {
+      /// Creation of the data bundle
+      dataItems = await _dataBundler.createDataBundleForEntity(
+        entity: entity,
+        metadata: metadata,
+        wallet: wallet,
+        driveKey: driveKey,
+        driveId: args.driveId!,
+        skipMetadata: skipMetadataUpload,
+      );
+    } else if (type == UploadType.d2n) {
+      /// Creation of the data bundle
+      dataItems = await _dataBundler.createBundleDataTransactionForEntity(
+        entity: entity,
+        metadata: metadata,
+        wallet: wallet,
+        driveKey: driveKey,
+        driveId: args.driveId!,
+        skipMetadata: skipMetadataUpload,
+      );
+    } else {
+      throw Exception('Invalid upload type');
+    }
 
+    for (var dataItem in dataItems) {
+      // TODO: verify if we are uploading for D2N or Turbo
+      final UploadItem uploadItem;
+
+      if (type == UploadType.turbo) {
+        uploadItem = DataItemUploadTask(
+          data: dataItem.dataItemResult,
+          size: dataItem.dataItemResult.dataSize,
+        );
+      } else if (type == UploadType.d2n) {
+        uploadItem = TransactionUploadTask(
+          data: dataItem.dataItemResult,
+          size: dataItem.dataItemResult.dataSize,
+        );
+      } else {
+        throw Exception('Invalid upload type');
+      }
+
+      final uploadTask = UploadTask(
+        dataItem: uploadItem,
+        content: dataItem.contents,
+      );
+
+      uploadTask.status = UploadStatus.preparationDone;
+      // TODO: the upload controller should emit the send sending the tasks
+      uploadController.updateProgress(
+        task: uploadTask,
+      );
+
+      if (uploadTask.dataItem?.data is TransactionResult) {
+        _d2nStreamedUpload
+            .send(uploadTask, wallet, uploadController)
+            .then((value) {})
+            .catchError((err) {
+          uploadController.onError(() => print('Error: $err'));
+        });
+      } else if (uploadTask.dataItem?.data is DataItemResult) {
         _turboStreamedUpload
             .send(uploadTask, wallet, uploadController)
             .then((value) {})
             .catchError((err) {
           uploadController.onError(() => print('Error: $err'));
         });
+      } else {
+        throw Exception('Invalid data item type');
       }
-    });
+    }
 
     return uploadController;
   }
@@ -469,11 +507,11 @@ class _ArDriveUploader implements ArDriveUploader {
   }
 }
 
-class DataItemResultWithContents {
-  final DataItemResult dataItemResult;
+class DataResultWithContents<T> {
+  final T dataItemResult;
   final List<ARFSUploadMetadata> contents;
 
-  DataItemResultWithContents({
+  DataResultWithContents({
     required this.dataItemResult,
     required this.contents,
   });

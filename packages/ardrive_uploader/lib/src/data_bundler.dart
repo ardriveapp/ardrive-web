@@ -30,7 +30,16 @@ abstract class DataBundler<T> {
     Function? onStartBundling,
   });
 
-  Future<List<DataItemResultWithContents>> createDataBundleForEntity({
+  Future<List<DataResultWithContents>> createDataBundleForEntity({
+    required IOEntity entity,
+    required T metadata, // top level metadata
+    required Wallet wallet,
+    SecretKey? driveKey,
+    required String driveId,
+    Function(T metadata)? skipMetadata,
+  });
+
+  Future<List<DataResultWithContents>> createBundleDataTransactionForEntity({
     required IOEntity entity,
     required T metadata, // top level metadata
     required Wallet wallet,
@@ -252,7 +261,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
   }
 
   @override
-  Future<List<DataItemResultWithContents>> createDataBundleForEntity({
+  Future<List<DataResultWithContents>> createDataBundleForEntity({
     required IOEntity entity,
     required ARFSUploadMetadata metadata, // top level metadata
     required Wallet wallet,
@@ -275,7 +284,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       );
 
       return [
-        DataItemResultWithContents(
+        DataResultWithContents(
           dataItemResult: await _createBundleStable(
             file: entity,
             metadata: fileMetadata,
@@ -291,7 +300,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     else if (entity is IOFolder) {
       List<ARFSUploadMetadata> folderMetadatas = [];
       List<DataItemFile> folderDataItems = [];
-      List<DataItemResultWithContents> dataItemsResult = [];
+      List<DataResultWithContents> dataItemsResult = [];
 
       /// Adds the Top level folder
       // TODO: REVIEW: on web it's not necessary to add the top level folder
@@ -422,7 +431,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
 
       /// All folders inside a single BDI, and the remaining files
       return [
-        DataItemResultWithContents(
+        DataResultWithContents(
           dataItemResult: folderBDIResult,
           contents: folderMetadatas,
         ),
@@ -437,7 +446,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
   // create the data items for each file and folder.
   Future<void> _iterateThroughFolderSubContent({
     required List<DataItemFile> folderDataItems,
-    required List<DataItemResultWithContents> dataItemsResult,
+    required List<DataResultWithContents> dataItemsResult,
     required List<ARFSUploadMetadata> foldersMetadatas,
     required List<IOEntity> entites,
     required ARFSUploadMetadataArgs args,
@@ -458,7 +467,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
         }
 
         dataItemsResult.add(
-          DataItemResultWithContents(
+          DataResultWithContents(
             dataItemResult: await _createBundleStable(
               file: entity,
               metadata: fileMetadata,
@@ -502,6 +511,85 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
         await _iterateThroughFolderSubContent(
           folderDataItems: folderDataItems,
           dataItemsResult: dataItemsResult,
+          foldersMetadatas: foldersMetadatas,
+          entites: subContent,
+          args: ARFSUploadMetadataArgs(
+            isPrivate: args.isPrivate,
+            driveId: args.driveId,
+            parentFolderId: folderMetadata.id,
+          ),
+          wallet: wallet,
+          driveKey: driveKey,
+          topMetadata: topMetadata,
+          skipMetadata: skipMetadata,
+        );
+      } else {
+        throw Exception('Invalid entity type');
+      }
+    }
+  }
+
+  // TODO: We are duplicating the logic. Needs to refactor
+  Future<void> _iterateThroughFolderSubContentForTransaction({
+    required List<DataItemFile> folderDataItems,
+    required List<DataResultWithContents> transactionResults,
+    required List<ARFSUploadMetadata> foldersMetadatas,
+    required List<IOEntity> entites,
+    required ARFSUploadMetadataArgs args,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    required ARFSUploadMetadata topMetadata,
+    Function(ARFSUploadMetadata metadata)? skipMetadata,
+  }) async {
+    for (var entity in entites) {
+      if (entity is IOFile) {
+        final fileMetadata = await metadataGenerator.generateMetadata(
+          entity,
+          args,
+        );
+
+        transactionResults.add(DataResultWithContents<TransactionResult>(
+          dataItemResult: await createBundleDataTransaction(
+            wallet: wallet,
+            file: entity,
+            metadata: fileMetadata,
+            driveKey: driveKey,
+          ),
+          contents: [fileMetadata],
+        ));
+      } else if (entity is IOFolder) {
+        final folderMetadata = await metadataGenerator.generateMetadata(
+          entity,
+          args,
+        );
+
+        // if (skipMetadata != null && skipMetadata(folderMetadata)) {
+        //   continue;
+        // }
+
+        /// Add to the list of folders metadatas
+        foldersMetadatas.add(folderMetadata);
+
+        print('Folder metadata generated: ${entity.name}');
+
+        folderDataItems.add(
+          await _createDataItemFromFolder(
+            folder: entity,
+            metadata: folderMetadata,
+            wallet: wallet,
+            driveKey: driveKey,
+          ),
+        );
+
+        final subContent = await entity.listContent();
+
+        for (var item in subContent) {
+          print(item.name);
+        }
+
+        await _iterateThroughFolderSubContentForTransaction(
+          folderDataItems: folderDataItems,
+          transactionResults: transactionResults,
           foldersMetadatas: foldersMetadatas,
           entites: subContent,
           args: ARFSUploadMetadataArgs(
@@ -744,18 +832,6 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     );
 
     return transactionResult;
-
-    // final uploadTx = await uploadTransaction(transactionResult).run();
-
-    // return uploadTx.match((l) => throw Exception(), (r) async {
-    //   print('----------------- starting upload ---------------------');
-    //   // upload stream
-    //   await for (var progress in r) {
-    //     print(progress);
-    //   }
-
-    //   return r;
-    // });
   }
 
   Future<TransactionResult> createDataBundleTransaction({
@@ -779,19 +855,6 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
 
     final dataBundleTaskEither =
         createDataBundleTaskEither(TaskEither.of(dataItemList));
-    //   .flatMap((dataBundle) {
-    // final dataBundleStream = dataBundle.stream;
-    // final dataBundleSize = dataBundle.dataBundleStreamSize;
-
-    // return createDataItemTaskEither(
-    //   wallet: wallet,
-    //   dataStream: dataBundleStream,
-    //   dataStreamSize: dataBundleSize,
-    //   target: '',
-    //   anchor: '',
-    //   tags: bundledDataItemTags,
-    // ).flatMap((dataItem) => TaskEither.of(dataItem));
-    // });
 
     final bundledDataItemTags = [
       createTag('Bundle-Format', 'binary'),
@@ -829,6 +892,168 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
       (r) => r,
     ).run();
   }
+
+  @override
+  Future<List<DataResultWithContents>> createBundleDataTransactionForEntity({
+    required IOEntity entity,
+    required ARFSUploadMetadata metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    required String driveId,
+    Function(ARFSUploadMetadata metadata)? skipMetadata,
+  }) async {
+    // TODO: implement createDataBundleForEntities
+    // TODO: implement the creation of the data bundle for entities, onyl for folders by now.
+    // Used for upload metadata
+
+    if (entity is IOFile) {
+      final fileMetadata = await metadataGenerator.generateMetadata(
+        entity,
+        ARFSUploadMetadataArgs(
+          isPrivate: driveKey != null,
+          driveId: driveId,
+          parentFolderId: metadata.id,
+        ),
+      );
+
+      return [
+        DataResultWithContents<TransactionResult>(
+          dataItemResult: await createBundleDataTransaction(
+            wallet: wallet,
+            file: entity,
+            metadata: metadata,
+            driveKey: driveKey,
+          ),
+          contents: [fileMetadata],
+        )
+      ];
+    }
+
+    // Generates for folders and files inside the folders.
+    else if (entity is IOFolder) {
+      List<ARFSUploadMetadata> folderMetadatas = [];
+      List<DataItemFile> folderDataItems = [];
+      List<DataResultWithContents> dataItemsResult = [];
+
+      /// Adds the Top level folder
+      // TODO: REVIEW: on web it's not necessary to add the top level folder
+      // if (!kIsWeb)
+      // if (skipMetadata != null && !skipMetadata(metadata)) {
+      folderMetadatas.add(metadata);
+      // }
+
+      await _iterateThroughFolderSubContentForTransaction(
+        folderDataItems: folderDataItems,
+        foldersMetadatas: folderMetadatas,
+        transactionResults: dataItemsResult,
+        entites: await entity.listContent(),
+        args: ARFSUploadMetadataArgs(
+          isPrivate: driveKey != null,
+          driveId: driveId,
+          parentFolderId: metadata.id,
+        ),
+        wallet: wallet,
+        driveKey: driveKey,
+        topMetadata: metadata,
+        skipMetadata: skipMetadata,
+      );
+
+      Stream<Uint8List> Function() metadataStreamGenerator;
+
+      final metadataJson = metadata.toJson();
+
+      final metadataBytes = utf8
+          .encode(jsonEncode(metadataJson))
+          .map((e) => Uint8List.fromList([e]));
+
+      if (driveKey != null) {
+        print('DriveKey is not null. Starting metadata encryption...');
+
+        final driveKeyData = Uint8List.fromList(await driveKey.extractBytes());
+
+        final implMetadata = await cipherStreamEncryptImpl(Cipher.aes256ctr,
+            keyData: driveKeyData);
+
+        final encryptMetadataStreamResult =
+            await implMetadata.encryptStreamGenerator(
+          () => Stream.fromIterable(metadataBytes),
+          metadataBytes.length,
+        );
+
+        print('Metadata encryption complete');
+
+        final metadataCipherIv = encryptMetadataStreamResult.nonce;
+
+        metadataStreamGenerator = encryptMetadataStreamResult.streamGenerator;
+
+        // TODO: REVIEW
+        metadata.entityMetadataTags.add(
+            Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv)));
+        metadata.entityMetadataTags
+            .add(Tag(EntityTag.cipher, Cipher.aes256ctr));
+      } else {
+        print('DriveKey is null. Skipping metadata encryption.');
+        metadataStreamGenerator = () => Stream.fromIterable(metadataBytes);
+      }
+
+      final metadataFile = DataItemFile(
+        dataSize: metadataBytes.length,
+        streamGenerator: metadataStreamGenerator,
+        tags: metadata.entityMetadataTags
+            .map((e) => createTag(e.name, e.value))
+            .toList(),
+      );
+
+      // TODO: Change it when update the arweave-dart package
+      // Currently we need to create the data item for the metadata first
+      // so we can get the tx id and add it to the metadata.
+      final metadataDataTaskEither = createDataItemTaskEither(
+          wallet: wallet,
+          dataStream: metadataStreamGenerator,
+          dataStreamSize: metadataBytes.length,
+          tags: metadata.dataItemTags
+              .map((e) => createTag(e.name, e.value))
+              .toList());
+
+      final metadataDataItemResult = await metadataDataTaskEither.run();
+
+      metadataDataItemResult.match((l) {
+        print('Error: $l');
+        print(StackTrace.current);
+        throw l;
+      }, (metadataDataItem) {
+        print('Metadata data item created. ID: ${metadataDataItem.id}');
+        metadata.setMetadataTxId = metadataDataItem.id;
+        return metadataDataItem;
+      });
+
+      /// List of folders DataItems
+      folderDataItems.insert(0, metadataFile);
+
+      for (var metadataFolder in folderDataItems) {
+        print('Metadata folder size: ${metadataFolder.dataSize}');
+        print('Metadata folder tags: ${metadataFolder.tags.length}');
+      }
+
+      final folderTransaction = await createDataBundleTransaction(
+        dataItemFiles: folderDataItems,
+        wallet: wallet,
+        tags:
+            metadata.bundleTags.map((e) => createTag(e.name, e.value)).toList(),
+      );
+
+      /// All folders inside a single BDI, and the remaining files
+      return [
+        DataResultWithContents<TransactionResult>(
+          dataItemResult: folderTransaction,
+          contents: folderMetadatas,
+        ),
+        ...dataItemsResult
+      ];
+    } else {
+      throw Exception('Invalid entity type');
+    }
+  }
 }
 
 // TODO: fix the issue on bundle creation. After this, this class should be the default.
@@ -846,7 +1071,7 @@ class ARFSDataBundler implements DataBundler<ARFSUploadMetadata> {
   }
 
   @override
-  Future<List<DataItemResultWithContents>> createDataBundleForEntity({
+  Future<List<DataResultWithContents>> createDataBundleForEntity({
     required IOEntity entity,
     required ARFSUploadMetadata metadata,
     required Wallet wallet,
@@ -869,10 +1094,22 @@ class ARFSDataBundler implements DataBundler<ARFSUploadMetadata> {
     // TODO: implement createBundleDataTransaction
     throw UnimplementedError();
   }
+
+  @override
+  Future<List<DataResultWithContents>> createBundleDataTransactionForEntity(
+      {required IOEntity entity,
+      required ARFSUploadMetadata metadata,
+      required Wallet wallet,
+      SecretKey? driveKey,
+      required String driveId,
+      Function(ARFSUploadMetadata metadata)? skipMetadata}) {
+    // TODO: implement createBundleDataTransactionForEntity
+    throw UnimplementedError();
+  }
 }
 
 @override
-Future<List<DataItemResultWithContents>> createDataBundleForEntity({
+Future<List<DataResultWithContents>> createDataBundleForEntity({
   required IOEntity entity,
   required ARFSUploadMetadata metadata, // top level metadata
   required Wallet wallet,

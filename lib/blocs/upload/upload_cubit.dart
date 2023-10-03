@@ -521,7 +521,9 @@ class UploadCubit extends Cubit<UploadState> {
 
     final uploadController = await ardriveUploader.uploadEntity(
       entity: folderWithConflictResolved,
+      type: UploadType.d2n,
       skipMetadataUpload: (metadata) {
+        // TODO: remove this
         if (metadata is ARFSFolderUploadMetatadata) {
           bool shouldSkip;
 
