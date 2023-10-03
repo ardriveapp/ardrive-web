@@ -201,10 +201,6 @@ class SharedFilePage extends StatelessWidget {
               desktop: (context) => Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Flexible(
-                    flex: 2,
-                    child: shareCard(),
-                  ),
                   if (state is SharedFileLoadSuccess) ...{
                     Flexible(
                       flex: 1,
@@ -213,7 +209,11 @@ class SharedFilePage extends StatelessWidget {
                         child: activityPanel(state),
                       ),
                     )
-                  }
+                  },
+                  Flexible(
+                    flex: 2,
+                    child: shareCard(),
+                  ),
                 ],
               ),
               mobile: (context) => SingleChildScrollView(
