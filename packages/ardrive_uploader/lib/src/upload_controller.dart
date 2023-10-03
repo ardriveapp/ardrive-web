@@ -7,16 +7,33 @@ import 'package:uuid/uuid.dart';
 
 import '../ardrive_uploader.dart';
 
+abstract class UploadItem<T> {
+  final int size;
+  final T data;
+
+  UploadItem({required this.size, required this.data});
+}
+
+class DataItemUploadTask extends UploadItem<DataItemResult> {
+  DataItemUploadTask({required int size, required DataItemResult data})
+      : super(size: size, data: data);
+}
+
+class TransactionUploadTask extends UploadItem<TransactionResult> {
+  TransactionUploadTask({required int size, required TransactionResult data})
+      : super(size: size, data: data);
+}
+
 abstract class _UploadTask<T> {
   abstract final String id;
-  abstract final DataItemResult? dataItem;
+  abstract final UploadItem? dataItem;
   abstract final List<ARFSUploadMetadata>? content;
   abstract double progress;
   abstract bool isProgressAvailable;
   abstract UploadStatus status;
 
   UploadTask copyWith({
-    DataItemResult? dataItem,
+    UploadItem? dataItem,
     double? progress,
     bool? isProgressAvailable,
     UploadStatus? status,
@@ -25,7 +42,7 @@ abstract class _UploadTask<T> {
 
 class UploadTask implements _UploadTask<ARFSUploadMetadata> {
   @override
-  final DataItemResult? dataItem;
+  final UploadItem? dataItem;
 
   @override
   final List<ARFSUploadMetadata>? content;
@@ -52,7 +69,7 @@ class UploadTask implements _UploadTask<ARFSUploadMetadata> {
 
   @override
   UploadTask copyWith({
-    DataItemResult? dataItem,
+    UploadItem? dataItem,
     double? progress,
     bool? isProgressAvailable,
     UploadStatus? status,
@@ -79,7 +96,6 @@ abstract class UploadController {
   Future<void> close();
   void cancel();
   void onCancel();
-  // TODO: Return a list of tasks.
   void onDone(Function(List<UploadTask> tasks) callback);
   void onError(Function() callback);
   void updateProgress({UploadTask? task});
@@ -245,7 +261,7 @@ class _UploadController implements UploadController {
 
     for (var task in tasks) {
       if (task.dataItem != null) {
-        totalUploaded += (task.progress * task.dataItem!.dataItemSize).toInt();
+        totalUploaded += (task.progress * task.dataItem!.size).toInt();
       }
     }
 
@@ -257,7 +273,7 @@ class _UploadController implements UploadController {
 
     for (var task in tasks) {
       if (task.dataItem != null) {
-        totalSize += task.dataItem!.dataItemSize;
+        totalSize += task.dataItem!.size;
       }
     }
 

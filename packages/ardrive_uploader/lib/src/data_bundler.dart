@@ -21,6 +21,15 @@ abstract class DataBundler<T> {
     Function? onStartBundling,
   });
 
+  Future<TransactionResult> createBundleDataTransaction({
+    required IOFile file,
+    required T metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    Function? onStartEncryption,
+    Function? onStartBundling,
+  });
+
   Future<List<DataItemResultWithContents>> createDataBundleForEntity({
     required IOEntity entity,
     required T metadata, // top level metadata
@@ -674,6 +683,152 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
 
     return dataItemFile;
   }
+
+  @override
+  Future<TransactionResult> createBundleDataTransaction({
+    required IOFile file,
+    required ARFSUploadMetadata metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    Function? onStartEncryption,
+    Function? onStartBundling,
+  }) async {
+    if (driveKey != null) {
+      onStartEncryption?.call();
+    } else {
+      onStartBundling?.call();
+    }
+
+    // returns the encrypted or not file read stream and the cipherIv if it was encrypted
+    final dataGenerator = await _dataGenerator(
+      dataStream: file.openReadStream,
+      fileLength: await file.length,
+      metadata: metadata,
+      wallet: wallet,
+      driveKey: driveKey,
+    );
+
+    print('Data item generated');
+
+    print('Starting to generate metadata data item');
+
+    final metadataDataItem = await _generateMetadataDataItem(
+      metadata: metadata,
+      dataStream: dataGenerator.$1,
+      fileLength: await file.length,
+      wallet: wallet,
+      driveKey: driveKey,
+    );
+
+    print('Metadata data item generated');
+    print('metadata id: ${metadata.metadataTxId}');
+
+    print('Starting to generate file data item');
+
+    final fileDataItem = _generateFileDataItem(
+      metadata: metadata,
+      dataStream: dataGenerator.$1,
+      fileLength: await file.length,
+      cipherIv: dataGenerator.$2,
+    );
+
+    print('Starting to create bundled data item');
+
+    final transactionResult = await createDataBundleTransaction(
+      dataItemFiles: [
+        metadataDataItem,
+        fileDataItem,
+      ],
+      wallet: wallet,
+      tags: metadata.bundleTags.map((e) => createTag(e.name, e.value)).toList(),
+    );
+
+    return transactionResult;
+
+    // final uploadTx = await uploadTransaction(transactionResult).run();
+
+    // return uploadTx.match((l) => throw Exception(), (r) async {
+    //   print('----------------- starting upload ---------------------');
+    //   // upload stream
+    //   await for (var progress in r) {
+    //     print(progress);
+    //   }
+
+    //   return r;
+    // });
+  }
+
+  Future<TransactionResult> createDataBundleTransaction({
+    required final Wallet wallet,
+    required final List<DataItemFile> dataItemFiles,
+    required final List<Tag> tags,
+  }) async {
+    final List<DataItemResult> dataItemList = [];
+    final dataItemCount = dataItemFiles.length;
+    for (var i = 0; i < dataItemCount; i++) {
+      final dataItem = dataItemFiles[i];
+      await createDataItemTaskEither(
+        wallet: wallet,
+        dataStream: dataItem.streamGenerator,
+        dataStreamSize: dataItem.dataSize,
+        target: dataItem.target,
+        anchor: dataItem.anchor,
+        tags: dataItem.tags,
+      ).map((dataItem) => dataItemList.add(dataItem)).run();
+    }
+
+    final dataBundleTaskEither =
+        createDataBundleTaskEither(TaskEither.of(dataItemList));
+    //   .flatMap((dataBundle) {
+    // final dataBundleStream = dataBundle.stream;
+    // final dataBundleSize = dataBundle.dataBundleStreamSize;
+
+    // return createDataItemTaskEither(
+    //   wallet: wallet,
+    //   dataStream: dataBundleStream,
+    //   dataStreamSize: dataBundleSize,
+    //   target: '',
+    //   anchor: '',
+    //   tags: bundledDataItemTags,
+    // ).flatMap((dataItem) => TaskEither.of(dataItem));
+    // });
+
+    final bundledDataItemTags = [
+      createTag('Bundle-Format', 'binary'),
+      createTag('Bundle-Version', '2.0.0'),
+      ...tags,
+    ];
+
+    final taskEither = await dataBundleTaskEither.run();
+    final result = taskEither.match(
+      (l) {
+        throw l;
+      },
+      (r) async {
+        int size = 0;
+
+        await for (var chunk in r.stream()) {
+          size += chunk.length;
+        }
+
+        print('Size of the bundled data item: $size bytes');
+
+        return createTransactionTaskEither(
+          wallet: wallet,
+          dataStreamGenerator: r.stream,
+          dataSize: size,
+          tags: bundledDataItemTags,
+        );
+      },
+    );
+
+    return (await result).match(
+      (l) {
+        throw l;
+      },
+      (r) => r,
+    ).run();
+  }
 }
 
 // TODO: fix the issue on bundle creation. After this, this class should be the default.
@@ -700,6 +855,18 @@ class ARFSDataBundler implements DataBundler<ARFSUploadMetadata> {
     required String driveId,
   }) {
     // TODO: implement createDataBundleForEntity
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<TransactionResult> createBundleDataTransaction(
+      {required IOFile file,
+      required ARFSUploadMetadata metadata,
+      required Wallet wallet,
+      SecretKey? driveKey,
+      Function? onStartEncryption,
+      Function? onStartBundling}) {
+    // TODO: implement createBundleDataTransaction
     throw UnimplementedError();
   }
 }
