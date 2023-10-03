@@ -585,7 +585,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
             BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
               builder: (context, state) {
                 return ScreenTypeLayout.builder(
-                  // FIXME: the desctop section is never gonna be rendered
+                  // FIXME: the desktop section is never gonna be rendered
                   /// because its wrapped in another layout builder for mobile.
                   desktop: (context) => ArDriveButton(
                     maxHeight: 44,
