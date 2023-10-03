@@ -201,18 +201,19 @@ class SharedFilePage extends StatelessWidget {
               desktop: (context) => Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Flexible(
-                    flex: 2,
-                    child: shareCard(),
-                  ),
+                  // Flexible(
+                  //   flex: 2,
+                  //   child: shareCard(),
+                  // ),
                   if (state is SharedFileLoadSuccess) ...{
                     Flexible(
                       flex: 1,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 24.0),
-                        child: activityPanel(state),
-                      ),
+                      child: activityPanel(state),
                     )
+                  } else ...{
+                    const CircularProgressIndicator(
+                      strokeWidth: 8,
+                    ),
                   }
                 ],
               ),
