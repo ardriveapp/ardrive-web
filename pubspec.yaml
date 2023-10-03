@@ -133,15 +133,13 @@ dependencies:
 
 dependency_overrides:
   ardrive_io:
-    path: ../packages/ardrive_io
-    # git:
-    #   url: https://github.com/ar-io/ardrive_io.git
-    #   ref: PE-3699-uploads-large-files-for-public-drives
+    git:
+      url: https://github.com/ar-io/ardrive_io.git
+      ref: PE-3699-uploads-large-files-for-public-drives
   arweave:
-    path: ../arweave-dart
-    # git:
-    #   url: https://github.com/ardriveapp/arweave-dart.git
-    #   ref: PE-3697
+    git:
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: PE-3697
   flutter_downloader: 1.10.3
   stripe_js:
     git:

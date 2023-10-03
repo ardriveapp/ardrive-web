@@ -83,9 +83,11 @@ packages:
   ardrive_io:
     dependency: "direct main"
     description:
-      path: "../packages/ardrive_io"
-      relative: true
-    source: path
+      path: "."
+      ref: PE-3699-uploads-large-files-for-public-drives
+      resolved-ref: "3ca5ffd5d68aea87b3a97febcf50b5ec5f816b90"
+      url: "https://github.com/ar-io/ardrive_io.git"
+    source: git
     version: "1.4.0"
   ardrive_ui:
     dependency: "direct main"
@@ -136,9 +138,11 @@ packages:
   arweave:
     dependency: "direct main"
     description:
-      path: "../arweave-dart"
-      relative: true
-    source: path
+      path: "."
+      ref: PE-3697
+      resolved-ref: "1e4b57b17d313daf7b779ad98aceb2560e290530"
+      url: "https://github.com/ardriveapp/arweave-dart.git"
+    source: git
     version: "3.7.0"
   async:
     dependency: "direct main"
