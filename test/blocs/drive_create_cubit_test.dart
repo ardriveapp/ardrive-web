@@ -67,7 +67,8 @@ void main() {
             password: '123',
             wallet: wallet,
             walletAddress: walletAddress,
-            profileSource: ProfileSource(type: ProfileSourceType.standalone),
+            profileSource:
+                const ProfileSource(type: ProfileSourceType.standalone),
             walletBalance: BigInt.from(10000001),
             cipherKey: SecretKey(keyBytes),
             useTurbo: turboUploadService.useTurboUpload,

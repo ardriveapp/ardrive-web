@@ -984,7 +984,7 @@ User getFakeUser() => User(
     walletBalance: BigInt.one,
     cipherKey: SecretKey([]),
     profileType: ProfileType.arConnect,
-    profileSource: ProfileSource(type: ProfileSourceType.standalone));
+    profileSource: const ProfileSource(type: ProfileSourceType.standalone));
 
 FolderEntry getFakeFolder() => FolderEntry(
       id: 'id',

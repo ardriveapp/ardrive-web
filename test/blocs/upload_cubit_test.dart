@@ -282,7 +282,8 @@ void main() {
           password: '123',
           wallet: tWallet,
           walletAddress: tWalletAddress!,
-          profileSource: ProfileSource(type: ProfileSourceType.standalone),
+          profileSource:
+              const ProfileSource(type: ProfileSourceType.standalone),
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
           useTurbo: false,
@@ -311,7 +312,7 @@ void main() {
           walletBalance: BigInt.one,
           cipherKey: SecretKey([]),
           profileType: ProfileType.json,
-          profileSource: ProfileSource(
+          profileSource: const ProfileSource(
             type: ProfileSourceType.standalone,
           ),
         ),
@@ -384,7 +385,8 @@ void main() {
             password: '123',
             wallet: tWallet,
             walletAddress: tWalletAddress!,
-            profileSource: ProfileSource(type: ProfileSourceType.standalone),
+            profileSource:
+                const ProfileSource(type: ProfileSourceType.standalone),
             walletBalance: BigInt.one,
             cipherKey: SecretKey(tKeyBytes),
           ),
@@ -487,7 +489,8 @@ void main() {
           password: '123',
           wallet: tWallet,
           walletAddress: tWalletAddress!,
-          profileSource: ProfileSource(type: ProfileSourceType.standalone),
+          profileSource:
+              const ProfileSource(type: ProfileSourceType.standalone),
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
           useTurbo: false,

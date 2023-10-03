@@ -123,7 +123,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(LoginLoading());
 
       profileType = ProfileType.json;
-      profileSource = ProfileSource(type: ProfileSourceType.standalone);
+      profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
       final wallet =
           Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
@@ -251,7 +251,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final wallet = ArConnectWallet(_arConnectService);
 
       profileType = ProfileType.arConnect;
-      profileSource = ProfileSource(type: ProfileSourceType.standalone);
+      profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
       lastKnownWalletAddress = await wallet.getAddress();
 
@@ -403,7 +403,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleAddWalletFromMnemonicEvent(
       AddWalletFromMnemonic event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
-    profileSource = ProfileSource(type: ProfileSourceType.standalone);
+    profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
     emit(const LoginGenerateWallet());
 
@@ -414,7 +414,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleAddWalletFromCompleterEvent(
       AddWalletFromCompleter event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
-    profileSource = ProfileSource(type: ProfileSourceType.standalone);
+    profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
     Completer<Wallet> completer = event.walletCompleter;
     Wallet wallet;
@@ -437,7 +437,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleCreateNewWalletEvent(
       CreateNewWallet event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
-    profileSource = ProfileSource(type: ProfileSourceType.standalone);
+    profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
     final mnemonic = bip39.generateMnemonic();
     emit(LoginCreateNewWallet(mnemonic));

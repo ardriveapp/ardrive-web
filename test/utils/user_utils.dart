@@ -24,7 +24,7 @@ void main() {
         walletBalance: BigInt.zero,
         cipherKey: SecretKey([1, 2, 3]),
         profileType: ProfileType.json,
-        profileSource: ProfileSource(type: ProfileSourceType.standalone),
+        profileSource: const ProfileSource(type: ProfileSourceType.standalone),
       );
       // arrange
       when(() => auth.currentUser).thenReturn(user);
@@ -48,7 +48,7 @@ void main() {
         walletBalance: BigInt.zero,
         cipherKey: SecretKey([1, 2, 3]),
         profileType: ProfileType.json,
-        profileSource: ProfileSource(type: ProfileSourceType.standalone),
+        profileSource: const ProfileSource(type: ProfileSourceType.standalone),
       );
       // arrange
       when(() => auth.currentUser).thenReturn(user);

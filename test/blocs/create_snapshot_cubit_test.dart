@@ -99,7 +99,8 @@ void main() {
             password: 'password',
             wallet: testWallet,
             walletAddress: await testWallet.getAddress(),
-            profileSource: ProfileSource(type: ProfileSourceType.standalone),
+            profileSource:
+                const ProfileSource(type: ProfileSourceType.standalone),
             walletBalance: BigInt.from(100),
             cipherKey: SecretKey(
               [1, 2, 3, 4, 5],

@@ -66,7 +66,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   Future<void> pickWallet(Wallet wallet) async {
     emit(ProfileAddUserStateLoadInProgress());
     _profileType = ProfileType.json;
-    _profileSource = ProfileSource(type: ProfileSourceType.standalone);
+    _profileSource = const ProfileSource(type: ProfileSourceType.standalone);
     _wallet = wallet;
 
     try {
@@ -92,7 +92,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       await arconnect.connect();
       emit(ProfileAddUserStateLoadInProgress());
       _profileType = ProfileType.arConnect;
-      _profileSource = ProfileSource(type: ProfileSourceType.standalone);
+      _profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
       if (!(await arconnect.checkPermissions())) {
         emit(ProfileAddFailure());
