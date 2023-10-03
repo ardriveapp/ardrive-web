@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
@@ -148,6 +149,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     /// For this test we'll call the same method twice to validate if the
@@ -187,16 +189,20 @@ void main() {
       when(() => mockUserRepository.deleteUser())
           .thenAnswer((invocation) async {});
 
-      when(() =>
-              mockUserRepository.saveUser('password', ProfileType.json, wallet))
-          .thenAnswer((invocation) => Future.value(null));
+      when(() => mockUserRepository.saveUser(
+          'password',
+          ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone),
+          wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
           .thenAnswer((invocation) async => loggedUser);
 
       // act
-      await arDriveAuth.login(wallet, 'password', ProfileType.json);
-      await arDriveAuth.login(wallet, 'password', ProfileType.json);
+      await arDriveAuth.login(wallet, 'password', ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone));
+      await arDriveAuth.login(wallet, 'password', ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       // assert
       verify(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
@@ -227,6 +233,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
     test(
         'should return the user when has private drives and login with sucess. ',
@@ -262,16 +269,18 @@ void main() {
       when(() => mockUserRepository.deleteUser())
           .thenAnswer((invocation) async {});
 
-      when(() =>
-              mockUserRepository.saveUser('password', ProfileType.json, wallet))
-          .thenAnswer((invocation) => Future.value(null));
+      when(() => mockUserRepository.saveUser(
+          'password',
+          ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone),
+          wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
           .thenAnswer((invocation) async => loggedUser);
 
       // act
-      final user =
-          await arDriveAuth.login(wallet, 'password', ProfileType.json);
+      final user = await arDriveAuth.login(wallet, 'password', ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       // assert
       expect(user, isNotNull);
@@ -323,16 +332,18 @@ void main() {
       when(() => mockUserRepository.deleteUser())
           .thenAnswer((invocation) async {});
 
-      when(() =>
-              mockUserRepository.saveUser('password', ProfileType.json, wallet))
-          .thenAnswer((invocation) => Future.value(null));
+      when(() => mockUserRepository.saveUser(
+          'password',
+          ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone),
+          wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
           .thenAnswer((invocation) async => loggedUser);
 
       // act
-      final user =
-          await arDriveAuth.login(wallet, 'password', ProfileType.json);
+      final user = await arDriveAuth.login(wallet, 'password', ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       // assert
       expect(user, isNotNull);
@@ -364,16 +375,18 @@ void main() {
       when(() => mockUserRepository.deleteUser())
           .thenAnswer((invocation) async {});
 
-      when(() =>
-              mockUserRepository.saveUser('password', ProfileType.json, wallet))
-          .thenAnswer((invocation) => Future.value(null));
+      when(() => mockUserRepository.saveUser(
+          'password',
+          ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone),
+          wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
           .thenAnswer((invocation) async => loggedUser);
 
       // act
-      final user =
-          await arDriveAuth.login(wallet, 'password', ProfileType.json);
+      final user = await arDriveAuth.login(wallet, 'password', ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       // assert
       expect(user, isNotNull);
@@ -409,16 +422,18 @@ void main() {
       when(() => mockUserRepository.deleteUser())
           .thenAnswer((invocation) async {});
 
-      when(() =>
-              mockUserRepository.saveUser('password', ProfileType.json, wallet))
-          .thenAnswer((invocation) => Future.value(null));
+      when(() => mockUserRepository.saveUser(
+          'password',
+          ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone),
+          wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
           .thenAnswer((invocation) async => loggedUser);
 
       // act
-      final user =
-          await arDriveAuth.login(wallet, 'password', ProfileType.json);
+      final user = await arDriveAuth.login(wallet, 'password', ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       // assert
       expect(user, isNotNull);
@@ -449,7 +464,9 @@ void main() {
       ).thenThrow(Exception('wrong password'));
 
       // assert
-      expectLater(() => arDriveAuth.login(wallet, 'password', ProfileType.json),
+      expectLater(
+          () => arDriveAuth.login(wallet, 'password', ProfileType.json,
+              const ProfileSource(type: ProfileSourceType.standalone)),
           throwsA(isA<AuthenticationFailedException>()));
     });
   });
@@ -462,6 +479,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     test('should return the user when password is correct', () async {
@@ -504,6 +522,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     test('should delete the current user and delete it when user is logged in',
@@ -569,6 +588,7 @@ void main() {
         walletBalance: BigInt.one,
         cipherKey: SecretKey([]),
         profileType: ProfileType.json,
+        profileSource: const ProfileSource(type: ProfileSourceType.standalone),
       );
       // arrange login
       when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
@@ -601,9 +621,11 @@ void main() {
       when(() => mockUserRepository.deleteUser())
           .thenAnswer((invocation) async {});
 
-      when(() =>
-              mockUserRepository.saveUser('password', ProfileType.json, wallet))
-          .thenAnswer((invocation) => Future.value(null));
+      when(() => mockUserRepository.saveUser(
+          'password',
+          ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone),
+          wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
           .thenAnswer((invocation) async => loggedUser);
@@ -618,7 +640,8 @@ void main() {
       when(() => mockDatabaseHelpers.deleteAllTables())
           .thenAnswer((invocation) async {});
 
-      await arDriveAuth.login(wallet, 'password', ProfileType.json);
+      await arDriveAuth.login(wallet, 'password', ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone));
 
       await arDriveAuth.logout();
 
@@ -645,6 +668,7 @@ void main() {
         walletBalance: BigInt.one,
         cipherKey: SecretKey([]),
         profileType: ProfileType.json,
+        profileSource: const ProfileSource(type: ProfileSourceType.standalone),
       );
       // arrange
       when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
@@ -668,9 +692,11 @@ void main() {
               )));
       when(() => mockUserRepository.deleteUser())
           .thenAnswer((invocation) async {});
-      when(() =>
-              mockUserRepository.saveUser('password', ProfileType.json, wallet))
-          .thenAnswer((invocation) => Future.value(null));
+      when(() => mockUserRepository.saveUser(
+          'password',
+          ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone),
+          wallet)).thenAnswer((invocation) => Future.value(null));
 
       when(() => mockUserRepository.getUser('password'))
           .thenAnswer((invocation) async => loggedUser);
@@ -688,6 +714,7 @@ void main() {
         walletBalance: BigInt.one,
         cipherKey: SecretKey([]),
         profileType: ProfileType.json,
+        profileSource: const ProfileSource(type: ProfileSourceType.standalone),
       );
 
       // act
@@ -702,7 +729,8 @@ void main() {
         expect(user.profileType, loggedUser.profileType);
       });
 
-      await arDriveAuth.login(wallet, 'password', ProfileType.json);
+      await arDriveAuth.login(wallet, 'password', ProfileType.json,
+          const ProfileSource(type: ProfileSourceType.standalone));
     });
 
     test('should change the state when user logs out', () async {
@@ -744,6 +772,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      profileSource: const ProfileSource(type: ProfileSourceType.standalone),
     );
 
     test(

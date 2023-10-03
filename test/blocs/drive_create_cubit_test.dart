@@ -3,6 +3,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/entities/entity.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -66,6 +67,8 @@ void main() {
             password: '123',
             wallet: wallet,
             walletAddress: walletAddress,
+            profileSource:
+                const ProfileSource(type: ProfileSourceType.standalone),
             walletBalance: BigInt.from(10000001),
             cipherKey: SecretKey(keyBytes),
             useTurbo: turboUploadService.useTurboUpload,

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -22,7 +23,8 @@ abstract class ArDriveAuth {
   Future<bool> isUserLoggedIn();
   Future<bool> isExistingUser(Wallet wallet);
   Future<bool> userHasPassword(Wallet wallet);
-  Future<User> login(Wallet wallet, String password, ProfileType profileType);
+  Future<User> login(Wallet wallet, String password, ProfileType profileType,
+      ProfileSource profileSource);
   Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
   Future<void> logout();
@@ -136,8 +138,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   @override
-  Future<User> login(
-      Wallet wallet, String password, ProfileType profileType) async {
+  Future<User> login(Wallet wallet, String password, ProfileType profileType,
+      ProfileSource profileSource) async {
     final isValidPassword = await _validateUser(
       wallet,
       password,
@@ -153,7 +155,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       _savePasswordInSecureStorage(password);
     }
 
-    currentUser = await _addUser(wallet, password, profileType);
+    currentUser = await _addUser(wallet, password, profileType, profileSource);
 
     _userStreamController.add(_currentUser);
 
@@ -284,8 +286,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
     Wallet wallet,
     String password,
     ProfileType profileType,
+    ProfileSource profileSource,
   ) async {
-    await _saveUser(password, profileType, wallet);
+    await _saveUser(password, profileType, profileSource, wallet);
 
     currentUser = await _userRepository.getUser(password);
 
@@ -297,6 +300,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
   Future<void> _saveUser(
     String password,
     ProfileType profileType,
+    ProfileSource profileSource,
     Wallet wallet,
   ) async {
     // delete previous user
@@ -309,6 +313,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     await _userRepository.saveUser(
       password,
       profileType,
+      profileSource,
       wallet,
     );
   }

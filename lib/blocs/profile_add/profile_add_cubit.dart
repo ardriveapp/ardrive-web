@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
@@ -44,6 +45,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   late FormGroup form;
   late Wallet _wallet;
   late ProfileType _profileType;
+  late ProfileSource _profileSource;
   late List<TransactionCommonMixin> _driveTxs;
 
   String? _lastKnownWalletAddress;
@@ -64,6 +66,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   Future<void> pickWallet(Wallet wallet) async {
     emit(ProfileAddUserStateLoadInProgress());
     _profileType = ProfileType.json;
+    _profileSource = const ProfileSource(type: ProfileSourceType.standalone);
     _wallet = wallet;
 
     try {
@@ -89,6 +92,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       await arconnect.connect();
       emit(ProfileAddUserStateLoadInProgress());
       _profileType = ProfileType.arConnect;
+      _profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
       if (!(await arconnect.checkPermissions())) {
         emit(ProfileAddFailure());
@@ -205,7 +209,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         }
       }
 
-      await _profileDao.addProfile(username, password, _wallet, _profileType);
+      await _profileDao.addProfile(
+          username, password, _wallet, _profileType, _profileSource);
 
       if (AppPlatform.isMobile) {
         _savePasswordOnSecureStore(password);

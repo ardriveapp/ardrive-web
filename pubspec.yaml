@@ -120,6 +120,7 @@ dependencies:
   flutter_email_sender: ^6.0.1
   provider: ^6.0.5
   just_audio: ^0.9.34
+  webthree: ^2.5.7+2
 
 dependency_overrides:
   ardrive_io:

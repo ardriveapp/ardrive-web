@@ -9,6 +9,7 @@ import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -281,6 +282,8 @@ void main() {
           password: '123',
           wallet: tWallet,
           walletAddress: tWalletAddress!,
+          profileSource:
+              const ProfileSource(type: ProfileSourceType.standalone),
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
           useTurbo: false,
@@ -309,6 +312,9 @@ void main() {
           walletBalance: BigInt.one,
           cipherKey: SecretKey([]),
           profileType: ProfileType.json,
+          profileSource: const ProfileSource(
+            type: ProfileSourceType.standalone,
+          ),
         ),
       );
 
@@ -379,6 +385,8 @@ void main() {
             password: '123',
             wallet: tWallet,
             walletAddress: tWalletAddress!,
+            profileSource:
+                const ProfileSource(type: ProfileSourceType.standalone),
             walletBalance: BigInt.one,
             cipherKey: SecretKey(tKeyBytes),
           ),
@@ -481,6 +489,8 @@ void main() {
           password: '123',
           wallet: tWallet,
           walletAddress: tWalletAddress!,
+          profileSource:
+              const ProfileSource(type: ProfileSourceType.standalone),
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
           useTurbo: false,

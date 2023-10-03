@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -13,7 +15,6 @@ import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'stub_web_wallet.dart' // stub implementation
@@ -25,6 +26,7 @@ part 'login_state.dart';
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ArDriveAuth _arDriveAuth;
   final ArConnectService _arConnectService;
+  final EthereumProviderService _ethereumProviderService;
 
   bool ignoreNextWaletSwitch = false;
 
@@ -34,11 +36,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   @visibleForTesting
   ProfileType? profileType;
 
+  @visibleForTesting
+  ProfileSource? profileSource;
+
   LoginBloc({
     required ArDriveAuth arDriveAuth,
     required ArConnectService arConnectService,
+    required EthereumProviderService ethereumProviderService,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
+        _ethereumProviderService = ethereumProviderService,
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
@@ -57,6 +64,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleCreatePasswordEvent(event, emit);
     } else if (event is AddWalletFromArConnect) {
       await _handleAddWalletFromArConnectEvent(event, emit);
+    } else if (event is AddWalletFromEthereumProviderEvent) {
+      await _handleAddWalletFromEthereumProviderEvent(event, emit);
     } else if (event is ForgetWallet) {
       await _handleForgetWalletEvent(event, emit);
     } else if (event is FinishOnboarding) {
@@ -118,6 +127,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(LoginLoading());
 
       profileType = ProfileType.json;
+      profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
       final wallet =
           Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
@@ -148,6 +158,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit: emit,
         previousState: previousState,
         profileType: profileType!,
+        profileSource: profileSource!,
       );
     } catch (e) {
       emit(LoginFailure(e));
@@ -176,7 +187,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    emit(LoginInitial(_arConnectService.isExtensionPresent()));
+    emit(LoginInitial(_arConnectService.isExtensionPresent(),
+        _ethereumProviderService.isExtensionPresent()));
   }
 
   Future<void> _handleUnlockUserWithPasswordEvent(
@@ -216,6 +228,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit: emit,
         previousState: previousState,
         profileType: profileType!,
+        profileSource: profileSource!,
       );
     } catch (e) {
       emit(LoginFailure(e));
@@ -252,6 +265,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final wallet = ArConnectWallet(_arConnectService);
 
       profileType = ProfileType.arConnect;
+      profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
       lastKnownWalletAddress = await wallet.getAddress();
 
@@ -266,6 +280,42 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
   }
 
+  Future<void> _handleAddWalletFromEthereumProviderEvent(
+      AddWalletFromEthereumProviderEvent event,
+      Emitter<LoginState> emit) async {
+    final previousState = state;
+
+    try {
+      emit(LoginLoading());
+
+      final ethereumWallet = await _ethereumProviderService.connect();
+
+      if (ethereumWallet == null) {
+        throw Exception('Ethereum wallet not connected');
+      }
+
+      final address = await ethereumWallet.getAddress();
+      final mnemonic = await ethereumWallet.deriveArdriveSeedphrase();
+
+      profileType = ProfileType.json;
+      profileSource = ProfileSource(
+        type: ProfileSourceType.ethereumSignature,
+        address: address,
+      );
+
+      emit(const LoginGenerateWallet());
+
+      final wallet = await generateWalletFromMnemonic(mnemonic);
+
+      emit(LoginDownloadGeneratedWallet(mnemonic, wallet));
+    } catch (e) {
+      logger.e('Failed to add wallet from Ethereum provider', e);
+
+      emit(LoginFailure(e));
+      emit(previousState);
+    }
+  }
+
   Future<void> _handleForgetWalletEvent(
     ForgetWallet event,
     Emitter<LoginState> emit,
@@ -274,7 +324,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arDriveAuth.logout();
     }
 
-    emit(LoginInitial(_arConnectService.isExtensionPresent()));
+    if (_isArConnectWallet()) {
+      await _arConnectService.disconnect();
+    }
+
+    emit(LoginInitial(_arConnectService.isExtensionPresent(),
+        _ethereumProviderService.isExtensionPresent()));
   }
 
   Future<void> _handleFinishOnboardingEvent(
@@ -290,6 +345,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required Wallet wallet,
     required String password,
     required ProfileType profileType,
+    required ProfileSource profileSource,
     required LoginState previousState,
     required Emitter<LoginState> emit,
   }) async {
@@ -308,6 +364,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       wallet,
       password,
       profileType,
+      profileSource,
     );
 
     emit(LoginSuccess(user));
@@ -341,7 +398,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arDriveAuth.logout();
 
       // ignore: invalid_use_of_visible_for_testing_member
-      emit(const LoginInitial(true));
+      emit(LoginInitial(true, _ethereumProviderService.isExtensionPresent()));
     });
   }
 
@@ -368,6 +425,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleAddWalletFromMnemonicEvent(
       AddWalletFromMnemonic event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
+    profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
     emit(const LoginGenerateWallet());
 
@@ -380,6 +438,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     Emitter<LoginState> emit,
   ) async {
     profileType = ProfileType.json;
+    profileSource = const ProfileSource(type: ProfileSourceType.standalone);
 
     Completer<Wallet> completer = event.walletCompleter;
     Wallet wallet;
@@ -404,6 +463,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     Emitter<LoginState> emit,
   ) async {
     profileType = ProfileType.json;
+    profileSource = const ProfileSource(type: ProfileSourceType.standalone);
+
     final mnemonic = bip39.generateMnemonic();
     emit(LoginCreateNewWallet(mnemonic));
   }
@@ -416,6 +477,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final wallet = event.wallet;
 
     profileType = ProfileType.json;
+    // Wallet could be from Ethereum or Arweave wallet file
+    // profileSource = ProfileSource(type: ProfileSourceType.arweaveKey);
 
     try {
       if (await _arDriveAuth.userHasPassword(wallet)) {
