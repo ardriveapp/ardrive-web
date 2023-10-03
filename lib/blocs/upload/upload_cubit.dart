@@ -456,16 +456,14 @@ class UploadCubit extends Cubit<UploadState> {
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
     // UPLOAD USING THE NEW UPLOADER
-    if (_uploadMethod == UploadMethod.turbo) {
-      // TODO: implement upload folders using the new uploader
-      if (uploadFolders) {
-        logger.i('Uploading folder using the new uploader');
-        await _uploadFolderUsingArDriveUploader();
-        return;
-      }
-      await _uploadUsingArDriveUploader();
+    // TODO: implement upload folders using the new uploader
+    if (uploadFolders) {
+      logger.i('Uploading folder using the new uploader');
+      await _uploadFolderUsingArDriveUploader();
       return;
     }
+    await _uploadUsingArDriveUploader();
+    return;
 
     final uploader = _getUploader();
 
@@ -628,6 +626,8 @@ class UploadCubit extends Cubit<UploadState> {
       files: uploadFiles,
       wallet: _auth.currentUser!.wallet,
       driveKey: driveKey,
+      type:
+          _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
     );
 
     List<UploadTask> completedTasks = [];
