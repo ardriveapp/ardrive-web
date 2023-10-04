@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
@@ -86,37 +87,38 @@ class ArDriveCrypto {
     Uint8List data,
     SecretKey key,
   ) async {
-    final decryptedData = await decryptTransactionData(transaction, data, key);
+    final cipher = transaction.getTag(EntityTag.cipher);
+    final cipherIvTag = transaction.getTag(EntityTag.cipherIv);
+
+    if (cipher == null || cipherIvTag == null) {
+      throw TransactionDecryptionException();
+    }
+
+    final decryptedData =
+        await decryptTransactionData(cipher, cipherIvTag, data, key);
+
     return json.decode(utf8.decode(decryptedData));
   }
 
-  /// Decrypts the provided transaction details and data into a [Uint8List] using the provided key.
+  /// Decrypts the provided transaction details and data into JSON using the provided key.
   ///
   /// Throws a [TransactionDecryptionException] if decryption fails.
-  Future<Uint8List> decryptTransactionData(
+  Future<Uint8List> decryptDataFromTransaction(
     TransactionCommonMixin transaction,
     Uint8List data,
     SecretKey key,
   ) async {
     final cipher = transaction.getTag(EntityTag.cipher);
+    final cipherIvTag = transaction.getTag(EntityTag.cipherIv);
 
-    try {
-      if (cipher == Cipher.aes256) {
-        final cipherIv =
-            utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv)!);
-
-        return aesGcm
-            .decrypt(
-              secretBoxFromDataWithMacConcatenation(data, nonce: cipherIv),
-              secretKey: key,
-            )
-            .then((res) => Uint8List.fromList(res));
-      }
-    } on SecretBoxAuthenticationError catch (_) {
+    if (cipher == null || cipherIvTag == null) {
       throw TransactionDecryptionException();
     }
 
-    throw ArgumentError();
+    final decryptedData =
+        await decryptTransactionData(cipher, cipherIvTag, data, key);
+
+    return decryptedData;
   }
 
   /// Creates a transaction with the provided entity's JSON data encrypted along with the appropriate cipher tags.
@@ -132,6 +134,7 @@ class ArDriveCrypto {
           utf8.encode(json.encode(entity)) as Uint8List, key);
 
   /// Creates a [Transaction] with the provided data encrypted along with the appropriate cipher tags.
+  /// TODO: remove it as we won't use it anymore
   Future<Transaction> createEncryptedTransaction(
     Uint8List data,
     SecretKey key,
@@ -142,7 +145,7 @@ class ArDriveCrypto {
         // The encrypted data should be a concatenation of the cipher text and MAC.
         data: encryptionRes.concatenation(nonce: false))
       ..addTag(EntityTag.contentType, ContentType.octetStream)
-      ..addTag(EntityTag.cipher, Cipher.aes256)
+      ..addTag(EntityTag.cipher, Cipher.aes256gcm)
       ..addTag(
         EntityTag.cipherIv,
         utils.encodeBytesToBase64(encryptionRes.nonce),
@@ -160,7 +163,7 @@ class ArDriveCrypto {
         // The encrypted data should be a concatenation of the cipher text and MAC.
         data: encryptionRes.concatenation(nonce: false))
       ..addTag(EntityTag.contentType, ContentType.octetStream)
-      ..addTag(EntityTag.cipher, Cipher.aes256)
+      ..addTag(EntityTag.cipher, Cipher.aes256gcm)
       ..addTag(
         EntityTag.cipherIv,
         utils.encodeBytesToBase64(encryptionRes.nonce),

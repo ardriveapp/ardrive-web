@@ -502,7 +502,7 @@ class UploadCubit extends Cubit<UploadState> {
     final private = _targetDrive.isPrivate;
     final driveKey = private
         ? await _driveDao.getDriveKey(
-            _targetDrive.id, _auth.currentUser!.cipherKey)
+            _targetDrive.id, _auth.currentUser.cipherKey)
         : null;
 
     List<(ARFSUploadMetadataArgs, IOEntity)> entities = [];
@@ -546,7 +546,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     final uploadController = await ardriveUploader.uploadEntities(
       entities: entities,
-      wallet: _auth.currentUser!.wallet,
+      wallet: _auth.currentUser.wallet,
       type:
           _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
       driveKey: driveKey,
@@ -697,11 +697,11 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void retryUploads(UploadController controller) {
-    controller.retryFailedTasks(_auth.currentUser!.wallet);
+    controller.retryFailedTasks(_auth.currentUser.wallet);
   }
 
   void retryTask(UploadController controller, UploadTask task) {
-    controller.retryTask(task, _auth.currentUser!.wallet);
+    controller.retryTask(task, _auth.currentUser.wallet);
   }
 
   Future<void> _uploadUsingArDriveUploader() async {
@@ -717,7 +717,7 @@ class UploadCubit extends Cubit<UploadState> {
     final private = _targetDrive.isPrivate;
     final driveKey = private
         ? await _driveDao.getDriveKey(
-            _targetDrive.id, _auth.currentUser!.cipherKey)
+            _targetDrive.id, _auth.currentUser.cipherKey)
         : null;
 
     List<(ARFSUploadMetadataArgs, IOFile)> uploadFiles = [];
@@ -743,7 +743,7 @@ class UploadCubit extends Cubit<UploadState> {
     /// Creates the uploader and starts the upload.
     final uploadController = await ardriveUploader.uploadFiles(
       files: uploadFiles,
-      wallet: _auth.currentUser!.wallet,
+      wallet: _auth.currentUser.wallet,
       driveKey: driveKey,
       type:
           _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
@@ -892,7 +892,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   ArDriveUploaderFromHandles _getUploader() {
-    final wallet = _auth.currentUser!.wallet;
+    final wallet = _auth.currentUser.wallet;
 
     final turboUploader = TurboUploader(_turbo, wallet);
     final arweaveUploader = ArweaveBundleUploader(_arweave.client);
@@ -920,7 +920,7 @@ class UploadCubit extends Cubit<UploadState> {
           arweaveService: _arweave,
           turboUploadService: _turbo,
           pstService: _pst,
-          wallet: _auth.currentUser!.wallet,
+          wallet: _auth.currentUser.wallet,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
           useTurbo: _uploadMethod == UploadMethod.turbo,
         );

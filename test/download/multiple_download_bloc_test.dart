@@ -93,9 +93,9 @@ void main() async {
     group('[$groupLabel] -', () {
       setUp(() {
         mockCrypto = MockArDriveCrypto();
-        when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
+        when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
             .thenAnswer((_) async => Uint8List(0));
-        when(() => mockCrypto.decryptTransactionData(
+        when(() => mockCrypto.decryptDataFromTransaction(
             decryptionFailureTransaction, any(), any())).thenThrow(Exception());
         multipleDownloadBloc = createMultipleDownloadBloc(
           arfsRepository: arfsRepository,
@@ -646,7 +646,8 @@ void main() async {
                 .having((s) => s.skippedFiles.length, 'skippedFiles.length', 0),
           ],
           verify: (bloc) {
-            verify(() => mockCrypto.decryptTransactionData(any(), any(), any()))
+            verify(() =>
+                    mockCrypto.decryptDataFromTransaction(any(), any(), any()))
                 .called(1);
           },
         );

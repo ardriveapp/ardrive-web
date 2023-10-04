@@ -155,7 +155,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       final dataTx = await (_arweave.getTransactionDetails(_file.txId));
 
       if (dataTx != null) {
-        final decryptedData = await _crypto.decryptTransactionData(
+        final decryptedData = await _crypto.decryptDataFromTransaction(
           dataTx,
           dataBytes,
           fileKey,

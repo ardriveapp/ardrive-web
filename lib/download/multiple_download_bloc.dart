@@ -195,7 +195,7 @@ class MultipleDownloadBloc
 
             try {
               if (dataTx != null) {
-                final decryptedData = await _crypto.decryptTransactionData(
+                final decryptedData = await _crypto.decryptDataFromTransaction(
                   dataTx,
                   dataBytes,
                   fileKey,

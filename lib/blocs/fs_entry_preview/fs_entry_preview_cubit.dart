@@ -134,7 +134,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       }
 
       try {
-        final decodedBytes = await _crypto.decryptTransactionData(
+        final decodedBytes = await _crypto.decryptDataFromTransaction(
           dataTx,
           dataRes.data,
           _fileKey!,
@@ -308,7 +308,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           }
 
           final fileKey = await _driveDao.getFileKey(file.id, driveKey);
-          final decodedBytes = await _crypto.decryptTransactionData(
+          final decodedBytes = await _crypto.decryptDataFromTransaction(
             dataTx,
             dataBytes,
             fileKey,

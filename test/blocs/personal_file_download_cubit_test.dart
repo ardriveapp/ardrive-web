@@ -122,7 +122,7 @@ void main() {
           .thenAnswer((invocation) => Future.value(SecretKey([])));
       when(() => mockArweaveService.getTransactionDetails(any())).thenAnswer(
           (invocation) => Future.value(MockTransactionCommonMixin()));
-      when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
+      when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
           .thenAnswer((invocation) => Future.value(Uint8List(100)));
     });
     blocTest<ProfileFileDownloadCubit, FileDownloadState>(
@@ -176,7 +176,7 @@ void main() {
         verifyNever(() => mockDriveDao.getFileKey(any(), any()));
         verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
         verifyNever(
-            () => mockCrypto.decryptTransactionData(any(), any(), any()));
+            () => mockCrypto.decryptDataFromTransaction(any(), any(), any()));
       },
       expect: () => <FileDownloadState>[
         FileDownloadInProgress(
@@ -321,7 +321,7 @@ void main() {
         verifyNever(() => mockDriveDao.getFileKey(any(), any()));
         verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
         verifyNever(
-            () => mockCrypto.decryptTransactionData(any(), any(), any()));
+            () => mockCrypto.decryptDataFromTransaction(any(), any(), any()));
       },
     );
 
@@ -360,7 +360,7 @@ void main() {
         verifyNever(() => mockDriveDao.getFileKey(any(), any()));
         verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
         verifyNever(
-            () => mockCrypto.decryptTransactionData(any(), any(), any()));
+            () => mockCrypto.decryptDataFromTransaction(any(), any(), any()));
       },
     );
 
@@ -381,7 +381,7 @@ void main() {
         /// Using a private drive
         when(() => mockARFSRepository.getDriveById(any()))
             .thenAnswer((_) async => mockDrivePrivate);
-        when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
+        when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
             .thenThrow((invocation) => Exception());
       },
       act: (bloc) {
@@ -413,7 +413,7 @@ void main() {
         /// Using a private drive
         when(() => mockARFSRepository.getDriveById(any()))
             .thenAnswer((_) async => mockDrivePrivate);
-        when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
+        when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
             .thenThrow((invocation) => Exception());
       },
       act: (bloc) {
@@ -469,8 +469,8 @@ void main() {
             verifyNever(() => mockDownloadService.download(any(), any()));
             verifyNever(() => mockDriveDao.getFileKey(any(), any()));
             verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
-            verifyNever(
-                () => mockCrypto.decryptTransactionData(any(), any(), any()));
+            verifyNever(() =>
+                mockCrypto.decryptDataFromTransaction(any(), any(), any()));
           });
 
       blocTest<ProfileFileDownloadCubit, FileDownloadState>(
@@ -511,8 +511,8 @@ void main() {
             verifyNever(() => mockDownloadService.download(any(), any()));
             verifyNever(() => mockDriveDao.getFileKey(any(), any()));
             verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
-            verifyNever(
-                () => mockCrypto.decryptTransactionData(any(), any(), any()));
+            verifyNever(() =>
+                mockCrypto.decryptDataFromTransaction(any(), any(), any()));
           });
 
       blocTest<ProfileFileDownloadCubit, FileDownloadState>(
@@ -593,7 +593,7 @@ void main() {
           verifyNever(() => mockDriveDao.getFileKey(any(), any()));
           verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
           verifyNever(
-              () => mockCrypto.decryptTransactionData(any(), any(), any()));
+              () => mockCrypto.decryptDataFromTransaction(any(), any(), any()));
         });
   });
 }
