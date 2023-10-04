@@ -147,7 +147,7 @@ dependency_overrides:
       ref: main
   fetch_client:
     git:
-      url: git@github.com:karlprieb/fetch_client.git
+      url: https://github.com/karlprieb/fetch_client.git
       ref: ignore-headers
   http: ^1.1.0
 
