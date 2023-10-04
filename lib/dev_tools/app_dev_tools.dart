@@ -98,161 +98,165 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.read<ConfigService>().config;
-    final configService = context.read<ConfigService>();
+    final ConfigService configService = context.read<ConfigService>();
+    final AppConfig config = configService.config;
 
-    ArDriveDevToolOption defaultArweaveGatewayUrlOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption defaultArweaveGatewayUrlOption =
+        ArDriveDevToolOption(
       name: 'defaultArweaveGatewayUrl',
-      value: settings.defaultArweaveGatewayUrl,
+      value: config.defaultArweaveGatewayUrl,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(defaultArweaveGatewayUrl: value),
+            config.copyWith(defaultArweaveGatewayUrl: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.text,
     );
 
-    ArDriveDevToolOption useTurboOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption useTurboOption = ArDriveDevToolOption(
       name: 'useTurboUpload',
-      value: settings.useTurboUpload,
+      value: config.useTurboUpload,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(useTurboUpload: value),
+            config.copyWith(useTurboUpload: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.bool,
     );
 
-    ArDriveDevToolOption useTurboPaymentOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption useTurboPaymentOption = ArDriveDevToolOption(
       name: 'useTurboPayment',
-      value: settings.useTurboPayment,
+      value: config.useTurboPayment,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(useTurboPayment: value),
+            config.copyWith(useTurboPayment: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.bool,
     );
 
-    ArDriveDevToolOption defaultTurboUrlOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption defaultTurboUrlOption = ArDriveDevToolOption(
       name: 'defaultTurboUrl',
-      value: settings.defaultTurboUploadUrl,
+      value: config.defaultTurboUploadUrl,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(defaultTurboUploadUrl: value),
+            config.copyWith(defaultTurboUploadUrl: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.text,
     );
 
-    ArDriveDevToolOption defaultTurboPaymentUrlOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption defaultTurboPaymentUrlOption =
+        ArDriveDevToolOption(
       name: 'defaultTurboUrl',
-      value: settings.defaultTurboPaymentUrl,
+      value: config.defaultTurboPaymentUrl,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(defaultTurboPaymentUrl: value),
+            config.copyWith(defaultTurboPaymentUrl: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.text,
     );
 
-    ArDriveDevToolOption stripePublishableKey = ArDriveDevToolOption(
+    final ArDriveDevToolOption stripePublishableKey = ArDriveDevToolOption(
       name: 'stripePublishableKey',
-      value: settings.stripePublishableKey,
+      value: config.stripePublishableKey,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(stripePublishableKey: value),
+            config.copyWith(stripePublishableKey: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.text,
     );
 
-    ArDriveDevToolOption allowedDataItemSizeForTurboOption =
+    final ArDriveDevToolOption allowedDataItemSizeForTurboOption =
         ArDriveDevToolOption(
       name: 'allowedDataItemSizeForTurbo',
-      value: settings.allowedDataItemSizeForTurbo,
+      value: config.allowedDataItemSizeForTurbo,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(allowedDataItemSizeForTurbo: value),
+            config.copyWith(allowedDataItemSizeForTurbo: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.number,
     );
 
-    ArDriveDevToolOption enableQuickSyncAuthoringOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption enableQuickSyncAuthoringOption =
+        ArDriveDevToolOption(
       name: 'enableQuickSyncAuthoring',
-      value: settings.enableQuickSyncAuthoring,
+      value: config.enableQuickSyncAuthoring,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(enableQuickSyncAuthoring: value),
+            config.copyWith(enableQuickSyncAuthoring: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.bool,
     );
 
-    ArDriveDevToolOption enableMultipleFileDownloadOption =
+    final ArDriveDevToolOption enableMultipleFileDownloadOption =
         ArDriveDevToolOption(
       name: 'enableMultipleFileDownload',
-      value: settings.enableMultipleFileDownload,
+      value: config.enableMultipleFileDownload,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(enableMultipleFileDownload: value),
+            config.copyWith(enableMultipleFileDownload: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.bool,
     );
 
-    ArDriveDevToolOption enableVideoPreviewOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption enableVideoPreviewOption = ArDriveDevToolOption(
       name: 'enableVideoPreview',
-      value: settings.enableVideoPreview,
+      value: config.enableVideoPreview,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(enableVideoPreview: value),
+            config.copyWith(enableVideoPreview: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.bool,
     );
 
-    ArDriveDevToolOption enableAudioPreviewOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption enableAudioPreviewOption = ArDriveDevToolOption(
       name: 'enableAudioPreview',
-      value: settings.enableAudioPreview,
+      value: config.enableAudioPreview,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(enableAudioPreview: value),
+            config.copyWith(enableAudioPreview: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.bool,
     );
 
-    ArDriveDevToolOption autoSyncIntervalInSecondsOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption autoSyncIntervalInSecondsOption =
+        ArDriveDevToolOption(
       name: 'autoSyncIntervalInSeconds',
-      value: settings.autoSyncIntervalInSeconds,
+      value: config.autoSyncIntervalInSeconds,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(autoSyncIntervalInSeconds: value),
+            config.copyWith(autoSyncIntervalInSeconds: value),
           );
         });
       },
@@ -260,7 +264,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
     );
 
     // reload option
-    ArDriveDevToolOption reloadOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption reloadOption = ArDriveDevToolOption(
       name: 'Reload',
       value: '',
       onChange: (value) {
@@ -269,7 +273,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.button,
     );
 
-    ArDriveDevToolOption resetOptions = ArDriveDevToolOption(
+    final ArDriveDevToolOption resetOptions = ArDriveDevToolOption(
       name: 'Reset options',
       value: '',
       onChange: (value) async {
@@ -284,26 +288,27 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.buttonTertiary,
     );
 
-    ArDriveDevToolOption enableSyncFromSnapshotOption = ArDriveDevToolOption(
+    final ArDriveDevToolOption enableSyncFromSnapshotOption =
+        ArDriveDevToolOption(
       name: 'enableSyncFromSnapshot',
-      value: settings.enableSyncFromSnapshot,
+      value: config.enableSyncFromSnapshot,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(enableSyncFromSnapshot: value),
+            config.copyWith(enableSyncFromSnapshot: value),
           );
         });
       },
       type: ArDriveDevToolOptionType.bool,
     );
 
-    ArDriveDevToolOption enableSeedPhreaseLogin = ArDriveDevToolOption(
+    final ArDriveDevToolOption enableSeedPhreaseLogin = ArDriveDevToolOption(
       name: 'enableSeedPhreaseLogin',
-      value: settings.enableSeedPhraseLogin,
+      value: config.enableSeedPhraseLogin,
       onChange: (value) {
         setState(() {
           configService.updateAppConfig(
-            settings.copyWith(enableSeedPhraseLogin: value),
+            config.copyWith(enableSeedPhraseLogin: value),
           );
         });
       },
@@ -311,7 +316,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
     );
 
     // reload option
-    ArDriveDevToolOption turboSetDefaultData = ArDriveDevToolOption(
+    final ArDriveDevToolOption turboSetDefaultData = ArDriveDevToolOption(
       name: 'setDefaultDataOnPaymentForm',
       value: '',
       onChange: (value) {},
@@ -327,7 +332,50 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.button,
     );
 
-    List options = [
+    final ArDriveDevToolOption forceNoFreeThanksToTurbo = ArDriveDevToolOption(
+      name: 'forceNoFreeThanksToTurbo',
+      value: config.forceNoFreeThanksToTurbo,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            config.copyWith(forceNoFreeThanksToTurbo: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
+    final ArDriveDevToolOption fakeTurboCredits = ArDriveDevToolOption<BigInt?>(
+      name: 'fakeTurboCredits',
+      value: config.fakeTurboCredits,
+      onChange: (value) {
+        late AppConfig newConfig;
+        if (value == null) {
+          newConfig = config.copyWith(unsetFakeTurboCredits: true);
+        } else {
+          newConfig = config.copyWith(fakeTurboCredits: value);
+        }
+        setState(() {
+          configService.updateAppConfig(newConfig);
+        });
+      },
+      type: ArDriveDevToolOptionType.turboCredits,
+    );
+
+    final ArDriveDevToolOption topUpDryRun = ArDriveDevToolOption(
+      name: 'topUpDryRun',
+      value: config.topUpDryRun,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            config.copyWith(topUpDryRun: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
+    final List<ArDriveDevToolOption> options = [
       useTurboOption,
       useTurboPaymentOption,
       defaultTurboPaymentUrlOption,
@@ -343,6 +391,9 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       defaultTurboUrlOption,
       autoSyncIntervalInSecondsOption,
       turboSetDefaultData,
+      forceNoFreeThanksToTurbo,
+      fakeTurboCredits,
+      topUpDryRun,
       reloadOption,
       resetOptions,
     ];
@@ -465,11 +516,38 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
             option.onInteraction?.call();
           },
         );
+
       case ArDriveDevToolOptionType.buttonTertiary:
         return ArDriveButton(
           style: ArDriveButtonStyle.tertiary,
           text: option.name,
           onPressed: () => option.onChange(option.value),
+        );
+
+      case ArDriveDevToolOptionType.turboCredits:
+        final optionAsBigInt = option as ArDriveDevToolOption<BigInt?>;
+        return ArDriveTextField(
+          label: optionAsBigInt.name,
+          initialValue: optionAsBigInt.value != null
+              ? (optionAsBigInt.value! / BigInt.from(1000000000000)).toString()
+              : '',
+          onFieldSubmitted: (value) {
+            final doubleVaue = double.tryParse(value);
+            if (doubleVaue == null) {
+              optionAsBigInt.onChange(null);
+              showOptionSavedMessage();
+              return;
+            }
+
+            final winstonCredits = BigInt.from(
+              (doubleVaue * 1000000000000).floor(),
+            );
+            optionAsBigInt.onChange(winstonCredits);
+            showOptionSavedMessage();
+          },
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,12}')),
+          ],
         );
     }
   }
@@ -599,14 +677,21 @@ class DraggableWindow extends HookWidget {
   }
 }
 
-enum ArDriveDevToolOptionType { text, bool, number, button, buttonTertiary }
+enum ArDriveDevToolOptionType {
+  text,
+  bool,
+  number,
+  button,
+  buttonTertiary,
+  turboCredits,
+}
 
-typedef OnChange = void Function(dynamic value);
+typedef OnChange<T> = void Function(T value);
 
-class ArDriveDevToolOption {
+class ArDriveDevToolOption<T> {
   final String name;
-  dynamic value;
-  final OnChange onChange;
+  T value;
+  final OnChange<T> onChange;
   final ArDriveDevToolOptionType type;
   final Function? onInteraction;
 

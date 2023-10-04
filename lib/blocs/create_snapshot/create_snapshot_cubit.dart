@@ -11,9 +11,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/services/config/app_config.dart';
-import 'package:ardrive/services/pst/pst.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -42,7 +40,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   final TabVisibilitySingleton _tabVisibility;
   final TurboBalanceRetriever turboBalanceRetriever;
   final ArDriveAuth auth;
-  final AppConfig appConfig;
+  final ConfigService configService;
   final TurboUploadService turboService;
   @visibleForTesting
   bool throwOnDataComputingForTesting;
@@ -71,11 +69,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   bool _sufficentCreditsBalance = false;
   bool _sufficientArBalance = false;
   bool _isFreeThanksToTurbo = false;
+  bool _wasSnapshotDataComputingCanceled = false;
 
   bool get _useTurboUpload =>
       _uploadMethod == UploadMethod.turbo || _isFreeThanksToTurbo;
 
-  bool _wasSnapshotDataComputingCanceled = false;
+  AppConfig get appConfig => configService.config;
 
   SnapshotItemToBeCreated? _itemToBeCreated;
   SnapshotEntity? _snapshotEntity;
@@ -89,7 +88,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     required TabVisibilitySingleton tabVisibility,
     required this.turboBalanceRetriever,
     required this.auth,
-    required this.appConfig,
+    required this.configService,
     required this.turboService,
     this.throwOnDataComputingForTesting = false,
     this.throwOnSignTxForTesting = false,
@@ -404,15 +403,65 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     );
   }
 
-  Future<void> _computeBalanceEstimate() async {
+  Future<void> refreshTurboBalance() async {
     final profileState = _profileCubit.state as ProfileLoggedIn;
     final wallet = profileState.wallet;
 
-    final turboBalance =
+    final BigInt? fakeTurboCredits = appConfig.fakeTurboCredits;
+
+    /// necessary to wait for backend update the balance
+    await Future.delayed(const Duration(seconds: 2));
+
+    final BigInt turboBalance = fakeTurboCredits ??
         await turboBalanceRetriever.getBalance(wallet).catchError((e) {
-      logger.e('Error while retrieving turbo balance', e);
-      return BigInt.zero;
-    });
+          logger.e('Error while retrieving turbo balance', e);
+          return BigInt.zero;
+        });
+
+    logger.d('Balance after topping up: $turboBalance');
+
+    _turboBalance = turboBalance;
+    _hasNoTurboBalance = turboBalance == BigInt.zero;
+    _turboCredits = convertCreditsToLiteralString(turboBalance);
+    _sufficentCreditsBalance = _costEstimateTurbo.totalCost <= _turboBalance;
+    _computeIsTurboEnabled();
+    _computeIsButtonEnabled();
+
+    if (state is ConfirmingSnapshotCreation) {
+      final stateAsConfirming = state as ConfirmingSnapshotCreation;
+
+      logger.d('Refreshing turbo balance');
+      logger.d('Turbo balance: $_turboCredits');
+      logger.d('Has no turbo balance: $_hasNoTurboBalance');
+      logger
+          .d('Sufficient balance to pay with turbo: $_sufficentCreditsBalance');
+      logger.d('Upload method: $_uploadMethod');
+
+      emit(
+        stateAsConfirming.copyWith(
+          turboCredits: _turboCredits,
+          hasNoTurboBalance: _hasNoTurboBalance,
+          sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
+          uploadMethod: _uploadMethod,
+          isButtonToUploadEnabled: _isButtonToUploadEnabled,
+        ),
+      );
+    }
+  }
+
+  Future<void> _computeBalanceEstimate() async {
+    final ProfileLoggedIn profileState = _profileCubit.state as ProfileLoggedIn;
+    final Wallet wallet = profileState.wallet;
+
+    final BigInt? fakeTurboCredits = appConfig.fakeTurboCredits;
+
+    final BigInt turboBalance = fakeTurboCredits ??
+        await turboBalanceRetriever.getBalance(wallet).catchError((e) {
+          logger.e('Error while retrieving turbo balance', e);
+          return BigInt.zero;
+        });
+
+    logger.d('Balance before topping up: $turboBalance');
 
     _turboBalance = turboBalance;
     _hasNoTurboBalance = turboBalance == BigInt.zero;
@@ -439,9 +488,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   void _computeIsFreeThanksToTurbo() {
     final allowedDataItemSizeForTurbo = appConfig.allowedDataItemSizeForTurbo;
+    final forceNoFreeThanksToTurbo = appConfig.forceNoFreeThanksToTurbo;
     final isFreeThanksToTurbo =
         _snapshotEntity!.data!.length <= allowedDataItemSizeForTurbo;
-    _isFreeThanksToTurbo = isFreeThanksToTurbo;
+    _isFreeThanksToTurbo = isFreeThanksToTurbo && !forceNoFreeThanksToTurbo;
   }
 
   Future<void> _emitConfirming({required int dataSize}) async {

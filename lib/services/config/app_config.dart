@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'app_config.g.dart';
@@ -18,6 +19,9 @@ class AppConfig {
   final bool enableSyncFromSnapshot;
   final bool enableSeedPhraseLogin;
   final String stripePublishableKey;
+  final bool forceNoFreeThanksToTurbo;
+  final BigInt? fakeTurboCredits;
+  final bool topUpDryRun;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -34,6 +38,9 @@ class AppConfig {
     this.enableSyncFromSnapshot = true,
     this.enableSeedPhraseLogin = true,
     required this.stripePublishableKey,
+    this.forceNoFreeThanksToTurbo = false,
+    this.fakeTurboCredits,
+    this.topUpDryRun = false,
   });
 
   AppConfig copyWith({
@@ -51,7 +58,15 @@ class AppConfig {
     bool? enableSyncFromSnapshot,
     bool? enableSeedPhraseLogin,
     String? stripePublishableKey,
+    bool? forceNoFreeThanksToTurbo,
+    BigInt? fakeTurboCredits,
+    bool? topUpDryRun,
+    bool? unsetFakeTurboCredits,
   }) {
+    final theFakeTurboCredits = unsetFakeTurboCredits == true
+        ? null
+        : fakeTurboCredits ?? this.fakeTurboCredits;
+
     return AppConfig(
       defaultArweaveGatewayUrl:
           defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
@@ -76,7 +91,39 @@ class AppConfig {
       enableSeedPhraseLogin:
           enableSeedPhraseLogin ?? this.enableSeedPhraseLogin,
       stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
+      forceNoFreeThanksToTurbo:
+          forceNoFreeThanksToTurbo ?? this.forceNoFreeThanksToTurbo,
+      fakeTurboCredits: theFakeTurboCredits,
+      topUpDryRun: topUpDryRun ?? this.topUpDryRun,
     );
+  }
+
+  String diff(AppConfig other) {
+    // Compares this and the given AppConfig and returns a csv string
+    /// representing the differences.
+
+    final thisJson = toJson();
+    final otherJson = other.toJson();
+
+    final keysOfThis = thisJson.keys;
+    final keysOfOther = otherJson.keys;
+    final Set<String> allKeys = {...keysOfThis, ...keysOfOther};
+
+    logger.d('All keys: $allKeys');
+    logger.d('This: $thisJson');
+    logger.d('Other: $otherJson');
+
+    final List<String> diffs = [];
+    for (final key in allKeys) {
+      final valueOfThis = thisJson[key];
+      final valueOfOther = otherJson[key];
+
+      if (valueOfThis != valueOfOther) {
+        diffs.add('$key: $valueOfThis -> $valueOfOther');
+      }
+    }
+
+    return diffs.join(', ');
   }
 
   @override

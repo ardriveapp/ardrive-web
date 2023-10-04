@@ -43,7 +43,7 @@ Future<void> promptToCreateSnapshot(
                 turboBalanceRetriever: TurboBalanceRetriever(
                   paymentService: context.read<PaymentService>(),
                 ),
-                appConfig: context.read<ConfigService>().config,
+                configService: context.read<ConfigService>(),
                 turboService: context.read<TurboUploadService>(),
               ),
               child: CreateSnapshotDialog(
@@ -416,8 +416,7 @@ Widget _confirmDialog(
                             state.sufficientBalanceToPayWithTurbo,
                         isFreeThanksToTurbo: false,
                         onTurboTopupSucess: () {
-                          createSnapshotCubit
-                              .setUploadMethod(UploadMethod.turbo);
+                          createSnapshotCubit.refreshTurboBalance();
                         },
                         onArSelect: () {
                           createSnapshotCubit.setUploadMethod(UploadMethod.ar);

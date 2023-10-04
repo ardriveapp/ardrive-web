@@ -63,6 +63,7 @@ void main() {
       final pst = MockPstService();
       final tabVisibility = MockTabVisibilitySingleton();
       final testWallet = getTestWallet();
+      final configService = MockConfigService();
       final appConfig = MockAppConfig();
       final auth = MockArDriveAuth();
       final paymentService = MockPaymentService();
@@ -198,6 +199,12 @@ void main() {
         when(() => appConfig.allowedDataItemSizeForTurbo)
             .thenAnswer((invocation) => 100);
         when(() => appConfig.useTurboUpload).thenAnswer((invocation) => true);
+        when(() => appConfig.forceNoFreeThanksToTurbo)
+            .thenAnswer((invocation) => false);
+        when(() => appConfig.fakeTurboCredits).thenAnswer((invocation) => null);
+        when(() => appConfig.topUpDryRun).thenAnswer((invocation) => false);
+
+        when(() => configService.config).thenAnswer((invocation) => appConfig);
 
         when(() => tabVisibility.isTabFocused())
             .thenAnswer((invocation) => true);
@@ -228,7 +235,7 @@ void main() {
           tabVisibility: tabVisibility,
           pst: pst,
           auth: auth,
-          appConfig: appConfig,
+          configService: configService,
           paymentService: paymentService,
           turboBalanceRetriever: turboBalanceRetriever,
           turboService: turboService,
@@ -245,7 +252,7 @@ void main() {
           tabVisibility: tabVisibility,
           pst: pst,
           auth: auth,
-          appConfig: appConfig,
+          configService: configService,
           paymentService: paymentService,
           turboBalanceRetriever: turboBalanceRetriever,
           turboService: turboService,
@@ -272,7 +279,7 @@ void main() {
           tabVisibility: tabVisibility,
           pst: pst,
           auth: auth,
-          appConfig: appConfig,
+          configService: configService,
           paymentService: paymentService,
           turboBalanceRetriever: turboBalanceRetriever,
           turboService: turboService,
@@ -305,7 +312,7 @@ void main() {
           pst: pst,
           throwOnDataComputingForTesting: true,
           auth: auth,
-          appConfig: appConfig,
+          configService: configService,
           paymentService: paymentService,
           turboBalanceRetriever: turboBalanceRetriever,
           turboService: turboService,
@@ -332,7 +339,7 @@ void main() {
           tabVisibility: tabVisibility,
           pst: pst,
           auth: auth,
-          appConfig: appConfig,
+          configService: configService,
           paymentService: paymentService,
           turboBalanceRetriever: turboBalanceRetriever,
           turboService: turboService,
@@ -360,7 +367,7 @@ void main() {
           pst: pst,
           throwOnDataComputingForTesting: true,
           auth: auth,
-          appConfig: appConfig,
+          configService: configService,
           paymentService: paymentService,
           turboBalanceRetriever: turboBalanceRetriever,
           turboService: turboService,
@@ -387,7 +394,7 @@ void main() {
           tabVisibility: tabVisibility,
           pst: pst,
           auth: auth,
-          appConfig: appConfig,
+          configService: configService,
           paymentService: paymentService,
           turboBalanceRetriever: turboBalanceRetriever,
           turboService: turboService,
@@ -471,7 +478,7 @@ void main() {
             tabVisibility: tabVisibility,
             pst: pst,
             auth: auth,
-            appConfig: appConfig,
+            configService: configService,
             paymentService: paymentService,
             turboBalanceRetriever: turboBalanceRetriever,
             turboService: turboService,
@@ -501,7 +508,7 @@ void main() {
             pst: pst,
             throwOnSignTxForTesting: true,
             auth: auth,
-            appConfig: appConfig,
+            configService: configService,
             paymentService: paymentService,
             turboBalanceRetriever: turboBalanceRetriever,
             turboService: turboService,
