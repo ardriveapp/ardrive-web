@@ -91,11 +91,11 @@ class VideoPlayerWidget extends StatefulWidget {
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     with AutomaticKeepAliveClientMixin {
   late VideoPlayerController _videoPlayerController;
-  late VideoPlayer _videoPlayer;
   bool _isVolumeSliderVisible = false;
   bool _wasPlaying = false;
   final _menuController = MenuController();
   final Lock _lock = Lock();
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -103,10 +103,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     super.initState();
     _videoPlayerController =
         VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-    _videoPlayerController.initialize();
-    _videoPlayerController.addListener(_listener);
-    _videoPlayer =
-        VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
+    _videoPlayerController.initialize().then((v) {
+      _videoPlayerController.addListener(_listener);
+      // force refresh
+      setState(() {});
+    }).catchError((err) {
+      final formatError =
+          err.toString().contains('MEDIA_ERR_SRC_NOT_SUPPORTED');
+      setState(() {
+        _errorMessage = formatError
+            ? 'File type unsupported by browser or operating system'
+            : appLocalizationsOf(context).couldNotLoadFile;
+      });
+    });
   }
 
   @override
@@ -121,18 +130,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     setState(() {
       if (_videoPlayerController.value.hasError) {
         logger.e('>>> ${_videoPlayerController.value.errorDescription}');
+        setState(() {
+          final formatError = _videoPlayerController.value.errorDescription
+                  ?.contains('MEDIA_ERR_SRC_NOT_SUPPORTED') ??
+              false;
 
-        // In case of emergency, reinitialize the video player.
-        _videoPlayerController.removeListener(_listener);
-        _videoPlayerController.dispose();
-
-        _videoPlayerController =
-            VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-        _videoPlayerController.initialize();
-        _videoPlayerController.addListener(_listener);
-
-        _videoPlayer =
-            VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
+          _errorMessage = formatError
+              ? 'File type unsupported by browser or operating system'
+              : appLocalizationsOf(context).couldNotLoadFile;
+        });
       }
     });
   }
@@ -178,10 +184,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   Widget build(BuildContext context) {
     super.build(context);
 
-    var colors = ArDriveTheme.of(context).themeData.colors;
-    var videoValue = _videoPlayerController.value;
-    var currentTime = getTimeString(videoValue.position);
-    var duration = getTimeString(videoValue.duration);
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final videoValue = _videoPlayerController.value;
+    final currentTime = getTimeString(videoValue.position);
+    final duration = getTimeString(videoValue.duration);
+
+    final controlsEnabled = videoValue.isInitialized &&
+        videoValue.duration > Duration.zero &&
+        _errorMessage == null;
 
     return VisibilityDetector(
         key: const Key('video-player'),
@@ -208,15 +218,27 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
             children: [
               Container(color: Colors.black),
               Center(
-                  child: AspectRatio(
-                      aspectRatio: _videoPlayerController.value.aspectRatio,
-                      child: _videoPlayer)),
+                  child: _errorMessage != null
+                      ? Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Text(
+                            _errorMessage ?? '',
+                            textAlign: TextAlign.center,
+                            style: ArDriveTypography.body
+                                .smallBold700(color: colors.themeFgMuted)
+                                .copyWith(fontSize: 13),
+                          ))
+                      : AspectRatio(
+                          aspectRatio: _videoPlayerController.value.aspectRatio,
+                          child: VideoPlayer(_videoPlayerController,
+                              key: const Key('videoPlayer')))),
             ],
           ))),
           Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
               child: Column(children: [
                 Text(widget.filename,
+                    textAlign: TextAlign.center,
                     style: ArDriveTypography.body
                         .smallBold700(color: colors.themeFgDefault)),
                 const SizedBox(height: 8),
@@ -238,48 +260,54 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                             videoValue.duration.inMilliseconds.toDouble()),
                         min: 0.0,
                         max: videoValue.duration.inMilliseconds.toDouble(),
-                        onChangeStart: (v) async {
-                          if (_videoPlayerController.value.duration >
-                              Duration.zero) {
-                            _wasPlaying =
-                                _videoPlayerController.value.isPlaying;
-                            if (_wasPlaying) {
-                              await _lock.synchronized(() async {
-                                await _videoPlayerController
-                                    .pause()
-                                    .catchError((e) {
-                                  logger.e('Error pausing video: $e');
-                                });
-                              });
-                              setState(() {});
-                            }
-                          }
-                        },
-                        onChanged: (v) async {
-                          setState(() {
-                            final milliseconds = v.toInt();
+                        onChangeStart: !controlsEnabled
+                            ? null
+                            : (v) async {
+                                if (_videoPlayerController.value.duration >
+                                    Duration.zero) {
+                                  _wasPlaying =
+                                      _videoPlayerController.value.isPlaying;
+                                  if (_wasPlaying) {
+                                    await _lock.synchronized(() async {
+                                      await _videoPlayerController
+                                          .pause()
+                                          .catchError((e) {
+                                        logger.e('Error pausing video: $e');
+                                      });
+                                    });
+                                    setState(() {});
+                                  }
+                                }
+                              },
+                        onChanged: !controlsEnabled
+                            ? null
+                            : (v) async {
+                                setState(() {
+                                  final milliseconds = v.toInt();
 
-                            if (_videoPlayerController.value.duration >
-                                Duration.zero) {
-                              _videoPlayerController
-                                  .seekTo(Duration(milliseconds: milliseconds));
-                            }
-                          });
-                        },
-                        onChangeEnd: (v) async {
-                          if (_videoPlayerController.value.duration >
-                                  Duration.zero &&
-                              _wasPlaying) {
-                            await _lock.synchronized(() async {
-                              await _videoPlayerController
-                                  .play()
-                                  .catchError((e) {
-                                logger.e('Error playing video: $e');
-                              });
-                            });
-                            setState(() {});
-                          }
-                        })),
+                                  if (_videoPlayerController.value.duration >
+                                      Duration.zero) {
+                                    _videoPlayerController.seekTo(
+                                        Duration(milliseconds: milliseconds));
+                                  }
+                                });
+                              },
+                        onChangeEnd: !controlsEnabled
+                            ? null
+                            : (v) async {
+                                if (_videoPlayerController.value.duration >
+                                        Duration.zero &&
+                                    _wasPlaying) {
+                                  await _lock.synchronized(() async {
+                                    await _videoPlayerController
+                                        .play()
+                                        .catchError((e) {
+                                      logger.e('Error playing video: $e');
+                                    });
+                                  });
+                                  setState(() {});
+                                }
+                              })),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -304,9 +332,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               alignment: Alignment.centerLeft,
                               child: ScreenTypeLayout.builder(
                                 mobile: (context) => IconButton(
-                                    onPressed: () {
-                                      goFullScreen();
-                                    },
+                                    onPressed: !controlsEnabled
+                                        ? null
+                                        : () {
+                                            goFullScreen();
+                                          },
                                     icon: const Icon(Icons.fullscreen_outlined,
                                         size: 24)),
                                 desktop: (context) => VolumeSliderWidget(
@@ -325,37 +355,41 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                 ),
                               ))),
                       MaterialButton(
-                        onPressed: () async {
-                          final value = _videoPlayerController.value;
-                          if (!value.isInitialized ||
-                              value.isBuffering ||
-                              value.duration <= Duration.zero) {
-                            return;
-                          }
-                          if (value.isPlaying) {
-                            await _lock.synchronized(() async {
-                              await _videoPlayerController
-                                  .pause()
-                                  .catchError((e) {
-                                logger.e('Error pausing video: $e');
-                              });
-                            });
-                          } else {
-                            if (value.position >= value.duration) {
-                              _videoPlayerController.seekTo(Duration.zero);
-                            }
+                        onPressed: !controlsEnabled
+                            ? null
+                            : () async {
+                                final value = _videoPlayerController.value;
+                                if (!value.isInitialized ||
+                                    value.isBuffering ||
+                                    value.duration <= Duration.zero) {
+                                  return;
+                                }
+                                if (value.isPlaying) {
+                                  await _lock.synchronized(() async {
+                                    await _videoPlayerController
+                                        .pause()
+                                        .catchError((e) {
+                                      logger.e('Error pausing video: $e');
+                                    });
+                                  });
+                                } else {
+                                  if (value.position >= value.duration) {
+                                    _videoPlayerController
+                                        .seekTo(Duration.zero);
+                                  }
 
-                            await _lock.synchronized(() async {
-                              await _videoPlayerController
-                                  .play()
-                                  .catchError((e) {
-                                logger.e('Error playing video: $e');
-                              });
-                            });
-                            setState(() {});
-                          }
-                        },
+                                  await _lock.synchronized(() async {
+                                    await _videoPlayerController
+                                        .play()
+                                        .catchError((e) {
+                                      logger.e('Error playing video: $e');
+                                    });
+                                  });
+                                  setState(() {});
+                                }
+                              },
                         color: colors.themeAccentBrand,
+                        disabledColor: colors.themeAccentDisabled,
                         shape: const CircleBorder(),
                         child: Padding(
                             padding: const EdgeInsets.all(8),
@@ -422,9 +456,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                         size: 24))),
                             ScreenTypeLayout.builder(
                               desktop: (context) => IconButton(
-                                  onPressed: () {
-                                    goFullScreen();
-                                  },
+                                  onPressed: !controlsEnabled
+                                      ? null
+                                      : () {
+                                          goFullScreen();
+                                        },
                                   icon: const Icon(Icons.fullscreen_outlined,
                                       size: 24)),
                               mobile: (context) => const SizedBox.shrink(),
@@ -477,6 +513,7 @@ class _FullScreenVideoPlayerWidgetState
   bool _controlsVisible = true;
   Timer? _hideControlsTimer;
   final Lock _lock = Lock();
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -497,8 +534,10 @@ class _FullScreenVideoPlayerWidgetState
             logger.e('Error playing video: $e');
           });
         } else {
-          _videoPlayer = VideoPlayer(_videoPlayerController,
-              key: const Key('videoPlayer'));
+          setState(() {
+            _videoPlayer = VideoPlayer(_videoPlayerController,
+                key: const Key('videoPlayer'));
+          });
         }
       });
     });
@@ -522,18 +561,9 @@ class _FullScreenVideoPlayerWidgetState
     setState(() {
       if (_videoPlayerController.value.hasError) {
         logger.e('>>> ${_videoPlayerController.value.errorDescription}');
-
-        // In case of emergency, reinitialize the video player.
-        _videoPlayerController.removeListener(_listener);
-        _videoPlayerController.dispose();
-
-        _videoPlayerController =
-            VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-        _videoPlayerController.initialize();
-        _videoPlayerController.addListener(_listener);
-
-        _videoPlayer =
-            VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
+        setState(() {
+          _errorMessage = appLocalizationsOf(context).couldNotLoadFile;
+        });
       }
     });
   }
@@ -574,7 +604,17 @@ class _FullScreenVideoPlayerWidgetState
         Center(
             child: AspectRatio(
           aspectRatio: _videoPlayerController.value.aspectRatio,
-          child: _videoPlayer ?? const SizedBox.shrink(),
+          child: _errorMessage != null
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    _errorMessage ?? '',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.body
+                        .smallBold700(color: colors.themeFgMuted)
+                        .copyWith(fontSize: 13),
+                  ))
+              : _videoPlayer ?? const SizedBox.shrink(),
         )),
         MouseRegion(
           onHover: (event) {
@@ -1077,6 +1117,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                     padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                     child: Column(children: [
                       Text(widget.filename,
+                          textAlign: TextAlign.center,
                           style: ArDriveTypography.body
                               .smallBold700(color: colors.themeFgDefault)),
                       const SizedBox(height: 8),
