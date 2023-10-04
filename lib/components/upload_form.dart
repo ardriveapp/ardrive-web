@@ -147,7 +147,6 @@ class _UploadFormState extends State<UploadForm> {
   @override
   initState() {
     super.initState();
-    startRandomMessageStream();
   }
 
   @override
