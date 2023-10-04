@@ -49,8 +49,6 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
       controller.updateProgress(task: handle);
     }
 
-    // TODO: set if its possible to get the progress. Check the turbo web impl
-
     // gets the streamed request
     final streamedRequest = _turbo
         .postStream(

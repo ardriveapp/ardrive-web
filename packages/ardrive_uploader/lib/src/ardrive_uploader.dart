@@ -2,10 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_uploader/src/d2n_streamed_upload.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
-import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
-import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
+import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
@@ -18,7 +16,7 @@ abstract class ArDriveUploader {
     required ARFSUploadMetadataArgs args,
     required Wallet wallet,
     SecretKey? driveKey,
-    UploadType type = UploadType.turbo,
+    required UploadType type,
   }) {
     throw UnimplementedError();
   }
@@ -27,7 +25,7 @@ abstract class ArDriveUploader {
     required List<(ARFSUploadMetadataArgs, IOFile)> files,
     required Wallet wallet,
     SecretKey? driveKey,
-    UploadType type = UploadType.turbo,
+    required UploadType type,
   }) {
     throw UnimplementedError();
   }
@@ -38,7 +36,7 @@ abstract class ArDriveUploader {
     SecretKey? driveKey,
     Function(ARFSUploadMetadata)? skipMetadataUpload,
     Function(ARFSUploadMetadata)? onCreateMetadata,
-    UploadType type = UploadType.turbo,
+    required UploadType type,
   }) {
     throw UnimplementedError();
   }
@@ -52,11 +50,10 @@ abstract class ArDriveUploader {
         appInfoServices: AppInfoServices(),
       ),
     );
+
     return _ArDriveUploader(
       turboUploadUri: turboUploadUri,
-      dataBundler: ARFSDataBundlerStable(
-        metadataGenerator,
-      ),
+      dataBundlerFactory: DataBundlerFactory(),
       metadataGenerator: metadataGenerator,
     );
   }
@@ -64,22 +61,18 @@ abstract class ArDriveUploader {
 
 class _ArDriveUploader implements ArDriveUploader {
   _ArDriveUploader({
-    required DataBundler<ARFSUploadMetadata> dataBundler,
+    required DataBundlerFactory dataBundlerFactory,
     required ARFSUploadMetadataGenerator metadataGenerator,
     required Uri turboUploadUri,
-  })  : _dataBundler = dataBundler,
+  })  : _dataBundlerFactory = dataBundlerFactory,
+        _turboUploadUri = turboUploadUri,
         _metadataGenerator = metadataGenerator,
-        _turboStreamedUpload = TurboStreamedUpload(
-          TurboUploadServiceImpl(
-            turboUploadUri: turboUploadUri,
-          ),
-        ),
-        _d2nStreamedUpload = D2NStreamedUpload();
+        _streamedUploadFactory = StreamedUploadFactory();
 
-  final TurboStreamedUpload _turboStreamedUpload;
-  final D2NStreamedUpload _d2nStreamedUpload;
-  final DataBundler<ARFSUploadMetadata> _dataBundler;
+  final StreamedUploadFactory _streamedUploadFactory;
+  final DataBundlerFactory _dataBundlerFactory;
   final ARFSUploadMetadataGenerator _metadataGenerator;
+  final Uri _turboUploadUri;
 
   @override
   Future<UploadController> upload({
@@ -87,23 +80,43 @@ class _ArDriveUploader implements ArDriveUploader {
     required ARFSUploadMetadataArgs args,
     required Wallet wallet,
     SecretKey? driveKey,
-    UploadType type = UploadType.turbo,
+    required UploadType type,
   }) async {
+    final dataBundler = _dataBundlerFactory.createDataBundler(
+      metadataGenerator: _metadataGenerator,
+      type: type,
+    );
+
     final metadata = await _metadataGenerator.generateMetadata(
       file,
       args,
     );
 
-    await _dataBundler.createBundleDataTransaction(
+    final streamedUpload =
+        _streamedUploadFactory.fromUploadType(type, _turboUploadUri);
+
+    final controller = UploadController(
+      StreamController<UploadProgress>(),
+      streamedUpload,
+    );
+
+    await dataBundler.createDataBundle(
       file: file,
       metadata: metadata,
       wallet: wallet,
+      driveKey: driveKey,
     );
 
-    return UploadController(
-      StreamController<UploadProgress>(),
-      _turboStreamedUpload,
+    streamedUpload.send(
+      UploadTask(
+        status: UploadStatus.notStarted,
+        content: [metadata],
+      ),
+      wallet,
+      controller,
     );
+
+    return controller;
   }
 
   @override
@@ -111,13 +124,13 @@ class _ArDriveUploader implements ArDriveUploader {
     required List<(ARFSUploadMetadataArgs, IOFile)> files,
     required Wallet wallet,
     SecretKey? driveKey,
-    UploadType type = UploadType.turbo,
+    required UploadType type,
   }) async {
     print('Creating a new upload controller using the upload type $type');
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
-      _turboStreamedUpload,
+      _streamedUploadFactory.fromUploadType(type, _turboUploadUri),
     );
 
     /// Attaches the upload controller to the upload service
@@ -149,8 +162,6 @@ class _ArDriveUploader implements ArDriveUploader {
         f.$2,
         f.$1,
       );
-
-      print('Metadata: ${metadata.toJson().toString()}');
 
       final uploadTask = UploadTask(
         status: UploadStatus.notStarted,
@@ -224,85 +235,70 @@ class _ArDriveUploader implements ArDriveUploader {
     required ARFSUploadMetadata metadata,
     required UploadType type,
   }) async {
-    switch (type) {
-      case UploadType.turbo:
-        final createDataBundle = _dataBundler.createDataBundle(
-          file: file,
-          metadata: metadata,
-          wallet: wallet,
-          driveKey: driveKey,
-          onStartBundling: () {
-            uploadTask = uploadTask.copyWith(
-              status: UploadStatus.bundling,
-            );
-            uploadController.updateProgress(
-              task: uploadTask,
-            );
-          },
-          onStartEncryption: () {
-            uploadTask = uploadTask.copyWith(
-              status: UploadStatus.encryting,
-            );
-            uploadController.updateProgress(
-              task: uploadTask,
-            );
-          },
-        );
+    final dataBundler = _dataBundlerFactory.createDataBundler(
+      metadataGenerator: _metadataGenerator,
+      type: type,
+    );
 
-        final bdi = await createDataBundle;
-
-        // TODO: verify if we are uploading for D2N or Turbo
+    final bdi = await dataBundler.createDataBundle(
+      file: file,
+      metadata: metadata,
+      wallet: wallet,
+      driveKey: driveKey,
+      onStartBundling: () {
         uploadTask = uploadTask.copyWith(
-          dataItem: DataItemUploadTask(size: bdi.dataItemSize, data: bdi),
-          status: UploadStatus.preparationDone,
+          status: UploadStatus.bundling,
         );
-
-        print('BDI id: ${bdi.id}');
-        print('BDI size: ${bdi.dataItemSize}');
-
         uploadController.updateProgress(
           task: uploadTask,
         );
-
-        print('Starting to send data bundle to network');
-
-        // uploads
-        final value = await _turboStreamedUpload
-            .send(uploadTask, wallet, uploadController)
-            .then((value) {})
-            .catchError((err) {
-          uploadController.onError(() => print('Error: $err'));
-        });
-
-        return value;
-      case UploadType.d2n:
-        print('Creating a new upload controller using the upload type $type');
-        final transactionResult =
-            await _dataBundler.createBundleDataTransaction(
-          file: file,
-          metadata: metadata,
-          wallet: wallet,
-          driveKey: driveKey,
+      },
+      onStartEncryption: () {
+        uploadTask = uploadTask.copyWith(
+          status: UploadStatus.encryting,
         );
+        uploadController.updateProgress(
+          task: uploadTask,
+        );
+      },
+    );
 
-        // adds the item for the upload
+    switch (type) {
+      case UploadType.d2n:
         uploadTask = uploadTask.copyWith(
           dataItem: TransactionUploadTask(
-            data: transactionResult,
-            size: transactionResult.dataSize,
+            data: bdi,
+            size: bdi.dataSize,
           ),
         );
-
-        // sends the upload
-        _d2nStreamedUpload
-            .send(uploadTask, wallet, uploadController)
-            .then((value) {
-          // print('Upload complete');
-        }).catchError((err) {
-          uploadController.onError(() => print('Error: $err'));
-        });
+        break;
+      case UploadType.turbo:
+        uploadTask = uploadTask.copyWith(
+          dataItem: DataItemUploadTask(
+            data: bdi,
+            size: bdi.dataItemSize,
+          ),
+          status: UploadStatus.preparationDone,
+        );
         break;
     }
+
+    uploadController.updateProgress(
+      task: uploadTask,
+    );
+
+    final streamedUpload =
+        _streamedUploadFactory.fromUploadType(type, _turboUploadUri);
+
+    final value = await streamedUpload
+        .send(uploadTask, wallet, uploadController)
+        .then((value) {
+      print('Upload complete');
+    }).catchError((err) {
+      uploadController.onError(() => print('Error: $err'));
+    });
+
+    return value;
   }
 
   @override
@@ -314,7 +310,17 @@ class _ArDriveUploader implements ArDriveUploader {
     Function(ARFSUploadMetadata p1)? onCreateMetadata,
     UploadType type = UploadType.turbo,
   }) async {
+    final dataBundler = _dataBundlerFactory.createDataBundler(
+      metadataGenerator: _metadataGenerator,
+      type: type,
+    );
+    final streamedUpload = _streamedUploadFactory.fromUploadType(
+      type,
+      _turboUploadUri,
+    );
+
     final entitiesWithMedata = <(ARFSUploadMetadata, IOEntity)>[];
+
     for (var e in entities) {
       final metadata = await _metadataGenerator.generateMetadata(
         e.$2,
@@ -324,35 +330,31 @@ class _ArDriveUploader implements ArDriveUploader {
       entitiesWithMedata.add((metadata, e.$2));
     }
 
-    final folderMetadatas = entitiesWithMedata
-        .where((element) => element.$2 is IOFolder)
-        .map((e) => e.$1)
-        .toList();
+    final folderMetadatas =
+        entitiesWithMedata.where((element) => element.$2 is IOFolder).toList();
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
-      _turboStreamedUpload,
+      streamedUpload,
     );
 
     if (folderMetadatas.isNotEmpty) {
+      final bundle = await dataBundler.createDataBundleForEntities(
+        entities: folderMetadatas,
+        wallet: wallet,
+        driveKey: driveKey,
+      );
+
+      /// folders always are generated in the first BDI.
+      final bundleForFolders = bundle.first;
+
+      UploadTask folderBDITask = UploadTask(
+        status: UploadStatus.notStarted,
+        content: bundleForFolders.contents,
+      );
+
       switch (type) {
         case UploadType.turbo:
-          final bundleForFolders =
-              (await _dataBundler.createDataBundleForEntities(
-            entities: entitiesWithMedata
-                .where((element) => element.$2 is IOFolder)
-                .toList(),
-            wallet: wallet,
-            driveKey: driveKey,
-          ))
-                  .first;
-
-          // turbo:
-          UploadTask folderBDITask = UploadTask(
-            status: UploadStatus.notStarted,
-            content: bundleForFolders.contents,
-          );
-
           folderBDITask = folderBDITask.copyWith(
             dataItem: DataItemUploadTask(
               size: bundleForFolders.dataItemResult.dataItemSize,
@@ -361,53 +363,28 @@ class _ArDriveUploader implements ArDriveUploader {
             status: UploadStatus.preparationDone,
           );
 
-          uploadController.updateProgress(
-            task: folderBDITask,
-          );
-
-          print('Starting to send data bundle to network');
-
-          // TODO: uploads: for now, only works for turbo
-          _turboStreamedUpload
-              .send(folderBDITask, wallet, uploadController)
-              .then((value) {})
-              .catchError((err) {
-            uploadController.onError(() => print('Error: $err'));
-          });
         case UploadType.d2n:
-          print('Creating a new upload controller using the upload type $type');
-          final transactionResult =
-              await _dataBundler.createBundleDataTransactionForEntities(
-            entities: entitiesWithMedata
-                .where((element) => element.$2 is IOFolder)
-                .toList(),
-            wallet: wallet,
-            driveKey: driveKey,
-          );
-
-          UploadTask folderTransactionTask = UploadTask(
-            status: UploadStatus.notStarted,
-            content: transactionResult.first.contents,
-          );
-
-          // adds the item for the upload
-          folderTransactionTask = folderTransactionTask.copyWith(
+          folderBDITask = folderBDITask.copyWith(
             dataItem: TransactionUploadTask(
-              data: transactionResult.first.dataItemResult,
-              size: transactionResult.first.dataItemResult.dataSize,
+              data: bundleForFolders.dataItemResult,
+              size: bundleForFolders.dataItemResult.dataSize,
             ),
           );
-
-          // sends the upload
-          _d2nStreamedUpload
-              .send(folderTransactionTask, wallet, uploadController)
-              .then((value) {
-            print('Upload complete');
-          }).catchError((err) {
-            uploadController.onError(() => print('Error: $err'));
-          });
           break;
       }
+
+      uploadController.updateProgress(
+        task: folderBDITask,
+      );
+
+      // sends the upload
+      streamedUpload
+          .send(folderBDITask, wallet, uploadController)
+          .then((value) {
+        print('Upload complete');
+      }).catchError((err) {
+        uploadController.onError(() => print('Error: $err'));
+      });
     }
 
     _uploadFiles(
