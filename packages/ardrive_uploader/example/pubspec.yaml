@@ -35,11 +35,11 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-4417-export-logs
+      ref: PE-3699-uploads-large-files-for-public-drives
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: 7183b84930711693a13b547af7d54d0fda78ebf0
+      ref: PE-3697
   ardrive_utils:
     path: ../../ardrive_utils
   # The following adds the Cupertino Icons font to your application.
@@ -57,20 +57,6 @@ dev_dependencies:
     sdk: flutter
 
 dependency_overrides:
-  ardrive_io:
-    git:
-      url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-4417-export-logs
-  arweave:
-    git:
-      url: https://github.com/ardriveapp/arweave-dart.git
-      ref: 7183b84930711693a13b547af7d54d0fda78ebf0
-  # http:
-  #   path: ../../../../packages/http/pkgs/http
-    # git:
-    #   url: https://github.com/ar-io/ardrive_io.git
-    #   ref: PE-4417-export-logs
-
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your

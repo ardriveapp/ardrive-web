@@ -16,11 +16,11 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-4417-export-logs
+      ref: PE-3699-uploads-large-files-for-public-drives
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-4318
+      ref: PE-3697
   ardrive_utils:
     path: ../ardrive_utils
   ardrive_crypto:
@@ -36,8 +36,11 @@ dependencies:
   rxdart: ^0.27.7
   dio: ^5.3.2
   fpdart: ^1.1.0
-  fetch_client: ^1.0.2
-  http: ^0.13.6
+  fetch_client:
+    git:
+      url: git@github.com:karlprieb/fetch_client.git
+      ref: ignore-headers
+  http: ^1.1.0
 
 dev_dependencies:
   lints: ^2.0.0
@@ -45,3 +48,4 @@ dev_dependencies:
   json_serializable:
   build_runner: ^2.0.4
 
+dependency_overrides:

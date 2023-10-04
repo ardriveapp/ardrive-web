@@ -61,6 +61,7 @@ Future<void> promptToUpload(
     // Open file picker on Web
     final ioFiles = kIsWeb
         ? await io.pickFiles(fileSource: FileSource.fileSystem)
+        // ignore: use_build_context_synchronously
         : await showMultipleFilesFilePickerModal(context);
 
     final uploadFiles = ioFiles

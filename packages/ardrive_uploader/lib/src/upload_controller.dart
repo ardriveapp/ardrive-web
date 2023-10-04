@@ -234,22 +234,8 @@ class _UploadController implements UploadController {
   @override
   final Map<String, UploadTask> tasks = {};
 
-  // CALCULATE BASED ON TOTAL SIZE NOT ONLY ON THE NUMBER OF TASKS
+  // TODO: CALCULATE BASED ON TOTAL SIZE NOT ONLY ON THE NUMBER OF TASKS
   double calculateTotalProgress(List<UploadTask> tasks) {
-    // double totalProgress = 0.0;
-
-    // for (var task in tasks) {
-    //   if (task.dataItem == null) {
-    //     totalProgress += 0;
-    //     continue;
-    //   }
-
-    //   if (task.isProgressAvailable) {
-    //     totalProgress += (task.progress * task.dataItem!.dataItemSize);
-    //   }
-    // }
-
-    // return (totalSize(tasks) == 0) ? 0.0 : totalProgress / totalSize(tasks);
     return tasks
             .map((e) => e.progress)
             .reduce((value, element) => value + element) /
@@ -310,5 +296,111 @@ class _UploadController implements UploadController {
     updateProgress(task: task);
 
     _streamedUpload.send(task, wallet, this);
+  }
+}
+
+enum UploadStatus {
+  /// The upload is not started yet
+  notStarted,
+
+  /// The upload is in progress
+  inProgress,
+
+  /// The upload is paused
+  paused,
+
+  bundling,
+
+  preparationDone,
+
+  encryting,
+
+  /// The upload is complete
+  complete,
+
+  /// The upload has failed
+  failed,
+}
+
+class UploadProgress {
+  final double progress;
+  final int totalSize;
+  final int totalUploaded;
+  final List<UploadTask> task;
+
+  DateTime? startTime;
+
+  UploadProgress({
+    required this.progress,
+    required this.totalSize,
+    required this.task,
+    required this.totalUploaded,
+    this.startTime,
+  });
+
+  UploadProgress copyWith({
+    double? progress,
+    int? totalSize,
+    List<UploadTask>? task,
+    int? totalUploaded,
+    DateTime? startTime,
+  }) {
+    return UploadProgress(
+      startTime: startTime ?? this.startTime,
+      progress: progress ?? this.progress,
+      totalSize: totalSize ?? this.totalSize,
+      task: task ?? this.task,
+      totalUploaded: totalUploaded ?? this.totalUploaded,
+    );
+  }
+
+  int getNumberOfItems() {
+    if (task.isEmpty) {
+      return 0;
+    }
+
+    return task.map((e) {
+      if (e.content == null) {
+        return 0;
+      }
+
+      return e.content!.length;
+    }).reduce((value, element) => value + element);
+  }
+
+  int tasksContentLength() {
+    int totalUploaded = 0;
+
+    for (var t in task) {
+      if (t.content != null) {
+        totalUploaded += t.content!.length;
+      }
+    }
+
+    return totalUploaded;
+  }
+
+  int tasksContentCompleted() {
+    int totalUploaded = 0;
+
+    for (var t in task) {
+      if (t.content != null) {
+        if (t.status == UploadStatus.complete) {
+          totalUploaded += t.content!.length;
+        }
+      }
+    }
+
+    return totalUploaded;
+  }
+
+  double calculateUploadSpeed() {
+    if (startTime == null) return 0.0;
+
+    final elapsedTime = DateTime.now().difference(startTime!).inSeconds;
+
+    if (elapsedTime == 0) return 0.0;
+
+    return (totalUploaded / elapsedTime).toDouble(); // Assuming speed in MB/s
   }
 }

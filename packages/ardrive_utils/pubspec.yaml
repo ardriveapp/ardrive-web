@@ -9,16 +9,16 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
-  device_info_plus: ^8.0.0
+  device_info_plus: ^9.0.3
   flutter:
     sdk: flutter
-  package_info_plus: ^3.1.2
+  package_info_plus: ^4.1.0
   platform: ^3.1.0
   universal_html: ^2.2.4
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-4318
+      ref: PE-3697
   js: ^0.6.7
 
 dev_dependencies:

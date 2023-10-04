@@ -17,6 +17,7 @@ class AppConfig {
   final int autoSyncIntervalInSeconds;
   final bool enableSyncFromSnapshot;
   final bool enableSeedPhraseLogin;
+  final bool useNewUploader;
   final String stripePublishableKey;
 
   AppConfig({
@@ -34,6 +35,7 @@ class AppConfig {
     this.enableSyncFromSnapshot = true,
     this.enableSeedPhraseLogin = true,
     required this.stripePublishableKey,
+    this.useNewUploader = false,
   });
 
   AppConfig copyWith({
@@ -51,8 +53,10 @@ class AppConfig {
     bool? enableSyncFromSnapshot,
     bool? enableSeedPhraseLogin,
     String? stripePublishableKey,
+    bool? useNewUploader,
   }) {
     return AppConfig(
+      useNewUploader: useNewUploader ?? this.useNewUploader,
       defaultArweaveGatewayUrl:
           defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
       useTurboUpload: useTurboUpload ?? this.useTurboUpload,

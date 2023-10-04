@@ -69,8 +69,6 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
 
   String? get dataTxId => _dataTxId;
 
-  // without dataTxId
-  // TODO: validate dataTxId
   @override
   Map<String, dynamic> toJson() => {
         'name': name,

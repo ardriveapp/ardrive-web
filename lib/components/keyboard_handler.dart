@@ -4,6 +4,7 @@ import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+// ignore: depend_on_referenced_packages
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
