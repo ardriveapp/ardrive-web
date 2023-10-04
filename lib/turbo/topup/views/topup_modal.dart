@@ -2,7 +2,7 @@ import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/top_up_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
-import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
@@ -20,9 +20,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
-void showTurboModal(BuildContext context, {Function()? onSuccess}) {
+void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
   final activityTracker = context.read<ActivityTracker>();
   final sessionManager = TurboSessionManager();
+  final appConfig = context.read<ConfigService>().config;
 
   final costCalculator = TurboCostCalculator(
     paymentService: context.read<PaymentService>(),
@@ -56,7 +57,7 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
     supportedCountriesRetriever: turboSupportedCountriesRetriever,
   );
 
-  initializeStripe(context.read<ConfigService>().config);
+  initializeStripe(appConfig);
 
   activityTracker.setToppingUp(true);
 
@@ -76,15 +77,16 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
           )..add(LoadInitialData()),
         ),
       ],
-      child: TurboModal(parentContext: modalContext),
+      child: TurboModal(
+        parentContext: modalContext,
+        appConfig: appConfig,
+      ),
     ),
     barrierDismissible: false,
     barrierColor:
         ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
   ).then((value) {
     logger.d('Turbo modal closed with value: ${turbo.paymentStatus}');
-
-    activityTracker.setToppingUp(false);
 
     if (turbo.paymentStatus == PaymentStatus.success) {
       logger.d('Turbo payment success');
@@ -93,13 +95,20 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
     }
 
     turbo.dispose();
+  }).whenComplete(() {
+    activityTracker.setToppingUp(false);
   });
 }
 
 class TurboModal extends StatefulWidget {
-  const TurboModal({super.key, required this.parentContext});
-
+  final AppConfig _appConfig;
   final BuildContext parentContext;
+
+  const TurboModal({
+    super.key,
+    required this.parentContext,
+    required AppConfig appConfig,
+  }) : _appConfig = appConfig;
 
   @override
   State<TurboModal> createState() => _TurboModalState();
@@ -206,9 +215,12 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                   state.priceEstimate,
                 )..add(PaymentReviewLoadPaymentModel()),
                 child: Container(
-                    color:
-                        ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-                    child: const TurboReviewView()),
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                  child: TurboReviewView(
+                    dryRun: widget._appConfig.topUpDryRun,
+                  ),
+                ),
               ),
             ],
           );
@@ -282,7 +294,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             Navigator.of(modalContext).pop();
             Navigator.of(context).pop();
 
-            showTurboModal(parentContext);
+            showTurboTopupModal(parentContext);
           },
         ),
       ),

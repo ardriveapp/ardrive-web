@@ -17,7 +17,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class TurboReviewView extends StatefulWidget {
-  const TurboReviewView({super.key});
+  final bool dryRun;
+  const TurboReviewView({
+    super.key,
+    required this.dryRun,
+  });
 
   @override
   State<TurboReviewView> createState() => _TurboReviewViewState();
@@ -582,6 +586,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
             BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
               builder: (context, state) {
                 return ScreenTypeLayout.builder(
+                  // FIXME: the desktop section is never gonna be rendered
+                  /// because its wrapped in another layout builder for mobile.
                   desktop: (context) => ArDriveButton(
                     maxHeight: 44,
                     maxWidth: 143,
@@ -611,6 +617,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             PaymentReviewFinishPayment(
                               email: _emailController.text,
                               userAcceptedToReceiveEmails: _emailChecked,
+                              dryRun: widget.dryRun,
                             ),
                           );
                     },
@@ -644,6 +651,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             PaymentReviewFinishPayment(
                               email: _emailController.text,
                               userAcceptedToReceiveEmails: _emailChecked,
+                              dryRun: widget.dryRun,
                             ),
                           );
                     },
@@ -730,6 +738,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             PaymentReviewFinishPayment(
                               email: _emailController.text,
                               userAcceptedToReceiveEmails: _emailChecked,
+                              dryRun: widget.dryRun,
                             ),
                           );
                     },
@@ -763,6 +772,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             PaymentReviewFinishPayment(
                               email: _emailController.text,
                               userAcceptedToReceiveEmails: _emailChecked,
+                              dryRun: widget.dryRun,
                             ),
                           );
                     },
