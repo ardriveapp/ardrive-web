@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:ardrive_crypto/src/constants.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart' hide Cipher;
+import 'package:flutter/foundation.dart';
 
 import 'crypto.dart';
 
@@ -34,9 +34,6 @@ Future<Uint8List> decryptTransactionData(
 
   final cipherIv = utils.decodeBase64ToBytes(cipherIvString);
 
-  print('cipher: $cipher');
-  print('cipherIv: $cipherIv');
-
   final SecretBox secretBox;
   switch (cipher) {
     case Cipher.aes256gcm:
@@ -56,7 +53,7 @@ Future<Uint8List> decryptTransactionData(
         .decrypt(secretBox, secretKey: key)
         .then((res) => Uint8List.fromList(res));
   } on SecretBoxAuthenticationError catch (e, s) {
-    print('Failed to decrypt transaction data with $e and $s');
+    debugPrint('Failed to decrypt transaction data with $e and $s');
     throw TransactionDecryptionException();
   }
 }

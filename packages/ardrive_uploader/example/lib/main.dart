@@ -121,6 +121,7 @@ class _UploadFormState extends State<UploadForm> {
     controller = await uploader.upload(
       file: file!,
       driveKey: driveKey,
+      type: UploadType.turbo,
       args: ARFSUploadMetadataArgs(
         driveId: driveIdController.text,
         parentFolderId: parentFolderIdController.text,
