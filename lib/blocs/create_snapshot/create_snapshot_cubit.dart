@@ -466,7 +466,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _turboBalance = turboBalance;
     _hasNoTurboBalance = turboBalance == BigInt.zero;
     _turboCredits = convertCreditsToLiteralString(turboBalance);
-    _arBalance = convertCreditsToLiteralString(auth.currentUser!.walletBalance);
+    _arBalance = convertCreditsToLiteralString(auth.currentUser.walletBalance);
   }
 
   void _computeIsTurboEnabled() async {
