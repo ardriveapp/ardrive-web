@@ -80,10 +80,10 @@ packages:
     description:
       path: "."
       ref: PE-4694
-      resolved-ref: "031eeac4673b636bbd44f2a91cc03bdcedf9762d"
+      resolved-ref: a775a227ac94b21c1ef05921a43abfa1ebddf3a5
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.10.0"
+    version: "1.11.0"
   args:
     dependency: transitive
     description:
@@ -1544,7 +1544,7 @@ packages:
     source: hosted
     version: "4.2.4"
   provider:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: provider
       sha256: cdbe7530b12ecd9eb455bdaa2fcb8d4dad22e80b8afb4798b41479d5ce26847f

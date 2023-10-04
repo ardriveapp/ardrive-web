@@ -5,7 +5,6 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/pst/pst.dart';
@@ -26,31 +25,29 @@ Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
 ) async {
-  return showModalDialog(
-      context,
-      () => showAnimatedDialog(
-            context,
-            barrierDismissible: false,
-            content: BlocProvider(
-              create: (_) => CreateSnapshotCubit(
-                arweave: context.read<ArweaveService>(),
-                driveDao: context.read<DriveDao>(),
-                profileCubit: context.read<ProfileCubit>(),
-                pst: context.read<PstService>(),
-                tabVisibility: TabVisibilitySingleton(),
-                auth: context.read<ArDriveAuth>(),
-                paymentService: context.read<PaymentService>(),
-                turboBalanceRetriever: TurboBalanceRetriever(
-                  paymentService: context.read<PaymentService>(),
-                ),
-                configService: context.read<ConfigService>(),
-                turboService: context.read<TurboUploadService>(),
-              ),
-              child: CreateSnapshotDialog(
-                drive: drive,
-              ),
-            ),
-          ));
+  return showAnimatedDialog(
+    context,
+    barrierDismissible: false,
+    content: BlocProvider(
+      create: (_) => CreateSnapshotCubit(
+        arweave: context.read<ArweaveService>(),
+        driveDao: context.read<DriveDao>(),
+        profileCubit: context.read<ProfileCubit>(),
+        pst: context.read<PstService>(),
+        tabVisibility: TabVisibilitySingleton(),
+        auth: context.read<ArDriveAuth>(),
+        paymentService: context.read<PaymentService>(),
+        turboBalanceRetriever: TurboBalanceRetriever(
+          paymentService: context.read<PaymentService>(),
+        ),
+        configService: context.read<ConfigService>(),
+        turboService: context.read<TurboUploadService>(),
+      ),
+      child: CreateSnapshotDialog(
+        drive: drive,
+      ),
+    ),
+  );
 }
 
 class CreateSnapshotDialog extends StatelessWidget {

@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/theme_switcher.dart';
 import 'package:ardrive/misc/resources.dart';
@@ -10,12 +11,12 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -463,7 +464,7 @@ class _AppSideBarState extends State<AppSideBar> {
         return HoverWidget(
           child: GestureDetector(
             onTap: () {
-              showAnimatedDialog(
+              showArDriveDialog(
                 context,
                 content: ArDriveStandardModal(
                   hasCloseButton: true,
@@ -714,35 +715,6 @@ class HelpButton extends StatelessWidget {
       icon: ArDriveIcons.question(),
       onPressed: () {
         openUrl(url: Resources.helpLink);
-      },
-    );
-  }
-}
-
-class AppVersionWidget extends StatelessWidget {
-  const AppVersionWidget({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: PackageInfo.fromPlatform(),
-      builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
-        final info = snapshot.data;
-        if (info == null) {
-          return const SizedBox(
-            height: 32,
-            width: 32,
-          );
-        }
-        final literalVersion =
-            kIsWeb ? info.version : '${info.version}+${info.buildNumber}';
-        return Text(
-          appLocalizationsOf(context).appVersion(literalVersion),
-          style: ArDriveTypography.body.buttonNormalRegular(
-            color: Colors.grey,
-          ),
-          textAlign: TextAlign.center,
-        );
       },
     );
   }

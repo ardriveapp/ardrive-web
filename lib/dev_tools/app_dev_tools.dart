@@ -591,6 +591,7 @@ class DraggableWindow extends HookWidget {
             windowPos.value += details.delta;
           },
           child: ArDriveCard(
+            elevation: 5,
             contentPadding: EdgeInsets.zero,
             boxShadow: BoxShadowCard.shadow100,
             width: windowSize.value.width,
@@ -600,7 +601,7 @@ class DraggableWindow extends HookWidget {
                 Padding(
                     padding: const EdgeInsets.only(top: 32.0), child: child),
                 Container(
-                  height: 32,
+                  height: 64,
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgDefault,
                   child: Row(
@@ -623,7 +624,7 @@ class DraggableWindow extends HookWidget {
                             child: Text(
                               value,
                               key: ValueKey<String>(value),
-                              style: ArDriveTypography.body.bodyRegular(
+                              style: ArDriveTypography.body.bodyBold(
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colors
