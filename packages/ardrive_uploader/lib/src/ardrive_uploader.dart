@@ -95,7 +95,10 @@ class _ArDriveUploader implements ArDriveUploader {
     );
 
     await _dataBundler.createBundleDataTransaction(
-        file: file, metadata: metadata, wallet: wallet);
+      file: file,
+      metadata: metadata,
+      wallet: wallet,
+    );
 
     return UploadController(
       StreamController<UploadProgress>(),
@@ -279,6 +282,7 @@ class _ArDriveUploader implements ArDriveUploader {
           file: file,
           metadata: metadata,
           wallet: wallet,
+          driveKey: driveKey,
         );
 
         // adds the item for the upload
