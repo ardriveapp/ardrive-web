@@ -255,7 +255,16 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
 
     final appInfo = _appInfoServices.appInfo;
 
-    tags.add(Tag(EntityTag.contentType, 'application/json'));
+    String contentType;
+
+    if (arguments.isPrivate!) {
+      contentType = 'application/octet-stream';
+    } else {
+      contentType = 'application/json';
+    }
+
+    tags.add(Tag(EntityTag.contentType, contentType));
+
     tags.add(Tag(EntityTag.arFs, appInfo.arfsVersion));
 
     switch (arguments.entity) {
