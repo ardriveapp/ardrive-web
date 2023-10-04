@@ -242,7 +242,7 @@ class _UploadFormState extends State<UploadForm> {
     const password = '123';
 
     final fileIdBytes =
-        Uint8List.fromList(Uuid.parse('ebdbce5b-6ce2-476d-ac26-51cdbd17f9d2'));
+        Uint8List.fromList(Uuid.parse('2a038da9-5ebd-4892-898f-8d0a456d25c3'));
 
     final driveKey = await kdf.deriveKey(
       secretKey: SecretKey(walletSignature),
@@ -258,10 +258,7 @@ class _UploadFormState extends State<UploadForm> {
 
     final keyData = Uint8List.fromList(await fileKey.extractBytes());
 
-    // final impl =
-    // await cipherStreamEncryptImpl(Cipher.aes256ctr, keyData: keyData);
-
-    final cipherIv = decodeBase64ToBytes('5_JZjWhjVK2zHsx9');
+    final cipherIv = decodeBase64ToBytes('ypXMDf2ls3Nw_A2n');
 
     final decrypted = await decryptTransactionDataStream(
       Cipher.aes256ctr,
@@ -273,10 +270,14 @@ class _UploadFormState extends State<UploadForm> {
 
     final Uint8List combinedData = await streamToUint8List(decrypted);
 
-    ArDriveIO().saveFile(await IOFile.fromData(combinedData,
-        name: 'decryptedfile.png',
+    ArDriveIO().saveFile(
+      await IOFile.fromData(
+        combinedData,
+        name: 'decryptedfile.json',
         lastModifiedDate: DateTime.now(),
-        contentType: 'image/png'));
+        contentType: 'application/json',
+      ),
+    );
   }
 }
 

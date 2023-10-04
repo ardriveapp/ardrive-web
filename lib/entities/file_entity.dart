@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -81,7 +82,7 @@ class FileEntity extends EntityWithCustomMetadata {
   }) async {
     try {
       Map<String, dynamic>? entityJson;
-    if (driveKey == null && fileKey == null) {
+      if (driveKey == null && fileKey == null) {
         entityJson = json.decode(utf8.decode(data));
       } else {
         fileKey ??= await crypto.deriveFileKey(
@@ -92,6 +93,8 @@ class FileEntity extends EntityWithCustomMetadata {
           data,
           fileKey,
         );
+
+        logger.d('entityJson: $entityJson');
       }
 
       final commitTime = transaction.getCommitTime();
@@ -117,7 +120,8 @@ class FileEntity extends EntityWithCustomMetadata {
       );
 
       return file;
-    } catch (_) {
+    } catch (e, s) {
+      logger.e('Failed to parse transaction: ${transaction.id}', e, s);
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }

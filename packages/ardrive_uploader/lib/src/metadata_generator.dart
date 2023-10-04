@@ -77,6 +77,7 @@ class ARFSUploadMetadataGenerator
           entityId: id,
           entity: EntityType.file,
           contentType: contentType,
+          isPrivate: arguments.isPrivate,
         ),
       );
 
@@ -105,6 +106,7 @@ class ARFSUploadMetadataGenerator
           entityId: id,
           entity: EntityType.folder,
           contentType: contentType,
+          isPrivate: arguments.isPrivate,
         ),
       );
 
@@ -367,6 +369,10 @@ class ARFSTagsValidator {
   static void validate(ARFSTagsArgs args) {
     if (args.driveId == null) {
       throw ArgumentError('driveId must not be null');
+    }
+
+    if (args.isPrivate == null) {
+      throw ArgumentError('isPrivate must not be null');
     }
 
     switch (args.entity) {

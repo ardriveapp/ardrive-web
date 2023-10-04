@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -87,17 +88,45 @@ class ArDriveCrypto {
     Uint8List data,
     SecretKey key,
   ) async {
-    final cipher = transaction.getTag(EntityTag.cipher);
-    final cipherIvTag = transaction.getTag(EntityTag.cipherIv);
+    try {
+      final cipher = transaction.getTag(EntityTag.cipher);
+      final cipherIvTag = transaction.getTag(EntityTag.cipherIv);
 
-    if (cipher == null || cipherIvTag == null) {
+      logger.d('starting decryption');
+
+      if (cipher == null || cipherIvTag == null) {
+        throw TransactionDecryptionException();
+      }
+
+      logger.d('cipher: $cipher');
+
+
+      final keyData = Uint8List.fromList(await key.extractBytes());
+
+      final decryptedData = await decryptTransactionDataStream(
+        cipher,
+        cipherIv,
+        Stream.fromIterable([data]),
+        keyData,
+        data.length,
+      );
+
+      final bytes = await streamToUint8List(decryptedData);
+      logger.d('decryptedData: $bytes');
+
+      final jsonStr = utf8.decode(bytes);
+
+      logger.d('json str: $jsonStr');
+
+      final jsonMap = json.decode(jsonStr);
+
+      logger.d('json map: $jsonMap');
+
+      return jsonMap;
+    } catch (e) {
+      logger.e('Failed to decrypt entity json', e);
       throw TransactionDecryptionException();
     }
-
-    final decryptedData =
-        await decryptTransactionData(cipher, cipherIvTag, data, key);
-
-    return json.decode(utf8.decode(decryptedData));
   }
 
   /// Decrypts the provided transaction details and data into JSON using the provided key.
@@ -178,4 +207,20 @@ class ProfileKeyDerivationResult {
   final List<int> salt;
 
   ProfileKeyDerivationResult(this.key, this.salt);
+}
+
+Future<Uint8List> streamToUint8List(Stream<Uint8List> stream) async {
+  List<Uint8List> collectedData = await stream.toList();
+  int totalLength =
+      collectedData.fold(0, (prev, element) => prev + element.length);
+
+  final result = Uint8List(totalLength);
+  int offset = 0;
+
+  for (var data in collectedData) {
+    result.setRange(offset, offset + data.length, data);
+    offset += data.length;
+  }
+
+  return result;
 }

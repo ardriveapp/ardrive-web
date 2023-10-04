@@ -34,6 +34,9 @@ Future<Uint8List> decryptTransactionData(
 
   final cipherIv = utils.decodeBase64ToBytes(cipherIvString);
 
+  print('cipher: $cipher');
+  print('cipherIv: $cipherIv');
+
   final SecretBox secretBox;
   switch (cipher) {
     case Cipher.aes256gcm:
@@ -52,7 +55,8 @@ Future<Uint8List> decryptTransactionData(
     return impl
         .decrypt(secretBox, secretKey: key)
         .then((res) => Uint8List.fromList(res));
-  } on SecretBoxAuthenticationError catch (_) {
+  } on SecretBoxAuthenticationError catch (e, s) {
+    print('Failed to decrypt transaction data with $e and $s');
     throw TransactionDecryptionException();
   }
 }

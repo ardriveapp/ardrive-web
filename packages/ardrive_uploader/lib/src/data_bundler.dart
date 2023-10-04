@@ -216,13 +216,29 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     if (driveKey != null) {
       // print('DriveKey is not null. Starting metadata encryption...');
 
-      final driveKeyData = Uint8List.fromList(await driveKey.extractBytes());
+      print('DriveKey is not null. Starting metadata encryption...');
 
-      final implMetadata = await cipherStreamEncryptImpl(Cipher.aes256ctr,
-          keyData: driveKeyData);
+      final fileIdBytes = Uint8List.fromList(Uuid.parse(metadata.id));
+      print('File ID bytes generated: ${fileIdBytes.length} bytes');
 
-      final encryptMetadataStreamResult =
-          await implMetadata.encryptStreamGenerator(
+      final kdf = Hkdf(hmac: Hmac(Sha256()), outputLength: keyByteLength);
+      print('KDF initialized');
+
+      final fileKey = await kdf.deriveKey(
+        secretKey: driveKey,
+        info: fileIdBytes,
+        nonce: Uint8List(1),
+      );
+
+      print('File key derived');
+
+      final keyData = Uint8List.fromList(await fileKey.extractBytes());
+      print('Key data extracted');
+
+      final impl =
+          await cipherStreamEncryptImpl(Cipher.aes256ctr, keyData: keyData);
+
+      final encryptMetadataStreamResult = await impl.encryptStreamGenerator(
         () => Stream.fromIterable(metadataBytes),
         metadataBytes.length,
       );
@@ -244,7 +260,7 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     // TODO: remove this when we fix the issue with the method that returns the
     final metadataTask = createDataItemTaskEither(
       wallet: wallet,
-      dataStream: () => Stream.fromIterable(metadataBytes),
+      dataStream: metadataGenerator,
       dataStreamSize: metadataBytes.length,
       tags: metadata.entityMetadataTags
           .map((e) => createTag(e.name, e.value))
@@ -328,13 +344,28 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     if (driveKey != null) {
       print('DriveKey is not null. Starting metadata encryption...');
 
-      final driveKeyData = Uint8List.fromList(await driveKey.extractBytes());
+      final fileIdBytes = Uint8List.fromList(Uuid.parse(metadata.id));
+      print('File ID bytes generated: ${fileIdBytes.length} bytes');
 
-      final implMetadata = await cipherStreamEncryptImpl(Cipher.aes256ctr,
-          keyData: driveKeyData);
+      final kdf = Hkdf(hmac: Hmac(Sha256()), outputLength: keyByteLength);
+      print('KDF initialized');
 
-      final encryptMetadataStreamResult =
-          await implMetadata.encryptStreamGenerator(
+      final fileKey = await kdf.deriveKey(
+        secretKey: driveKey,
+        info: fileIdBytes,
+        nonce: Uint8List(1),
+      );
+
+      print('File key derived');
+
+      final keyData = Uint8List.fromList(await fileKey.extractBytes());
+      print('Key data extracted');
+
+      final impl =
+          await cipherStreamEncryptImpl(Cipher.aes256ctr, keyData: keyData);
+      print('Cipher impl ready');
+
+      final encryptMetadataStreamResult = await impl.encryptStreamGenerator(
         () => Stream.fromIterable(metadataBytes),
         metadataBytes.length,
       );
@@ -520,13 +551,27 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
     if (driveKey != null) {
       print('DriveKey is not null. Starting metadata encryption...');
 
-      final driveKeyData = Uint8List.fromList(await driveKey.extractBytes());
+      final fileIdBytes = Uint8List.fromList(Uuid.parse(metadata.id));
+      print('File ID bytes generated: ${fileIdBytes.length} bytes');
 
-      final implMetadata = await cipherStreamEncryptImpl(Cipher.aes256ctr,
-          keyData: driveKeyData);
+      final kdf = Hkdf(hmac: Hmac(Sha256()), outputLength: keyByteLength);
+      print('KDF initialized');
 
-      final encryptMetadataStreamResult =
-          await implMetadata.encryptStreamGenerator(
+      final fileKey = await kdf.deriveKey(
+        secretKey: driveKey,
+        info: fileIdBytes,
+        nonce: Uint8List(1),
+      );
+
+      print('File key derived');
+
+      final keyData = Uint8List.fromList(await fileKey.extractBytes());
+      print('Key data extracted');
+
+      final impl =
+          await cipherStreamEncryptImpl(Cipher.aes256ctr, keyData: keyData);
+
+      final encryptMetadataStreamResult = await impl.encryptStreamGenerator(
         () => Stream.fromIterable(metadataBytes),
         metadataBytes.length,
       );
@@ -654,8 +699,8 @@ class ARFSDataBundlerStable implements DataBundler<ARFSUploadMetadata> {
 
     if (cipherIv != null) {
       // TODO: REVIEW THIS
-      tags.add(Tag(EntityTag.cipher, encodeBytesToBase64(cipherIv)));
-      tags.add(Tag(EntityTag.cipherIv, Cipher.aes256ctr));
+      tags.add(Tag(EntityTag.cipher, Cipher.aes256ctr));
+      tags.add(Tag(EntityTag.cipherIv, encodeBytesToBase64(cipherIv)));
     }
 
     final dataItemFile = DataItemFile(
