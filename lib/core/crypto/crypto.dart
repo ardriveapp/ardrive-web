@@ -100,6 +100,7 @@ class ArDriveCrypto {
 
       logger.d('cipher: $cipher');
 
+      final cipherIv = utils.decodeBase64ToBytes(cipherIvTag);
 
       final keyData = Uint8List.fromList(await key.extractBytes());
 
