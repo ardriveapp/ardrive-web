@@ -75,8 +75,10 @@ class UploadCubit extends Cubit<UploadState> {
         logger.d('Disabling button');
       }
 
-      emit((state as UploadReady).copyWith(
-          uploadMethod: method, isButtonToUploadEnabled: isButtonEnabled));
+      emit(uploadReady.copyWith(
+        uploadMethod: method,
+        isButtonToUploadEnabled: isButtonEnabled,
+      ));
     }
   }
 

@@ -118,4 +118,22 @@ class SnapshotEntity extends Entity {
 
     return tx;
   }
+
+  @override
+  Future<DataItem> asDataItem(SecretKey? key) async {
+    if (key != null) {
+      throw UnsupportedError('Snapshot entities are not encrypted.');
+    }
+
+    final item = DataItem.withBlobData(data: data!);
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    item.addTag(EntityTag.contentType, ContentType.json);
+    addEntityTagsToTransaction(item);
+    item.addApplicationTags(
+      version: packageInfo.version,
+    );
+
+    return item;
+  }
 }

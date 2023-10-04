@@ -10,10 +10,12 @@ abstract class PaymentReviewEvent extends Equatable {
 class PaymentReviewFinishPayment extends PaymentReviewEvent {
   final String? email;
   final bool userAcceptedToReceiveEmails;
+  final bool dryRun;
 
   const PaymentReviewFinishPayment({
     this.email,
     this.userAcceptedToReceiveEmails = false,
+    this.dryRun = false,
   });
 
   @override
