@@ -432,7 +432,6 @@ class EntityActionsMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveDropdown(
-      width: item is DriveDataItem ? 240 : 160,
       height: isMobile(context) ? 44 : 60,
       anchor: alignment,
       items: _getItems(item, context, withInfo),

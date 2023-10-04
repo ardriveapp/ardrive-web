@@ -8,6 +8,7 @@ import 'package:ardrive/turbo/topup/views/topup_payment_form.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
@@ -65,7 +66,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               .read<TurboTopupFlowBloc>()
               .add(const TurboTopUpShowSuccessView());
         } else if (state is PaymentReviewPaymentError) {
-          showAnimatedDialog(
+          showArDriveDialog(
             context,
             content: ArDriveStandardModal(
               width: 575,
@@ -92,7 +93,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 .withOpacity(0.9),
           );
         } else if (state is PaymentReviewErrorLoadingPaymentModel) {
-          showAnimatedDialog(
+          showArDriveDialog(
             context,
             content: ArDriveStandardModal(
               width: 575,

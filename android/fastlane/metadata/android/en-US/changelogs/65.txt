@@ -1,0 +1,5 @@
+- Add app version number on login page
+- Disables multi-select option when a modal is open
+- Pending files now can be shared
+- Layout improvements to the country dropdown on the Turbo payment form
+- Fixed issue where switching ArConnect wallets redirected users to initial unlock screen.

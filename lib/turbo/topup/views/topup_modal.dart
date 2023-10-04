@@ -14,6 +14,7 @@ import 'package:ardrive/turbo/topup/views/topup_success_view.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -32,7 +33,7 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
   );
 
   final priceEstimator = TurboPriceEstimator(
-    wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+    wallet: context.read<ArDriveAuth>().currentUser.wallet,
     paymentService: context.read<PaymentService>(),
     costCalculator: costCalculator,
   );
@@ -51,7 +52,7 @@ void showTurboModal(BuildContext context, {Function()? onSuccess}) {
     balanceRetriever: balanceRetriever,
     priceEstimator: priceEstimator,
     paymentProvider: turboPaymentProvider,
-    wallet: context.read<ArDriveAuth>().currentUser!.wallet,
+    wallet: context.read<ArDriveAuth>().currentUser.wallet,
     supportedCountriesRetriever: turboSupportedCountriesRetriever,
   );
 
@@ -250,7 +251,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   }
 
   void _showSuccessDialog() {
-    showAnimatedDialog(
+    showArDriveDialog(
       context,
       content: const ArDriveStandardModal(
         width: 575,

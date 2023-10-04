@@ -8,6 +8,7 @@ import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub implementation
     if (dart.library.html) 'package:ardrive/authentication/login/blocs/web_wallet.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -19,6 +20,7 @@ import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -98,10 +100,25 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         child: Row(
           children: [
             Expanded(
-              child: _buildIllustration(
-                  context,
-                  // verify theme light
-                  Resources.images.login.gridImage),
+              child: Stack(
+                children: [
+                  _buildIllustration(
+                    context,
+                    // verify theme light
+                    Resources.images.login.gridImage,
+                  ),
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    child: AppVersionWidget(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
+                  ),
+                ],
+              ),
             ),
             Expanded(
               child: FractionallySizedBox(
@@ -122,7 +139,29 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               horizontal: 16,
               vertical: 8,
             ),
-            child: Center(child: _buildContent(context)),
+            child: Stack(
+              children: [
+                Center(
+                  child: Column(
+                    children: [
+                      _buildContent(context),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  bottom: 16,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width - 32,
+                    child: AppVersionWidget(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -212,7 +251,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           logger.e('Login Failure', state.error);
 
           if (state.error is WalletMismatchException) {
-            showAnimatedDialog(
+            showArDriveDialog(
               context,
               content: ArDriveIconModal(
                 title: appLocalizationsOf(context).loginFailed,
@@ -232,7 +271,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             return;
           }
 
-          showAnimatedDialog(
+          showArDriveDialog(
             context,
             content: ArDriveIconModal(
               title: appLocalizationsOf(context).loginFailed,
@@ -927,7 +966,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     final isValid = _formKey.currentState!.validateSync();
 
     if (!isValid) {
-      showAnimatedDialog(context,
+      showArDriveDialog(context,
           content: ArDriveIconModal(
             icon: ArDriveIcons.triangle(
               size: 88,
@@ -948,7 +987,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
-      showAnimatedDialog(context,
+      showArDriveDialog(context,
           content: ArDriveIconModal(
             icon: ArDriveIcons.triangle(
               size: 88,
@@ -1433,7 +1472,7 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
         bip39.validateMnemonic(_seedPhraseController.text);
 
     if (!isValid) {
-      showAnimatedDialog(context,
+      showArDriveDialog(context,
           content: ArDriveIconModal(
             icon: ArDriveIcons.triangle(
               size: 88,
@@ -2204,7 +2243,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                                           color: colors.themeErrorMuted,
                                         )
                                         .copyWith(fontSize: 14)))
-                          ]),
+                          ]), 
                           shape: RoundedRectangleBorder(
                             side: BorderSide(
                                 color: colors.themeErrorMuted, width: 1),
