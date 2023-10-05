@@ -833,6 +833,10 @@
   "@fileType": {
     "description": "The MIME type of the file"
   },
+  "fileTypeUnsupported": "File type unsupported by browser or operating system",
+  "@fileTypeUnsupported": {
+    "description": "Message shown when unable to load media file due to unsupported file format"
+  },
   "fileWasCreatedWithName": "This file was created with the name {fileName}.",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
