@@ -201,10 +201,6 @@ class SharedFilePage extends StatelessWidget {
               desktop: (context) => Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Flexible(
-                  //   flex: 2,
-                  //   child: shareCard(),
-                  // ),
                   if (state is SharedFileLoadSuccess) ...{
                     Flexible(
                       flex: 1,
@@ -220,20 +216,18 @@ class SharedFilePage extends StatelessWidget {
               mobile: (context) => SingleChildScrollView(
                 primary: true,
                 child: SizedBox(
-                  child: Column(
-                    children: [
-                      shareCard(),
-                      const SizedBox(
-                        height: 16,
-                      ),
-                      if (state is SharedFileLoadSuccess) ...{
-                        SizedBox(
-                          height: 600,
-                          child: activityPanel(state),
-                        )
-                      }
-                    ],
-                  ),
+                  height: state is SharedFileLoadSuccess
+                      ? 2 * (MediaQuery.of(context).size.height - 48)
+                      : (MediaQuery.of(context).size.height - 48),
+                  child: state is SharedFileLoadSuccess
+                      ? Expanded(child: activityPanel(state))
+                      : const Center(
+                          child: SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
                 ),
               ),
             ),
