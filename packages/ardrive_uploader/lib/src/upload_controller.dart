@@ -26,23 +26,25 @@ class TransactionUploadTask extends UploadItem<TransactionResult> {
 
 abstract class _UploadTask<T> {
   abstract final String id;
-  abstract final UploadItem? dataItem;
+  abstract final UploadItem? uploadItem;
   abstract final List<ARFSUploadMetadata>? content;
   abstract double progress;
   abstract bool isProgressAvailable;
   abstract UploadStatus status;
 
   UploadTask copyWith({
-    UploadItem? dataItem,
+    UploadItem? uploadItem,
     double? progress,
     bool? isProgressAvailable,
     UploadStatus? status,
+    String? id,
+    List<ARFSUploadMetadata>? content,
   });
 }
 
 class UploadTask implements _UploadTask<ARFSUploadMetadata> {
   @override
-  final UploadItem? dataItem;
+  final UploadItem? uploadItem;
 
   @override
   final List<ARFSUploadMetadata>? content;
@@ -57,7 +59,7 @@ class UploadTask implements _UploadTask<ARFSUploadMetadata> {
   bool isProgressAvailable = true;
 
   UploadTask({
-    this.dataItem,
+    this.uploadItem,
     this.isProgressAvailable = true,
     this.status = UploadStatus.notStarted,
     this.content,
@@ -69,7 +71,7 @@ class UploadTask implements _UploadTask<ARFSUploadMetadata> {
 
   @override
   UploadTask copyWith({
-    UploadItem? dataItem,
+    UploadItem? uploadItem,
     double? progress,
     bool? isProgressAvailable,
     UploadStatus? status,
@@ -77,7 +79,7 @@ class UploadTask implements _UploadTask<ARFSUploadMetadata> {
     List<ARFSUploadMetadata>? content,
   }) {
     return UploadTask(
-      dataItem: dataItem ?? this.dataItem,
+      uploadItem: uploadItem ?? this.uploadItem,
       content: content ?? this.content,
       id: id ?? this.id,
       isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
@@ -90,6 +92,7 @@ class UploadTask implements _UploadTask<ARFSUploadMetadata> {
 abstract class UploadController {
   abstract final Map<String, UploadTask> tasks;
 
+  /// TODO: implement the sendTasks method
   Future<void> sendTasks();
   Future<void> retryTask(UploadTask task, Wallet wallet);
   Future<void> retryFailedTasks(Wallet wallet);
@@ -126,7 +129,6 @@ class _UploadController implements UploadController {
 
   bool _isCanceled = false;
   bool get isCanceled => _isCanceled;
-
   DateTime? _start;
 
   void init() {
@@ -167,12 +169,15 @@ class _UploadController implements UploadController {
 
   @override
   void cancel() {
+    // TODO: it's uploading closing the progress stream. We need to cancel the upload
     _isCanceled = true;
     _progressStream.close();
   }
 
   @override
-  void onCancel() {}
+  void onCancel() {
+    // TODO: implement onCancel
+  }
 
   @override
   void onDone(Function(List<UploadTask> tasks) callback) {
@@ -208,12 +213,7 @@ class _UploadController implements UploadController {
     return;
   }
 
-  UploadProgress _uploadProgress = UploadProgress(
-    progress: 0,
-    totalSize: 0,
-    task: [],
-    totalUploaded: 0,
-  );
+  UploadProgress _uploadProgress = UploadProgress.notStarted();
 
   @override
   void onError(Function() callback) {
@@ -246,8 +246,8 @@ class _UploadController implements UploadController {
     int totalUploaded = 0;
 
     for (var task in tasks) {
-      if (task.dataItem != null) {
-        totalUploaded += (task.progress * task.dataItem!.size).toInt();
+      if (task.uploadItem != null) {
+        totalUploaded += (task.progress * task.uploadItem!.size).toInt();
       }
     }
 
@@ -258,8 +258,8 @@ class _UploadController implements UploadController {
     int totalSize = 0;
 
     for (var task in tasks) {
-      if (task.dataItem != null) {
-        totalSize += task.dataItem!.size;
+      if (task.uploadItem != null) {
+        totalSize += task.uploadItem!.size;
       }
     }
 
@@ -268,7 +268,7 @@ class _UploadController implements UploadController {
 
   @override
   Future<void> sendTasks() async {
-    // _streamedUpload.send();
+    // TODO: implement sendTasks
   }
 
   @override
@@ -337,6 +337,15 @@ class UploadProgress {
     required this.totalUploaded,
     this.startTime,
   });
+
+  factory UploadProgress.notStarted() {
+    return UploadProgress(
+      progress: 0,
+      totalSize: 0,
+      task: [],
+      totalUploaded: 0,
+    );
+  }
 
   UploadProgress copyWith({
     double? progress,

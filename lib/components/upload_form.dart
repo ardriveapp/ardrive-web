@@ -817,9 +817,9 @@ class _UploadFormState extends State<UploadForm> {
                           break;
                       }
 
-                      if (task.isProgressAvailable && task.dataItem != null) {
+                      if (task.isProgressAvailable && task.uploadItem != null) {
                         progressText =
-                            '${filesize(((task.dataItem!.size) * task.progress).ceil())}/${filesize(task.dataItem!.size)}';
+                            '${filesize(((task.uploadItem!.size) * task.progress).ceil())}/${filesize(task.uploadItem!.size)}';
                       } else {
                         progressText =
                             'Your upload is in progress, but for large files the progress it not available. Please wait...';

@@ -44,7 +44,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     handle = handle.copyWith(status: UploadStatus.inProgress);
     controller.updateProgress(task: handle);
 
-    if (kIsWeb && handle.dataItem!.size > 1024 * 1024 * 500) {
+    if (kIsWeb && handle.uploadItem!.size > 1024 * 1024 * 500) {
       handle.isProgressAvailable = false;
       controller.updateProgress(task: handle);
     }
@@ -58,8 +58,8 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
               'x-address': publicKey,
               'x-signature': signature,
             },
-            dataItem: handle.dataItem!.data,
-            size: handle.dataItem!.size,
+            dataItem: handle.uploadItem!.data,
+            size: handle.uploadItem!.size,
             onSendProgress: (progress) {
               handle.progress = progress;
               controller.updateProgress(task: handle);

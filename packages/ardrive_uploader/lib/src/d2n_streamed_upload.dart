@@ -9,15 +9,15 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     Wallet wallet,
     UploadController controller,
   ) async {
-    if (handle.dataItem is! TransactionUploadTask) {
+    if (handle.uploadItem is! TransactionUploadTask) {
       throw ArgumentError('handle must be of type TransactionUploadTask');
     }
 
     print('D2NStreamedUpload.send');
 
-    final progressStreamTask =
-        await uploadTransaction((handle.dataItem as TransactionUploadTask).data)
-            .run();
+    final progressStreamTask = await uploadTransaction(
+            (handle.uploadItem as TransactionUploadTask).data)
+        .run();
 
     progressStreamTask.match((l) => print(''), (progressStream) async {
       final listen = progressStream.listen(

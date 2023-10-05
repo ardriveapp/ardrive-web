@@ -266,7 +266,7 @@ class _ArDriveUploader implements ArDriveUploader {
     switch (type) {
       case UploadType.d2n:
         uploadTask = uploadTask.copyWith(
-          dataItem: TransactionUploadTask(
+          uploadItem: TransactionUploadTask(
             data: bdi,
             size: bdi.dataSize,
           ),
@@ -274,7 +274,7 @@ class _ArDriveUploader implements ArDriveUploader {
         break;
       case UploadType.turbo:
         uploadTask = uploadTask.copyWith(
-          dataItem: DataItemUploadTask(
+          uploadItem: DataItemUploadTask(
             data: bdi,
             size: bdi.dataItemSize,
           ),
@@ -356,7 +356,7 @@ class _ArDriveUploader implements ArDriveUploader {
       switch (type) {
         case UploadType.turbo:
           folderBDITask = folderBDITask.copyWith(
-            dataItem: DataItemUploadTask(
+            uploadItem: DataItemUploadTask(
               size: bundleForFolders.dataItemResult.dataItemSize,
               data: bundleForFolders.dataItemResult,
             ),
@@ -365,7 +365,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
         case UploadType.d2n:
           folderBDITask = folderBDITask.copyWith(
-            dataItem: TransactionUploadTask(
+            uploadItem: TransactionUploadTask(
               data: bundleForFolders.dataItemResult,
               size: bundleForFolders.dataItemResult.dataSize,
             ),
