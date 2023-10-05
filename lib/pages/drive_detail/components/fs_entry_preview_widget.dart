@@ -112,7 +112,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
           err.toString().contains('MEDIA_ERR_SRC_NOT_SUPPORTED');
       setState(() {
         _errorMessage = formatError
-            ? 'File type unsupported by browser or operating system'
+            ? appLocalizationsOf(context).fileTypeUnsupported
             : appLocalizationsOf(context).couldNotLoadFile;
       });
     });
@@ -136,7 +136,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
               false;
 
           _errorMessage = formatError
-              ? 'File type unsupported by browser or operating system'
+              ? appLocalizationsOf(context).fileTypeUnsupported
               : appLocalizationsOf(context).couldNotLoadFile;
         });
       }
