@@ -9,11 +9,12 @@ Future<void> showArDriveDialog(
   required Widget content,
   Color? barrierColor,
 }) async {
-  context.read<ActivityTracker>().setShowingAnyDialog(true);
+  final activityTracker = context.read<ActivityTracker>();
+  activityTracker.setShowingAnyDialog(true);
   return showAnimatedDialog(
     context,
     content: content,
     barrierColor: barrierColor,
     barrierDismissible: barrierDismissible,
-  ).then((value) => context.read<ActivityTracker>().setShowingAnyDialog(false));
+  ).then((value) => activityTracker.setShowingAnyDialog(false));
 }
