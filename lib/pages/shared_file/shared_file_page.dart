@@ -195,10 +195,10 @@ class SharedFilePage extends StatelessWidget {
             );
           }
 
-          return Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: ScreenTypeLayout.builder(
-              desktop: (context) => Row(
+          return ScreenTypeLayout.builder(
+            desktop: (context) => Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (state is SharedFileLoadSuccess) ...{
@@ -213,20 +213,20 @@ class SharedFilePage extends StatelessWidget {
                   }
                 ],
               ),
-              mobile: (context) => SingleChildScrollView(
-                primary: true,
-                child: SizedBox(
-                  height: (MediaQuery.of(context).size.height - 48),
-                  child: state is SharedFileLoadSuccess
-                      ? Expanded(child: activityPanel(state))
-                      : const Center(
-                          child: SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(),
-                          ),
+            ),
+            mobile: (context) => SingleChildScrollView(
+              primary: true,
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height,
+                child: state is SharedFileLoadSuccess
+                    ? Expanded(child: activityPanel(state))
+                    : const Center(
+                        child: SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(),
                         ),
-                ),
+                      ),
               ),
             ),
           );

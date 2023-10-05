@@ -130,47 +130,47 @@ class _DetailsPanelState extends State<DetailsPanel> {
             Column(
               children: [
                 Expanded(child: _buildPreview(previewState)),
-                SizedBox(
-                  height: mobileView ? 158 : 0,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 40,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: ArDriveButton(
-                                  icon: ArDriveIcons.download(
-                                      color: Colors.white),
-                                  onPressed: () {
-                                    final file = ARFSFactory()
-                                        .getARFSFileFromFileRevision(
-                                      widget.revisions!.last,
-                                    );
-                                    return promptToDownloadSharedFile(
-                                      revision: file,
-                                      context: context,
-                                      fileKey: widget.fileKey,
-                                    );
-                                  },
-                                  text: appLocalizationsOf(context).download,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: ArDriveButton(
-                          style: ArDriveButtonStyle.tertiary,
-                          onPressed: () => openUrl(url: 'https://ardrive.io/'),
-                          text: appLocalizationsOf(context).whatIsArDrive,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
+                // SizedBox(
+                //   height: mobileView ? 158 : 0,
+                //   child: Column(
+                //     children: [
+                //       Expanded(
+                //         child: SizedBox(
+                //           height: 40,
+                //           child: Row(
+                //             children: [
+                //               Expanded(
+                //                 child: ArDriveButton(
+                //                   icon: ArDriveIcons.download(
+                //                       color: Colors.white),
+                //                   onPressed: () {
+                //                     final file = ARFSFactory()
+                //                         .getARFSFileFromFileRevision(
+                //                       widget.revisions!.last,
+                //                     );
+                //                     return promptToDownloadSharedFile(
+                //                       revision: file,
+                //                       context: context,
+                //                       fileKey: widget.fileKey,
+                //                     );
+                //                   },
+                //                   text: appLocalizationsOf(context).download,
+                //                 ),
+                //               ),
+                //             ],
+                //           ),
+                //         ),
+                //       ),
+                //       Expanded(
+                //         child: ArDriveButton(
+                //           style: ArDriveButtonStyle.tertiary,
+                //           onPressed: () => openUrl(url: 'https://ardrive.io/'),
+                //           text: appLocalizationsOf(context).whatIsArDrive,
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                // )
               ],
             )),
       ],
@@ -204,51 +204,35 @@ class _DetailsPanelState extends State<DetailsPanel> {
     ];
 
     return [
-      if (widget.isSharePage)
-        mobileView
-            ? SizedBox(
-                height: 64,
-                child: Column(
-                  children: [
-                    ArDriveImage(
-                      image: AssetImage(
-                        ArDriveTheme.of(context).themeData.name == 'light'
-                            ? Resources.images.brand.blackLogo2
-                            : Resources.images.brand.whiteLogo2,
-                      ),
-                      height: 48,
-                      fit: BoxFit.contain,
-                    ),
-                  ],
-                ),
-              )
-            : Flexible(
-                flex: 2,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: ArDriveCard(
-                        borderRadius:
-                            AppPlatform.isMobile || AppPlatform.isMobileWeb()
-                                ? 0
-                                : null,
-                        backgroundColor: ArDriveTheme.of(context)
-                            .themeData
-                            .tableTheme
-                            .backgroundColor,
-                        contentPadding: widget.isSharePage
-                            ? const EdgeInsets.only()
-                            : const EdgeInsets.all(24),
-                        content: _buildPreview(previewState),
-                      ),
-                    ),
-                  ],
+      if (widget.isSharePage && !mobileView) ...[
+        Flexible(
+          flex: 2,
+          child: Column(
+            children: [
+              Expanded(
+                child: ArDriveCard(
+                  borderRadius:
+                      AppPlatform.isMobile || AppPlatform.isMobileWeb()
+                          ? 0
+                          : null,
+                  backgroundColor: ArDriveTheme.of(context)
+                      .themeData
+                      .tableTheme
+                      .backgroundColor,
+                  contentPadding: widget.isSharePage
+                      ? const EdgeInsets.only()
+                      : const EdgeInsets.all(24),
+                  content: _buildPreview(previewState),
                 ),
               ),
-      const SizedBox(
-        height: 16,
-        width: 16,
-      ),
+            ],
+          ),
+        ),
+        const SizedBox(
+          height: 16,
+          width: 16,
+        ),
+      ],
       Flexible(
         flex: 1,
         child: ArDriveCard(
@@ -272,6 +256,23 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     ],
                   ),
                   mobile: (context) => const SizedBox.shrink(),
+                ),
+              if (mobileView && widget.isSharePage)
+                SizedBox(
+                  height: 64,
+                  child: Column(
+                    children: [
+                      ArDriveImage(
+                        image: AssetImage(
+                          ArDriveTheme.of(context).themeData.name == 'light'
+                              ? Resources.images.brand.blackLogo2
+                              : Resources.images.brand.whiteLogo2,
+                        ),
+                        height: 48,
+                        fit: BoxFit.contain,
+                      ),
+                    ],
+                  ),
                 ),
               if (previewState is FsEntryPreviewSuccess &&
                   !(widget.isSharePage && mobileView))
@@ -335,44 +336,42 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     ),
                     if (widget.isSharePage)
                       SizedBox(
-                        height: mobileView ? 0 : 138,
+                        height: mobileView ? 138 : 138,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            if (!mobileView) ...[
-                              ArDriveButton(
-                                style: ArDriveButtonStyle.tertiary,
-                                onPressed: () =>
-                                    openUrl(url: 'https://ardrive.io/'),
-                                text: appLocalizationsOf(context).whatIsArDrive,
+                            SizedBox(
+                              height: 40,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: ArDriveButton(
+                                      icon: ArDriveIcons.download(
+                                          color: Colors.white),
+                                      onPressed: () {
+                                        final file = ARFSFactory()
+                                            .getARFSFileFromFileRevision(
+                                          widget.revisions!.last,
+                                        );
+                                        return promptToDownloadSharedFile(
+                                          revision: file,
+                                          context: context,
+                                          fileKey: widget.fileKey,
+                                        );
+                                      },
+                                      text:
+                                          appLocalizationsOf(context).download,
+                                    ),
+                                  )
+                                ],
                               ),
-                              SizedBox(
-                                height: 40,
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: ArDriveButton(
-                                        icon: ArDriveIcons.download(
-                                            color: Colors.white),
-                                        onPressed: () {
-                                          final file = ARFSFactory()
-                                              .getARFSFileFromFileRevision(
-                                            widget.revisions!.last,
-                                          );
-                                          return promptToDownloadSharedFile(
-                                            revision: file,
-                                            context: context,
-                                            fileKey: widget.fileKey,
-                                          );
-                                        },
-                                        text: appLocalizationsOf(context)
-                                            .download,
-                                      ),
-                                    )
-                                  ],
-                                ),
-                              ),
-                            ],
+                            ),
+                            ArDriveButton(
+                              style: ArDriveButtonStyle.tertiary,
+                              onPressed: () =>
+                                  openUrl(url: 'https://ardrive.io/'),
+                              text: appLocalizationsOf(context).whatIsArDrive,
+                            ),
                           ],
                         ),
                       ),
