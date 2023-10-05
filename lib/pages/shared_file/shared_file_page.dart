@@ -216,9 +216,7 @@ class SharedFilePage extends StatelessWidget {
               mobile: (context) => SingleChildScrollView(
                 primary: true,
                 child: SizedBox(
-                  height: state is SharedFileLoadSuccess
-                      ? 2 * (MediaQuery.of(context).size.height - 48)
-                      : (MediaQuery.of(context).size.height - 48),
+                  height: (MediaQuery.of(context).size.height - 48),
                   child: state is SharedFileLoadSuccess
                       ? Expanded(child: activityPanel(state))
                       : const Center(
