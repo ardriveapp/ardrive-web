@@ -1,5 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 
 final fakePrivateTags = [
@@ -28,7 +28,7 @@ List<Tag> fakeApplicationTags({
 
 List<Tag> createFakeEntityTags(FileEntity entity) => <Tag>[
       Tag(EntityTag.arFs, '0.12'),
-      Tag(EntityTag.entityType, EntityType.file),
+      Tag(EntityTag.entityType, EntityTypeTag.file),
       Tag(EntityTag.driveId, entity.driveId!),
       Tag(EntityTag.parentFolderId, entity.parentFolderId!),
       Tag(EntityTag.fileId, entity.id!),

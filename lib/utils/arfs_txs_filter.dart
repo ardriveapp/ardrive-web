@@ -1,4 +1,4 @@
-import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 
 final supportedArFSVersions = ['0.10', '0.11', '0.12', '0.13'];

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -54,12 +55,12 @@ class DriveEntity extends EntityWithCustomMetadata {
   ]) async {
     try {
       final drivePrivacy =
-          transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public;
+          transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacyTag.public;
 
       Map<String, dynamic>? entityJson;
-      if (drivePrivacy == DrivePrivacy.public) {
+      if (drivePrivacy == DrivePrivacyTag.public) {
         entityJson = json.decode(utf8.decode(data));
-      } else if (drivePrivacy == DrivePrivacy.private) {
+      } else if (drivePrivacy == DrivePrivacyTag.private) {
         entityJson =
             await crypto.decryptEntityJson(transaction, data, driveKey!);
       }
@@ -95,11 +96,11 @@ class DriveEntity extends EntityWithCustomMetadata {
 
     tx
       ..addArFsTag()
-      ..addTag(EntityTag.entityType, EntityType.drive)
+      ..addTag(EntityTag.entityType, EntityTypeTag.drive)
       ..addTag(EntityTag.driveId, id!)
       ..addTag(EntityTag.drivePrivacy, privacy!);
 
-    if (privacy == DrivePrivacy.private) {
+    if (privacy == DrivePrivacyTag.private) {
       tx.addTag(EntityTag.driveAuthMode, authMode!);
     }
   }

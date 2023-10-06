@@ -207,6 +207,23 @@ class UploadInProgress extends UploadState {
   List<Object?> get props => [uploadPlan, _equatableBust];
 }
 
+class UploadInProgressUsingNewUploader extends UploadState {
+  final UploadProgress progress;
+  final UploadController controller;
+  final double totalProgress;
+  final Key? equatableBust;
+
+  UploadInProgressUsingNewUploader({
+    required this.progress,
+    required this.totalProgress,
+    required this.controller,
+    this.equatableBust,
+  });
+
+  @override
+  List<Object?> get props => [progress, totalProgress, equatableBust];
+}
+
 class UploadFailure extends UploadState {
   final UploadErrors error;
 
