@@ -696,6 +696,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                   if (snapshot.hasData) {
                     return TruncatedAddress(
                       walletAddress: snapshot.data!,
+                      fontSize: 18,
                     );
                   } else {
                     return const SizedBox.shrink();
