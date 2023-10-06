@@ -42,145 +42,6 @@ class SharedFilePage extends StatelessWidget {
           }
         },
         builder: (context, state) {
-          Widget shareCard() {
-            return ArDriveCard(
-              backgroundColor:
-                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-              elevation: 2,
-              content: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: 400,
-                      minWidth: kMediumDialogWidth,
-                      minHeight: 256,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        ScreenTypeLayout.builder(
-                          desktop: (context) => Row(
-                            children: [
-                              ArDriveImage(
-                                image: AssetImage(
-                                  ArDriveTheme.of(context).themeData.name ==
-                                          'light'
-                                      ? Resources.images.brand.blackLogo2
-                                      : Resources.images.brand.whiteLogo2,
-                                ),
-                                height: 80,
-                                fit: BoxFit.contain,
-                              ),
-                            ],
-                          ),
-                          mobile: (context) => Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ArDriveImage(
-                                image: AssetImage(
-                                  ArDriveTheme.of(context).themeData.name ==
-                                          'light'
-                                      ? Resources.images.brand.blackLogo2
-                                      : Resources.images.brand.whiteLogo2,
-                                ),
-                                height: 55,
-                                fit: BoxFit.contain,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        if (state is SharedFileIsPrivate) ...[
-                          Text(appLocalizationsOf(context)
-                              .sharedFileIsEncrypted),
-                          const SizedBox(height: 16),
-                          ArDriveTextField(
-                            controller: _fileKeyController,
-                            autofocus: true,
-                            obscureText: true,
-                            hintText: appLocalizationsOf(context).enterFileKey,
-                            onFieldSubmitted: (_) => context
-                                .read<SharedFileCubit>()
-                                .submit(_fileKeyController.text),
-                          ),
-                          const SizedBox(height: 16),
-                          ArDriveButton(
-                            onPressed: () => context
-                                .read<SharedFileCubit>()
-                                .submit(_fileKeyController.text),
-                            text: appLocalizationsOf(context).unlock,
-                          ),
-                        ],
-                        if (state is SharedFileLoadInProgress)
-                          const CircularProgressIndicator()
-                        else if (state is SharedFileLoadSuccess) ...{
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: DriveExplorerItemTileLeading(
-                              item: DriveDataTableItemMapper.fromRevision(
-                                state.fileRevisions.first,
-                                false, // in this page we don't have the information about the current drive, so it's impossible to know if the file is from the user logged in
-                              ),
-                            ),
-                            title: Text(
-                              state.fileRevisions.first.name,
-                              style: ArDriveTypography.body.buttonLargeBold(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgDefault,
-                              ),
-                            ),
-                            subtitle: Text(
-                              filesize(state.fileRevisions.first.size),
-                              style: ArDriveTypography.body.buttonNormalRegular(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeAccentDisabled,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          ArDriveButton(
-                            icon: ArDriveIcons.download(color: Colors.white),
-                            onPressed: () {
-                              final file =
-                                  ARFSFactory().getARFSFileFromFileRevision(
-                                state.fileRevisions.first,
-                              );
-                              return promptToDownloadSharedFile(
-                                revision: file,
-                                context: context,
-                                fileKey: state.fileKey,
-                              );
-                            },
-                            text: appLocalizationsOf(context).download,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildReturnToAppLink(context),
-                        } else if (state is SharedFileNotFound) ...{
-                          const Icon(Icons.error_outline, size: 36),
-                          const SizedBox(height: 16),
-                          Text(
-                            appLocalizationsOf(context)
-                                .specifiedFileDoesNotExist,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 24),
-                          _buildReturnToAppLink(context),
-                        }
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }
-
           Widget activityPanel(SharedFileLoadSuccess state) {
             return DetailsPanel(
               item: DriveDataTableItemMapper.fromRevision(
@@ -210,9 +71,7 @@ class SharedFilePage extends StatelessWidget {
                         child: activityPanel(state),
                       )
                     } else ...{
-                      const CircularProgressIndicator(
-                        strokeWidth: 8,
-                      ),
+                      _buildShareCard(context, state)
                     }
                   ],
                 ),
@@ -224,17 +83,145 @@ class SharedFilePage extends StatelessWidget {
                 height: MediaQuery.of(context).size.height,
                 child: state is SharedFileLoadSuccess
                     ? Expanded(child: activityPanel(state))
-                    : const Center(
-                        child: SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
+                    : _buildShareCard(context, state),
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildShareCard(BuildContext context, SharedFileState state) {
+    return ArDriveCard(
+      backgroundColor:
+          ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+      elevation: 2,
+      content: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 400,
+              minWidth: kMediumDialogWidth,
+              minHeight: 256,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ScreenTypeLayout.builder(
+                  desktop: (context) => Row(
+                    children: [
+                      ArDriveImage(
+                        image: AssetImage(
+                          ArDriveTheme.of(context).themeData.name == 'light'
+                              ? Resources.images.brand.blackLogo2
+                              : Resources.images.brand.whiteLogo2,
+                        ),
+                        height: 80,
+                        fit: BoxFit.contain,
+                      ),
+                    ],
+                  ),
+                  mobile: (context) => Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ArDriveImage(
+                        image: AssetImage(
+                          ArDriveTheme.of(context).themeData.name == 'light'
+                              ? Resources.images.brand.blackLogo2
+                              : Resources.images.brand.whiteLogo2,
+                        ),
+                        height: 55,
+                        fit: BoxFit.contain,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                if (state is SharedFileIsPrivate) ...[
+                  Text(appLocalizationsOf(context).sharedFileIsEncrypted),
+                  const SizedBox(height: 16),
+                  ArDriveTextField(
+                    controller: _fileKeyController,
+                    autofocus: true,
+                    obscureText: true,
+                    hintText: appLocalizationsOf(context).enterFileKey,
+                    onFieldSubmitted: (_) => context
+                        .read<SharedFileCubit>()
+                        .submit(_fileKeyController.text),
+                  ),
+                  const SizedBox(height: 16),
+                  ArDriveButton(
+                    onPressed: () => context
+                        .read<SharedFileCubit>()
+                        .submit(_fileKeyController.text),
+                    text: appLocalizationsOf(context).unlock,
+                  ),
+                ],
+                if (state is SharedFileLoadInProgress)
+                  const CircularProgressIndicator()
+                else if (state is SharedFileLoadSuccess) ...{
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: DriveExplorerItemTileLeading(
+                      item: DriveDataTableItemMapper.fromRevision(
+                        state.fileRevisions.first,
+                        false, // in this page we don't have the information about the current drive, so it's impossible to know if the file is from the user logged in
+                      ),
+                    ),
+                    title: Text(
+                      state.fileRevisions.first.name,
+                      style: ArDriveTypography.body.buttonLargeBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
+                    ),
+                    subtitle: Text(
+                      filesize(state.fileRevisions.first.size),
+                      style: ArDriveTypography.body.buttonNormalRegular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeAccentDisabled,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ArDriveButton(
+                    icon: ArDriveIcons.download(color: Colors.white),
+                    onPressed: () {
+                      final file = ARFSFactory().getARFSFileFromFileRevision(
+                        state.fileRevisions.first,
+                      );
+                      return promptToDownloadSharedFile(
+                        revision: file,
+                        context: context,
+                        fileKey: state.fileKey,
+                      );
+                    },
+                    text: appLocalizationsOf(context).download,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildReturnToAppLink(context),
+                } else if (state is SharedFileNotFound) ...{
+                  const Icon(Icons.error_outline, size: 36),
+                  const SizedBox(height: 16),
+                  Text(
+                    appLocalizationsOf(context).specifiedFileDoesNotExist,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildReturnToAppLink(context),
+                }
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

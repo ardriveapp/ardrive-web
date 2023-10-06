@@ -11,7 +11,7 @@ class FsEntryPreviewWidget extends StatefulWidget {
     required this.isSharePage,
   }) : super(key: key);
 
-  final FsEntryPreviewSuccess state;
+  final FsEntryPreviewState state;
 
   @override
   State<FsEntryPreviewWidget> createState() => _FsEntryPreviewWidgetState();
@@ -22,6 +22,7 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   Widget build(BuildContext context) {
     switch (widget.state.runtimeType) {
       case FsEntryPreviewLoading:
+      case FsEntryPreviewInitial:
         return const Center(
           child: SizedBox(
             height: 24,

@@ -119,8 +119,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     required FsEntryInfoState infoState,
   }) {
     final tabs = [
-      if (previewState is FsEntryPreviewSuccess &&
-          !(widget.isSharePage && !mobileView)) ...[
+      if (!(widget.isSharePage && !mobileView)) ...[
         ArDriveTab(
             Tab(
               child: Text(
@@ -130,47 +129,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
             Column(
               children: [
                 Expanded(child: _buildPreview(previewState)),
-                // SizedBox(
-                //   height: mobileView ? 158 : 0,
-                //   child: Column(
-                //     children: [
-                //       Expanded(
-                //         child: SizedBox(
-                //           height: 40,
-                //           child: Row(
-                //             children: [
-                //               Expanded(
-                //                 child: ArDriveButton(
-                //                   icon: ArDriveIcons.download(
-                //                       color: Colors.white),
-                //                   onPressed: () {
-                //                     final file = ARFSFactory()
-                //                         .getARFSFileFromFileRevision(
-                //                       widget.revisions!.last,
-                //                     );
-                //                     return promptToDownloadSharedFile(
-                //                       revision: file,
-                //                       context: context,
-                //                       fileKey: widget.fileKey,
-                //                     );
-                //                   },
-                //                   text: appLocalizationsOf(context).download,
-                //                 ),
-                //               ),
-                //             ],
-                //           ),
-                //         ),
-                //       ),
-                //       Expanded(
-                //         child: ArDriveButton(
-                //           style: ArDriveButtonStyle.tertiary,
-                //           onPressed: () => openUrl(url: 'https://ardrive.io/'),
-                //           text: appLocalizationsOf(context).whatIsArDrive,
-                //         ),
-                //       ),
-                //     ],
-                //   ),
-                // )
               ],
             )),
       ],
@@ -403,7 +361,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     ];
   }
 
-  Widget _buildPreview(previewState) {
+  Widget _buildPreview(FsEntryPreviewState previewState) {
     return Align(
       alignment: Alignment.center,
       child: FsEntryPreviewWidget(
