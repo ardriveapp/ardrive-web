@@ -9,12 +9,14 @@ import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub
     if (dart.library.html) 'package:ardrive/authentication/login/blocs/web_wallet.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
+import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/io_utils.dart';
@@ -48,6 +50,7 @@ class _LoginPageState extends State<LoginPage> {
       create: (context) => LoginBloc(
         arConnectService: ArConnectService(),
         arDriveAuth: context.read<ArDriveAuth>(),
+        userRepository: context.read<UserRepository>(),
       )..add(const CheckIfUserIsLoggedIn()),
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (context, state) {
@@ -314,7 +317,9 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         } else if (enableSeedPhraseLogin &&
             state is LoginDownloadGeneratedWallet) {
           content = DownloadWalletView(
-              mnemonic: state.mnemonic, wallet: state.walletFile);
+            mnemonic: state.mnemonic,
+            wallet: state.walletFile,
+          );
         } else {
           content = PromptWalletView(
             key: const Key('promptWalletView'),
@@ -683,6 +688,19 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                 appLocalizationsOf(context).welcomeBackEmphasized,
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.headline.headline4Bold(),
+              ),
+              FutureBuilder(
+                future: context.read<LoginBloc>().getWalletAddress(),
+                builder:
+                    (BuildContext context, AsyncSnapshot<String?> snapshot) {
+                  if (snapshot.hasData) {
+                    return TruncatedAddress(
+                      walletAddress: snapshot.data!,
+                    );
+                  } else {
+                    return const SizedBox.shrink();
+                  }
+                },
               ),
               Column(
                 children: [
@@ -2243,7 +2261,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                                           color: colors.themeErrorMuted,
                                         )
                                         .copyWith(fontSize: 14)))
-                          ]), 
+                          ]),
                           shape: RoundedRectangleBorder(
                             side: BorderSide(
                                 color: colors.themeErrorMuted, width: 1),

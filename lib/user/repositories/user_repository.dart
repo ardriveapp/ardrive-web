@@ -14,6 +14,7 @@ abstract class UserRepository {
     Wallet wallet,
   );
   Future<void> deleteUser();
+  Future<String?> getOwnerOfDefaultProfile();
 
   factory UserRepository(ProfileDao profileDao, ArweaveService arweave) =>
       _UserRepository(
@@ -85,6 +86,17 @@ class _UserRepository implements UserRepository {
     final profile = await _profileDao.getDefaultProfile();
 
     return profile != null;
+  }
+
+  @override
+  Future<String?> getOwnerOfDefaultProfile() async {
+    final profile = await _profileDao.getDefaultProfile();
+
+    if (profile == null) {
+      return null;
+    }
+
+    return profile.walletPublicKey;
   }
 }
 
