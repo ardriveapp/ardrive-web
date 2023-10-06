@@ -63,26 +63,23 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
             onSendProgress: (progress) {
               handle.progress = progress;
               controller.updateProgress(task: handle);
-
-              if (progress == 1) {
-                handle.status = UploadStatus.complete;
-                controller.updateProgress(task: handle);
-              }
             })
         .then((value) async {
+      print('value: $value');
       if (!handle.isProgressAvailable) {
         print('Progress is not available, setting to 1');
         handle.progress = 1;
       }
 
-      controller.updateProgress(
-        task: handle,
-      );
+      handle.status = UploadStatus.complete;
+
+      controller.updateProgress(task: handle);
 
       return value;
     }).onError((e, s) {
       print(e.toString());
       handle.status = UploadStatus.failed;
+      print('handle.status: ${handle.status}');
       controller.updateProgress(task: handle);
     });
 

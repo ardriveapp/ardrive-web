@@ -100,7 +100,7 @@ abstract class UploadController {
   void cancel();
   void onCancel();
   void onDone(Function(List<UploadTask> tasks) callback);
-  void onError(Function() callback);
+  void onError(Function(List<UploadTask> tasks) callback);
   void updateProgress({UploadTask? task});
   void onProgressChange(Function(UploadProgress progress) callback);
 
@@ -216,9 +216,7 @@ class _UploadController implements UploadController {
   UploadProgress _uploadProgress = UploadProgress.notStarted();
 
   @override
-  void onError(Function() callback) {
-    // TODO: implement onError
-  }
+  void onError(Function(List<UploadTask> tasks) callback) {}
 
   @override
   void onProgressChange(Function(UploadProgress progress) callback) {

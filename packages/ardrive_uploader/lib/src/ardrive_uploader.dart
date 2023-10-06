@@ -294,9 +294,7 @@ class _ArDriveUploader implements ArDriveUploader {
         .send(uploadTask, wallet, uploadController)
         .then((value) {
       print('Upload complete');
-    }).catchError((err) {
-      uploadController.onError(() => print('Error: $err'));
-    });
+    }).catchError((err) {});
 
     return value;
   }
@@ -382,9 +380,7 @@ class _ArDriveUploader implements ArDriveUploader {
           .send(folderBDITask, wallet, uploadController)
           .then((value) {
         print('Upload complete');
-      }).catchError((err) {
-        uploadController.onError(() => print('Error: $err'));
-      });
+      }).catchError((err) {});
     }
 
     _uploadFiles(

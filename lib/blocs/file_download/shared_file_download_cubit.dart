@@ -47,7 +47,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
           FileDownloadSuccess(
             bytes: dataRes.data,
             fileName: revision.name,
-            mimeType: revision.contentType ?? lookupMimeType(revision.name),
+            mimeType: revision.contentType ?? io.lookupMimeType(revision.name),
             lastModified: revision.lastModifiedDate,
           ),
         );
@@ -71,7 +71,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       FileDownloadSuccess(
         bytes: dataBytes,
         fileName: revision.name,
-        mimeType: revision.contentType ?? lookupMimeType(revision.name),
+        mimeType: revision.contentType ?? io.lookupMimeType(revision.name),
         lastModified: revision.lastModifiedDate,
       ),
     );

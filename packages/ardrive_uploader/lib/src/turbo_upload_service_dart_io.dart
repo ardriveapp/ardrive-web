@@ -4,7 +4,7 @@ import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 
-class TurboUploadServiceImpl implements TurboUploadService {
+class TurboUploadServiceImpl implements TurboUploadService<Response> {
   final Uri turboUploadUri;
 
   /// We are using Dio directly here. In the future we must adapt our ArDriveHTTP to support

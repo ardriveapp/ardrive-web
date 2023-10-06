@@ -55,7 +55,7 @@ class MockUploadPlanUtils extends Mock implements UploadPlanUtils {}
 class MockBiometricAuthentication extends Mock
     implements BiometricAuthentication {}
 
-class MockArDriveDownloader extends Mock implements ArDriveDownloader {}
+class MockArDriveDownloader extends Mock implements ArDriveMobileDownloader {}
 
 class MockDownloadService extends Mock implements DownloadService {}
 

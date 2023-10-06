@@ -99,7 +99,7 @@ Future<void> _initialize() async {
 
   logger.i('Initializing with config: $config');
 
-  ArDriveDownloader.initialize();
+  ArDriveMobileDownloader.initialize();
 
   _arweave = ArweaveService(
     Arweave(

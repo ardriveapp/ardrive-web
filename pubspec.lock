@@ -83,11 +83,9 @@ packages:
   ardrive_io:
     dependency: "direct main"
     description:
-      path: "."
-      ref: PE-3699-uploads-large-files-for-public-drives
-      resolved-ref: "7bd6e71dafad52d84f26ad9d4c4d6d7d6e8471c4"
-      url: "https://github.com/ar-io/ardrive_io.git"
-    source: git
+      path: "../packages/ardrive_io"
+      relative: true
+    source: path
     version: "1.4.0"
   ardrive_ui:
     dependency: "direct main"
@@ -675,6 +673,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.3+1"
+  file_system_access_api:
+    dependency: transitive
+    description:
+      name: file_system_access_api
+      sha256: bcbf061ce180dffcceed9faefab513e87bff1eef38c3ed99cf7c3bbbc65a34e1
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   firebase_core:
     dependency: "direct main"
     description:

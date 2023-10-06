@@ -554,6 +554,12 @@ class UploadCubit extends Cubit<UploadState> {
       driveKey: driveKey,
     );
 
+    uploadController.onError((tasks) {
+      logger.e('Error uploading', tasks);
+      addError(Exception('Error uploading'));
+      hasEmittedError = true;
+    });
+
     uploadController.onProgressChange(
       (progress) {
         emit(
@@ -752,6 +758,12 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     List<UploadTask> completedTasks = [];
+
+    uploadController.onError((tasks) {
+      logger.e('Error uploading', tasks);
+      addError(Exception('Error uploading'));
+      hasEmittedError = true;
+    });
 
     uploadController.onProgressChange(
       (progress) {
