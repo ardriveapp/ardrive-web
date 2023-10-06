@@ -215,10 +215,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       AppPlatform.isMobile || AppPlatform.isMobileWeb()
                           ? 0
                           : null,
-                  backgroundColor: ArDriveTheme.of(context)
-                      .themeData
-                      .tableTheme
-                      .backgroundColor,
+                  backgroundColor: mobileView
+                      ? ArDriveTheme.of(context)
+                          .themeData
+                          .tableTheme
+                          .backgroundColor
+                      : ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeBgSurface,
                   contentPadding: widget.isSharePage
                       ? const EdgeInsets.only()
                       : const EdgeInsets.all(24),
@@ -238,8 +243,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
         child: ArDriveCard(
           borderRadius:
               AppPlatform.isMobile || AppPlatform.isMobileWeb() ? 0 : null,
-          backgroundColor:
-              ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+          backgroundColor: widget.isSharePage
+              ? ArDriveTheme.of(context).themeData.tableTheme.cellColor
+              : ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
           contentPadding: const EdgeInsets.all(24),
           content: Column(
             children: [
@@ -257,7 +263,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   ),
                   mobile: (context) => const SizedBox.shrink(),
                 ),
-              if (mobileView && widget.isSharePage)
+              if (widget.isSharePage)
                 SizedBox(
                   height: 64,
                   child: Column(
@@ -275,7 +281,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   ),
                 ),
               if (previewState is FsEntryPreviewSuccess &&
-                  !(widget.isSharePage && mobileView))
+                  !(widget.isSharePage))
                 ArDriveCard(
                   contentPadding: const EdgeInsets.all(24),
                   backgroundColor: ArDriveTheme.of(context)
@@ -305,7 +311,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           size: 32,
                         ),
                       },
-                      if (widget.currentDrive != null && !widget.isSharePage)
+                      if (widget.currentDrive != null)
                         ScreenTypeLayout.builder(
                           desktop: (context) => const SizedBox.shrink(),
                           mobile: (context) => EntityActionsMenu(
@@ -332,11 +338,23 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       child: ArDriveTabView(
                         key: Key(widget.item.id + tabs.length.toString()),
                         tabs: tabs,
+                        backgroundColor: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeBgSurface,
+                        unselectedTabColor: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeBgSurface,
+                        unselectedLabelColor: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
                       ),
                     ),
                     if (widget.isSharePage)
                       SizedBox(
-                        height: mobileView ? 138 : 138,
+                        height: 138,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [

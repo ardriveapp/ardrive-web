@@ -196,22 +196,26 @@ class SharedFilePage extends StatelessWidget {
           }
 
           return ScreenTypeLayout.builder(
-            desktop: (context) => Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (state is SharedFileLoadSuccess) ...{
-                    Flexible(
-                      flex: 1,
-                      child: activityPanel(state),
-                    )
-                  } else ...{
-                    const CircularProgressIndicator(
-                      strokeWidth: 8,
-                    ),
-                  }
-                ],
+            desktop: (context) => Container(
+              color:
+                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (state is SharedFileLoadSuccess) ...{
+                      Flexible(
+                        flex: 1,
+                        child: activityPanel(state),
+                      )
+                    } else ...{
+                      const CircularProgressIndicator(
+                        strokeWidth: 8,
+                      ),
+                    }
+                  ],
+                ),
               ),
             ),
             mobile: (context) => SingleChildScrollView(
