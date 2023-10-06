@@ -25,6 +25,8 @@
 //   return Stream<int>.periodic(const Duration(seconds: 1), (c) => c + 1).take(5);
 // }
 
+void main() {}
+
 // // TODO(@thiagocarvalhodev): Implemente tests related to ArDriveDownloader
 // void main() {
 //   late ProfileFileDownloadCubit profileFileDownloadCubit;
