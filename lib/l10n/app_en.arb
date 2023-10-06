@@ -1970,6 +1970,10 @@
   "@waitForDownload": {
     "description": "User must to wait this download"
   },
+  "walletAddress": "Wallet address:",
+  "@walletAddress": {
+    "description": "E.g. \"The wallet address is… ABCDEFGH\""
+  },
   "walletChangedDuringManifestCreation": "Provided wallet has unexpectedly changed during manifest creation...",
   "@walletChangedDuringManifestCreation": {
     "description": "The wallet has been changed while the creation of the manifest was in process"

@@ -694,9 +694,22 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                 builder:
                     (BuildContext context, AsyncSnapshot<String?> snapshot) {
                   if (snapshot.hasData) {
-                    return TruncatedAddress(
-                      walletAddress: snapshot.data!,
-                      fontSize: 18,
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          appLocalizationsOf(context).walletAddress,
+                          style: ArDriveTypography.body
+                              .captionRegular()
+                              .copyWith(fontSize: 18),
+                        ),
+                        const SizedBox(width: 8),
+                        TruncatedAddress(
+                          walletAddress: snapshot.data!,
+                          fontSize: 18,
+                        ),
+                      ],
                     );
                   } else {
                     return const SizedBox.shrink();
