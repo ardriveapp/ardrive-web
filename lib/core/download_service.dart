@@ -2,9 +2,12 @@ import 'dart:typed_data';
 
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive_http/ardrive_http.dart';
+import 'package:arweave/arweave.dart' as arweave;
 
 abstract class DownloadService {
-  Future<Uint8List> download(String fileId, bool isManifest);
+  Future<Uint8List> download(String fileTxId, bool isManifest);
+  Future<Stream<List<int>>> downloadStream(String fileTxId, bool isManifest);
+
   factory DownloadService(ArweaveService arweaveService) =>
       _DownloadService(arweaveService);
 }
@@ -27,5 +30,13 @@ class _DownloadService implements DownloadService {
     }
 
     throw Exception('Download failed');
+  }
+
+  @override
+  Future<Stream<List<int>>> downloadStream(
+      String fileTxId, bool isManifest) async {
+    final downloadResponse = await arweave.download(txId: fileTxId);
+
+    return downloadResponse.$1;
   }
 }

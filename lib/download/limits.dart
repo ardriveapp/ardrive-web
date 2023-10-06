@@ -1,7 +1,8 @@
 import 'package:ardrive/utils/data_size.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
+// ignore: depend_on_referenced_packages
 import 'package:device_info_plus/device_info_plus.dart';
 
-import '../utils/app_platform.dart';
 import 'download_utils.dart';
 
 final publicDownloadUnknownPlatformSizeLimit = const GiB(2).size;
