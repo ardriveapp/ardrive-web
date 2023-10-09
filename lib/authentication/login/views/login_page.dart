@@ -690,7 +690,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                 style: ArDriveTypography.headline.headline4Bold(),
               ),
               FutureBuilder(
-                future: context.read<LoginBloc>().getWalletAddress(),
+                future: context.read<ArDriveAuth>().getWalletAddress(),
                 builder:
                     (BuildContext context, AsyncSnapshot<String?> snapshot) {
                   if (snapshot.hasData) {
