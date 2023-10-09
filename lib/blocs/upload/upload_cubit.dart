@@ -564,7 +564,7 @@ class UploadCubit extends Cubit<UploadState> {
       (progress) {
         emit(
           UploadInProgressUsingNewUploader(
-            totalProgress: progress.progress,
+            totalProgress: progress.progressInPercentage,
             equatableBust: UniqueKey(),
             progress: progress,
             controller: uploadController,
@@ -783,7 +783,7 @@ class UploadCubit extends Cubit<UploadState> {
         emit(
           UploadInProgressUsingNewUploader(
             progress: progress,
-            totalProgress: progress.progress,
+            totalProgress: progress.progressInPercentage,
             controller: uploadController,
             equatableBust: UniqueKey(),
           ),
@@ -798,7 +798,7 @@ class UploadCubit extends Cubit<UploadState> {
           emit(
             UploadInProgressUsingNewUploader(
               progress: progress.progress,
-              totalProgress: progress.progress.progress,
+              totalProgress: progress.progress.progressInPercentage,
               controller: uploadController,
               equatableBust: UniqueKey(),
             ),

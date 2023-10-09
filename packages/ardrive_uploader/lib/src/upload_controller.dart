@@ -138,7 +138,7 @@ class _UploadController implements UploadController {
 
         _onProgressChange!(event);
 
-        if (_uploadProgress.progress == 1) {
+        if (_uploadProgress.progressInPercentage == 1) {
           await close();
           return;
         }
@@ -314,7 +314,8 @@ enum UploadStatus {
 }
 
 class UploadProgress {
-  final double progress;
+  /// The progress in percentage from 0 to 1
+  final double progressInPercentage;
   final int totalSize;
   final int totalUploaded;
   final List<UploadTask> task;
@@ -322,7 +323,7 @@ class UploadProgress {
   DateTime? startTime;
 
   UploadProgress({
-    required this.progress,
+    required this.progressInPercentage,
     required this.totalSize,
     required this.task,
     required this.totalUploaded,
@@ -331,7 +332,7 @@ class UploadProgress {
 
   factory UploadProgress.notStarted() {
     return UploadProgress(
-      progress: 0,
+      progressInPercentage: 0,
       totalSize: 0,
       task: [],
       totalUploaded: 0,
@@ -347,7 +348,7 @@ class UploadProgress {
   }) {
     return UploadProgress(
       startTime: startTime ?? this.startTime,
-      progress: progress ?? this.progress,
+      progressInPercentage: progress ?? this.progressInPercentage,
       totalSize: totalSize ?? this.totalSize,
       task: task ?? this.task,
       totalUploaded: totalUploaded ?? this.totalUploaded,
