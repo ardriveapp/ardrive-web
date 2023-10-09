@@ -56,9 +56,6 @@ class TurboUploadServiceImpl implements TurboUploadService<Response> {
 
     return response;
   }
-
-  @override
-  bool get isPossibleGetProgress => true;
 }
 
 class TurboUploadExceptions implements Exception {}

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:fetch_client/fetch_client.dart';
@@ -28,12 +29,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required Map<String, dynamic> headers,
   }) {
     // max of 500mib
-    if (dataItem.dataItemSize <= 1024 * 1024 * 500) {
-      _isPossibleGetProgress = true;
-
-      // TODO: Add this to the task instead of the controller
-      // controller.isPossibleGetProgress = true;
-
+    if (dataItem.dataItemSize <= MiB(500).size) {
       return _uploadWithDio(
         dataItem: dataItem,
         wallet: wallet,
@@ -163,11 +159,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
 
     return response;
   }
-
-  @override
-  bool get isPossibleGetProgress => _isPossibleGetProgress;
-
-  bool _isPossibleGetProgress = false;
 }
 
 class TurboUploadExceptions implements Exception {}

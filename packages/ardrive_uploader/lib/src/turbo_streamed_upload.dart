@@ -18,7 +18,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
 
   @override
   Future<dynamic> send(
-    handle,
+    uploadTask,
     Wallet wallet,
     UploadController controller,
   ) async {
@@ -41,12 +41,16 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
       },
     );
 
-    handle = handle.copyWith(status: UploadStatus.inProgress);
-    controller.updateProgress(task: handle);
+    uploadTask = uploadTask.copyWith(status: UploadStatus.inProgress);
+    controller.updateProgress(task: uploadTask);
 
-    if (kIsWeb && handle.uploadItem!.size > 1024 * 1024 * 500) {
-      handle.isProgressAvailable = false;
-      controller.updateProgress(task: handle);
+    /// If the file is larger than 500 MiB, we don't get progress updates.
+    ///
+    /// The TurboUploadServiceImpl for web uses fetch_client for the upload of files
+    /// larger than 500 MiB. fetch_client does not support progress updates.
+    if (kIsWeb && uploadTask.uploadItem!.size > MiB(500).size) {
+      uploadTask.isProgressAvailable = false;
+      controller.updateProgress(task: uploadTask);
     }
 
     // gets the streamed request
@@ -58,29 +62,29 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
               'x-address': publicKey,
               'x-signature': signature,
             },
-            dataItem: handle.uploadItem!.data,
-            size: handle.uploadItem!.size,
+            dataItem: uploadTask.uploadItem!.data,
+            size: uploadTask.uploadItem!.size,
             onSendProgress: (progress) {
-              handle.progress = progress;
-              controller.updateProgress(task: handle);
+              uploadTask.progress = progress;
+              controller.updateProgress(task: uploadTask);
             })
         .then((value) async {
       print('value: $value');
-      if (!handle.isProgressAvailable) {
+      if (!uploadTask.isProgressAvailable) {
         print('Progress is not available, setting to 1');
-        handle.progress = 1;
+        uploadTask.progress = 1;
       }
 
-      handle.status = UploadStatus.complete;
+      uploadTask.status = UploadStatus.complete;
 
-      controller.updateProgress(task: handle);
+      controller.updateProgress(task: uploadTask);
 
       return value;
     }).onError((e, s) {
       print(e.toString());
-      handle.status = UploadStatus.failed;
-      print('handle.status: ${handle.status}');
-      controller.updateProgress(task: handle);
+      uploadTask.status = UploadStatus.failed;
+      print('handle.status: ${uploadTask.status}');
+      controller.updateProgress(task: uploadTask);
     });
 
     return streamedRequest;
