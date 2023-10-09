@@ -1,4 +1,4 @@
-import 'package:ardrive/utils/data_size.dart';
+import 'package:ardrive_utils/src/base2_size.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// https://www.kylesconverter.com/data-storage/gibibits-to-bits

@@ -1,4 +1,4 @@
-import 'package:ardrive/utils/data_size.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
 
 final privateFileSizeLimit = const MiB(100000).size;

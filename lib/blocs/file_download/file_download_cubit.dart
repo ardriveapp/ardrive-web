@@ -7,7 +7,6 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart' as io;
