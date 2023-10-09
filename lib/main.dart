@@ -12,6 +12,8 @@ import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
 import 'package:ardrive/pst/community_oracle.dart';
 import 'package:ardrive/pst/contract_oracle.dart';
+import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
+import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
@@ -207,8 +209,8 @@ class AppState extends State<App> {
             communityOracle: CommunityOracle(
               ArDriveContractOracle([
                 ContractOracle(VertoContractReader()),
-                // ContractOracle(RedstoneContractReader()),
-                // ContractOracle(SmartweaveContractReader()),
+                ContractOracle(RedstoneContractReader()),
+                ContractOracle(SmartweaveContractReader()),
               ]),
             ),
           ),
