@@ -322,7 +322,7 @@ class UploadCubit extends Cubit<UploadState> {
       _removeFilesWithFileNameConflicts();
     }
 
-    logger.i(
+    logger.d(
       'Upload preparation started. UploadMethod: $_uploadMethod',
     );
 
@@ -353,7 +353,7 @@ class UploadCubit extends Cubit<UploadState> {
       bool isTurboZeroBalance =
           uploadPreparation.uploadPaymentInfo.turboBalance == BigInt.zero;
 
-      logger.i(
+      logger.d(
         'Upload preparation finished\n'
         'UploadMethod: $_uploadMethod\n'
         'UploadPlan For AR: ${uploadPreparation.uploadPaymentInfo.arCostEstimate.toString()}\n'
@@ -438,7 +438,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     logger.d('Max files per bundle: ${uploadPlan.maxDataItemCount}');
 
-    logger.i('Starting upload...');
+    logger.d('Starting upload...');
 
     //Check if the same wallet it being used before starting upload.
     if (await _profileCubit.checkIfWalletMismatch()) {
@@ -453,11 +453,11 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    logger.i(
+    logger.d(
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
     if (configService.config.useNewUploader) {
-      logger.i('Uploading folder using the new uploader');
+      logger.d('Uploading folder using the new uploader');
 
       if (uploadFolders) {
         await _uploadFolderUsingArDriveUploader();
@@ -469,7 +469,7 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
-    logger.i('Uploading using the old uploader');
+    logger.d('Uploading using the old uploader');
     final uploader = _getUploader();
 
     await for (final progress in uploader.uploadFromHandles(
@@ -484,7 +484,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
     }
 
-    logger.i('Upload finished');
+    logger.d('Upload finished');
 
     unawaited(_profileCubit.refreshBalance());
 
@@ -885,7 +885,7 @@ class UploadCubit extends Cubit<UploadState> {
               folderId: folderMetadata.id,
             );
 
-            logger.i('Folder created with id: $id');
+            logger.d('Folder created with id: $id');
 
             entity.txId = metadata.metadataTxId!;
 
@@ -909,7 +909,7 @@ class UploadCubit extends Cubit<UploadState> {
     final turboUploader = TurboUploader(_turbo, wallet);
     final arweaveUploader = ArweaveBundleUploader(_arweave.client);
 
-    logger.i(
+    logger.d(
         'Uploaders created: Turbo: $turboUploader, Arweave: $arweaveUploader');
 
     final bundleUploader = BundleUploader(
@@ -924,7 +924,7 @@ class UploadCubit extends Cubit<UploadState> {
       bundleUploader: bundleUploader,
       fileV2Uploader: v2Uploader,
       prepareBundle: (handle) async {
-        logger.i(
+        logger.d(
             'Preparing bundle.. using turbo: ${_uploadMethod == UploadMethod.turbo}');
 
         await handle.prepareAndSignBundleTransaction(
@@ -937,10 +937,10 @@ class UploadCubit extends Cubit<UploadState> {
           useTurbo: _uploadMethod == UploadMethod.turbo,
         );
 
-        logger.i('Bundle preparation finished');
+        logger.d('Bundle preparation finished');
       },
       prepareFile: (handle) async {
-        logger.i('Preparing file...');
+        logger.d('Preparing file...');
 
         await handle.prepareAndSignTransactions(
           arweaveService: _arweave,
