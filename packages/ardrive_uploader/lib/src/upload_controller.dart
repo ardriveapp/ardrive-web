@@ -24,7 +24,7 @@ class TransactionUploadTask extends UploadItem<TransactionResult> {
       : super(size: size, data: data);
 }
 
-abstract class _UploadTask<T> {
+abstract class UploadTask<T> {
   abstract final String id;
   abstract final UploadItem? uploadItem;
   abstract final List<ARFSUploadMetadata>? content;
@@ -42,7 +42,7 @@ abstract class _UploadTask<T> {
   });
 }
 
-class UploadTask implements _UploadTask<ARFSUploadMetadata> {
+class ARFSUploadTask implements UploadTask<ARFSUploadMetadata> {
   @override
   final UploadItem? uploadItem;
 
@@ -58,7 +58,7 @@ class UploadTask implements _UploadTask<ARFSUploadMetadata> {
   @override
   bool isProgressAvailable = true;
 
-  UploadTask({
+  ARFSUploadTask({
     this.uploadItem,
     this.isProgressAvailable = true,
     this.status = UploadStatus.notStarted,
@@ -70,7 +70,7 @@ class UploadTask implements _UploadTask<ARFSUploadMetadata> {
   UploadStatus status;
 
   @override
-  UploadTask copyWith({
+  ARFSUploadTask copyWith({
     UploadItem? uploadItem,
     double? progress,
     bool? isProgressAvailable,
@@ -78,7 +78,7 @@ class UploadTask implements _UploadTask<ARFSUploadMetadata> {
     String? id,
     List<ARFSUploadMetadata>? content,
   }) {
-    return UploadTask(
+    return ARFSUploadTask(
       uploadItem: uploadItem ?? this.uploadItem,
       content: content ?? this.content,
       id: id ?? this.id,

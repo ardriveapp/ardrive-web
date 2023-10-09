@@ -140,7 +140,7 @@ packages:
     description:
       path: "."
       ref: PE-3697
-      resolved-ref: "30517c20669de213b8105273d3ec97005867bc90"
+      resolved-ref: c2bd4e0b6475c0c62b4cbf83bb4a928e4147fc3a
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.7.0"

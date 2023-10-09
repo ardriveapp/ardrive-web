@@ -108,7 +108,7 @@ class _ArDriveUploader implements ArDriveUploader {
     );
 
     streamedUpload.send(
-      UploadTask(
+      ARFSUploadTask(
         status: UploadStatus.notStarted,
         content: [metadata],
       ),
@@ -164,7 +164,7 @@ class _ArDriveUploader implements ArDriveUploader {
         f.$1,
       );
 
-      final uploadTask = UploadTask(
+      final uploadTask = ARFSUploadTask(
         status: UploadStatus.notStarted,
         content: [metadata],
       );
@@ -347,7 +347,7 @@ class _ArDriveUploader implements ArDriveUploader {
       /// folders always are generated in the first BDI.
       final bundleForFolders = bundle.first;
 
-      UploadTask folderBDITask = UploadTask(
+      ARFSUploadTask folderBDITask = ARFSUploadTask(
         status: UploadStatus.notStarted,
         content: bundleForFolders.contents,
       );
