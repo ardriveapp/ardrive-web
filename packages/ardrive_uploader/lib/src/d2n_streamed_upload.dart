@@ -32,7 +32,8 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
         },
         onDone: () {
           // finishes the upload
-          handle = handle.copyWith(status: UploadStatus.complete, progress: 1);
+          handle = handle.copyWith(
+              status: UploadStatus.complete, progressInPercentage: 1);
 
           controller.updateProgress(task: handle);
         },

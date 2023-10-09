@@ -35,7 +35,7 @@ abstract class UploadTask<T> {
 
   UploadTask copyWith({
     UploadItem? uploadItem,
-    double? progress,
+    double? progressInPercentage,
     bool? isProgressAvailable,
     UploadStatus? status,
     String? id,
@@ -73,7 +73,7 @@ class ARFSUploadTask implements UploadTask<ARFSUploadMetadata> {
   @override
   ARFSUploadTask copyWith({
     UploadItem? uploadItem,
-    double? progress,
+    double? progressInPercentage,
     bool? isProgressAvailable,
     UploadStatus? status,
     String? id,
@@ -194,7 +194,7 @@ class _UploadController implements UploadController {
       // TODO: Check how to improve this
       _uploadProgress = _uploadProgress.copyWith(
         task: taskList,
-        progress: calculateTotalProgress(taskList),
+        progressInPercentage: calculateTotalProgress(taskList),
         totalSize: totalSize(taskList),
         totalUploaded: totalUploaded(taskList),
         startTime: _start,
@@ -340,7 +340,7 @@ class UploadProgress {
   }
 
   UploadProgress copyWith({
-    double? progress,
+    double? progressInPercentage,
     int? totalSize,
     List<UploadTask>? task,
     int? totalUploaded,
@@ -348,7 +348,7 @@ class UploadProgress {
   }) {
     return UploadProgress(
       startTime: startTime ?? this.startTime,
-      progressInPercentage: progress ?? this.progressInPercentage,
+      progressInPercentage: progressInPercentage ?? this.progressInPercentage,
       totalSize: totalSize ?? this.totalSize,
       task: task ?? this.task,
       totalUploaded: totalUploaded ?? this.totalUploaded,
