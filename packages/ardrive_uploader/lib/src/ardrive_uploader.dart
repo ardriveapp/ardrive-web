@@ -241,7 +241,7 @@ class _ArDriveUploader implements ArDriveUploader {
       type: type,
     );
 
-    final bdi = await dataBundler.createDataBundle(
+    final bundle = await dataBundler.createDataBundle(
       file: file,
       metadata: metadata,
       wallet: wallet,
@@ -268,16 +268,16 @@ class _ArDriveUploader implements ArDriveUploader {
       case UploadType.d2n:
         uploadTask = uploadTask.copyWith(
           uploadItem: TransactionUploadTask(
-            data: bdi,
-            size: bdi.dataSize,
+            data: bundle,
+            size: bundle.dataSize,
           ),
         );
         break;
       case UploadType.turbo:
         uploadTask = uploadTask.copyWith(
           uploadItem: DataItemUploadTask(
-            data: bdi,
-            size: bdi.dataItemSize,
+            data: bundle,
+            size: bundle.dataItemSize,
           ),
           status: UploadStatus.preparationDone,
         );
