@@ -16,10 +16,13 @@ class DataBundlerFactory {
     required ARFSUploadMetadataGenerator metadataGenerator,
     required UploadType type,
   }) {
-    if (type == UploadType.turbo) {
-      return BDIDataBundler(metadataGenerator);
-    } else {
-      return DataTransactionBundler(metadataGenerator);
+    switch (type) {
+      case UploadType.turbo:
+        return BDIDataBundler(metadataGenerator);
+      case UploadType.d2n:
+        return DataTransactionBundler(metadataGenerator);
+      default:
+        throw Exception('Invalid upload type');
     }
   }
 }
