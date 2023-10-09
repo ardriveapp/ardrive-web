@@ -9,7 +9,7 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     Wallet wallet,
     UploadController controller,
   ) async {
-    if (handle.uploadItem is! TransactionUploadTask) {
+    if (handle.uploadItem is! BundleTransactionUploadItem) {
       throw ArgumentError('handle must be of type TransactionUploadTask');
     }
 
@@ -20,7 +20,7 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     controller.updateProgress(task: handle);
 
     final progressStreamTask = await uploadTransaction(
-            (handle.uploadItem as TransactionUploadTask).data)
+            (handle.uploadItem as BundleTransactionUploadItem).data)
         .run();
 
     progressStreamTask.match((l) => print(''), (progressStream) async {

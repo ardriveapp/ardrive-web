@@ -14,13 +14,14 @@ abstract class UploadItem<T> {
   UploadItem({required this.size, required this.data});
 }
 
-class DataItemUploadTask extends UploadItem<DataItemResult> {
-  DataItemUploadTask({required int size, required DataItemResult data})
+class BundleDataItemUploadItem extends UploadItem<DataItemResult> {
+  BundleDataItemUploadItem({required int size, required DataItemResult data})
       : super(size: size, data: data);
 }
 
-class TransactionUploadTask extends UploadItem<TransactionResult> {
-  TransactionUploadTask({required int size, required TransactionResult data})
+class BundleTransactionUploadItem extends UploadItem<TransactionResult> {
+  BundleTransactionUploadItem(
+      {required int size, required TransactionResult data})
       : super(size: size, data: data);
 }
 
@@ -92,7 +93,7 @@ class ARFSUploadTask implements UploadTask<ARFSUploadMetadata> {
 abstract class UploadController {
   abstract final Map<String, UploadTask> tasks;
 
-  /// TODO: implement the sendTasks method
+  // TODO: implement the sendTasks method
   Future<void> sendTasks();
   Future<void> retryTask(UploadTask task, Wallet wallet);
   Future<void> retryFailedTasks(Wallet wallet);
