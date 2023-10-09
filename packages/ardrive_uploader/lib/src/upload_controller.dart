@@ -149,9 +149,6 @@ class _UploadController implements UploadController {
       },
       onDone: () {
         print('Done upload');
-        for (var task in tasks.values) {
-          print('Task: ${task.id} - ${task.status}');
-        }
         _onDone(tasks.values.toList());
         subscription.cancel();
       },
