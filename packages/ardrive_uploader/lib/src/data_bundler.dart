@@ -86,12 +86,6 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       driveKey: driveKey,
     );
 
-    print('file metadata: ${metadata.toJson()}');
-
-    for (var tag in metadata.dataItemTags) {
-      print('tag: ${tag.name} - ${tag.value}');
-    }
-
     final fileDataItem = _generateFileDataItem(
       metadata: metadata,
       dataStream: dataGenerator.$1,
@@ -495,15 +489,6 @@ DataItemFile _generateFileDataItem({
   Uint8List? cipherIv,
 }) {
   final tags = metadata.dataItemTags;
-
-  // if (cipherIv != null) {
-  //   tags.add(Tag(EntityTag.cipher, Cipher.aes256ctr));
-  //   tags.add(Tag(EntityTag.cipherIv, encodeBytesToBase64(cipherIv)));
-  // }
-
-  for (var tag in metadata.dataItemTags) {
-    print('tag: ${tag.name} - ${tag.value}');
-  }
 
   final dataItemFile = DataItemFile(
     dataSize: fileLength,
