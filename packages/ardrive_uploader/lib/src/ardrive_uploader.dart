@@ -133,14 +133,15 @@ class _ArDriveUploader implements ArDriveUploader {
       _streamedUploadFactory.fromUploadType(type, _turboUploadUri),
     );
 
-    /// Attaches the upload controller to the upload service
-    _uploadFiles(
+    /// Attaches the upload controller to the upload service and doesn't await
+    /// for the upload to complete.
+    unawaited(_uploadFiles(
       files: files,
       wallet: wallet,
       controller: uploadController,
       driveKey: driveKey,
       type: type,
-    );
+    ));
 
     return uploadController;
   }
@@ -383,13 +384,15 @@ class _ArDriveUploader implements ArDriveUploader {
       }).catchError((err) {});
     }
 
-    _uploadFiles(
+    /// Attaches the upload controller to the upload service and doesn't await
+    /// for the upload to complete.
+    unawaited(_uploadFiles(
       files: entities.whereType<(ARFSUploadMetadataArgs, IOFile)>().toList(),
       wallet: wallet,
       driveKey: driveKey,
       controller: uploadController,
       type: type,
-    );
+    ));
 
     return uploadController;
   }
