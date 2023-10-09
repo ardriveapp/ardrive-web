@@ -944,24 +944,25 @@ class _UploadFormState extends State<UploadForm> {
                                           const SizedBox(
                                             width: 8,
                                           ),
-                                          if (task.status ==
-                                              UploadStatus.failed)
-                                            SizedBox(
-                                              height: 24,
-                                              child: ArDriveClickArea(
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    context
-                                                        .read<UploadCubit>()
-                                                        .retryTask(
-                                                          state.controller,
-                                                          task,
-                                                        );
-                                                  },
-                                                  child: ArDriveIcons.refresh(),
-                                                ),
-                                              ),
-                                            )
+                                          // TODO: Implement retry
+                                          // if (task.status ==
+                                          //     UploadStatus.failed)
+                                          //   SizedBox(
+                                          //     height: 24,
+                                          //     child: ArDriveClickArea(
+                                          //       child: GestureDetector(
+                                          //         onTap: () {
+                                          //           context
+                                          //               .read<UploadCubit>()
+                                          //               .retryTask(
+                                          //                 state.controller,
+                                          //                 task,
+                                          //               );
+                                          //         },
+                                          //         child: ArDriveIcons.refresh(),
+                                          //       ),
+                                          //     ),
+                                          //   )
                                         ],
                                       ),
                                     ),

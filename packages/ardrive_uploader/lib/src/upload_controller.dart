@@ -89,14 +89,9 @@ class ARFSUploadTask implements UploadTask<ARFSUploadMetadata> {
   }
 }
 
-// TODO: Review this file
 abstract class UploadController {
   abstract final Map<String, UploadTask> tasks;
 
-  // TODO: implement the sendTasks method
-  Future<void> sendTasks();
-  Future<void> retryTask(UploadTask task, Wallet wallet);
-  Future<void> retryFailedTasks(Wallet wallet);
   Future<void> close();
   void cancel();
   void onCancel();
@@ -262,12 +257,8 @@ class _UploadController implements UploadController {
     return totalSize;
   }
 
-  @override
-  Future<void> sendTasks() async {
-    // TODO: implement sendTasks
-  }
-
-  @override
+  /// It is just an experimentation. It is not used yet, but it will be used in the future.
+  /// When this implementation is stable, we must add this method on its interface class: `UploadController`.
   Future<void> retryFailedTasks(Wallet wallet) async {
     final failedTasks =
         tasks.values.where((e) => e.status == UploadStatus.failed).toList();
@@ -285,7 +276,8 @@ class _UploadController implements UploadController {
     }
   }
 
-  @override
+  /// It is just an experimentation. It is not used yet, but it will be used in the future.
+  /// When this implementation is stable, we must add this method on its interface class: `UploadController`.
   Future<void> retryTask(UploadTask task, Wallet wallet) async {
     task.copyWith(status: UploadStatus.notStarted);
 
@@ -302,14 +294,17 @@ enum UploadStatus {
   /// The upload is in progress
   inProgress,
 
+  /// The upload is being bundled
+  bundling,
+
+  /// The upload is being encrypted
+  encryting,
+
   /// The upload is paused
   paused,
 
-  bundling,
-
+  /// The upload is prepartion is done: the bundle is ready to be uploaded
   preparationDone,
-
-  encryting,
 
   /// The upload is complete
   complete,

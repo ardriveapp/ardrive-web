@@ -704,13 +704,11 @@ class UploadCubit extends Cubit<UploadState> {
     );
   }
 
-  void retryUploads(UploadController controller) {
-    controller.retryFailedTasks(_auth.currentUser.wallet);
-  }
+  // TODO: implement this
+  void retryUploads(UploadController controller) {}
 
-  void retryTask(UploadController controller, UploadTask task) {
-    controller.retryTask(task, _auth.currentUser.wallet);
-  }
+  // TODO: implement this
+  void retryTask(UploadController controller, UploadTask task) {}
 
   Future<void> _uploadUsingArDriveUploader() async {
     final ardriveUploader = ArDriveUploader(
