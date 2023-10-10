@@ -825,6 +825,9 @@ class _UploadFormState extends State<UploadForm> {
                         case UploadStatus.preparationDone:
                           status = 'Preparation done';
                           break;
+                        case UploadStatus.canceled:
+                          status = 'Canceled';
+                          break;
                       }
 
                       if (task.isProgressAvailable) {

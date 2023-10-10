@@ -28,11 +28,74 @@ class BundleTransactionUploadItem extends UploadItem<TransactionResult> {
       : super(size: size, data: data);
 }
 
+class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
+  final List<(ARFSFolderUploadMetatadata, IOEntity)> folders;
+
+  @override
+  final UploadItem? uploadItem;
+
+  @override
+  final StreamedUpload streamedUpload;
+
+  @override
+  final List<ARFSUploadMetadata>? content;
+
+  @override
+  double progress = 0;
+
+  @override
+  final String id;
+
+  @override
+  bool isProgressAvailable = true;
+
+  FolderUploadTask({
+    required this.folders,
+    this.uploadItem,
+    this.isProgressAvailable = true,
+    this.status = UploadStatus.notStarted,
+    this.content,
+    this.encryptionKey,
+    required this.streamedUpload,
+    String? id,
+  }) : id = id ?? const Uuid().v4();
+
+  @override
+  UploadStatus status;
+
+  @override
+  FolderUploadTask copyWith({
+    UploadItem? uploadItem,
+    double? progressInPercentage,
+    bool? isProgressAvailable,
+    UploadStatus? status,
+    String? id,
+    List<ARFSUploadMetadata>? content,
+    SecretKey? encryptionKey,
+    List<(ARFSFolderUploadMetatadata, IOEntity)>? folders,
+    StreamedUpload? streamedUpload,
+  }) {
+    return FolderUploadTask(
+      streamedUpload: streamedUpload ?? this.streamedUpload,
+      folders: folders ?? this.folders,
+      uploadItem: uploadItem ?? this.uploadItem,
+      content: content ?? this.content,
+      id: id ?? this.id,
+      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
+      status: status ?? this.status,
+    );
+  }
+
+  @override
+  final SecretKey? encryptionKey;
+}
+
 class FileUploadTask extends UploadTask {
   final IOFile file;
 
   final ARFSFileUploadMetadata metadata;
 
+  @override
   final StreamedUpload streamedUpload;
 
   @override
@@ -102,6 +165,7 @@ abstract class UploadTask<T> {
   abstract bool isProgressAvailable;
   abstract UploadStatus status;
   abstract final SecretKey? encryptionKey;
+  abstract final StreamedUpload streamedUpload;
 
   UploadTask copyWith({
     UploadItem? uploadItem,
@@ -161,6 +225,10 @@ class ARFSUploadTask implements UploadTask<ARFSUploadMetadata> {
 
   @override
   final SecretKey? encryptionKey;
+
+  @override
+  // TODO: implement streamedUpload
+  StreamedUpload get streamedUpload => throw UnimplementedError();
 }
 
 abstract class UploadController {
@@ -176,6 +244,7 @@ abstract class UploadController {
   void sendTasks(
     Wallet wallet,
   );
+  void sendTask(UploadTask task, Wallet wallet, {Function()? onTaskCompleted});
   void addTask(UploadTask task);
 
   factory UploadController(
@@ -209,6 +278,8 @@ class _UploadController implements UploadController {
   bool _isCanceled = false;
   bool get isCanceled => _isCanceled;
   DateTime? _start;
+
+  WorkerPool? workerPool;
 
   void init() {
     _isCanceled = false;
@@ -248,15 +319,22 @@ class _UploadController implements UploadController {
 
   @override
   Future<void> cancel() async {
-    for (var task in tasks.values
-        .where((element) => element.status == UploadStatus.inProgress)) {
-      if (task is FileUploadTask) {
-        print('Cancelling task ${task.id}');
+    workerPool?.cancel();
+    _isCanceled = true;
+
+    for (var task in tasks.values) {
+      if (task.status == UploadStatus.complete) continue;
+      if (task.status == UploadStatus.failed) continue;
+      if (task.status == UploadStatus.notStarted) continue;
+
+      if (task.status == UploadStatus.inProgress) {
+        print('Canceling request: ${task.id}');
         await task.streamedUpload.cancel(task, this);
       }
+
+      task = task.copyWith(status: UploadStatus.canceled);
     }
-    // TODO: it's uploading closing the progress stream. We need to cancel the upload
-    _isCanceled = true;
+
     _progressStream.close();
   }
 
@@ -405,10 +483,12 @@ class _UploadController implements UploadController {
       return;
     } else {
       // creates a worker pool and initializes it with the tasks
-      WorkerPool(
+      workerPool = WorkerPool(
         numWorkers: 5,
         maxTasksPerWorker: 5,
-        taskQueue: tasks.values.toList().cast<FileUploadTask>(),
+        taskQueue: tasks.values
+            .where((element) => element.status == UploadStatus.notStarted)
+            .toList(),
         wallet: wallet,
         dataBundler: _dataBundler,
         uploadController: this,
@@ -422,6 +502,18 @@ class _UploadController implements UploadController {
   @override
   void addTask(UploadTask task) {
     tasks[task.id] = task;
+  }
+
+  @override
+  void sendTask(UploadTask task, Wallet wallet, {Function()? onTaskCompleted}) {
+    Worker(
+      wallet: wallet,
+      dataBundler: _dataBundler,
+      uploadController: this,
+      onTaskCompleted: () {
+        onTaskCompleted?.call();
+      },
+    ).addTask(task);
   }
 }
 
@@ -449,6 +541,9 @@ enum UploadStatus {
 
   /// The upload has failed
   failed,
+
+  /// The upload has been canceled
+  canceled,
 }
 
 class UploadProgress {
@@ -604,7 +699,25 @@ class Worker {
             );
           },
         );
+      } else if (task is FolderUploadTask) {
+        // creates the bundle for folders
+        bundle = await dataBundler.createDataBundleForEntities(
+          entities: task.folders,
+          wallet: wallet,
+          driveKey: task.encryptionKey,
+        );
+
+        final folderBundle = (bundle as List<DataResultWithContents>).first;
+
+        bundle = folderBundle.dataItemResult;
       }
+
+      /// The upload can be canceled while the bundle is being created
+      if (task.status == UploadStatus.canceled) {
+        print('Upload canceled');
+        return;
+      }
+
       if (bundle is TransactionResult) {
         task = task.copyWith(
           status: UploadStatus.preparationDone,
@@ -629,9 +742,13 @@ class Worker {
         task: task,
       );
 
-      final value = await (task as FileUploadTask)
-          .streamedUpload
-          .send(task, wallet, uploadController);
+      if (_isCanceled) {
+        print('Upload canceled');
+        return;
+      }
+
+      final value =
+          await task.streamedUpload.send(task, wallet, uploadController);
 
       return value;
     } catch (e) {
@@ -643,15 +760,20 @@ class Worker {
         task: task,
       );
       print('Error: $e');
-      return;
     }
   }
+
+  void cancel() {
+    _isCanceled = true;
+  }
+
+  bool _isCanceled = false;
 }
 
 class WorkerPool {
   final int numWorkers;
   final int maxTasksPerWorker;
-  final List<FileUploadTask> taskQueue;
+  final List<UploadTask> taskQueue;
   final List<Worker> workers;
   final Wallet wallet;
   final DataBundler dataBundler;
@@ -685,6 +807,10 @@ class WorkerPool {
         dataBundler: dataBundler,
         uploadController: uploadController,
         onTaskCompleted: () {
+          if (_isCanceled) {
+            return;
+          }
+
           _assignNextTask(i);
         },
       );
@@ -705,4 +831,15 @@ class WorkerPool {
       workers[workerIndex].addTask(nextTask);
     }
   }
+
+  void cancel() {
+    _isCanceled = true;
+    for (var element in workers) {
+      element.cancel();
+    }
+  }
+
+  bool get isCanceled => _isCanceled;
+
+  bool _isCanceled = false;
 }

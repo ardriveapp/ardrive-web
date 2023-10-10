@@ -334,7 +334,10 @@ class _ArDriveUploader implements ArDriveUploader {
       _turboUploadUri,
     );
 
-    final entitiesWithMedata = <(ARFSUploadMetadata, IOEntity)>[];
+    final filesWitMetadatas = <(ARFSFileUploadMetadata, IOFile)>[];
+    final folderMetadatas = <(ARFSFolderUploadMetatadata, IOEntity)>[];
+
+    FolderUploadTask? folderUploadTask;
 
     for (var e in entities) {
       final metadata = await _metadataGenerator.generateMetadata(
@@ -342,11 +345,13 @@ class _ArDriveUploader implements ArDriveUploader {
         e.$1,
       );
 
-      entitiesWithMedata.add((metadata, e.$2));
+      if (metadata is ARFSFolderUploadMetatadata) {
+        folderMetadatas.add((metadata, e.$2));
+        continue;
+      } else if (metadata is ARFSFileUploadMetadata) {
+        filesWitMetadatas.add((metadata, e.$2 as IOFile));
+      }
     }
-
-    final folderMetadatas =
-        entitiesWithMedata.where((element) => element.$2 is IOFolder).toList();
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
@@ -355,57 +360,42 @@ class _ArDriveUploader implements ArDriveUploader {
     );
 
     if (folderMetadatas.isNotEmpty) {
-      final bundle = await dataBundler.createDataBundleForEntities(
-        entities: folderMetadatas,
-        wallet: wallet,
-        driveKey: driveKey,
+      folderUploadTask = FolderUploadTask(
+        folders: folderMetadatas,
+        content: folderMetadatas.map((e) => e.$1).toList(),
+        encryptionKey: driveKey,
+        streamedUpload: _streamedUploadFactory.fromUploadType(
+          type,
+          _turboUploadUri,
+        ),
       );
 
-      /// folders always are generated in the first BDI.
-      final bundleForFolders = bundle.first;
-
-      ARFSUploadTask folderBDITask = ARFSUploadTask(
-        status: UploadStatus.notStarted,
-        content: bundleForFolders.contents,
-      );
-
-      switch (type) {
-        case UploadType.turbo:
-          folderBDITask = folderBDITask.copyWith(
-            uploadItem: BundleDataItemUploadItem(
-              size: bundleForFolders.dataItemResult.dataItemSize,
-              data: bundleForFolders.dataItemResult,
-            ),
-            status: UploadStatus.preparationDone,
-          );
-
-        case UploadType.d2n:
-          folderBDITask = folderBDITask.copyWith(
-            uploadItem: BundleTransactionUploadItem(
-              data: bundleForFolders.dataItemResult,
-              size: bundleForFolders.dataItemResult.dataSize,
-            ),
-          );
-          break;
-      }
-
-      uploadController.updateProgress(
-        task: folderBDITask,
-      );
-
-      // sends the upload
-      streamedUpload.send(folderBDITask, wallet, uploadController);
+      uploadController.addTask(folderUploadTask);
     }
 
-    /// Attaches the upload controller to the upload service and doesn't await
-    /// for the upload to complete.
-    unawaited(_uploadFiles(
-      files: entities.whereType<(ARFSUploadMetadataArgs, IOFile)>().toList(),
-      wallet: wallet,
-      driveKey: driveKey,
-      controller: uploadController,
-      type: type,
-    ));
+    for (var f in filesWitMetadatas) {
+      final fileTask = FileUploadTask(
+        file: f.$2,
+        metadata: f.$1,
+        encryptionKey: driveKey,
+        streamedUpload: _streamedUploadFactory.fromUploadType(
+          type,
+          _turboUploadUri,
+        ),
+        content: [f.$1],
+      );
+
+      uploadController.addTask(fileTask);
+    }
+
+    if (folderUploadTask != null) {
+      // first sends the upload task for the folder and then uploads the files
+      uploadController.sendTask(folderUploadTask, wallet, onTaskCompleted: () {
+        uploadController.sendTasks(wallet);
+      });
+    } else {
+      uploadController.sendTasks(wallet);
+    }
 
     return uploadController;
   }
