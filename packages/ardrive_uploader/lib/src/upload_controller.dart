@@ -308,9 +308,7 @@ class _UploadController implements UploadController {
   UploadProgress _uploadProgress = UploadProgress.notStarted();
 
   @override
-  void onError(Function(List<UploadTask> tasks) callback) {
-    _onError = callback;
-  }
+  void onError(Function(List<UploadTask> tasks) callback) {}
 
   @override
   void onProgressChange(Function(UploadProgress progress) callback) {
@@ -320,10 +318,6 @@ class _UploadController implements UploadController {
   void Function(UploadProgress progress)? _onProgressChange = (progress) {};
 
   void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {
-    print('Upload Finished');
-  };
-
-  void Function(List<UploadTask> tasks) _onError = (List<UploadTask> tasks) {
     print('Upload Finished');
   };
 
