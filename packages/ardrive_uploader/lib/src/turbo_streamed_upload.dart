@@ -79,10 +79,21 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
 
       return value;
     }).onError((e, s) {
+      print(e);
       uploadTask.status = UploadStatus.failed;
       controller.updateProgress(task: uploadTask);
     });
 
     return streamedRequest;
+  }
+
+  @override
+  Future<void> cancel(
+    UploadTask handle,
+    UploadController controller,
+  ) async {
+    handle.status = UploadStatus.failed;
+    controller.updateProgress(task: handle);
+    await _turbo.cancel();
   }
 }

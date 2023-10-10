@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:arweave/arweave.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -25,6 +28,72 @@ class BundleTransactionUploadItem extends UploadItem<TransactionResult> {
       : super(size: size, data: data);
 }
 
+class FileUploadTask extends UploadTask {
+  final IOFile file;
+
+  final ARFSFileUploadMetadata metadata;
+
+  final StreamedUpload streamedUpload;
+
+  @override
+  final UploadItem? uploadItem;
+
+  @override
+  final List<ARFSUploadMetadata>? content;
+
+  @override
+  double progress = 0;
+
+  @override
+  final String id;
+
+  @override
+  bool isProgressAvailable = true;
+
+  FileUploadTask({
+    this.uploadItem,
+    this.isProgressAvailable = true,
+    this.status = UploadStatus.notStarted,
+    this.content,
+    String? id,
+    required this.file,
+    required this.metadata,
+    this.encryptionKey,
+    required this.streamedUpload,
+  }) : id = id ?? const Uuid().v4();
+
+  @override
+  UploadStatus status;
+
+  @override
+  FileUploadTask copyWith({
+    UploadItem? uploadItem,
+    double? progressInPercentage,
+    bool? isProgressAvailable,
+    UploadStatus? status,
+    String? id,
+    ARFSFileUploadMetadata? metadata,
+    List<ARFSUploadMetadata>? content,
+    SecretKey? encryptionKey,
+    StreamedUpload? streamedUpload,
+  }) {
+    return FileUploadTask(
+      streamedUpload: streamedUpload ?? this.streamedUpload,
+      encryptionKey: encryptionKey ?? this.encryptionKey,
+      metadata: metadata ?? this.metadata,
+      uploadItem: uploadItem ?? this.uploadItem,
+      content: content ?? this.content,
+      id: id ?? this.id,
+      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
+      status: status ?? this.status,
+      file: file,
+    );
+  }
+
+  @override
+  final SecretKey? encryptionKey;
+}
+
 abstract class UploadTask<T> {
   abstract final String id;
   abstract final UploadItem? uploadItem;
@@ -32,6 +101,7 @@ abstract class UploadTask<T> {
   abstract double progress;
   abstract bool isProgressAvailable;
   abstract UploadStatus status;
+  abstract final SecretKey? encryptionKey;
 
   UploadTask copyWith({
     UploadItem? uploadItem,
@@ -64,6 +134,7 @@ class ARFSUploadTask implements UploadTask<ARFSUploadMetadata> {
     this.isProgressAvailable = true,
     this.status = UploadStatus.notStarted,
     this.content,
+    this.encryptionKey,
     String? id,
   }) : id = id ?? const Uuid().v4();
 
@@ -87,26 +158,35 @@ class ARFSUploadTask implements UploadTask<ARFSUploadMetadata> {
       status: status ?? this.status,
     );
   }
+
+  @override
+  final SecretKey? encryptionKey;
 }
 
 abstract class UploadController {
   abstract final Map<String, UploadTask> tasks;
 
   Future<void> close();
-  void cancel();
+  Future<void> cancel();
   void onCancel();
   void onDone(Function(List<UploadTask> tasks) callback);
   void onError(Function(List<UploadTask> tasks) callback);
   void updateProgress({UploadTask? task});
   void onProgressChange(Function(UploadProgress progress) callback);
+  void sendTasks(
+    Wallet wallet,
+  );
+  void addTask(UploadTask task);
 
   factory UploadController(
     StreamController<UploadProgress> progressStream,
     StreamedUpload streamedUpload,
+    DataBundler dataBundler,
   ) {
     return _UploadController(
       progressStream: progressStream,
       streamedUpload: streamedUpload,
+      dataBundler: dataBundler,
     );
   }
 }
@@ -114,11 +194,14 @@ abstract class UploadController {
 class _UploadController implements UploadController {
   final StreamController<UploadProgress> _progressStream;
   final StreamedUpload _streamedUpload;
+  final DataBundler _dataBundler;
 
   _UploadController({
     required StreamController<UploadProgress> progressStream,
     required StreamedUpload streamedUpload,
-  })  : _progressStream = progressStream,
+    required DataBundler dataBundler,
+  })  : _dataBundler = dataBundler,
+        _progressStream = progressStream,
         _streamedUpload = streamedUpload {
     init();
   }
@@ -164,7 +247,14 @@ class _UploadController implements UploadController {
   }
 
   @override
-  void cancel() {
+  Future<void> cancel() async {
+    for (var task in tasks.values
+        .where((element) => element.status == UploadStatus.inProgress)) {
+      if (task is FileUploadTask) {
+        print('Cancelling task ${task.id}');
+        await task.streamedUpload.cancel(task, this);
+      }
+    }
     // TODO: it's uploading closing the progress stream. We need to cancel the upload
     _isCanceled = true;
     _progressStream.close();
@@ -232,6 +322,7 @@ class _UploadController implements UploadController {
   void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {
     print('Upload Finished');
   };
+
   void Function(List<UploadTask> tasks) _onError = (List<UploadTask> tasks) {
     print('Upload Finished');
   };
@@ -300,6 +391,43 @@ class _UploadController implements UploadController {
     updateProgress(task: task);
 
     _streamedUpload.send(task, wallet, this);
+  }
+
+  @override
+  void sendTasks(Wallet wallet) {
+    if (tasks.isEmpty) {
+      throw Exception('No tasks to send');
+    }
+
+    if (tasks.length == 1) {
+      // creates a worker and initializes it with the first task
+      Worker(
+        wallet: wallet,
+        dataBundler: _dataBundler,
+        uploadController: this,
+        onTaskCompleted: () {},
+      ).addTask(tasks.values.first);
+
+      return;
+    } else {
+      // creates a worker pool and initializes it with the tasks
+      WorkerPool(
+        numWorkers: 5,
+        maxTasksPerWorker: 5,
+        taskQueue: tasks.values.toList().cast<FileUploadTask>(),
+        wallet: wallet,
+        dataBundler: _dataBundler,
+        uploadController: this,
+        onTaskCompleted: (task) {
+          updateProgress(task: task);
+        },
+      );
+    }
+  }
+
+  @override
+  void addTask(UploadTask task) {
+    tasks[task.id] = task;
   }
 }
 
@@ -419,5 +547,168 @@ class UploadProgress {
     if (elapsedTime == 0) return 0.0;
 
     return (totalUploaded / elapsedTime).toDouble(); // Assuming speed in MB/s
+  }
+}
+
+class Worker {
+  final Function() onTaskCompleted;
+  final int maxTasks;
+  final DataBundler dataBundler;
+  final Wallet wallet;
+  final UploadController uploadController;
+
+  List<Future<void>> taskFutures = [];
+
+  Worker({
+    required this.onTaskCompleted,
+    this.maxTasks = 5,
+    required this.dataBundler,
+    required this.wallet,
+    required this.uploadController,
+  });
+
+  void addTask(UploadTask task) {
+    if (taskFutures.length < maxTasks) {
+      final future = _performUpload(task);
+      taskFutures.add(future);
+
+      future.then((_) {
+        taskFutures.remove(future);
+        onTaskCompleted();
+      });
+    }
+  }
+
+  Future<void> _performUpload(UploadTask task) async {
+    // Your upload logic here
+    /// Can be either a DataItemResult or a TransactionResult
+    dynamic bundle;
+
+    try {
+      if (task is FileUploadTask) {
+        task = task.copyWith(content: [task.metadata]);
+
+        bundle = await dataBundler.createDataBundle(
+          file: task.file,
+          metadata: task.metadata,
+          wallet: wallet,
+          driveKey: task.encryptionKey,
+          onStartBundling: () {
+            task = task.copyWith(
+              status: UploadStatus.bundling,
+            );
+            uploadController.updateProgress(
+              task: task,
+            );
+          },
+          onStartEncryption: () {
+            task = task.copyWith(
+              status: UploadStatus.encryting,
+            );
+            uploadController.updateProgress(
+              task: task,
+            );
+          },
+        );
+      }
+      if (bundle is TransactionResult) {
+        task = task.copyWith(
+          status: UploadStatus.preparationDone,
+          uploadItem: BundleTransactionUploadItem(
+            size: bundle.dataSize,
+            data: bundle,
+          ),
+        );
+      } else if (bundle is DataItemResult) {
+        task = task.copyWith(
+          status: UploadStatus.preparationDone,
+          uploadItem: BundleDataItemUploadItem(
+            size: bundle.dataItemSize,
+            data: bundle,
+          ),
+        );
+      } else {
+        throw Exception('Unknown bundle type');
+      }
+
+      uploadController.updateProgress(
+        task: task,
+      );
+
+      final value = await (task as FileUploadTask)
+          .streamedUpload
+          .send(task, wallet, uploadController);
+
+      return value;
+    } catch (e) {
+      /// Adds the status failed to the upload task and stops the upload.
+      task = task.copyWith(
+        status: UploadStatus.failed,
+      );
+      uploadController.updateProgress(
+        task: task,
+      );
+      print('Error: $e');
+      return;
+    }
+  }
+}
+
+class WorkerPool {
+  final int numWorkers;
+  final int maxTasksPerWorker;
+  final List<FileUploadTask> taskQueue;
+  final List<Worker> workers;
+  final Wallet wallet;
+  final DataBundler dataBundler;
+  final UploadController uploadController;
+
+  WorkerPool({
+    required this.numWorkers,
+    required this.maxTasksPerWorker,
+    required this.taskQueue,
+    required this.wallet,
+    required Function(UploadTask task) onTaskCompleted,
+    required this.dataBundler,
+    required this.uploadController,
+  }) : workers = List.generate(
+          numWorkers,
+          (index) => Worker(
+            wallet: wallet,
+            dataBundler: dataBundler,
+            uploadController: uploadController,
+            onTaskCompleted: () {},
+          ),
+        ) {
+    _setWorkerCallbacks();
+    _initializeWorkers();
+  }
+
+  void _setWorkerCallbacks() {
+    for (var i = 0; i < numWorkers; i++) {
+      workers[i] = Worker(
+        wallet: wallet,
+        dataBundler: dataBundler,
+        uploadController: uploadController,
+        onTaskCompleted: () {
+          _assignNextTask(i);
+        },
+      );
+    }
+  }
+
+  void _initializeWorkers() {
+    for (var i = 0; i < numWorkers; i++) {
+      for (var j = 0; j < maxTasksPerWorker; j++) {
+        _assignNextTask(i);
+      }
+    }
+  }
+
+  void _assignNextTask(int workerIndex) {
+    if (taskQueue.isNotEmpty) {
+      final nextTask = taskQueue.removeAt(0);
+      workers[workerIndex].addTask(nextTask);
+    }
   }
 }

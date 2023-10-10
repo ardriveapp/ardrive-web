@@ -768,6 +768,16 @@ class _UploadFormState extends State<UploadForm> {
   }) {
     final progress = state.progress;
     return ArDriveStandardModal(
+      actions: [
+        ModalAction(
+          action: () {
+            context.read<UploadCubit>().cancelUpload();
+          },
+          title: state.isCanceling
+              ? appLocalizationsOf(context).cancelEmphasized
+              : 'Canceling...',
+        ),
+      ],
       width: kLargeDialogWidth,
       title:
           '${appLocalizationsOf(context).uploadingNFiles(state.progress.getNumberOfItems())} ${(state.totalProgress * 100).toStringAsFixed(2)}%',

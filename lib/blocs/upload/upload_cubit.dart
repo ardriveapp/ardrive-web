@@ -780,10 +780,19 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
+        logger.d('Upload finished');
+
+        for (var task in tasks) {
+          logger.d('Task status: ${task.status}');
+        }
+
         if (tasks.any((element) => element.status == UploadStatus.failed)) {
           // if any of the files failed, we should throw an error
+          logger.e('Error uploading');
           addError(Exception('Error uploading'));
         }
+
+        logger.d('Saving files on database');
 
         for (var task in tasks
             .where((element) => element.status == UploadStatus.complete)) {
@@ -1009,6 +1018,36 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadFailure(error: UploadErrors.unknown));
     logger.e('Failed to upload file', error, stackTrace);
     super.onError(error, stackTrace);
+  }
+
+  Future<void> cancelUpload() async {
+    if (state is UploadInProgressUsingNewUploader) {
+      final state = this.state as UploadInProgressUsingNewUploader;
+
+      emit(
+        UploadInProgressUsingNewUploader(
+          controller: state.controller,
+          equatableBust: state.equatableBust,
+          progress: state.progress,
+          totalProgress: state.totalProgress,
+          isCanceling: true,
+        ),
+      );
+
+      emit(UploadFailure(error: UploadErrors.unknown));
+
+      await state.controller.cancel();
+
+      emit(
+        UploadInProgressUsingNewUploader(
+          controller: state.controller,
+          equatableBust: state.equatableBust,
+          progress: state.progress,
+          totalProgress: state.totalProgress,
+          isCanceling: false,
+        ),
+      );
+    }
   }
 }
 

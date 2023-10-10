@@ -85,6 +85,10 @@ class _ArDriveUploader implements ArDriveUploader {
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       _streamedUploadFactory.fromUploadType(type, _turboUploadUri),
+      _dataBundlerFactory.createDataBundler(
+        metadataGenerator: _metadataGenerator,
+        type: type,
+      ),
     );
 
     final metadata = await _metadataGenerator.generateMetadata(
@@ -97,14 +101,9 @@ class _ArDriveUploader implements ArDriveUploader {
       content: [metadata],
     );
 
-    _uploadSingleFile(
-      file: file,
-      uploadController: uploadController,
-      wallet: wallet,
-      uploadTask: uploadTask,
-      metadata: metadata,
-      type: type,
-    );
+    uploadController.addTask(uploadTask);
+
+    uploadController.sendTasks(wallet);
 
     return uploadController;
   }
@@ -121,17 +120,32 @@ class _ArDriveUploader implements ArDriveUploader {
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       _streamedUploadFactory.fromUploadType(type, _turboUploadUri),
+      _dataBundlerFactory.createDataBundler(
+        metadataGenerator: _metadataGenerator,
+        type: type,
+      ),
     );
 
-    /// Attaches the upload controller to the upload service and doesn't await
-    /// for the upload to complete.
-    unawaited(_uploadFiles(
-      files: files,
-      wallet: wallet,
-      controller: uploadController,
-      driveKey: driveKey,
-      type: type,
-    ));
+    for (var f in files) {
+      final metadata = await _metadataGenerator.generateMetadata(
+        f.$2,
+        f.$1,
+      );
+
+      final fileTask = FileUploadTask(
+        file: f.$2,
+        metadata: metadata as ARFSFileUploadMetadata,
+        encryptionKey: driveKey,
+        streamedUpload: _streamedUploadFactory.fromUploadType(
+          type,
+          _turboUploadUri,
+        ),
+      );
+
+      uploadController.addTask(fileTask);
+    }
+
+    uploadController.sendTasks(wallet);
 
     return uploadController;
   }
@@ -300,6 +314,7 @@ class _ArDriveUploader implements ArDriveUploader {
     return value;
   }
 
+  // TODO: Check it
   @override
   Future<UploadController> uploadEntities({
     required List<(ARFSUploadMetadataArgs, IOEntity)> entities,
@@ -313,6 +328,7 @@ class _ArDriveUploader implements ArDriveUploader {
       metadataGenerator: _metadataGenerator,
       type: type,
     );
+
     final streamedUpload = _streamedUploadFactory.fromUploadType(
       type,
       _turboUploadUri,
@@ -335,6 +351,7 @@ class _ArDriveUploader implements ArDriveUploader {
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       streamedUpload,
+      dataBundler,
     );
 
     if (folderMetadatas.isNotEmpty) {

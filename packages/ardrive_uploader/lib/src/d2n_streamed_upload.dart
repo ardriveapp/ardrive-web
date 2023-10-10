@@ -51,4 +51,10 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
       listen.asFuture();
     });
   }
+
+  @override
+  Future<void> cancel(UploadTask handle, UploadController controller) {
+    // TODO: implement cancel
+    throw UnimplementedError();
+  }
 }

@@ -11,4 +11,6 @@ abstract class TurboUploadService<T> {
     required int size,
     required Map<String, dynamic> headers,
   });
+
+  Future<void> cancel();
 }

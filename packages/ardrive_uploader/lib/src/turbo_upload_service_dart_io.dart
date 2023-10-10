@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:arweave/arweave.dart';
@@ -14,6 +15,8 @@ class TurboUploadServiceImpl implements TurboUploadService<Response> {
   TurboUploadServiceImpl({
     required this.turboUploadUri,
   });
+
+  final _streamController = StreamController<Uint8List>();
 
   /// We are using Dio directly here. In the future we must adapt our ArDriveHTTP to support
   /// streaming uploads.
@@ -34,6 +37,8 @@ class TurboUploadServiceImpl implements TurboUploadService<Response> {
       dataItemSize += data.length;
     }
 
+    dataItem.streamGenerator().pipe(_streamController.sink);
+
     final dio = Dio();
 
     final response = await dio.post(
@@ -42,7 +47,7 @@ class TurboUploadServiceImpl implements TurboUploadService<Response> {
         print('Sent: $sent, total: $total');
         onSendProgress?.call(sent / total);
       },
-      data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
+      data: _streamController.stream, // Creates a Stream<List<int>>.
       options: Options(
         headers: {
           // stream
@@ -55,6 +60,13 @@ class TurboUploadServiceImpl implements TurboUploadService<Response> {
     print('Response from turbo: ${response.statusCode}');
 
     return response;
+  }
+
+  @override
+  Future<void> cancel() {
+    _streamController.close();
+    print('Stream closed');
+    return Future.value();
   }
 }
 

@@ -571,11 +571,9 @@ packages:
   fetch_client:
     dependency: "direct overridden"
     description:
-      path: "."
-      ref: ignore-headers
-      resolved-ref: ba37ef6eaa291cdb36b4616c6fbec3c690bca728
-      url: "https://github.com/karlprieb/fetch_client.git"
-    source: git
+      path: "../packages/fetch_client"
+      relative: true
+    source: path
     version: "1.0.2"
   ffi:
     dependency: transitive

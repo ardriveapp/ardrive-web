@@ -20,6 +20,16 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required this.turboUploadUri,
   });
 
+  final _streamController = StreamController<Uint8List>(sync: true);
+  final _fetchController = StreamController<List<int>>(sync: false);
+  final CancelToken _cancelToken = CancelToken();
+
+  final client = FetchClient(
+    mode: RequestMode.cors,
+    streamRequests: true,
+    cache: RequestCache.noCache,
+  );
+
   @override
   Future<dynamic> postStream({
     required DataItemResult dataItem,
@@ -64,6 +74,8 @@ class TurboUploadServiceImpl implements TurboUploadService {
       dataItemSize += data.length;
     }
 
+    dataItem.streamGenerator().pipe(_streamController.sink);
+
     final dio = Dio();
 
     final response = await dio.post(
@@ -71,7 +83,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
       onSendProgress: (sent, total) {
         onSendProgress?.call(sent / total);
       },
-      data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
+      data: _streamController.stream, // Creates a Stream<List<int>>.
       options: Options(
         headers: {
           // stream
@@ -79,6 +91,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
           Headers.contentLengthHeader: dataItemSize, // Set the content-length.
         }..addAll(headers),
       ),
+      cancelToken: _cancelToken,
     );
 
     print('Response from turbo: ${response.statusCode}');
@@ -116,23 +129,15 @@ class TurboUploadServiceImpl implements TurboUploadService {
       );
     }
 
-    final client = FetchClient(
-      mode: RequestMode.cors,
-      streamRequests: true,
-      cache: RequestCache.noCache,
-    );
-
-    final controller = StreamController<List<int>>(sync: false);
-
     final request = ArDriveStreamedRequest(
       'POST',
       Uri.parse(url),
-      controller,
+      _fetchController,
     )..headers.addAll({
         'content-type': 'application/octet-stream',
       });
 
-    controller
+    _fetchController
         .addStream(
       dataItem.streamGenerator().transform(
             createPassthroughTransformer(),
@@ -143,21 +148,36 @@ class TurboUploadServiceImpl implements TurboUploadService {
       request.sink.close();
     });
 
-    controller.onPause = () {
+    _fetchController.onPause = () {
       print('Paused');
     };
 
-    controller.onResume = () {
+    _fetchController.onResume = () {
       print('Resumed');
     };
 
-    request.contentLength = dataItemSize;
+    try {
+      request.contentLength = dataItemSize;
 
-    final response = await client.send(request);
+      final response = await client.send(request);
 
-    print(await utf8.decodeStream(response.stream));
+      print(await utf8.decodeStream(response.stream));
 
-    return response;
+      return response;
+    } catch (e) {
+      print(e);
+      print('end of stream');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> cancel() async {
+    _cancelToken.cancel();
+    client.close();
+    _fetchController.close();
+    _streamController.close();
+    print('Stream closed');
   }
 }
 

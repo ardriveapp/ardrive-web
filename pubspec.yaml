@@ -146,9 +146,10 @@ dependency_overrides:
       path: packages/stripe_platform_interface
       ref: main
   fetch_client:
-    git:
-      url: https://github.com/karlprieb/fetch_client.git
-      ref: ignore-headers
+    path: ../packages/fetch_client
+    # git:
+    #   url: https://github.com/karlprieb/fetch_client.git
+    #   ref: ignore-headers
   http: ^1.1.0
 
 dev_dependencies:

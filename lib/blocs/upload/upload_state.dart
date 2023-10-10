@@ -211,6 +211,7 @@ class UploadInProgressUsingNewUploader extends UploadState {
   final UploadProgress progress;
   final UploadController controller;
   final double totalProgress;
+  final bool isCanceling;
   final Key? equatableBust;
 
   UploadInProgressUsingNewUploader({
@@ -218,6 +219,7 @@ class UploadInProgressUsingNewUploader extends UploadState {
     required this.totalProgress,
     required this.controller,
     this.equatableBust,
+    this.isCanceling = false,
   });
 
   @override
