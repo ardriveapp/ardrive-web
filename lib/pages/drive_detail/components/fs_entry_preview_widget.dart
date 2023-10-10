@@ -193,6 +193,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
         videoValue.duration > Duration.zero &&
         _errorMessage == null;
 
+    var bufferedValue = videoValue.buffered.isNotEmpty
+        ? videoValue.buffered.last.end.inMilliseconds.toDouble()
+        : 0.0;
+
     return VisibilityDetector(
         key: const Key('video-player'),
         onVisibilityChanged: (VisibilityInfo info) async {
@@ -228,10 +232,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                 .smallBold700(color: colors.themeFgMuted)
                                 .copyWith(fontSize: 13),
                           ))
-                      : AspectRatio(
-                          aspectRatio: _videoPlayerController.value.aspectRatio,
-                          child: VideoPlayer(_videoPlayerController,
-                              key: const Key('videoPlayer')))),
+                      : !videoValue.isInitialized
+                          ? const Center(
+                              child: SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          : AspectRatio(
+                              aspectRatio:
+                                  _videoPlayerController.value.aspectRatio,
+                              child: VideoPlayer(_videoPlayerController,
+                                  key: const Key('videoPlayer')))),
             ],
           ))),
           Padding(
@@ -258,6 +271,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                         value: min(
                             videoValue.position.inMilliseconds.toDouble(),
                             videoValue.duration.inMilliseconds.toDouble()),
+                        secondaryTrackValue: bufferedValue,
                         min: 0.0,
                         max: videoValue.duration.inMilliseconds.toDouble(),
                         onChangeStart: !controlsEnabled
@@ -595,6 +609,10 @@ class _FullScreenVideoPlayerWidgetState
     var currentTime = getTimeString(videoValue.position);
     var duration = getTimeString(videoValue.duration);
 
+    var bufferedValue = videoValue.buffered.isNotEmpty
+        ? videoValue.buffered.last.end.inMilliseconds.toDouble()
+        : 0.0;
+
     return Scaffold(
         body: Center(
             child: Stack(
@@ -614,7 +632,15 @@ class _FullScreenVideoPlayerWidgetState
                         .smallBold700(color: colors.themeFgMuted)
                         .copyWith(fontSize: 13),
                   ))
-              : _videoPlayer ?? const SizedBox.shrink(),
+              : !videoValue.isInitialized
+                  ? const Center(
+                      child: SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : _videoPlayer ?? const SizedBox.shrink(),
         )),
         MouseRegion(
           onHover: (event) {
@@ -726,6 +752,7 @@ class _FullScreenVideoPlayerWidgetState
                                                 videoValue
                                                     .duration.inMilliseconds
                                                     .toDouble()),
+                                            secondaryTrackValue: bufferedValue,
                                             min: 0.0,
                                             max: videoValue
                                                 .duration.inMilliseconds
