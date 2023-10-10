@@ -774,4 +774,29 @@ void main() {
       });
     });
   });
+
+  group('getWalletAddress method', () {
+    test('should return the wallet address when user is logged in', () async {
+      const publicKey =
+          'y6tP8PVR5VSOsouFIDFBIDAAQ19b25pQRcDrdYDyBr7dtW5sKHHpcrA-I1scOk5H_ZX22_4E5T568SToox_y5XeBJ3nw9kB8HzgdmQyMnEBnb050NvKv2w47vD7I0I7qrRSqJ8dt3Q3UPZvkys9sm2HEpoMaaJ-Fx44ww1CYs5U2KXI-BSpwA7SQE3eRIESZ-kD4D9TYt5ykuslRKOM1lZSiRxGqKfpnutKNZ5tdl5-d9Z4eZ2qeMETevbhXUjh8p7sJbWb02hHozNJUBawuZ3xQ2KRQqymFM9GqKE8EnHIVvR2V1LIkbcWbEIuSpqviwLschZpQ9pbTljMOqKR7_ox_199qyU9z4nnJsGLBZnv5ilGs1J5dlCitDlRCMJ53A9e5GojEzKOpzaFfHlei9DD2MUN8cKc7_pQuFuhNwkMwzKduekmFgRdvIr0ZlyRiG02CX3txpXjqw5iBYjhs4fQhNE0nj9FzBnEm4z_NltyTAf8W6TbKN40AFn__A5-wUDQ1XdA7bgPfz4UMDyldkHLXTzdgn5jg2-233IO5PK0xOes0jMRdR1d0jqF38wldgWtBt6oDk8jic6hCUCP29zoYqlNRcJHKFRDWZaZMkmVQON6-EvilC7-sGiKsbcTIhRw-wuC0guQFHSUiJpJZB9hWmMHejGqME0mCin6gQFM';
+      const expectedWalletAddress =
+          'e3a1dzQ1DlGBHa7hjOzTtODLLHwwRsbq0evWvJMqkkc';
+
+      when(() => mockUserRepository.getOwnerOfDefaultProfile())
+          .thenAnswer((_) async => publicKey);
+
+      final walletAddress = await arDriveAuth.getWalletAddress();
+
+      expect(walletAddress, expectedWalletAddress);
+    });
+
+    test('should return null when user is not logged in', () async {
+      when(() => mockUserRepository.getOwnerOfDefaultProfile())
+          .thenAnswer((_) async => null);
+
+      final walletAddress = await arDriveAuth.getWalletAddress();
+
+      expect(walletAddress, null);
+    });
+  });
 }
