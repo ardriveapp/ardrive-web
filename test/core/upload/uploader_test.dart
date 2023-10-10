@@ -67,13 +67,13 @@ class MockUploadPaymentEvaluator extends Mock
     implements UploadPaymentEvaluator {}
 
 void main() {
-  ArDriveUploader uploader;
+  ArDriveUploaderFromHandles uploader;
   MockBundleUploader bundleUploader;
   MockFileV2Uploader fileV2Uploader;
 
   bundleUploader = MockBundleUploader();
   fileV2Uploader = MockFileV2Uploader();
-  uploader = ArDriveUploader(
+  uploader = ArDriveUploaderFromHandles(
     bundleUploader: bundleUploader,
     fileV2Uploader: fileV2Uploader,
     prepareBundle: (handle) async {},

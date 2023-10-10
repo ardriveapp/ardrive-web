@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -91,6 +93,8 @@ class FileEntity extends EntityWithCustomMetadata {
           data,
           fileKey,
         );
+
+        logger.d('entityJson: $entityJson');
       }
 
       final commitTime = transaction.getCommitTime();
@@ -116,7 +120,8 @@ class FileEntity extends EntityWithCustomMetadata {
       );
 
       return file;
-    } catch (_) {
+    } catch (e, s) {
+      logger.e('Failed to parse transaction: ${transaction.id}', e, s);
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }
@@ -131,7 +136,7 @@ class FileEntity extends EntityWithCustomMetadata {
 
     tx
       ..addArFsTag()
-      ..addTag(EntityTag.entityType, EntityType.file)
+      ..addTag(EntityTag.entityType, EntityTypeTag.file)
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.parentFolderId, parentFolderId!)
       ..addTag(EntityTag.fileId, id!);

@@ -7,10 +7,10 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +52,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     return arconnect.isExtensionPresent();
   }
 
-  ProfileType? getProfileType() => _profileType;
+  ProfileType getProfileType() => _profileType;
 
   Future<void> promptForWallet() async {
     if (_profileType == ProfileType.arConnect) {
@@ -168,7 +168,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       final String password = form.control('password').value;
 
       final privateDriveTxs = _driveTxs.where(
-          (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+          (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private);
 
       // Try and decrypt one of the user's private drive entities to check if they are entering the
       // right password.

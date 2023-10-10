@@ -9,6 +9,12 @@ abstract class PaymentFormState extends Equatable {
   final PriceEstimate priceEstimate;
   final int quoteExpirationTimeInSeconds;
 
+  bool get hasPromoCodeApplied => priceEstimate.hasPromoCodeApplied;
+  String? get humanReadableDiscountPercentage =>
+      priceEstimate.humanReadableDiscountPercentage;
+  String get paymentAmount => priceEstimate.paymentAmount.toStringAsFixed(2);
+  BigInt get winstonCredits => priceEstimate.winstonCredits;
+
   @override
   List<Object> get props => [
         priceEstimate,
@@ -35,21 +41,6 @@ class PaymentFormLoaded extends PaymentFormState {
   final bool isPromoCodeInvalid;
   final bool isFetchingPromoCode;
   final bool errorFetchingPromoCode;
-
-  double? get promoDiscountFactor {
-    if (priceEstimate.estimate.adjustments.isEmpty) {
-      return null;
-    }
-
-    final adjustment = priceEstimate.estimate.adjustments.first;
-    final adjustmentMagnitude = adjustment.operatorMagnitude;
-
-    // Multiplying by 100 and then dividing by 100 is a workaround for
-    /// floating point precision issues.
-    final factor = (100 - (adjustmentMagnitude * 100)) / 100;
-
-    return factor;
-  }
 
   const PaymentFormLoaded(
     super.priceEstimate,

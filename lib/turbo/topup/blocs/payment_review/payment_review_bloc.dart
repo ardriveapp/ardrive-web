@@ -47,7 +47,9 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         userAcceptedToReceiveEmails: event.userAcceptedToReceiveEmails,
       );
 
-      final paymentStatus = await turbo.confirmPayment();
+      final paymentStatus = await turbo.confirmPayment(
+        dryRun: event.dryRun,
+      );
 
       if (paymentStatus == PaymentStatus.success) {
         _emitPaymentSuccess(emit);

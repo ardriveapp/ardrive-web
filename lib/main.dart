@@ -12,8 +12,6 @@ import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
 import 'package:ardrive/pst/community_oracle.dart';
 import 'package:ardrive/pst/contract_oracle.dart';
-import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
-import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
@@ -24,7 +22,6 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
-import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
@@ -32,6 +29,7 @@ import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -44,6 +42,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:provider/provider.dart';
 
 import 'blocs/blocs.dart';
 import 'firebase_options.dart';
@@ -62,6 +61,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final localStore = await LocalKeyValueStore.getInstance();
+
+  await AppInfoServices().loadAppInfo();
 
   configService = ConfigService(
     appFlavors: AppFlavors(EnvFetcher()),
@@ -98,7 +99,7 @@ Future<void> _initialize() async {
 
   logger.i('Initializing with config: $config');
 
-  ArDriveDownloader.initialize();
+  ArDriveMobileDownloader.initialize();
 
   _arweave = ArweaveService(
     Arweave(
@@ -180,7 +181,8 @@ class AppState extends State<App> {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<ActivityTracker>(create: (_) => ActivityTracker()),
+        ChangeNotifierProvider<ActivityTracker>(
+            create: (_) => ActivityTracker()),
         RepositoryProvider<ArweaveService>(create: (_) => _arweave),
         // repository provider for UploadFileChecker
         RepositoryProvider<UploadFileChecker>(
@@ -205,8 +207,8 @@ class AppState extends State<App> {
             communityOracle: CommunityOracle(
               ArDriveContractOracle([
                 ContractOracle(VertoContractReader()),
-                ContractOracle(RedstoneContractReader()),
-                ContractOracle(SmartweaveContractReader()),
+                // ContractOracle(RedstoneContractReader()),
+                // ContractOracle(SmartweaveContractReader()),
               ]),
             ),
           ),

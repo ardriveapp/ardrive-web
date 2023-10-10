@@ -73,7 +73,7 @@ class CommunityOracle {
     final Map<ArweaveAddress, double> weighted = {};
     for (final addr in balances.keys) {
       weighted[addr] = balances[addr]! / total;
-    }
+  }
 
     // Get a random holder based off of the weighted list of holders
     final randomHolder = weightedRandom(weighted, testingRandom: testingRandom);

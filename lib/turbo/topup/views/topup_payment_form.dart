@@ -11,6 +11,7 @@ import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -117,7 +118,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     return BlocListener<PaymentFormBloc, PaymentFormState>(
       listener: (context, state) {
         if (state is PaymentFormError) {
-          showAnimatedDialog(
+          showArDriveDialog(
             context,
             barrierDismissible: false,
             content: ArDriveStandardModal(
@@ -237,24 +238,18 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
                     return Text(
-                      '${convertCreditsToLiteralString(state.priceEstimate.estimate.winstonCredits)} Credits',
+                      '${convertCreditsToLiteralString(state.winstonCredits)} Credits',
                       style: ArDriveTypography.body.leadBold(),
                     );
                   },
                 ),
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
-                    final actualPaymentAmount = state
-                            .priceEstimate.estimate.adjustments.isNotEmpty
-                        ? state.priceEstimate.estimate.actualPaymentAmount! /
-                            100
-                        : state.priceEstimate.priceInCurrency;
                     return RichText(
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text:
-                                '\$${(actualPaymentAmount).toStringAsFixed(2)}',
+                            text: '\$${state.paymentAmount}',
                             style: ArDriveTypography.body.captionBold(
                               color: ArDriveTheme.of(context)
                                   .themeData
@@ -262,12 +257,10 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                                   .themeFgMuted,
                             ),
                           ),
-                          if (state.priceEstimate.estimate
-                                  .humanReadableDiscountPercentage !=
-                              null)
+                          if (state.hasPromoCodeApplied)
                             TextSpan(
                               text:
-                                  ' (${state.priceEstimate.estimate.humanReadableDiscountPercentage}% discount applied)', // TODO: localize
+                                  ' (${state.humanReadableDiscountPercentage}% discount applied)', // TODO: localize
                               style: ArDriveTypography.body.buttonNormalRegular(
                                 color: ArDriveTheme.of(context)
                                     .themeData
@@ -429,13 +422,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               nameOnCardTextField(),
             ],
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              countryTextField(theme),
-            ],
-          ),
-          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(bottom: 4, right: 16),
             child: Align(
@@ -490,6 +476,13 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 });
               },
             ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              countryTextField(theme),
+            ],
           ),
           const SizedBox(height: 16),
           Row(children: [promoCodeLabel()]),
@@ -616,8 +609,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   Widget promoCodeWidget(ArDriveTextFieldTheme theme) {
     return BlocBuilder<PaymentFormBloc, PaymentFormState>(
         builder: (context, state) {
-      final hasPromoCodeApplied =
-          state.priceEstimate.estimate.adjustments.isNotEmpty;
+      final hasPromoCodeApplied = state.hasPromoCodeApplied;
 
       return Expanded(
         child: hasPromoCodeApplied
@@ -1017,11 +1009,29 @@ class InputDropdownMenu<T extends InputDropdownItem> extends StatefulWidget {
 class _InputDropdownMenuState<T extends InputDropdownItem>
     extends State<InputDropdownMenu<T>> {
   T? _selectedItem;
+  final GlobalKey _childKey = GlobalKey();
+  double? _childWidth;
+  double get childWidth => _childWidth ?? 200;
+
+  void _refreshChildWidth() {
+    final currentContext = _childKey.currentContext;
+    if (currentContext == null) {
+      return;
+    }
+
+    final RenderBox renderBox =
+        _childKey.currentContext!.findRenderObject() as RenderBox;
+
+    setState(() {
+      _childWidth = renderBox.size.width;
+    });
+  }
 
   @override
   initState() {
     super.initState();
     _selectedItem = widget.selectedItem;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshChildWidth());
   }
 
   @override
@@ -1031,13 +1041,12 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
         showScrollbars: true,
         onClick: widget.onClick,
         maxHeight: 275,
-        width: 200,
         anchor: widget.anchor,
         items: widget.items
             .map(
               (e) => ArDriveDropdownItem(
                 content: Container(
-                  width: 200,
+                  width: _childWidth,
                   alignment: Alignment.center,
                   height: 44,
                   color: widget.backgroundColor ??
@@ -1071,6 +1080,7 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
             )
             .toList(),
         child: Column(
+          key: _childKey,
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,

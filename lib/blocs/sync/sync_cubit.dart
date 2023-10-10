@@ -17,14 +17,13 @@ import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:retry/retry.dart';
-
-import '../../utils/html/html_util.dart';
 
 part 'sync_progress.dart';
 part 'sync_state.dart';

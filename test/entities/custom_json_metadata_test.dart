@@ -1,4 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -135,7 +136,7 @@ void main() {
       folderEntity.driveId = '';
       folderEntity.parentFolderId = '';
       driveEntity.id = '';
-      driveEntity.privacy = DrivePrivacy.public;
+      driveEntity.privacy = DrivePrivacyTag.public;
 
       fileTransaction = await fileEntity.asTransaction();
       folderTransaction = await folderEntity.asTransaction();
