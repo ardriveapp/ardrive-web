@@ -32,11 +32,25 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
           // updates the progress. progress.$1 is the current chunk, progress.$2 is the total chunks
           handle.progress = (progress.$1 / progress.$2);
           controller.updateProgress(task: handle);
+
+          if (progress.$1 == progress.$2) {
+            print('D2NStreamedUpload.send.onDone');
+            // finishes the upload
+            handle = handle.copyWith(
+              status: UploadStatus.complete,
+              progressInPercentage: 1,
+            );
+
+            controller.updateProgress(task: handle);
+          }
         },
         onDone: () {
+          print('D2NStreamedUpload.send.onDone');
           // finishes the upload
           handle = handle.copyWith(
-              status: UploadStatus.complete, progressInPercentage: 1);
+            status: UploadStatus.complete,
+            progressInPercentage: 1,
+          );
 
           controller.updateProgress(task: handle);
         },

@@ -33,8 +33,10 @@ abstract class DataBundler<T> {
     required ARFSUploadMetadata metadata,
     required Wallet wallet,
     SecretKey? driveKey,
-    Function? onStartEncryption,
-    Function? onStartBundling,
+    Function? onStartMetadataCreation,
+    Function? onFinishMetadataCreation,
+    Function? onStartBundleCreation,
+    Function? onFinishBundleCreation,
   });
 
   Future<DataResultWithContents<T>> createDataBundleForEntity({
@@ -65,6 +67,10 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     SecretKey? driveKey,
     Function? onStartEncryption,
     Function? onStartBundling,
+    Function? onStartMetadataCreation,
+    Function? onFinishMetadataCreation,
+    Function? onStartBundleCreation,
+    Function? onFinishBundleCreation,
   }) async {
     if (driveKey != null) {
       onStartEncryption?.call();
@@ -81,6 +87,8 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       driveKey: driveKey,
     );
 
+    onStartMetadataCreation?.call();
+
     final metadataDataItem = await _generateMetadataDataItemForFile(
       metadata: metadata,
       dataStream: dataGenerator,
@@ -89,12 +97,16 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       driveKey: driveKey,
     );
 
+    onFinishMetadataCreation?.call();
+
     final fileDataItem = _generateFileDataItem(
       metadata: metadata,
       dataStream: dataGenerator.$1,
       fileLength: await file.length,
       cipherIv: dataGenerator.$2,
     );
+
+    onStartBundleCreation?.call();
 
     final transactionResult = await createDataBundleTransaction(
       dataItemFiles: [
@@ -104,6 +116,8 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       wallet: wallet,
       tags: metadata.bundleTags.map((e) => createTag(e.name, e.value)).toList(),
     );
+
+    onFinishBundleCreation?.call();
 
     return transactionResult;
   }
@@ -288,8 +302,11 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     required ARFSUploadMetadata metadata,
     required Wallet wallet,
     SecretKey? driveKey,
-    Function? onStartEncryption,
     Function? onStartBundling,
+    Function? onStartMetadataCreation,
+    Function? onFinishMetadataCreation,
+    Function? onStartBundleCreation,
+    Function? onFinishBundleCreation,
   }) {
     return _createBundleStable(
       file: file,
@@ -297,7 +314,10 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       wallet: wallet,
       driveKey: driveKey,
       onStartBundling: onStartBundling,
-      onStartEncryption: onStartEncryption,
+      onFinishBundleCreation: onFinishBundleCreation,
+      onStartBundleCreation: onStartBundleCreation,
+      onStartMetadataCreation: onStartMetadataCreation,
+      onFinishMetadataCreation: onFinishMetadataCreation,
     );
   }
 
@@ -305,15 +325,16 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     required IOFile file,
     required ARFSUploadMetadata metadata,
     required Wallet wallet,
-    Function? onStartEncryption,
     Function? onStartBundling,
     SecretKey? driveKey,
+    Function? onStartMetadataCreation,
+    Function? onFinishMetadataCreation,
+    Function? onStartBundleCreation,
+    Function? onFinishBundleCreation,
   }) async {
-    if (driveKey != null) {
-      onStartEncryption?.call();
-    } else {
-      onStartBundling?.call();
-    }
+    print('Creating bundle for file: ${file.path}');
+    onStartMetadataCreation?.call();
+    print('Creating metadata data item');
 
     // returns the encrypted or not file read stream and the cipherIv if it was encrypted
     final dataGenerator = await _dataGenerator(
@@ -332,12 +353,16 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       driveKey: driveKey,
     );
 
+    onFinishMetadataCreation?.call();
+
     final fileDataItem = _generateFileDataItem(
       metadata: metadata,
       dataStream: dataGenerator.$1,
       fileLength: await file.length,
       cipherIv: dataGenerator.$2,
     );
+
+    onStartBundleCreation?.call();
 
     final createBundledDataItem = createBundledDataItemTaskEither(
       dataItemFiles: [
@@ -349,6 +374,8 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     );
 
     final bundledDataItem = await (await createBundledDataItem).run();
+
+    onFinishBundleCreation?.call();
 
     return bundledDataItem.match((l) {
       print('Error: $l');

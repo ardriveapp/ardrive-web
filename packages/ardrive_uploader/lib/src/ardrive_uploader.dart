@@ -145,6 +145,8 @@ class _ArDriveUploader implements ArDriveUploader {
       uploadController.addTask(fileTask);
     }
 
+    uploadController.updateProgress();
+
     uploadController.sendTasks(wallet);
 
     return uploadController;

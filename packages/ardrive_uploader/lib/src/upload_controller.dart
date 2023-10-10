@@ -376,9 +376,9 @@ class _UploadController implements UploadController {
         totalUploaded: totalUploaded(taskList),
         startTime: _start,
       );
-
-      _progressStream.add(_uploadProgress);
     }
+
+    _progressStream.add(_uploadProgress);
 
     return;
   }
@@ -524,8 +524,11 @@ enum UploadStatus {
   /// The upload is in progress
   inProgress,
 
+  /// The upload is being prepared
+  creatingMetadata,
+
   /// The upload is being bundled
-  bundling,
+  creatingBundle,
 
   /// The upload is being encrypted
   encryting,
@@ -682,18 +685,23 @@ class Worker {
           metadata: task.metadata,
           wallet: wallet,
           driveKey: task.encryptionKey,
-          onStartBundling: () {
+          onStartBundleCreation: () {
+            print('Creating bundle');
+
             task = task.copyWith(
-              status: UploadStatus.bundling,
+              status: UploadStatus.creatingBundle,
             );
+
             uploadController.updateProgress(
               task: task,
             );
           },
-          onStartEncryption: () {
+          onStartMetadataCreation: () {
+            print('Creating metadata');
             task = task.copyWith(
-              status: UploadStatus.encryting,
+              status: UploadStatus.creatingMetadata,
             );
+
             uploadController.updateProgress(
               task: task,
             );

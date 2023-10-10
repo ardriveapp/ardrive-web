@@ -31,6 +31,7 @@ import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../blocs/upload/upload_handles/bundle_upload_handle.dart';
 import '../pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -797,7 +798,7 @@ class _UploadFormState extends State<UploadForm> {
                     itemBuilder: (BuildContext context, int index) {
                       final task = progress.task[index];
 
-                      String progressText;
+                      String? progressText;
                       String status = '';
 
                       switch (task.status) {
@@ -810,8 +811,9 @@ class _UploadFormState extends State<UploadForm> {
                         case UploadStatus.paused:
                           status = 'Paused';
                           break;
-                        case UploadStatus.bundling:
-                          status = 'Bundling';
+                        case UploadStatus.creatingMetadata:
+                          status =
+                              'We are preparing your upload. Preparation step 1/2';
                           break;
                         case UploadStatus.encryting:
                           status = 'Encrypting';
@@ -828,14 +830,15 @@ class _UploadFormState extends State<UploadForm> {
                         case UploadStatus.canceled:
                           status = 'Canceled';
                           break;
+                        case UploadStatus.creatingBundle:
+                          status =
+                              'We are preparing your upload. Preparation step 2/2';
                       }
 
                       if (task.isProgressAvailable) {
                         if (task.uploadItem != null) {
                           progressText =
                               '${filesize(((task.uploadItem!.size) * task.progress).ceil())}/${filesize(task.uploadItem!.size)}';
-                        } else {
-                          progressText = 'Preparing...';
                         }
                       } else {
                         progressText =
@@ -889,27 +892,33 @@ class _UploadFormState extends State<UploadForm> {
                                           AnimatedSwitcher(
                                             duration:
                                                 const Duration(seconds: 1),
-                                            child: Text(
-                                              status,
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  status,
+                                                  style: ArDriveTypography.body
+                                                      .buttonNormalBold(
+                                                    color:
+                                                        ArDriveTheme.of(context)
+                                                            .themeData
+                                                            .colors
+                                                            .themeFgOnDisabled,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          if (progressText != null)
+                                            Text(
+                                              progressText,
                                               style: ArDriveTypography.body
-                                                  .buttonNormalBold(
+                                                  .buttonNormalRegular(
                                                 color: ArDriveTheme.of(context)
                                                     .themeData
                                                     .colors
                                                     .themeFgOnDisabled,
                                               ),
                                             ),
-                                          ),
-                                          Text(
-                                            progressText,
-                                            style: ArDriveTypography.body
-                                                .buttonNormalRegular(
-                                              color: ArDriveTheme.of(context)
-                                                  .themeData
-                                                  .colors
-                                                  .themeFgOnDisabled,
-                                            ),
-                                          ),
                                         ],
                                       ),
                                     ),
@@ -919,41 +928,71 @@ class _UploadFormState extends State<UploadForm> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.center,
                                         mainAxisSize: MainAxisSize.max,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
                                         children: [
-                                          Flexible(
-                                            flex: 2,
-                                            child: ArDriveProgressBar(
-                                              height: 4,
-                                              indicatorColor: task.status ==
-                                                      UploadStatus.failed
-                                                  ? ArDriveTheme.of(context)
-                                                      .themeData
-                                                      .colors
-                                                      .themeErrorDefault
-                                                  : task.progress == 1
-                                                      ? ArDriveTheme.of(context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeSuccessDefault
-                                                      : ArDriveTheme.of(context)
+                                          if (task.status ==
+                                                  UploadStatus.failed ||
+                                              task.status ==
+                                                  UploadStatus.inProgress ||
+                                              task.status ==
+                                                  UploadStatus.complete) ...[
+                                            Flexible(
+                                              flex: 2,
+                                              child: ArDriveProgressBar(
+                                                height: 4,
+                                                indicatorColor: task.status ==
+                                                        UploadStatus.failed
+                                                    ? ArDriveTheme.of(context)
+                                                        .themeData
+                                                        .colors
+                                                        .themeErrorDefault
+                                                    : task.progress == 1
+                                                        ? ArDriveTheme.of(
+                                                                context)
+                                                            .themeData
+                                                            .colors
+                                                            .themeSuccessDefault
+                                                        : ArDriveTheme.of(
+                                                                context)
+                                                            .themeData
+                                                            .colors
+                                                            .themeFgDefault,
+                                                percentage: task.progress,
+                                              ),
+                                            ),
+                                            Flexible(
+                                              child: Text(
+                                                '${(task.progress * 100).toInt()}%',
+                                                style: ArDriveTypography.body
+                                                    .buttonNormalBold(
+                                                  color:
+                                                      ArDriveTheme.of(context)
                                                           .themeData
                                                           .colors
                                                           .themeFgDefault,
-                                              percentage: task.progress,
-                                            ),
-                                          ),
-                                          Flexible(
-                                            child: Text(
-                                              '${(task.progress * 100).toInt()}%',
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
-                                                color: ArDriveTheme.of(context)
-                                                    .themeData
-                                                    .colors
-                                                    .themeFgDefault,
+                                                ),
                                               ),
                                             ),
-                                          ),
+                                          ],
+                                          if (task.status ==
+                                                  UploadStatus.creatingBundle ||
+                                              task.status ==
+                                                  UploadStatus.creatingMetadata)
+                                            Flexible(
+                                              flex: 2,
+                                              child: SizedBox(
+                                                child: LoadingAnimationWidget
+                                                    .prograssiveDots(
+                                                  color:
+                                                      ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeFgDefault,
+                                                  size: 40,
+                                                ),
+                                              ),
+                                            ),
                                           const SizedBox(
                                             width: 8,
                                           ),
