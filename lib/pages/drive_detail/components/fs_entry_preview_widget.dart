@@ -439,7 +439,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                               });
                                             },
                                             title: Text(
-                                              '$v',
+                                              v == 1.0
+                                                  ? appLocalizationsOf(context)
+                                                      .normal
+                                                  : '$v',
                                               style: ArDriveTypography.body
                                                   .buttonNormalBold(
                                                       color: colors
@@ -956,7 +959,11 @@ class _FullScreenVideoPlayerWidgetState
                                                           });
                                                         },
                                                         title: Text(
-                                                          '$v',
+                                                          v == 1.0
+                                                              ? appLocalizationsOf(
+                                                                      context)
+                                                                  .normal
+                                                              : '$v',
                                                           style: ArDriveTypography
                                                               .body
                                                               .buttonNormalBold(
