@@ -571,9 +571,11 @@ packages:
   fetch_client:
     dependency: "direct overridden"
     description:
-      path: "../packages/fetch_client"
-      relative: true
-    source: path
+      path: "."
+      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
+      resolved-ref: "95241dd94f0f64bae7553e7a3bbaa5d0558f63ee"
+      url: "https://github.com/thiagocarvalhodev/fetch_client.git"
+    source: git
     version: "1.0.2"
   ffi:
     dependency: transitive

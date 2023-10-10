@@ -146,10 +146,9 @@ dependency_overrides:
       path: packages/stripe_platform_interface
       ref: main
   fetch_client:
-    path: ../packages/fetch_client
-    # git:
-    #   url: https://github.com/karlprieb/fetch_client.git
-    #   ref: ignore-headers
+    git:
+      url: https://github.com/thiagocarvalhodev/fetch_client.git
+      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
   http: ^1.1.0
 
 dev_dependencies:
