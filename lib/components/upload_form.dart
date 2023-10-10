@@ -774,8 +774,8 @@ class _UploadFormState extends State<UploadForm> {
             context.read<UploadCubit>().cancelUpload();
           },
           title: state.isCanceling
-              ? appLocalizationsOf(context).cancelEmphasized
-              : 'Canceling...',
+              ? 'Canceling...'
+              : appLocalizationsOf(context).cancelEmphasized,
         ),
       ],
       width: kLargeDialogWidth,
