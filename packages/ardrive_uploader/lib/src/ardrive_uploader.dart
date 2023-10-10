@@ -82,9 +82,9 @@ class _ArDriveUploader implements ArDriveUploader {
     SecretKey? driveKey,
     required UploadType type,
   }) async {
-    final dataBundler = _dataBundlerFactory.createDataBundler(
-      metadataGenerator: _metadataGenerator,
-      type: type,
+    final uploadController = UploadController(
+      StreamController<UploadProgress>(),
+      _streamedUploadFactory.fromUploadType(type, _turboUploadUri),
     );
 
     final metadata = await _metadataGenerator.generateMetadata(
@@ -92,31 +92,21 @@ class _ArDriveUploader implements ArDriveUploader {
       args,
     );
 
-    final streamedUpload =
-        _streamedUploadFactory.fromUploadType(type, _turboUploadUri);
-
-    final controller = UploadController(
-      StreamController<UploadProgress>(),
-      streamedUpload,
+    final uploadTask = ARFSUploadTask(
+      status: UploadStatus.notStarted,
+      content: [metadata],
     );
 
-    await dataBundler.createDataBundle(
+    _uploadSingleFile(
       file: file,
-      metadata: metadata,
+      uploadController: uploadController,
       wallet: wallet,
-      driveKey: driveKey,
+      uploadTask: uploadTask,
+      metadata: metadata,
+      type: type,
     );
 
-    streamedUpload.send(
-      ARFSUploadTask(
-        status: UploadStatus.notStarted,
-        content: [metadata],
-      ),
-      wallet,
-      controller,
-    );
-
-    return controller;
+    return uploadController;
   }
 
   @override
@@ -218,7 +208,6 @@ class _ArDriveUploader implements ArDriveUploader {
       }).catchError((error) {
         activeUploads.remove(uploadFuture);
         totalSize -= fileSize;
-        // TODO: Handle error
       });
 
       activeUploads.add(uploadFuture);
@@ -241,28 +230,42 @@ class _ArDriveUploader implements ArDriveUploader {
       type: type,
     );
 
-    final bundle = await dataBundler.createDataBundle(
-      file: file,
-      metadata: metadata,
-      wallet: wallet,
-      driveKey: driveKey,
-      onStartBundling: () {
-        uploadTask = uploadTask.copyWith(
-          status: UploadStatus.bundling,
-        );
-        uploadController.updateProgress(
-          task: uploadTask,
-        );
-      },
-      onStartEncryption: () {
-        uploadTask = uploadTask.copyWith(
-          status: UploadStatus.encryting,
-        );
-        uploadController.updateProgress(
-          task: uploadTask,
-        );
-      },
-    );
+    /// Can be either a DataItemResult or a TransactionResult
+    late dynamic bundle;
+
+    try {
+      bundle = await dataBundler.createDataBundle(
+        file: file,
+        metadata: metadata,
+        wallet: wallet,
+        driveKey: driveKey,
+        onStartBundling: () {
+          uploadTask = uploadTask.copyWith(
+            status: UploadStatus.bundling,
+          );
+          uploadController.updateProgress(
+            task: uploadTask,
+          );
+        },
+        onStartEncryption: () {
+          uploadTask = uploadTask.copyWith(
+            status: UploadStatus.encryting,
+          );
+          uploadController.updateProgress(
+            task: uploadTask,
+          );
+        },
+      );
+    } catch (e) {
+      /// Adds the status failed to the upload task and stops the upload.
+      uploadTask = uploadTask.copyWith(
+        status: UploadStatus.failed,
+      );
+      uploadController.updateProgress(
+        task: uploadTask,
+      );
+      return;
+    }
 
     switch (type) {
       case UploadType.d2n:
@@ -291,11 +294,8 @@ class _ArDriveUploader implements ArDriveUploader {
     final streamedUpload =
         _streamedUploadFactory.fromUploadType(type, _turboUploadUri);
 
-    final value = await streamedUpload
-        .send(uploadTask, wallet, uploadController)
-        .then((value) {
-      print('Upload complete');
-    }).catchError((err) {});
+    final value =
+        await streamedUpload.send(uploadTask, wallet, uploadController);
 
     return value;
   }
@@ -377,11 +377,7 @@ class _ArDriveUploader implements ArDriveUploader {
       );
 
       // sends the upload
-      streamedUpload
-          .send(folderBDITask, wallet, uploadController)
-          .then((value) {
-        print('Upload complete');
-      }).catchError((err) {});
+      streamedUpload.send(folderBDITask, wallet, uploadController);
     }
 
     /// Attaches the upload controller to the upload service and doesn't await

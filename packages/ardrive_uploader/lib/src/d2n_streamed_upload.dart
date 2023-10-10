@@ -23,7 +23,10 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
             (handle.uploadItem as BundleTransactionUploadItem).data)
         .run();
 
-    progressStreamTask.match((l) => print(''), (progressStream) async {
+    progressStreamTask.match((l) {
+      handle = handle.copyWith(status: UploadStatus.failed);
+      controller.updateProgress(task: handle);
+    }, (progressStream) async {
       final listen = progressStream.listen(
         (progress) {
           // updates the progress. progress.$1 is the current chunk, progress.$2 is the total chunks

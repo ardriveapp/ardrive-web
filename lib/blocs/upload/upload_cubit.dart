@@ -577,12 +577,21 @@ class UploadCubit extends Cubit<UploadState> {
       (tasks) async {
         logger.d('Upload finished');
 
+        if (tasks.any((element) => element.status == UploadStatus.failed)) {
+          // if any of the files failed, we should throw an error
+          addError(Exception('Error uploading'));
+        }
+
+        final tasksWithSuccess = tasks
+            .where((element) => element.status == UploadStatus.complete)
+            .toList();
+
         try {
           final List<ARFSFolderUploadMetatadata> foldersMetadata = [];
           final List<ARFSFileUploadMetadata> filesMetadata = [];
 
           for (var metadata
-              in tasks.expand((element) => element.content ?? [])) {
+              in tasksWithSuccess.expand((element) => element.content ?? [])) {
             if (metadata is ARFSFolderUploadMetatadata) {
               foldersMetadata.add(metadata);
             } else if (metadata is ARFSFileUploadMetadata) {
@@ -660,38 +669,31 @@ class UploadCubit extends Cubit<UploadState> {
 
             entity.txId = file.metadataTxId!;
 
-            try {
-              files.first.getIdentifier();
-              // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
-              // TODO: Changed this logic. PLEASE REVIEW IT.
-              if (revisionAction == RevisionAction.uploadNewVersion) {
-                final existingFile = await _driveDao
-                    .fileById(driveId: driveId, fileId: file.id)
-                    .getSingle();
+            if (revisionAction == RevisionAction.uploadNewVersion) {
+              final existingFile = await _driveDao
+                  .fileById(driveId: driveId, fileId: file.id)
+                  .getSingle();
 
-                final filePath = existingFile.path;
-                await _driveDao.writeFileEntity(entity, filePath);
-                await _driveDao.insertFileRevision(
-                  entity.toRevisionCompanion(
-                    performedAction: revisionAction,
-                  ),
-                );
-              } else {
-                logger.d(files.first.getIdentifier());
-                final parentFolderPath = (await _driveDao
-                        .folderById(
-                            driveId: driveId, folderId: file.parentFolderId)
-                        .getSingle())
-                    .path;
-                await _driveDao.writeFileEntity(entity, parentFolderPath);
-                await _driveDao.insertFileRevision(
-                  entity.toRevisionCompanion(
-                    performedAction: revisionAction,
-                  ),
-                );
-              }
-            } catch (e) {
-              logger.e('Error saving file', e);
+              final filePath = existingFile.path;
+              await _driveDao.writeFileEntity(entity, filePath);
+              await _driveDao.insertFileRevision(
+                entity.toRevisionCompanion(
+                  performedAction: revisionAction,
+                ),
+              );
+            } else {
+              logger.d(files.first.getIdentifier());
+              final parentFolderPath = (await _driveDao
+                      .folderById(
+                          driveId: driveId, folderId: file.parentFolderId)
+                      .getSingle())
+                  .path;
+              await _driveDao.writeFileEntity(entity, parentFolderPath);
+              await _driveDao.insertFileRevision(
+                entity.toRevisionCompanion(
+                  performedAction: revisionAction,
+                ),
+              );
             }
           }
         } catch (e) {
@@ -755,8 +757,6 @@ class UploadCubit extends Cubit<UploadState> {
           _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
     );
 
-    List<UploadTask> completedTasks = [];
-
     uploadController.onError((tasks) {
       logger.e('Error uploading', tasks);
       addError(Exception('Error uploading'));
@@ -765,20 +765,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onProgressChange(
       (progress) {
-        final newCompletedTasks = progress.task.where(
-          (element) =>
-              element.status == UploadStatus.complete &&
-              !completedTasks.contains(element),
-        );
-
-        for (var element in newCompletedTasks) {
-          completedTasks.add(element);
-          // TODO: Save as the file is finished the upload
-          // _saveEntityOnDB(element);
-          for (var metadata in element.content!) {
-            logger.d(metadata.metadataTxId ?? 'METADATA IS NULL');
-          }
-        }
+        // TODO: Save as the file is finished the upload
 
         emit(
           UploadInProgressUsingNewUploader(
@@ -794,19 +781,12 @@ class UploadCubit extends Cubit<UploadState> {
     uploadController.onDone(
       (tasks) async {
         if (tasks.any((element) => element.status == UploadStatus.failed)) {
-          final progress = state as UploadInProgressUsingNewUploader;
-          emit(
-            UploadInProgressUsingNewUploader(
-              progress: progress.progress,
-              totalProgress: progress.progress.progressInPercentage,
-              controller: uploadController,
-              equatableBust: UniqueKey(),
-            ),
-          );
-          return;
+          // if any of the files failed, we should throw an error
+          addError(Exception('Error uploading'));
         }
 
-        for (var task in tasks) {
+        for (var task in tasks
+            .where((element) => element.status == UploadStatus.complete)) {
           await _saveEntityOnDB(task);
         }
 

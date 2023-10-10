@@ -351,7 +351,6 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     final bundledDataItem = await (await createBundledDataItem).run();
 
     return bundledDataItem.match((l) {
-      // TODO: handle error
       print('Error: $l');
       print(StackTrace.current);
       throw l;
@@ -399,7 +398,6 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       final bundledDataItem = await (await createBundledDataItem).run();
 
       return bundledDataItem.match((l) {
-        // TODO: handle error
         print('Error: $l');
         print(StackTrace.current);
         throw l;
@@ -466,7 +464,6 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
 
     // folder bdi
     final folderBDIResult = await folderBDITask.match((l) {
-      // TODO: handle error
       print('Error: $l');
       print(StackTrace.current);
       throw l;

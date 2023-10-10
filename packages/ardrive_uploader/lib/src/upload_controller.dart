@@ -138,7 +138,10 @@ class _UploadController implements UploadController {
 
         _onProgressChange!(event);
 
-        if (_uploadProgress.progressInPercentage == 1) {
+        final finishedTasksLength =
+            _failedTasks.length + _completedTasks.length;
+
+        if (finishedTasksLength == tasks.length) {
           await close();
           return;
         }
@@ -186,6 +189,12 @@ class _UploadController implements UploadController {
     }
 
     if (task != null) {
+      if (task.status == UploadStatus.complete) {
+        _completedTasks[task.id] = task;
+      } else if (task.status == UploadStatus.failed) {
+        _failedTasks[task.id] = task;
+      }
+
       tasks[task.id] = task;
 
       // TODO: Check how to improve this
@@ -209,7 +218,9 @@ class _UploadController implements UploadController {
   UploadProgress _uploadProgress = UploadProgress.notStarted();
 
   @override
-  void onError(Function(List<UploadTask> tasks) callback) {}
+  void onError(Function(List<UploadTask> tasks) callback) {
+    _onError = callback;
+  }
 
   @override
   void onProgressChange(Function(UploadProgress progress) callback) {
@@ -221,9 +232,14 @@ class _UploadController implements UploadController {
   void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {
     print('Upload Finished');
   };
+  void Function(List<UploadTask> tasks) _onError = (List<UploadTask> tasks) {
+    print('Upload Finished');
+  };
 
   @override
   final Map<String, UploadTask> tasks = {};
+  final Map<String, UploadTask> _completedTasks = {};
+  final Map<String, UploadTask> _failedTasks = {};
 
   // TODO: CALCULATE BASED ON TOTAL SIZE NOT ONLY ON THE NUMBER OF TASKS
   double calculateTotalProgress(List<UploadTask> tasks) {
