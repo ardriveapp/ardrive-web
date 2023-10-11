@@ -26,20 +26,19 @@ class JSrawRequestParams {
 Future<EthereumProviderWallet?> connect() async {
   final eth = _getProvider();
 
-  // Ensure the user is on Ethereum chain before requesting account
+  final credentials = await eth.requestAccount();
+  if (!eth.isConnected()) {
+    return null;
+  }
+  final address = credentials.address;
+
+  // Ensure the user is on Ethereum chain
   await eth.rawRequest(
     'wallet_switchEthereumChain',
     params: [
       JSrawRequestParams(chainId: '0x1'),
     ],
   );
-
-  final credentials = await eth.requestAccount();
-  if (!eth.isConnected()) {
-    return null;
-  }
-
-  final address = credentials.address;
 
   return EthereumProviderWallet(credentials, address.hex);
 }
