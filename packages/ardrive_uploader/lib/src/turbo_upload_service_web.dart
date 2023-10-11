@@ -20,7 +20,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required this.turboUploadUri,
   });
 
-  final _streamController = StreamController<Uint8List>(sync: true);
   final _fetchController = StreamController<List<int>>(sync: false);
   final CancelToken _cancelToken = CancelToken();
 
@@ -67,15 +66,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
   }) async {
     final url = '$turboUploadUri/v1/tx';
 
-    int dataItemSize = 0;
-
-    // TODO: remove after fixing the issue with the size of the upload
-    await for (final data in dataItem.streamGenerator()) {
-      dataItemSize += data.length;
-    }
-
-    dataItem.streamGenerator().pipe(_streamController.sink);
-
     final dio = Dio();
 
     final response = await dio.post(
@@ -83,12 +73,12 @@ class TurboUploadServiceImpl implements TurboUploadService {
       onSendProgress: (sent, total) {
         onSendProgress?.call(sent / total);
       },
-      data: _streamController.stream, // Creates a Stream<List<int>>.
+      data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
       options: Options(
         headers: {
           // stream
           Headers.contentTypeHeader: 'application/octet-stream',
-          Headers.contentLengthHeader: dataItemSize, // Set the content-length.
+          Headers.contentLengthHeader: size, // Set the content-length.
         }..addAll(headers),
       ),
       cancelToken: _cancelToken,
@@ -109,11 +99,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
     final url = '$turboUploadUri/v1/tx';
 
     int dataItemSize = 0;
-
-    // TODO: remove after fixing the issue with the size of the upload
-    await for (final data in dataItem.streamGenerator()) {
-      dataItemSize += data.length;
-    }
 
     StreamTransformer<Uint8List, Uint8List> createPassthroughTransformer() {
       return StreamTransformer.fromHandlers(
@@ -165,8 +150,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
 
       return response;
     } catch (e) {
-      print(e);
-      print('end of stream');
+      print('Error on turbo upload using FetchClient: $e');
       rethrow;
     }
   }
@@ -176,7 +160,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
     _cancelToken.cancel();
     client.close();
     _fetchController.close();
-    _streamController.close();
     print('Stream closed');
   }
 }

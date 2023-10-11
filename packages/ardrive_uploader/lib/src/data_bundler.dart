@@ -378,7 +378,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     onFinishBundleCreation?.call();
 
     return bundledDataItem.match((l) {
-      print('Error: $l');
+      print('Error bundling the file: $l');
       print(StackTrace.current);
       throw l;
     }, (bdi) async {
@@ -425,7 +425,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       final bundledDataItem = await (await createBundledDataItem).run();
 
       return bundledDataItem.match((l) {
-        print('Error: $l');
+        print('Error bundling the file: $l');
         print(StackTrace.current);
         throw l;
       }, (bdi) async {
@@ -491,7 +491,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
 
     // folder bdi
     final folderBDIResult = await folderBDITask.match((l) {
-      print('Error: $l');
+      print('Error bundling the folder bdi: $l');
       print(StackTrace.current);
       throw l;
     }, (bdi) async {
@@ -568,7 +568,7 @@ Future<DataItemFile> _generateMetadataDataItem({
   final metadataTaskEither = await metadataTask.run();
 
   metadataTaskEither.match((l) {
-    print('Error: $l');
+    print('Error creating metadata data item: $l');
     print(StackTrace.current);
     throw l;
   }, (metadataDataItem) {
@@ -610,7 +610,7 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   final fileDataItemResult = await fileDataItemEither.run();
 
   fileDataItemResult.match((l) {
-    print('Error: $l');
+    print('Error: creating file data item: $l');
     print(StackTrace.current);
   }, (fileDataItem) {
     metadata as ARFSFileUploadMetadata;
@@ -652,7 +652,7 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   final metadataTaskEither = await metadataTask.run();
 
   metadataTaskEither.match((l) {
-    print('Error: $l');
+    print('Error: creating metadata data item: $l');
     print(StackTrace.current);
     throw l;
   }, (metadataDataItem) {

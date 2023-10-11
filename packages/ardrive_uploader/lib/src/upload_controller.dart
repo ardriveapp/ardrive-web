@@ -41,7 +41,7 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
   final List<ARFSUploadMetadata>? content;
 
   @override
-  double progress = 0;
+  final double progress;
 
   @override
   final String id;
@@ -57,6 +57,7 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
     this.content,
     this.encryptionKey,
     required this.streamedUpload,
+    this.progress = 0,
     String? id,
   }) : id = id ?? const Uuid().v4();
 
@@ -66,7 +67,7 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
   @override
   FolderUploadTask copyWith({
     UploadItem? uploadItem,
-    double? progressInPercentage,
+    double? progress,
     bool? isProgressAvailable,
     UploadStatus? status,
     String? id,
@@ -81,6 +82,7 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
       uploadItem: uploadItem ?? this.uploadItem,
       content: content ?? this.content,
       id: id ?? this.id,
+      progress: progress ?? this.progress,
       isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
       status: status ?? this.status,
     );
@@ -105,7 +107,7 @@ class FileUploadTask extends UploadTask {
   final List<ARFSUploadMetadata>? content;
 
   @override
-  double progress = 0;
+  final double progress;
 
   @override
   final String id;
@@ -123,6 +125,7 @@ class FileUploadTask extends UploadTask {
     required this.metadata,
     this.encryptionKey,
     required this.streamedUpload,
+    this.progress = 0,
   }) : id = id ?? const Uuid().v4();
 
   @override
@@ -131,7 +134,7 @@ class FileUploadTask extends UploadTask {
   @override
   FileUploadTask copyWith({
     UploadItem? uploadItem,
-    double? progressInPercentage,
+    double? progress,
     bool? isProgressAvailable,
     UploadStatus? status,
     String? id,
@@ -150,6 +153,7 @@ class FileUploadTask extends UploadTask {
       isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
       status: status ?? this.status,
       file: file,
+      progress: progress ?? this.progress,
     );
   }
 
@@ -161,15 +165,15 @@ abstract class UploadTask<T> {
   abstract final String id;
   abstract final UploadItem? uploadItem;
   abstract final List<ARFSUploadMetadata>? content;
-  abstract double progress;
-  abstract bool isProgressAvailable;
-  abstract UploadStatus status;
+  abstract final double progress;
+  abstract final bool isProgressAvailable;
+  abstract final UploadStatus status;
   abstract final SecretKey? encryptionKey;
   abstract final StreamedUpload streamedUpload;
 
   UploadTask copyWith({
     UploadItem? uploadItem,
-    double? progressInPercentage,
+    double? progress,
     bool? isProgressAvailable,
     UploadStatus? status,
     String? id,
@@ -208,7 +212,7 @@ class ARFSUploadTask implements UploadTask<ARFSUploadMetadata> {
   @override
   ARFSUploadTask copyWith({
     UploadItem? uploadItem,
-    double? progressInPercentage,
+    double? progress,
     bool? isProgressAvailable,
     UploadStatus? status,
     String? id,
@@ -687,7 +691,6 @@ class Worker {
           driveKey: task.encryptionKey,
           onStartBundleCreation: () {
             print('Creating bundle');
-
             task = task.copyWith(
               status: UploadStatus.creatingBundle,
             );
@@ -728,7 +731,6 @@ class Worker {
 
       if (bundle is TransactionResult) {
         task = task.copyWith(
-          status: UploadStatus.preparationDone,
           uploadItem: BundleTransactionUploadItem(
             size: bundle.dataSize,
             data: bundle,
@@ -736,7 +738,6 @@ class Worker {
         );
       } else if (bundle is DataItemResult) {
         task = task.copyWith(
-          status: UploadStatus.preparationDone,
           uploadItem: BundleDataItemUploadItem(
             size: bundle.dataItemSize,
             data: bundle,

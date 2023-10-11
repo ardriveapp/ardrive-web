@@ -41,17 +41,23 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
       },
     );
 
-    uploadTask = uploadTask.copyWith(status: UploadStatus.inProgress);
-    controller.updateProgress(task: uploadTask);
-
     /// If the file is larger than 500 MiB, we don't get progress updates.
     ///
     /// The TurboUploadServiceImpl for web uses fetch_client for the upload of files
     /// larger than 500 MiB. fetch_client does not support progress updates.
     if (kIsWeb && uploadTask.uploadItem!.size > MiB(500).size) {
-      uploadTask.isProgressAvailable = false;
-      controller.updateProgress(task: uploadTask);
+      uploadTask = uploadTask.copyWith(isProgressAvailable: false);
     }
+
+    int size = 0;
+
+    final task = uploadTask.uploadItem!.data as DataItemResult;
+
+    await for (final data in task.streamGenerator()) {
+      size += data.length;
+    }
+
+    controller.updateProgress(task: uploadTask);
 
     // gets the streamed request
     final streamedRequest = _turbo
@@ -63,24 +69,34 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
               'x-signature': signature,
             },
             dataItem: uploadTask.uploadItem!.data,
-            size: uploadTask.uploadItem!.size,
+            size: size,
             onSendProgress: (progress) {
-              uploadTask.progress = progress;
+              uploadTask = uploadTask.copyWith(
+                progress: progress,
+                status: UploadStatus.inProgress,
+              );
               controller.updateProgress(task: uploadTask);
             })
         .then((value) async {
       if (!uploadTask.isProgressAvailable) {
-        uploadTask.progress = 1;
+        uploadTask = uploadTask.copyWith(
+          progress: 1,
+          status: UploadStatus.complete,
+        );
       }
 
-      uploadTask.status = UploadStatus.complete;
+      uploadTask = uploadTask.copyWith(
+        status: UploadStatus.complete,
+      );
 
       controller.updateProgress(task: uploadTask);
 
       return value;
     }).onError((e, s) {
-      print(e);
-      uploadTask.status = UploadStatus.failed;
+      print('Error on TurboStreamedUpload.send: $e');
+      uploadTask = uploadTask.copyWith(
+        status: UploadStatus.failed,
+      );
       controller.updateProgress(task: uploadTask);
     });
 
@@ -92,7 +108,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     UploadTask handle,
     UploadController controller,
   ) async {
-    handle.status = UploadStatus.failed;
+    handle = handle.copyWith(status: UploadStatus.failed);
     controller.updateProgress(task: handle);
     await _turbo.cancel();
   }

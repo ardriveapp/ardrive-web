@@ -15,10 +15,6 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
 
     print('D2NStreamedUpload.send');
 
-    handle = handle.copyWith(status: UploadStatus.inProgress);
-
-    controller.updateProgress(task: handle);
-
     final progressStreamTask = await uploadTransaction(
             (handle.uploadItem as BundleTransactionUploadItem).data)
         .run();
@@ -30,7 +26,11 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
       final listen = progressStream.listen(
         (progress) {
           // updates the progress. progress.$1 is the current chunk, progress.$2 is the total chunks
-          handle.progress = (progress.$1 / progress.$2);
+          handle = handle.copyWith(
+            progress: progress.$1 / progress.$2,
+            status: UploadStatus.inProgress,
+          );
+
           controller.updateProgress(task: handle);
 
           if (progress.$1 == progress.$2) {
@@ -38,7 +38,7 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
             // finishes the upload
             handle = handle.copyWith(
               status: UploadStatus.complete,
-              progressInPercentage: 1,
+              progress: 1,
             );
 
             controller.updateProgress(task: handle);
@@ -49,12 +49,13 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
           // finishes the upload
           handle = handle.copyWith(
             status: UploadStatus.complete,
-            progressInPercentage: 1,
+            progress: 1,
           );
 
           controller.updateProgress(task: handle);
         },
         onError: (e) {
+          print('D2NStreamedUpload.send.onError: $e');
           handle = handle.copyWith(
             status: UploadStatus.failed,
           );

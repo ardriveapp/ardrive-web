@@ -457,8 +457,6 @@ class UploadCubit extends Cubit<UploadState> {
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
     if (configService.config.useNewUploader) {
-      logger.d('Uploading folder using the new uploader');
-
       if (uploadFolders) {
         await _uploadFolderUsingArDriveUploader();
         return;
