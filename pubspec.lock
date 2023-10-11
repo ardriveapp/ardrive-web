@@ -561,20 +561,20 @@ packages:
     source: hosted
     version: "1.3.1"
   fetch_api:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: fetch_api
-      sha256: b88977a8f369344cbaa13a53752629185ecae0d56c6683f0a2060b652a0cf437
+      sha256: "7896632eda5af40c4459d673ad601df21d4c3ae6a45997e300a92ca63ec9fe4c"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.2"
+    version: "1.0.1"
   fetch_client:
     dependency: "direct overridden"
     description:
       path: "."
-      ref: ignore-headers
-      resolved-ref: ba37ef6eaa291cdb36b4616c6fbec3c690bca728
-      url: "https://github.com/karlprieb/fetch_client.git"
+      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
+      resolved-ref: "95241dd94f0f64bae7553e7a3bbaa5d0558f63ee"
+      url: "https://github.com/thiagocarvalhodev/fetch_client.git"
     source: git
     version: "1.0.2"
   ffi:
@@ -833,10 +833,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_multi_formatter
-      sha256: "532696e5f92bfd5d17a99a355f2f690f1434ed226a4264023e79ad2626492002"
+      sha256: bfef1fb7357b5be34cdf7797da361d185f6e873e2f3d2704dbfa56181d021543
       url: "https://pub.dev"
     source: hosted
-    version: "2.11.13"
+    version: "2.11.14"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -2308,4 +2308,4 @@ packages:
     version: "3.1.2"
 sdks:
   dart: ">=3.1.0 <4.0.0"
-  flutter: ">=3.13.0"
+  flutter: ">=3.13.6"

@@ -7,7 +7,7 @@ version: 2.19.1
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
-  flutter: 3.10.2
+  flutter: 3.13.6
 
 # https://pub.dev/packages/script_runner
 script_runner:
@@ -126,7 +126,6 @@ dependencies:
   provider: ^6.0.5
   just_audio: ^0.9.34
   webthree: ^2.5.7+2
-
 dependency_overrides:
   ardrive_io:
     git:
@@ -148,9 +147,10 @@ dependency_overrides:
       ref: main
   fetch_client:
     git:
-      url: https://github.com/karlprieb/fetch_client.git
-      ref: ignore-headers
+      url: https://github.com/thiagocarvalhodev/fetch_client.git
+      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
   http: ^1.1.0
+  fetch_api: 1.0.1
 
 dev_dependencies:
   integration_test:
