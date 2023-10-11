@@ -4,6 +4,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -75,7 +76,7 @@ class SnapshotEntity extends Entity {
 
     tx
       ..addArFsTag()
-      ..addTag(EntityTag.entityType, EntityType.snapshot)
+      ..addTag(EntityTag.entityType, EntityTypeTag.snapshot)
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.snapshotId, id!)
       ..addTag(EntityTag.blockStart, '$blockStart')
@@ -116,5 +117,23 @@ class SnapshotEntity extends Entity {
     );
 
     return tx;
+  }
+
+  @override
+  Future<DataItem> asDataItem(SecretKey? key) async {
+    if (key != null) {
+      throw UnsupportedError('Snapshot entities are not encrypted.');
+    }
+
+    final item = DataItem.withBlobData(data: data!);
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    item.addTag(EntityTag.contentType, ContentType.json);
+    addEntityTagsToTransaction(item);
+    item.addApplicationTags(
+      version: packageInfo.version,
+    );
+
+    return item;
   }
 }

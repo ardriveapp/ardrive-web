@@ -59,7 +59,7 @@ class _TurboBalanceState extends State<TurboBalance> {
               borderRadius: 20,
               onPressed: () {
                 showCookiePolicyConsentModal(context, (context) {
-                  showTurboModal(context);
+                  showTurboTopupModal(context);
                 });
 
                 widget.onTapAddButton?.call();

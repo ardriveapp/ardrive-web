@@ -5,7 +5,7 @@ import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -60,7 +60,7 @@ void main() {
             rootFolderId: rootFolderId,
             ownerAddress: 'fake-owner-address',
             name: 'fake-drive-name',
-            privacy: DrivePrivacy.public,
+            privacy: DrivePrivacyTag.public,
           ),
         );
         // Create fake root folder for drive and sub folders

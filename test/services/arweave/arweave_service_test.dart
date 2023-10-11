@@ -1,7 +1,7 @@
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
