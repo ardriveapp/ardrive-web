@@ -689,32 +689,9 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                 textAlign: TextAlign.center,
                 style: ArDriveTypography.headline.headline4Bold(),
               ),
-              FutureBuilder(
-                future: context.read<ArDriveAuth>().getWalletAddress(),
-                builder:
-                    (BuildContext context, AsyncSnapshot<String?> snapshot) {
-                  if (snapshot.hasData) {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          appLocalizationsOf(context).walletAddress,
-                          style: ArDriveTypography.body
-                              .captionRegular()
-                              .copyWith(fontSize: 18),
-                        ),
-                        const SizedBox(width: 8),
-                        TruncatedAddress(
-                          walletAddress: snapshot.data!,
-                          fontSize: 18,
-                        ),
-                      ],
-                    );
-                  } else {
-                    return const SizedBox.shrink();
-                  }
-                },
+              _buildAddressPreview(
+                context,
+                maybeWallet: widget.wallet,
               ),
               Column(
                 children: [
@@ -2668,4 +2645,43 @@ class _LoginCopyButtonState extends State<LoginCopyButton> {
       });
     }
   }
+}
+
+Widget _buildAddressPreview(
+  BuildContext context, {
+  required Wallet? maybeWallet,
+}) {
+  Future<String?> getWalletAddress() async {
+    if (maybeWallet == null) {
+      return context.read<ArDriveAuth>().getWalletAddress();
+    }
+    return maybeWallet.getAddress();
+  }
+
+  return FutureBuilder(
+    future: getWalletAddress(),
+    builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
+      if (snapshot.hasData) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              appLocalizationsOf(context).walletAddress,
+              style: ArDriveTypography.body
+                  .captionRegular()
+                  .copyWith(fontSize: 18),
+            ),
+            const SizedBox(width: 8),
+            TruncatedAddress(
+              walletAddress: snapshot.data!,
+              fontSize: 18,
+            ),
+          ],
+        );
+      } else {
+        return const SizedBox.shrink();
+      }
+    },
+  );
 }
