@@ -20,6 +20,7 @@ import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/plausible_event_tracker.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
@@ -42,6 +43,13 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  @override
+  void initState() {
+    PlausibleEventTracker.track('welcome', 'welcome');
+
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider<LoginBloc>(
@@ -666,6 +674,13 @@ class PromptPasswordView extends StatefulWidget {
 }
 
 class _PromptPasswordViewState extends State<PromptPasswordView> {
+  @override
+  void initState() {
+    PlausibleEventTracker.track('welcomeBack', 'welcomeBack');
+
+    super.initState();
+  }
+
   final _passwordController = TextEditingController();
 
   bool _isPasswordValid = false;
@@ -1362,6 +1377,8 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
 
   @override
   void initState() {
+    PlausibleEventTracker.track('seedPhrase', 'seedPhrase');
+
     super.initState();
   }
 
@@ -1522,6 +1539,8 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
 
   @override
   void initState() {
+    PlausibleEventTracker.track('walletGeneration', 'walletGeneration');
+
     super.initState();
 
     // TODO: create/update localization key
@@ -1632,6 +1651,12 @@ class DownloadWalletView extends StatefulWidget {
 }
 
 class _DownloadWalletViewState extends State<DownloadWalletView> {
+  @override
+  void initState() {
+    PlausibleEventTracker.track('walletGeneration', 'walletGeneration');
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
@@ -2243,7 +2268,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                                           color: colors.themeErrorMuted,
                                         )
                                         .copyWith(fontSize: 14)))
-                          ]), 
+                          ]),
                           shape: RoundedRectangleBorder(
                             side: BorderSide(
                                 color: colors.themeErrorMuted, width: 1),
@@ -2282,6 +2307,8 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildWriteDownSeedPhrase() {
+    PlausibleEventTracker.track('viewSeedPhrase', 'viewSeedPhrase');
+
     final screenSize = MediaQuery.of(context).size;
 
     final rowCount = screenSize.width > (176 * 3 + 24 * 4) ? 3 : 2;
@@ -2461,6 +2488,8 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildGettingStarted() {
+    PlausibleEventTracker.track('gettingStarted', 'gettingStarted');
+
     // TODO: create/update localization keys
     var cardInfos = [
       [
