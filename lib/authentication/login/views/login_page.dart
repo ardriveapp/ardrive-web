@@ -45,9 +45,9 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
-    PlausibleEventTracker.track('welcome', 'welcome');
-
     super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.welcomePage);
   }
 
   @override
@@ -676,9 +676,9 @@ class PromptPasswordView extends StatefulWidget {
 class _PromptPasswordViewState extends State<PromptPasswordView> {
   @override
   void initState() {
-    PlausibleEventTracker.track('welcomeBack', 'welcomeBack');
-
     super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.welcomeBackPage);
   }
 
   final _passwordController = TextEditingController();
@@ -1373,13 +1373,12 @@ class EnterSeedPhraseView extends StatefulWidget {
 class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
   final _seedPhraseController = ArDriveMultlineObscureTextController();
   final _formKey = GlobalKey<ArDriveFormState>();
-  // var _seedPhraseFormatIsValid = false;
 
   @override
   void initState() {
-    PlausibleEventTracker.track('seedPhrase', 'seedPhrase');
-
     super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.seedPhrasePage);
   }
 
   @override
@@ -1539,9 +1538,9 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
 
   @override
   void initState() {
-    PlausibleEventTracker.track('walletGeneration', 'walletGeneration');
-
     super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.walletGenerationPage);
 
     // TODO: create/update localization key
     _message = 'Did you know?\n\n${_messages[0]}';
@@ -1653,8 +1652,9 @@ class DownloadWalletView extends StatefulWidget {
 class _DownloadWalletViewState extends State<DownloadWalletView> {
   @override
   void initState() {
-    PlausibleEventTracker.track('walletGeneration', 'walletGeneration');
     super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.walletDownloadPage);
   }
 
   @override
@@ -1711,6 +1711,9 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                 child: GestureDetector(
                     onTap: () {
                       _onDownload();
+                      PlausibleEventTracker.track(
+                        event: PlausibleEvent.downloadKeyFile,
+                      );
                     },
                     child: Container(
                       decoration: BoxDecoration(
@@ -2307,7 +2310,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildWriteDownSeedPhrase() {
-    PlausibleEventTracker.track('viewSeedPhrase', 'viewSeedPhrase');
+    PlausibleEventTracker.track(event: PlausibleEvent.seedPhrasePage);
 
     final screenSize = MediaQuery.of(context).size;
 
@@ -2488,7 +2491,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildGettingStarted() {
-    PlausibleEventTracker.track('gettingStarted', 'gettingStarted');
+    PlausibleEventTracker.track(event: PlausibleEvent.gettingStartedPage);
 
     // TODO: create/update localization keys
     var cardInfos = [
