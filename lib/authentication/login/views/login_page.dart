@@ -803,11 +803,6 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
   bool _confirmPasswordIsValid = false;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
       defaultMaxHeight: 798,
@@ -1021,6 +1016,10 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
           ));
       return;
     }
+
+    PlausibleEventTracker.track(
+      event: PlausibleEvent.createdAndConfirmedPasswords,
+    );
 
     context.read<LoginBloc>().add(
           CreatePassword(
@@ -1712,7 +1711,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                     onTap: () {
                       _onDownload();
                       PlausibleEventTracker.track(
-                        event: PlausibleEvent.downloadKeyFile,
+                        event: PlausibleEvent.keyFileDownloaded,
                       );
                     },
                     child: Container(

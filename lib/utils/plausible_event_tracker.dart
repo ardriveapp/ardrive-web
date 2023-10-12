@@ -11,9 +11,9 @@ abstract class PlausibleEventTracker {
 
   static Future<void> track({required PlausibleEvent event}) async {
     try {
-      final response = await http.post(_plausibleUrl, body: _eventBody(event));
+      await http.post(_plausibleUrl, body: _eventBody(event));
 
-      logger.d('Plausible response: ${response.statusCode}');
+      logger.d('Sent plausible event: ${event.name}');
     } catch (e, s) {
       logger.e('Plausible response error: $e $s');
     }
@@ -39,9 +39,9 @@ enum PlausibleEvent {
   arDriveTutorialsPage1,
   arDriveTutorialsPage2,
   arDriveTutorialsPage3,
-  createAndConfirmPasswords,
-  downloadKeyFile,
+  createdAndConfirmedPasswords,
   gettingStartedPage,
+  keyFileDownloaded,
   loginPage,
   returningUserPage,
   seedPhrasePage,
