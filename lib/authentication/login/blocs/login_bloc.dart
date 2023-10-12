@@ -324,10 +324,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arDriveAuth.logout();
     }
 
-    if (_isArConnectWallet()) {
-      await _arConnectService.disconnect();
-    }
-
     emit(LoginInitial(_arConnectService.isExtensionPresent(),
         _ethereumProviderService.isExtensionPresent()));
   }
