@@ -236,6 +236,7 @@ class _ProfileCardState extends State<ProfileCard> {
                 children: [
                   SizedBox(
                     child: Text(
+                      // TODO: localize?
                       'AR:',
                       style: ArDriveTypography.body.captionRegular().copyWith(
                             fontWeight: FontWeight.w600,
