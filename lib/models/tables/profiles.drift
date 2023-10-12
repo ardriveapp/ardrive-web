@@ -10,6 +10,6 @@ CREATE TABLE profiles (
     profileType INTEGER NOT NULL,
 
     -- Added in schema v18
-    profileSourceType INTEGER,
+    profileSourceType INTEGER NOT NULL,
     profileSourceAddress TEXT
 );

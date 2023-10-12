@@ -1,3 +1,4 @@
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:drift/drift.dart';
@@ -78,7 +79,18 @@ class Database extends _$Database {
               // Adding support for remembering source Ethereum address
               logger.i('Migrating schema from v17 to v18');
 
-              await m.addColumn(profiles, profiles.profileSourceType);
+              // Make sure existing profiles have a ProfileSourceType
+              await transaction(
+                () async {
+                  await m.addColumn(profiles, profiles.profileSourceType);
+                  await update(profiles).write(
+                    ProfilesCompanion(
+                      profileSourceType:
+                          Value(ProfileSourceType.standalone.index),
+                    ),
+                  );
+                },
+              );
               await m.addColumn(profiles, profiles.profileSourceAddress);
             }
           }
