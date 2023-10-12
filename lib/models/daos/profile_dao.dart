@@ -148,7 +148,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         encryptedWallet: encryptedWallet,
         keySalt: profileSalt as Uint8List,
         profileType: profileType.index,
-        profileSourceType: Value(profileSource.type.index),
+        profileSourceType: profileSource.type.index,
         profileSourceAddress: Value(profileSource.address),
         walletPublicKey: publicKey,
         encryptedPublicKey: encryptedPublicKey.concatenation(nonce: false),
