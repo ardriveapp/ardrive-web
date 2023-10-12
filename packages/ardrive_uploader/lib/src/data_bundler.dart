@@ -92,7 +92,6 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     final metadataDataItem = await _generateMetadataDataItemForFile(
       metadata: metadata,
       dataStream: dataGenerator,
-      fileLength: await file.length,
       wallet: wallet,
       driveKey: driveKey,
     );
@@ -102,8 +101,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     final fileDataItem = _generateFileDataItem(
       metadata: metadata,
       dataStream: dataGenerator.$1,
-      fileLength: await file.length,
-      cipherIv: dataGenerator.$2,
+      fileLength: dataGenerator.$4,
     );
 
     onStartBundleCreation?.call();
@@ -348,7 +346,6 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     final metadataDataItem = await _generateMetadataDataItemForFile(
       metadata: metadata,
       dataStream: dataGenerator,
-      fileLength: await file.length,
       wallet: wallet,
       driveKey: driveKey,
     );
@@ -358,8 +355,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     final fileDataItem = _generateFileDataItem(
       metadata: metadata,
       dataStream: dataGenerator.$1,
-      fileLength: await file.length,
-      cipherIv: dataGenerator.$2,
+      fileLength: dataGenerator.$4,
     );
 
     onStartBundleCreation?.call();
@@ -513,7 +509,6 @@ DataItemFile _generateFileDataItem({
   required ARFSUploadMetadata metadata,
   required Stream<Uint8List> Function() dataStream,
   required int fileLength,
-  Uint8List? cipherIv,
 }) {
   final tags = metadata.dataItemTags;
 
@@ -536,6 +531,7 @@ Future<DataItemFile> _generateMetadataDataItem({
   final metadataJson = metadata.toJson();
   final metadataBytes =
       utf8.encode(jsonEncode(metadataJson)).map((e) => Uint8List.fromList([e]));
+  int length;
 
   if (driveKey != null) {
     final encryptedMetadata = await handleEncryption(
@@ -548,18 +544,23 @@ Future<DataItemFile> _generateMetadataDataItem({
 
     metadataStreamGenerator = encryptedMetadata.$1;
     final metadataCipherIv = encryptedMetadata.$2;
+    final cipher = encryptedMetadata.$3;
 
     metadata.entityMetadataTags
         .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv!)));
-    metadata.entityMetadataTags.add(Tag(EntityTag.cipher, Cipher.aes256ctr));
+    print('Encrypting metadata data item with cipher $cipher');
+
+    metadata.entityMetadataTags.add(Tag(EntityTag.cipher, cipher));
+    length = encryptedMetadata.$4;
   } else {
     metadataStreamGenerator = () => Stream.fromIterable(metadataBytes);
+    length = metadataBytes.length;
   }
 
   final metadataTask = createDataItemTaskEither(
     wallet: wallet,
     dataStream: metadataStreamGenerator,
-    dataStreamSize: metadataBytes.length,
+    dataStreamSize: length,
     tags: metadata.entityMetadataTags
         .map((e) => createTag(e.name, e.value))
         .toList(),
@@ -577,7 +578,7 @@ Future<DataItemFile> _generateMetadataDataItem({
   });
 
   return DataItemFile(
-    dataSize: metadataBytes.length,
+    dataSize: length,
     streamGenerator: metadataStreamGenerator,
     tags: metadata.entityMetadataTags
         .map((e) => createTag(e.name, e.value))
@@ -587,15 +588,20 @@ Future<DataItemFile> _generateMetadataDataItem({
 
 Future<DataItemFile> _generateMetadataDataItemForFile({
   required ARFSUploadMetadata metadata,
-  required (Stream<Uint8List> Function(), Uint8List? dataStream) dataStream,
-  required int fileLength,
+  required (
+    Stream<Uint8List> Function(),
+    Uint8List? dataStream,
+    String? cipher,
+    int fileLength
+  ) dataStream,
   required Wallet wallet,
   SecretKey? driveKey,
 }) async {
   final dataItemTags = metadata.dataItemTags;
 
   if (driveKey != null) {
-    dataItemTags.add(Tag(EntityTag.cipher, Cipher.aes256ctr));
+    dataItemTags.add(Tag(EntityTag.cipher, dataStream.$3!));
+    print('Encrypting metadata data item with cipher ${dataStream.$3}');
     dataItemTags
         .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(dataStream.$2!)));
   }
@@ -603,7 +609,7 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   final fileDataItemEither = createDataItemTaskEither(
     wallet: wallet,
     dataStream: dataStream.$1,
-    dataStreamSize: fileLength,
+    dataStreamSize: dataStream.$4,
     tags: dataItemTags.map((e) => createTag(e.name, e.value)).toList(),
   );
 
@@ -617,6 +623,8 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
     print('File data item id: ${fileDataItem.id}');
     metadata.setDataTxId = fileDataItem.id;
   });
+
+  int metadataLength;
 
   final metadataBytes = utf8
       .encode(jsonEncode(metadata.toJson()))
@@ -632,18 +640,23 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
         metadataBytes.length,
         keyByteLength);
     metadataGenerator = result.$1;
-
+    final metadataCipherIv = result.$2;
+    final metadataCipher = result.$3;
+    metadataLength = result.$4;
     metadata.entityMetadataTags
-        .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(result.$2!)));
-    metadata.entityMetadataTags.add(Tag(EntityTag.cipher, AES256CTR));
+        .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv!)));
+    print('Encrypting metadata data item with cipher $metadataCipher');
+
+    metadata.entityMetadataTags.add(Tag(EntityTag.cipher, metadataCipher));
   } else {
     metadataGenerator = () => Stream.fromIterable(metadataBytes);
+    metadataLength = metadataBytes.length;
   }
 
   final metadataTask = createDataItemTaskEither(
     wallet: wallet,
     dataStream: metadataGenerator,
-    dataStreamSize: metadataBytes.length,
+    dataStreamSize: metadataLength,
     tags: metadata.entityMetadataTags
         .map((e) => createTag(e.name, e.value))
         .toList(),
@@ -662,7 +675,7 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   });
 
   return DataItemFile(
-    dataSize: metadataBytes.length,
+    dataSize: metadataLength,
     streamGenerator: metadataGenerator,
     tags: metadata.entityMetadataTags
         .map((e) => createTag(e.name, e.value))
@@ -672,6 +685,8 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
 
 // ignore: constant_identifier_names
 const AES256CTR = Cipher.aes256ctr;
+// ignore: constant_identifier_names
+const AES256GCM = Cipher.aes256gcm;
 // ignore: non_constant_identifier_names
 final UNIT_BYTE_LIST = Uint8List(1);
 
@@ -683,22 +698,65 @@ Future<SecretKeyData> deriveFileKey(
       secretKey: driveKey, info: fileIdBytes, nonce: UNIT_BYTE_LIST);
 }
 
-Future<(Stream<Uint8List> Function(), Uint8List? cipherIv)> handleEncryption(
-    SecretKey driveKey,
-    Stream<Uint8List> Function() dataStream,
-    String fileId,
-    int fileLength,
-    int keyByteLength) async {
+Future<
+    (
+      Stream<Uint8List> Function(),
+      Uint8List? cipherIv,
+      String cipher,
+      int fileLength
+    )> handleEncryption(
+  SecretKey driveKey,
+  Stream<Uint8List> Function() dataStream,
+  String fileId,
+  int fileLength,
+  int keyByteLength,
+) async {
   final fileKey = await deriveFileKey(driveKey, fileId, keyByteLength);
   final keyData = Uint8List.fromList(await fileKey.extractBytes());
-  final impl = await cipherStreamEncryptImpl(AES256CTR, keyData: keyData);
-  final encryptStreamResult =
-      await impl.encryptStreamGenerator(dataStream, fileLength);
-  return (encryptStreamResult.streamGenerator, encryptStreamResult.nonce);
+  Stream<Uint8List> Function() dataStreamGenerator;
+  Uint8List nonce;
+  String cipher;
+  int length;
+  print('File length before encryption: $fileLength');
+
+  if (fileLength < MiB(100).size) {
+    // uses GCM
+    final impl = cipherBufferImpl(AES256GCM);
+    cipher = AES256GCM;
+    final data = await streamToUint8List(dataStream());
+    final encryptStreamResult =
+        await impl.encrypt(data.toList(), secretKey: fileKey);
+    final encryptedData = encryptStreamResult.concatenation(nonce: false);
+    dataStreamGenerator = () => Stream.fromIterable([encryptedData]);
+    nonce = Uint8List.fromList(encryptStreamResult.nonce);
+    length = encryptedData.length;
+  } else {
+    final impl = await cipherStreamEncryptImpl(AES256CTR, keyData: keyData);
+    final encryptStreamResult =
+        await impl.encryptStreamGenerator(dataStream, fileLength);
+    cipher = AES256CTR;
+    dataStreamGenerator = encryptStreamResult.streamGenerator;
+    nonce = encryptStreamResult.nonce;
+    length = fileLength;
+  }
+
+  print('File length after encryption: $length');
+
+  return (
+    dataStreamGenerator,
+    nonce,
+    cipher,
+    length,
+  );
 }
 
-Future<(Stream<Uint8List> Function() generator, Uint8List? cipherIv)>
-    _dataGenerator({
+Future<
+    (
+      Stream<Uint8List> Function() generator,
+      Uint8List? cipherIv,
+      String? cipher,
+      int fileSize
+    )> _dataGenerator({
   required ARFSUploadMetadata metadata,
   required Stream<Uint8List> Function() dataStream,
   required int fileLength,
@@ -709,6 +767,11 @@ Future<(Stream<Uint8List> Function() generator, Uint8List? cipherIv)>
     return await handleEncryption(
         driveKey, dataStream, metadata.id, fileLength, keyByteLength);
   } else {
-    return (dataStream, null);
+    return (
+      dataStream,
+      null,
+      null,
+      fileLength,
+    );
   }
 }

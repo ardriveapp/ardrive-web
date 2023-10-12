@@ -6,3 +6,4 @@ export 'src/base2_size.dart';
 export 'src/entity_tag.dart';
 export 'src/html/html.dart';
 export 'src/sign_nounce_and_data.dart';
+export 'src/streams.dart';

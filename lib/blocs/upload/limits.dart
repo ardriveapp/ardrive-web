@@ -10,7 +10,7 @@ int bundleSizeLimit(bool isTurbo) =>
     isTurbo ? turboBundleSizeLimit : d2nBundleSizeLimit;
 
 final d2nBundleSizeLimit = const GiB(65).size;
-final turboBundleSizeLimit = const MiB(1).size;
+final turboBundleSizeLimit = const GiB(2).size;
 final mobileBundleSizeLimit = const GiB(65).size;
 const maxBundleDataItemCount = 500;
 const maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
