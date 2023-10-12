@@ -104,28 +104,42 @@ class ArDriveCrypto {
 
       final keyData = Uint8List.fromList(await key.extractBytes());
 
-      final decryptedData = await decryptTransactionDataStream(
-        cipher,
-        cipherIv,
-        Stream.fromIterable([data]),
-        keyData,
-        data.length,
-      );
+      Uint8List decryptedData;
 
-      final bytes = await streamToUint8List(decryptedData);
-      logger.d('decryptedData: $bytes');
+      if (cipher == Cipher.aes256ctr) {
+        final stream = await decryptTransactionDataStream(
+          cipher,
+          cipherIv,
+          Stream.fromIterable([data]),
+          keyData,
+          data.length,
+        );
 
-      final jsonStr = utf8.decode(bytes);
+        final bytes = await streamToUint8List(stream);
 
-      logger.d('json str: $jsonStr');
+        decryptedData = bytes;
+      } else if (cipher == Cipher.aes256gcm) {
+        final secretBox = secretBoxFromDataWithMacConcatenation(
+          data,
+          nonce: cipherIv,
+        );
 
+        final decryptedDataAsListInt = await aesGcm.decrypt(
+          secretBox,
+          secretKey: key,
+        );
+
+        decryptedData = Uint8List.fromList(decryptedDataAsListInt);
+      } else {
+        throw TransactionDecryptionException();
+      }
+
+      final jsonStr = utf8.decode(decryptedData);
       final jsonMap = json.decode(jsonStr);
 
-      logger.d('json map: $jsonMap');
-
       return jsonMap;
-    } catch (e) {
-      logger.e('Failed to decrypt entity json', e);
+    } catch (e, s) {
+      logger.e('Failed to decrypt entity json', e, s);
       throw TransactionDecryptionException();
     }
   }
