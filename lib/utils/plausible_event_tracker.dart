@@ -39,23 +39,24 @@ enum PlausibleEvent {
   arDriveTutorialsPage1,
   arDriveTutorialsPage2,
   arDriveTutorialsPage3,
-  createdAndConfirmedPasswords,
-  gettingStartedPage,
-  keyFileDownloaded,
-  loginPage,
+  createAndConfirmPasswordPage,
+  createdAndConfirmedPassword, // implemented
+  gettingStartedPage, // implemented
   returningUserPage,
-  seedPhrasePage,
+  enterSeedPhrasePage, // implemented
+  onboardingPage, // implemented
   shareFilePage,
   turboPaymentDetails,
   turboPurchaseReview,
   turboTopUpModal,
   verifySeedPhrasePage,
   viewSeedPhrasePage,
-  walletCreate,
-  walletDownloadPage,
-  walletGenerationPage,
-  welcomePage,
-  welcomeBackPage,
+  walletCreate, // is it different from walletGenerationPage
+  walletDownloadPage, // implemented
+  walletDownloaded, // implemented
+  walletGenerationPage, // implemented
+  welcomePage, // implemented
+  welcomeBackPage, // implemented
 
   unknown,
 }

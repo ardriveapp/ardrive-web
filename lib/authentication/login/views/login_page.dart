@@ -803,6 +803,15 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
   bool _confirmPasswordIsValid = false;
 
   @override
+  void initState() {
+    super.initState();
+
+    PlausibleEventTracker.track(
+      event: PlausibleEvent.createAndConfirmPasswordPage,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
       defaultMaxHeight: 798,
@@ -1018,7 +1027,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     }
 
     PlausibleEventTracker.track(
-      event: PlausibleEvent.createdAndConfirmedPasswords,
+      event: PlausibleEvent.createdAndConfirmedPassword,
     );
 
     context.read<LoginBloc>().add(
@@ -1043,6 +1052,13 @@ class OnBoardingView extends StatefulWidget {
 
 class OnBoardingViewState extends State<OnBoardingView> {
   int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.onboardingPage);
+  }
 
   List<_OnBoarding> get _list => [
         _OnBoarding(
@@ -1363,8 +1379,6 @@ const double _defaultLoginCardMaxHeight = 489;
 class EnterSeedPhraseView extends StatefulWidget {
   const EnterSeedPhraseView({super.key});
 
-  // final Wallet wallet;
-
   @override
   State<EnterSeedPhraseView> createState() => _EnterSeedPhraseViewState();
 }
@@ -1377,7 +1391,7 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.track(event: PlausibleEvent.seedPhrasePage);
+    PlausibleEventTracker.track(event: PlausibleEvent.enterSeedPhrasePage);
   }
 
   @override
@@ -1711,7 +1725,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                     onTap: () {
                       _onDownload();
                       PlausibleEventTracker.track(
-                        event: PlausibleEvent.keyFileDownloaded,
+                        event: PlausibleEvent.walletDownloaded,
                       );
                     },
                     child: Container(
@@ -2309,7 +2323,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildWriteDownSeedPhrase() {
-    PlausibleEventTracker.track(event: PlausibleEvent.seedPhrasePage);
+    PlausibleEventTracker.track(event: PlausibleEvent.verifySeedPhrasePage);
 
     final screenSize = MediaQuery.of(context).size;
 
