@@ -254,12 +254,16 @@ abstract class UploadController {
   factory UploadController(
     StreamController<UploadProgress> progressStream,
     StreamedUpload streamedUpload,
-    DataBundler dataBundler,
-  ) {
+    DataBundler dataBundler, {
+    int numOfWorkers = 5,
+    int maxTasksPerWorker = 5,
+  }) {
     return _UploadController(
       progressStream: progressStream,
       streamedUpload: streamedUpload,
       dataBundler: dataBundler,
+      numOfWorkers: numOfWorkers,
+      maxTasksPerWorker: maxTasksPerWorker,
     );
   }
 }
@@ -268,12 +272,18 @@ class _UploadController implements UploadController {
   final StreamController<UploadProgress> _progressStream;
   final StreamedUpload _streamedUpload;
   final DataBundler _dataBundler;
+  final int _numOfWorkers;
+  final int _maxTasksPerWorker;
 
   _UploadController({
     required StreamController<UploadProgress> progressStream,
     required StreamedUpload streamedUpload,
     required DataBundler dataBundler,
+    int numOfWorkers = 5,
+    int maxTasksPerWorker = 5,
   })  : _dataBundler = dataBundler,
+        _numOfWorkers = numOfWorkers,
+        _maxTasksPerWorker = maxTasksPerWorker,
         _progressStream = progressStream,
         _streamedUpload = streamedUpload {
     init();
@@ -434,6 +444,10 @@ class _UploadController implements UploadController {
     for (var task in tasks) {
       if (task.uploadItem != null) {
         totalSize += task.uploadItem!.size;
+      } else {
+        if (task is FileUploadTask) {
+          totalSize += task.metadata.size;
+        }
       }
     }
 
@@ -488,8 +502,8 @@ class _UploadController implements UploadController {
     } else {
       // creates a worker pool and initializes it with the tasks
       workerPool = WorkerPool(
-        numWorkers: 5,
-        maxTasksPerWorker: 5,
+        numWorkers: _numOfWorkers,
+        maxTasksPerWorker: _maxTasksPerWorker,
         taskQueue: tasks.values
             .where((element) => element.status == UploadStatus.notStarted)
             .toList(),

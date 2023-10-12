@@ -89,6 +89,8 @@ class _ArDriveUploader implements ArDriveUploader {
         metadataGenerator: _metadataGenerator,
         type: type,
       ),
+      numOfWorkers: 1,
+      maxTasksPerWorker: 1,
     );
 
     final metadata = await _metadataGenerator.generateMetadata(
@@ -124,6 +126,8 @@ class _ArDriveUploader implements ArDriveUploader {
         metadataGenerator: _metadataGenerator,
         type: type,
       ),
+      numOfWorkers: driveKey != null ? 3 : 5,
+      maxTasksPerWorker: driveKey != null ? 1 : 5,
     );
 
     for (var f in files) {
@@ -135,6 +139,7 @@ class _ArDriveUploader implements ArDriveUploader {
       final fileTask = FileUploadTask(
         file: f.$2,
         metadata: metadata as ARFSFileUploadMetadata,
+        content: [metadata],
         encryptionKey: driveKey,
         streamedUpload: _streamedUploadFactory.fromUploadType(
           type,
@@ -195,6 +200,8 @@ class _ArDriveUploader implements ArDriveUploader {
       StreamController<UploadProgress>(),
       streamedUpload,
       dataBundler,
+      numOfWorkers: driveKey != null ? 3 : 5,
+      maxTasksPerWorker: driveKey != null ? 1 : 5,
     );
 
     if (folderMetadatas.isNotEmpty) {

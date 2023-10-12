@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
@@ -89,8 +88,6 @@ class UploadCubit extends Cubit<UploadState> {
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
   final List<String> conflictingFolders = [];
-
-  bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
   UploadCubit({
     required this.driveId,

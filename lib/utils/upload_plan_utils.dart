@@ -85,7 +85,7 @@ class UploadPlanUtils {
           ? RevisionAction.uploadNewVersion
           : RevisionAction.create;
 
-      if (fileSize < bundleSizeLimit) {
+      if (fileSize < bundleSizeLimit(useTurbo)) {
         fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
           entity: fileEntity,
           path: filePath,
@@ -129,6 +129,7 @@ class UploadPlanUtils {
       turboUploadService: turboUploadService,
       maxDataItemCount:
           useTurbo ? maxFilesSizePerBundleUsingTurbo : maxFilesPerBundle,
+      useTurbo: useTurbo,
     );
   }
 
