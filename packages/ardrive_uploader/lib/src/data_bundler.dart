@@ -84,7 +84,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       fileLength: await file.length,
       metadata: metadata,
       wallet: wallet,
-      driveKey: driveKey,
+      encryptionKey: driveKey,
     );
 
     onStartMetadataCreation?.call();
@@ -340,7 +340,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       fileLength: await file.length,
       metadata: metadata,
       wallet: wallet,
-      driveKey: driveKey,
+      encryptionKey: driveKey,
     );
 
     final metadataDataItem = await _generateMetadataDataItemForFile(
@@ -534,8 +534,19 @@ Future<DataItemFile> _generateMetadataDataItem({
   int length;
 
   if (driveKey != null) {
+    SecretKey key;
+    if (metadata is ARFSFolderUploadMetatadata) {
+      key = driveKey;
+    } else {
+      key = await deriveFileKey(
+        driveKey,
+        metadata.id,
+        keyByteLength,
+      );
+    }
+
     final encryptedMetadata = await handleEncryption(
-      driveKey,
+      key,
       () => Stream.fromIterable(metadataBytes),
       metadata.id,
       metadataBytes.length,
@@ -633,8 +644,14 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   Stream<Uint8List> Function() metadataGenerator;
 
   if (driveKey != null) {
+    final fileKey = await deriveFileKey(
+      driveKey,
+      metadata.id,
+      keyByteLength,
+    );
+
     final result = await handleEncryption(
-        driveKey,
+        fileKey,
         () => Stream.fromIterable(metadataBytes),
         metadata.id,
         metadataBytes.length,
@@ -705,14 +722,13 @@ Future<
       String cipher,
       int fileLength
     )> handleEncryption(
-  SecretKey driveKey,
+  SecretKey encryptionKey,
   Stream<Uint8List> Function() dataStream,
   String fileId,
   int fileLength,
   int keyByteLength,
 ) async {
-  final fileKey = await deriveFileKey(driveKey, fileId, keyByteLength);
-  final keyData = Uint8List.fromList(await fileKey.extractBytes());
+  final keyData = Uint8List.fromList(await encryptionKey.extractBytes());
   Stream<Uint8List> Function() dataStreamGenerator;
   Uint8List nonce;
   String cipher;
@@ -725,7 +741,7 @@ Future<
     cipher = AES256GCM;
     final data = await streamToUint8List(dataStream());
     final encryptStreamResult =
-        await impl.encrypt(data.toList(), secretKey: fileKey);
+        await impl.encrypt(data.toList(), secretKey: encryptionKey);
     final encryptedData = encryptStreamResult.concatenation(nonce: false);
     dataStreamGenerator = () => Stream.fromIterable([encryptedData]);
     nonce = Uint8List.fromList(encryptStreamResult.nonce);
@@ -761,11 +777,11 @@ Future<
   required Stream<Uint8List> Function() dataStream,
   required int fileLength,
   required Wallet wallet,
-  SecretKey? driveKey,
+  SecretKey? encryptionKey,
 }) async {
-  if (driveKey != null) {
+  if (encryptionKey != null) {
     return await handleEncryption(
-        driveKey, dataStream, metadata.id, fileLength, keyByteLength);
+        encryptionKey, dataStream, metadata.id, fileLength, keyByteLength);
   } else {
     return (
       dataStream,
