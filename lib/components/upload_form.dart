@@ -935,12 +935,14 @@ class _UploadFormState extends State<UploadForm> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.end,
                                         children: [
-                                          if (task.status ==
-                                                  UploadStatus.failed ||
-                                              task.status ==
-                                                  UploadStatus.inProgress ||
-                                              task.status ==
-                                                  UploadStatus.complete) ...[
+                                          if (task.isProgressAvailable &&
+                                              (task.status ==
+                                                      UploadStatus.failed ||
+                                                  task.status ==
+                                                      UploadStatus.inProgress ||
+                                                  task.status ==
+                                                      UploadStatus
+                                                          .complete)) ...[
                                             Flexible(
                                               flex: 2,
                                               child: ArDriveProgressBar(

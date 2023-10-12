@@ -41,20 +41,21 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
       },
     );
 
-    /// If the file is larger than 500 MiB, we don't get progress updates.
-    ///
-    /// The TurboUploadServiceImpl for web uses fetch_client for the upload of files
-    /// larger than 500 MiB. fetch_client does not support progress updates.
-    if (kIsWeb && uploadTask.uploadItem!.size > MiB(500).size) {
-      uploadTask = uploadTask.copyWith(isProgressAvailable: false);
-    }
-
     int size = 0;
 
     final task = uploadTask.uploadItem!.data as DataItemResult;
 
     await for (final data in task.streamGenerator()) {
       size += data.length;
+    }
+
+    /// If the file is larger than 500 MiB, we don't get progress updates.
+    ///
+    /// The TurboUploadServiceImpl for web uses fetch_client for the upload of files
+    /// larger than 500 MiB. fetch_client does not support progress updates.
+    if (kIsWeb && uploadTask.uploadItem!.size > MiB(500).size) {
+      uploadTask = uploadTask.copyWith(
+          isProgressAvailable: false, status: UploadStatus.inProgress);
     }
 
     controller.updateProgress(task: uploadTask);
