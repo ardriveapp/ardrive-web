@@ -47,9 +47,11 @@ enum PlausibleEvent {
   logout, // implemented
   onboardingPage, // implemented
   sharedFilePage, // implemented
-  turboPaymentDetails,
-  turboPurchaseReview,
-  turboTopUpModal,
+  turboPaymentDetails, // implemented
+  turboPurchaseReview, // implemented
+  turboTopUpModal, // implemented
+  turboTopUpCancel, // implemented
+  turboTopUpSuccess, // implemented
   verifySeedPhrasePage, // implemented
   writeDownSeedPhrasePage, // implemented
   walletDownloadPage, // implemented
