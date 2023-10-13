@@ -45,9 +45,9 @@ enum PlausibleEvent {
   gettingStartedPage, // implemented
   returningUserPage,
   enterSeedPhrasePage, // implemented
-  logout,
+  logout, // implemented
   onboardingPage, // implemented
-  shareFilePage,
+  sharedFilePage, // implemented
   turboPaymentDetails,
   turboPurchaseReview,
   turboTopUpModal,

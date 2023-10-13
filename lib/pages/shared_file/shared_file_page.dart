@@ -7,6 +7,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -19,9 +20,11 @@ import '../drive_detail/components/drive_explorer_item_tile.dart';
 /// [SharedFilePage] displays details of a shared file and controls for downloading and previewing it
 /// from a parent [SharedFileCubit].
 class SharedFilePage extends StatelessWidget {
-  SharedFilePage({Key? key}) : super(key: key);
-
   final _fileKeyController = TextEditingController();
+
+  SharedFilePage({Key? key}) : super(key: key) {
+    PlausibleEventTracker.track(event: PlausibleEvent.sharedFilePage);
+  }
 
   @override
   Widget build(BuildContext context) {
