@@ -33,9 +33,9 @@ abstract class PlausibleEventTracker {
 }
 
 enum PlausibleEvent {
-  arDriveFileExplorerLoggedInUser,
-  arDriveFileExplorerNewUserEmpty,
-  arDriveFileExplorerNonLoggedInUser,
+  fileExplorerLoggedInUser, // implemented
+  fileExplorerNewUserEmpty, // implemented
+  fileExplorerNonLoggedInUser, // implemented
   tutorialsPage1, // implemented
   tutorialsPage2, // implemented
   tutorialsPage3, // implemented
@@ -45,6 +45,7 @@ enum PlausibleEvent {
   gettingStartedPage, // implemented
   returningUserPage,
   enterSeedPhrasePage, // implemented
+  logout,
   onboardingPage, // implemented
   shareFilePage,
   turboPaymentDetails,
