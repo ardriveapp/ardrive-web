@@ -158,7 +158,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     }();
 
     final profileSource = ProfileSource(
-      type: ProfileSourceType.values[profile.details.profileSourceType ?? 0],
+      type: ProfileSourceType.values[profile.details.profileSourceType],
       address: profile.details.profileSourceAddress,
     );
 

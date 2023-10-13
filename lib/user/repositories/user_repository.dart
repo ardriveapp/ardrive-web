@@ -48,8 +48,8 @@ class _UserRepository implements UserRepository {
     final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],
       profileSource: ProfileSource(
-        type: ProfileSourceType
-            .values[profileDetails.details.profileSourceType ?? 0],
+        type:
+            ProfileSourceType.values[profileDetails.details.profileSourceType],
         address: profileDetails.details.walletPublicKey,
       ),
       wallet: profileDetails.wallet,
