@@ -9,6 +9,7 @@ import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
+import 'package:ardrive/utils/plausible_event_tracker.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart' as utils;
@@ -370,8 +371,11 @@ class __LogoutButtonState extends State<_LogoutButton> {
       child: InkWell(
         onTap: () {
           context.read<ArDriveAuth>().logout().then(
-                (value) => context.read<ProfileCubit>().logoutProfile(),
-              );
+            (value) {
+              context.read<ProfileCubit>().logoutProfile();
+              PlausibleEventTracker.track(event: PlausibleEvent.logout);
+            },
+          );
         },
         child: Container(
           color: _isHovering
