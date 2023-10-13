@@ -36,10 +36,11 @@ enum PlausibleEvent {
   arDriveFileExplorerLoggedInUser,
   arDriveFileExplorerNewUserEmpty,
   arDriveFileExplorerNonLoggedInUser,
-  arDriveTutorialsPage1,
-  arDriveTutorialsPage2,
-  arDriveTutorialsPage3,
-  createAndConfirmPasswordPage,
+  tutorialsPage1, // implemented
+  tutorialsPage2, // implemented
+  tutorialsPage3, // implemented
+  tutorialSkipped, // implemented
+  createAndConfirmPasswordPage, // implemented
   createdAndConfirmedPassword, // implemented
   gettingStartedPage, // implemented
   returningUserPage,

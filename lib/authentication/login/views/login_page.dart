@@ -1057,16 +1057,18 @@ class OnBoardingViewState extends State<OnBoardingView> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.track(event: PlausibleEvent.onboardingPage);
+    PlausibleEventTracker.track(event: PlausibleEvent.onboardingPage).then(
+      (value) {
+        PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage1);
+      },
+    );
   }
 
   List<_OnBoarding> get _list => [
         _OnBoarding(
           primaryButtonText: appLocalizationsOf(context).next,
           primaryButtonAction: () {
-            setState(() {
-              _currentPage++;
-            });
+            _goToNextPage();
           },
           secundaryButtonHasIcon: false,
           secundaryButtonText: appLocalizationsOf(context).skip,
@@ -1076,6 +1078,7 @@ class OnBoardingViewState extends State<OnBoardingView> {
                     wallet: widget.wallet,
                   ),
                 );
+            PlausibleEventTracker.track(event: PlausibleEvent.tutorialSkipped);
           },
           title: appLocalizationsOf(context).onboarding1Title,
           description: appLocalizationsOf(context).onboarding1Description,
@@ -1084,15 +1087,11 @@ class OnBoardingViewState extends State<OnBoardingView> {
         _OnBoarding(
           primaryButtonText: appLocalizationsOf(context).next,
           primaryButtonAction: () {
-            setState(() {
-              _currentPage++;
-            });
+            _goToNextPage();
           },
           secundaryButtonText: appLocalizationsOf(context).backButtonOnboarding,
           secundaryButtonAction: () {
-            setState(() {
-              _currentPage--;
-            });
+            _goToPreviousPage();
           },
           title: appLocalizationsOf(context).onboarding2Title,
           description: appLocalizationsOf(context).onboarding2Description,
@@ -1109,15 +1108,35 @@ class OnBoardingViewState extends State<OnBoardingView> {
           },
           secundaryButtonText: appLocalizationsOf(context).backButtonOnboarding,
           secundaryButtonAction: () {
-            setState(() {
-              _currentPage--;
-            });
+            _goToPreviousPage();
           },
           title: appLocalizationsOf(context).onboarding3Title,
           description: appLocalizationsOf(context).onboarding3Description,
           illustration: AssetImage(Resources.images.login.gridImage),
         ),
       ];
+
+  void _goToNextPage() {
+    _goToPage(_currentPage + 1);
+  }
+
+  void _goToPreviousPage() {
+    _goToPage(_currentPage - 1);
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+
+    if (_currentPage == 0) {
+      PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage1);
+    } else if (_currentPage == 1) {
+      PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage2);
+    } else if (_currentPage == 2) {
+      PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage3);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1222,12 +1241,12 @@ class OnBoardingViewState extends State<OnBoardingView> {
 }
 
 class _OnBoardingContent extends StatelessWidget {
+  final _OnBoarding onBoarding;
+
   const _OnBoardingContent({
     super.key,
     required this.onBoarding,
   });
-
-  final _OnBoarding onBoarding;
 
   @override
   Widget build(BuildContext context) {
