@@ -1885,7 +1885,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     });
   }
 
-  void advancePage() async {
+  void goNextPage() async {
     if (_currentPage == 2) {
       context
           .read<LoginBloc>()
@@ -1896,19 +1896,37 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
         _wordsAreCorrect = false;
         _currentPage++;
       });
+      _trackPlausible();
     }
   }
 
-  void back() {
-    _isBlurredSeedPhrase = true;
-    _wordsAreCorrect = false;
+  void goPrevPage() {
+    setState(() {
+      _isBlurredSeedPhrase = true;
+      _wordsAreCorrect = false;
+    });
     if (_currentPage == 0) {
-      // Navigator.pop(context);
       context.read<LoginBloc>().add(const ForgetWallet());
     } else {
       setState(() {
         _currentPage--;
       });
+      _trackPlausible();
+    }
+  }
+
+  void _trackPlausible() {
+    switch (_currentPage) {
+      case 1:
+        PlausibleEventTracker.track(
+          event: PlausibleEvent.writeDownSeedPhrasePage,
+        );
+        break;
+      case 2:
+        PlausibleEventTracker.track(
+          event: PlausibleEvent.verifySeedPhrasePage,
+        );
+        break;
     }
   }
 
@@ -2010,7 +2028,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                   return colors.themeFgDefault.withOpacity(0.1);
                 }),
               ),
-              onPressed: back,
+              onPressed: goPrevPage,
               child: Center(
                   // TODO: create/update localization key
                   child: Text('Back',
@@ -2038,7 +2056,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
             maxWidth: double.maxFinite,
             borderRadius: 0,
             text: text,
-            onPressed: advancePage));
+            onPressed: goNextPage));
   }
 
   Widget _buildCard(List<String> cardInfo) {
@@ -2342,8 +2360,6 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildWriteDownSeedPhrase() {
-    PlausibleEventTracker.track(event: PlausibleEvent.verifySeedPhrasePage);
-
     final screenSize = MediaQuery.of(context).size;
 
     final rowCount = screenSize.width > (176 * 3 + 24 * 4) ? 3 : 2;

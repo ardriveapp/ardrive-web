@@ -43,7 +43,6 @@ enum PlausibleEvent {
   createAndConfirmPasswordPage, // implemented
   createdAndConfirmedPassword, // implemented
   gettingStartedPage, // implemented
-  returningUserPage,
   enterSeedPhrasePage, // implemented
   logout, // implemented
   onboardingPage, // implemented
@@ -51,9 +50,8 @@ enum PlausibleEvent {
   turboPaymentDetails,
   turboPurchaseReview,
   turboTopUpModal,
-  verifySeedPhrasePage,
-  viewSeedPhrasePage,
-  walletCreate, // is it different from walletGenerationPage
+  verifySeedPhrasePage, // implemented
+  writeDownSeedPhrasePage, // implemented
   walletDownloadPage, // implemented
   walletDownloaded, // implemented
   walletGenerationPage, // implemented
