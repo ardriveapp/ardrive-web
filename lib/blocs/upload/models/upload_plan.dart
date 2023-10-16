@@ -22,14 +22,15 @@ class UploadPlan {
     required this.maxDataItemCount,
   });
 
-  static Future<UploadPlan> create(
-      {required Map<String, FileV2UploadHandle> fileV2UploadHandles,
-      required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
-      required Map<String, FolderDataItemUploadHandle>
-          folderDataItemUploadHandles,
-      required TurboUploadService turboUploadService,
-      required int maxDataItemCount,
-      required bool useTurbo}) async {
+  static Future<UploadPlan> create({
+    required Map<String, FileV2UploadHandle> fileV2UploadHandles,
+    required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
+    required Map<String, FolderDataItemUploadHandle>
+        folderDataItemUploadHandles,
+    required TurboUploadService turboUploadService,
+    required int maxDataItemCount,
+    required bool useTurbo,
+  }) async {
     final uploadPlan = UploadPlan._create(
       fileV2UploadHandles: fileV2UploadHandles,
       maxDataItemCount: maxDataItemCount,
@@ -59,7 +60,7 @@ class UploadPlan {
   }) async {
     logger.i(
         'Creating bundle handles from data item handles with a max number of files of $maxDataItemCount');
-    final int maxBundleSize = bundleSizeLimit(useTurbo);
+    final int maxBundleSize = computeBundleSizeLimit(useTurbo);
 
     final folderItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: maxBundleSize,

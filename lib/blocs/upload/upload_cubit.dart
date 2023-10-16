@@ -335,12 +335,11 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
 
-      _uploadMethod = uploadPreparation.uploadPaymentInfo.defaultPaymentMethod;
-
-      logger.d('Upload method: $_uploadMethod');
-
       final paymentInfo = uploadPreparation.uploadPaymentInfo;
       final uploadPlansPreparation = uploadPreparation.uploadPlansPreparation;
+
+      _uploadMethod = paymentInfo.defaultPaymentMethod;
+      logger.d('Upload method: $_uploadMethod');
 
       if (await _profileCubit.checkIfWalletMismatch()) {
         emit(UploadWalletMismatch());
