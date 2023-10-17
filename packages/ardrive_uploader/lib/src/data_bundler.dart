@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -735,7 +736,7 @@ Future<
   int length;
   print('File length before encryption: $fileLength');
 
-  if (fileLength < MiB(100).size) {
+  if (fileLength < maxSizeSupportedByGCMEncryption) {
     // uses GCM
     final impl = cipherBufferImpl(AES256GCM);
     cipher = AES256GCM;
