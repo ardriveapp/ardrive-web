@@ -16,7 +16,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -27,37 +27,7 @@ class Database extends _$Database {
         onUpgrade: (Migrator m, int from, int to) async {
           logger.i('schema changed from $from to $to');
 
-          if (from == 16 && to == 17) {
-            // Then we're adding the pin and custom fields columns
-            logger.i('Migrating schema from v16 to v17');
-
-            await m.addColumn(
-              driveRevisions,
-              driveRevisions.customJsonMetadata,
-            );
-            await m.addColumn(driveRevisions, driveRevisions.customGQLTags);
-            await m.addColumn(drives, drives.customJsonMetadata);
-            await m.addColumn(drives, drives.customGQLTags);
-
-            await m.addColumn(
-              folderRevisions,
-              folderRevisions.customJsonMetadata,
-            );
-            await m.addColumn(folderRevisions, folderRevisions.customGQLTags);
-            await m.addColumn(folderEntries, folderEntries.customJsonMetadata);
-            await m.addColumn(folderEntries, folderEntries.customGQLTags);
-
-            await m.addColumn(fileRevisions, fileRevisions.customJsonMetadata);
-            await m.addColumn(fileRevisions, fileRevisions.customGQLTags);
-            await m.addColumn(fileEntries, fileEntries.customJsonMetadata);
-            await m.addColumn(fileEntries, fileEntries.customGQLTags);
-
-            await m.addColumn(fileEntries, fileEntries.pinnedDataOwnerAddress);
-            await m.addColumn(
-              fileRevisions,
-              fileRevisions.pinnedDataOwnerAddress,
-            );
-          } else if (from >= 1 && from < schemaVersion) {
+          if (from >= 1 && from < 16) {
             logger.i(
               'No strategy set for migration v$from to v$to'
               ' - Resetting database schema',
@@ -69,6 +39,48 @@ class Database extends _$Database {
             }
 
             await m.createAll();
+          } else {
+            if (from < 17) {
+              // Then we're adding the pin and custom fields columns
+              logger.i('Migrating schema from v16 to v17');
+
+              await m.addColumn(
+                driveRevisions,
+                driveRevisions.customJsonMetadata,
+              );
+              await m.addColumn(driveRevisions, driveRevisions.customGQLTags);
+              await m.addColumn(drives, drives.customJsonMetadata);
+              await m.addColumn(drives, drives.customGQLTags);
+
+              await m.addColumn(
+                folderRevisions,
+                folderRevisions.customJsonMetadata,
+              );
+              await m.addColumn(folderRevisions, folderRevisions.customGQLTags);
+              await m.addColumn(
+                  folderEntries, folderEntries.customJsonMetadata);
+              await m.addColumn(folderEntries, folderEntries.customGQLTags);
+
+              await m.addColumn(
+                  fileRevisions, fileRevisions.customJsonMetadata);
+              await m.addColumn(fileRevisions, fileRevisions.customGQLTags);
+              await m.addColumn(fileEntries, fileEntries.customJsonMetadata);
+              await m.addColumn(fileEntries, fileEntries.customGQLTags);
+
+              await m.addColumn(
+                  fileEntries, fileEntries.pinnedDataOwnerAddress);
+              await m.addColumn(
+                fileRevisions,
+                fileRevisions.pinnedDataOwnerAddress,
+              );
+            }
+            if (from < 18) {
+              // Adding support for remembering source Ethereum address
+              logger.i('Migrating schema from v17 to v18');
+
+              await m.addColumn(profiles, profiles.profileSourceType);
+              await m.addColumn(profiles, profiles.profileSourceAddress);
+            }
           }
         },
       );

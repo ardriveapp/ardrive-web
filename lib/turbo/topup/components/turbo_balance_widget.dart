@@ -90,12 +90,14 @@ class _TurboBalanceState extends State<TurboBalance> {
                       flex: 2,
                       child: Text(
                         appLocalizationsOf(context).turboAddCreditsBlurb,
-                        style: ArDriveTypography.body.captionRegular().copyWith(
+                        style: ArDriveTypography.body
+                            .captionRegular(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgSubtle)
+                            .copyWith(
                               fontWeight: FontWeight.w600,
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgMuted,
                             ),
                       ),
                     ),

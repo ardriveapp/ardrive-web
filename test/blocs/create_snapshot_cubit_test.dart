@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/services/config/app_config.dart';
@@ -137,6 +138,8 @@ void main() {
             password: 'password',
             wallet: testWallet,
             walletAddress: await testWallet.getAddress(),
+            profileSource:
+                const ProfileSource(type: ProfileSourceType.standalone),
             walletBalance: BigInt.from(100),
             cipherKey: SecretKey(
               [1, 2, 3, 4, 5],
@@ -194,6 +197,9 @@ void main() {
               walletBalance: BigInt.one,
               cipherKey: cipher,
               profileType: ProfileType.json,
+              profileSource: const ProfileSource(
+                type: ProfileSourceType.standalone,
+              ),
             ));
 
         when(() => appConfig.allowedDataItemSizeForTurbo)

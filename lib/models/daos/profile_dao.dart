@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -98,6 +99,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     String password,
     Wallet wallet,
     ProfileType profileType,
+    ProfileSource profileSource,
   ) async {
     logger.d('Adding profile with type $profileType');
 
@@ -146,6 +148,8 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         encryptedWallet: encryptedWallet,
         keySalt: profileSalt as Uint8List,
         profileType: profileType.index,
+        profileSourceType: Value(profileSource.type.index),
+        profileSourceAddress: Value(profileSource.address),
         walletPublicKey: publicKey,
         encryptedPublicKey: encryptedPublicKey.concatenation(nonce: false),
       ),

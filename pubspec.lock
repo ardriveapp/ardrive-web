@@ -53,10 +53,10 @@ packages:
     dependency: "direct main"
     description:
       name: archive
-      sha256: "06a96f1249f38a00435b3b0c9a3246d934d7dbc8183fc7c9e56989860edb99d4"
+      sha256: "7e0d52067d05f2e0324268097ba723b71cb41ac8a6a2b24d1edf9c536b987b03"
       url: "https://pub.dev"
     source: hosted
-    version: "3.4.4"
+    version: "3.4.6"
   arconnect:
     dependency: "direct main"
     description:
@@ -131,16 +131,16 @@ packages:
     dependency: "direct main"
     description:
       name: artemis
-      sha256: "696b16c9ee7934d76ca18267973355620669bdc5a3cc62d116e8e7c86ef8f31b"
+      sha256: "06a268b75948a9822572f65280cc679bfe889bf84fa02283ed75470670d2a3e0"
       url: "https://pub.dev"
     source: hosted
-    version: "7.13.0-beta.2"
+    version: "7.13.1"
   arweave:
     dependency: "direct main"
     description:
       path: "."
       ref: PE-3697
-      resolved-ref: "30517c20669de213b8105273d3ec97005867bc90"
+      resolved-ref: c2bd4e0b6475c0c62b4cbf83bb4a928e4147fc3a
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.7.0"
@@ -561,7 +561,7 @@ packages:
     source: hosted
     version: "1.3.1"
   fetch_api:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: fetch_api
       sha256: "7896632eda5af40c4459d673ad601df21d4c3ae6a45997e300a92ca63ec9fe4c"
@@ -572,9 +572,9 @@ packages:
     dependency: "direct overridden"
     description:
       path: "."
-      ref: ignore-headers
-      resolved-ref: ba37ef6eaa291cdb36b4616c6fbec3c690bca728
-      url: "https://github.com/karlprieb/fetch_client.git"
+      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
+      resolved-ref: "95241dd94f0f64bae7553e7a3bbaa5d0558f63ee"
+      url: "https://github.com/thiagocarvalhodev/fetch_client.git"
     source: git
     version: "1.0.2"
   ffi:
@@ -833,10 +833,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_multi_formatter
-      sha256: "71232e0ff3e24e94a94b5e01aaca8476a2d0c27ffe8bde16127f5e7c17f8e96f"
+      sha256: bfef1fb7357b5be34cdf7797da361d185f6e873e2f3d2704dbfa56181d021543
       url: "https://pub.dev"
     source: hosted
-    version: "2.11.11"
+    version: "2.11.14"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -1235,6 +1235,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.8.1"
+  json_rpc_2:
+    dependency: transitive
+    description:
+      name: json_rpc_2
+      sha256: "5e469bffa23899edacb7b22787780068d650b106a21c76db3c49218ab7ca447e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
   json_serializable:
     dependency: "direct dev"
     description:
@@ -1383,10 +1391,10 @@ packages:
     dependency: transitive
     description:
       name: mutex
-      sha256: "03116a4e46282a671b46c12de649d72c0ed18188ffe12a8d0fc63e83f4ad88f4"
+      sha256: "8827da25de792088eb33e572115a5eb0d61d61a3c01acbc8bcbe76ed78f1a1f2"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "3.1.0"
   nested:
     dependency: transitive
     description:
@@ -1543,10 +1551,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_platform_interface
-      sha256: f2343e9fa9c22ae4fd92d4732755bfe452214e7189afcc097380950cf567b4b2
+      sha256: "6760eb5ef34589224771010805bea6054ad28453906936f843a8cc4d3a55c4a4"
       url: "https://pub.dev"
     source: hosted
-    version: "3.11.5"
+    version: "3.12.0"
   permission_handler_windows:
     dependency: transitive
     description:
@@ -1695,10 +1703,10 @@ packages:
     dependency: "direct main"
     description:
       name: shared_preferences
-      sha256: b7f41bad7e521d205998772545de63ff4e6c97714775902c199353f8bf1511ac
+      sha256: "81429e4481e1ccfb51ede496e916348668fd0921627779233bd24cc3ff6abd02"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.1"
+    version: "2.2.2"
   shared_preferences_android:
     dependency: transitive
     description:
@@ -2250,6 +2258,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
+  webthree:
+    dependency: "direct main"
+    description:
+      name: webthree
+      sha256: "3c653ea7a3a8e846f444afac9912daf6f83e9270f5ee0d677873569ef42d3374"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.7+2"
   win32:
     dependency: transitive
     description:
@@ -2292,4 +2308,4 @@ packages:
     version: "3.1.2"
 sdks:
   dart: ">=3.1.0 <4.0.0"
-  flutter: ">=3.13.0"
+  flutter: ">=3.13.6"

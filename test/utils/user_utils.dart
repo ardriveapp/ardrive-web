@@ -1,3 +1,4 @@
+import 'package:ardrive/entities/profile_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/user_utils.dart';
@@ -23,6 +24,7 @@ void main() {
         walletBalance: BigInt.zero,
         cipherKey: SecretKey([1, 2, 3]),
         profileType: ProfileType.json,
+        profileSource: const ProfileSource(type: ProfileSourceType.standalone),
       );
       // arrange
       when(() => auth.currentUser).thenReturn(user);
@@ -46,6 +48,7 @@ void main() {
         walletBalance: BigInt.zero,
         cipherKey: SecretKey([1, 2, 3]),
         profileType: ProfileType.json,
+        profileSource: const ProfileSource(type: ProfileSourceType.standalone),
       );
       // arrange
       when(() => auth.currentUser).thenReturn(user);
