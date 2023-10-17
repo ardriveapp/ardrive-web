@@ -85,7 +85,7 @@ class UploadPlanUtils {
           ? RevisionAction.uploadNewVersion
           : RevisionAction.create;
 
-      final bundleSizeLimit = computeBundleSizeLimit(useTurbo);
+      final bundleSizeLimit = getBundleSizeLimit(useTurbo);
 
       if (fileSize < bundleSizeLimit) {
         fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(

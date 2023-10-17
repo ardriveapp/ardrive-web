@@ -60,7 +60,7 @@ class UploadPlan {
   }) async {
     logger.i(
         'Creating bundle handles from data item handles with a max number of files of $maxDataItemCount');
-    final int maxBundleSize = computeBundleSizeLimit(useTurbo);
+    final int maxBundleSize = getBundleSizeLimit(useTurbo);
 
     final folderItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: maxBundleSize,
