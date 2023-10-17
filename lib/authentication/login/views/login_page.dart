@@ -321,7 +321,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           content = PromptWalletView(
             key: const Key('promptWalletView'),
             isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
-            isEthereumProviderAvailable: (state).isEthereumProviderAvailable,
+            isEthereumProviderAvailable: state.isEthereumProviderAvailable,
           );
         }
 

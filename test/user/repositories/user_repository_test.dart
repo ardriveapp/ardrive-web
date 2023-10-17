@@ -47,6 +47,7 @@ void main() {
                 encryptedWallet: Uint8List.fromList([]),
                 keySalt: Uint8List.fromList([]),
                 profileType: 0, //json
+                profileSourceType: 0, //standalone
                 username: '',
                 walletPublicKey: '',
                 id: 'id',
@@ -61,6 +62,7 @@ void main() {
                 encryptedWallet: Uint8List.fromList([]),
                 keySalt: Uint8List.fromList([]),
                 profileType: 0, //json
+                profileSourceType: 0, //standalone
                 username: '',
                 walletPublicKey: '',
                 id: 'id',
@@ -113,6 +115,7 @@ void main() {
                 encryptedWallet: Uint8List.fromList([]),
                 keySalt: Uint8List.fromList([]),
                 profileType: 0, //json
+                profileSourceType: 0, //standalone
                 username: '',
                 walletPublicKey: '',
                 id: 'id',
@@ -176,6 +179,7 @@ void main() {
             encryptedWallet: Uint8List.fromList([]),
             keySalt: Uint8List.fromList([]),
             profileType: 0, //json
+            profileSourceType: 0, //standalone
             username: '',
             walletPublicKey: '',
             id: 'id',

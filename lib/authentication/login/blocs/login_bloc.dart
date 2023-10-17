@@ -324,10 +324,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arDriveAuth.logout();
     }
 
-    if (_isArConnectWallet()) {
-      await _arConnectService.disconnect();
-    }
-
     emit(LoginInitial(_arConnectService.isExtensionPresent(),
         _ethereumProviderService.isExtensionPresent()));
   }
@@ -477,8 +473,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final wallet = event.wallet;
 
     profileType = ProfileType.json;
-    // Wallet could be from Ethereum or Arweave wallet file
-    // profileSource = ProfileSource(type: ProfileSourceType.arweaveKey);
+    // Wallet could be from Ethereum or Arweave wallet file, so don't set profileSource
 
     try {
       if (await _arDriveAuth.userHasPassword(wallet)) {
