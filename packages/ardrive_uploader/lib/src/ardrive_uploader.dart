@@ -131,13 +131,16 @@ class _ArDriveUploader implements ArDriveUploader {
     );
 
     for (var f in files) {
+      final ARFSUploadMetadataArgs metadataArgs = f.$1;
+      final IOFile ioFile = f.$2;
+
       final metadata = await _metadataGenerator.generateMetadata(
-        f.$2,
-        f.$1,
+        ioFile,
+        metadataArgs,
       );
 
       final fileTask = FileUploadTask(
-        file: f.$2,
+        file: ioFile,
         metadata: metadata as ARFSFileUploadMetadata,
         content: [metadata],
         encryptionKey: driveKey,
