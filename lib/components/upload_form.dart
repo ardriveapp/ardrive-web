@@ -947,23 +947,11 @@ class _UploadFormState extends State<UploadForm> {
                                               flex: 2,
                                               child: ArDriveProgressBar(
                                                 height: 4,
-                                                indicatorColor: task.status ==
-                                                        UploadStatus.failed
-                                                    ? ArDriveTheme.of(context)
-                                                        .themeData
-                                                        .colors
-                                                        .themeErrorDefault
-                                                    : task.progress == 1
-                                                        ? ArDriveTheme.of(
-                                                                context)
-                                                            .themeData
-                                                            .colors
-                                                            .themeSuccessDefault
-                                                        : ArDriveTheme.of(
-                                                                context)
-                                                            .themeData
-                                                            .colors
-                                                            .themeFgDefault,
+                                                indicatorColor:
+                                                    _getUploadStatusColor(
+                                                  context,
+                                                  task,
+                                                ),
                                                 percentage: task.progress,
                                               ),
                                             ),
@@ -1003,25 +991,6 @@ class _UploadFormState extends State<UploadForm> {
                                           const SizedBox(
                                             width: 8,
                                           ),
-                                          // TODO: Implement retry
-                                          // if (task.status ==
-                                          //     UploadStatus.failed)
-                                          //   SizedBox(
-                                          //     height: 24,
-                                          //     child: ArDriveClickArea(
-                                          //       child: GestureDetector(
-                                          //         onTap: () {
-                                          //           context
-                                          //               .read<UploadCubit>()
-                                          //               .retryTask(
-                                          //                 state.controller,
-                                          //                 task,
-                                          //               );
-                                          //         },
-                                          //         child: ArDriveIcons.refresh(),
-                                          //       ),
-                                          //     ),
-                                          //   )
                                         ],
                                       ),
                                     ),
@@ -1077,5 +1046,18 @@ class _UploadFormState extends State<UploadForm> {
         ],
       ),
     );
+  }
+
+  Color _getUploadStatusColor(
+      BuildContext context, UploadTask uploadStatusColor) {
+    final themeColors = ArDriveTheme.of(context).themeData.colors;
+
+    if (uploadStatusColor.status == UploadStatus.failed) {
+      return themeColors.themeErrorDefault;
+    } else if (uploadStatusColor.progress == 1) {
+      return themeColors.themeSuccessDefault;
+    } else {
+      return themeColors.themeFgDefault;
+    }
   }
 }
