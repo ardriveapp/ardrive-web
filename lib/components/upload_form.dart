@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
@@ -27,13 +25,11 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/upload/upload_handles/bundle_upload_handle.dart';
-import '../pages/drive_detail/components/drive_explorer_item_tile.dart';
 
 Future<void> promptToUpload(
   BuildContext context, {
@@ -43,15 +39,14 @@ Future<void> promptToUpload(
 }) async {
   final selectedFiles = <UploadFile>[];
   final io = ArDriveIO();
-  IOFolder? ioFolder;
   if (isFolderUpload) {
-    ioFolder = await io.pickFolder();
+    final ioFolder = await io.pickFolder();
     final ioFiles = await ioFolder.listFiles();
     final uploadFiles = ioFiles.map((file) {
       return UploadFile(
         ioFile: file,
         parentFolderId: parentFolderId,
-        relativeTo: ioFolder!.path.isEmpty ? null : getDirname(ioFolder.path),
+        relativeTo: ioFolder.path.isEmpty ? null : getDirname(ioFolder.path),
       );
     }).toList();
     selectedFiles.addAll(uploadFiles);
@@ -60,7 +55,6 @@ Future<void> promptToUpload(
     // Open file picker on Web
     final ioFiles = kIsWeb
         ? await io.pickFiles(fileSource: FileSource.fileSystem)
-        // ignore: use_build_context_synchronously
         : await showMultipleFilesFilePickerModal(context);
 
     final uploadFiles = ioFiles
@@ -77,7 +71,6 @@ Future<void> promptToUpload(
       context,
       content: BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
-          folder: ioFolder,
           arDriveUploadManager: ArDriveUploadPreparationManager(
             uploadPreparePaymentOptions: UploadPaymentEvaluator(
               appConfig: context.read<ConfigService>().config,
@@ -143,11 +136,6 @@ class UploadForm extends StatefulWidget {
 
 class _UploadFormState extends State<UploadForm> {
   final _scrollController = ScrollController();
-
-  @override
-  initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
@@ -575,8 +563,6 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               ),
             );
-          } else if (state is UploadInProgressUsingNewUploader) {
-            return _uploadUsingNewUploader(state: state);
           } else if (state is UploadInProgress) {
             final numberOfFilesInBundles =
                 state.uploadPlan.bundleUploadHandles.isNotEmpty
@@ -762,260 +748,4 @@ class _UploadFormState extends State<UploadForm> {
           return const SizedBox();
         },
       );
-
-  Widget _uploadUsingNewUploader({
-    required UploadInProgressUsingNewUploader state,
-  }) {
-    final progress = state.progress;
-    return ArDriveStandardModal(
-      width: kLargeDialogWidth,
-      title:
-          '${appLocalizationsOf(context).uploadingNFiles(state.progress.getNumberOfItems())} ${(state.totalProgress * 100).toStringAsFixed(2)}%',
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: kLargeDialogWidth,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 256 * 1.5),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                child: Scrollbar(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: progress.task.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final task = progress.task[index];
-
-                      String progressText;
-                      String status = '';
-
-                      switch (task.status) {
-                        case UploadStatus.notStarted:
-                          status = 'Not started';
-                          break;
-                        case UploadStatus.inProgress:
-                          status = 'In progress';
-                          break;
-                        case UploadStatus.paused:
-                          status = 'Paused';
-                          break;
-                        case UploadStatus.bundling:
-                          status = 'Bundling';
-                          break;
-                        case UploadStatus.encryting:
-                          status = 'Encrypting';
-                          break;
-                        case UploadStatus.complete:
-                          status = 'Complete';
-                          break;
-                        case UploadStatus.failed:
-                          status = 'Failed';
-                          break;
-                        case UploadStatus.preparationDone:
-                          status = 'Preparation done';
-                          break;
-                      }
-
-                      if (task.isProgressAvailable) {
-                        if (task.uploadItem != null) {
-                          progressText =
-                              '${filesize(((task.uploadItem!.size) * task.progress).ceil())}/${filesize(task.uploadItem!.size)}';
-                        } else {
-                          progressText = 'Preparing...';
-                        }
-                      } else {
-                        progressText =
-                            'Your upload is in progress, but for large files the progress it not available. Please wait...';
-                      }
-
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (task.content != null)
-                            for (var file in task.content!)
-                              ListTile(
-                                leading: file is ARFSFileUploadMetadata
-                                    ? getIconForContentType(
-                                        file.dataContentType,
-                                        size: 24,
-                                      )
-                                    : file is ARFSFolderUploadMetatadata
-                                        ? getIconForContentType(
-                                            'folder',
-                                            size: 24,
-                                          )
-                                        : null,
-                                contentPadding: EdgeInsets.zero,
-                                title: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Flexible(
-                                      flex: 1,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            file.name,
-                                            style: ArDriveTypography.body
-                                                .buttonNormalBold(
-                                                  color:
-                                                      ArDriveTheme.of(context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeFgDefault,
-                                                )
-                                                .copyWith(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                          ),
-                                          AnimatedSwitcher(
-                                            duration:
-                                                const Duration(seconds: 1),
-                                            child: Text(
-                                              status,
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
-                                                color: ArDriveTheme.of(context)
-                                                    .themeData
-                                                    .colors
-                                                    .themeFgOnDisabled,
-                                              ),
-                                            ),
-                                          ),
-                                          Text(
-                                            progressText,
-                                            style: ArDriveTypography.body
-                                                .buttonNormalRegular(
-                                              color: ArDriveTheme.of(context)
-                                                  .themeData
-                                                  .colors
-                                                  .themeFgOnDisabled,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Flexible(
-                                      flex: 1,
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          Flexible(
-                                            flex: 2,
-                                            child: ArDriveProgressBar(
-                                              height: 4,
-                                              indicatorColor: task.status ==
-                                                      UploadStatus.failed
-                                                  ? ArDriveTheme.of(context)
-                                                      .themeData
-                                                      .colors
-                                                      .themeErrorDefault
-                                                  : task.progress == 1
-                                                      ? ArDriveTheme.of(context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeSuccessDefault
-                                                      : ArDriveTheme.of(context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeFgDefault,
-                                              percentage: task.progress,
-                                            ),
-                                          ),
-                                          Flexible(
-                                            child: Text(
-                                              '${(task.progress * 100).toInt()}%',
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
-                                                color: ArDriveTheme.of(context)
-                                                    .themeData
-                                                    .colors
-                                                    .themeFgDefault,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(
-                                            width: 8,
-                                          ),
-                                          if (task.status ==
-                                              UploadStatus.failed)
-                                            SizedBox(
-                                              height: 24,
-                                              child: ArDriveClickArea(
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    context
-                                                        .read<UploadCubit>()
-                                                        .retryTask(
-                                                          state.controller,
-                                                          task,
-                                                        );
-                                                  },
-                                                  child: ArDriveIcons.refresh(),
-                                                ),
-                                              ),
-                                            )
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          Divider(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgSubtle
-                                .withOpacity(0.5),
-                            thickness: 0.5,
-                            height: 8,
-                          )
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(
-            height: 8,
-          ),
-          Text(
-            'Total uploaded: ${filesize(state.progress.totalUploaded)} of ${filesize(state.progress.totalSize)}',
-            style: ArDriveTypography.body
-                .buttonNormalBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault)
-                .copyWith(fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'Files uploaded: ${state.progress.tasksContentCompleted()} of ${state.progress.tasksContentLength()}',
-            style: ArDriveTypography.body
-                .buttonNormalBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault)
-                .copyWith(fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
-            style: ArDriveTypography.body.buttonNormalBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDefault),
-          ),
-        ],
-      ),
-    );
-  }
 }

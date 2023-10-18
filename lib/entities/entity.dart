@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+
+import 'entities.dart';
 
 abstract class Entity {
   final ArDriveCrypto _crypto;
