@@ -612,16 +612,20 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   final dataItemTags = metadata.dataItemTags;
 
   if (driveKey != null) {
-    dataItemTags.add(Tag(EntityTag.cipher, dataStream.$3!));
-    print('Encrypting metadata data item with cipher ${dataStream.$3}');
-    dataItemTags
-        .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(dataStream.$2!)));
+    final cipher = dataStream.$3;
+    final cipherIv = dataStream.$2;
+
+    dataItemTags.add(Tag(EntityTag.cipher, cipher!));
+    dataItemTags.add(Tag(EntityTag.cipherIv, encodeBytesToBase64(cipherIv!)));
   }
+
+  final dataStreamGenerator = dataStream.$1;
+  final dataStreamSize = dataStream.$4;
 
   final fileDataItemEither = createDataItemTaskEither(
     wallet: wallet,
-    dataStream: dataStream.$1,
-    dataStreamSize: dataStream.$4,
+    dataStream: dataStreamGenerator,
+    dataStreamSize: dataStreamSize,
     tags: dataItemTags.map((e) => createTag(e.name, e.value)).toList(),
   );
 
@@ -652,15 +656,19 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
     );
 
     final result = await handleEncryption(
-        fileKey,
-        () => Stream.fromIterable(metadataBytes),
-        metadata.id,
-        metadataBytes.length,
-        keyByteLength);
+      fileKey,
+      () => Stream.fromIterable(metadataBytes),
+      metadata.id,
+      metadataBytes.length,
+      keyByteLength,
+    );
+
     metadataGenerator = result.$1;
+    metadataLength = result.$4;
+
     final metadataCipherIv = result.$2;
     final metadataCipher = result.$3;
-    metadataLength = result.$4;
+
     metadata.entityMetadataTags
         .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv!)));
     print('Encrypting metadata data item with cipher $metadataCipher');
