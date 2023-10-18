@@ -4,7 +4,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -84,7 +83,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   Future<void> loadFileDetails(SecretKey? fileKey) async {
     emit(SharedFileLoadInProgress());
     final privacy = await _arweave.getFilePrivacyForId(fileId);
-    if (fileKey == null && privacy == DrivePrivacyTag.private) {
+    if (fileKey == null && privacy == DrivePrivacy.private) {
       emit(SharedFileIsPrivate());
       return;
     }

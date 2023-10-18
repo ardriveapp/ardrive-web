@@ -13,7 +13,6 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
-// ignore: depend_on_referenced_packages
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -195,7 +194,7 @@ class MultipleDownloadBloc
 
             try {
               if (dataTx != null) {
-                final decryptedData = await _crypto.decryptDataFromTransaction(
+                final decryptedData = await _crypto.decryptTransactionData(
                   dataTx,
                   dataBytes,
                   fileKey,

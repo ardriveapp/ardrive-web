@@ -13,13 +13,12 @@ import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
-// ignore: depend_on_referenced_packages
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mocktail/mocktail.dart';
@@ -55,7 +54,7 @@ class MockUploadPlanUtils extends Mock implements UploadPlanUtils {}
 class MockBiometricAuthentication extends Mock
     implements BiometricAuthentication {}
 
-class MockArDriveDownloader extends Mock implements ArDriveMobileDownloader {}
+class MockArDriveDownloader extends Mock implements ArDriveDownloader {}
 
 class MockDownloadService extends Mock implements DownloadService {}
 
