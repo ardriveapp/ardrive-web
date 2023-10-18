@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_uploader/src/d2n_streamed_upload.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:arweave/arweave.dart';
@@ -250,6 +251,7 @@ abstract class UploadController {
   );
   void sendTask(UploadTask task, Wallet wallet, {Function()? onTaskCompleted});
   void addTask(UploadTask task);
+  bool canCancelUpload();
 
   factory UploadController(
     StreamController<UploadProgress> progressStream,
@@ -519,6 +521,14 @@ class _UploadController implements UploadController {
 
   @override
   void addTask(UploadTask task) {
+    /// For D2N uploads, they can be canceled while the bundle is being created, but not while the upload is in progress.
+    /// But for now, it will not be cancelable while the bundle is being created. It will be addressed in a future release.
+    ///
+    /// All Turbo uploads can be canceled while the bundle is being created or while the upload is in progress.
+    if (_canCancelUpload && task.streamedUpload is D2NStreamedUpload) {
+      _canCancelUpload = false;
+    }
+
     tasks[task.id] = task;
   }
 
@@ -532,6 +542,13 @@ class _UploadController implements UploadController {
         onTaskCompleted?.call();
       },
     ).addTask(task);
+  }
+
+  bool _canCancelUpload = true;
+
+  @override
+  bool canCancelUpload() {
+    return _canCancelUpload;
   }
 }
 

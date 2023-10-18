@@ -70,6 +70,7 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     });
   }
 
+  /// Cancel D2N uploads are not supported yet.
   @override
   Future<void> cancel(UploadTask handle, UploadController controller) {
     // TODO: implement cancel
