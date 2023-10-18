@@ -1029,19 +1029,19 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
 
-      state.controller.cancel().then((value) {
-        emit(
-          UploadInProgressUsingNewUploader(
-            controller: state.controller,
-            equatableBust: state.equatableBust,
-            progress: state.progress,
-            totalProgress: state.totalProgress,
-            isCanceling: false,
-          ),
-        );
+      await state.controller.cancel();
 
-        addError(Exception('Upload canceled'));
-      });
+      emit(
+        UploadInProgressUsingNewUploader(
+          controller: state.controller,
+          equatableBust: state.equatableBust,
+          progress: state.progress,
+          totalProgress: state.totalProgress,
+          isCanceling: false,
+        ),
+      );
+
+      addError(Exception('Upload canceled'));
     }
   }
 }
