@@ -25,9 +25,12 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     }, (progressStream) async {
       final listen = progressStream.listen(
         (progress) {
-          // updates the progress. progress.$1 is the current chunk, progress.$2 is the total chunks
+          final uploaded = progress.$1;
+          final total = progress.$2;
+          final progressPercent = uploaded / total;
+
           handle = handle.copyWith(
-            progress: progress.$1 / progress.$2,
+            progress: progressPercent,
             status: UploadStatus.inProgress,
           );
 
