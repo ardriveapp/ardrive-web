@@ -80,9 +80,7 @@ class SharedFilePage extends StatelessWidget {
             mobile: (context) => SizedBox(
               height: MediaQuery.of(context).size.height,
               child: state is SharedFileLoadSuccess
-                  ? Row(children: [
-                      Expanded(child: activityPanel(state)),
-                    ])
+                  ? Row(children: [Expanded(child: activityPanel(state))])
                   : _buildShareCard(context, state),
             ),
           );

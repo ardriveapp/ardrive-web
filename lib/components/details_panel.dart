@@ -119,19 +119,20 @@ class _DetailsPanelState extends State<DetailsPanel> {
     required FsEntryInfoState infoState,
   }) {
     final tabs = [
-      if (!(widget.isSharePage && !mobileView)) ...[
+      if (!(widget.isSharePage && !mobileView) &&
+          previewState is! FsEntryPreviewUnavailable)
         ArDriveTab(
-            Tab(
-              child: Text(
-                appLocalizationsOf(context).itemPreviewEmphasized,
-              ),
+          Tab(
+            child: Text(
+              appLocalizationsOf(context).itemPreviewEmphasized,
             ),
-            Column(
-              children: [
-                Expanded(child: _buildPreview(previewState)),
-              ],
-            )),
-      ],
+          ),
+          Column(
+            children: [
+              Expanded(child: _buildPreview(previewState)),
+            ],
+          ),
+        ),
       ArDriveTab(
         Tab(
           child: Text(
