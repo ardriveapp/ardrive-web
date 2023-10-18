@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -15,6 +16,7 @@ import '../../../test_utils/utils.dart';
 void main() {
   late ArDriveAuth mockArDriveAuth;
   late ArConnectService mockArConnectService;
+  late UserRepository mockUserRepository;
 
   final wallet = getTestWallet();
 
@@ -24,6 +26,7 @@ void main() {
   setUp(() {
     mockArDriveAuth = MockArDriveAuth();
     mockArConnectService = MockArConnectService();
+    mockUserRepository = MockUserRepository();
   });
 
   group('AddWalletFile', () {
@@ -38,6 +41,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -62,6 +66,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -103,6 +108,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -130,6 +136,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -160,6 +167,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -197,6 +205,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -236,6 +245,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -257,6 +267,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -290,6 +301,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -315,6 +327,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -353,6 +366,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -376,6 +390,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -423,6 +438,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -449,6 +465,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -483,6 +500,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -512,6 +530,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -557,6 +576,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -581,6 +601,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -606,6 +627,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -642,6 +664,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -665,6 +688,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -698,6 +722,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       act: (bloc) async {
@@ -729,6 +754,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -754,6 +780,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
