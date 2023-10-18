@@ -11,9 +11,7 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   @override
   Future<AppRoutePath> parseRouteInformation(
       RouteInformation routeInformation) async {
-    // TODO: Remove deprecated member use
-    // ignore: deprecated_member_use
-    final uri = Uri.parse(routeInformation.location);
+    final uri = Uri.parse(routeInformation.location!);
     // Handle '/'
     if (uri.pathSegments.isEmpty) {
       return AppRoutePath.unknown();
@@ -77,36 +75,36 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   @override
   RouteInformation restoreRouteInformation(AppRoutePath configuration) {
     if (configuration.signingIn) {
-      return RouteInformation(uri: Uri.parse('/sign-in'));
+      return const RouteInformation(location: '/sign-in');
     } else if (configuration.driveId != null) {
       if (configuration.driveName != null &&
           configuration.sharedRawDriveKey != null) {
         return RouteInformation(
-          uri: Uri.parse(
+          location:
               '/drives/${configuration.driveId}?name=${configuration.driveName}'
-              '&$driveKeyQueryParamName=${configuration.sharedRawDriveKey}'),
+              '&$driveKeyQueryParamName=${configuration.sharedRawDriveKey}',
         );
       }
 
       return configuration.driveFolderId == null
-          ? RouteInformation(uri: Uri.parse('/drives/${configuration.driveId}'))
+          ? RouteInformation(location: '/drives/${configuration.driveId}')
           : RouteInformation(
-              uri: Uri.parse(
-                  '/drives/${configuration.driveId}/folders/${configuration.driveFolderId}'),
+              location:
+                  '/drives/${configuration.driveId}/folders/${configuration.driveFolderId}',
             );
     } else if (configuration.sharedFileId != null) {
       final sharedFilePath = '/file/${configuration.sharedFileId}/view';
 
       if (configuration.sharedRawFileKey != null) {
         return RouteInformation(
-          uri: Uri.parse(
-              '$sharedFilePath?$fileKeyQueryParamName=${configuration.sharedRawFileKey}'),
+          location:
+              '$sharedFilePath?$fileKeyQueryParamName=${configuration.sharedRawFileKey}',
         );
       } else {
-        return RouteInformation(uri: Uri.parse(sharedFilePath));
+        return RouteInformation(location: sharedFilePath);
       }
     }
 
-    return RouteInformation(uri: Uri.parse('/'));
+    return const RouteInformation(location: '/');
   }
 }

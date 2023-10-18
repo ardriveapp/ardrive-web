@@ -26,7 +26,7 @@ abstract class ArDriveAuth {
   Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
   Future<void> logout();
-  User get currentUser;
+  User? get currentUser;
   Stream<User?> onAuthStateChanged();
   Future<bool> isBiometricsEnabled();
 
@@ -216,30 +216,29 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
     try {
       if (_currentUser != null) {
-        await _secureKeyValueStore.remove('password');
-        await _secureKeyValueStore.remove('biometricEnabled');
+        if (currentUser.profileType == ProfileType.arConnect) {
+          try {
+            await _arConnectService.disconnect();
+          } catch (e) {
+            logger.e('Failed to disconnect from ArConnect', e);
+          }
+        }
+
+        _secureKeyValueStore.remove('password');
+        _secureKeyValueStore.remove('biometricEnabled');
+
         currentUser = null;
         firstPrivateDriveTxId = null;
-        await _disconnectFromArConnect();
+
         _userStreamController.add(null);
       }
 
       await _databaseHelpers.deleteAllTables();
+
       (await _metadataCache).clear();
     } catch (e) {
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');
-    }
-  }
-
-  Future<void> _disconnectFromArConnect() async {
-    final hasArConnectPermissions = await _arConnectService.checkPermissions();
-    if (hasArConnectPermissions) {
-      try {
-        await _arConnectService.disconnect();
-      } catch (e) {
-        logger.e('Failed to disconnect from ArConnect', e);
-      }
     }
   }
 

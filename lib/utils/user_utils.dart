@@ -4,7 +4,7 @@ import 'package:ardrive/user/user.dart';
 bool isDriveOwner(ArDriveAuth auth, String driveOwner) {
   User user;
   try {
-    user = auth.currentUser;
+    user = auth.currentUser!;
   } catch (e) {
     return false;
   }

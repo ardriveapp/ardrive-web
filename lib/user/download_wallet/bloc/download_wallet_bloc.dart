@@ -28,7 +28,7 @@ class DownloadWalletBloc
             return;
           }
           try {
-            final wallet = _ardriveAuth.currentUser.wallet;
+            final wallet = _ardriveAuth.currentUser!.wallet;
 
             await _ardriveIOUtils.downloadWalletAsJsonFile(
               wallet: wallet,

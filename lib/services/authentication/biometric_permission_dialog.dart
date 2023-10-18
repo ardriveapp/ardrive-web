@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -108,7 +107,7 @@ Future<void> showBiometricExceptionDialog(
   void Function()? action,
   void Function()? cancelAction,
 }) async {
-  return showArDriveDialog(
+  return showAnimatedDialog(
     context,
     content: ArDriveStandardModal(
       title: appLocalizationsOf(context).enableBiometricLogin,

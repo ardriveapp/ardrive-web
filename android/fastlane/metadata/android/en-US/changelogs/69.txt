@@ -1,1 +1,0 @@
-- Fixes the issue of new users not being able to upload after the first drive creation

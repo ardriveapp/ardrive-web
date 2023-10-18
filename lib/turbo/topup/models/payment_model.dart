@@ -86,17 +86,8 @@ class Adjustment extends Equatable {
   });
 
   String get humanReadableDiscountPercentage {
-    return discountPercentage.toStringAsFixed(0);
-  }
-
-  double get promoDiscountFactor {
-    final factor = discountPercentage / 100;
-    return factor;
-  }
-
-  double get discountPercentage {
     final discountPercentage = 100 - (operatorMagnitude * 100);
-    return discountPercentage;
+    return discountPercentage.toStringAsFixed(0);
   }
 
   factory Adjustment.fromJson(Map<String, dynamic> json) =>

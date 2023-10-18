@@ -3,12 +3,12 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
 import 'package:ardrive/utils/screen_sizes.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-Future<void> openFeedbackSurveyModal(BuildContext context) => showArDriveDialog(
+Future<void> openFeedbackSurveyModal(BuildContext context) =>
+    showAnimatedDialog(
       context,
       content: const FeedbackSurveyModal(),
     );

@@ -21,7 +21,7 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:tuple/tuple.dart';
 
-class ArDriveUploaderFromHandles {
+class ArDriveUploader {
   final BundleUploader _bundleUploader;
   final FileV2Uploader _fileV2Uploader;
   final Future<void> Function(BundleUploadHandle handle) _prepareBundle;
@@ -33,7 +33,7 @@ class ArDriveUploaderFromHandles {
   final Future<void> Function(FileV2UploadHandle handle, Object error)
       _onUploadFileError;
 
-  ArDriveUploaderFromHandles({
+  ArDriveUploader({
     required BundleUploader bundleUploader,
     required FileV2Uploader fileV2Uploader,
     required Future<void> Function(BundleUploadHandle handle) prepareBundle,
@@ -357,7 +357,7 @@ class UploadPaymentEvaluator {
       /// If we can't get the balance, turbo won't be available
       try {
         turboBalance =
-            await _turboBalanceRetriever.getBalance(_auth.currentUser.wallet);
+            await _turboBalanceRetriever.getBalance(_auth.currentUser!.wallet);
 
         logger.i('Turbo balance: $turboBalance');
       } catch (e, stacktrace) {

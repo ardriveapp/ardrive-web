@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -9,7 +8,7 @@ Future<void> showProgressDialog(
   required String title,
   List<ModalAction>? actions,
 }) =>
-    showArDriveDialog(
+    showAnimatedDialog(
       context,
       barrierDismissible: false,
       content: ProgressDialog(

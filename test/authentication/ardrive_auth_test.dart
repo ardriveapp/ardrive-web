@@ -55,13 +55,6 @@ void main() {
       id: 'some_id',
       rootFolderId: 'some_id',
     ));
-
-    when(() => mockArConnectService.checkPermissions()).thenAnswer(
-      (invocation) => Future.value(true),
-    );
-    when(() => mockArConnectService.disconnect()).thenAnswer(
-      (invocation) => Future.value(null),
-    );
   });
 
   // test `ArDriveAuth`
@@ -650,7 +643,7 @@ void main() {
       when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
               maxRetries: any(named: 'maxRetries')))
           .thenAnswer((_) async => 'some_id');
-      // mock crypto derive drive key
+      // mock cripto derive drive key
       when(
         () => mockArDriveCrypto.deriveDriveKey(
           wallet,

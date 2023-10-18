@@ -149,8 +149,7 @@ Widget _buildDataListContent(
   return LayoutBuilder(builder: (context, constraints) {
     return ArDriveDataTable<ArDriveDataTableItem>(
       key: ValueKey(folder.id),
-      lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
-          !context.watch<ActivityTracker>().isMultiSelectEnabled,
+      lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
       maxItemsPerPage: 100,
       pageItemsDivisorFactor: 25,

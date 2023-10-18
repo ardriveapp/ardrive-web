@@ -3,7 +3,6 @@ import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,7 +24,7 @@ Future<void> showCongestionDependentModalDialog(
   return await showModalDialog(context, () async {
     if (warnAboutCongestion) {
       bool shouldShowDialog = false;
-      await showArDriveDialog(
+      await showAnimatedDialog(
         context,
         content: ArDriveStandardModal(
           title: appLocalizationsOf(context).warningEmphasized,

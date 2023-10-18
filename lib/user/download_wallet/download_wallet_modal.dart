@@ -4,13 +4,12 @@ import 'package:ardrive/user/download_wallet/bloc/download_wallet_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 void showDownloadWalletModal(BuildContext context) {
-  showArDriveDialog(
+  showAnimatedDialog(
     context,
     content: BlocProvider<DownloadWalletBloc>(
       create: (_) => DownloadWalletBloc(
@@ -34,7 +33,7 @@ class DownloadWalletModal extends StatelessWidget {
         if (state is DownloadWalletSuccess) {
           Navigator.of(context).pop();
         } else if (state is DownloadWalletFailure) {
-          showArDriveDialog(
+          showAnimatedDialog(
             context,
             content: ArDriveStandardModal(
               title: appLocalizationsOf(context).error,

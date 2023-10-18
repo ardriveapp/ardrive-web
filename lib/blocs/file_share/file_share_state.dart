@@ -25,13 +25,10 @@ class FileShareLoadSuccess extends FileShareState {
   /// Whether or not this file is public ie. not encrypted on the network.
   final bool isPublicFile;
 
-  final bool isPending;
-
   const FileShareLoadSuccess({
     required this.fileName,
     required this.fileShareLink,
     required this.isPublicFile,
-    required this.isPending,
   });
 
   @override

@@ -5,7 +5,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,7 +17,7 @@ Future<void> promptToMove(
   required String driveId,
   required List<ArDriveDataTableItem> selectedItems,
 }) {
-  return showArDriveDialog(
+  return showAnimatedDialog(
     context,
     content: MultiBlocProvider(
       providers: [
@@ -285,7 +284,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                 text: appLocalizationsOf(context)
                                     .createFolderEmphasized,
                                 onPressed: () {
-                                  showArDriveDialog(
+                                  showAnimatedDialog(
                                     context,
                                     content: BlocProvider(
                                       create: (context) => FolderCreateCubit(

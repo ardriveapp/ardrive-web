@@ -4,8 +4,7 @@ class Resources {
       'https://ardrive.zendesk.com/hc/en-us/articles/5258520347419-Fund-Your-Wallet';
   static const manifestLearnMoreLink =
       'https://ardrive.zendesk.com/hc/en-us/articles/5300353421467-Arweave-Manifests';
-  static const surveyFeedbackFormUrl =
-      'https://pds-inc.typeform.com/UserSurvey';
+  static const surveyFeedbackFormUrl = 'https://ar-io.typeform.com/UserSurvey';
 
   static const helpLink = 'https://ardrive.zendesk.com/hc/en-us';
   static const agreementLink = 'https://ardrive.io/tos-and-privacy/';

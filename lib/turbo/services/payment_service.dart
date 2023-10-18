@@ -42,18 +42,69 @@ class PaymentService {
     required String currency,
     String? promoCode,
   }) async {
-    final Map<String, dynamic> signatureHeaders =
-        await _signatureHeadersForGetPriceForFiat(wallet: wallet);
-    final result = await _requestPriceForFiat(
-      httpClient,
-      signatureHeaders: signatureHeaders,
-      amount: amount,
-      currency: currency,
-      turboPaymentUri: turboPaymentUri,
-      promoCode: promoCode,
+    final acceptedStatusCodes = [200, 202, 204];
+    late Map<String, dynamic> headers;
+
+    if (wallet != null) {
+      final nonce = const Uuid().v4();
+      final publicKey = await wallet.getOwner();
+      final signature = await signNonceAndData(
+        nonce: nonce,
+        wallet: wallet,
+      );
+
+      headers = {
+        'x-nonce': nonce,
+        'x-signature': signature,
+        'x-public-key': publicKey,
+      };
+    } else {
+      headers = {};
+    }
+
+    final urlParams = promoCode != null && promoCode.isNotEmpty
+        ? '?promoCode=$promoCode'
+        : '';
+
+    final result = await httpClient
+        .get(
+            url: '$turboPaymentUri/v1/price/$currency/$amount$urlParams',
+            headers: headers)
+        .onError(
+      (ArDriveHTTPException error, stackTrace) {
+        if (error.statusCode == 400) {
+          logger.d('Invalid promo code: $promoCode');
+          throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
+        }
+        throw PaymentServiceException(
+          'Turbo price fetch failed with status code ${error.statusCode}',
+        );
+      },
     );
 
-    return _parseHttpResponseForPriceForFiat(result);
+    logger.d('Turbo price fetch status code: ${result.statusCode}');
+
+    if (!acceptedStatusCodes.contains(result.statusCode)) {
+      throw PaymentServiceException(
+        'Turbo price fetch failed with status code ${result.statusCode}',
+      );
+    }
+
+    final parsedData = json.decode(result.data);
+
+    final winc = BigInt.parse(parsedData['winc']);
+    final int? actualPaymentAmount = parsedData['actualPaymentAmount'];
+    final int? quotedPaymentAmount = parsedData['quotedPaymentAmount'];
+    final adjustments = ((parsedData['adjustments'] ?? const []) as List)
+        .map((e) => Adjustment.fromJson(e))
+        .toList();
+
+    return PriceForFiat(
+      winc: winc,
+      actualPaymentAmount: actualPaymentAmount,
+      quotedPaymentAmount: quotedPaymentAmount,
+      adjustments: adjustments,
+    );
   }
 
   Future<BigInt> getBalance({
@@ -128,93 +179,6 @@ class PaymentService {
   }
 }
 
-PriceForFiat _parseHttpResponseForPriceForFiat(
-  ArDriveHTTPResponse response,
-) {
-  final parsedData = json.decode(response.data);
-
-  final winc = BigInt.parse(parsedData['winc']);
-  final int? actualPaymentAmount = parsedData['actualPaymentAmount'];
-  final int? quotedPaymentAmount = parsedData['quotedPaymentAmount'];
-  final adjustments = ((parsedData['adjustments'] ?? const []) as List)
-      .map((e) => Adjustment.fromJson(e))
-      .toList();
-
-  return PriceForFiat(
-    winc: winc,
-    actualPaymentAmount: actualPaymentAmount,
-    quotedPaymentAmount: quotedPaymentAmount,
-    adjustments: adjustments,
-  );
-}
-
-Future<ArDriveHTTPResponse> _requestPriceForFiat(
-  ArDriveHTTP httpClient, {
-  required Map<String, dynamic> signatureHeaders,
-  required double amount,
-  required String currency,
-  required Uri turboPaymentUri,
-  required String? promoCode,
-}) async {
-  final acceptedStatusCodes = [200, 202, 204];
-  final String urlParams = _urlParamsForGetPriceForFiat(promoCode: promoCode);
-
-  final result = await httpClient
-      .get(
-    url: '$turboPaymentUri/v1/price/$currency/$amount$urlParams',
-    headers: signatureHeaders,
-  )
-      .onError(
-    (ArDriveHTTPException error, stackTrace) {
-      if (error.statusCode == 400) {
-        logger.e('Invalid promo code: $promoCode');
-        throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
-      }
-      throw PaymentServiceException(
-        'Turbo price fetch failed with exception: $error',
-      );
-    },
-  );
-
-  if (!acceptedStatusCodes.contains(result.statusCode)) {
-    throw PaymentServiceException(
-      'Turbo price fetch failed with status code ${result.statusCode}',
-    );
-  }
-
-  return result;
-}
-
-Future<Map<String, dynamic>> _signatureHeadersForGetPriceForFiat({
-  required Wallet? wallet,
-}) async {
-  if (wallet == null) {
-    return {};
-  }
-
-  final nonce = const Uuid().v4();
-  final publicKey = await wallet.getOwner();
-  final signature = await signNonceAndData(
-    nonce: nonce,
-    wallet: wallet,
-  );
-
-  return {
-    'x-nonce': nonce,
-    'x-signature': signature,
-    'x-public-key': publicKey,
-  };
-}
-
-String _urlParamsForGetPriceForFiat({
-  required String? promoCode,
-}) {
-  final urlParams =
-      promoCode != null && promoCode.isNotEmpty ? '?promoCode=$promoCode' : '';
-
-  return urlParams;
-}
-
 class DontUsePaymentService implements PaymentService {
   @override
   late ArDriveHTTP httpClient;
@@ -266,11 +230,6 @@ class PaymentServiceException implements Exception {
   final String message;
 
   PaymentServiceException([this.message = '']);
-
-  @override
-  String toString() {
-    return 'PaymentServiceException{message: $message}';
-  }
 }
 
 class PaymentServiceInvalidPromoCode implements PaymentServiceException {
@@ -294,6 +253,20 @@ class PriceForFiat extends Equatable {
     }
 
     return adjustments.first.humanReadableDiscountPercentage;
+  }
+
+  double? get promoDiscountFactor {
+    if (adjustments.isEmpty) {
+      return null;
+    }
+
+    final adjustmentMagnitude = adjustments.first.operatorMagnitude;
+
+    // Multiplying by 100 and then dividing by 100 is a workaround for
+    /// floating point precision issues.
+    final factor = (100 - (adjustmentMagnitude * 100)) / 100;
+
+    return factor;
   }
 
   BigInt get winstonCredits => winc;

@@ -3,7 +3,6 @@ import 'package:ardrive/cookie_policy_consent/cookie_policy_consent.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +17,7 @@ Future<void> showCookiePolicyConsentModal(
     ArDriveCookiePolicyConsent(),
   )..add(VerifyCookiePolicyConsent());
 
-  return showArDriveDialog(
+  return showAnimatedDialog(
     context,
     barrierDismissible: false,
     content: BlocProvider<CookiePolicyConsentBloc>(

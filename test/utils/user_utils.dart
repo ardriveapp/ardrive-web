@@ -59,7 +59,7 @@ void main() {
 
     test('should return false when the current user is null', () {
       // arrange
-      when(() => auth.currentUser).thenThrow(Exception());
+      when(() => auth.currentUser).thenReturn(null);
 
       // act
       final result = isDriveOwner(auth, 'other address');

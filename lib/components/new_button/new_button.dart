@@ -304,7 +304,8 @@ class NewButton extends StatelessWidget {
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
-          if (driveDetailState.currentDrive.privacy == 'public')
+          if (driveDetailState.currentDrive.privacy == 'public' &&
+              drive != null)
             ArDriveNewButtonItem(
               onClick: () {
                 promptToCreateManifest(
@@ -318,7 +319,8 @@ class NewButton extends StatelessWidget {
               name: appLocalizations.createManifest,
               icon: ArDriveIcons.tournament(size: defaultIconSize),
             ),
-          if (context.read<ConfigService>().config.enableQuickSyncAuthoring)
+          if (context.read<ConfigService>().config.enableQuickSyncAuthoring &&
+              drive != null)
             ArDriveNewButtonItem(
               onClick: () {
                 promptToCreateSnapshot(
@@ -327,7 +329,10 @@ class NewButton extends StatelessWidget {
                 );
               },
               isDisabled: !driveDetailState.hasWritePermissions ||
-                  driveDetailState.driveIsEmpty,
+                  driveDetailState.driveIsEmpty ||
+                  !profile.hasMinimumBalanceForUpload(
+                    minimumWalletBalance: minimumWalletBalance,
+                  ),
               name: appLocalizations.createSnapshot,
               icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
             ),

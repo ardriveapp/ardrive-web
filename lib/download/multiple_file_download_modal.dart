@@ -9,7 +9,6 @@ import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +30,7 @@ promptToDownloadMultipleFiles(
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
 
-  showArDriveDialog(
+  showAnimatedDialog(
     context,
     barrierDismissible: false,
     content: BlocProvider(

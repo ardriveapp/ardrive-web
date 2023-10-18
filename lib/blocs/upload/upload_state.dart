@@ -155,42 +155,11 @@ class UploadReady extends UploadState {
   @override
   List<Object?> get props => [
         costEstimateAr,
-        costEstimateTurbo,
         sufficientArBalance,
-        isZeroBalance,
-        sufficentCreditsBalance,
-        uploadIsPublic,
         uploadPlanForAR,
-        uploadPlanForTurbo,
-        isTurboUploadPossible,
         isFreeThanksToTurbo,
-        uploadSize,
-        credits,
-        arBalance,
-        turboCredits,
-        uploadMethod,
         isButtonToUploadEnabled,
       ];
-
-  @override
-  toString() => 'UploadReady { '
-      'costEstimateAr: $costEstimateAr, '
-      'costEstimateTurbo: $costEstimateTurbo, '
-      'sufficientArBalance: $sufficientArBalance, '
-      'isZeroBalance: $isZeroBalance, '
-      'sufficentCreditsBalance: $sufficentCreditsBalance, '
-      'uploadIsPublic: $uploadIsPublic, '
-      'uploadPlanForAR: $uploadPlanForAR, '
-      'uploadPlanForTurbo: $uploadPlanForTurbo, '
-      'isTurboUploadPossible: $isTurboUploadPossible, '
-      'isFreeThanksToTurbo: $isFreeThanksToTurbo, '
-      'uploadSize: $uploadSize, '
-      'credits: $credits, '
-      'arBalance: $arBalance, '
-      'turboCredits: $turboCredits, '
-      'uploadMethod: $uploadMethod, '
-      'isButtonToUploadEnabled: $isButtonToUploadEnabled, '
-      '}';
 }
 
 class UploadInProgress extends UploadState {
@@ -205,23 +174,6 @@ class UploadInProgress extends UploadState {
 
   @override
   List<Object?> get props => [uploadPlan, _equatableBust];
-}
-
-class UploadInProgressUsingNewUploader extends UploadState {
-  final UploadProgress progress;
-  final UploadController controller;
-  final double totalProgress;
-  final Key? equatableBust;
-
-  UploadInProgressUsingNewUploader({
-    required this.progress,
-    required this.totalProgress,
-    required this.controller,
-    this.equatableBust,
-  });
-
-  @override
-  List<Object?> get props => [progress, totalProgress, equatableBust];
 }
 
 class UploadFailure extends UploadState {

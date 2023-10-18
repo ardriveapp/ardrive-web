@@ -139,7 +139,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
         promoCode: promoCode,
       );
 
-      final isPromoCodeInvalid = promoCode != null &&
+      final isInvalid = promoCode != null &&
           refreshedPriceEstimate.estimate.adjustments.isEmpty;
 
       emit(
@@ -150,7 +150,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
           stateAsLoaded.supportedCountries,
-          isPromoCodeInvalid: isPromoCodeInvalid,
+          isPromoCodeInvalid: isInvalid,
           isFetchingPromoCode: false,
         ),
       );

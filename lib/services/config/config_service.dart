@@ -55,10 +55,9 @@ class ConfigService {
     }
   }
 
-  void updateAppConfig(AppConfig newConfig) {
-    // logger.d('App config updated: ${config.diff(newConfig)}');
-    _configFetcher.saveConfigOnDevToolsPrefs(newConfig);
-    _config = newConfig;
+  void updateAppConfig(AppConfig config) {
+    _configFetcher.saveConfigOnDevToolsPrefs(config);
+    _config = config;
   }
 
   Future<void> resetDevToolsPrefs() async {

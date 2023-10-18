@@ -2,7 +2,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';

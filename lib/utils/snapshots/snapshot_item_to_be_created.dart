@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
 import 'package:ardrive/utils/snapshots/tx_snapshot_to_snapshot_data.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 
 import 'height_range.dart';
 
@@ -83,6 +83,6 @@ class SnapshotItemToBeCreated {
     final entityTypeTags =
         tags.where((tag) => tag.name == EntityTag.entityType);
 
-    return entityTypeTags.any((tag) => tag.value == EntityTypeTag.snapshot);
+    return entityTypeTags.any((tag) => tag.value == EntityType.snapshot);
   }
 }

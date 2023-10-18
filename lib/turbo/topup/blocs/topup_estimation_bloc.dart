@@ -97,7 +97,7 @@ class TurboTopUpEstimationBloc
               promoCode: promoCode,
             );
           } catch (e, s) {
-            logger.e('Failed to refresh estimate', e, s);
+            logger.e('error updating the promo code', e, s);
             emit(EstimationLoaded(
               balance: stateAsLoaded.balance,
               estimatedStorageForBalance:
@@ -190,28 +190,31 @@ class TurboTopUpEstimationBloc
     required String? promoCode,
   }) async {
     emit(EstimationLoading());
+    try {
+      final priceEstimate = turbo.currentPriceEstimate;
 
-    final priceEstimate = turbo.currentPriceEstimate;
+      final estimatedStorageForBalance =
+          await turbo.computeStorageEstimateForCredits(
+        credits: _balance,
+        outputDataUnit: currentDataUnit,
+      );
 
-    final estimatedStorageForBalance =
-        await turbo.computeStorageEstimateForCredits(
-      credits: _balance,
-      outputDataUnit: currentDataUnit,
-    );
-
-    emit(
-      EstimationLoaded(
-        balance: _balance,
-        estimatedStorageForBalance:
-            estimatedStorageForBalance.toStringAsFixed(2),
-        selectedAmount: priceEstimate.priceInCurrency,
-        creditsForSelectedAmount: priceEstimate.estimate.winstonCredits,
-        estimatedStorageForSelectedAmount:
-            priceEstimate.estimatedStorage.toStringAsFixed(2),
-        currencyUnit: currentCurrency,
-        dataUnit: currentDataUnit,
-      ),
-    );
+      emit(
+        EstimationLoaded(
+          balance: _balance,
+          estimatedStorageForBalance:
+              estimatedStorageForBalance.toStringAsFixed(2),
+          selectedAmount: priceEstimate.priceInCurrency,
+          creditsForSelectedAmount: priceEstimate.estimate.winstonCredits,
+          estimatedStorageForSelectedAmount:
+              priceEstimate.estimatedStorage.toStringAsFixed(2),
+          currencyUnit: currentCurrency,
+          dataUnit: currentDataUnit,
+        ),
+      );
+    } catch (e, _) {
+      rethrow;
+    }
   }
 
   Future<void> _getBalance() async {
