@@ -981,7 +981,8 @@ class _UploadFormState extends State<UploadForm> {
                                               ),
                                             ),
                                           ],
-                                          if (task.status ==
+                                          if (!task.isProgressAvailable ||
+                                              task.status ==
                                                   UploadStatus.creatingBundle ||
                                               task.status ==
                                                   UploadStatus.creatingMetadata)
