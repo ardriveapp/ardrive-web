@@ -1,6 +1,6 @@
 import 'package:ardrive_utils/ardrive_utils.dart';
 
-final privateFileSizeLimit = const MiB(100000).size;
+final privateFileSizeLimit = const MiB(100).size;
 
 final mobilePrivateFileSizeLimit = const GiB(10).size;
 
