@@ -14,7 +14,6 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -261,7 +260,7 @@ class ArweaveService {
           final isSnapshot = tags.any(
             (tag) =>
                 tag.name == EntityTag.entityType &&
-                tag.value == EntityTypeTag.snapshot.toString(),
+                tag.value == EntityType.snapshot.toString(),
           );
 
           // don't fetch data for snapshots
@@ -307,20 +306,20 @@ class ArweaveService {
         await metadataCache.put(transaction.id, rawEntityData);
 
         Entity? entity;
-        if (entityType == EntityTypeTag.drive) {
+        if (entityType == EntityType.drive) {
           entity = await DriveEntity.fromTransaction(
               transaction, _crypto, rawEntityData, driveKey);
-        } else if (entityType == EntityTypeTag.folder) {
+        } else if (entityType == EntityType.folder) {
           entity = await FolderEntity.fromTransaction(
               transaction, _crypto, rawEntityData, driveKey);
-        } else if (entityType == EntityTypeTag.file) {
+        } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
             transaction,
             rawEntityData,
             driveKey: driveKey,
             crypto: _crypto,
           );
-        } else if (entityType == EntityTypeTag.snapshot) {
+        } else if (entityType == EntityType.snapshot) {
           // TODO: instantiate entity and add to blockHistory
         }
 
@@ -372,7 +371,7 @@ class ArweaveService {
     );
 
     final privateDriveTxs = driveTxs.where(
-        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private);
+        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
 
     return privateDriveTxs.isNotEmpty;
   }
@@ -496,7 +495,7 @@ class ArweaveService {
     );
 
     final privateDriveTxs = driveTxs.where(
-        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private);
+        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
 
     return privateDriveTxs.isNotEmpty
         ? privateDriveTxs.first.getTag(EntityTag.driveId)!
@@ -530,7 +529,7 @@ class ArweaveService {
         }
 
         final driveKey =
-            driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private
+            driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
                 ? await _crypto.deriveDriveKey(
                     wallet,
                     driveTx.getTag(EntityTag.driveId)!,
@@ -721,8 +720,8 @@ class ArweaveService {
       final fileTx = filteredEdges.first.node;
 
       return fileTx.getTag(EntityTag.cipherIv) != null
-          ? DrivePrivacyTag.private
-          : DrivePrivacyTag.public;
+          ? DrivePrivacy.private
+          : DrivePrivacy.public;
     }
   }
 
@@ -779,7 +778,7 @@ class ArweaveService {
   ) async {
     final driveTxs = await getUniqueUserDriveEntityTxs(profileId);
     final privateDriveTxs = driveTxs.where(
-        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private);
+        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
 
     if (privateDriveTxs.isEmpty) {
       return null;

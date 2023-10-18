@@ -1,7 +1,6 @@
-import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// TODO: move this test for TabVisibilitySingleton to ardrive_utils
 void main() {
   group('TabVisibilitySingleton class', () {
     test(
