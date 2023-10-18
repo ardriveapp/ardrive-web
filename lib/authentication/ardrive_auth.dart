@@ -12,6 +12,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:stash_shared_preferences/stash_shared_preferences.dart';
@@ -29,6 +30,7 @@ abstract class ArDriveAuth {
   User get currentUser;
   Stream<User?> onAuthStateChanged();
   Future<bool> isBiometricsEnabled();
+  Future<String?> getWalletAddress();
 
   factory ArDriveAuth({
     required ArweaveService arweave,
@@ -325,6 +327,15 @@ class ArDriveAuthImpl implements ArDriveAuth {
     );
 
     return firstPrivateDriveTxId;
+  }
+
+  @override
+  Future<String?> getWalletAddress() async {
+    final owner = await _userRepository.getOwnerOfDefaultProfile();
+    if (owner == null) {
+      return null;
+    }
+    return ownerToAddress(owner);
   }
 }
 

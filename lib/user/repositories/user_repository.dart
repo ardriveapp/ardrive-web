@@ -14,6 +14,7 @@ abstract class UserRepository {
     Wallet wallet,
   );
   Future<void> deleteUser();
+  Future<String?> getOwnerOfDefaultProfile();
 
   factory UserRepository(ProfileDao profileDao, ArweaveService arweave) =>
       _UserRepository(
@@ -33,6 +34,8 @@ class _UserRepository implements UserRepository {
         _arweave = arweave;
 
   // TODO: Check ProfileDAO to implement only one source for user data
+
+  // Will return null if no user is not logged in - i.e. not present in the DB
   @override
   Future<User?> getUser(String password) async {
     final profile = await _profileDao.getDefaultProfile();
@@ -85,6 +88,18 @@ class _UserRepository implements UserRepository {
     final profile = await _profileDao.getDefaultProfile();
 
     return profile != null;
+  }
+
+  // Will return null if no user is not logged in - i.e. not present in the DB
+  @override
+  Future<String?> getOwnerOfDefaultProfile() async {
+    final profile = await _profileDao.getDefaultProfile();
+
+    if (profile == null) {
+      return null;
+    }
+
+    return profile.walletPublicKey;
   }
 }
 
