@@ -139,8 +139,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3697
-      resolved-ref: c2bd4e0b6475c0c62b4cbf83bb4a928e4147fc3a
+      ref: PE-4812-cancel-button-fails-to-stop-file-upload-when-using-a-rs-only
+      resolved-ref: "0fd825555310a1a5bf5d256328c3f207ce148a5e"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.7.0"
