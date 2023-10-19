@@ -19,9 +19,12 @@ abstract class PlausibleEventTracker {
     }
   }
 
-  static String _eventBody(PlausibleEvent event) {
+  static String _eventBody(
+    PlausibleEvent event, {
+    String eventName = plausiblePageViewEventName,
+  }) {
     return jsonEncode({
-      'name': event.name,
+      'name': eventName,
       'url': _eventUrl(event),
       'domain': _appDomain,
     });
@@ -32,33 +35,35 @@ abstract class PlausibleEventTracker {
   }
 }
 
+const String plausiblePageViewEventName = 'pageview';
+
 enum PlausibleEvent {
-  fileExplorerLoggedInUser, // implemented
-  fileExplorerNewUserEmpty, // implemented
-  fileExplorerNonLoggedInUser, // implemented
-  tutorialsPage1, // implemented
-  tutorialsPage2, // implemented
-  tutorialsPage3, // implemented
-  tutorialSkipped, // implemented
-  createAndConfirmPasswordPage, // implemented
-  createdAndConfirmedPassword, // implemented
-  gettingStartedPage, // implemented
-  enterSeedPhrasePage, // implemented
-  logout, // implemented
-  onboardingPage, // implemented
-  sharedFilePage, // implemented
-  turboPaymentDetails, // implemented
-  turboPurchaseReview, // implemented
-  turboTopUpModal, // implemented
-  turboTopUpCancel, // implemented
-  turboTopUpSuccess, // implemented
-  verifySeedPhrasePage, // implemented
-  writeDownSeedPhrasePage, // implemented
-  walletDownloadPage, // implemented
-  walletDownloaded, // implemented
-  walletGenerationPage, // implemented
-  welcomePage, // implemented
-  welcomeBackPage, // implemented
+  fileExplorerLoggedInUser,
+  fileExplorerNewUserEmpty,
+  fileExplorerNonLoggedInUser,
+  tutorialsPage1,
+  tutorialsPage2,
+  tutorialsPage3,
+  tutorialSkipped,
+  createAndConfirmPasswordPage,
+  createdAndConfirmedPassword,
+  gettingStartedPage,
+  enterSeedPhrasePage,
+  logout,
+  onboardingPage,
+  sharedFilePage,
+  turboPaymentDetails,
+  turboPurchaseReview,
+  turboTopUpModal,
+  turboTopUpCancel,
+  turboTopUpSuccess,
+  verifySeedPhrasePage,
+  writeDownSeedPhrasePage,
+  walletDownloadPage,
+  walletDownloaded,
+  walletGenerationPage,
+  welcomePage,
+  welcomeBackPage,
 
   unknown,
 }
