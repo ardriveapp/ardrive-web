@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -91,7 +92,7 @@ class FolderEntity extends EntityWithCustomMetadata {
 
     tx
       ..addArFsTag()
-      ..addTag(EntityTag.entityType, EntityType.folder)
+      ..addTag(EntityTag.entityType, EntityTypeTag.folder)
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.folderId, id!);
 
