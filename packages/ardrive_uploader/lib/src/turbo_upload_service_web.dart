@@ -83,6 +83,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
         ),
         cancelToken: _cancelToken,
       );
+      
       print('Response from turbo: ${response.statusCode}');
 
       return response;

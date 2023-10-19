@@ -1034,7 +1034,7 @@ class UploadCubit extends Cubit<UploadState> {
           ),
         );
 
-        state.controller.cancel();
+        await state.controller.cancel();
 
         emit(
           UploadInProgressUsingNewUploader(

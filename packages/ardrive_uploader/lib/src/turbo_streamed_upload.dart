@@ -49,10 +49,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
       size += data.length;
     }
 
-    print('Upload status after calculating the size: ${uploadTask.status}');
-
     /// It is possible to cancel an upload before starting the network request.
-    print('Is canceled: $_isCanceled');
     if (_isCanceled) {
       print('Upload canceled on StreamedUpload');
       return;

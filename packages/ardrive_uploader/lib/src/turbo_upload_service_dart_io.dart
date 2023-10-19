@@ -52,7 +52,6 @@ class TurboUploadServiceImpl implements TurboUploadService<Response> {
 
       return response;
     } catch (e) {
-      print('Error on turbo upload: $e');
       if (_isCanceled) {
         _cancelToken = CancelToken();
 

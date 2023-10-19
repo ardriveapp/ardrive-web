@@ -341,19 +341,23 @@ class _UploadController implements UploadController {
     workerPool?.cancel();
     _isCanceled = true;
 
-    for (var task in tasks.values) {
-      print('Canceling task with status: ${task.status}');
-      if (task.status == UploadStatus.complete) continue;
-      if (task.status == UploadStatus.failed) continue;
+    final cancelableTask = tasks.values
+        .where((e) =>
+            e.status != UploadStatus.complete &&
+            e.status != UploadStatus.failed)
+        .toList();
 
-      task.streamedUpload.cancel(task, this);
+    final cancelTasksFuture = cancelableTask.map((task) async {
+      await task.streamedUpload.cancel(task, this);
 
       task = task.copyWith(status: UploadStatus.canceled);
 
       _canceledTasks.putIfAbsent(task.id, () => task);
 
       updateProgress(task: task);
-    }
+    });
+
+    await Future.wait(cancelTasksFuture);
 
     _onCancel(_canceledTasks.values.toList());
 

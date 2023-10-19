@@ -91,8 +91,9 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
   @override
   Future<void> cancel(UploadTask handle, UploadController controller) async {
     print('D2NStreamedUpload.cancel');
-    _aborter?.abort();
     _isCanceled = true;
+
+    await _aborter?.abort();
   }
 
   bool _isCanceled = false;
