@@ -88,9 +88,14 @@ class VideoPlayerWidget extends StatefulWidget {
   _VideoPlayerWidgetState createState() => _VideoPlayerWidgetState();
 }
 
-class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
+class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
+    with AutomaticKeepAliveClientMixin {
   late VideoPlayerController _videoPlayerController;
-  late VideoPlayer _videoPlayer;
+  bool _isVolumeSliderVisible = false;
+  bool _wasPlaying = false;
+  final _menuController = MenuController();
+  final Lock _lock = Lock();
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -98,10 +103,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     super.initState();
     _videoPlayerController =
         VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-    _videoPlayerController.initialize();
-    _videoPlayerController.addListener(_listener);
-    _videoPlayer =
-        VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
+    _videoPlayerController.initialize().then((v) {
+      _videoPlayerController.addListener(_listener);
+      // force refresh
+      setState(() {});
+    }).catchError((err) {
+      final formatError =
+          err.toString().contains('MEDIA_ERR_SRC_NOT_SUPPORTED');
+      setState(() {
+        _errorMessage = formatError
+            ? appLocalizationsOf(context).fileTypeUnsupported
+            : appLocalizationsOf(context).couldNotLoadFile;
+      });
+    });
   }
 
   @override
@@ -115,129 +129,199 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void _listener() {
     setState(() {
       if (_videoPlayerController.value.hasError) {
-        logger.d('>>> ${_videoPlayerController.value.errorDescription}');
+        logger.e('>>> ${_videoPlayerController.value.errorDescription}');
+        setState(() {
+          final formatError = _videoPlayerController.value.errorDescription
+                  ?.contains('MEDIA_ERR_SRC_NOT_SUPPORTED') ??
+              false;
 
-        // FIXME: This is a hack to deal with Chrome having problems on pressing
-        // play after pause rapidly. Also happens when a video reaches its end
-        // and a user plays it again right away.
-        // The error message is:
-        // "The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22"
-        // A better fix is required but putting this in for now.
-        _videoPlayerController.removeListener(_listener);
-        _videoPlayerController.dispose();
-
-        _videoPlayerController =
-            VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-        _videoPlayerController.initialize();
-        _videoPlayerController.addListener(_listener);
-
-        _videoPlayer =
-            VideoPlayer(_videoPlayerController, key: const Key('videoPlayer'));
+          _errorMessage = formatError
+              ? appLocalizationsOf(context).fileTypeUnsupported
+              : appLocalizationsOf(context).couldNotLoadFile;
+        });
       }
     });
   }
 
   void goFullScreen() {
-    final fsController =
-        VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-    fsController.initialize().then((_) {
-      fsController.seekTo(_videoPlayerController.value.position);
-      fsController.play();
-    });
+    bool wasPlaying = _videoPlayerController.value.isPlaying;
+    if (wasPlaying) {
+      _videoPlayerController.pause().catchError((error) {
+        logger.e('Error pausing video: $error');
+      });
+    }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (context) => Scaffold(
-          body: Center(
-            child: TapRegion(
-                onTapInside: (v) {
-                  _videoPlayerController.seekTo(fsController.value.position);
-                  Navigator.of(context).pop();
+    Navigator.of(context).push(PageRouteBuilder(
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return Scaffold(
+            body: Center(
+              child: FullScreenVideoPlayerWidget(
+                filename: widget.filename,
+                videoUrl: widget.videoUrl,
+                initialPosition: _videoPlayerController.value.position,
+                initialIsPlaying: wasPlaying,
+                initialVolume: _videoPlayerController.value.volume,
+                onClose: (position, isPlaying, volume) async {
+                  _videoPlayerController.seekTo(position);
+                  _videoPlayerController.setVolume(volume);
+                  if (isPlaying) {
+                    await _lock.synchronized(() async {
+                      await _videoPlayerController.play().catchError((e) {
+                        logger.e('Error playing video: $e');
+                      });
+                    });
+                  }
                 },
-                child: AspectRatio(
-                    aspectRatio: _videoPlayerController.value.aspectRatio,
-                    child: VideoPlayer(fsController))),
-          ),
-        ),
-      ),
-    );
+              ),
+            ),
+          );
+        }));
   }
 
   @override
   Widget build(BuildContext context) {
-    var colors = ArDriveTheme.of(context).themeData.colors;
-    var videoValue = _videoPlayerController.value;
-    var currentTime = getTimeString(videoValue.position);
-    var duration = getTimeString(videoValue.duration);
+    super.build(context);
+
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final videoValue = _videoPlayerController.value;
+    final currentTime = getTimeString(videoValue.position);
+    final duration = getTimeString(videoValue.duration);
+
+    final controlsEnabled = videoValue.isInitialized &&
+        videoValue.duration > Duration.zero &&
+        _errorMessage == null;
+
+    var bufferedValue = videoValue.buffered.isNotEmpty
+        ? videoValue.buffered.last.end.inMilliseconds.toDouble()
+        : 0.0;
 
     return VisibilityDetector(
         key: const Key('video-player'),
-        onVisibilityChanged: (VisibilityInfo info) {
+        onVisibilityChanged: (VisibilityInfo info) async {
           if (mounted) {
+            if (info.visibleFraction < 0.5 &&
+                _videoPlayerController.value.isPlaying) {
+              await _lock.synchronized(() async {
+                await _videoPlayerController.pause().catchError((error) {
+                  logger.e('Error pausing video: $error');
+                });
+              });
+            }
             setState(
-              () {
-                // if (_videoPlayerController.value.isInitialized) {
-                //   _isPlaying = info.visibleFraction > 0.5;
-                //   _isPlaying
-                //       ? _videoPlayerController.play()
-                //       : _videoPlayerController.pause();
-                // }
-              },
+              () {},
             );
           }
         },
-        child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Column(children: [
-              Expanded(
-                  child: AspectRatio(
-                      aspectRatio: _videoPlayerController.value.aspectRatio,
-                      child: TapRegion(
-                          onTapInside: (v) {
-                            goFullScreen();
-                          },
-                          child: _videoPlayer))),
-              const SizedBox(height: 8),
-              Column(children: [
+        child: Column(children: [
+          Expanded(
+              child: Center(
+                  child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Container(color: Colors.black),
+              Center(
+                  child: _errorMessage != null
+                      ? Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Text(
+                            _errorMessage ?? '',
+                            textAlign: TextAlign.center,
+                            style: ArDriveTypography.body
+                                .smallBold700(color: colors.themeFgMuted)
+                                .copyWith(fontSize: 13),
+                          ))
+                      : !videoValue.isInitialized
+                          ? const Center(
+                              child: SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          : AspectRatio(
+                              aspectRatio:
+                                  _videoPlayerController.value.aspectRatio,
+                              child: VideoPlayer(_videoPlayerController,
+                                  key: const Key('videoPlayer')))),
+            ],
+          ))),
+          Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+              child: Column(children: [
                 Text(widget.filename,
+                    textAlign: TextAlign.center,
                     style: ArDriveTypography.body
                         .smallBold700(color: colors.themeFgDefault)),
-                const SizedBox(height: 4),
-                const Text('metadata'),
                 const SizedBox(height: 8),
-                Slider(
-                    value: min(videoValue.position.inMilliseconds.toDouble(),
-                        videoValue.duration.inMilliseconds.toDouble()),
-                    min: 0.0,
-                    max: videoValue.duration.inMilliseconds.toDouble(),
-                    onChangeStart: (v) {
-                      setState(() {
-                        if (_videoPlayerController.value.duration >
-                            Duration.zero) {
-                          _videoPlayerController.pause();
-                        }
-                      });
-                    },
-                    onChanged: (v) {
-                      setState(() {
-                        if (_videoPlayerController.value.duration >
-                            Duration.zero) {
-                          _videoPlayerController
-                              .seekTo(Duration(milliseconds: v.toInt()));
-                        }
-                      });
-                    },
-                    onChangeEnd: (v) {
-                      setState(() {
-                        if (_videoPlayerController.value.duration >
-                            Duration.zero) {
-                          // _videoPlayerController
-                          //     .seekTo(Duration(milliseconds: v.toInt()));
-                          _videoPlayerController.play();
-                        }
-                      });
-                    }),
+                SliderTheme(
+                    data: SliderThemeData(
+                        trackHeight: 4,
+                        trackShape:
+                            _NoAdditionalHeightRoundedRectSliderTrackShape(),
+                        inactiveTrackColor: colors.themeBgSubtle,
+                        disabledThumbColor: colors.themeAccentBrand,
+                        disabledInactiveTrackColor: colors.themeBgSubtle,
+                        overlayShape: SliderComponentShape.noOverlay,
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 8,
+                        )),
+                    child: Slider(
+                        value: min(
+                            videoValue.position.inMilliseconds.toDouble(),
+                            videoValue.duration.inMilliseconds.toDouble()),
+                        secondaryTrackValue: bufferedValue,
+                        min: 0.0,
+                        max: videoValue.duration.inMilliseconds.toDouble(),
+                        onChangeStart: !controlsEnabled
+                            ? null
+                            : (v) async {
+                                if (_videoPlayerController.value.duration >
+                                    Duration.zero) {
+                                  _wasPlaying =
+                                      _videoPlayerController.value.isPlaying;
+                                  if (_wasPlaying) {
+                                    await _lock.synchronized(() async {
+                                      await _videoPlayerController
+                                          .pause()
+                                          .catchError((e) {
+                                        logger.e('Error pausing video: $e');
+                                      });
+                                    });
+                                    setState(() {});
+                                  }
+                                }
+                              },
+                        onChanged: !controlsEnabled
+                            ? null
+                            : (v) async {
+                                setState(() {
+                                  final milliseconds = v.toInt();
+
+                                  if (_videoPlayerController.value.duration >
+                                      Duration.zero) {
+                                    _videoPlayerController.seekTo(
+                                        Duration(milliseconds: milliseconds));
+                                  }
+                                });
+                              },
+                        onChangeEnd: !controlsEnabled
+                            ? null
+                            : (v) async {
+                                if (_videoPlayerController.value.duration >
+                                        Duration.zero &&
+                                    _wasPlaying) {
+                                  await _lock.synchronized(() async {
+                                    await _videoPlayerController
+                                        .play()
+                                        .catchError((e) {
+                                      logger.e('Error playing video: $e');
+                                    });
+                                  });
+                                  setState(() {});
+                                }
+                              })),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -247,75 +331,695 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    IconButton(
-                        onPressed: () {
-                          setState(() {
-                            if (!_videoPlayerController.value.isInitialized ||
-                                _videoPlayerController.value.isBuffering ||
-                                _videoPlayerController.value.duration <=
-                                    Duration.zero) {
-                              return;
-                            }
-                            final videoValue = _videoPlayerController.value;
-                            final newPosition = videoValue.position -
-                                const Duration(seconds: 15);
-                            _videoPlayerController.seekTo(newPosition);
-                          });
-                        },
-                        icon: const Icon(Icons.fast_rewind_outlined, size: 24)),
-                    MaterialButton(
-                      onPressed: () {
-                        setState(() {
-                          final value = _videoPlayerController.value;
-                          if (!value.isInitialized ||
-                              value.isBuffering ||
-                              value.duration <= Duration.zero) {
-                            return;
-                          }
-                          if (_videoPlayerController.value.isPlaying) {
-                            _videoPlayerController.pause();
-                          } else {
-                            if (value.position >= value.duration) {
-                              _videoPlayerController.seekTo(Duration.zero);
-                            }
-                            _videoPlayerController.play();
-                          }
-                        });
-                      },
-                      color: colors.themeAccentBrand,
-                      shape: const CircleBorder(),
-                      child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: (_videoPlayerController.value.isPlaying)
-                              ? const Icon(Icons.pause_outlined, size: 32)
-                              : const Icon(Icons.play_arrow_outlined,
-                                  size: 32)),
-                    ),
-                    IconButton(
-                        onPressed: () {
-                          setState(() {
-                            if (!_videoPlayerController.value.isInitialized ||
-                                _videoPlayerController.value.isBuffering ||
-                                _videoPlayerController.value.duration <=
-                                    Duration.zero) {
-                              return;
-                            }
-                            final videoValue = _videoPlayerController.value;
-                            final newPosition = videoValue.position +
-                                const Duration(seconds: 15);
+                MouseRegion(
+                  onExit: (event) {
+                    setState(() {
+                      _isVolumeSliderVisible = false;
+                    });
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                          child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: ScreenTypeLayout.builder(
+                                mobile: (context) => IconButton(
+                                    onPressed: !controlsEnabled
+                                        ? null
+                                        : () {
+                                            goFullScreen();
+                                          },
+                                    icon: const Icon(Icons.fullscreen_outlined,
+                                        size: 24)),
+                                desktop: (context) => VolumeSliderWidget(
+                                  volume: _videoPlayerController.value.volume,
+                                  setVolume: (v) {
+                                    setState(() {
+                                      _videoPlayerController.setVolume(v);
+                                    });
+                                  },
+                                  sliderVisible: _isVolumeSliderVisible,
+                                  setSliderVisible: (v) {
+                                    setState(() {
+                                      _isVolumeSliderVisible = v;
+                                    });
+                                  },
+                                ),
+                              ))),
+                      MaterialButton(
+                        onPressed: !controlsEnabled
+                            ? null
+                            : () async {
+                                final value = _videoPlayerController.value;
+                                if (!value.isInitialized ||
+                                    value.isBuffering ||
+                                    value.duration <= Duration.zero) {
+                                  return;
+                                }
+                                if (value.isPlaying) {
+                                  await _lock.synchronized(() async {
+                                    await _videoPlayerController
+                                        .pause()
+                                        .catchError((e) {
+                                      logger.e('Error pausing video: $e');
+                                    });
+                                  });
+                                } else {
+                                  if (value.position >= value.duration) {
+                                    _videoPlayerController
+                                        .seekTo(Duration.zero);
+                                  }
 
-                            _videoPlayerController.seekTo(newPosition);
-                          });
-                        },
-                        icon: const Icon(Icons.fast_forward_outlined, size: 24))
-                  ],
+                                  await _lock.synchronized(() async {
+                                    await _videoPlayerController
+                                        .play()
+                                        .catchError((e) {
+                                      logger.e('Error playing video: $e');
+                                    });
+                                  });
+                                  setState(() {});
+                                }
+                              },
+                        color: colors.themeAccentBrand,
+                        disabledColor: colors.themeAccentDisabled,
+                        shape: const CircleBorder(),
+                        child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: (_videoPlayerController.value.isPlaying)
+                                ? Icon(
+                                    Icons.pause_outlined,
+                                    size: 32,
+                                    color: colors.themeFgOnAccent,
+                                  )
+                                : Icon(
+                                    Icons.play_arrow_outlined,
+                                    size: 32,
+                                    color: colors.themeFgOnAccent,
+                                  )),
+                      ),
+                      Expanded(
+                          child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ScreenTypeLayout.builder(
+                                desktop: (context) => MenuAnchor(
+                                      menuChildren: [
+                                        ..._speedOptions.map((v) {
+                                          return ListTile(
+                                            tileColor: colors.themeBgSurface,
+                                            onTap: () {
+                                              setState(() {
+                                                _videoPlayerController
+                                                    .setPlaybackSpeed(v);
+                                                _menuController.close();
+                                              });
+                                            },
+                                            title: Text(
+                                              v == 1.0
+                                                  ? appLocalizationsOf(context)
+                                                      .normal
+                                                  : '$v',
+                                              style: ArDriveTypography.body
+                                                  .buttonNormalBold(
+                                                      color: colors
+                                                          .themeFgDefault),
+                                            ),
+                                          );
+                                        })
+                                      ],
+                                      controller: _menuController,
+                                      child: IconButton(
+                                          onPressed: () {
+                                            _menuController.open();
+                                          },
+                                          icon: const Icon(
+                                              Icons.settings_outlined,
+                                              size: 24)),
+                                    ),
+                                mobile: (context) => IconButton(
+                                    onPressed: () {
+                                      _displaySpeedOptionsModal(context, (v) {
+                                        setState(() {
+                                          _videoPlayerController
+                                              .setPlaybackSpeed(v);
+                                        });
+                                      });
+                                    },
+                                    icon: const Icon(Icons.settings_outlined,
+                                        size: 24))),
+                            ScreenTypeLayout.builder(
+                              desktop: (context) => IconButton(
+                                  onPressed: !controlsEnabled
+                                      ? null
+                                      : () {
+                                          goFullScreen();
+                                        },
+                                  icon: const Icon(Icons.fullscreen_outlined,
+                                      size: 24)),
+                              mobile: (context) => const SizedBox.shrink(),
+                            )
+                          ],
+                        ),
+                      ))
+                    ],
+                  ),
                 )
-              ])
-            ])));
+              ]))
+        ]));
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+}
+
+class FullScreenVideoPlayerWidget extends StatefulWidget {
+  final String videoUrl;
+  final String filename;
+  final Duration initialPosition;
+  final bool initialIsPlaying;
+  final double initialVolume;
+  final Function(Duration, bool, double) onClose;
+
+  const FullScreenVideoPlayerWidget(
+      {Key? key,
+      required this.filename,
+      required this.videoUrl,
+      required this.initialPosition,
+      required this.initialIsPlaying,
+      required this.initialVolume,
+      required this.onClose})
+      : super(key: key);
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _FullScreenVideoPlayerWidgetState createState() =>
+      _FullScreenVideoPlayerWidgetState();
+}
+
+class _FullScreenVideoPlayerWidgetState
+    extends State<FullScreenVideoPlayerWidget> {
+  late VideoPlayerController _videoPlayerController;
+  VideoPlayer? _videoPlayer;
+  bool _wasPlaying = false;
+  bool _isVolumeSliderVisible = false;
+  final _menuController = MenuController();
+  bool _controlsVisible = true;
+  Timer? _hideControlsTimer;
+  final Lock _lock = Lock();
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    logger.d('Initializing video player: ${widget.videoUrl}');
+    super.initState();
+    _videoPlayerController =
+        VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+    _videoPlayerController.initialize().then((_) {
+      _videoPlayerController.seekTo(widget.initialPosition).then((_) {
+        _videoPlayerController.setVolume(widget.initialVolume);
+        if (widget.initialIsPlaying) {
+          _videoPlayerController.play().then((_) {
+            setState(() {
+              _videoPlayer = VideoPlayer(_videoPlayerController,
+                  key: const Key('videoPlayer'));
+            });
+          }).catchError((e) {
+            logger.e('Error playing video: $e');
+          });
+        } else {
+          setState(() {
+            _videoPlayer = VideoPlayer(_videoPlayerController,
+                key: const Key('videoPlayer'));
+          });
+        }
+      });
+    });
+    _videoPlayerController.addListener(_listener);
+
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+
+    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _controlsVisible = false;
+        });
+      }
+    });
+  }
+
+  void _listener() {
+    setState(() {
+      if (_videoPlayerController.value.hasError) {
+        logger.e('>>> ${_videoPlayerController.value.errorDescription}');
+        setState(() {
+          _errorMessage = appLocalizationsOf(context).couldNotLoadFile;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+
+    // Calling onClose() here to work when user hits close zoom button or hits
+    // system back button on Android.
+    widget.onClose(
+      _videoPlayerController.value.position,
+      _videoPlayerController.value.isPlaying,
+      _videoPlayerController.value.volume,
+    );
+
+    logger.d('Disposing video player');
+    _videoPlayerController.removeListener(_listener);
+    _videoPlayerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    var videoValue = _videoPlayerController.value;
+    var currentTime = getTimeString(videoValue.position);
+    var duration = getTimeString(videoValue.duration);
+
+    var bufferedValue = videoValue.buffered.isNotEmpty
+        ? videoValue.buffered.last.end.inMilliseconds.toDouble()
+        : 0.0;
+
+    return Scaffold(
+        body: Center(
+            child: Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(color: Colors.black),
+        Center(
+            child: AspectRatio(
+          aspectRatio: _videoPlayerController.value.aspectRatio,
+          child: _errorMessage != null
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    _errorMessage ?? '',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.body
+                        .smallBold700(color: colors.themeFgMuted)
+                        .copyWith(fontSize: 13),
+                  ))
+              : !videoValue.isInitialized
+                  ? const Center(
+                      child: SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : _videoPlayer ?? const SizedBox.shrink(),
+        )),
+        MouseRegion(
+          onHover: (event) {
+            if (!AppPlatform.isMobile) {
+              setState(() {
+                _controlsVisible = true;
+                _hideControlsTimer?.cancel();
+                _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+                  if (mounted) {
+                    setState(() {
+                      _controlsVisible = false;
+                    });
+                  }
+                });
+              });
+            }
+          },
+          onExit: (event) {
+            if (!AppPlatform.isMobile) {
+              if (mounted) {
+                setState(() {
+                  _hideControlsTimer?.cancel();
+                });
+              }
+            }
+          },
+          cursor: _controlsVisible
+              ? SystemMouseCursors.click
+              : SystemMouseCursors.none,
+          child: TapRegion(
+            onTapInside: (event) {
+              setState(() {
+                _hideControlsTimer?.cancel();
+                _controlsVisible = !_controlsVisible;
+
+                if (_controlsVisible && !AppPlatform.isMobile) {
+                  _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+                    if (mounted) {
+                      setState(() {
+                        _controlsVisible = false;
+                      });
+                    }
+                  });
+                }
+              });
+            },
+            child: Container(color: Colors.black.withOpacity(0.0)),
+          ),
+        ),
+        AnimatedOpacity(
+            opacity: _controlsVisible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Column(
+              children: [
+                const Expanded(child: SizedBox.shrink()),
+                MouseRegion(
+                    onHover: (event) {
+                      _hideControlsTimer?.cancel();
+                      if (!AppPlatform.isMobile && !_controlsVisible) {
+                        setState(() {
+                          _controlsVisible = true;
+                        });
+                      }
+                    },
+                    child: TapRegion(
+                        onTapInside: (event) {
+                          if (AppPlatform.isMobile && !_controlsVisible) {
+                            _hideControlsTimer?.cancel();
+                            setState(() {
+                              _controlsVisible = true;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                          color: colors.themeBgCanvas,
+                          child: Column(children: [
+                            Text(widget.filename,
+                                style: ArDriveTypography.body.smallBold700(
+                                    color: colors.themeFgDefault)),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Text(currentTime),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                    child: SliderTheme(
+                                        data: SliderThemeData(
+                                            trackHeight: 4,
+                                            trackShape:
+                                                _NoAdditionalHeightRoundedRectSliderTrackShape(),
+                                            inactiveTrackColor:
+                                                colors.themeBgSubtle,
+                                            disabledThumbColor:
+                                                colors.themeAccentBrand,
+                                            disabledInactiveTrackColor:
+                                                colors.themeBgSubtle,
+                                            overlayShape:
+                                                SliderComponentShape.noOverlay,
+                                            thumbShape:
+                                                const RoundSliderThumbShape(
+                                              enabledThumbRadius: 8,
+                                            )),
+                                        child: Slider(
+                                            value: min(
+                                                videoValue
+                                                    .position.inMilliseconds
+                                                    .toDouble(),
+                                                videoValue
+                                                    .duration.inMilliseconds
+                                                    .toDouble()),
+                                            secondaryTrackValue: bufferedValue,
+                                            min: 0.0,
+                                            max: videoValue
+                                                .duration.inMilliseconds
+                                                .toDouble(),
+                                            onChangeStart: (v) async {
+                                              if (_videoPlayerController
+                                                      .value.duration >
+                                                  Duration.zero) {
+                                                _wasPlaying =
+                                                    _videoPlayerController
+                                                        .value.isPlaying;
+                                                if (_wasPlaying) {
+                                                  await _lock
+                                                      .synchronized(() async {
+                                                    await _videoPlayerController
+                                                        .pause()
+                                                        .catchError((e) {
+                                                      logger.e(
+                                                          'Error pausing video: $e');
+                                                    });
+
+                                                    setState(() {});
+                                                  });
+                                                }
+                                              }
+                                            },
+                                            onChanged: (v) async {
+                                              if (_videoPlayerController
+                                                      .value.duration >
+                                                  Duration.zero) {
+                                                _videoPlayerController.seekTo(
+                                                    Duration(
+                                                        milliseconds:
+                                                            v.toInt()));
+                                                setState(() {});
+                                              }
+                                            },
+                                            onChangeEnd: (v) async {
+                                              if (_videoPlayerController
+                                                          .value.duration >
+                                                      Duration.zero &&
+                                                  _wasPlaying) {
+                                                await _lock
+                                                    .synchronized(() async {
+                                                  await _videoPlayerController
+                                                      .play()
+                                                      .catchError((e) {
+                                                    logger.e(
+                                                        'Error playing video: $e');
+                                                  });
+                                                });
+                                                setState(() {});
+                                              }
+                                            }))),
+                                const SizedBox(width: 8),
+                                Text(duration)
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            MouseRegion(
+                              onExit: (event) {
+                                setState(() {
+                                  _isVolumeSliderVisible = false;
+                                });
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                      child: Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: ScreenTypeLayout.builder(
+                                            mobile: (context) => IconButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                icon: const Icon(
+                                                    Icons
+                                                        .fullscreen_exit_outlined,
+                                                    size: 24)),
+                                            desktop: (context) => Row(
+                                              children: [
+                                                SizedBox(
+                                                    width: 200,
+                                                    child: VolumeSliderWidget(
+                                                      volume:
+                                                          _videoPlayerController
+                                                              .value.volume,
+                                                      setVolume: (v) {
+                                                        setState(() {
+                                                          _videoPlayerController
+                                                              .setVolume(v);
+                                                        });
+                                                      },
+                                                      sliderVisible:
+                                                          _isVolumeSliderVisible,
+                                                      setSliderVisible: (v) {
+                                                        setState(() {
+                                                          _isVolumeSliderVisible =
+                                                              v;
+                                                        });
+                                                      },
+                                                    )),
+                                                const Expanded(
+                                                    child: SizedBox.shrink()),
+                                              ],
+                                            ),
+                                          ))),
+                                  IconButton.outlined(
+                                      onPressed: () {
+                                        setState(() {
+                                          _videoPlayerController.seekTo(
+                                              _videoPlayerController
+                                                      .value.position -
+                                                  const Duration(seconds: 10));
+                                        });
+                                      },
+                                      icon: const Icon(Icons.replay_10,
+                                          size: 24)),
+                                  MaterialButton(
+                                    onPressed: () async {
+                                      final value =
+                                          _videoPlayerController.value;
+                                      if (!value.isInitialized ||
+                                          value.isBuffering ||
+                                          value.duration <= Duration.zero) {
+                                        return;
+                                      }
+                                      if (value.isPlaying) {
+                                        await _lock.synchronized(() async {
+                                          await _videoPlayerController
+                                              .pause()
+                                              .catchError((e) {
+                                            logger.e('Error pausing video: $e');
+                                          });
+                                        });
+                                      } else {
+                                        if (value.position >= value.duration) {
+                                          _videoPlayerController
+                                              .seekTo(Duration.zero);
+                                        }
+                                        await _lock.synchronized(() async {
+                                          await _videoPlayerController
+                                              .play()
+                                              .catchError((e) {
+                                            logger.e('Error playing video: $e');
+                                          });
+                                        });
+                                      }
+                                      setState(() {});
+                                    },
+                                    color: colors.themeAccentBrand,
+                                    shape: const CircleBorder(),
+                                    child: Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: (_videoPlayerController
+                                                .value.isPlaying)
+                                            ? Icon(
+                                                Icons.pause_outlined,
+                                                size: 32,
+                                                color: colors.themeFgOnAccent,
+                                              )
+                                            : Icon(
+                                                Icons.play_arrow_outlined,
+                                                size: 32,
+                                                color: colors.themeFgOnAccent,
+                                              )),
+                                  ),
+                                  IconButton.outlined(
+                                      onPressed: () {
+                                        setState(() {
+                                          _videoPlayerController.seekTo(
+                                              _videoPlayerController
+                                                      .value.position +
+                                                  const Duration(seconds: 10));
+                                        });
+                                      },
+                                      icon: const Icon(Icons.forward_10,
+                                          size: 24)),
+                                  Expanded(
+                                      child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        ScreenTypeLayout.builder(
+                                            desktop: (context) => MenuAnchor(
+                                                  menuChildren: [
+                                                    ..._speedOptions.map((v) {
+                                                      return ListTile(
+                                                        tileColor: colors
+                                                            .themeBgSurface,
+                                                        onTap: () {
+                                                          setState(() {
+                                                            _videoPlayerController
+                                                                .setPlaybackSpeed(
+                                                                    v);
+                                                            _menuController
+                                                                .close();
+                                                          });
+                                                        },
+                                                        title: Text(
+                                                          v == 1.0
+                                                              ? appLocalizationsOf(
+                                                                      context)
+                                                                  .normal
+                                                              : '$v',
+                                                          style: ArDriveTypography
+                                                              .body
+                                                              .buttonNormalBold(
+                                                                  color: colors
+                                                                      .themeFgDefault),
+                                                        ),
+                                                      );
+                                                    })
+                                                  ],
+                                                  controller: _menuController,
+                                                  child: IconButton(
+                                                      onPressed: () {
+                                                        _menuController.open();
+                                                      },
+                                                      icon: const Icon(
+                                                          Icons
+                                                              .settings_outlined,
+                                                          size: 24)),
+                                                ),
+                                            mobile: (context) => IconButton(
+                                                onPressed: () {
+                                                  _displaySpeedOptionsModal(
+                                                      context, (v) {
+                                                    setState(() {
+                                                      _videoPlayerController
+                                                          .setPlaybackSpeed(v);
+                                                    });
+                                                  });
+                                                },
+                                                icon: const Icon(
+                                                    Icons.settings_outlined,
+                                                    size: 24))),
+                                        ScreenTypeLayout.builder(
+                                          desktop: (context) => IconButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                              icon: const Icon(
+                                                  Icons
+                                                      .fullscreen_exit_outlined,
+                                                  size: 24)),
+                                          mobile: (context) =>
+                                              const SizedBox.shrink(),
+                                        )
+                                      ],
+                                    ),
+                                  ))
+                                ],
+                              ),
+                            )
+                          ]),
+                        ))),
+              ],
+            )),
+      ],
+    )));
   }
 }
 
@@ -363,7 +1067,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
         });
       });
     }).catchError((e) {
-      logger.d('Error setting audio url: $e');
+      logger.e('Error setting audio url: $e');
       setState(() {
         _loadState = LoadState.failed;
       });
@@ -447,6 +1151,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                     padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                     child: Column(children: [
                       Text(widget.filename,
+                          textAlign: TextAlign.center,
                           style: ArDriveTypography.body
                               .smallBold700(color: colors.themeFgDefault)),
                       const SizedBox(height: 8),

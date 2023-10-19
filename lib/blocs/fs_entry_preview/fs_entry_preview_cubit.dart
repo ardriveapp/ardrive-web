@@ -339,8 +339,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         return audioContentTypes
             .any((element) => element.contains(fileExtension));
       case 'video':
-        return videoContentTypes
-            .any((element) => element.contains(fileExtension));
+        return true;
       default:
         return false;
     }

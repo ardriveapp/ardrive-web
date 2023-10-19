@@ -833,6 +833,10 @@
   "@fileType": {
     "description": "The MIME type of the file"
   },
+  "fileTypeUnsupported": "File type unsupported by browser or operating system",
+  "@fileTypeUnsupported": {
+    "description": "Message shown when unable to load media file due to unsupported file format"
+  },
   "fileWasCreatedWithName": "This file was created with the name {fileName}.",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
@@ -1969,6 +1973,10 @@
   "waitForDownload": "Due to the size of your file, this download could take a while. Please keep the app open while the download is in progress.",
   "@waitForDownload": {
     "description": "User must to wait this download"
+  },
+  "walletAddress": "Wallet address:",
+  "@walletAddress": {
+    "description": "E.g. \"The wallet address is… ABCDEFGH\""
   },
   "walletChangedDuringManifestCreation": "Provided wallet has unexpectedly changed during manifest creation...",
   "@walletChangedDuringManifestCreation": {

@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.19.1
+version: 2.20.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -126,6 +126,7 @@ dependencies:
   provider: ^6.0.5
   just_audio: ^0.9.34
   loading_animation_widget: ^1.2.0+4
+  synchronized: ^3.1.0
 
 dependency_overrides:
   ardrive_io:
