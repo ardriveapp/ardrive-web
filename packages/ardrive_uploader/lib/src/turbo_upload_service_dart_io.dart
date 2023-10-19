@@ -36,7 +36,6 @@ class TurboUploadServiceImpl implements TurboUploadService<Response> {
       final response = await dio.post(
         url,
         onSendProgress: (sent, total) {
-          print('Sent: $sent, total: $total');
           onSendProgress?.call(sent / total);
         },
         data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
