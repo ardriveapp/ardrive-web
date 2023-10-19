@@ -829,7 +829,7 @@ class _UploadFormState extends State<UploadForm> {
                         ),
                         ModalAction(
                           action: () {
-                            context.read<UploadCubit>().cancelUpload();
+                            cubit.cancelUpload();
                             Navigator.pop(context);
                           },
                           title: 'Yes',
