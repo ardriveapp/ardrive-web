@@ -49,6 +49,15 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
       size += data.length;
     }
 
+    print('Upload status after calculating the size: ${uploadTask.status}');
+
+    /// It is possible to cancel an upload before starting the network request.
+    print('Is canceled: $_isCanceled');
+    if (_isCanceled) {
+      print('Upload canceled on StreamedUpload');
+      return;
+    }
+
     /// If the file is larger than 500 MiB, we don't get progress updates.
     ///
     /// The TurboUploadServiceImpl for web uses fetch_client for the upload of files
@@ -109,8 +118,11 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     UploadTask handle,
     UploadController controller,
   ) async {
-    handle = handle.copyWith(status: UploadStatus.failed);
-    controller.updateProgress(task: handle);
+    _isCanceled = true;
     await _turbo.cancel();
+    handle = handle.copyWith(status: UploadStatus.canceled);
+    controller.updateProgress(task: handle);
   }
+
+  bool _isCanceled = false;
 }

@@ -15,6 +15,12 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
       throw ArgumentError('handle must be of type TransactionUploadTask');
     }
 
+    /// It is possible to cancel an upload before starting the network request.
+    if (_isCanceled) {
+      print('Upload canceled on D2NStreamedUpload');
+      return;
+    }
+
     print('D2NStreamedUpload.send');
 
     handle = handle.copyWith(
@@ -86,5 +92,8 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
   Future<void> cancel(UploadTask handle, UploadController controller) async {
     print('D2NStreamedUpload.cancel');
     _aborter?.abort();
+    _isCanceled = true;
   }
+
+  bool _isCanceled = false;
 }

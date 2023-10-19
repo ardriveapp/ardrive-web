@@ -1047,8 +1047,6 @@ class UploadCubit extends Cubit<UploadState> {
           ),
         );
 
-        logger.d('Upload canceled');
-
         emit(UploadCanceled());
       } catch (e) {
         logger.e('Error canceling upload', e);

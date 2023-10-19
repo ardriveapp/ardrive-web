@@ -21,7 +21,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
   });
 
   final _fetchController = StreamController<List<int>>(sync: false);
-  final CancelToken _cancelToken = CancelToken();
+  CancelToken _cancelToken = CancelToken();
 
   final client = FetchClient(
     mode: RequestMode.cors,
@@ -67,26 +67,34 @@ class TurboUploadServiceImpl implements TurboUploadService {
     final url = '$turboUploadUri/v1/tx';
 
     final dio = Dio();
+    try {
+      final response = await dio.post(
+        url,
+        onSendProgress: (sent, total) {
+          onSendProgress?.call(sent / total);
+        },
+        data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
+        options: Options(
+          headers: {
+            // stream
+            Headers.contentTypeHeader: 'application/octet-stream',
+            Headers.contentLengthHeader: size, // Set the content-length.
+          }..addAll(headers),
+        ),
+        cancelToken: _cancelToken,
+      );
+      print('Response from turbo: ${response.statusCode}');
 
-    final response = await dio.post(
-      url,
-      onSendProgress: (sent, total) {
-        onSendProgress?.call(sent / total);
-      },
-      data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
-      options: Options(
-        headers: {
-          // stream
-          Headers.contentTypeHeader: 'application/octet-stream',
-          Headers.contentLengthHeader: size, // Set the content-length.
-        }..addAll(headers),
-      ),
-      cancelToken: _cancelToken,
-    );
+      return response;
+    } catch (e) {
+      print('Error on turbo upload: $e');
+      if (_isCanceled) {
+        _cancelToken = CancelToken();
 
-    print('Response from turbo: ${response.statusCode}');
-
-    return response;
+        _cancelToken.cancel();
+      }
+      rethrow;
+    }
   }
 
   Future<FetchResponse> _uploadStreamWithFetchClient({
@@ -160,8 +168,11 @@ class TurboUploadServiceImpl implements TurboUploadService {
     _cancelToken.cancel();
     client.close();
     _fetchController.close();
+    _isCanceled = true;
     print('Stream closed');
   }
+
+  bool _isCanceled = false;
 }
 
 class TurboUploadExceptions implements Exception {}

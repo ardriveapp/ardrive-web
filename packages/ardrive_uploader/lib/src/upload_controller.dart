@@ -143,6 +143,7 @@ class FileUploadTask extends UploadTask {
     SecretKey? encryptionKey,
     StreamedUpload? streamedUpload,
   }) {
+    print('Copying new task with status: ${status ?? this.status}');
     return FileUploadTask(
       streamedUpload: streamedUpload ?? this.streamedUpload,
       encryptionKey: encryptionKey ?? this.encryptionKey,
@@ -345,10 +346,7 @@ class _UploadController implements UploadController {
       if (task.status == UploadStatus.complete) continue;
       if (task.status == UploadStatus.failed) continue;
 
-      if (task.status == UploadStatus.inProgress) {
-        print('Canceling request: ${task.id}');
-        task.streamedUpload.cancel(task, this);
-      }
+      task.streamedUpload.cancel(task, this);
 
       task = task.copyWith(status: UploadStatus.canceled);
 
@@ -742,7 +740,7 @@ class Worker {
 
       /// The upload can be canceled while the bundle is being created
       if (task.status == UploadStatus.canceled) {
-        print('Upload canceled');
+        print('Upload canceled while bundle was being created');
         return;
       }
 
@@ -769,7 +767,7 @@ class Worker {
       );
 
       if (_isCanceled) {
-        print('Upload canceled');
+        print('Upload canceled after bundle creation and before upload');
         return;
       }
 
