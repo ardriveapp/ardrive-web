@@ -563,6 +563,7 @@ class UploadCubit extends Cubit<UploadState> {
             equatableBust: UniqueKey(),
             progress: progress,
             controller: uploadController,
+            uploadMethod: _uploadMethod!,
           ),
         );
       },
@@ -573,6 +574,7 @@ class UploadCubit extends Cubit<UploadState> {
         logger.d('Upload finished');
 
         if (tasks.any((element) => element.status == UploadStatus.failed)) {
+          logger.e('Error uploading');
           // if any of the files failed, we should throw an error
           addError(Exception('Error uploading'));
         }
@@ -768,6 +770,7 @@ class UploadCubit extends Cubit<UploadState> {
             totalProgress: progress.progressInPercentage,
             controller: uploadController,
             equatableBust: UniqueKey(),
+            uploadMethod: _uploadMethod!,
           ),
         );
       },
@@ -1017,31 +1020,39 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> cancelUpload() async {
     if (state is UploadInProgressUsingNewUploader) {
-      final state = this.state as UploadInProgressUsingNewUploader;
+      try {
+        final state = this.state as UploadInProgressUsingNewUploader;
 
-      emit(
-        UploadInProgressUsingNewUploader(
-          controller: state.controller,
-          equatableBust: state.equatableBust,
-          progress: state.progress,
-          totalProgress: state.totalProgress,
-          isCanceling: true,
-        ),
-      );
+        emit(
+          UploadInProgressUsingNewUploader(
+            controller: state.controller,
+            equatableBust: state.equatableBust,
+            progress: state.progress,
+            totalProgress: state.totalProgress,
+            isCanceling: true,
+            uploadMethod: _uploadMethod!,
+          ),
+        );
 
-      await state.controller.cancel();
+        state.controller.cancel();
 
-      emit(
-        UploadInProgressUsingNewUploader(
-          controller: state.controller,
-          equatableBust: state.equatableBust,
-          progress: state.progress,
-          totalProgress: state.totalProgress,
-          isCanceling: false,
-        ),
-      );
+        emit(
+          UploadInProgressUsingNewUploader(
+            controller: state.controller,
+            equatableBust: state.equatableBust,
+            progress: state.progress,
+            totalProgress: state.totalProgress,
+            isCanceling: false,
+            uploadMethod: _uploadMethod!,
+          ),
+        );
 
-      addError(Exception('Upload canceled'));
+        logger.d('Upload canceled');
+
+        emit(UploadCanceled());
+      } catch (e) {
+        logger.e('Error canceling upload', e);
+      }
     }
   }
 }

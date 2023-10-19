@@ -213,6 +213,7 @@ class UploadInProgressUsingNewUploader extends UploadState {
   final double totalProgress;
   final bool isCanceling;
   final Key? equatableBust;
+  final UploadMethod uploadMethod;
 
   UploadInProgressUsingNewUploader({
     required this.progress,
@@ -220,6 +221,7 @@ class UploadInProgressUsingNewUploader extends UploadState {
     required this.controller,
     this.equatableBust,
     this.isCanceling = false,
+    required this.uploadMethod,
   });
 
   @override
@@ -244,6 +246,10 @@ class UploadShowingWarning extends UploadState {
   @override
   List<Object> get props => [reason];
 }
+
+class UploadCanceled extends UploadState {}
+
+class CancelD2NUploadWarning extends UploadState {}
 
 enum UploadWarningReason {
   /// The user is attempting to upload a file that is too large.
