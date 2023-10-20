@@ -9,35 +9,75 @@ abstract class PlausibleEventTracker {
 
   static Uri get _plausibleUrl => Uri.parse(_plausibleUrlString);
 
-  static Future<void> track({required PlausibleEvent event}) async {
-    try {
-      await http.post(_plausibleUrl, body: _eventBody(event));
+  static Future<void> trackCustomEvent({
+    required ArDrivePage page,
+    required ArDriveEvent event,
+  }) async {
+    // FIXME: un-comment this when custom events are set up in plausible
+    /// for now we are just tracking them as page views
+    //
+    // return _track(pageName: page.name, customEventName: event.name);
 
-      logger.d('Sent plausible event: ${event.name}');
+    return _track(pageName: event.name);
+  }
+
+  static Future<void> trackPageView({required ArDrivePage page}) async {
+    return _track(pageName: page.name);
+  }
+
+  static Future<void> _track({
+    required String pageName,
+    String? customEventName,
+  }) async {
+    final eventName = customEventName ?? ArDriveEvent.pageview.name;
+    try {
+      await http.post(_plausibleUrl,
+          body: _eventBody(
+            pageName,
+            customEventName: eventName,
+          ));
+
+      logger.d('Sent plausible event: $eventName on page: $pageName');
     } catch (e, s) {
       logger.e('Plausible response error: $e $s');
     }
   }
 
   static String _eventBody(
-    PlausibleEvent event, {
-    String eventName = plausiblePageViewEventName,
+    String pageName, {
+    required String customEventName,
   }) {
+    final eventName = customEventName;
     return jsonEncode({
       'name': eventName,
-      'url': _eventUrl(event),
+      'url': _pageUrl(pageName),
       'domain': _appDomain,
     });
   }
 
-  static String _eventUrl(PlausibleEvent event) {
-    return 'https://$_appDomain/${event.name}';
+  static String _pageUrl(String pageName) {
+    return 'https://$_appDomain/$pageName';
   }
 }
 
-const String plausiblePageViewEventName = 'pageview';
+enum ArDrivePage {
+  createAndConfirmPassword,
+  fileExplorer,
+  gettingStarted,
+  enterSeedPhrase,
+  onboarding,
+  profile,
+  sharedFile,
+  turboTopUpModal,
+  verifySeedPhrase,
+  writeDownSeedPhrase,
+  walletDownload,
+  walletGeneration,
+  landing,
+  welcomeBack,
+}
 
-enum PlausibleEvent {
+enum ArDriveEvent {
   fileExplorerLoggedInUser,
   fileExplorerNewUserEmpty,
   fileExplorerNonLoggedInUser,
@@ -45,25 +85,13 @@ enum PlausibleEvent {
   tutorialsPage2,
   tutorialsPage3,
   tutorialSkipped,
-  createAndConfirmPasswordPage,
   createdAndConfirmedPassword,
-  gettingStartedPage,
-  enterSeedPhrasePage,
   logout,
-  onboardingPage,
-  sharedFilePage,
-  turboPaymentDetails,
-  turboPurchaseReview,
-  turboTopUpModal,
   turboTopUpCancel,
   turboTopUpSuccess,
-  verifySeedPhrasePage,
-  writeDownSeedPhrasePage,
-  walletDownloadPage,
+  turboPaymentDetails,
+  turboPurchaseReview,
   walletDownloaded,
-  walletGenerationPage,
-  welcomePage,
-  welcomeBackPage,
 
-  unknown,
+  pageview,
 }

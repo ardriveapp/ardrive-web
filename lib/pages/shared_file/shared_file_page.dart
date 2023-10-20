@@ -23,7 +23,7 @@ class SharedFilePage extends StatelessWidget {
   final _fileKeyController = TextEditingController();
 
   SharedFilePage({Key? key}) : super(key: key) {
-    PlausibleEventTracker.track(event: PlausibleEvent.sharedFilePage);
+    PlausibleEventTracker.trackPageView(page: ArDrivePage.sharedFile);
   }
 
   @override

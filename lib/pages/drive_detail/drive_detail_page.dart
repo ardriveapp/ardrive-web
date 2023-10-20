@@ -73,11 +73,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     super.initState();
 
     if (widget.anonymouslyShowDriveDetail) {
-      PlausibleEventTracker.track(
-          event: PlausibleEvent.fileExplorerNonLoggedInUser);
+      PlausibleEventTracker.trackCustomEvent(
+        page: ArDrivePage.fileExplorer,
+        event: ArDriveEvent.fileExplorerNonLoggedInUser,
+      );
     } else {
-      PlausibleEventTracker.track(
-          event: PlausibleEvent.fileExplorerLoggedInUser);
+      PlausibleEventTracker.trackCustomEvent(
+        page: ArDrivePage.fileExplorer,
+        event: ArDriveEvent.fileExplorerLoggedInUser,
+      );
     }
   }
 

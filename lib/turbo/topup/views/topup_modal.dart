@@ -62,7 +62,7 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
 
   activityTracker.setToppingUp(true);
 
-  PlausibleEventTracker.track(event: PlausibleEvent.turboTopUpModal);
+  PlausibleEventTracker.trackPageView(page: ArDrivePage.turboTopUpModal);
 
   showAnimatedDialogWithBuilder(
     context,
@@ -93,12 +93,18 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
 
     if (turbo.paymentStatus == PaymentStatus.success) {
       logger.d('Turbo payment success');
-      PlausibleEventTracker.track(event: PlausibleEvent.turboTopUpSuccess);
+      PlausibleEventTracker.trackCustomEvent(
+        page: ArDrivePage.turboTopUpModal,
+        event: ArDriveEvent.turboTopUpSuccess,
+      );
 
       onSuccess?.call();
     } else {
       logger.d('Turbo payment error');
-      PlausibleEventTracker.track(event: PlausibleEvent.turboTopUpCancel);
+      PlausibleEventTracker.trackCustomEvent(
+        page: ArDrivePage.turboTopUpModal,
+        event: ArDriveEvent.turboTopUpCancel,
+      );
     }
 
     turbo.dispose();
@@ -176,8 +182,9 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         if (state is TurboTopupFlowShowingEstimationView) {
           view = const TopUpEstimationView();
         } else if (state is TurboTopupFlowShowingPaymentFormView) {
-          PlausibleEventTracker.track(
-            event: PlausibleEvent.turboPaymentDetails,
+          PlausibleEventTracker.trackCustomEvent(
+            page: ArDrivePage.turboTopUpModal,
+            event: ArDriveEvent.turboPaymentDetails,
           );
           view = Stack(
             children: [
@@ -200,8 +207,9 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             ],
           );
         } else if (state is TurboTopupFlowShowingPaymentReviewView) {
-          PlausibleEventTracker.track(
-            event: PlausibleEvent.turboPurchaseReview,
+          PlausibleEventTracker.trackCustomEvent(
+            page: ArDrivePage.turboTopUpModal,
+            event: ArDriveEvent.turboPurchaseReview,
           );
           view = Stack(
             children: [
