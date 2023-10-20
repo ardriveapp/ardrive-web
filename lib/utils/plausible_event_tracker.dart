@@ -4,28 +4,55 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:http/http.dart' as http;
 
 abstract class PlausibleEventTracker {
-  static const String _plausibleUrlString = 'https://plausible.io/api/event';
-  static const String _appDomain = 'app.ardrive.io';
-
-  static Uri get _plausibleUrl => Uri.parse(_plausibleUrlString);
-
   static Future<void> trackCustomEvent({
     required ArDrivePage page,
     required ArDriveEvent event,
+    PlausibleApi? plausibleApi,
   }) async {
     // FIXME: un-comment this when custom events are set up in plausible
     /// for now we are just tracking them as page views
     //
     // return _track(pageName: page.name, customEventName: event.name);
 
-    return _track(pageName: event.name);
+    return _track(
+      pageName: event.name,
+      plausibleApi: plausibleApi ?? PlausibleApi(),
+    );
   }
 
-  static Future<void> trackPageView({required ArDrivePage page}) async {
-    return _track(pageName: page.name);
+  static Future<void> trackPageView({
+    required ArDrivePage page,
+    PlausibleApi? plausibleApi,
+  }) async {
+    return _track(
+      pageName: page.name,
+      plausibleApi: plausibleApi ?? PlausibleApi(),
+    );
   }
 
   static Future<void> _track({
+    required String pageName,
+    String? customEventName,
+    required PlausibleApi plausibleApi,
+  }) async {
+    return plausibleApi.track(
+      pageName: pageName,
+      customEventName: customEventName,
+    );
+  }
+}
+
+class PlausibleApi {
+  final String _plausibleUrlString = 'https://plausible.io/api/event';
+  final String _appDomain = 'app.ardrive.io';
+
+  Uri get _plausibleUrl => Uri.parse(_plausibleUrlString);
+
+  const PlausibleApi._();
+  static const PlausibleApi _instance = PlausibleApi._();
+  factory PlausibleApi() => _instance;
+
+  Future<void> track({
     required String pageName,
     String? customEventName,
   }) async {
@@ -43,7 +70,7 @@ abstract class PlausibleEventTracker {
     }
   }
 
-  static String _eventBody(
+  String _eventBody(
     String pageName, {
     required String customEventName,
   }) {
@@ -55,7 +82,7 @@ abstract class PlausibleEventTracker {
     });
   }
 
-  static String _pageUrl(String pageName) {
+  String _pageUrl(String pageName) {
     return 'https://$_appDomain/$pageName';
   }
 }
