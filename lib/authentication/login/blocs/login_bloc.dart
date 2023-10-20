@@ -172,13 +172,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           logger.e('Failed to unlock user with biometrics', e);
         }
       }
-
       emit(const PromptPassword());
 
       return;
     }
 
-    emit(LoginInitial(_arConnectService.isExtensionPresent()));
+    if (event.gettinStarted) {
+      _handleCreateNewWalletEvent(const CreateNewWallet(), emit);
+    } else {
+      emit(LoginInitial(_arConnectService.isExtensionPresent()));
+    }
   }
 
   Future<void> _handleUnlockUserWithPasswordEvent(

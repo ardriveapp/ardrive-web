@@ -37,7 +37,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final bool gettingStarted;
+
+  const LoginPage({
+    super.key,
+    this.gettingStarted = false,
+  });
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -46,12 +51,18 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
+    final loginBloc = LoginBloc(
+      arConnectService: ArConnectService(),
+      arDriveAuth: context.read<ArDriveAuth>(),
+      userRepository: context.read<UserRepository>(),
+    )..add(
+        CheckIfUserIsLoggedIn(
+          gettinStarted: widget.gettingStarted,
+        ),
+      );
+
     return BlocProvider<LoginBloc>(
-      create: (context) => LoginBloc(
-        arConnectService: ArConnectService(),
-        arDriveAuth: context.read<ArDriveAuth>(),
-        userRepository: context.read<UserRepository>(),
-      )..add(const CheckIfUserIsLoggedIn()),
+      create: (context) => loginBloc,
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (context, state) {
           if (state is LoginOnBoarding) {

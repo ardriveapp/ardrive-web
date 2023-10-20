@@ -24,7 +24,11 @@ class AddWalletFromArConnect extends LoginEvent {
 }
 
 class CheckIfUserIsLoggedIn extends LoginEvent {
-  const CheckIfUserIsLoggedIn();
+  final bool gettinStarted;
+
+  const CheckIfUserIsLoggedIn({
+    this.gettinStarted = false,
+  });
 
   @override
   List<Object> get props => [];

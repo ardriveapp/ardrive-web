@@ -21,6 +21,8 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       case 'sign-in':
         // Handle '/sign-in'
         return AppRoutePath.signIn();
+      case 'get-started':
+        return AppRoutePath.getStarted();
       case 'drives':
         if (uri.pathSegments.length > 1) {
           final driveId = uri.pathSegments[1];
@@ -76,6 +78,8 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   RouteInformation restoreRouteInformation(AppRoutePath configuration) {
     if (configuration.signingIn) {
       return const RouteInformation(location: '/sign-in');
+    } else if (configuration.getStarted) {
+      return const RouteInformation(location: '/get-started');
     } else if (configuration.driveId != null) {
       if (configuration.driveName != null &&
           configuration.sharedRawDriveKey != null) {
