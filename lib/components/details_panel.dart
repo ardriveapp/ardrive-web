@@ -17,6 +17,7 @@ import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.d
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
@@ -222,7 +223,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   ),
                   mobile: (context) => const SizedBox.shrink(),
                 ),
-              if (widget.isSharePage)
+              if (widget.isSharePage &&
+                  (previewState is! FsEntryPreviewUnavailable || mobileView))
                 SizedBox(
                   height: 64,
                   child: Column(
@@ -239,8 +241,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     ],
                   ),
                 ),
-              if (previewState is FsEntryPreviewSuccess &&
-                  !(widget.isSharePage))
+              if ((previewState is FsEntryPreviewSuccess &&
+                      !widget.isSharePage) ||
+                  (widget.isSharePage &&
+                      previewState is FsEntryPreviewUnavailable &&
+                      !mobileView))
                 ArDriveCard(
                   contentPadding: const EdgeInsets.all(24),
                   backgroundColor: ArDriveTheme.of(context)
@@ -311,7 +316,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
                             .themeFgDefault,
                       ),
                     ),
-                    if (widget.isSharePage)
+                    if (widget.isSharePage &&
+                        (previewState is! FsEntryPreviewUnavailable ||
+                            mobileView))
                       SizedBox(
                         height: 138,
                         child: Column(
@@ -363,6 +370,78 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }
 
   Widget _buildPreview(FsEntryPreviewState previewState) {
+    if (previewState is FsEntryPreviewUnavailable) {
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 400,
+            minWidth: kMediumDialogWidth,
+            minHeight: 256,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ArDriveImage(
+                image: AssetImage(
+                  ArDriveTheme.of(context).themeData.name == 'light'
+                      ? Resources.images.brand.blackLogo2
+                      : Resources.images.brand.whiteLogo2,
+                ),
+                height: 80,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 32),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: DriveExplorerItemTileLeading(item: widget.item),
+                title: Text(
+                  widget.item.name,
+                  style: ArDriveTypography.body.buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+                ),
+                subtitle: Text(
+                  filesize(widget.item.size),
+                  style: ArDriveTypography.body.buttonNormalRegular(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeAccentDisabled,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ArDriveButton(
+                icon: ArDriveIcons.download(color: Colors.white),
+                onPressed: () {
+                  final file = ARFSFactory().getARFSFileFromFileRevision(
+                    widget.revisions!.last,
+                  );
+                  return promptToDownloadSharedFile(
+                    revision: file,
+                    context: context,
+                    fileKey: widget.fileKey,
+                  );
+                },
+                text: appLocalizationsOf(context).download,
+              ),
+              const SizedBox(height: 16),
+              ArDriveButton(
+                style: ArDriveButtonStyle.tertiary,
+                onPressed: () => openUrl(url: 'https://ardrive.io/'),
+                text: appLocalizationsOf(context).whatIsArDrive,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Align(
       alignment: Alignment.center,
       child: FsEntryPreviewWidget(
