@@ -116,9 +116,8 @@ class _AppSideBarState extends State<AppSideBar> {
               const SizedBox(
                 height: 16,
               ),
-              if (AppPlatform.isMobile ||
-                  AppPlatform.isMobileWeb() &&
-                      configService.flavor != Flavor.production) ...[
+              if ((AppPlatform.isMobile || AppPlatform.isMobileWeb()) &&
+                  configService.flavor != Flavor.production) ...[
                 Padding(
                   padding: const EdgeInsets.only(left: 16.0),
                   child: GestureDetector(
