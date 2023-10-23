@@ -144,6 +144,7 @@ class UploadForm extends StatefulWidget {
 
 class _UploadFormState extends State<UploadForm> {
   final _scrollController = ScrollController();
+  bool _isShowingCancelDialog = false;
 
   @override
   initState() {
@@ -154,8 +155,10 @@ class _UploadFormState extends State<UploadForm> {
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
-            Navigator.pop(context);
-            context.read<FeedbackSurveyCubit>().openRemindMe();
+            if (!_isShowingCancelDialog) {
+              Navigator.pop(context);
+              context.read<FeedbackSurveyCubit>().openRemindMe();
+            }
           } else if (state is UploadPreparationInitialized) {
             context.read<UploadCubit>().verifyFilesAboveWarningLimit();
           }
@@ -164,6 +167,7 @@ class _UploadFormState extends State<UploadForm> {
             context.read<ProfileCubit>().logoutProfile();
           }
         },
+        buildWhen: (previous, current) => current is! UploadComplete,
         builder: (context, state) {
           if (state is UploadFolderNameConflict) {
             return ArDriveStandardModal(
@@ -703,6 +707,17 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               ),
             );
+          } else if (state is UploadCanceled) {
+            return ArDriveStandardModal(
+              title: 'Upload canceled',
+              description: 'Your upload was canceled',
+              actions: [
+                ModalAction(
+                  action: () => Navigator.of(context).pop(false),
+                  title: appLocalizationsOf(context).okEmphasized,
+                ),
+              ],
+            );
           } else if (state is UploadFailure) {
             if (state.error == UploadErrors.turboTimeout) {
               return ArDriveStandardModal(
@@ -772,8 +787,63 @@ class _UploadFormState extends State<UploadForm> {
       actions: [
         ModalAction(
           action: () {
-            context.read<UploadCubit>().cancelUpload();
+            if (state.uploadMethod == UploadMethod.ar &&
+                state.progress.task.any(
+                    (element) => element.status == UploadStatus.inProgress)) {
+              _isShowingCancelDialog = true;
+              final cubit = context.read<UploadCubit>();
+
+              showAnimatedDialog(
+                context,
+                content: BlocBuilder<UploadCubit, UploadState>(
+                  bloc: cubit,
+                  builder: (context, state) {
+                    if (state is UploadComplete) {
+                      // TODO: localize
+                      return ArDriveStandardModal(
+                        title: 'Upload complete',
+                        description:
+                            'Your upload is complete. You can not cancel it anymore.',
+                        actions: [
+                          ModalAction(
+                            action: () {
+                              // parent modal
+                              Navigator.pop(context);
+
+                              Navigator.pop(context);
+                            },
+                            title: 'Ok',
+                          ),
+                        ],
+                      );
+                    }
+                    // TODO: localize
+                    return ArDriveStandardModal(
+                      title: 'Warning',
+                      description:
+                          'Cancelling this upload may still result in a charge to your wallet. Do you still wish to proceed?',
+                      actions: [
+                        ModalAction(
+                          action: () => Navigator.pop(context),
+                          title: 'No',
+                        ),
+                        ModalAction(
+                          action: () {
+                            cubit.cancelUpload();
+                            Navigator.pop(context);
+                          },
+                          title: 'Yes',
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            } else {
+              context.read<UploadCubit>().cancelUpload();
+            }
           },
+          // TODO: localize
           title: state.isCanceling
               ? 'Canceling...'
               : appLocalizationsOf(context).cancelEmphasized,
@@ -801,6 +871,7 @@ class _UploadFormState extends State<UploadForm> {
                       String? progressText;
                       String status = '';
 
+                      // TODO: localize
                       switch (task.status) {
                         case UploadStatus.notStarted:
                           status = 'Not started';
@@ -844,6 +915,7 @@ class _UploadFormState extends State<UploadForm> {
                         }
                       } else {
                         if (task.status == UploadStatus.inProgress) {
+                          // TODO: localize
                           progressText =
                               'Your upload is in progress, but for large files the progress it not available. Please wait...';
                         }
@@ -1017,6 +1089,7 @@ class _UploadFormState extends State<UploadForm> {
           const SizedBox(
             height: 8,
           ),
+          // TODO: localize
           Text(
             'Total uploaded: ${filesize(state.progress.totalUploaded)} of ${filesize(state.progress.totalSize)}',
             style: ArDriveTypography.body
@@ -1027,6 +1100,7 @@ class _UploadFormState extends State<UploadForm> {
                         .themeFgDefault)
                 .copyWith(fontWeight: FontWeight.bold),
           ),
+          // TODO: localize
           Text(
             'Files uploaded: ${state.progress.tasksContentCompleted()} of ${state.progress.tasksContentLength()}',
             style: ArDriveTypography.body
@@ -1037,6 +1111,7 @@ class _UploadFormState extends State<UploadForm> {
                         .themeFgDefault)
                 .copyWith(fontWeight: FontWeight.bold),
           ),
+          // TODO: localize
           Text(
             'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
             style: ArDriveTypography.body.buttonNormalBold(

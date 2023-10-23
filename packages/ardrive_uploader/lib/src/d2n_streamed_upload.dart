@@ -3,6 +3,8 @@ import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:arweave/arweave.dart';
 
 class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
+  UploadAborter? _aborter;
+
   @override
   Future<dynamic> send(
     UploadTask handle,
@@ -13,7 +15,20 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
       throw ArgumentError('handle must be of type TransactionUploadTask');
     }
 
+    /// It is possible to cancel an upload before starting the network request.
+    if (_isCanceled) {
+      print('Upload canceled on D2NStreamedUpload');
+      return;
+    }
+
     print('D2NStreamedUpload.send');
+
+    handle = handle.copyWith(
+      progress: 0,
+      status: UploadStatus.inProgress,
+    );
+
+    controller.updateProgress(task: handle);
 
     final progressStreamTask = await uploadTransaction(
             (handle.uploadItem as BundleTransactionUploadItem).data)
@@ -22,8 +37,10 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     progressStreamTask.match((l) {
       handle = handle.copyWith(status: UploadStatus.failed);
       controller.updateProgress(task: handle);
-    }, (progressStream) async {
-      final listen = progressStream.listen(
+    }, (uploadProgressAndAborter) async {
+      final uploadProgress = uploadProgressAndAborter.$1;
+      _aborter = uploadProgressAndAborter.$2;
+      final listen = uploadProgress.listen(
         (progress) {
           final uploaded = progress.$1;
           final total = progress.$2;
@@ -70,9 +87,14 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     });
   }
 
+  /// Cancel D2N uploads are not supported yet.
   @override
-  Future<void> cancel(UploadTask handle, UploadController controller) {
-    // TODO: implement cancel
-    throw UnimplementedError();
+  Future<void> cancel(UploadTask handle, UploadController controller) async {
+    print('D2NStreamedUpload.cancel');
+    _isCanceled = true;
+
+    await _aborter?.abort();
   }
+
+  bool _isCanceled = false;
 }

@@ -136,7 +136,7 @@ dependency_overrides:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-3697
+      ref: PE-4812-cancel-button-fails-to-stop-file-upload-when-using-a-rs-only
   stripe_js:
     git:
       url: https://github.com/ardriveapp/flutter_stripe/

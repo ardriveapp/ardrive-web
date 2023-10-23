@@ -143,6 +143,7 @@ class FileUploadTask extends UploadTask {
     SecretKey? encryptionKey,
     StreamedUpload? streamedUpload,
   }) {
+    print('Copying new task with status: ${status ?? this.status}');
     return FileUploadTask(
       streamedUpload: streamedUpload ?? this.streamedUpload,
       encryptionKey: encryptionKey ?? this.encryptionKey,
@@ -240,7 +241,7 @@ abstract class UploadController {
 
   Future<void> close();
   Future<void> cancel();
-  void onCancel();
+  void onCancel(Function(List<UploadTask> tasks) callback);
   void onDone(Function(List<UploadTask> tasks) callback);
   void onError(Function(List<UploadTask> tasks) callback);
   void updateProgress({UploadTask? task});
@@ -302,6 +303,10 @@ class _UploadController implements UploadController {
     subscription =
         _progressStream.stream.debounceTime(Duration(milliseconds: 100)).listen(
       (event) async {
+        if (_isCanceled) {
+          return;
+        }
+
         _start ??= DateTime.now();
 
         _onProgressChange!(event);
@@ -336,25 +341,32 @@ class _UploadController implements UploadController {
     workerPool?.cancel();
     _isCanceled = true;
 
-    for (var task in tasks.values) {
-      if (task.status == UploadStatus.complete) continue;
-      if (task.status == UploadStatus.failed) continue;
-      if (task.status == UploadStatus.notStarted) continue;
+    final cancelableTask = tasks.values
+        .where((e) =>
+            e.status != UploadStatus.complete &&
+            e.status != UploadStatus.failed)
+        .toList();
 
-      if (task.status == UploadStatus.inProgress) {
-        print('Canceling request: ${task.id}');
-        await task.streamedUpload.cancel(task, this);
-      }
+    final cancelTasksFuture = cancelableTask.map((task) async {
+      await task.streamedUpload.cancel(task, this);
 
       task = task.copyWith(status: UploadStatus.canceled);
-    }
+
+      _canceledTasks.putIfAbsent(task.id, () => task);
+
+      updateProgress(task: task);
+    });
+
+    await Future.wait(cancelTasksFuture);
+
+    _onCancel(_canceledTasks.values.toList());
 
     _progressStream.close();
   }
 
   @override
-  void onCancel() {
-    // TODO: implement onCancel
+  void onCancel(Function(List<UploadTask> tasks) callback) {
+    _onCancel = callback;
   }
 
   @override
@@ -413,10 +425,15 @@ class _UploadController implements UploadController {
     print('Upload Finished');
   };
 
+  void Function(List<UploadTask> tasks) _onCancel = (List<UploadTask> tasks) {
+    print('Upload Canceled');
+  };
+
   @override
   final Map<String, UploadTask> tasks = {};
   final Map<String, UploadTask> _completedTasks = {};
   final Map<String, UploadTask> _failedTasks = {};
+  final Map<String, UploadTask> _canceledTasks = {};
 
   // TODO: CALCULATE BASED ON TOTAL SIZE NOT ONLY ON THE NUMBER OF TASKS
   double calculateTotalProgress(List<UploadTask> tasks) {
@@ -489,32 +506,20 @@ class _UploadController implements UploadController {
       throw Exception('No tasks to send');
     }
 
-    if (tasks.length == 1) {
-      // creates a worker and initializes it with the first task
-      Worker(
-        wallet: wallet,
-        dataBundler: _dataBundler,
-        uploadController: this,
-        onTaskCompleted: () {},
-      ).addTask(tasks.values.first);
-
-      return;
-    } else {
-      // creates a worker pool and initializes it with the tasks
-      workerPool = WorkerPool(
-        numWorkers: _numOfWorkers,
-        maxTasksPerWorker: _maxTasksPerWorker,
-        taskQueue: tasks.values
-            .where((element) => element.status == UploadStatus.notStarted)
-            .toList(),
-        wallet: wallet,
-        dataBundler: _dataBundler,
-        uploadController: this,
-        onTaskCompleted: (task) {
-          updateProgress(task: task);
-        },
-      );
-    }
+    // creates a worker pool and initializes it with the tasks
+    workerPool = WorkerPool(
+      numWorkers: _numOfWorkers,
+      maxTasksPerWorker: _maxTasksPerWorker,
+      taskQueue: tasks.values
+          .where((element) => element.status == UploadStatus.notStarted)
+          .toList(),
+      wallet: wallet,
+      dataBundler: _dataBundler,
+      uploadController: this,
+      onTaskCompleted: (task) {
+        updateProgress(task: task);
+      },
+    );
   }
 
   @override
@@ -739,7 +744,7 @@ class Worker {
 
       /// The upload can be canceled while the bundle is being created
       if (task.status == UploadStatus.canceled) {
-        print('Upload canceled');
+        print('Upload canceled while bundle was being created');
         return;
       }
 
@@ -766,7 +771,7 @@ class Worker {
       );
 
       if (_isCanceled) {
-        print('Upload canceled');
+        print('Upload canceled after bundle creation and before upload');
         return;
       }
 
