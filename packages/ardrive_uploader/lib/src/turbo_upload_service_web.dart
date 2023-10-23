@@ -143,7 +143,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
 
     try {
       request.contentLength = dataItemSize;
-
+      request.persistentConnection = false;
       final response = await client.send(request);
 
       print(await utf8.decodeStream(response.stream));
