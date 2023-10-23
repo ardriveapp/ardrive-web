@@ -393,25 +393,27 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 32),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: DriveExplorerItemTileLeading(item: widget.item),
-                title: Text(
-                  widget.item.name,
-                  style: ArDriveTypography.body.buttonLargeBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
+              IntrinsicWidth(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: DriveExplorerItemTileLeading(item: widget.item),
+                  title: Text(
+                    widget.item.name,
+                    style: ArDriveTypography.body.buttonLargeBold(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
                   ),
-                ),
-                subtitle: Text(
-                  filesize(widget.item.size),
-                  style: ArDriveTypography.body.buttonNormalRegular(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeAccentDisabled,
+                  subtitle: Text(
+                    filesize(widget.item.size),
+                    style: ArDriveTypography.body.buttonNormalRegular(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeAccentDisabled,
+                    ),
                   ),
                 ),
               ),
