@@ -13,7 +13,9 @@ class LoginInitial extends LoginState {
   final bool isArConnectAvailable;
 }
 
-class LoginLoading extends LoginState {}
+class LoginLoading extends LoginState {
+  const LoginLoading();
+}
 
 class LoginOnBoarding extends LoginState {
   const LoginOnBoarding(this.walletFile);

@@ -75,6 +75,10 @@ class _LoginPageState extends State<LoginPage> {
             view = OnBoardingView(wallet: state.walletFile);
           } else if (state is LoginCreateNewWallet) {
             view = CreateNewWalletView(mnemonic: state.mnemonic);
+          } else if (state is LoginLoading && widget.gettingStarted) {
+            view = const Center(
+              child: CircularProgressIndicator(),
+            );
           } else {
             view = const LoginPageScaffold();
           }
