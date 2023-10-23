@@ -21,7 +21,6 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:wakelock/wakelock.dart';
 
 import 'enums/conflicting_files_actions.dart';
 
@@ -426,7 +425,6 @@ class UploadCubit extends Cubit<UploadState> {
     required UploadPlan uploadPlanForAr,
     UploadPlan? uploadPlanForTurbo,
   }) async {
-    Wakelock.enable();
     UploadPlan uploadPlan;
 
     if (_uploadMethod == UploadMethod.ar || uploadPlanForTurbo == null) {
