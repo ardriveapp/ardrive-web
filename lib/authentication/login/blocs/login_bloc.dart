@@ -41,7 +41,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required UserRepository userRepository,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
-        super(const LoginLoading()) {
+        super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
   }
@@ -161,7 +161,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     CheckIfUserIsLoggedIn event,
     Emitter<LoginState> emit,
   ) async {
-    emit(const LoginLoading());
+    emit(LoginLoading());
 
     if (await _arDriveAuth.isUserLoggedIn()) {
       if (await _arDriveAuth.isBiometricsEnabled()) {
@@ -190,7 +190,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ) async {
     final previousState = state;
 
-    emit(const LoginLoading());
+    emit(LoginLoading());
 
     try {
       final user = await _arDriveAuth.unlockUser(password: event.password);
@@ -212,7 +212,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ) async {
     final previousState = state;
 
-    emit(const LoginLoading());
+    emit(LoginLoading());
 
     try {
       await _verifyArConnectWalletAddressAndLogin(
@@ -235,7 +235,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final previousState = state;
 
     try {
-      emit(const LoginLoading());
+      emit(LoginLoading());
 
       bool hasPermissions = await _arConnectService.checkPermissions();
       if (!hasPermissions) {
@@ -353,7 +353,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _loginWithBiometrics({
     required Emitter<LoginState> emit,
   }) async {
-    emit(const LoginLoading());
+    emit(LoginLoading());
 
     final user = await _arDriveAuth.unlockWithBiometrics(
         localizedReason: 'Login using credentials stored on this device');
