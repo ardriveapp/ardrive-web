@@ -4,9 +4,12 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/theme_switcher.dart';
+import 'package:ardrive/dev_tools/app_dev_tools.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -113,6 +116,26 @@ class _AppSideBarState extends State<AppSideBar> {
               const SizedBox(
                 height: 16,
               ),
+              if (AppPlatform.isMobile &&
+                  configService.flavor != Flavor.production) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0),
+                  child: GestureDetector(
+                    child: Text(
+                      'Open dev tools',
+                      style: ArDriveTypography.body
+                          .buttonNormalBold()
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    onTap: () {
+                      ArDriveDevTools().showDevTools();
+                    },
+                  ),
+                ),
+                const SizedBox(
+                  height: 16,
+                ),
+              ],
               const Padding(
                 padding: EdgeInsets.only(left: 16.0),
                 child: HelpButton(),
