@@ -21,6 +21,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'enums/conflicting_files_actions.dart';
 
@@ -708,6 +709,9 @@ class UploadCubit extends Cubit<UploadState> {
   void retryTask(UploadController controller, UploadTask task) {}
 
   Future<void> _uploadUsingArDriveUploader() async {
+    await WakelockPlus.enable();
+    logger.d('Wakelock enabled');
+
     final ardriveUploader = ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
       metadataGenerator: ARFSUploadMetadataGenerator(
