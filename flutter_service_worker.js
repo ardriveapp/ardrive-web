@@ -4,8 +4,8 @@ const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
 const RESOURCES = {"sql-wasm.wasm": "8b3b3fe7c9c611db53b9e43661bf38dd",
-"index.html": "b8c3c51adba7223d5e213dd269af388d",
-"/": "b8c3c51adba7223d5e213dd269af388d",
+"index.html": "f213b2cbc1232629528c58cf739a7d14",
+"/": "f213b2cbc1232629528c58cf739a7d14",
 "version.json": "a5060a902c5a03bff01e5cb2d0e79903",
 "ardrive-http.js": "02734007a6c6df531f242b329a99a623",
 "favicon.png": "7eb6f5ce1c03da1e55cc086e10e0afca",
@@ -403,7 +403,7 @@ const RESOURCES = {"sql-wasm.wasm": "8b3b3fe7c9c611db53b9e43661bf38dd",
 "js/is_document_focused.js": "50c9b2315780823c9234b1115a50d564",
 "js/arconnect.js": "319aaf4ece35e24861e488a1e292c5d7",
 "js/arweave-wallet.js": "a40d9528a4fd067426c4bf6b1837f312",
-"main.dart.js": "af446e2a312c522b3f0ce3cdc2fa73e2"};
+"main.dart.js": "58ed842e53e007734993b0886ba5bc5a"};
 // The application shell files that are downloaded before a service worker can
 // start.
 const CORE = ["main.dart.js",
