@@ -1,5 +1,5 @@
 import 'package:ardrive/entities/constants.dart';
-import 'package:ardrive/entities/string_types.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';

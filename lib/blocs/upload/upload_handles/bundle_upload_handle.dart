@@ -11,6 +11,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
+import 'package:pst/pst.dart';
 
 class BundleUploadHandle implements UploadHandle {
   final List<FileDataItemUploadHandle> fileDataItemUploadHandles;
@@ -157,7 +158,7 @@ class BundleUploadHandle implements UploadHandle {
     for (var folder in folderDataItemUploadHandles) {
       await folder.writeFolderToDatabase(driveDao: driveDao);
     }
-    
+
     for (var file in fileDataItemUploadHandles) {
       await file.writeFileEntityToDatabase(
         bundledInTxId: bundleId,

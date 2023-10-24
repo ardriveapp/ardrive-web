@@ -2,13 +2,13 @@ import 'package:arconnect/arconnect.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
-import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:pst/pst.dart';
 
 abstract class TransactionSigner {
   Future<SignedTransactionInfo> signTransaction({
