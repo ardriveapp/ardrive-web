@@ -28,19 +28,23 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:synchronized/synchronized.dart';
 import 'package:timeago/timeago.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -52,8 +56,11 @@ part 'components/drive_detail_folder_empty_card.dart';
 part 'components/fs_entry_preview_widget.dart';
 
 class DriveDetailPage extends StatefulWidget {
+  final bool anonymouslyShowDriveDetail;
+
   const DriveDetailPage({
     Key? key,
+    required this.anonymouslyShowDriveDetail,
   }) : super(key: key);
 
   @override
@@ -63,6 +70,19 @@ class DriveDetailPage extends StatefulWidget {
 class _DriveDetailPageState extends State<DriveDetailPage> {
   bool checkboxEnabled = false;
   final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.anonymouslyShowDriveDetail) {
+      PlausibleEventTracker.track(
+          event: PlausibleEvent.fileExplorerNonLoggedInUser);
+    } else {
+      PlausibleEventTracker.track(
+          event: PlausibleEvent.fileExplorerLoggedInUser);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

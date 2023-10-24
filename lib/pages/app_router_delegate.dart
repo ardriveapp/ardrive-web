@@ -15,9 +15,9 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -81,7 +81,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
       },
       builder: (context, _) => BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
-          // Clear state to prevent the last drive from being attached on new login
+          // Clear state to prevent the last drive from being attached on new
+          // login.
           if (state is ProfileLoggingOut) {
             logger.d('Logging out. Clearing state.');
 
@@ -91,8 +92,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           final anonymouslyShowDriveDetail =
               state is! ProfileLoggedIn && canAnonymouslyShowDriveDetail(state);
 
-          // If the user is not already signing in, not viewing a shared file and not anonymously viewing a drive,
-          // redirect them to sign in.
+          // If the user is not already signing in, not viewing a shared file
+          // and not anonymously viewing a drive, redirect them to sign in.
           //
           // Additionally, redirect the user to sign in if they are logging out.
           final showingAnonymousRoute =
@@ -153,8 +154,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 Widget? shellPage;
                 if (state is DrivesLoadSuccess) {
                   shellPage = !state.hasNoDrives
-                      ? const DriveDetailPage()
-                      : const NoDrivesPage();
+                      ? DriveDetailPage(
+                          anonymouslyShowDriveDetail:
+                              anonymouslyShowDriveDetail,
+                        )
+                      : NoDrivesPage(
+                          anonymouslyShowDriveDetail:
+                              anonymouslyShowDriveDetail,
+                        );
+
                   driveId = state.selectedDriveId;
                 }
 

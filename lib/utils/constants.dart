@@ -14,11 +14,6 @@ const List<String> audioContentTypes = [
   'audio/mpeg',
 ];
 
-const List<String> videoContentTypes = [
-  'video/mp4',
-  'video/quicktime',
-];
-
 const profileQueryMaxRetries = 6;
 
 const String hasAcceptedCookiePolicyKey = 'hasAcceptedCookiePolicy';

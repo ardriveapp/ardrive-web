@@ -5,10 +5,11 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:equatable/equatable.dart';
@@ -37,6 +38,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   LoginBloc({
     required ArDriveAuth arDriveAuth,
     required ArConnectService arConnectService,
+    required UserRepository userRepository,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
         super(LoginLoading()) {

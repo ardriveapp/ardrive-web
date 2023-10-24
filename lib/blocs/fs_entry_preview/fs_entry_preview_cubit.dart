@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/mime_lookup.dart';
 import 'package:ardrive_http/ardrive_http.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
@@ -134,7 +134,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       }
 
       try {
-        final decodedBytes = await _crypto.decryptDataFromTransaction(
+        final decodedBytes = await _crypto.decryptTransactionData(
           dataTx,
           dataRes.data,
           _fileKey!,
@@ -276,12 +276,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       final drive = await _driveDao.driveById(driveId: driveId).getSingle();
 
       switch (drive.privacy) {
-        case DrivePrivacyTag.public:
+        case DrivePrivacy.public:
           emit(
             FsEntryPreviewImage(imageBytes: dataBytes, previewUrl: dataUrl),
           );
           break;
-        case DrivePrivacyTag.private:
+        case DrivePrivacy.private:
           final profile = _profileCubit.state;
           SecretKey? driveKey;
 
@@ -308,7 +308,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           }
 
           final fileKey = await _driveDao.getFileKey(file.id, driveKey);
-          final decodedBytes = await _crypto.decryptDataFromTransaction(
+          final decodedBytes = await _crypto.decryptTransactionData(
             dataTx,
             dataBytes,
             fileKey,
@@ -339,8 +339,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         return audioContentTypes
             .any((element) => element.contains(fileExtension));
       case 'video':
-        return videoContentTypes
-            .any((element) => element.contains(fileExtension));
+        return true;
       default:
         return false;
     }

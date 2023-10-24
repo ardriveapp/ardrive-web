@@ -23,8 +23,7 @@ jobs:
         run: flutter pub global activate script_runner
 
       - name: Build app
-        run: |
-          scr setup
+        run: scr setup
 
       - name: Lint
         run: flutter analyze

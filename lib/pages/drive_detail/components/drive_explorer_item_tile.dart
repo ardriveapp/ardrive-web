@@ -66,7 +66,7 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.center,
-            child: getIconForContentType(
+            child: _getIconForContentType(
               item.contentType,
             ),
           ),
@@ -110,41 +110,43 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
       ),
     );
   }
-}
 
-ArDriveIcon getIconForContentType(String contentType, {double size = 18}) {
-  if (contentType == 'folder') {
-    return ArDriveIcons.folderOutline(
-      size: size,
-    );
-  } else if (FileTypeHelper.isZip(contentType)) {
-    return ArDriveIcons.zip(
-      size: size,
-    );
-  } else if (FileTypeHelper.isImage(contentType)) {
-    return ArDriveIcons.image(
-      size: size,
-    );
-  } else if (FileTypeHelper.isVideo(contentType)) {
-    return ArDriveIcons.video(
-      size: size,
-    );
-  } else if (FileTypeHelper.isAudio(contentType)) {
-    return ArDriveIcons.music(
-      size: size,
-    );
-  } else if (FileTypeHelper.isDoc(contentType)) {
-    return ArDriveIcons.fileOutlined(
-      size: size,
-    );
-  } else if (FileTypeHelper.isCode(contentType)) {
-    return ArDriveIcons.fileOutlined(
-      size: size,
-    );
-  } else {
-    return ArDriveIcons.fileOutlined(
-      size: size,
-    );
+  ArDriveIcon _getIconForContentType(String contentType) {
+    const size = 18.0;
+
+    if (contentType == 'folder') {
+      return ArDriveIcons.folderOutline(
+        size: size,
+      );
+    } else if (FileTypeHelper.isZip(contentType)) {
+      return ArDriveIcons.zip(
+        size: size,
+      );
+    } else if (FileTypeHelper.isImage(contentType)) {
+      return ArDriveIcons.image(
+        size: size,
+      );
+    } else if (FileTypeHelper.isVideo(contentType)) {
+      return ArDriveIcons.video(
+        size: size,
+      );
+    } else if (FileTypeHelper.isAudio(contentType)) {
+      return ArDriveIcons.music(
+        size: size,
+      );
+    } else if (FileTypeHelper.isDoc(contentType)) {
+      return ArDriveIcons.fileOutlined(
+        size: size,
+      );
+    } else if (FileTypeHelper.isCode(contentType)) {
+      return ArDriveIcons.fileOutlined(
+        size: size,
+      );
+    } else {
+      return ArDriveIcons.fileOutlined(
+        size: size,
+      );
+    }
   }
 }
 

@@ -238,24 +238,18 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
                     return Text(
-                      '${convertCreditsToLiteralString(state.priceEstimate.estimate.winstonCredits)} Credits',
+                      '${convertCreditsToLiteralString(state.winstonCredits)} Credits',
                       style: ArDriveTypography.body.leadBold(),
                     );
                   },
                 ),
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
-                    final actualPaymentAmount = state
-                            .priceEstimate.estimate.adjustments.isNotEmpty
-                        ? state.priceEstimate.estimate.actualPaymentAmount! /
-                            100
-                        : state.priceEstimate.priceInCurrency;
                     return RichText(
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text:
-                                '\$${(actualPaymentAmount).toStringAsFixed(2)}',
+                            text: '\$${state.paymentAmount}',
                             style: ArDriveTypography.body.captionBold(
                               color: ArDriveTheme.of(context)
                                   .themeData
@@ -263,12 +257,10 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                                   .themeFgMuted,
                             ),
                           ),
-                          if (state.priceEstimate.estimate
-                                  .humanReadableDiscountPercentage !=
-                              null)
+                          if (state.hasPromoCodeApplied)
                             TextSpan(
                               text:
-                                  ' (${state.priceEstimate.estimate.humanReadableDiscountPercentage}% discount applied)', // TODO: localize
+                                  ' (${state.humanReadableDiscountPercentage}% discount applied)', // TODO: localize
                               style: ArDriveTypography.body.buttonNormalRegular(
                                 color: ArDriveTheme.of(context)
                                     .themeData
@@ -617,8 +609,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   Widget promoCodeWidget(ArDriveTextFieldTheme theme) {
     return BlocBuilder<PaymentFormBloc, PaymentFormState>(
         builder: (context, state) {
-      final hasPromoCodeApplied =
-          state.priceEstimate.estimate.adjustments.isNotEmpty;
+      final hasPromoCodeApplied = state.hasPromoCodeApplied;
 
       return Expanded(
         child: hasPromoCodeApplied

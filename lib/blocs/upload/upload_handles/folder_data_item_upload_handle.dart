@@ -65,7 +65,6 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
       wallet,
       key: driveKey,
     );
-    
     await folderEntityTx.sign(wallet);
   }
 
