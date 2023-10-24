@@ -127,7 +127,9 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     String? cipherIvTag;
     SecretKey? fileKey;
 
-    if (drive.drivePrivacy == DrivePrivacy.private) {
+    final isPinFile = _file.pinnedDataOwnerAddress != null;
+
+    if (drive.drivePrivacy == DrivePrivacy.private && !isPinFile) {
       SecretKey? driveKey;
 
       if (cipherKey != null) {
@@ -138,9 +140,11 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       } else {
         driveKey = await _driveDao.getDriveKeyFromMemory(_file.driveId);
       }
+
       if (driveKey == null) {
         throw StateError('Drive Key not found');
       }
+
       fileKey = await _driveDao.getFileKey(_file.id, driveKey);
 
       final dataTx = await (_arweave.getTransactionDetails(_file.txId));
@@ -186,6 +190,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
               _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
         ),
       );
+
       _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
     }
 
