@@ -214,6 +214,7 @@ class UploadInProgressUsingNewUploader extends UploadState {
   final bool isCanceling;
   final Key? equatableBust;
   final UploadMethod uploadMethod;
+  final bool containsLargeTurboUpload;
 
   UploadInProgressUsingNewUploader({
     required this.progress,
@@ -222,6 +223,7 @@ class UploadInProgressUsingNewUploader extends UploadState {
     this.equatableBust,
     this.isCanceling = false,
     required this.uploadMethod,
+    required this.containsLargeTurboUpload,
   });
 
   @override

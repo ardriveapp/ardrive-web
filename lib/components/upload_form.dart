@@ -1118,6 +1118,33 @@ class _UploadFormState extends State<UploadForm> {
                 color:
                     ArDriveTheme.of(context).themeData.colors.themeFgDefault),
           ),
+          const SizedBox(
+            height: 8,
+          ),
+          if (state.containsLargeTurboUpload)
+            Align(
+              alignment: Alignment.center,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Warning!',
+                    style: ArDriveTypography.body
+                        .buttonLargeBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeErrorMuted,
+                        )
+                        .copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  Text('Leaving this page may result in a failed upload',
+                      style: ArDriveTypography.body.buttonLargeBold())
+                ],
+              ),
+            )
         ],
       ),
     );
