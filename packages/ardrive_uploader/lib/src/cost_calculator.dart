@@ -1,6 +1,7 @@
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
+// ignore: depend_on_referenced_packages
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pst/pst.dart';
