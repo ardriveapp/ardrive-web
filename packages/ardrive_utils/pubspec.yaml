@@ -15,6 +15,10 @@ dependencies:
   package_info_plus: ^4.1.0
   platform: ^3.1.0
   universal_html: ^2.2.4
+  ardrive_http:
+    git:
+      url: https://github.com/ar-io/ardrive_http.git
+      ref: v1.3.1
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git

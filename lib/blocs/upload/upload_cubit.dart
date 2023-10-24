@@ -18,6 +18,7 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -364,6 +365,8 @@ class UploadCubit extends Cubit<UploadState> {
 
       final literalBalance = convertCreditsToLiteralString(
           uploadPreparation.uploadPaymentInfo.turboBalance);
+      final literalARBalance =
+          convertARToLiteralString(_auth.currentUser.walletBalance);
 
       bool isButtonEnabled = false;
       bool sufficientBalanceToPayWithAR =
@@ -401,8 +404,7 @@ class UploadCubit extends Cubit<UploadState> {
           costEstimateAr: paymentInfo.arCostEstimate,
           costEstimateTurbo: paymentInfo.turboCostEstimate,
           credits: literalBalance,
-          arBalance:
-              convertCreditsToLiteralString(_auth.currentUser.walletBalance),
+          arBalance: literalARBalance,
           uploadIsPublic: _targetDrive.isPublic,
           sufficientArBalance:
               profile.walletBalance >= paymentInfo.arCostEstimate.totalCost,
@@ -495,6 +497,10 @@ class UploadCubit extends Cubit<UploadState> {
           appInfoServices: AppInfoServices(),
         ),
       ),
+      arweave: Arweave(
+        gatewayUrl: Uri.parse(configService.config.defaultArweaveGatewayUrl!),
+      ),
+      pstService: _pst,
     );
 
     final private = _targetDrive.isPrivate;
@@ -716,6 +722,10 @@ class UploadCubit extends Cubit<UploadState> {
           appInfoServices: AppInfoServices(),
         ),
       ),
+      arweave: Arweave(
+        gatewayUrl: Uri.parse(configService.config.defaultArweaveGatewayUrl!),
+      ),
+      pstService: _pst,
     );
 
     final private = _targetDrive.isPrivate;

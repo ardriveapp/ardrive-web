@@ -7,6 +7,7 @@ import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
+import 'package:pst/pst.dart';
 
 enum UploadType { turbo, d2n }
 
@@ -44,6 +45,8 @@ abstract class ArDriveUploader {
   factory ArDriveUploader({
     ARFSUploadMetadataGenerator? metadataGenerator,
     required Uri turboUploadUri,
+    Arweave? arweave,
+    PstService? pstService,
   }) {
     metadataGenerator ??= ARFSUploadMetadataGenerator(
       tagsGenerator: ARFSTagsGenetator(
@@ -51,10 +54,23 @@ abstract class ArDriveUploader {
       ),
     );
 
+    arweave ??= Arweave();
+    pstService ??= PstService(
+      communityOracle: CommunityOracle(
+        ArDriveContractOracle([
+          ContractOracle(VertoContractReader()),
+          ContractOracle(RedstoneContractReader()),
+          ContractOracle(SmartweaveContractReader()),
+        ]),
+      ),
+    );
+
     return _ArDriveUploader(
       turboUploadUri: turboUploadUri,
       dataBundlerFactory: DataBundlerFactory(),
       metadataGenerator: metadataGenerator,
+      arweave: arweave,
+      pstService: pstService,
     );
   }
 }
@@ -64,13 +80,19 @@ class _ArDriveUploader implements ArDriveUploader {
     required DataBundlerFactory dataBundlerFactory,
     required ARFSUploadMetadataGenerator metadataGenerator,
     required Uri turboUploadUri,
+    required Arweave arweave,
+    required PstService pstService,
   })  : _dataBundlerFactory = dataBundlerFactory,
         _turboUploadUri = turboUploadUri,
         _metadataGenerator = metadataGenerator,
+        _arweave = arweave,
+        _pstService = pstService,
         _streamedUploadFactory = StreamedUploadFactory();
 
   final StreamedUploadFactory _streamedUploadFactory;
   final DataBundlerFactory _dataBundlerFactory;
+  final Arweave _arweave;
+  final PstService _pstService;
   final ARFSUploadMetadataGenerator _metadataGenerator;
   final Uri _turboUploadUri;
 
@@ -88,6 +110,8 @@ class _ArDriveUploader implements ArDriveUploader {
       _dataBundlerFactory.createDataBundler(
         metadataGenerator: _metadataGenerator,
         type: type,
+        arweaveService: _arweave,
+        pstService: _pstService,
       ),
       numOfWorkers: 1,
       maxTasksPerWorker: 1,
@@ -125,6 +149,8 @@ class _ArDriveUploader implements ArDriveUploader {
       _dataBundlerFactory.createDataBundler(
         metadataGenerator: _metadataGenerator,
         type: type,
+        arweaveService: _arweave,
+        pstService: _pstService,
       ),
       numOfWorkers: driveKey != null ? 3 : 5,
       maxTasksPerWorker: driveKey != null ? 1 : 5,
@@ -173,6 +199,8 @@ class _ArDriveUploader implements ArDriveUploader {
     final dataBundler = _dataBundlerFactory.createDataBundler(
       metadataGenerator: _metadataGenerator,
       type: type,
+      arweaveService: _arweave,
+      pstService: _pstService,
     );
 
     final streamedUpload = _streamedUploadFactory.fromUploadType(
