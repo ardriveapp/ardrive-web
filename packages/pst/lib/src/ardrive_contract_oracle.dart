@@ -1,5 +1,6 @@
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pst/src/contract_oracle.dart';
 import 'package:pst/src/pst_contract_data.dart';
 import 'package:retry/retry.dart';
@@ -8,9 +9,13 @@ const _maxReadContractAttempts = 3;
 
 class ArDriveContractOracle implements ContractOracle {
   final List<ContractOracle> _contractOracles;
+  final ContractOracle? _fallbackContractOracle;
 
-  ArDriveContractOracle(List<ContractOracle> contractOracles)
-      : _contractOracles = contractOracles {
+  ArDriveContractOracle(
+    List<ContractOracle> contractOracles, {
+    ContractOracle? fallbackContractOracle,
+  })  : _fallbackContractOracle = fallbackContractOracle,
+        _contractOracles = contractOracles {
     if (contractOracles.isEmpty) {
       throw const EmptyContractOracles();
     }
@@ -31,12 +36,23 @@ class ArDriveContractOracle implements ContractOracle {
 
   /// iterates over all contract readers attempting to read the contract
   Future<CommunityContractData> _getContractFromOracles() async {
-    final contract = await getFirstFutureResult<CommunityContractData>(
-        _contractOracles
-            .map((e) async => await _getContractWithRetries(e))
-            .toList());
+    try {
+      final contract = await getFirstFutureResult<CommunityContractData>(
+          _contractOracles
+              .map((e) async => await _getContractWithRetries(e))
+              .toList());
 
-    return contract;
+      return contract;
+    } catch (e) {
+      debugPrint('Could not read contract state from any of the oracles');
+      if (_fallbackContractOracle == null) {
+        throw const CouldNotReadContractState(
+          reason: 'Max retry attempts reached',
+        );
+      }
+
+      return _fallbackContractOracle!.getCommunityContract();
+    }
   }
 
   /// attempts multiple retries to read the given contract oracle

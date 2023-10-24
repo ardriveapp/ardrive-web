@@ -202,11 +202,16 @@ class AppState extends State<App> {
         RepositoryProvider<PstService>(
           create: (_) => PstService(
             communityOracle: CommunityOracle(
-              ArDriveContractOracle([
-                ContractOracle(VertoContractReader()),
-                ContractOracle(RedstoneContractReader()),
-                // ContractOracle(SmartweaveContractReader()),
-              ]),
+              ArDriveContractOracle(
+                [
+                  ContractOracle(VertoContractReader()),
+                  ContractOracle(RedstoneContractReader()),
+                  ContractOracle(ARNSContractReader()),
+                ],
+                fallbackContractOracle: ContractOracle(
+                  SmartweaveContractReader(),
+                ),
+              ),
             ),
           ),
         ),
