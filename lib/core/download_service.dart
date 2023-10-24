@@ -35,6 +35,11 @@ class _DownloadService implements DownloadService {
   @override
   Future<Stream<List<int>>> downloadStream(
       String fileTxId, bool isManifest) async {
+    if (isManifest) {
+      final data = await download(fileTxId, true);
+      return Stream.fromIterable([data.toList()]);
+    }
+
     final downloadResponse = await arweave.download(txId: fileTxId);
 
     return downloadResponse.$1;

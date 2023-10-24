@@ -162,6 +162,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       fileName: _file.name,
       fileSize: _file.size,
       lastModifiedDate: _file.lastModifiedDate,
+      isManifest: _file.contentType == ContentType.manifest,
       contentType:
           _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
       cipher: cipher,
