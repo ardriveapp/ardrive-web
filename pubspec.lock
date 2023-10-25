@@ -85,7 +85,7 @@ packages:
     description:
       path: "."
       ref: PE-3699-uploads-large-files-for-public-drives
-      resolved-ref: b42e3dc7c178a380a4f8c77d070396b5929308c5
+      resolved-ref: "8c6ac43b14874b7078548b830ad1c8394109491c"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.0"

@@ -175,13 +175,6 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         return;
       }
 
-      if (progress == 100) {
-        emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
-        return;
-      }
-
-      logger.d('Download progress: $progress');
-
       emit(
         FileDownloadWithProgress(
           fileName: _file.name,
