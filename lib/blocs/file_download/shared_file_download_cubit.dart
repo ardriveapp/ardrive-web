@@ -7,17 +7,14 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   final ARFSFileEntity revision;
   final ArweaveService _arweave;
   final ArDriveCrypto _crypto;
-  final ArDriveDownloader _arDriveDownloader;
 
   SharedFileDownloadCubit({
     this.fileKey,
     required this.revision,
     required ArweaveService arweave,
     required ArDriveCrypto crypto,
-    required ArDriveDownloader arDriveDownloader,
   })  : _arweave = arweave,
         _crypto = crypto,
-        _arDriveDownloader = arDriveDownloader,
         super(FileDownloadStarting()) {
     download();
   }
@@ -31,6 +28,8 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   }
 
   Future<void> _downloadFile(ARFSFileEntity revision) async {
+    late Uint8List dataBytes;
+
     emit(
       FileDownloadInProgress(
         fileName: revision.name,
@@ -38,63 +37,44 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
-    String? cipher;
-    String? cipherIvTag;
-    final isPinFile = revision.pinnedDataOwnerAddress != null;
+    final dataRes = await ArDriveHTTP().getAsBytes(
+        '${_arweave.client.api.gatewayUrl.origin}/${revision.dataTxId}');
 
-    if (fileKey != null && !isPinFile) {
+    if (fileKey != null) {
+      final isPinFile = revision.pinnedDataOwnerAddress != null;
+      if (isPinFile) {
+        emit(
+          FileDownloadSuccess(
+            bytes: dataRes.data,
+            fileName: revision.name,
+            mimeType: revision.contentType ?? io.lookupMimeType(revision.name),
+            lastModified: revision.lastModifiedDate,
+          ),
+        );
+        return;
+      }
+
       final dataTx = await (_arweave.getTransactionDetails(revision.dataTxId!));
 
-      if (dataTx == null) {
-        throw StateError('Data transaction not found');
+      if (dataTx != null) {
+        dataBytes = await _crypto.decryptDataFromTransaction(
+          dataTx,
+          dataRes.data,
+          fileKey!,
+        );
       }
-
-      cipher = dataTx.getTag(EntityTag.cipher);
-      cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
+    } else {
+      dataBytes = dataRes.data;
     }
 
-    final downloadStream = _arDriveDownloader.downloadFile(
-      dataTx: revision.dataTxId!,
-      fileName: revision.name,
-      fileSize: revision.size,
-      lastModifiedDate: revision.lastModifiedDate,
-      contentType:
-          revision.contentType ?? lookupMimeTypeWithDefaultType(revision.name),
-      cipher: cipher,
-      cipherIvString: cipherIvTag,
-      fileKey: fileKey,
+    emit(
+      FileDownloadSuccess(
+        bytes: dataBytes,
+        fileName: revision.name,
+        mimeType: revision.contentType ?? io.lookupMimeType(revision.name),
+        lastModified: revision.lastModifiedDate,
+      ),
     );
-
-    logger.d(
-        'Downloading file ${revision.name} and dataTxId is ${revision.txId} of size ${revision.size}');
-
-    await for (var progress in downloadStream) {
-      if (state is FileDownloadAborted) {
-        return;
-      }
-
-      if (progress == 100) {
-        emit(FileDownloadFinishedWithSuccess(fileName: revision.name));
-        logger.d('Download finished');
-        return;
-      }
-
-      logger.d('Download progress: $progress');
-
-      emit(
-        FileDownloadWithProgress(
-          fileName: revision.name,
-          progress: progress.toInt(),
-          fileSize: revision.size,
-          contentType: revision.contentType ??
-              lookupMimeTypeWithDefaultType(revision.name),
-        ),
-      );
-    }
-
-    logger.d('Download finished');
-
-    emit(FileDownloadFinishedWithSuccess(fileName: revision.name));
   }
 
   @override
