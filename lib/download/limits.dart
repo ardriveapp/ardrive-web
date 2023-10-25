@@ -7,6 +7,7 @@ import 'download_utils.dart';
 final publicDownloadUnknownPlatformSizeLimit = const GiB(2).size;
 final publicDownloadWebSizeLimit = const MiB(500).size;
 final publicDownloadFirefoxSizeLimit = const GiB(2).size;
+final publicDownloadSafariSizeLimit = const GiB(1).size;
 final publicDownloadMobileSizeLimit = const MiB(300).size;
 
 final privateDownloadUnknownPlatformSizeLimit = const GiB(2).size;
