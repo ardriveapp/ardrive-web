@@ -37,6 +37,7 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           contentType: (widget.state as FsEntryPreviewImage).contentType,
           imageBytes: (widget.state as FsEntryPreviewImage).imageBytes,
           isSharePage: widget.isSharePage,
+          isFullScreen: false,
         );
 
       case FsEntryPreviewAudio:
@@ -1026,18 +1027,74 @@ class _FullScreenVideoPlayerWidgetState
   }
 }
 
+class ImagePreviewFullScreenWidget extends StatefulWidget {
+  final Uint8List imageBytes;
+  final String filename;
+  final String contentType;
+
+  const ImagePreviewFullScreenWidget({
+    super.key,
+    required this.filename,
+    required this.contentType,
+    required this.imageBytes,
+  });
+
+  @override
+  State<StatefulWidget> createState() {
+    return _ImagePreviewFullScreenWidgetState();
+  }
+}
+
+class _ImagePreviewFullScreenWidgetState
+    extends State<ImagePreviewFullScreenWidget> {
+  bool fullScreenMode = false;
+
+  @override
+  void initState() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ImagePreviewWidget(
+        filename: widget.filename,
+        contentType: widget.contentType,
+        imageBytes: widget.imageBytes,
+        isFullScreen: true,
+      ),
+    );
+  }
+}
+
 class ImagePreviewWidget extends StatefulWidget {
   final Uint8List imageBytes;
   final String filename;
   final String contentType;
   final bool isSharePage;
+  final bool isFullScreen;
 
   const ImagePreviewWidget({
     super.key,
     required this.filename,
     required this.contentType,
     required this.imageBytes,
-    required this.isSharePage,
+    this.isSharePage = false,
+    this.isFullScreen = false,
   });
 
   @override
@@ -1049,7 +1106,7 @@ class ImagePreviewWidget extends StatefulWidget {
 class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   @override
   Widget build(BuildContext context) {
-    if (!widget.isSharePage) {
+    if (!widget.isSharePage && !widget.isFullScreen) {
       return _buildImage();
     } else {
       final theme = ArDriveTheme.of(context);
@@ -1123,7 +1180,9 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           ),
           child: IconButton(
             onPressed: goFullScreen,
-            icon: const Icon(Icons.fullscreen_outlined, size: 24),
+            icon: widget.isFullScreen
+                ? const Icon(Icons.fullscreen_exit_outlined)
+                : const Icon(Icons.fullscreen_outlined, size: 24),
           ),
         ),
       ],
@@ -1142,7 +1201,23 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         .toUpperCase();
   }
 
-  void goFullScreen() {}
+  void goFullScreen() {
+    if (widget.isFullScreen) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          pageBuilder: (context, _, __) => ImagePreviewFullScreenWidget(
+            filename: widget.filename,
+            contentType: widget.contentType,
+            imageBytes: widget.imageBytes,
+          ),
+        ),
+      );
+    }
+  }
 }
 
 class AudioPlayerWidget extends StatefulWidget {
