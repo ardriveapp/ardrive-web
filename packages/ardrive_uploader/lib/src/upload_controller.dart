@@ -143,7 +143,6 @@ class FileUploadTask extends UploadTask {
     SecretKey? encryptionKey,
     StreamedUpload? streamedUpload,
   }) {
-    print('Copying new task with status: ${status ?? this.status}');
     return FileUploadTask(
       streamedUpload: streamedUpload ?? this.streamedUpload,
       encryptionKey: encryptionKey ?? this.encryptionKey,
@@ -377,37 +376,69 @@ class _UploadController implements UploadController {
   @override
   void updateProgress({
     UploadTask? task,
-  }) {
-    if (_progressStream.isClosed) {
+  }) async {
+    if (_progressStream.isClosed || task == null) {
       return;
     }
 
-    if (task != null) {
-      if (task.status == UploadStatus.complete) {
-        _completedTasks[task.id] = task;
-      } else if (task.status == UploadStatus.failed) {
-        _failedTasks[task.id] = task;
-      }
+    var taskId = task.id;
+    var existingTask = tasks[taskId];
+    var uploadItem = task.uploadItem;
 
-      tasks[task.id] = task;
-
-      // TODO: Check how to improve this
-      final taskList = tasks.values.toList();
-
-      // TODO: Check how to improve this
-      _uploadProgress = _uploadProgress.copyWith(
-        task: taskList,
-        progressInPercentage: calculateTotalProgress(taskList),
-        totalSize: totalSize(taskList),
-        totalUploaded: totalUploaded(taskList),
-        startTime: _start,
-      );
+    if (task.status == UploadStatus.complete) {
+      _completedTasks[taskId] = task;
+      _totalUploadedItems += task.content!.length;
+    } else if (task.status == UploadStatus.failed) {
+      _failedTasks[taskId] = task;
     }
 
-    _progressStream.add(_uploadProgress);
+    if (existingTask == null ||
+        existingTask.uploadItem == null ||
+        existingTask.content == null) {
+      if (task is FileUploadTask &&
+          uploadItem == null &&
+          task.content != null) {
+        _totalSize += await task.file.length;
+      }
 
-    return;
+      if (uploadItem != null && task is FileUploadTask) {
+        _totalSize -= await task.file.length;
+        _totalSize += uploadItem.size;
+      }
+    }
+
+    if (existingTask != null &&
+        existingTask.uploadItem != null &&
+        uploadItem != null) {
+      double diff = task.progress - existingTask.progress;
+      _totalUploaded += (diff * uploadItem.size).toInt();
+
+      if (diff > 0) {
+        _totalProgress += diff;
+      }
+    }
+
+    tasks[taskId] = task;
+
+    double progressInPercentage = _totalProgress / tasks.length;
+    _uploadProgress = _uploadProgress.copyWith(
+      task: tasks,
+      progressInPercentage: progressInPercentage,
+      totalSize: _totalSize,
+      totalUploaded: _totalUploaded,
+      startTime: _start,
+      numberOfItems: _numberOfItems,
+      numberOfUploadedItems: _totalUploadedItems,
+    );
+
+    _progressStream.add(_uploadProgress);
   }
+
+  int _totalSize = 0;
+  int _numberOfItems = 0;
+  double _totalProgress = 0;
+  int _totalUploaded = 0;
+  int _totalUploadedItems = 0;
 
   UploadProgress _uploadProgress = UploadProgress.notStarted();
 
@@ -455,20 +486,8 @@ class _UploadController implements UploadController {
     return totalUploaded;
   }
 
-  int totalSize(List<UploadTask> tasks) {
-    int totalSize = 0;
-
-    for (var task in tasks) {
-      if (task.uploadItem != null) {
-        totalSize += task.uploadItem!.size;
-      } else {
-        if (task is FileUploadTask) {
-          totalSize += task.metadata.size;
-        }
-      }
-    }
-
-    return totalSize;
+  int totalSize() {
+    return _totalSize;
   }
 
   /// It is just an experimentation. It is not used yet, but it will be used in the future.
@@ -524,6 +543,10 @@ class _UploadController implements UploadController {
 
   @override
   void addTask(UploadTask task) {
+    if (task.content != null) {
+      _numberOfItems += task.content!.length;
+    }
+
     tasks[task.id] = task;
   }
 
@@ -577,7 +600,9 @@ class UploadProgress {
   final double progressInPercentage;
   final int totalSize;
   final int totalUploaded;
-  final List<UploadTask> task;
+  final Map<String, UploadTask> task;
+  final int numberOfItems;
+  final int numberOfUploadedItems;
 
   DateTime? startTime;
 
@@ -586,6 +611,8 @@ class UploadProgress {
     required this.totalSize,
     required this.task,
     required this.totalUploaded,
+    required this.numberOfItems,
+    required this.numberOfUploadedItems,
     this.startTime,
   });
 
@@ -593,65 +620,32 @@ class UploadProgress {
     return UploadProgress(
       progressInPercentage: 0,
       totalSize: 0,
-      task: [],
+      task: {},
       totalUploaded: 0,
+      numberOfItems: 0,
+      numberOfUploadedItems: 0,
     );
   }
 
   UploadProgress copyWith({
     double? progressInPercentage,
     int? totalSize,
-    List<UploadTask>? task,
+    Map<String, UploadTask>? task,
     int? totalUploaded,
     DateTime? startTime,
+    int? numberOfItems,
+    int? numberOfUploadedItems,
   }) {
     return UploadProgress(
+      numberOfUploadedItems:
+          numberOfUploadedItems ?? this.numberOfUploadedItems,
       startTime: startTime ?? this.startTime,
       progressInPercentage: progressInPercentage ?? this.progressInPercentage,
       totalSize: totalSize ?? this.totalSize,
       task: task ?? this.task,
       totalUploaded: totalUploaded ?? this.totalUploaded,
+      numberOfItems: numberOfItems ?? this.numberOfItems,
     );
-  }
-
-  int getNumberOfItems() {
-    if (task.isEmpty) {
-      return 0;
-    }
-
-    return task.map((e) {
-      if (e.content == null) {
-        return 0;
-      }
-
-      return e.content!.length;
-    }).reduce((value, element) => value + element);
-  }
-
-  int tasksContentLength() {
-    int totalUploaded = 0;
-
-    for (var t in task) {
-      if (t.content != null) {
-        totalUploaded += t.content!.length;
-      }
-    }
-
-    return totalUploaded;
-  }
-
-  int tasksContentCompleted() {
-    int totalUploaded = 0;
-
-    for (var t in task) {
-      if (t.content != null) {
-        if (t.status == UploadStatus.complete) {
-          totalUploaded += t.content!.length;
-        }
-      }
-    }
-
-    return totalUploaded;
   }
 
   double calculateUploadSpeed() {
@@ -709,7 +703,7 @@ class Worker {
           wallet: wallet,
           driveKey: task.encryptionKey,
           onStartBundleCreation: () {
-            print('Creating bundle');
+            // print('Creating bundle');
             task = task.copyWith(
               status: UploadStatus.creatingBundle,
             );
@@ -719,7 +713,7 @@ class Worker {
             );
           },
           onStartMetadataCreation: () {
-            print('Creating metadata');
+            // print('Creating metadata');
             task = task.copyWith(
               status: UploadStatus.creatingMetadata,
             );

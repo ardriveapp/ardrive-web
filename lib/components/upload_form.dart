@@ -788,7 +788,7 @@ class _UploadFormState extends State<UploadForm> {
         ModalAction(
           action: () {
             if (state.uploadMethod == UploadMethod.ar &&
-                state.progress.task.any(
+                state.progress.task.values.any(
                     (element) => element.status == UploadStatus.inProgress)) {
               _isShowingCancelDialog = true;
               final cubit = context.read<UploadCubit>();
@@ -851,7 +851,7 @@ class _UploadFormState extends State<UploadForm> {
       ],
       width: kLargeDialogWidth,
       title:
-          '${appLocalizationsOf(context).uploadingNFiles(state.progress.getNumberOfItems())} ${(state.totalProgress * 100).toStringAsFixed(2)}%',
+          '${appLocalizationsOf(context).uploadingNFiles(state.progress.numberOfItems)} ${(state.totalProgress * 100).toStringAsFixed(2)}%',
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -866,7 +866,7 @@ class _UploadFormState extends State<UploadForm> {
                     shrinkWrap: true,
                     itemCount: progress.task.length,
                     itemBuilder: (BuildContext context, int index) {
-                      final task = progress.task[index];
+                      final task = progress.task.values.elementAt(index);
 
                       String? progressText;
                       String status = '';
@@ -1102,7 +1102,7 @@ class _UploadFormState extends State<UploadForm> {
           ),
           // TODO: localize
           Text(
-            'Files uploaded: ${state.progress.tasksContentCompleted()} of ${state.progress.tasksContentLength()}',
+            'Files uploaded: ${state.progress.numberOfUploadedItems} of ${state.progress.numberOfItems}',
             style: ArDriveTypography.body
                 .buttonNormalBold(
                     color: ArDriveTheme.of(context)
