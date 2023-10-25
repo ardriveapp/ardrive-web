@@ -1118,10 +1118,11 @@ class _UploadFormState extends State<UploadForm> {
                 color:
                     ArDriveTheme.of(context).themeData.colors.themeFgDefault),
           ),
-          const SizedBox(
-            height: 8,
-          ),
-          if (state.containsLargeTurboUpload)
+
+          if (state.containsLargeTurboUpload) ...[
+            const SizedBox(
+              height: 8,
+            ),
             Align(
               alignment: Alignment.center,
               child: Column(
@@ -1144,7 +1145,8 @@ class _UploadFormState extends State<UploadForm> {
                       style: ArDriveTypography.body.buttonLargeBold())
                 ],
               ),
-            )
+            ),
+          ],
         ],
       ),
     );

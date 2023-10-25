@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
@@ -765,9 +766,6 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onProgressChange(
       (progress) async {
-        logger.d('Progress: ${progress.progressInPercentage}');
-
-        logger.d('Contains large turbo upload: $_containsLargeTurboUpload');
         // TODO: Save as the file is finished the upload
 
         emit(
@@ -814,7 +812,7 @@ class UploadCubit extends Cubit<UploadState> {
       _containsLargeTurboUpload = false;
 
       for (var file in files) {
-        if (await file.ioFile.length >= const MiB(500).size) {
+        if (await file.ioFile.length >= largeFileUploadSizeThreshold) {
           _containsLargeTurboUpload = true;
           break;
         }
