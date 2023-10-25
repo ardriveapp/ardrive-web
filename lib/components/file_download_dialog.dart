@@ -95,6 +95,8 @@ Future<void> promptToDownloadSharedFile({
   required ARFSFileEntity revision,
 }) {
   final cubit = SharedFileDownloadCubit(
+    arDriveDownloader: ArDriveDownloader(
+        ardriveIo: ArDriveIO(), ioFileAdapter: IOFileAdapter()),
     crypto: ArDriveCrypto(),
     revision: revision,
     fileKey: fileKey,
