@@ -421,6 +421,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   bool hasEmittedError = false;
+  bool hasEmittedWarning = false;
 
   Future<void> startUpload({
     required UploadPlan uploadPlanForAr,
@@ -457,6 +458,17 @@ class UploadCubit extends Cubit<UploadState> {
     if (configService.config.useNewUploader) {
       if (_uploadMethod == UploadMethod.turbo) {
         await _verifyIfUploadContainsLargeFilesUsingTurbo();
+        if (!hasEmittedWarning && kIsWeb && !await AppPlatform.isChrome()) {
+          emit(
+            UploadShowingWarning(
+              reason: UploadWarningReason.fileTooLargeOnNonChromeBrowser,
+              uploadPlanForAR: uploadPlanForAr,
+              uploadPlanForTurbo: uploadPlanForTurbo,
+            ),
+          );
+          hasEmittedWarning = true;
+          return;
+        }
       } else {
         _containsLargeTurboUpload = false;
       }
@@ -1006,7 +1018,11 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       if (fileAboveWarningLimit) {
-        emit(UploadShowingWarning(reason: UploadWarningReason.fileTooLarge));
+        emit(UploadShowingWarning(
+          reason: UploadWarningReason.fileTooLarge,
+          uploadPlanForAR: null,
+          uploadPlanForTurbo: null,
+        ));
 
         return;
       }

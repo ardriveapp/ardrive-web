@@ -7,6 +7,7 @@ final largeFileUploadSizeThreshold = const MiB(500).size;
 final mobilePrivateFileSizeLimit = const GiB(10).size;
 
 final publicFileSafeSizeLimit = const GiB(5).size;
+final nonChromeBrowserUploadSafeLimitUsingTurbo = const MiB(500).size;
 
 int bundleSizeLimit(bool isTurbo) =>
     isTurbo ? turboBundleSizeLimit : d2nBundleSizeLimit;
