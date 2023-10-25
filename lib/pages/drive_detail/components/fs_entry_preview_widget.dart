@@ -32,13 +32,11 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         );
 
       case FsEntryPreviewImage:
-        return ArDriveImage(
-          fit: BoxFit.contain,
-          height: double.maxFinite,
-          width: double.maxFinite,
-          image: MemoryImage(
-            (widget.state as FsEntryPreviewImage).imageBytes,
-          ),
+        return ImagePreviewWidget(
+          filename: (widget.state as FsEntryPreviewImage).filename,
+          contentType: (widget.state as FsEntryPreviewImage).contentType,
+          imageBytes: (widget.state as FsEntryPreviewImage).imageBytes,
+          isSharePage: widget.isSharePage,
         );
 
       case FsEntryPreviewAudio:
@@ -1026,6 +1024,125 @@ class _FullScreenVideoPlayerWidgetState
       ],
     )));
   }
+}
+
+class ImagePreviewWidget extends StatefulWidget {
+  final Uint8List imageBytes;
+  final String filename;
+  final String contentType;
+  final bool isSharePage;
+
+  const ImagePreviewWidget({
+    super.key,
+    required this.filename,
+    required this.contentType,
+    required this.imageBytes,
+    required this.isSharePage,
+  });
+
+  @override
+  State<StatefulWidget> createState() {
+    return _ImagePreviewWidgetState();
+  }
+}
+
+class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isSharePage) {
+      return _buildImage();
+    } else {
+      final theme = ArDriveTheme.of(context);
+
+      return Column(
+        children: [
+          Flexible(child: _buildImage()),
+          Container(
+            color: theme.themeData.colors.themeBgCanvas,
+            child: _buildActionBar(),
+          ),
+        ],
+      );
+    }
+  }
+
+  Widget _buildImage() {
+    return ArDriveImage(
+      fit: BoxFit.contain,
+      height: double.maxFinite,
+      width: double.maxFinite,
+      image: MemoryImage(
+        widget.imageBytes,
+      ),
+    );
+  }
+
+  Widget _buildActionBar() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        SizedBox(
+          height: 96,
+          child: Padding(
+            padding: const EdgeInsets.only(
+              left: 24,
+              top: 24,
+              bottom: 24,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getFileNameWithNoExtension(),
+                  style: ArDriveTypography.body.smallBold700(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+                ),
+                Text(
+                  _getFileExtension(),
+                  style: ArDriveTypography.body.smallRegular(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDisabled,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(
+            right: 24,
+            top: 24,
+            bottom: 24,
+          ),
+          child: IconButton(
+            onPressed: goFullScreen,
+            icon: const Icon(Icons.fullscreen_outlined, size: 24),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getFileNameWithNoExtension() {
+    return widget.filename.substring(0, widget.filename.lastIndexOf('.'));
+  }
+
+  String _getFileExtension() {
+    return widget.contentType
+        .substring(
+          widget.contentType.lastIndexOf('/') + 1,
+        )
+        .toUpperCase();
+  }
+
+  void goFullScreen() {}
 }
 
 class AudioPlayerWidget extends StatefulWidget {
