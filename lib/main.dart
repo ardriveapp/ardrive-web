@@ -9,12 +9,6 @@ import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
-import 'package:ardrive/pst/ardrive_contract_oracle.dart';
-import 'package:ardrive/pst/community_oracle.dart';
-import 'package:ardrive/pst/contract_oracle.dart';
-import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
-import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
-import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
@@ -45,6 +39,7 @@ import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:pst/pst.dart';
 
 import 'blocs/blocs.dart';
 import 'firebase_options.dart';
@@ -207,11 +202,16 @@ class AppState extends State<App> {
         RepositoryProvider<PstService>(
           create: (_) => PstService(
             communityOracle: CommunityOracle(
-              ArDriveContractOracle([
-                ContractOracle(VertoContractReader()),
-                ContractOracle(RedstoneContractReader()),
-                ContractOracle(SmartweaveContractReader()),
-              ]),
+              ArDriveContractOracle(
+                [
+                  ContractOracle(VertoContractReader()),
+                  ContractOracle(RedstoneContractReader()),
+                  ContractOracle(ARNSContractReader()),
+                ],
+                fallbackContractOracle: ContractOracle(
+                  SmartweaveContractReader(),
+                ),
+              ),
             ),
           ),
         ),

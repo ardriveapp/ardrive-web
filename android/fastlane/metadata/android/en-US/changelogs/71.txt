@@ -1,0 +1,1 @@
+- Enhanced the login flow analytics with Plausible to better understand and optimize user experience

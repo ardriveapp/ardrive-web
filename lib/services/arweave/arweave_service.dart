@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
@@ -1149,6 +1148,7 @@ class ArweaveService {
         dryRun: dryRun,
       );
 
+  // TODO: replace with the method on ardrive_utils
   Future<double?> getArUsdConversionRateOrNull() async {
     try {
       return await getArUsdConversionRate();
@@ -1157,6 +1157,7 @@ class ArweaveService {
     }
   }
 
+  // TODO: replace with the method on ardrive_utils
   Future<double> getArUsdConversionRate() async {
     const String coinGeckoApi =
         'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd';
