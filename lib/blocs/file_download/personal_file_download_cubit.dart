@@ -42,6 +42,18 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         _arfsRepository = arfsRepository,
         super(FileDownloadStarting());
 
+  Future<void> verifyUploadLimitationsAndDownload(SecretKey? cipherKey) async {
+    if (await AppPlatform.isSafari()) {
+      if (_file.size > publicDownloadSafariSizeLimit) {
+        emit(const FileDownloadFailure(
+            FileDownloadFailureReason.browserDoesNotSupportLargeDownloads));
+        return;
+      }
+    }
+
+    download(cipherKey);
+  }
+
   Future<void> download(SecretKey? cipherKey) async {
     try {
       final drive = await _arfsRepository.getDriveById(_file.driveId);
@@ -174,13 +186,6 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       if (state is FileDownloadAborted) {
         return;
       }
-
-      if (progress == 100) {
-        emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
-        return;
-      }
-
-      logger.d('Download progress: $progress');
 
       emit(
         FileDownloadWithProgress(

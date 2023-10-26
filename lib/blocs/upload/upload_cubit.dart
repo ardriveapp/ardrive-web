@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
@@ -335,12 +336,11 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
 
-      _uploadMethod = uploadPreparation.uploadPaymentInfo.defaultPaymentMethod;
-
-      logger.d('Upload method: $_uploadMethod');
-
       final paymentInfo = uploadPreparation.uploadPaymentInfo;
       final uploadPlansPreparation = uploadPreparation.uploadPlansPreparation;
+
+      _uploadMethod = paymentInfo.defaultPaymentMethod;
+      logger.d('Upload method: $_uploadMethod');
 
       if (await _profileCubit.checkIfWalletMismatch()) {
         emit(UploadWalletMismatch());
@@ -420,6 +420,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   bool hasEmittedError = false;
+  bool hasEmittedWarning = false;
 
   Future<void> startUpload({
     required UploadPlan uploadPlanForAr,
@@ -454,6 +455,23 @@ class UploadCubit extends Cubit<UploadState> {
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
     if (configService.config.useNewUploader) {
+      if (_uploadMethod == UploadMethod.turbo) {
+        await _verifyIfUploadContainsLargeFilesUsingTurbo();
+        if (!hasEmittedWarning && kIsWeb && !await AppPlatform.isChrome()) {
+          emit(
+            UploadShowingWarning(
+              reason: UploadWarningReason.fileTooLargeOnNonChromeBrowser,
+              uploadPlanForAR: uploadPlanForAr,
+              uploadPlanForTurbo: uploadPlanForTurbo,
+            ),
+          );
+          hasEmittedWarning = true;
+          return;
+        }
+      } else {
+        _containsLargeTurboUpload = false;
+      }
+
       if (uploadFolders) {
         await _uploadFolderUsingArDriveUploader();
         return;
@@ -564,6 +582,7 @@ class UploadCubit extends Cubit<UploadState> {
             progress: progress,
             controller: uploadController,
             uploadMethod: _uploadMethod!,
+            containsLargeTurboUpload: _containsLargeTurboUpload!,
           ),
         );
       },
@@ -703,11 +722,7 @@ class UploadCubit extends Cubit<UploadState> {
     );
   }
 
-  // TODO: implement this
-  void retryUploads(UploadController controller) {}
-
-  // TODO: implement this
-  void retryTask(UploadController controller, UploadTask task) {}
+  bool? _containsLargeTurboUpload;
 
   Future<void> _uploadUsingArDriveUploader() async {
     final ardriveUploader = ArDriveUploader(
@@ -761,7 +776,7 @@ class UploadCubit extends Cubit<UploadState> {
     });
 
     uploadController.onProgressChange(
-      (progress) {
+      (progress) async {
         // TODO: Save as the file is finished the upload
 
         emit(
@@ -771,6 +786,7 @@ class UploadCubit extends Cubit<UploadState> {
             controller: uploadController,
             equatableBust: UniqueKey(),
             uploadMethod: _uploadMethod!,
+            containsLargeTurboUpload: _containsLargeTurboUpload!,
           ),
         );
       },
@@ -800,6 +816,19 @@ class UploadCubit extends Cubit<UploadState> {
         unawaited(_profileCubit.refreshBalance());
       },
     );
+  }
+
+  Future<void> _verifyIfUploadContainsLargeFilesUsingTurbo() async {
+    if (_containsLargeTurboUpload == null) {
+      _containsLargeTurboUpload = false;
+
+      for (var file in files) {
+        if (await file.ioFile.length >= largeFileUploadSizeThreshold) {
+          _containsLargeTurboUpload = true;
+          break;
+        }
+      }
+    }
   }
 
   Future _saveEntityOnDB(UploadTask task) async {
@@ -988,7 +1017,11 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       if (fileAboveWarningLimit) {
-        emit(UploadShowingWarning(reason: UploadWarningReason.fileTooLarge));
+        emit(UploadShowingWarning(
+          reason: UploadWarningReason.fileTooLarge,
+          uploadPlanForAR: null,
+          uploadPlanForTurbo: null,
+        ));
 
         return;
       }
@@ -1031,6 +1064,7 @@ class UploadCubit extends Cubit<UploadState> {
             totalProgress: state.totalProgress,
             isCanceling: true,
             uploadMethod: _uploadMethod!,
+            containsLargeTurboUpload: state.containsLargeTurboUpload,
           ),
         );
 
@@ -1044,6 +1078,7 @@ class UploadCubit extends Cubit<UploadState> {
             totalProgress: state.totalProgress,
             isCanceling: false,
             uploadMethod: _uploadMethod!,
+            containsLargeTurboUpload: state.containsLargeTurboUpload,
           ),
         );
 

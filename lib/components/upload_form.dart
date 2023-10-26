@@ -755,7 +755,11 @@ class _UploadFormState extends State<UploadForm> {
                     Text(
                       appLocalizationsOf(context)
                           .weDontRecommendUploadsAboveASafeLimit(
-                        filesize(publicFileSafeSizeLimit),
+                        filesize(
+                          state.reason == UploadWarningReason.fileTooLarge
+                              ? publicFileSafeSizeLimit
+                              : nonChromeBrowserUploadSafeLimitUsingTurbo,
+                        ),
                       ),
                       style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
@@ -768,8 +772,19 @@ class _UploadFormState extends State<UploadForm> {
                   title: appLocalizationsOf(context).cancelEmphasized,
                 ),
                 ModalAction(
-                  action: () =>
-                      context.read<UploadCubit>().checkFilesAboveLimit(),
+                  action: () {
+                    if (state.uploadPlanForAR != null &&
+                        state.reason ==
+                            UploadWarningReason
+                                .fileTooLargeOnNonChromeBrowser) {
+                      return context.read<UploadCubit>().startUpload(
+                            uploadPlanForAr: state.uploadPlanForAR!,
+                            uploadPlanForTurbo: state.uploadPlanForTurbo,
+                          );
+                    }
+
+                    return context.read<UploadCubit>().checkFilesAboveLimit();
+                  },
                   title: appLocalizationsOf(context).proceed,
                 ),
               ],
@@ -1118,6 +1133,35 @@ class _UploadFormState extends State<UploadForm> {
                 color:
                     ArDriveTheme.of(context).themeData.colors.themeFgDefault),
           ),
+
+          if (state.containsLargeTurboUpload) ...[
+            const SizedBox(
+              height: 8,
+            ),
+            Align(
+              alignment: Alignment.center,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Warning!',
+                    style: ArDriveTypography.body
+                        .buttonLargeBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeErrorMuted,
+                        )
+                        .copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  Text('Leaving this page may result in a failed upload',
+                      style: ArDriveTypography.body.buttonLargeBold())
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
