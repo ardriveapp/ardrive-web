@@ -22,7 +22,7 @@ class CommunityOracle {
     final contractData = await _getCommunityContractData();
 
     final CommunityTipPercentage tipPercentage =
-        contractData.settings.fee / 100;
+        contractData.settings.fee / 100.0;
 
     final value = max<int>(
       // Workaround [BigInt] percentage division problems
