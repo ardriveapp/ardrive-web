@@ -182,6 +182,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       fileKey: fileKey,
     );
 
+    final isChrome = await AppPlatform.isChrome();
+
     await for (var progress in downloadStream) {
       if (state is FileDownloadAborted) {
         return;
@@ -198,6 +200,11 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       );
 
       _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
+
+      if (progress == 100 && isChrome) {
+        emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
+        return;
+      }
     }
 
     emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
