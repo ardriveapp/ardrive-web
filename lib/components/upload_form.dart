@@ -839,7 +839,10 @@ class _UploadFormState extends State<UploadForm> {
                           'Cancelling this upload may still result in a charge to your wallet. Do you still wish to proceed?',
                       actions: [
                         ModalAction(
-                          action: () => Navigator.pop(context),
+                          action: () {
+                            _isShowingCancelDialog = false;
+                            Navigator.pop(context);
+                          },
                           title: 'No',
                         ),
                         ModalAction(
@@ -855,8 +858,10 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               );
             } else {
-              context.read<UploadCubit>().cancelUpload();
+              return context.read<UploadCubit>().cancelUpload();
             }
+
+            Navigator.pop(context);
           },
           // TODO: localize
           title: state.isCanceling

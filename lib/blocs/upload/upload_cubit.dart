@@ -814,6 +814,9 @@ class UploadCubit extends Cubit<UploadState> {
         }
 
         unawaited(_profileCubit.refreshBalance());
+
+        // all files are uploaded
+        emit(UploadComplete());
       },
     );
   }
@@ -912,9 +915,6 @@ class UploadCubit extends Cubit<UploadState> {
             );
           });
         }
-
-        // all files are uploaded
-        emit(UploadComplete());
       }
     }
   }
