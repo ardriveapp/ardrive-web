@@ -460,7 +460,10 @@ class UploadCubit extends Cubit<UploadState> {
     if (configService.config.useNewUploader) {
       if (_uploadMethod == UploadMethod.turbo) {
         await _verifyIfUploadContainsLargeFilesUsingTurbo();
-        if (!hasEmittedWarning && kIsWeb && !await AppPlatform.isChrome()) {
+        if ((_containsLargeTurboUpload ?? false) &&
+            !hasEmittedWarning &&
+            kIsWeb &&
+            !await AppPlatform.isChrome()) {
           emit(
             UploadShowingWarning(
               reason: UploadWarningReason.fileTooLargeOnNonChromeBrowser,
