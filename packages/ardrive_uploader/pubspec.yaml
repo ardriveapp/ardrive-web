@@ -16,11 +16,11 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-3699-uploads-large-files-for-public-drives
+      ref: v1.4.0
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-4812-cancel-button-fails-to-stop-file-upload-when-using-a-rs-only
+      ref: v3.8.0
   ardrive_utils:
     path: ../ardrive_utils
   ardrive_crypto:
@@ -40,8 +40,8 @@ dependencies:
   fpdart: ^1.1.0
   fetch_client:
     git:
-      url: https://github.com/karlprieb/fetch_client.git
-      ref: ignore-headers
+      url: https://github.com/thiagocarvalhodev/fetch_client.git
+      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
   http: ^1.1.0
 
 dev_dependencies:
