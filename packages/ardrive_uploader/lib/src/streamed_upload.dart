@@ -10,6 +10,8 @@ abstract class StreamedUpload<T, R> {
     Wallet wallet,
     UploadController controller,
   );
+
+  Future<void> cancel(T handle, UploadController controller);
 }
 
 class StreamedUploadFactory {

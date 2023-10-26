@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -86,7 +85,7 @@ class SnapshotEntity extends Entity {
   }
 
   Future<DataItem> asPreparedDataItem({
-    required ArweaveAddress owner,
+    required ArweaveAddressString owner,
   }) async {
     final dataItem = DataItem()
       ..setOwner(owner)

@@ -20,7 +20,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-3697
+      ref: PE-4812-cancel-button-fails-to-stop-file-upload-when-using-a-rs-only
   ardrive_utils:
     path: ../ardrive_utils
   ardrive_crypto:
@@ -29,6 +29,8 @@ dependencies:
     path: ../arconnect
   arfs:
     path: ../arfs
+  pst:
+    path: ../pst
   json_annotation: ^4.8.0
   uuid: ^3.0.4
   system_info_plus: ^0.0.5

@@ -7,7 +7,6 @@ import 'package:ardrive/download/download_utils.dart';
 import 'package:ardrive/download/multiple_download_bloc.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:bloc_test/bloc_test.dart';

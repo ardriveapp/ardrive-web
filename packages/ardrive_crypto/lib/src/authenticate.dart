@@ -1,3 +1,6 @@
+// TODO: this class could be useful. It's not used anywhere in the app, but it could be used to authenticate a transaction.
+// The Authenticate class is tightly coupled with ArweaveService and TransactionCommonMixin
+
 // import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 // import 'package:ardrive/utils/data_size.dart';
 // import 'package:arweave/arweave.dart';

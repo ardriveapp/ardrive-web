@@ -1,0 +1,34 @@
+name: pst
+description: A new Flutter package project.
+version: 0.0.1
+homepage:
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.1.3 <4.0.0'
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  arweave:
+    git:
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: PE-3697
+  ardrive_http:
+    git:
+      url: https://github.com/ar-io/ardrive_http.git
+      ref: v1.3.1
+  universal_html: ^2.2.4
+  ardrive_utils:
+    path: ../ardrive_utils
+  equatable: ^2.0.5
+  retry: ^3.1.2
+  mocktail: ^0.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:

@@ -7,7 +7,7 @@ version: 2.21.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
-  flutter: 3.10.2
+  flutter: 3.13.2
 
 # https://pub.dev/packages/script_runner
 script_runner:
@@ -49,6 +49,8 @@ dependencies:
   ardrive_crypto:
     path: ./packages/ardrive_crypto
   artemis: ^7.0.0-beta.13
+  pst:
+    path: ./packages/pst
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
@@ -125,6 +127,7 @@ dependencies:
   dio: ^5.3.2
   provider: ^6.0.5
   just_audio: ^0.9.34
+  loading_animation_widget: ^1.2.0+4
   synchronized: ^3.1.0
 
 dependency_overrides:
@@ -135,7 +138,7 @@ dependency_overrides:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-3697
+      ref: PE-4812-cancel-button-fails-to-stop-file-upload-when-using-a-rs-only
   stripe_js:
     git:
       url: https://github.com/ardriveapp/flutter_stripe/
@@ -148,8 +151,8 @@ dependency_overrides:
       ref: main
   fetch_client:
     git:
-      url: https://github.com/karlprieb/fetch_client.git
-      ref: ignore-headers
+      url: https://github.com/thiagocarvalhodev/fetch_client.git
+      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
   http: ^1.1.0
 
 dev_dependencies:

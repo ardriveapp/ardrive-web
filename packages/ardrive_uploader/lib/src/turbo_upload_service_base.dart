@@ -12,5 +12,5 @@ abstract class TurboUploadService<T> {
     required Map<String, dynamic> headers,
   });
 
-  bool get isPossibleGetProgress;
+  Future<void> cancel();
 }

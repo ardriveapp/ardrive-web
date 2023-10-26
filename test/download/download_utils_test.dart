@@ -1,7 +1,7 @@
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/download/download_utils.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
-import 'package:ardrive/utils/data_size.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 

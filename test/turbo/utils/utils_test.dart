@@ -2,13 +2,13 @@ import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('convertCreditsToLiteralString', () {
+  group('convertWinstonToLiteralString', () {
     test('returns correct literal credits string', () {
       expect(
-          convertCreditsToLiteralString(BigInt.from(5000000000000)), '5.0000');
+          convertWinstonToLiteralString(BigInt.from(5000000000000)), '5.0000');
       expect(
-          convertCreditsToLiteralString(BigInt.from(1234567890000)), '1.2346');
-      expect(convertCreditsToLiteralString(BigInt.from(0)), '0.0000');
+          convertWinstonToLiteralString(BigInt.from(1234567890000)), '1.2346');
+      expect(convertWinstonToLiteralString(BigInt.from(0)), '0.0000');
     });
   });
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:fetch_client/fetch_client.dart';
@@ -19,6 +20,15 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required this.turboUploadUri,
   });
 
+  final _fetchController = StreamController<List<int>>(sync: false);
+  CancelToken _cancelToken = CancelToken();
+
+  final client = FetchClient(
+    mode: RequestMode.cors,
+    streamRequests: true,
+    cache: RequestCache.noCache,
+  );
+
   @override
   Future<dynamic> postStream({
     required DataItemResult dataItem,
@@ -28,12 +38,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required Map<String, dynamic> headers,
   }) {
     // max of 500mib
-    if (dataItem.dataItemSize <= 1024 * 1024 * 500) {
-      _isPossibleGetProgress = true;
-
-      // TODO: Add this to the task instead of the controller
-      // controller.isPossibleGetProgress = true;
-
+    if (dataItem.dataItemSize <= MiB(500).size) {
       return _uploadWithDio(
         dataItem: dataItem,
         wallet: wallet,
@@ -61,33 +66,36 @@ class TurboUploadServiceImpl implements TurboUploadService {
   }) async {
     final url = '$turboUploadUri/v1/tx';
 
-    int dataItemSize = 0;
-
-    // TODO: remove after fixing the issue with the size of the upload
-    await for (final data in dataItem.streamGenerator()) {
-      dataItemSize += data.length;
-    }
-
     final dio = Dio();
+    try {
+      final response = await dio.post(
+        url,
+        onSendProgress: (sent, total) {
+          onSendProgress?.call(sent / total);
+        },
+        data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
+        options: Options(
+          headers: {
+            // stream
+            Headers.contentTypeHeader: 'application/octet-stream',
+            Headers.contentLengthHeader: size, // Set the content-length.
+          }..addAll(headers),
+        ),
+        cancelToken: _cancelToken,
+      );
+      
+      print('Response from turbo: ${response.statusCode}');
 
-    final response = await dio.post(
-      url,
-      onSendProgress: (sent, total) {
-        onSendProgress?.call(sent / total);
-      },
-      data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
-      options: Options(
-        headers: {
-          // stream
-          Headers.contentTypeHeader: 'application/octet-stream',
-          Headers.contentLengthHeader: dataItemSize, // Set the content-length.
-        }..addAll(headers),
-      ),
-    );
+      return response;
+    } catch (e) {
+      print('Error on turbo upload: $e');
+      if (_isCanceled) {
+        _cancelToken = CancelToken();
 
-    print('Response from turbo: ${response.statusCode}');
-
-    return response;
+        _cancelToken.cancel();
+      }
+      rethrow;
+    }
   }
 
   Future<FetchResponse> _uploadStreamWithFetchClient({
@@ -100,11 +108,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
     final url = '$turboUploadUri/v1/tx';
 
     int dataItemSize = 0;
-
-    // TODO: remove after fixing the issue with the size of the upload
-    await for (final data in dataItem.streamGenerator()) {
-      dataItemSize += data.length;
-    }
 
     StreamTransformer<Uint8List, Uint8List> createPassthroughTransformer() {
       return StreamTransformer.fromHandlers(
@@ -120,23 +123,15 @@ class TurboUploadServiceImpl implements TurboUploadService {
       );
     }
 
-    final client = FetchClient(
-      mode: RequestMode.cors,
-      streamRequests: true,
-      cache: RequestCache.noCache,
-    );
-
-    final controller = StreamController<List<int>>(sync: false);
-
     final request = ArDriveStreamedRequest(
       'POST',
       Uri.parse(url),
-      controller,
+      _fetchController,
     )..headers.addAll({
         'content-type': 'application/octet-stream',
       });
 
-    controller
+    _fetchController
         .addStream(
       dataItem.streamGenerator().transform(
             createPassthroughTransformer(),
@@ -147,27 +142,41 @@ class TurboUploadServiceImpl implements TurboUploadService {
       request.sink.close();
     });
 
-    controller.onPause = () {
+    _fetchController.onPause = () {
       print('Paused');
     };
 
-    controller.onResume = () {
+    _fetchController.onResume = () {
       print('Resumed');
     };
 
-    request.contentLength = dataItemSize;
+    try {
+      request.contentLength = dataItemSize;
+      request.persistentConnection = false;
 
-    final response = await client.send(request);
+      print('is persistent connection?${request.persistentConnection}');
 
-    print(await utf8.decodeStream(response.stream));
+      final response = await client.send(request);
 
-    return response;
+      print(await utf8.decodeStream(response.stream));
+
+      return response;
+    } catch (e) {
+      print('Error on turbo upload using FetchClient: $e');
+      rethrow;
+    }
   }
 
   @override
-  bool get isPossibleGetProgress => _isPossibleGetProgress;
+  Future<void> cancel() async {
+    _cancelToken.cancel();
+    client.close();
+    _fetchController.close();
+    _isCanceled = true;
+    print('Stream closed');
+  }
 
-  bool _isPossibleGetProgress = false;
+  bool _isCanceled = false;
 }
 
 class TurboUploadExceptions implements Exception {}
