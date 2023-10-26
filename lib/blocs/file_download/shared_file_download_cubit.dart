@@ -40,8 +40,13 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     String? cipherIvTag;
     final isPinFile = revision.pinnedDataOwnerAddress != null;
 
+    if (revision.dataTxId == null) {
+      logger.e('Data transaction id is null');
+      throw StateError('Data transaction id is null');
+    }
+
     if (fileKey != null && !isPinFile) {
-      final dataTx = await (_arweave.getTransactionDetails(revision.dataTxId!));
+      final dataTx = await _arweave.getTransactionDetails(revision.dataTxId!);
 
       if (dataTx == null) {
         throw StateError('Data transaction not found');
