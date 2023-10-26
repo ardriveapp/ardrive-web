@@ -363,10 +363,10 @@ class UploadCubit extends Cubit<UploadState> {
         'Is Zero Balance: $isTurboZeroBalance\n',
       );
 
-      final literalBalance = convertCreditsToLiteralString(
+      final literalBalance = convertWinstonToLiteralString(
           uploadPreparation.uploadPaymentInfo.turboBalance);
       final literalARBalance =
-          convertARToLiteralString(_auth.currentUser.walletBalance);
+          convertWinstonToLiteralString(_auth.currentUser.walletBalance);
 
       bool isButtonEnabled = false;
       bool sufficientBalanceToPayWithAR =

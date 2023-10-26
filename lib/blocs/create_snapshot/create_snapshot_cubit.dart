@@ -421,7 +421,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _turboBalance = turboBalance;
     _hasNoTurboBalance = turboBalance == BigInt.zero;
-    _turboCredits = convertCreditsToLiteralString(turboBalance);
+    _turboCredits = convertWinstonToLiteralString(turboBalance);
     _sufficentCreditsBalance = _costEstimateTurbo.totalCost <= _turboBalance;
     _computeIsTurboEnabled();
     _computeIsButtonEnabled();
@@ -464,8 +464,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _turboBalance = turboBalance;
     _hasNoTurboBalance = turboBalance == BigInt.zero;
-    _turboCredits = convertCreditsToLiteralString(turboBalance);
-    _arBalance = convertCreditsToLiteralString(auth.currentUser.walletBalance);
+    _turboCredits = convertWinstonToLiteralString(turboBalance);
+    _arBalance = convertWinstonToLiteralString(auth.currentUser.walletBalance);
   }
 
   void _computeIsTurboEnabled() async {
