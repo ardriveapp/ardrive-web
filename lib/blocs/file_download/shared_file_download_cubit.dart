@@ -36,11 +36,13 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
-    String? cipher;
+    String? cipherTag;
     String? cipherIvTag;
     final isPinFile = revision.pinnedDataOwnerAddress != null;
 
-    if (revision.dataTxId == null) {
+    final dataTxId = revision.dataTxId;
+
+    if (dataTxId == null) {
       logger.e('Data transaction id is null');
       throw StateError('Data transaction id is null');
     }
@@ -52,18 +54,18 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
         throw StateError('Data transaction not found');
       }
 
-      cipher = dataTx.getTag(EntityTag.cipher);
+      cipherTag = dataTx.getTag(EntityTag.cipher);
       cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
     }
 
     final downloadStream = _arDriveDownloader.downloadFile(
-      dataTx: revision.dataTxId!,
+      dataTx: dataTxId,
       fileName: revision.name,
       fileSize: revision.size,
       lastModifiedDate: revision.lastModifiedDate,
       contentType:
           revision.contentType ?? lookupMimeTypeWithDefaultType(revision.name),
-      cipher: cipher,
+      cipher: cipherTag,
       cipherIvString: cipherIvTag,
       fileKey: fileKey,
       isManifest: revision.contentType == ContentType.manifest,
