@@ -2,21 +2,28 @@ import 'dart:math';
 
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
-import 'package:pst/src/contract_oracle.dart';
+import 'package:pst/pst.dart';
 import 'package:pst/src/utils.dart';
 
 /// Minimum ArDrive community tip from the Community Improvement Proposal Doc:
 /// https://arweave.net/Yop13NrLwqlm36P_FDCdMaTBwSlj0sdNGAC4FqfRUgo
 final minArDriveCommunityWinstonTip = Winston(BigInt.from(10000000));
 
+// TODO: implement unit tests
 class CommunityOracle {
   final ContractOracle _contractOracle;
+  CommunityContractData? _communityContractData;
+  DateTime? _lastFetchedTime;
 
   CommunityOracle(ContractOracle contractOracle)
       : _contractOracle = contractOracle;
 
   Future<Winston> getCommunityWinstonTip(Winston winstonCost) async {
-    final tipPercentage = await _contractOracle.getTipPercentageFromContract();
+    final contractData = await _getCommunityContractData();
+
+    final CommunityTipPercentage tipPercentage =
+        contractData.settings.fee / 100;
+
     final value = max<int>(
       // Workaround [BigInt] percentage division problems
       // by first multiplying by the percentage * 100 and then dividing by 100.
@@ -24,13 +31,15 @@ class CommunityOracle {
           .toInt(),
       minArDriveCommunityWinstonTip.value.toInt(),
     );
+
     return Winston(BigInt.from(value));
   }
 
   Future<ArweaveAddress> selectTokenHolder({
     double? testingRandom, // for testing purposes only
   }) async {
-    final contract = await _contractOracle.getCommunityContract();
+    final contract = await _getCommunityContractData();
+
     final Map<ArweaveAddress, int> balances = Map.from(contract.balances);
     final vault = contract.vault;
 
@@ -81,6 +90,22 @@ class CommunityOracle {
     }
 
     return randomHolder;
+  }
+
+  Future<CommunityContractData> _getCommunityContractData() async {
+    final currentTime = DateTime.now();
+
+    if (_communityContractData != null &&
+        _lastFetchedTime != null &&
+        currentTime.difference(_lastFetchedTime!).inMinutes < 30) {
+      return _communityContractData!;
+    }
+
+    _communityContractData = await _contractOracle.getCommunityContract();
+
+    _lastFetchedTime = currentTime;
+
+    return _communityContractData!;
   }
 }
 

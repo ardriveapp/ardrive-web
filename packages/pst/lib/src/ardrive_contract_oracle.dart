@@ -47,11 +47,11 @@ class ArDriveContractOracle implements ContractOracle {
       debugPrint('Could not read contract state from any of the oracles');
       if (_fallbackContractOracle == null) {
         throw const CouldNotReadContractState(
-          reason: 'Max retry attempts reached',
+          reason: 'No fallback contract reader provided',
         );
       }
 
-      return _fallbackContractOracle!.getCommunityContract();
+      return _getContractWithRetries(_fallbackContractOracle!);
     }
   }
 

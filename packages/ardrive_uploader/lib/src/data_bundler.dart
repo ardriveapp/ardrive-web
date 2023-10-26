@@ -294,8 +294,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
           totalSize: size,
         );
 
-        final communityTip =
-            await pstService.getCommunityTip(uploadCost.totalCost);
+        final target = await pstService.getWeightedPstHolder();
 
         return createTransactionTaskEither(
           quantity: uploadCost.pstFee,
@@ -303,7 +302,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
           dataStreamGenerator: r.stream,
           dataSize: size,
           tags: bundledDataItemTags,
-          target: communityTip.target,
+          target: target.toString(),
         );
       },
     );

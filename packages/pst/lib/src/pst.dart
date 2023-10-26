@@ -7,8 +7,6 @@ export 'enums.dart';
 
 class PstService {
   final CommunityOracle _communityOracle;
-  CommunityTip? _communityTip;
-  DateTime? _lastFetchedTime;
 
   PstService({required CommunityOracle communityOracle})
       : _communityOracle = communityOracle;
@@ -18,9 +16,7 @@ class PstService {
       _communityOracle.selectTokenHolder();
 
   Future<Winston> getPSTFee(BigInt uploadCost) async {
-    await getCommunityTip(uploadCost);
-
-    return _communityTip!.quantity;
+    return _getPSTFee(uploadCost);
   }
 
   Future<Winston> _getPSTFee(BigInt uploadCost) async {
@@ -35,31 +31,4 @@ class PstService {
     tx.setTarget((await getWeightedPstHolder()).toString());
     tx.setQuantity((await getPSTFee(tx.reward)).value);
   }
-
-  Future<CommunityTip> getCommunityTip(BigInt uploadCost) async {
-    final currentTime = DateTime.now();
-
-    if (_communityTip != null &&
-        _lastFetchedTime != null &&
-        currentTime.difference(_lastFetchedTime!).inMinutes < 30) {
-      return _communityTip!;
-    }
-
-    _communityTip = CommunityTip(
-      (await getWeightedPstHolder()).toString(),
-      await _getPSTFee(uploadCost),
-    );
-
-    _lastFetchedTime = currentTime;
-
-    return _communityTip!;
-  }
-}
-
-class CommunityTip {
-  final Tag tag = Tag(TipType.tagName, TipType.dataUpload);
-  final String target;
-  final Winston quantity;
-
-  CommunityTip(this.target, this.quantity);
 }
