@@ -8,7 +8,7 @@ The ArDrive Web App allows a user to log in to securely view, upload and manage 
 Have any questions? Join the ArDrive Discord channel for support, news and updates. https://discord.gg/ya4hf2H
 
 ## Setting up the Development Environment
-
+****
 Install lefthook for your platform from the intructions [here](https://github.com/evilmartians/lefthook/blob/master/docs/other.md).
 This will enable the use of git hooks.
 After installing lefthook you need to enable it by running:

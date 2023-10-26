@@ -29,17 +29,20 @@ Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions({
       continue;
     }
     // If Parent-Folder-Id is missing for a file, put it in the root folder
+    try {
+      entity.parentFolderId = entity.parentFolderId ?? rootPath;
+      final revision =
+          entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
-    entity.parentFolderId = entity.parentFolderId ?? rootPath;
-    final revision =
-        entity.toRevisionCompanion(performedAction: revisionPerformedAction);
+      if (revision.action.value.isEmpty) {
+        continue;
+      }
 
-    if (revision.action.value.isEmpty) {
-      continue;
+      newRevisions.add(revision);
+      latestRevisions[entity.id!] = revision;
+    } catch (e) {
+      logger.e('Error adding revision for entity: ${entity.id}', e);
     }
-
-    newRevisions.add(revision);
-    latestRevisions[entity.id!] = revision;
   }
 
   await database.batch((b) {

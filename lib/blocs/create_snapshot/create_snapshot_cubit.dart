@@ -7,25 +7,24 @@ import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
-import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pst/pst.dart';
 import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -422,7 +421,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _turboBalance = turboBalance;
     _hasNoTurboBalance = turboBalance == BigInt.zero;
-    _turboCredits = convertCreditsToLiteralString(turboBalance);
+    _turboCredits = convertWinstonToLiteralString(turboBalance);
     _sufficentCreditsBalance = _costEstimateTurbo.totalCost <= _turboBalance;
     _computeIsTurboEnabled();
     _computeIsButtonEnabled();
@@ -465,8 +464,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _turboBalance = turboBalance;
     _hasNoTurboBalance = turboBalance == BigInt.zero;
-    _turboCredits = convertCreditsToLiteralString(turboBalance);
-    _arBalance = convertCreditsToLiteralString(auth.currentUser.walletBalance);
+    _turboCredits = convertWinstonToLiteralString(turboBalance);
+    _arBalance = convertWinstonToLiteralString(auth.currentUser.walletBalance);
   }
 
   void _computeIsTurboEnabled() async {
@@ -550,7 +549,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   Future<Uint8List> _jsonMetadataOfTxId(String txId) async {
     final drive =
         await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
-    final isPrivate = drive != null && drive.privacy != DrivePrivacy.public;
+    final isPrivate = drive != null && drive.privacy != DrivePrivacyTag.public;
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),

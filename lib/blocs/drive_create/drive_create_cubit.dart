@@ -1,13 +1,13 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
     show DrivePrivacy;
-import 'package:ardrive/entities/constants.dart' as constants;
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -19,9 +19,7 @@ part 'drive_create_state.dart';
 class DriveCreateCubit extends Cubit<DriveCreateState> {
   final form = FormGroup({
     'privacy': FormControl<String>(
-      value: DrivePrivacy.private.name,
-      validators: [Validators.required],
-    ),
+        value: DrivePrivacyTag.private, validators: [Validators.required]),
   });
 
   final ArweaveService _arweave;
@@ -85,8 +83,8 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         name: driveName,
         rootFolderId: createRes.rootFolderId,
         privacy: drivePrivacy,
-        authMode: drivePrivacy == constants.DrivePrivacy.private
-            ? constants.DriveAuthMode.password
+        authMode: drivePrivacy == DrivePrivacyTag.private
+            ? DriveAuthModeTag.password
             : null,
       );
 

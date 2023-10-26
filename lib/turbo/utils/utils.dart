@@ -1,4 +1,4 @@
-String convertCreditsToLiteralString(BigInt credits) {
+String convertWinstonToLiteralString(BigInt credits) {
   final creditsAsAr = convertWinstonToAr(credits);
   final creditsString = creditsAsAr.toStringAsFixed(4);
 

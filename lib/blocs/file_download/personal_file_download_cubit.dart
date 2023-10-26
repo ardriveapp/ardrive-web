@@ -22,27 +22,37 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   final DriveDao _driveDao;
   final ArweaveService _arweave;
-  final ArDriveDownloader _downloader;
-  final DownloadService _downloadService;
+  final io.ArDriveMobileDownloader _downloader;
+  final ArDriveDownloader _arDriveDownloader;
   final ARFSRepository _arfsRepository;
-  final ArDriveCrypto _crypto;
 
   ProfileFileDownloadCubit({
     required ARFSFileEntity file,
     required DriveDao driveDao,
     required ArweaveService arweave,
-    required ArDriveDownloader downloader,
-    required DownloadService downloadService,
+    required io.ArDriveMobileDownloader downloader,
+    required ArDriveDownloader arDriveDownloader,
     required ARFSRepository arfsRepository,
     required ArDriveCrypto crypto,
   })  : _driveDao = driveDao,
         _arweave = arweave,
+        _arDriveDownloader = arDriveDownloader,
         _file = file,
         _downloader = downloader,
-        _downloadService = downloadService,
         _arfsRepository = arfsRepository,
-        _crypto = crypto,
         super(FileDownloadStarting());
+
+  Future<void> verifyUploadLimitationsAndDownload(SecretKey? cipherKey) async {
+    if (await AppPlatform.isSafari()) {
+      if (_file.size > publicDownloadSafariSizeLimit) {
+        emit(const FileDownloadFailure(
+            FileDownloadFailureReason.browserDoesNotSupportLargeDownloads));
+        return;
+      }
+    }
+
+    download(cipherKey);
+  }
 
   Future<void> download(SecretKey? cipherKey) async {
     try {
@@ -78,6 +88,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
             final stream = _downloader.downloadFile(
               '${_arweave.client.api.gatewayUrl.origin}/${_file.txId}',
               _file.name,
+              _file.contentType,
             );
 
             await for (int progress in stream) {
@@ -90,6 +101,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
                   fileName: _file.name,
                   progress: progress,
                   fileSize: _file.size,
+                  contentType: _file.contentType ??
+                      lookupMimeTypeWithDefaultType(_file.name),
                 ),
               );
               _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
@@ -119,24 +132,17 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
-    final dataBytes = await _downloadService.download(
-        _file.txId, _file.contentType == constants.ContentType.manifest);
+    logger
+        .d('Downloading file ${_file.name} and dataTxId is ${_file.dataTxId}');
 
-    if (drive.drivePrivacy == DrivePrivacy.private) {
+    String? cipher;
+    String? cipherIvTag;
+    SecretKey? fileKey;
+
+    final isPinFile = _file.pinnedDataOwnerAddress != null;
+
+    if (drive.drivePrivacy == DrivePrivacy.private && !isPinFile) {
       SecretKey? driveKey;
-
-      final isPinFile = _file.pinnedDataOwnerAddress != null;
-      if (isPinFile) {
-        emit(
-          FileDownloadSuccess(
-            bytes: dataBytes,
-            fileName: _file.name,
-            mimeType: _file.contentType ?? lookupMimeType(_file.name),
-            lastModified: _file.lastModifiedDate,
-          ),
-        );
-        return;
-      }
 
       if (cipherKey != null) {
         driveKey = await _driveDao.getDriveKey(
@@ -151,36 +157,57 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         throw StateError('Drive Key not found');
       }
 
-      final fileKey = await _driveDao.getFileKey(_file.id, driveKey);
+      fileKey = await _driveDao.getFileKey(_file.id, driveKey);
+
       final dataTx = await (_arweave.getTransactionDetails(_file.txId));
 
-      if (dataTx != null) {
-        final decryptedData = await _crypto.decryptTransactionData(
-          dataTx,
-          dataBytes,
-          fileKey,
-        );
+      if (dataTx == null) {
+        throw StateError('Data transaction not found');
+      }
 
-        emit(
-          FileDownloadSuccess(
-            bytes: decryptedData,
-            fileName: _file.name,
-            mimeType: _file.contentType ?? lookupMimeType(_file.name),
-            lastModified: _file.lastModifiedDate,
-          ),
-        );
+      cipher = dataTx.getTag(EntityTag.cipher);
+      cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
+    }
+
+    final downloadStream = _arDriveDownloader.downloadFile(
+      dataTx: _file.txId,
+      fileName: _file.name,
+      fileSize: _file.size,
+      lastModifiedDate: _file.lastModifiedDate,
+      isManifest: _file.contentType == ContentType.manifest,
+      contentType:
+          _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
+      cipher: cipher,
+      cipherIvString: cipherIvTag,
+      fileKey: fileKey,
+    );
+
+    final isChrome = await AppPlatform.isChrome();
+
+    await for (var progress in downloadStream) {
+      if (state is FileDownloadAborted) {
+        return;
+      }
+
+      emit(
+        FileDownloadWithProgress(
+          fileName: _file.name,
+          progress: progress.toInt(),
+          fileSize: _file.size,
+          contentType:
+              _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
+        ),
+      );
+
+      _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
+
+      if (progress == 100 && isChrome) {
+        emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
         return;
       }
     }
 
-    emit(
-      FileDownloadSuccess(
-        bytes: dataBytes,
-        fileName: _file.name,
-        mimeType: _file.contentType ?? lookupMimeType(_file.name),
-        lastModified: _file.lastModifiedDate,
-      ),
-    );
+    emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
   }
 
   @visibleForTesting
