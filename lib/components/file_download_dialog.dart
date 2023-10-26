@@ -37,7 +37,10 @@ Future<void> promptToDownloadProfileFile({
       ARFSFactory(),
     ),
     arDriveDownloader: ArDriveDownloader(
-        ardriveIo: ArDriveIO(), ioFileAdapter: IOFileAdapter()),
+      ardriveIo: ArDriveIO(),
+      ioFileAdapter: IOFileAdapter(),
+      arweave: arweave,
+    ),
     downloader: ArDriveMobileDownloader(),
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
@@ -72,7 +75,10 @@ Future<void> promptToDownloadFileRevision({
       ARFSFactory(),
     ),
     arDriveDownloader: ArDriveDownloader(
-        ardriveIo: ArDriveIO(), ioFileAdapter: IOFileAdapter()),
+      ardriveIo: ArDriveIO(),
+      ioFileAdapter: IOFileAdapter(),
+      arweave: arweave,
+    ),
     downloader: ArDriveMobileDownloader(),
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
