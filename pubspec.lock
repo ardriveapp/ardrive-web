@@ -84,8 +84,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3699-uploads-large-files-for-public-drives
-      resolved-ref: "8c6ac43b14874b7078548b830ad1c8394109491c"
+      ref: "v1.4.0"
+      resolved-ref: "487156d476ad1612967348e5ae154147e481a77f"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.0"
@@ -93,11 +93,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.12.0"
-      resolved-ref: e8af5815f7e1c27fa72544a379971d4630599805
+      ref: "v1.13.0"
+      resolved-ref: adf682c8729512cbf91624143c7149158e0585dd
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.12.0"
+    version: "1.13.0"
   ardrive_uploader:
     dependency: "direct main"
     description:
@@ -139,11 +139,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-4812-cancel-button-fails-to-stop-file-upload-when-using-a-rs-only
-      resolved-ref: "0fd825555310a1a5bf5d256328c3f207ce148a5e"
+      ref: "v3.8.0"
+      resolved-ref: a61f9d73ee5eac1b6a169d6ccc6dc1948aa39b8f
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "3.7.0"
+    version: "3.8.0"
   async:
     dependency: "direct main"
     description:
@@ -569,7 +569,7 @@ packages:
     source: hosted
     version: "1.0.1"
   fetch_client:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       path: "."
       ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
@@ -2306,5 +2306,5 @@ packages:
     source: hosted
     version: "3.1.2"
 sdks:
-  dart: ">=3.1.3 <4.0.0"
+  dart: ">=3.1.0 <4.0.0"
   flutter: ">=3.13.6"
