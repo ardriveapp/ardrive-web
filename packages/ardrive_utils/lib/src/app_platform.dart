@@ -50,6 +50,16 @@ class AppPlatform {
     final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
     return info is WebBrowserInfo && info.browserName == BrowserName.firefox;
   }
+
+  static Future<bool> isChrome({DeviceInfoPlugin? deviceInfo}) async {
+    final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
+    return info is WebBrowserInfo && info.browserName == BrowserName.chrome;
+  }
+
+  static Future<bool> isSafari({DeviceInfoPlugin? deviceInfo}) async {
+    final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
+    return info is WebBrowserInfo && info.browserName == BrowserName.safari;
+  }
 }
 
 // ignore: constant_identifier_names

@@ -45,7 +45,7 @@ Future<void> promptToDownloadProfileFile({
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
     arweave: arweave,
-  )..download(cipherKey);
+  )..verifyUploadLimitationsAndDownload(cipherKey);
   return showArDriveDialog(
     context,
     barrierDismissible: false,
@@ -83,7 +83,7 @@ Future<void> promptToDownloadFileRevision({
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
     arweave: arweave,
-  )..download(cipherKey);
+  )..verifyUploadLimitationsAndDownload(cipherKey);
 
   return showArDriveDialog(
     context,
@@ -148,6 +148,9 @@ class FileDownloadDialog extends StatelessWidget {
           } else if (state is FileDownloadFailure) {
             if (state.reason == FileDownloadFailureReason.unknownError) {
               return _fileDownloadFailedDialog(context);
+            } else if (state.reason ==
+                FileDownloadFailureReason.browserDoesNotSupportLargeDownloads) {
+              return _fileDownloadFailedDueToAboveBrowserLimit(context);
             }
 
             return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
@@ -178,6 +181,21 @@ class FileDownloadDialog extends StatelessWidget {
       title: appLocalizationsOf(context).warningEmphasized,
       description:
           appLocalizationsOf(context).fileFailedToDownloadFileAboveLimit,
+      actions: [
+        ModalAction(
+          action: () => Navigator.pop(context),
+          title: appLocalizationsOf(context).ok,
+        ),
+      ],
+    );
+  }
+
+  ArDriveStandardModal _fileDownloadFailedDueToAboveBrowserLimit(
+      BuildContext context) {
+    return _modalWrapper(
+      title: appLocalizationsOf(context).warningEmphasized,
+      description:
+          appLocalizationsOf(context).fileFailedToDownloadFileAbovePublicLimit,
       actions: [
         ModalAction(
           action: () => Navigator.pop(context),
