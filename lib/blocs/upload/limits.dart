@@ -6,7 +6,7 @@ final mobilePrivateFileSizeLimit = const GiB(10).size;
 
 final publicFileSafeSizeLimit = const GiB(5).size;
 
-int bundleSizeLimit(bool isTurbo) =>
+int getBundleSizeLimit(bool isTurbo) =>
     isTurbo ? turboBundleSizeLimit : d2nBundleSizeLimit;
 
 final d2nBundleSizeLimit = const GiB(65).size;
