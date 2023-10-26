@@ -7,7 +7,7 @@ version: 2.22.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
-  flutter: 3.10.2
+  flutter: 3.13.6
 
 # https://pub.dev/packages/script_runner
 script_runner:
@@ -35,11 +35,11 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.3.0
+      ref: v1.4.0
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: v1.12.0
+      ref: v1.13.0
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:
@@ -52,7 +52,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-3697
+      ref: v3.8.0
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   intersperse: ^2.0.0
@@ -128,14 +128,6 @@ dependencies:
   synchronized: ^3.1.0
 
 dependency_overrides:
-  ardrive_io:
-    git:
-      url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-3699-uploads-large-files-for-public-drives
-  arweave:
-    git:
-      url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-3697
   stripe_js:
     git:
       url: https://github.com/ardriveapp/flutter_stripe/
@@ -146,10 +138,6 @@ dependency_overrides:
       url: https://github.com/ardriveapp/flutter_stripe/
       path: packages/stripe_platform_interface
       ref: main
-  fetch_client:
-    git:
-      url: https://github.com/karlprieb/fetch_client.git
-      ref: ignore-headers
   http: ^1.1.0
 
 dev_dependencies:
