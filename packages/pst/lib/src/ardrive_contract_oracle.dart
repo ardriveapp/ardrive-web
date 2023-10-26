@@ -15,12 +15,7 @@ class ArDriveContractOracle implements ContractOracle {
     List<ContractOracle> contractOracles, {
     ContractOracle? fallbackContractOracle,
   })  : _fallbackContractOracle = fallbackContractOracle,
-        _contractOracles = contractOracles {
-    if (contractOracles.isEmpty) {
-      throw const EmptyContractOracles();
-    }
-  }
-
+        _contractOracles = contractOracles;
   @override
   Future<CommunityContractData> getCommunityContract() async {
     try {
@@ -37,6 +32,10 @@ class ArDriveContractOracle implements ContractOracle {
   /// iterates over all contract readers attempting to read the contract
   Future<CommunityContractData> _getContractFromOracles() async {
     try {
+      if (_contractOracles.isEmpty) {
+        throw const EmptyContractOracles();
+      }
+
       final contract = await getFirstFutureResult<CommunityContractData>(
           _contractOracles
               .map((e) async => await _getContractWithRetries(e))
