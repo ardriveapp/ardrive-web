@@ -78,8 +78,6 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
         return;
       }
 
-      logger.d('Download progress: $progress');
-
       emit(
         FileDownloadWithProgress(
           fileName: revision.name,
