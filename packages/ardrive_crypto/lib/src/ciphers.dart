@@ -6,7 +6,7 @@ import 'package:ardrive_crypto/src/stream_aes.dart';
 import 'package:ardrive_crypto/src/stream_cipher.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 
-StreamingCipher cipherBufferImpl(String cipherName) {
+AesGcm cipherBufferImpl(String cipherName) {
   final impls = {
     Cipher.aes256gcm: AesGcm.with256bits(),
     // Avoid this implementation because it generates a 16 byte nonce by default...
@@ -14,7 +14,7 @@ StreamingCipher cipherBufferImpl(String cipherName) {
   };
   final impl = impls[cipherName];
   if (impl == null) throw ArgumentError();
-  return impl as StreamingCipher;
+  return impl;
 }
 
 FutureOr<DecryptStream> cipherStreamDecryptImpl(

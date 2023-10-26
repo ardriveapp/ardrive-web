@@ -11,6 +11,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
+import 'package:pst/pst.dart';
 
 class FileV2UploadHandle implements UploadHandle {
   final FileEntity entity;

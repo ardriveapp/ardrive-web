@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:ardrive/blocs/upload/models/web_folder.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/entities/folder_entity.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 
@@ -65,7 +65,7 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
       wallet,
       key: driveKey,
     );
-    
+
     await folderEntityTx.sign(wallet);
   }
 
