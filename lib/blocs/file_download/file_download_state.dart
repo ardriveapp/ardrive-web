@@ -81,6 +81,7 @@ class FileDownloadAborted extends FileDownloadState {}
 enum FileDownloadFailureReason {
   unknownError,
   fileAboveLimit,
+  browserDoesNotSupportLargeDownloads,
   networkConnectionError,
   fileNotFound
 }
