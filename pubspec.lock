@@ -1283,6 +1283,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  loading_animation_widget:
+    dependency: "direct main"
+    description:
+      name: loading_animation_widget
+      sha256: "1901682600273a966c34cf44a85fc5355da92a8d08a8a43c11adc4e471993e3a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0+4"
   local_auth:
     dependency: "direct main"
     description:
@@ -1611,6 +1619,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.5"
+  pst:
+    dependency: "direct main"
+    description:
+      path: "packages/pst"
+      relative: true
+    source: path
+    version: "0.0.1"
   pub_semver:
     dependency: transitive
     description:

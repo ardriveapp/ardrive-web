@@ -379,7 +379,7 @@ class UploadPaymentEvaluator {
         .getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles);
 
     bool isUploadEligibleToTurbo =
-        uploadPlanForAR.fileV2UploadHandles.isEmpty &&
+        uploadPlanForTurbo.fileV2UploadHandles.isEmpty &&
             uploadPlanForTurbo.bundleUploadHandles.isNotEmpty;
 
     UploadCostEstimate turboCostEstimate = UploadCostEstimate.zero();

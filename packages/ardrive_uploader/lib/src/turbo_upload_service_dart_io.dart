@@ -15,6 +15,8 @@ class TurboUploadServiceImpl implements TurboUploadService<Response> {
     required this.turboUploadUri,
   });
 
+  CancelToken _cancelToken = CancelToken();
+
   /// We are using Dio directly here. In the future we must adapt our ArDriveHTTP to support
   /// streaming uploads.
   /// This is a temporary solution.
@@ -28,37 +30,47 @@ class TurboUploadServiceImpl implements TurboUploadService<Response> {
   }) async {
     final url = '$turboUploadUri/v1/tx';
 
-    int dataItemSize = 0;
-
-    await for (final data in dataItem.streamGenerator()) {
-      dataItemSize += data.length;
-    }
-
     final dio = Dio();
 
-    final response = await dio.post(
-      url,
-      onSendProgress: (sent, total) {
-        print('Sent: $sent, total: $total');
-        onSendProgress?.call(sent / total);
-      },
-      data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
-      options: Options(
-        headers: {
-          // stream
-          Headers.contentTypeHeader: 'application/octet-stream',
-          Headers.contentLengthHeader: dataItemSize, // Set the content-length.
-        }..addAll(headers),
-      ),
-    );
+    try {
+      final response = await dio.post(
+        url,
+        onSendProgress: (sent, total) {
+          onSendProgress?.call(sent / total);
+        },
+        data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
+        options: Options(
+          headers: {
+            // stream
+            Headers.contentTypeHeader: 'application/octet-stream',
+            Headers.contentLengthHeader: size, // Set the content-length.
+          }..addAll(headers),
+        ),
+        cancelToken: _cancelToken,
+      );
+      print('Response from turbo: ${response.statusCode}');
 
-    print('Response from turbo: ${response.statusCode}');
+      return response;
+    } catch (e) {
+      if (_isCanceled) {
+        _cancelToken = CancelToken();
 
-    return response;
+        _cancelToken.cancel();
+      }
+
+      rethrow;
+    }
   }
 
   @override
-  bool get isPossibleGetProgress => true;
+  Future<void> cancel() {
+    _cancelToken.cancel();
+    print('Stream closed');
+    _isCanceled = true;
+    return Future.value();
+  }
+
+  bool _isCanceled = false;
 }
 
 class TurboUploadExceptions implements Exception {}

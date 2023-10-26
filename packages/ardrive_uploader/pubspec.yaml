@@ -29,6 +29,8 @@ dependencies:
     path: ../arconnect
   arfs:
     path: ../arfs
+  pst:
+    path: ../pst
   json_annotation: ^4.8.0
   uuid: ^3.0.4
   system_info_plus: ^0.0.5

@@ -1,8 +1,8 @@
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 
 import '../../services/arweave/arweave_service.dart';
 

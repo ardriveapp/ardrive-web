@@ -11,7 +11,7 @@ void main() {
 
   group('convertCreditsToLiteralString method', () {
     test('should return 0.0001 when credits is 100000000', () {
-      final result = convertCreditsToLiteralString(BigInt.from(100000000));
+      final result = convertWinstonToLiteralString(BigInt.from(100000000));
       expect(result, '0.0001');
     });
   });

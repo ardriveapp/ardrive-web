@@ -211,13 +211,19 @@ class UploadInProgressUsingNewUploader extends UploadState {
   final UploadProgress progress;
   final UploadController controller;
   final double totalProgress;
+  final bool isCanceling;
   final Key? equatableBust;
+  final UploadMethod uploadMethod;
+  final bool containsLargeTurboUpload;
 
   UploadInProgressUsingNewUploader({
     required this.progress,
     required this.totalProgress,
     required this.controller,
     this.equatableBust,
+    this.isCanceling = false,
+    required this.uploadMethod,
+    required this.containsLargeTurboUpload,
   });
 
   @override
@@ -236,16 +242,27 @@ class UploadWalletMismatch extends UploadState {}
 
 class UploadShowingWarning extends UploadState {
   final UploadWarningReason reason;
+  final UploadPlan? uploadPlanForAR;
+  final UploadPlan? uploadPlanForTurbo;
 
-  UploadShowingWarning({required this.reason});
+  UploadShowingWarning({
+    required this.reason,
+    this.uploadPlanForAR,
+    this.uploadPlanForTurbo,
+  });
 
   @override
   List<Object> get props => [reason];
 }
 
+class UploadCanceled extends UploadState {}
+
+class CancelD2NUploadWarning extends UploadState {}
+
 enum UploadWarningReason {
   /// The user is attempting to upload a file that is too large.
   fileTooLarge,
+  fileTooLargeOnNonChromeBrowser,
 }
 
 enum UploadErrors {
