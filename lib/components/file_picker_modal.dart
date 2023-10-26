@@ -107,6 +107,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                         widget.onClose(content);
                       } catch (e) {
                         if (e is FileSystemPermissionDeniedException) {
+                          // ignore: use_build_context_synchronously
                           await _showCameraPermissionModal(context);
                           logger.e('Camera permission denied', e);
                         }
@@ -217,6 +218,7 @@ Future<bool> verifyStoragePermissionAndShowModalWhenDenied(
     await verifyStoragePermission();
   } catch (e) {
     if (e is FileSystemPermissionDeniedException) {
+      // ignore: use_build_context_synchronously
       await showStoragePermissionModal(context);
     }
     return false;

@@ -2,7 +2,7 @@
   "defaultArweaveGatewayUrl": "https://arweave.net",
   "useTurboUpload": true,
   "useTurboPayment": true,
-  "defaultTurboUploadUrl": "https://upload.ardrive.dev",
+  "defaultTurboUploadUrl": "https://upload.ardrive.io",
   "defaultTurboPaymentUrl": "https://payment.ardrive.dev",
   "allowedDataItemSizeForTurbo": 500000,
   "enableQuickSyncAuthoring": true,
@@ -10,5 +10,6 @@
   "enableVideoPreview": true,
   "enableAudioPreview": true,
   "stripePublishableKey": "pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z",
-  "enablePins": true
+  "enablePins": true,
+  "useNewUploader": true
 }

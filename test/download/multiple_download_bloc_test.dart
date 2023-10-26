@@ -7,11 +7,12 @@ import 'package:ardrive/download/download_utils.dart';
 import 'package:ardrive/download/multiple_download_bloc.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive_http/ardrive_http.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
+// ignore: depend_on_referenced_packages
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -92,9 +93,9 @@ void main() async {
     group('[$groupLabel] -', () {
       setUp(() {
         mockCrypto = MockArDriveCrypto();
-        when(() => mockCrypto.decryptTransactionData(any(), any(), any()))
+        when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
             .thenAnswer((_) async => Uint8List(0));
-        when(() => mockCrypto.decryptTransactionData(
+        when(() => mockCrypto.decryptDataFromTransaction(
             decryptionFailureTransaction, any(), any())).thenThrow(Exception());
         multipleDownloadBloc = createMultipleDownloadBloc(
           arfsRepository: arfsRepository,
@@ -645,7 +646,8 @@ void main() async {
                 .having((s) => s.skippedFiles.length, 'skippedFiles.length', 0),
           ],
           verify: (bloc) {
-            verify(() => mockCrypto.decryptTransactionData(any(), any(), any()))
+            verify(() =>
+                    mockCrypto.decryptDataFromTransaction(any(), any(), any()))
                 .called(1);
           },
         );

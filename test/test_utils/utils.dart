@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io' if (dart.library.html) 'dart:html';
 import 'dart:math';
 
-import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -54,7 +54,7 @@ Future<void> addTestFilesToDb(
         rootFolderId: rootFolderId,
         ownerAddress: 'fake-owner-address',
         name: 'fake-drive-name',
-        privacy: DrivePrivacy.public,
+        privacy: DrivePrivacyTag.public,
       ),
     );
     // Create fake root folder for drive and sub folders
