@@ -84,8 +84,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.0"
-      resolved-ref: "487156d476ad1612967348e5ae154147e481a77f"
+      ref: PE-4896-drag-and-drop-applies-wrong-content-type-to-files
+      resolved-ref: "43398cdcd4da47e7e05a59908f9b1f93c624cc11"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.0"
@@ -93,8 +93,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.13.0"
-      resolved-ref: adf682c8729512cbf91624143c7149158e0585dd
+      ref: PE-4896-drag-and-drop-applies-wrong-content-type-to-files
+      resolved-ref: "3245c8f7396a613dbcd6d92f84c0f60f379d660c"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.13.0"

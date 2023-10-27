@@ -35,11 +35,11 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.0
+      ref: PE-4896-drag-and-drop-applies-wrong-content-type-to-files
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: v1.13.0
+      ref: PE-4896-drag-and-drop-applies-wrong-content-type-to-files
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:
@@ -142,6 +142,14 @@ dependency_overrides:
       path: packages/stripe_platform_interface
       ref: main
   http: ^1.1.0
+  ardrive_io:
+    git:
+      url: https://github.com/ar-io/ardrive_io.git
+      ref: PE-4896-drag-and-drop-applies-wrong-content-type-to-files
+  ardrive_ui:
+    git:
+      url: https://github.com/ar-io/ardrive_ui.git
+      ref: PE-4896-drag-and-drop-applies-wrong-content-type-to-files
 
 dev_dependencies:
   integration_test:
