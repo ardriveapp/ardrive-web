@@ -83,7 +83,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
         ),
         cancelToken: _cancelToken,
       );
-      
+
       print('Response from turbo: ${response.statusCode}');
 
       return response;
@@ -123,6 +123,13 @@ class TurboUploadServiceImpl implements TurboUploadService {
       );
     }
 
+    Stream<Uint8List> rateLimitedStream = dataItem
+        .streamGenerator()
+        .transform(
+          createPassthroughTransformer(),
+        )
+        .transform(RateLimitTransformer(1024 * 1024));
+
     final request = ArDriveStreamedRequest(
       'POST',
       Uri.parse(url),
@@ -133,9 +140,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
 
     _fetchController
         .addStream(
-      dataItem.streamGenerator().transform(
-            createPassthroughTransformer(),
-          ),
+      rateLimitedStream,
     )
         .then((value) {
       print('Done');
@@ -177,6 +182,36 @@ class TurboUploadServiceImpl implements TurboUploadService {
   }
 
   bool _isCanceled = false;
+}
+
+class RateLimitTransformer extends StreamTransformerBase<Uint8List, Uint8List> {
+  final int bytesPerSecond;
+
+  RateLimitTransformer(this.bytesPerSecond);
+
+  @override
+  Stream<Uint8List> bind(Stream<Uint8List> stream) async* {
+    var lastTime = DateTime.now().millisecondsSinceEpoch;
+    var bytesTransferred = 0;
+
+    await for (Uint8List chunk in stream) {
+      var currentTime = DateTime.now().millisecondsSinceEpoch;
+      var deltaTime = currentTime - lastTime;
+      bytesTransferred += chunk.length;
+
+      if (bytesTransferred >= bytesPerSecond) {
+        var sleepTime = 1000 - deltaTime;
+        if (sleepTime > 0) {
+          await Future.delayed(Duration(milliseconds: sleepTime));
+        }
+
+        lastTime = DateTime.now().millisecondsSinceEpoch;
+        bytesTransferred = 0;
+      }
+
+      yield chunk;
+    }
+  }
 }
 
 class TurboUploadExceptions implements Exception {}
