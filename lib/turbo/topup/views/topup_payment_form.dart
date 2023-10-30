@@ -238,7 +238,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 BlocBuilder<PaymentFormBloc, PaymentFormState>(
                   builder: (context, state) {
                     return Text(
-                      '${convertCreditsToLiteralString(state.winstonCredits)} Credits',
+                      '${convertWinstonToLiteralString(state.winstonCredits)} Credits',
                       style: ArDriveTypography.body.leadBold(),
                     );
                   },

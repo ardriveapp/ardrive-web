@@ -1,0 +1,3 @@
+- Significantly increases the upload size limitations for both Turbo and D2N.
+- Increases download size limitations.
+- Fixes the placement of video player icons in Safari.

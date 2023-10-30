@@ -47,7 +47,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
           FileDownloadSuccess(
             bytes: dataRes.data,
             fileName: revision.name,
-            mimeType: revision.contentType ?? lookupMimeType(revision.name),
+            mimeType: revision.contentType ?? io.lookupMimeType(revision.name),
             lastModified: revision.lastModifiedDate,
           ),
         );
@@ -57,7 +57,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       final dataTx = await (_arweave.getTransactionDetails(revision.dataTxId!));
 
       if (dataTx != null) {
-        dataBytes = await _crypto.decryptTransactionData(
+        dataBytes = await _crypto.decryptDataFromTransaction(
           dataTx,
           dataRes.data,
           fileKey!,
@@ -71,7 +71,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       FileDownloadSuccess(
         bytes: dataBytes,
         fileName: revision.name,
-        mimeType: revision.contentType ?? lookupMimeType(revision.name),
+        mimeType: revision.contentType ?? io.lookupMimeType(revision.name),
         lastModified: revision.lastModifiedDate,
       ),
     );

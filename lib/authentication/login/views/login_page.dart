@@ -18,14 +18,15 @@ import 'package:ardrive/services/authentication/biometric_permission_dialog.dart
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/plausible_event_tracker.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/gestures.dart';
@@ -49,6 +50,13 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  @override
+  void initState() {
+    super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.welcomePage);
+  }
+
   @override
   Widget build(BuildContext context) {
     final loginBloc = LoginBloc(
@@ -686,6 +694,13 @@ class PromptPasswordView extends StatefulWidget {
 }
 
 class _PromptPasswordViewState extends State<PromptPasswordView> {
+  @override
+  void initState() {
+    super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.welcomeBackPage);
+  }
+
   final _passwordController = TextEditingController();
 
   bool _isPasswordValid = false;
@@ -814,6 +829,10 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
   @override
   void initState() {
     super.initState();
+
+    PlausibleEventTracker.track(
+      event: PlausibleEvent.createAndConfirmPasswordPage,
+    );
   }
 
   @override
@@ -1031,6 +1050,10 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
       return;
     }
 
+    PlausibleEventTracker.track(
+      event: PlausibleEvent.createdAndConfirmedPassword,
+    );
+
     context.read<LoginBloc>().add(
           CreatePassword(
             password: _passwordController.text,
@@ -1054,13 +1077,22 @@ class OnBoardingView extends StatefulWidget {
 class OnBoardingViewState extends State<OnBoardingView> {
   int _currentPage = 0;
 
+  @override
+  void initState() {
+    super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.onboardingPage).then(
+      (value) {
+        PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage1);
+      },
+    );
+  }
+
   List<_OnBoarding> get _list => [
         _OnBoarding(
           primaryButtonText: appLocalizationsOf(context).next,
           primaryButtonAction: () {
-            setState(() {
-              _currentPage++;
-            });
+            _goToNextPage();
           },
           secundaryButtonHasIcon: false,
           secundaryButtonText: appLocalizationsOf(context).skip,
@@ -1070,6 +1102,7 @@ class OnBoardingViewState extends State<OnBoardingView> {
                     wallet: widget.wallet,
                   ),
                 );
+            PlausibleEventTracker.track(event: PlausibleEvent.tutorialSkipped);
           },
           title: appLocalizationsOf(context).onboarding1Title,
           description: appLocalizationsOf(context).onboarding1Description,
@@ -1078,15 +1111,11 @@ class OnBoardingViewState extends State<OnBoardingView> {
         _OnBoarding(
           primaryButtonText: appLocalizationsOf(context).next,
           primaryButtonAction: () {
-            setState(() {
-              _currentPage++;
-            });
+            _goToNextPage();
           },
           secundaryButtonText: appLocalizationsOf(context).backButtonOnboarding,
           secundaryButtonAction: () {
-            setState(() {
-              _currentPage--;
-            });
+            _goToPreviousPage();
           },
           title: appLocalizationsOf(context).onboarding2Title,
           description: appLocalizationsOf(context).onboarding2Description,
@@ -1103,15 +1132,35 @@ class OnBoardingViewState extends State<OnBoardingView> {
           },
           secundaryButtonText: appLocalizationsOf(context).backButtonOnboarding,
           secundaryButtonAction: () {
-            setState(() {
-              _currentPage--;
-            });
+            _goToPreviousPage();
           },
           title: appLocalizationsOf(context).onboarding3Title,
           description: appLocalizationsOf(context).onboarding3Description,
           illustration: AssetImage(Resources.images.login.gridImage),
         ),
       ];
+
+  void _goToNextPage() {
+    _goToPage(_currentPage + 1);
+  }
+
+  void _goToPreviousPage() {
+    _goToPage(_currentPage - 1);
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+
+    if (_currentPage == 0) {
+      PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage1);
+    } else if (_currentPage == 1) {
+      PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage2);
+    } else if (_currentPage == 2) {
+      PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage3);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1216,12 +1265,12 @@ class OnBoardingViewState extends State<OnBoardingView> {
 }
 
 class _OnBoardingContent extends StatelessWidget {
+  final _OnBoarding onBoarding;
+
   const _OnBoardingContent({
     super.key,
     required this.onBoarding,
   });
-
-  final _OnBoarding onBoarding;
 
   @override
   Widget build(BuildContext context) {
@@ -1373,8 +1422,6 @@ const double _defaultLoginCardMaxHeight = 489;
 class EnterSeedPhraseView extends StatefulWidget {
   const EnterSeedPhraseView({super.key});
 
-  // final Wallet wallet;
-
   @override
   State<EnterSeedPhraseView> createState() => _EnterSeedPhraseViewState();
 }
@@ -1382,11 +1429,12 @@ class EnterSeedPhraseView extends StatefulWidget {
 class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
   final _seedPhraseController = ArDriveMultlineObscureTextController();
   final _formKey = GlobalKey<ArDriveFormState>();
-  // var _seedPhraseFormatIsValid = false;
 
   @override
   void initState() {
     super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.enterSeedPhrasePage);
   }
 
   @override
@@ -1548,6 +1596,8 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
   void initState() {
     super.initState();
 
+    PlausibleEventTracker.track(event: PlausibleEvent.walletGenerationPage);
+
     // TODO: create/update localization key
     _message = 'Did you know?\n\n${_messages[0]}';
 
@@ -1657,6 +1707,13 @@ class DownloadWalletView extends StatefulWidget {
 
 class _DownloadWalletViewState extends State<DownloadWalletView> {
   @override
+  void initState() {
+    super.initState();
+
+    PlausibleEventTracker.track(event: PlausibleEvent.walletDownloadPage);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaxDeviceSizesConstrainedBox(
       defaultMaxHeight: 798,
@@ -1710,6 +1767,9 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                 child: GestureDetector(
                     onTap: () {
                       _onDownload();
+                      PlausibleEventTracker.track(
+                        event: PlausibleEvent.walletDownloaded,
+                      );
                     },
                     child: Container(
                       decoration: BoxDecoration(
@@ -1849,7 +1909,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     });
   }
 
-  void advancePage() async {
+  void goNextPage() async {
     if (_currentPage == 2) {
       context
           .read<LoginBloc>()
@@ -1860,19 +1920,37 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
         _wordsAreCorrect = false;
         _currentPage++;
       });
+      _trackPlausible();
     }
   }
 
-  void back() {
-    _isBlurredSeedPhrase = true;
-    _wordsAreCorrect = false;
+  void goPrevPage() {
+    setState(() {
+      _isBlurredSeedPhrase = true;
+      _wordsAreCorrect = false;
+    });
     if (_currentPage == 0) {
-      // Navigator.pop(context);
       context.read<LoginBloc>().add(const ForgetWallet());
     } else {
       setState(() {
         _currentPage--;
       });
+      _trackPlausible();
+    }
+  }
+
+  void _trackPlausible() {
+    switch (_currentPage) {
+      case 1:
+        PlausibleEventTracker.track(
+          event: PlausibleEvent.writeDownSeedPhrasePage,
+        );
+        break;
+      case 2:
+        PlausibleEventTracker.track(
+          event: PlausibleEvent.verifySeedPhrasePage,
+        );
+        break;
     }
   }
 
@@ -1974,7 +2052,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
                   return colors.themeFgDefault.withOpacity(0.1);
                 }),
               ),
-              onPressed: back,
+              onPressed: goPrevPage,
               child: Center(
                   // TODO: create/update localization key
                   child: Text('Back',
@@ -2002,7 +2080,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
             maxWidth: double.maxFinite,
             borderRadius: 0,
             text: text,
-            onPressed: advancePage));
+            onPressed: goNextPage));
   }
 
   Widget _buildCard(List<String> cardInfo) {
@@ -2485,6 +2563,8 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildGettingStarted() {
+    PlausibleEventTracker.track(event: PlausibleEvent.gettingStartedPage);
+
     // TODO: create/update localization keys
     var cardInfos = [
       [

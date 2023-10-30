@@ -6,12 +6,13 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
+import 'package:ardrive/utils/plausible_event_tracker.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -273,10 +274,7 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildBalanceRow(BuildContext context, ProfileLoggedIn state) {
-    final walletBalance =
-        double.tryParse(utils.winstonToAr(state.walletBalance))
-                ?.toStringAsFixed(5) ??
-            '0';
+    final walletBalance = convertWinstonToLiteralString(state.walletBalance);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -370,8 +368,11 @@ class __LogoutButtonState extends State<_LogoutButton> {
       child: InkWell(
         onTap: () {
           context.read<ArDriveAuth>().logout().then(
-                (value) => context.read<ProfileCubit>().logoutProfile(),
-              );
+            (value) {
+              context.read<ProfileCubit>().logoutProfile();
+              PlausibleEventTracker.track(event: PlausibleEvent.logout);
+            },
+          );
         },
         child: Container(
           color: _isHovering

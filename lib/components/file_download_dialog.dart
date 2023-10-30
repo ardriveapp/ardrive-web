@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/progress_bar.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/core/download_service.dart';
+import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -36,12 +36,16 @@ Future<void> promptToDownloadProfileFile({
       context.read<DriveDao>(),
       ARFSFactory(),
     ),
-    downloadService: DownloadService(arweave),
-    downloader: ArDriveDownloader(),
+    arDriveDownloader: ArDriveDownloader(
+      ardriveIo: ArDriveIO(),
+      ioFileAdapter: IOFileAdapter(),
+      arweave: arweave,
+    ),
+    downloader: ArDriveMobileDownloader(),
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
     arweave: arweave,
-  )..download(cipherKey);
+  )..verifyUploadLimitationsAndDownload(cipherKey);
   return showArDriveDialog(
     context,
     barrierDismissible: false,
@@ -70,12 +74,16 @@ Future<void> promptToDownloadFileRevision({
       context.read<DriveDao>(),
       ARFSFactory(),
     ),
-    downloadService: DownloadService(arweave),
-    downloader: ArDriveDownloader(),
+    arDriveDownloader: ArDriveDownloader(
+      ardriveIo: ArDriveIO(),
+      ioFileAdapter: IOFileAdapter(),
+      arweave: arweave,
+    ),
+    downloader: ArDriveMobileDownloader(),
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
     arweave: arweave,
-  )..download(cipherKey);
+  )..verifyUploadLimitationsAndDownload(cipherKey);
 
   return showArDriveDialog(
     context,
@@ -140,6 +148,9 @@ class FileDownloadDialog extends StatelessWidget {
           } else if (state is FileDownloadFailure) {
             if (state.reason == FileDownloadFailureReason.unknownError) {
               return _fileDownloadFailedDialog(context);
+            } else if (state.reason ==
+                FileDownloadFailureReason.browserDoesNotSupportLargeDownloads) {
+              return _fileDownloadFailedDueToAboveBrowserLimit(context);
             }
 
             return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
@@ -170,6 +181,21 @@ class FileDownloadDialog extends StatelessWidget {
       title: appLocalizationsOf(context).warningEmphasized,
       description:
           appLocalizationsOf(context).fileFailedToDownloadFileAboveLimit,
+      actions: [
+        ModalAction(
+          action: () => Navigator.pop(context),
+          title: appLocalizationsOf(context).ok,
+        ),
+      ],
+    );
+  }
+
+  ArDriveStandardModal _fileDownloadFailedDueToAboveBrowserLimit(
+      BuildContext context) {
+    return _modalWrapper(
+      title: appLocalizationsOf(context).warningEmphasized,
+      description:
+          appLocalizationsOf(context).fileFailedToDownloadFileAbovePublicLimit,
       actions: [
         ModalAction(
           action: () => Navigator.pop(context),
@@ -278,27 +304,95 @@ class FileDownloadDialog extends StatelessWidget {
 
   ArDriveStandardModal _downloadingFileWithProgressDialog(
       BuildContext context, FileDownloadWithProgress state) {
+    final progressText =
+        '${filesize(((state.fileSize) * (state.progress / 100)).ceil())}/${filesize(state.fileSize)}';
     return _modalWrapper(
         title: appLocalizationsOf(context).downloadingFile,
         child: SizedBox(
-          width: kMediumDialogWidth,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  state.fileName,
-                ),
-                subtitle: Text(
-                    '${filesize((state.fileSize * (state.progress / 100)).round())} / ${filesize(state.fileSize)}'),
+          width: kLargeDialogWidth,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: getIconForContentType(
+                state.contentType,
+                size: 24,
               ),
-              ProgressBar(
-                  percentage: (context.read<FileDownloadCubit>()
-                          as ProfileFileDownloadCubit)
-                      .downloadProgress)
-            ],
-          ),
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          state.fileName,
+                          style: ArDriveTypography.body.bodyBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          ),
+                        ),
+                        AnimatedSwitcher(
+                          duration: const Duration(seconds: 1),
+                          child: Text(
+                            'Downloading',
+                            style: ArDriveTypography.body.buttonNormalBold(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgOnDisabled,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          progressText,
+                          style: ArDriveTypography.body.buttonNormalRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgOnDisabled,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: ArDriveProgressBar(
+                    height: 4,
+                    indicatorColor: state.progress == 100
+                        ? ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeSuccessDefault
+                        : ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                    percentage: state.progress / 100,
+                  ),
+                ),
+                Text(
+                  '${(state.progress).toInt()}%',
+                  style: ArDriveTypography.body.buttonNormalBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+                ),
+              ],
+            ),
+          ]),
         ),
         actions: [
           ModalAction(

@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -57,9 +58,9 @@ void main() {
           DriveEntity(
             id: validDriveId,
             name: validDriveName,
-            privacy: DrivePrivacy.public,
+            privacy: DrivePrivacyTag.public,
             rootFolderId: validRootFolderId,
-            authMode: DriveAuthMode.none,
+            authMode: DriveAuthModeTag.none,
           )..ownerAddress = ownerAddress,
         ),
       );
@@ -72,9 +73,9 @@ void main() {
           DriveEntity(
             id: validPrivateDriveId,
             name: validDriveName,
-            privacy: DrivePrivacy.private,
+            privacy: DrivePrivacyTag.private,
             rootFolderId: validRootFolderId,
-            authMode: DriveAuthMode.password,
+            authMode: DriveAuthModeTag.password,
           )..ownerAddress = ownerAddress,
         ),
       );
@@ -85,9 +86,9 @@ void main() {
       when(() => arweave.getLatestDriveEntityWithId(notFoundDriveId))
           .thenAnswer((_) => Future.value(null));
       when(() => arweave.getDrivePrivacyForId(validDriveId))
-          .thenAnswer((_) => Future.value(DrivePrivacy.public));
+          .thenAnswer((_) => Future.value(DrivePrivacyTag.public));
       when(() => arweave.getDrivePrivacyForId(validPrivateDriveId))
-          .thenAnswer((_) => Future.value(DrivePrivacy.private));
+          .thenAnswer((_) => Future.value(DrivePrivacyTag.private));
 
       when(() => syncBloc.startSync()).thenAnswer((_) => Future.value(null));
 

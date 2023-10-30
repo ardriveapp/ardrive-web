@@ -24,7 +24,7 @@ Future<IOFile> _convertTextToIOFile({
 }
 
 final logger = Logger(
-  logLevel: kReleaseMode ? LogLevel.warning : LogLevel.debug,
+  logLevel: LogLevel.debug,
   storeLogsInMemory: true,
   logExporter: LogExporter(),
 );
@@ -45,7 +45,7 @@ class Logger {
   late ListQueue<String> inMemoryLogs;
 
   Logger({
-    LogLevel logLevel = LogLevel.warning,
+    LogLevel logLevel = LogLevel.debug,
     bool storeLogsInMemory = false,
     LogLevel memoryLogLevel = LogLevel.debug,
     int memoryLogSize = 500,

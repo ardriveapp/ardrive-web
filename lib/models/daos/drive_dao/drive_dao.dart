@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -49,7 +49,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> deleteSharedPrivateDrives(String? owner) async {
     final drives = (await allDrives().get()).where(
       (drive) =>
-          drive.ownerAddress != owner && drive.privacy == DrivePrivacy.private,
+          drive.ownerAddress != owner &&
+          drive.privacy == DrivePrivacyTag.private,
     );
     for (var drive in drives) {
       await detachDrive(drive.id);
@@ -111,12 +112,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     SecretKey? driveKey;
     switch (privacy) {
-      case DrivePrivacy.private:
+      case DrivePrivacyTag.private:
         driveKey = await _crypto.deriveDriveKey(wallet, driveId, password);
         insertDriveOp = await _addDriveKeyToDriveCompanion(
             insertDriveOp, profileKey, driveKey);
         break;
-      case DrivePrivacy.public:
+      case DrivePrivacyTag.public:
         // Nothing to do
         break;
     }
@@ -182,7 +183,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               lastUpdated: Value(entity.createdAt),
             );
 
-            if (entity.privacy == DrivePrivacy.private) {
+            if (entity.privacy == DrivePrivacyTag.private) {
               driveCompanion = await _addDriveKeyToDriveCompanion(
                   driveCompanion, profileKey!, entry.value!);
             }
@@ -213,7 +214,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       lastUpdated: Value(entity.createdAt),
     );
 
-    if (entity.privacy == DrivePrivacy.private) {
+    if (entity.privacy == DrivePrivacyTag.private) {
       if (profileKey != null) {
         companion = await _addDriveKeyToDriveCompanion(
           companion,
