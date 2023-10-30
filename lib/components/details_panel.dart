@@ -119,9 +119,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
     required FsEntryPreviewState previewState,
     required FsEntryInfoState infoState,
   }) {
+    final isNotSharePageInMobileView = !(widget.isSharePage && !mobileView);
+    final isPreviewUnavailable = previewState is FsEntryPreviewUnavailable;
+    final isPreviewSuccess = previewState is FsEntryPreviewSuccess;
+    final isSharePage = widget.isSharePage;
+
     final tabs = [
-      if (!(widget.isSharePage && !mobileView) &&
-          previewState is! FsEntryPreviewUnavailable)
+      if (isNotSharePageInMobileView && !isPreviewUnavailable)
         ArDriveTab(
           Tab(
             child: Text(
@@ -164,7 +168,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     ];
 
     return [
-      if (widget.isSharePage && !mobileView) ...[
+      if (isSharePage && !mobileView) ...[
         Flexible(
           flex: 2,
           child: Column(
@@ -184,7 +188,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           .themeData
                           .colors
                           .themeBgSurface,
-                  contentPadding: widget.isSharePage
+                  contentPadding: isSharePage
                       ? const EdgeInsets.only()
                       : const EdgeInsets.all(24),
                   content: _buildPreview(previewState),
@@ -203,13 +207,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
         child: ArDriveCard(
           borderRadius:
               AppPlatform.isMobile || AppPlatform.isMobileWeb() ? 0 : null,
-          backgroundColor: widget.isSharePage
+          backgroundColor: isSharePage
               ? ArDriveTheme.of(context).themeData.tableTheme.cellColor
               : ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
           contentPadding: const EdgeInsets.all(24),
           content: Column(
             children: [
-              if (!widget.isSharePage)
+              if (!isSharePage)
                 ScreenTypeLayout.builder(
                   desktop: (context) => Column(
                     children: [
@@ -223,8 +227,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   ),
                   mobile: (context) => const SizedBox.shrink(),
                 ),
-              if (widget.isSharePage &&
-                  (previewState is! FsEntryPreviewUnavailable || mobileView))
+              if (isSharePage && (!isPreviewUnavailable || mobileView))
                 SizedBox(
                   height: 64,
                   child: Column(
@@ -241,11 +244,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     ],
                   ),
                 ),
-              if ((previewState is FsEntryPreviewSuccess &&
-                      !widget.isSharePage) ||
-                  (widget.isSharePage &&
-                      previewState is FsEntryPreviewUnavailable &&
-                      !mobileView))
+              if ((!isSharePage && isPreviewSuccess) ||
+                  (isSharePage && isPreviewUnavailable && !mobileView))
                 ArDriveCard(
                   contentPadding: const EdgeInsets.all(24),
                   backgroundColor: ArDriveTheme.of(context)
@@ -316,9 +316,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                             .themeFgDefault,
                       ),
                     ),
-                    if (widget.isSharePage &&
-                        (previewState is! FsEntryPreviewUnavailable ||
-                            mobileView))
+                    if (isSharePage && (!isPreviewUnavailable || mobileView))
                       SizedBox(
                         height: 138,
                         child: Column(
