@@ -24,10 +24,10 @@ class AddWalletFromArConnect extends LoginEvent {
 }
 
 class CheckIfUserIsLoggedIn extends LoginEvent {
-  final bool gettinStarted;
+  final bool gettingStarted;
 
   const CheckIfUserIsLoggedIn({
-    this.gettinStarted = false,
+    this.gettingStarted = false,
   });
 
   @override
