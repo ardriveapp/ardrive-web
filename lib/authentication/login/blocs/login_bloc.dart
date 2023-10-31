@@ -72,7 +72,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     } else if (event is AddWalletFromCompleter) {
       await _handleAddWalletFromCompleterEvent(event, emit);
     } else if (event is CreateNewWallet) {
-      await _handleCreateNewWalletEvent(event, emit);
+      _handleCreateNewWalletEvent(event, emit);
     } else if (event is CompleteWalletGeneration) {
       await _handleCompleteWalletGenerationEvent(event, emit);
     }
@@ -177,7 +177,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    if (event.gettinStarted) {
+    if (event.gettingStarted) {
       _handleCreateNewWalletEvent(const CreateNewWallet(), emit);
     } else {
       emit(LoginInitial(_arConnectService.isExtensionPresent()));
@@ -404,7 +404,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(LoginDownloadGeneratedWallet(event.mnemonic, wallet));
   }
 
-  Future<void> _handleCreateNewWalletEvent(
+  void _handleCreateNewWalletEvent(
     CreateNewWallet event,
     Emitter<LoginState> emit,
   ) async {

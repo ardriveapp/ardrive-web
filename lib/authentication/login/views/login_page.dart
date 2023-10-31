@@ -50,6 +50,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  bool didGettingStartedLoadedAlready = false;
+  bool get isGettingStartedLoading =>
+      widget.gettingStarted && !didGettingStartedLoadedAlready;
+
   @override
   void initState() {
     super.initState();
@@ -65,30 +69,80 @@ class _LoginPageState extends State<LoginPage> {
       userRepository: context.read<UserRepository>(),
     )..add(
         CheckIfUserIsLoggedIn(
-          gettinStarted: widget.gettingStarted,
+          gettingStarted: widget.gettingStarted,
         ),
       );
 
     return BlocProvider<LoginBloc>(
       create: (context) => loginBloc,
       child: BlocConsumer<LoginBloc, LoginState>(
-        listener: (context, state) {
-          if (state is LoginOnBoarding) {
+        listener: (context, loginState) {
+          if (loginState is! LoginLoading && loginState is! LoginInitial) {
+            setState(() {
+              didGettingStartedLoadedAlready = true;
+            });
+          }
+
+          if (loginState is LoginOnBoarding) {
             preCacheOnBoardingAssets(context);
+          } else if (loginState is LoginFailure) {
+            // TODO: Verify if the error is `NoConnectionException` and show an appropriate message after validating with UI/UX
+
+            logger.e('Login Failure', loginState.error);
+
+            if (loginState.error is WalletMismatchException) {
+              showArDriveDialog(
+                context,
+                content: ArDriveIconModal(
+                  title: appLocalizationsOf(context).loginFailed,
+                  content: appLocalizationsOf(context)
+                      .arConnectWalletDoestNotMatchArDriveWallet,
+                  icon: ArDriveIcons.triangle(
+                    size: 88,
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeErrorMuted,
+                  ),
+                ),
+              );
+              return;
+            } else if (loginState.error is BiometricException) {
+              showBiometricExceptionDialogForException(
+                  context, loginState.error as BiometricException, () {});
+              return;
+            }
+
+            showArDriveDialog(
+              context,
+              content: ArDriveIconModal(
+                title: appLocalizationsOf(context).loginFailed,
+                content: appLocalizationsOf(context).pleaseTryAgain,
+                icon: ArDriveIcons.triangle(
+                  size: 88,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+                ),
+              ),
+            );
+          } else if (loginState is LoginSuccess) {
+            logger.d('Login Success, unlocking default profile');
+
+            context.read<ProfileCubit>().unlockDefaultProfile(
+                loginState.user.password, loginState.user.profileType);
           }
         },
-        builder: (context, state) {
+        builder: (context, loginState) {
           late Widget view;
-          if (state is LoginOnBoarding) {
-            view = OnBoardingView(wallet: state.walletFile);
-          } else if (state is LoginCreateNewWallet) {
-            view = CreateNewWalletView(mnemonic: state.mnemonic);
-          } else if (state is LoginLoading && widget.gettingStarted) {
-            view = const Center(
-              child: CircularProgressIndicator(),
-            );
+          if (loginState is LoginOnBoarding) {
+            view = OnBoardingView(wallet: loginState.walletFile);
+          } else if (loginState is LoginCreateNewWallet) {
+            view = CreateNewWalletView(mnemonic: loginState.mnemonic);
           } else {
-            view = const LoginPageScaffold();
+            view = LoginPageScaffold(
+              loginState: loginState,
+              isGettingStartedLoading: isGettingStartedLoading,
+            );
           }
 
           return _FadeThroughTransitionSwitcher(
@@ -102,8 +156,13 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class LoginPageScaffold extends StatefulWidget {
+  final bool isGettingStartedLoading;
+  final LoginState loginState;
+
   const LoginPageScaffold({
     super.key,
+    this.isGettingStartedLoading = false,
+    required this.loginState,
   });
 
   @override
@@ -112,14 +171,18 @@ class LoginPageScaffold extends StatefulWidget {
 
 class _LoginPageScaffoldState extends State<LoginPageScaffold> {
   final globalKey = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  bool getStartedLoadingHasRan = false;
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isGettingStartedLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return ScreenTypeLayout.builder(
       desktop: (context) => Material(
         color: ArDriveTheme.of(context).themeData.backgroundColor,
@@ -150,7 +213,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               child: FractionallySizedBox(
                 widthFactor: 0.75,
                 child: Center(
-                  child: _buildContent(context),
+                  child: _buildContent(
+                    context,
+                    loginState: widget.loginState,
+                  ),
                 ),
               ),
             ),
@@ -170,7 +236,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                 Center(
                   child: Column(
                     children: [
-                      _buildContent(context),
+                      _buildContent(
+                        context,
+                        loginState: widget.loginState,
+                      ),
                     ],
                   ),
                 ),
@@ -260,72 +329,39 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
     );
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent(BuildContext context, {required LoginState loginState}) {
     final enableSeedPhraseLogin =
         context.read<ConfigService>().config.enableSeedPhraseLogin;
-    return BlocConsumer<LoginBloc, LoginState>(
+    return BlocBuilder<LoginBloc, LoginState>(
       key: globalKey,
-      buildWhen: (previous, current) =>
-          current is! LoginFailure &&
-          current is! LoginSuccess &&
-          current is! LoginOnBoarding &&
-          current is! LoginCreateNewWallet,
-      listener: (context, state) {
-        if (state is LoginFailure) {
-          // TODO: Verify if the error is `NoConnectionException` and show an appropriate message after validating with UI/UX
+      buildWhen: (previous, current) {
+        final isFailure = current is LoginFailure;
+        final isSuccess = current is LoginSuccess;
+        final isOnBoarding = current is LoginOnBoarding;
+        final isCreateNewWallet = current is LoginCreateNewWallet;
 
-          logger.e('Login Failure', state.error);
+        logger.d(
+          'LoginBloc buildWhen'
+          ' - isFailure: $isFailure'
+          ' - isSuccess: $isSuccess'
+          ' - isOnBoarding: $isOnBoarding'
+          ' - isCreateNewWallet: $isCreateNewWallet',
+        );
 
-          if (state.error is WalletMismatchException) {
-            showArDriveDialog(
-              context,
-              content: ArDriveIconModal(
-                title: appLocalizationsOf(context).loginFailed,
-                content: appLocalizationsOf(context)
-                    .arConnectWalletDoestNotMatchArDriveWallet,
-                icon: ArDriveIcons.triangle(
-                  size: 88,
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
-                ),
-              ),
-            );
-            return;
-          } else if (state.error is BiometricException) {
-            showBiometricExceptionDialogForException(
-                context, state.error as BiometricException, () {});
-            return;
-          }
-
-          showArDriveDialog(
-            context,
-            content: ArDriveIconModal(
-              title: appLocalizationsOf(context).loginFailed,
-              content: appLocalizationsOf(context).pleaseTryAgain,
-              icon: ArDriveIcons.triangle(
-                size: 88,
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
-              ),
-            ),
-          );
-        } else if (state is LoginSuccess) {
-          context.read<ProfileCubit>().unlockDefaultProfile(
-              state.user.password, state.user.profileType);
-        }
+        return !(isFailure || isSuccess || isOnBoarding || isCreateNewWallet);
       },
-      builder: (context, state) {
+      builder: (context, loginState) {
         late Widget content;
 
-        if (state is PromptPassword) {
+        if (loginState is PromptPassword) {
           content = PromptPasswordView(
-            wallet: state.walletFile,
+            wallet: loginState.walletFile,
           );
-        } else if (state is CreatingNewPassword) {
+        } else if (loginState is CreatingNewPassword) {
           content = CreatePasswordView(
-            wallet: state.walletFile,
+            wallet: loginState.walletFile,
           );
-        } else if (state is LoginLoading) {
+        } else if (loginState is LoginLoading || loginState is LoginSuccess) {
           content = const MaxDeviceSizesConstrainedBox(
             child: _LoginCard(
               content: Center(
@@ -333,20 +369,22 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               ),
             ),
           );
-        } else if (enableSeedPhraseLogin && state is LoginEnterSeedPhrase) {
+        } else if (enableSeedPhraseLogin &&
+            loginState is LoginEnterSeedPhrase) {
           content = const EnterSeedPhraseView();
-        } else if (enableSeedPhraseLogin && state is LoginGenerateWallet) {
+        } else if (enableSeedPhraseLogin && loginState is LoginGenerateWallet) {
           content = const GenerateWalletView();
         } else if (enableSeedPhraseLogin &&
-            state is LoginDownloadGeneratedWallet) {
+            loginState is LoginDownloadGeneratedWallet) {
           content = DownloadWalletView(
-            mnemonic: state.mnemonic,
-            wallet: state.walletFile,
+            mnemonic: loginState.mnemonic,
+            wallet: loginState.walletFile,
           );
         } else {
           content = PromptWalletView(
             key: const Key('promptWalletView'),
-            isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
+            isArConnectAvailable:
+                (loginState as LoginInitial).isArConnectAvailable,
           );
         }
 

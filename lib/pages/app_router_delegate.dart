@@ -106,6 +106,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               !gettingStarted &&
               (!showingAnonymousRoute || state is ProfileLoggingOut)) {
             signingIn = true;
+            gettingStarted = false;
             notifyListeners();
           }
 
