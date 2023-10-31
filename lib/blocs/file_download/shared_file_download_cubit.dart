@@ -17,6 +17,20 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   })  : _arweave = arweave,
         _arDriveDownloader = arDriveDownloader,
         super(FileDownloadStarting()) {
+    verifyUploadLimitationsAndDownload();
+  }
+
+  // TODO: we are duplicating code here, we should refactor this. Personal and Share file downloads are pretty similar
+  // we must refactor to reuse the code and avoid duplication
+  Future<void> verifyUploadLimitationsAndDownload() async {
+    if (await AppPlatform.isSafari()) {
+      if (revision.size > publicDownloadSafariSizeLimit) {
+        emit(const FileDownloadFailure(
+            FileDownloadFailureReason.browserDoesNotSupportLargeDownloads));
+        return;
+      }
+    }
+
     download();
   }
 
@@ -70,9 +84,6 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       fileKey: fileKey,
       isManifest: revision.contentType == ContentType.manifest,
     );
-
-    logger.d(
-        'Downloading file ${revision.name} and dataTxId is ${revision.txId} of size ${revision.size}');
 
     await for (var progress in downloadStream) {
       if (state is FileDownloadAborted) {
