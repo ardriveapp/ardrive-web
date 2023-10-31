@@ -21,7 +21,7 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:tuple/tuple.dart';
 
-class ArDriveUploader {
+class ArDriveUploaderFromHandles {
   final BundleUploader _bundleUploader;
   final FileV2Uploader _fileV2Uploader;
   final Future<void> Function(BundleUploadHandle handle) _prepareBundle;
@@ -33,7 +33,7 @@ class ArDriveUploader {
   final Future<void> Function(FileV2UploadHandle handle, Object error)
       _onUploadFileError;
 
-  ArDriveUploader({
+  ArDriveUploaderFromHandles({
     required BundleUploader bundleUploader,
     required FileV2Uploader fileV2Uploader,
     required Future<void> Function(BundleUploadHandle handle) prepareBundle,
@@ -379,7 +379,7 @@ class UploadPaymentEvaluator {
         .getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles);
 
     bool isUploadEligibleToTurbo =
-        uploadPlanForAR.fileV2UploadHandles.isEmpty &&
+        uploadPlanForTurbo.fileV2UploadHandles.isEmpty &&
             uploadPlanForTurbo.bundleUploadHandles.isNotEmpty;
 
     UploadCostEstimate turboCostEstimate = UploadCostEstimate.zero();

@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -75,7 +75,7 @@ class SnapshotEntity extends Entity {
 
     tx
       ..addArFsTag()
-      ..addTag(EntityTag.entityType, EntityType.snapshot)
+      ..addTag(EntityTag.entityType, EntityTypeTag.snapshot)
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.snapshotId, id!)
       ..addTag(EntityTag.blockStart, '$blockStart')
@@ -85,7 +85,7 @@ class SnapshotEntity extends Entity {
   }
 
   Future<DataItem> asPreparedDataItem({
-    required ArweaveAddress owner,
+    required ArweaveAddressString owner,
   }) async {
     final dataItem = DataItem()
       ..setOwner(owner)

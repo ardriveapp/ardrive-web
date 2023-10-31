@@ -113,7 +113,7 @@ class _TurboBalanceState extends State<TurboBalance> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      '${convertCreditsToLiteralString(balance)} ${appLocalizationsOf(context).credits}',
+                      '${convertWinstonToLiteralString(balance)} ${appLocalizationsOf(context).credits}',
                       style: ArDriveTypography.body.captionRegular().copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: 18,

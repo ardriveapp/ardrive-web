@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -52,7 +52,7 @@ class ManifestData {
   Uint8List get jsonData => utf8.encode(json.encode(this)) as Uint8List;
 
   Future<DataItem> asPreparedDataItem({
-    required ArweaveAddress owner,
+    required ArweaveAddressString owner,
   }) async {
     final manifestDataItem = DataItem.withBlobData(data: jsonData)
       ..setOwner(owner)

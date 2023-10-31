@@ -18,7 +18,6 @@ import 'package:ardrive/services/authentication/biometric_permission_dialog.dart
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -27,6 +26,7 @@ import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/gestures.dart';

@@ -2,11 +2,11 @@
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
-import 'package:ardrive/entities/entity.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -131,6 +131,52 @@ void main() {
           bloc.form.value = {
             'name': validDriveName,
             'privacy': DrivePrivacy.private.name,
+          };
+
+          bloc.onPrivacyChanged();
+
+          await bloc.submit('');
+        },
+        expect: () => [
+          const DriveCreateInProgress(privacy: DrivePrivacy.public),
+          const DriveCreateInProgress(privacy: DrivePrivacy.private),
+          const DriveCreateSuccess(privacy: DrivePrivacy.private),
+        ],
+        verify: (_) {},
+      );
+
+      tearDown(() async {
+        await db.close();
+      });
+
+      blocTest<DriveCreateCubit, DriveCreateState>(
+        'create public drive',
+        build: () => driveCreateCubit,
+        act: (bloc) async {
+          bloc.form.value = {
+            'name': validDriveName,
+            'privacy': DrivePrivacyTag.public,
+          };
+          await bloc.submit('');
+        },
+        expect: () => [
+          const DriveCreateInProgress(
+            privacy: DrivePrivacy.public,
+          ),
+          const DriveCreateSuccess(
+            privacy: DrivePrivacy.public,
+          ),
+        ],
+        verify: (_) {},
+      );
+
+      blocTest<DriveCreateCubit, DriveCreateState>(
+        'create private drive',
+        build: () => driveCreateCubit,
+        act: (bloc) async {
+          bloc.form.value = {
+            'name': validDriveName,
+            'privacy': DrivePrivacyTag.private,
           };
 
           bloc.onPrivacyChanged();

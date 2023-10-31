@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';

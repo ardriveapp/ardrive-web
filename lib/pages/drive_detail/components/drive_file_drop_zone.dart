@@ -22,6 +22,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
+import 'package:pst/pst.dart';
 
 class DriveFileDropZone extends StatefulWidget {
   final String driveId;

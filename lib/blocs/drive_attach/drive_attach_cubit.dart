@@ -2,11 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -218,7 +217,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     final drivePrivacy = await _arweave.getDrivePrivacyForId(driveId);
 
     switch (drivePrivacy) {
-      case DrivePrivacy.private:
+      case DrivePrivacyTag.private:
         emit(DriveAttachPrivate());
         break;
       case null:
