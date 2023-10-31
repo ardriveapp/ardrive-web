@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: v1.13.1
+      ref: PE-4711
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:
