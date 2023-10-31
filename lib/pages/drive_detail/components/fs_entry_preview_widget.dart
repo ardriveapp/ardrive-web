@@ -21,6 +21,11 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   @override
   Widget build(BuildContext context) {
     switch (widget.state.runtimeType) {
+      case FsEntryPreviewUnavailable:
+        return const Center(
+          child: Text('Preview unavailable'),
+        );
+
       case FsEntryPreviewLoading:
       case FsEntryPreviewInitial:
         return const Center(
