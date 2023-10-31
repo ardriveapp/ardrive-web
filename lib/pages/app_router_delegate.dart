@@ -26,6 +26,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
   bool signingIn = false;
 
+  bool gettingStarted = false;
+
   String? driveId;
   String? driveName;
   String? driveFolderId;
@@ -46,6 +48,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @override
   AppRoutePath get currentConfiguration => AppRoutePath(
         signingIn: signingIn,
+        getStarted: gettingStarted,
         driveId: driveId,
         driveName: driveName,
         sharedDriveKey: sharedDriveKey,
@@ -100,16 +103,20 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               anonymouslyShowDriveDetail || isViewingSharedFile;
 
           if (!signingIn &&
+              !gettingStarted &&
               (!showingAnonymousRoute || state is ProfileLoggingOut)) {
             signingIn = true;
+            gettingStarted = false;
             notifyListeners();
           }
 
           // Redirect the user away from sign in if they are already signed in.
-          if (signingIn && state is ProfileLoggedIn) {
+          if ((signingIn || gettingStarted) && state is ProfileLoggedIn) {
             signingIn = false;
+            gettingStarted = false;
             notifyListeners();
           }
+
           // Cleans up any shared drives from previous sessions
           // TODO: Find a better place to do this
           final lastLoggedInUser =
@@ -137,6 +144,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             );
           } else if (signingIn) {
             shell = const LoginPage();
+          } else if (gettingStarted) {
+            shell = const LoginPage(gettingStarted: true);
           } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
               listener: (context, state) {
@@ -316,6 +325,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {
     signingIn = configuration.signingIn;
+    gettingStarted = configuration.getStarted;
     driveId = configuration.driveId;
     driveName = configuration.driveName;
     driveFolderId = configuration.driveFolderId;
@@ -328,6 +338,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   void clearState() {
     signingIn = true;
+    gettingStarted = false;
     driveId = null;
     driveName = null;
     driveFolderId = null;
