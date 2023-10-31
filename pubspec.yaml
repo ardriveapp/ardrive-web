@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.22.0
+version: 2.22.1
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -35,11 +35,11 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.0
+      ref: v1.4.1
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: v1.13.0
+      ref: v1.13.1
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:

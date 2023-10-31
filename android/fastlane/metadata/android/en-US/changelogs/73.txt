@@ -1,0 +1,1 @@
+- Fixes wrong content type when uploading the file using drag and drop
