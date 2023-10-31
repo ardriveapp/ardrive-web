@@ -143,7 +143,6 @@ class FileUploadTask extends UploadTask {
     SecretKey? encryptionKey,
     StreamedUpload? streamedUpload,
   }) {
-    print('Copying new task with status: ${status ?? this.status}');
     return FileUploadTask(
       streamedUpload: streamedUpload ?? this.streamedUpload,
       encryptionKey: encryptionKey ?? this.encryptionKey,
