@@ -1,7 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -14,9 +13,11 @@ import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pst/pst.dart';
 
 import '../utils/show_general_dialog.dart';
 import 'components.dart';

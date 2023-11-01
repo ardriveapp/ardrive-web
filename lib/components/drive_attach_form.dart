@@ -1,5 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -8,6 +7,7 @@ import 'package:ardrive/utils/add_debounce.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

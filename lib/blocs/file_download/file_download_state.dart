@@ -27,11 +27,13 @@ class FileDownloadWithProgress extends FileDownloadState {
     required this.fileName,
     required this.progress,
     required this.fileSize,
+    required this.contentType,
   });
 
   final int progress;
   final int fileSize;
   final String fileName;
+  final String contentType;
 
   @override
   List<Object> get props => [progress, fileName];
@@ -79,6 +81,7 @@ class FileDownloadAborted extends FileDownloadState {}
 enum FileDownloadFailureReason {
   unknownError,
   fileAboveLimit,
+  browserDoesNotSupportLargeDownloads,
   networkConnectionError,
   fileNotFound
 }

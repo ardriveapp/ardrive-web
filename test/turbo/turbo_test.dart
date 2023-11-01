@@ -4,9 +4,9 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
-import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 // ignore: depend_on_referenced_packages
 import 'package:fake_async/fake_async.dart';

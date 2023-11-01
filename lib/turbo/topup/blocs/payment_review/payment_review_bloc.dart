@@ -205,7 +205,7 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     );
   }
 
-  String _getCreditsFromPaymentModel() => convertCreditsToLiteralString(
+  String _getCreditsFromPaymentModel() => convertWinstonToLiteralString(
       BigInt.from(int.parse(_paymentModel!.topUpQuote.winstonCreditAmount)));
 
   String? _getSubTotalFromPaymentModel() {
