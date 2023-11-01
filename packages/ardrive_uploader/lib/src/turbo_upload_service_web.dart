@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:js' as js;
 import 'dart:typed_data';
 
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
@@ -105,6 +106,8 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required int size,
     required Map<String, dynamic> headers,
   }) async {
+    StreamSubscription<Uint8List>? subscription;
+
     final url = '$turboUploadUri/v1/tx';
 
     int dataItemSize = 0;
@@ -138,14 +141,14 @@ class TurboUploadServiceImpl implements TurboUploadService {
         'content-type': 'application/octet-stream',
       });
 
-    _fetchController
-        .addStream(
-      rateLimitedStream,
-    )
-        .then((value) {
-      print('Done');
-      request.sink.close();
-    });
+    // _fetchController
+    //     .addStream(
+    //   rateLimitedStream,
+    // )
+    //     .then((value) {
+    //   print('Done');
+    //   request.sink.close();
+    // });
 
     _fetchController.onPause = () {
       print('Paused');
@@ -154,6 +157,33 @@ class TurboUploadServiceImpl implements TurboUploadService {
     _fetchController.onResume = () {
       print('Resumed');
     };
+
+// Create a timer to check memory every second
+    var timer = Timer.periodic(Duration(milliseconds: 500), (Timer t) async {
+      print('Checking memory');
+      Map<String, dynamic> memoryInfo = getMemoryInfo();
+      int usageMemory = memoryInfo['usedJSHeapSize'];
+
+      print(usageMemory);
+
+      if (usageMemory >= MiB(560).size) {
+        // 20 MiB
+        subscription?.pause(); // Pause upload
+      } else {
+        subscription?.resume(); // Resume upload
+      }
+    });
+
+    subscription = rateLimitedStream.listen((data) {
+      print('Data received: ${data.length}');
+      _fetchController.sink.add(data); // Manually add data to controller
+    }, onDone: () {
+      print('Done');
+      request.sink.close();
+      timer.cancel(); // Stop the timer
+    }, onError: (e) {
+      print('Error: $e');
+    });
 
     try {
       request.contentLength = dataItemSize;
@@ -244,4 +274,13 @@ class ArDriveStreamedRequest extends http.BaseRequest {
     super.finalize();
     return http.ByteStream(_controller.stream);
   }
+}
+
+Map<String, dynamic> getMemoryInfo() {
+  final jsMemory = js.context['performance']['memory'];
+  return {
+    'totalJSHeapSize': jsMemory['totalJSHeapSize'],
+    'usedJSHeapSize': jsMemory['usedJSHeapSize'],
+    'jsHeapSizeLimit': jsMemory['jsHeapSizeLimit'],
+  };
 }
