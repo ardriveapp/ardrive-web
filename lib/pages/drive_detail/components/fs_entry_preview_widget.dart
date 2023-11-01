@@ -1111,21 +1111,17 @@ class ImagePreviewWidget extends StatefulWidget {
 class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   @override
   Widget build(BuildContext context) {
-    if (!widget.isSharePage && !widget.isFullScreen) {
-      return _buildImage();
-    } else {
-      final theme = ArDriveTheme.of(context);
+    final theme = ArDriveTheme.of(context);
 
-      return Column(
-        children: [
-          Flexible(child: _buildImage()),
-          Container(
-            color: theme.themeData.colors.themeBgCanvas,
-            child: _buildActionBar(),
-          ),
-        ],
-      );
-    }
+    return Column(
+      children: [
+        Flexible(child: _buildImage()),
+        Container(
+          color: theme.themeData.colors.themeBgCanvas,
+          child: _buildActionBar(),
+        ),
+      ],
+    );
   }
 
   Widget _buildImage() {
