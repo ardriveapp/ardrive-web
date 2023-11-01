@@ -6,6 +6,8 @@ class AppRoutePath {
   /// Whether or not the user is trying to sign in.
   final bool signingIn;
 
+  final bool getStarted;
+
   final String? driveId;
   final String? driveName;
   final String? driveFolderId;
@@ -23,6 +25,7 @@ class AppRoutePath {
 
   const AppRoutePath({
     this.signingIn = false,
+    this.getStarted = false,
     this.driveId,
     this.driveName,
     this.driveFolderId,
@@ -35,6 +38,8 @@ class AppRoutePath {
 
   /// Creates a route that lets the user sign in.
   factory AppRoutePath.signIn() => const AppRoutePath(signingIn: true);
+
+  factory AppRoutePath.getStarted() => const AppRoutePath(getStarted: true);
 
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail({

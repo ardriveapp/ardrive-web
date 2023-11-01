@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
@@ -25,11 +27,15 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:pst/pst.dart';
 
 import '../blocs/upload/upload_handles/bundle_upload_handle.dart';
+import '../pages/drive_detail/components/drive_explorer_item_tile.dart';
 
 Future<void> promptToUpload(
   BuildContext context, {
@@ -39,14 +45,15 @@ Future<void> promptToUpload(
 }) async {
   final selectedFiles = <UploadFile>[];
   final io = ArDriveIO();
+  IOFolder? ioFolder;
   if (isFolderUpload) {
-    final ioFolder = await io.pickFolder();
+    ioFolder = await io.pickFolder();
     final ioFiles = await ioFolder.listFiles();
     final uploadFiles = ioFiles.map((file) {
       return UploadFile(
         ioFile: file,
         parentFolderId: parentFolderId,
-        relativeTo: ioFolder.path.isEmpty ? null : getDirname(ioFolder.path),
+        relativeTo: ioFolder!.path.isEmpty ? null : getDirname(ioFolder.path),
       );
     }).toList();
     selectedFiles.addAll(uploadFiles);
@@ -55,6 +62,7 @@ Future<void> promptToUpload(
     // Open file picker on Web
     final ioFiles = kIsWeb
         ? await io.pickFiles(fileSource: FileSource.fileSystem)
+        // ignore: use_build_context_synchronously
         : await showMultipleFilesFilePickerModal(context);
 
     final uploadFiles = ioFiles
@@ -71,6 +79,7 @@ Future<void> promptToUpload(
       context,
       content: BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
+          folder: ioFolder,
           arDriveUploadManager: ArDriveUploadPreparationManager(
             uploadPreparePaymentOptions: UploadPaymentEvaluator(
               appConfig: context.read<ConfigService>().config,
@@ -136,13 +145,21 @@ class UploadForm extends StatefulWidget {
 
 class _UploadFormState extends State<UploadForm> {
   final _scrollController = ScrollController();
+  bool _isShowingCancelDialog = false;
+
+  @override
+  initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
-            Navigator.pop(context);
-            context.read<FeedbackSurveyCubit>().openRemindMe();
+            if (!_isShowingCancelDialog) {
+              Navigator.pop(context);
+              context.read<FeedbackSurveyCubit>().openRemindMe();
+            }
           } else if (state is UploadPreparationInitialized) {
             context.read<UploadCubit>().verifyFilesAboveWarningLimit();
           }
@@ -151,6 +168,7 @@ class _UploadFormState extends State<UploadForm> {
             context.read<ProfileCubit>().logoutProfile();
           }
         },
+        buildWhen: (previous, current) => current is! UploadComplete,
         builder: (context, state) {
           if (state is UploadFolderNameConflict) {
             return ArDriveStandardModal(
@@ -563,6 +581,8 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               ),
             );
+          } else if (state is UploadInProgressUsingNewUploader) {
+            return _uploadUsingNewUploader(state: state);
           } else if (state is UploadInProgress) {
             final numberOfFilesInBundles =
                 state.uploadPlan.bundleUploadHandles.isNotEmpty
@@ -688,6 +708,17 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               ),
             );
+          } else if (state is UploadCanceled) {
+            return ArDriveStandardModal(
+              title: 'Upload canceled',
+              description: 'Your upload was canceled',
+              actions: [
+                ModalAction(
+                  action: () => Navigator.of(context).pop(false),
+                  title: appLocalizationsOf(context).okEmphasized,
+                ),
+              ],
+            );
           } else if (state is UploadFailure) {
             if (state.error == UploadErrors.turboTimeout) {
               return ArDriveStandardModal(
@@ -725,7 +756,11 @@ class _UploadFormState extends State<UploadForm> {
                     Text(
                       appLocalizationsOf(context)
                           .weDontRecommendUploadsAboveASafeLimit(
-                        filesize(publicFileSafeSizeLimit),
+                        filesize(
+                          state.reason == UploadWarningReason.fileTooLarge
+                              ? publicFileSafeSizeLimit
+                              : nonChromeBrowserUploadSafeLimitUsingTurbo,
+                        ),
                       ),
                       style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
@@ -738,8 +773,19 @@ class _UploadFormState extends State<UploadForm> {
                   title: appLocalizationsOf(context).cancelEmphasized,
                 ),
                 ModalAction(
-                  action: () =>
-                      context.read<UploadCubit>().checkFilesAboveLimit(),
+                  action: () {
+                    if (state.uploadPlanForAR != null &&
+                        state.reason ==
+                            UploadWarningReason
+                                .fileTooLargeOnNonChromeBrowser) {
+                      return context.read<UploadCubit>().startUpload(
+                            uploadPlanForAr: state.uploadPlanForAR!,
+                            uploadPlanForTurbo: state.uploadPlanForTurbo,
+                          );
+                    }
+
+                    return context.read<UploadCubit>().checkFilesAboveLimit();
+                  },
                   title: appLocalizationsOf(context).proceed,
                 ),
               ],
@@ -748,4 +794,390 @@ class _UploadFormState extends State<UploadForm> {
           return const SizedBox();
         },
       );
+
+  Widget _uploadUsingNewUploader({
+    required UploadInProgressUsingNewUploader state,
+  }) {
+    final progress = state.progress;
+    return ArDriveStandardModal(
+      actions: [
+        ModalAction(
+          action: () {
+            if (state.uploadMethod == UploadMethod.ar &&
+                state.progress.task.any(
+                    (element) => element.status == UploadStatus.inProgress)) {
+              _isShowingCancelDialog = true;
+              final cubit = context.read<UploadCubit>();
+
+              showAnimatedDialog(
+                context,
+                content: BlocBuilder<UploadCubit, UploadState>(
+                  bloc: cubit,
+                  builder: (context, state) {
+                    if (state is UploadComplete) {
+                      // TODO: localize
+                      return ArDriveStandardModal(
+                        title: 'Upload complete',
+                        description:
+                            'Your upload is complete. You can not cancel it anymore.',
+                        actions: [
+                          ModalAction(
+                            action: () {
+                              // parent modal
+                              Navigator.pop(context);
+
+                              Navigator.pop(context);
+                            },
+                            title: 'Ok',
+                          ),
+                        ],
+                      );
+                    }
+                    // TODO: localize
+                    return ArDriveStandardModal(
+                      title: 'Warning',
+                      description:
+                          'Cancelling this upload may still result in a charge to your wallet. Do you still wish to proceed?',
+                      actions: [
+                        ModalAction(
+                          action: () => Navigator.pop(context),
+                          title: 'No',
+                        ),
+                        ModalAction(
+                          action: () {
+                            cubit.cancelUpload();
+                            Navigator.pop(context);
+                          },
+                          title: 'Yes',
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            } else {
+              context.read<UploadCubit>().cancelUpload();
+            }
+          },
+          // TODO: localize
+          title: state.isCanceling
+              ? 'Canceling...'
+              : appLocalizationsOf(context).cancelEmphasized,
+        ),
+      ],
+      width: kLargeDialogWidth,
+      title:
+          '${appLocalizationsOf(context).uploadingNFiles(state.progress.getNumberOfItems())} ${(state.totalProgress * 100).toStringAsFixed(2)}%',
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: kLargeDialogWidth,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 256 * 1.5),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: Scrollbar(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: progress.task.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final task = progress.task[index];
+
+                      String? progressText;
+                      String status = '';
+
+                      // TODO: localize
+                      switch (task.status) {
+                        case UploadStatus.notStarted:
+                          status = 'Not started';
+                          break;
+                        case UploadStatus.inProgress:
+                          status = 'In progress';
+                          break;
+                        case UploadStatus.paused:
+                          status = 'Paused';
+                          break;
+                        case UploadStatus.creatingMetadata:
+                          status =
+                              'We are preparing your upload. Preparation step 1/2';
+                          break;
+                        case UploadStatus.encryting:
+                          status = 'Encrypting';
+                          break;
+                        case UploadStatus.complete:
+                          status = 'Complete';
+                          break;
+                        case UploadStatus.failed:
+                          status = 'Failed';
+                          break;
+                        case UploadStatus.preparationDone:
+                          status = 'Preparation done';
+                          break;
+                        case UploadStatus.canceled:
+                          status = 'Canceled';
+                          break;
+                        case UploadStatus.creatingBundle:
+                          status =
+                              'We are preparing your upload. Preparation step 2/2';
+                      }
+
+                      if (task.isProgressAvailable) {
+                        if (task.status == UploadStatus.inProgress ||
+                            task.status == UploadStatus.complete ||
+                            task.status == UploadStatus.failed) {
+                          progressText =
+                              '${filesize(((task.uploadItem!.size) * task.progress).ceil())}/${filesize(task.uploadItem!.size)}';
+                        }
+                      } else {
+                        if (task.status == UploadStatus.inProgress) {
+                          // TODO: localize
+                          progressText =
+                              'Your upload is in progress, but for large files the progress it not available. Please wait...';
+                        }
+                      }
+
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (task.content != null)
+                            for (var file in task.content!)
+                              ListTile(
+                                leading: file is ARFSFileUploadMetadata
+                                    ? getIconForContentType(
+                                        file.dataContentType,
+                                        size: 24,
+                                      )
+                                    : file is ARFSFolderUploadMetatadata
+                                        ? getIconForContentType(
+                                            'folder',
+                                            size: 24,
+                                          )
+                                        : null,
+                                contentPadding: EdgeInsets.zero,
+                                title: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.max,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Flexible(
+                                      flex: 1,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            file.name,
+                                            style: ArDriveTypography.body
+                                                .buttonNormalBold(
+                                                  color:
+                                                      ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeFgDefault,
+                                                )
+                                                .copyWith(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                          ),
+                                          AnimatedSwitcher(
+                                            duration:
+                                                const Duration(seconds: 1),
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  status,
+                                                  style: ArDriveTypography.body
+                                                      .buttonNormalBold(
+                                                    color:
+                                                        ArDriveTheme.of(context)
+                                                            .themeData
+                                                            .colors
+                                                            .themeFgOnDisabled,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          if (progressText != null)
+                                            Text(
+                                              progressText,
+                                              style: ArDriveTypography.body
+                                                  .buttonNormalRegular(
+                                                color: ArDriveTheme.of(context)
+                                                    .themeData
+                                                    .colors
+                                                    .themeFgOnDisabled,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    Flexible(
+                                      flex: 1,
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.max,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          if (task.isProgressAvailable &&
+                                              (task.status ==
+                                                      UploadStatus.failed ||
+                                                  task.status ==
+                                                      UploadStatus.inProgress ||
+                                                  task.status ==
+                                                      UploadStatus
+                                                          .complete)) ...[
+                                            Flexible(
+                                              flex: 2,
+                                              child: ArDriveProgressBar(
+                                                height: 4,
+                                                indicatorColor:
+                                                    _getUploadStatusColor(
+                                                  context,
+                                                  task,
+                                                ),
+                                                percentage: task.progress,
+                                              ),
+                                            ),
+                                            Flexible(
+                                              child: Text(
+                                                '${(task.progress * 100).toInt()}%',
+                                                style: ArDriveTypography.body
+                                                    .buttonNormalBold(
+                                                  color:
+                                                      ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeFgDefault,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                          if (!task.isProgressAvailable ||
+                                              task.status ==
+                                                  UploadStatus.creatingBundle ||
+                                              task.status ==
+                                                  UploadStatus.creatingMetadata)
+                                            Flexible(
+                                              flex: 2,
+                                              child: SizedBox(
+                                                child: LoadingAnimationWidget
+                                                    .prograssiveDots(
+                                                  color:
+                                                      ArDriveTheme.of(context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeFgDefault,
+                                                  size: 40,
+                                                ),
+                                              ),
+                                            ),
+                                          const SizedBox(
+                                            width: 8,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          Divider(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgSubtle
+                                .withOpacity(0.5),
+                            thickness: 0.5,
+                            height: 8,
+                          )
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(
+            height: 8,
+          ),
+          // TODO: localize
+          Text(
+            'Total uploaded: ${filesize(state.progress.totalUploaded)} of ${filesize(state.progress.totalSize)}',
+            style: ArDriveTypography.body
+                .buttonNormalBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault)
+                .copyWith(fontWeight: FontWeight.bold),
+          ),
+          // TODO: localize
+          Text(
+            'Files uploaded: ${state.progress.tasksContentCompleted()} of ${state.progress.tasksContentLength()}',
+            style: ArDriveTypography.body
+                .buttonNormalBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault)
+                .copyWith(fontWeight: FontWeight.bold),
+          ),
+          // TODO: localize
+          Text(
+            'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
+            style: ArDriveTypography.body.buttonNormalBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgDefault),
+          ),
+
+          if (state.containsLargeTurboUpload) ...[
+            const SizedBox(
+              height: 8,
+            ),
+            Align(
+              alignment: Alignment.center,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Warning!',
+                    style: ArDriveTypography.body
+                        .buttonLargeBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeErrorMuted,
+                        )
+                        .copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  Text('Leaving this page may result in a failed upload',
+                      style: ArDriveTypography.body.buttonLargeBold())
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Color _getUploadStatusColor(
+      BuildContext context, UploadTask uploadStatusColor) {
+    final themeColors = ArDriveTheme.of(context).themeData.colors;
+
+    if (uploadStatusColor.status == UploadStatus.failed) {
+      return themeColors.themeErrorDefault;
+    } else if (uploadStatusColor.progress == 1) {
+      return themeColors.themeSuccessDefault;
+    } else {
+      return themeColors.themeFgDefault;
+    }
+  }
 }

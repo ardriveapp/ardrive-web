@@ -1,5 +1,6 @@
-import 'package:ardrive/utils/app_platform.dart';
-// ignore: depend_on_referenced_packages
+// ignore_for_file: depend_on_referenced_packages
+
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:platform/platform.dart';
 import 'package:test/test.dart';
 

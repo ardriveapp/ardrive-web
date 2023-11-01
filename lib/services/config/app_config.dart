@@ -18,6 +18,7 @@ class AppConfig {
   final int autoSyncIntervalInSeconds;
   final bool enableSyncFromSnapshot;
   final bool enableSeedPhraseLogin;
+  final bool useNewUploader;
   final String stripePublishableKey;
   final bool forceNoFreeThanksToTurbo;
   final BigInt? fakeTurboCredits;
@@ -38,6 +39,7 @@ class AppConfig {
     this.enableSyncFromSnapshot = true,
     this.enableSeedPhraseLogin = true,
     required this.stripePublishableKey,
+    this.useNewUploader = false,
     this.forceNoFreeThanksToTurbo = false,
     this.fakeTurboCredits,
     this.topUpDryRun = false,
@@ -58,6 +60,7 @@ class AppConfig {
     bool? enableSyncFromSnapshot,
     bool? enableSeedPhraseLogin,
     String? stripePublishableKey,
+    bool? useNewUploader,
     bool? forceNoFreeThanksToTurbo,
     BigInt? fakeTurboCredits,
     bool? topUpDryRun,
@@ -68,6 +71,7 @@ class AppConfig {
         : fakeTurboCredits ?? this.fakeTurboCredits;
 
     return AppConfig(
+      useNewUploader: useNewUploader ?? this.useNewUploader,
       defaultArweaveGatewayUrl:
           defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
       useTurboUpload: useTurboUpload ?? this.useTurboUpload,

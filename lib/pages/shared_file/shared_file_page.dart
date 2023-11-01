@@ -80,14 +80,11 @@ class SharedFilePage extends StatelessWidget {
                 ),
               ),
             ),
-            mobile: (context) => SingleChildScrollView(
-              primary: true,
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height,
-                child: state is SharedFileLoadSuccess
-                    ? Expanded(child: activityPanel(state))
-                    : _buildShareCard(context, state),
-              ),
+            mobile: (context) => SizedBox(
+              height: MediaQuery.of(context).size.height,
+              child: state is SharedFileLoadSuccess
+                  ? Row(children: [Expanded(child: activityPanel(state))])
+                  : _buildShareCard(context, state),
             ),
           );
         },

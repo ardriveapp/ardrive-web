@@ -1,4 +1,4 @@
-import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class AppInfo {
@@ -48,4 +48,4 @@ class AppInfoServices {
 }
 
 const String appName = 'ArDrive-App';
-const String arfsVersion = '0.12';
+const String arfsVersion = '0.13';

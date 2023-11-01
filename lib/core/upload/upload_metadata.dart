@@ -56,9 +56,23 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
     required super.isPrivate,
   });
 
+  // without dataTxId
   @override
-  Map<String, dynamic> toJson() => _$ARFSFileUploadMetadataToJson(this);
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'size': size,
+        'lastModifiedDate': lastModifiedDate.millisecondsSinceEpoch,
+        'dataContentType': dataContentType,
+      };
 }
+
+// {
+//   "name": "420-3",
+//   "size": 420000,
+//   "lastModifiedDate": 1682024476785,
+//   "dataTxId": "vjjdo85A_XjpZuZV3zwEiECoArmFNqU8VizHirCoXUQ",
+//   "dataContentType": "application/octet-stream"
+// }
 
 abstract class ARFSUploadMetadata extends UploadMetadata {
   final String name;
@@ -74,4 +88,7 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
   });
 
   Map<String, dynamic> toJson();
+
+  @override
+  String toString() => toJson().toString();
 }
