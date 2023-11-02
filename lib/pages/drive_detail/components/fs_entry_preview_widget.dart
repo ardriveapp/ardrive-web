@@ -1136,57 +1136,78 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildActionBar() {
+    final isFileExplorer = !widget.isSharePage && !widget.isFullScreen;
+
+    if (isFileExplorer) {
+      return Expanded(
+          child: Column(children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [_buildNameAndExtension(isFileExplorer: isFileExplorer)],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [_buildFullScreenButton(isFileExplorer: isFileExplorer)],
+        ),
+      ]));
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        SizedBox(
-          height: 96,
-          child: Padding(
-            padding: const EdgeInsets.only(
-              left: 24,
-              top: 24,
-              bottom: 24,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getFileNameWithNoExtension(),
-                  style: ArDriveTypography.body.smallBold700(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
-                  ),
-                ),
-                Text(
-                  _getFileExtension(),
-                  style: ArDriveTypography.body.smallRegular(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDisabled,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(
-            right: 24,
-            top: 24,
-            bottom: 24,
-          ),
-          child: IconButton(
-            onPressed: goFullScreen,
-            icon: widget.isFullScreen
-                ? const Icon(Icons.fullscreen_exit_outlined)
-                : const Icon(Icons.fullscreen_outlined, size: 24),
-          ),
-        ),
+        _buildNameAndExtension(isFileExplorer: isFileExplorer),
+        _buildFullScreenButton(isFileExplorer: isFileExplorer),
       ],
+    );
+  }
+
+  Widget _buildNameAndExtension({required bool isFileExplorer}) {
+    return SizedBox(
+      height: isFileExplorer ? null : 96,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          top: 24,
+          bottom: isFileExplorer ? 0 : 24,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: isFileExplorer
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
+          children: [
+            Text(
+              _getFileNameWithNoExtension(),
+              style: ArDriveTypography.body.smallBold700(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              ),
+            ),
+            Text(
+              _getFileTypeFromMime(),
+              style: ArDriveTypography.body.smallRegular(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFullScreenButton({required bool isFileExplorer}) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        top: isFileExplorer ? 0 : 24,
+        bottom: 24,
+      ),
+      child: IconButton(
+        onPressed: _toggleFullScreen,
+        icon: widget.isFullScreen
+            ? const Icon(Icons.fullscreen_exit_outlined)
+            : const Icon(Icons.fullscreen_outlined, size: 24),
+      ),
     );
   }
 
@@ -1194,7 +1215,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     return widget.filename.substring(0, widget.filename.lastIndexOf('.'));
   }
 
-  String _getFileExtension() {
+  String _getFileTypeFromMime() {
     return widget.contentType
         .substring(
           widget.contentType.lastIndexOf('/') + 1,
@@ -1202,7 +1223,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         .toUpperCase();
   }
 
-  void goFullScreen() {
+  void _toggleFullScreen() {
     if (widget.isFullScreen) {
       Navigator.of(context).pop();
     } else {
