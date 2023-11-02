@@ -6,8 +6,8 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
-import 'package:ardrive/utils/mime_lookup.dart';
 import 'package:ardrive_http/ardrive_http.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -79,7 +79,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           final data = await _getPreviewData(file, previewUrl);
 
           if (data != null) {
-            emit(FsEntryPreviewImage(imageBytes: data, previewUrl: previewUrl));
+            emit(FsEntryPreviewImage(
+              imageBytes: data,
+              previewUrl: previewUrl,
+              filename: file.name,
+              contentType: file.contentType,
+            ));
           } else {
             emit(FsEntryPreviewUnavailable());
           }
@@ -206,6 +211,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             }
           }
         });
+      } else {
+        emit(FsEntryPreviewUnavailable());
       }
     } else {
       emit(FsEntryPreviewUnavailable());
@@ -278,7 +285,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       switch (drive.privacy) {
         case DrivePrivacyTag.public:
           emit(
-            FsEntryPreviewImage(imageBytes: dataBytes, previewUrl: dataUrl),
+            FsEntryPreviewImage(
+              imageBytes: dataBytes,
+              previewUrl: dataUrl,
+              filename: file.name,
+              contentType: file.dataContentType ??
+                  lookupMimeTypeWithDefaultType(file.name),
+            ),
           );
           break;
         case DrivePrivacyTag.private:
@@ -289,7 +302,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
           if (isPinFile) {
             emit(
-              FsEntryPreviewImage(imageBytes: dataBytes, previewUrl: dataUrl),
+              FsEntryPreviewImage(
+                imageBytes: dataBytes,
+                previewUrl: dataUrl,
+                filename: file.name,
+                contentType: file.dataContentType ??
+                    lookupMimeTypeWithDefaultType(file.name),
+              ),
             );
             break;
           }
@@ -314,7 +333,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             fileKey,
           );
           emit(
-            FsEntryPreviewImage(imageBytes: decodedBytes, previewUrl: dataUrl),
+            FsEntryPreviewImage(
+              imageBytes: decodedBytes,
+              previewUrl: dataUrl,
+              filename: file.name,
+              contentType: file.dataContentType ??
+                  lookupMimeTypeWithDefaultType(file.name),
+            ),
           );
           break;
 
