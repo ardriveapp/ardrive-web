@@ -568,9 +568,13 @@ class UploadCubit extends Cubit<UploadState> {
       },
     );
 
+    uploadController.onCompleteTask((task) {
+      _saveEntityOnDB(task);
+    });
+
     uploadController.onDone(
       (tasks) async {
-        logger.d('Upload finished');
+        logger.d('Upload folders and files finished');
 
         if (tasks.any((element) => element.status == UploadStatus.failed)) {
           logger.e('Error uploading');
@@ -578,123 +582,6 @@ class UploadCubit extends Cubit<UploadState> {
           addError(Exception('Error uploading'));
         }
 
-        final tasksWithSuccess = tasks
-            .where((element) => element.status == UploadStatus.complete)
-            .toList();
-
-        try {
-          final List<ARFSFolderUploadMetatadata> foldersMetadata = [];
-          final List<ARFSFileUploadMetadata> filesMetadata = [];
-
-          for (var metadata
-              in tasksWithSuccess.expand((element) => element.content ?? [])) {
-            if (metadata is ARFSFolderUploadMetatadata) {
-              foldersMetadata.add(metadata);
-            } else if (metadata is ARFSFileUploadMetadata) {
-              filesMetadata.add(metadata);
-            }
-          }
-
-          for (var metadata in foldersMetadata) {
-            final revisionAction = conflictingFolders.contains(metadata.name)
-                ? RevisionAction.uploadNewVersion
-                : RevisionAction.create;
-
-            final entity = FolderEntity(
-              driveId: metadata.driveId,
-              id: metadata.id,
-              name: metadata.name,
-              parentFolderId: metadata.parentFolderId,
-            );
-
-            if (metadata.metadataTxId == null) {
-              logger.e('Metadata tx id is null');
-              throw Exception('Metadata tx id is null');
-            }
-
-            entity.txId = metadata.metadataTxId!;
-
-            final folderPath = foldersByPath.values
-                .firstWhere((element) =>
-                    element.name == metadata.name &&
-                    element.parentFolderId == metadata.parentFolderId)
-                .path;
-
-            await _driveDao.transaction(() async {
-              await _driveDao.createFolder(
-                driveId: _targetDrive.id,
-                parentFolderId: metadata.parentFolderId,
-                folderName: metadata.name,
-                path: folderPath,
-                folderId: metadata.id,
-              );
-              await _driveDao.insertFolderRevision(
-                entity.toRevisionCompanion(
-                  performedAction: revisionAction,
-                ),
-              );
-            });
-          }
-
-          logger.d('Files metadata: ${filesMetadata.length}');
-
-          for (var file in filesMetadata) {
-            final revisionAction = conflictingFiles.values.contains(file.id)
-                ? RevisionAction.uploadNewVersion
-                : RevisionAction.create;
-
-            logger.d('File id: ${file.id}');
-            logger
-                .d('Reusing id? ${conflictingFiles.values.contains(file.id)}');
-
-            final entity = FileEntity(
-              dataContentType: file.dataContentType,
-              dataTxId: file.dataTxId,
-              driveId: file.driveId,
-              id: file.id,
-              lastModifiedDate: file.lastModifiedDate,
-              name: file.name,
-              parentFolderId: file.parentFolderId,
-              size: file.size,
-            );
-
-            if (file.metadataTxId == null) {
-              logger.e('Metadata tx id is null');
-              throw Exception('Metadata tx id is null');
-            }
-
-            entity.txId = file.metadataTxId!;
-
-            if (revisionAction == RevisionAction.uploadNewVersion) {
-              final existingFile = await _driveDao
-                  .fileById(driveId: driveId, fileId: file.id)
-                  .getSingle();
-
-              final filePath = existingFile.path;
-              await _driveDao.writeFileEntity(entity, filePath);
-              await _driveDao.insertFileRevision(
-                entity.toRevisionCompanion(
-                  performedAction: revisionAction,
-                ),
-              );
-            } else {
-              logger.d(files.first.getIdentifier());
-              final parentFolderPath = (await _driveDao
-                      .folderById(
-                          driveId: driveId, folderId: file.parentFolderId)
-                      .getSingle())
-                  .path;
-              await _driveDao.writeFileEntity(entity, parentFolderPath);
-              await _driveDao.insertFileRevision(
-                entity.toRevisionCompanion(
-                  performedAction: revisionAction,
-                ),
-              );
-            }
-          }
-        } catch (e) {
-          logger.e('Error saving folder', e);
-        }
         emit(UploadComplete());
 
         unawaited(_profileCubit.refreshBalance());
@@ -779,26 +666,22 @@ class UploadCubit extends Cubit<UploadState> {
       (tasks) async {
         logger.d('Upload finished');
 
-        for (var task in tasks) {
-          logger.d('Task status: ${task.status}');
-        }
-
         if (tasks.any((element) => element.status == UploadStatus.failed)) {
-          // if any of the files failed, we should throw an error
           logger.e('Error uploading');
+          // if any of the files failed, we should throw an error
           addError(Exception('Error uploading'));
         }
 
-        logger.d('Saving files on database');
-
-        for (var task in tasks
-            .where((element) => element.status == UploadStatus.complete)) {
-          await _saveEntityOnDB(task);
-        }
-
         unawaited(_profileCubit.refreshBalance());
+
+        // all files are uploaded
+        emit(UploadComplete());
       },
     );
+
+    uploadController.onCompleteTask((task) async {
+      await _saveEntityOnDB(task);
+    });
   }
 
   Future _saveEntityOnDB(UploadTask task) async {
@@ -812,7 +695,7 @@ class UploadCubit extends Cubit<UploadState> {
         if (metadata is ARFSFileUploadMetadata) {
           final fileMetadata = metadata;
 
-          final revisionAction = conflictingFiles.containsKey(fileMetadata.name)
+          final revisionAction = conflictingFiles.values.contains(metadata.id)
               ? RevisionAction.uploadNewVersion
               : RevisionAction.create;
 
@@ -848,33 +731,38 @@ class UploadCubit extends Cubit<UploadState> {
             );
           });
         } else if (metadata is ARFSFolderUploadMetatadata) {
-          final folderMetadata = metadata;
-
-          final revisionAction =
-              conflictingFolders.contains(folderMetadata.name)
-                  ? RevisionAction.uploadNewVersion
-                  : RevisionAction.create;
+          final revisionAction = conflictingFolders.contains(metadata.name)
+              ? RevisionAction.uploadNewVersion
+              : RevisionAction.create;
 
           final entity = FolderEntity(
-            driveId: folderMetadata.driveId,
-            id: folderMetadata.id,
-            name: folderMetadata.name,
-            parentFolderId: folderMetadata.parentFolderId,
+            driveId: metadata.driveId,
+            id: metadata.id,
+            name: metadata.name,
+            parentFolderId: metadata.parentFolderId,
           );
 
+          if (metadata.metadataTxId == null) {
+            logger.e('Metadata tx id is null');
+            throw Exception('Metadata tx id is null');
+          }
+
+          entity.txId = metadata.metadataTxId!;
+
+          final folderPath = foldersByPath.values
+              .firstWhere((element) =>
+                  element.name == metadata.name &&
+                  element.parentFolderId == metadata.parentFolderId)
+              .path;
+
           await _driveDao.transaction(() async {
-            final id = await _driveDao.createFolder(
+            await _driveDao.createFolder(
               driveId: _targetDrive.id,
-              parentFolderId: folderMetadata.parentFolderId,
-              folderName: folderMetadata.name,
-              path: '${_targetFolder.path}/${metadata.name}',
-              folderId: folderMetadata.id,
+              parentFolderId: metadata.parentFolderId,
+              folderName: metadata.name,
+              path: folderPath,
+              folderId: metadata.id,
             );
-
-            logger.d('Folder created with id: $id');
-
-            entity.txId = metadata.metadataTxId!;
-
             await _driveDao.insertFolderRevision(
               entity.toRevisionCompanion(
                 performedAction: revisionAction,
@@ -882,9 +770,6 @@ class UploadCubit extends Cubit<UploadState> {
             );
           });
         }
-
-        // all files are uploaded
-        emit(UploadComplete());
       }
     }
   }

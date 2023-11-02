@@ -20,6 +20,7 @@ abstract class UploadController {
   void onError(Function(List<UploadTask> tasks) callback);
   void updateProgress({UploadTask? task});
   void onProgressChange(Function(UploadProgress progress) callback);
+  void onCompleteTask(Function(UploadTask tasks) callback);
   void sendTasks(
     Wallet wallet,
   );
@@ -193,6 +194,11 @@ class _UploadController implements UploadController {
   }
 
   @override
+  void onCompleteTask(Function(UploadTask tasks) callback) {
+    _onCompleteTask = callback;
+  }
+
+  @override
   void onDone(Function(List<UploadTask> tasks) callback) {
     _onDone = callback;
   }
@@ -273,9 +279,16 @@ class _UploadController implements UploadController {
     print('Upload Canceled');
   };
 
+  void Function(UploadTask task) _onCompleteTask = (UploadTask tasks) {
+    print('Upload Canceled');
+  };
+
   void _updateTaskStatus(UploadTask task, String taskId) {
     switch (task.status) {
       case UploadStatus.complete:
+        if (_completedTasks[taskId] == null) {
+          _onCompleteTask(task);
+        }
         _completedTasks[taskId] = task;
         _totalUploadedItems += task.content!.length;
         break;
