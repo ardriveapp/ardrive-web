@@ -10,6 +10,7 @@ import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/components/payment_method_selector_widget.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
@@ -79,6 +80,7 @@ Future<void> promptToUpload(
       context,
       content: BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
+          activityTracker: context.read<ActivityTracker>(),
           folder: ioFolder,
           arDriveUploadManager: ArDriveUploadPreparationManager(
             uploadPreparePaymentOptions: UploadPaymentEvaluator(
@@ -159,6 +161,8 @@ class _UploadFormState extends State<UploadForm> {
             if (!_isShowingCancelDialog) {
               Navigator.pop(context);
               context.read<FeedbackSurveyCubit>().openRemindMe();
+              context.read<ActivityTracker>().setUploading(false);
+              context.read<SyncCubit>().startSync();
             }
           } else if (state is UploadPreparationInitialized) {
             context.read<UploadCubit>().verifyFilesAboveWarningLimit();

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
@@ -24,6 +25,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final DriveDao _driveDao;
   final ConfigService _configService;
   final ArDriveAuth _auth;
+  final ActivityTracker _activityTracker;
 
   StreamSubscription? _folderSubscription;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
@@ -41,8 +43,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ConfigService configService,
+    required ActivityTracker activityTracker,
     required ArDriveAuth auth,
   })  : _profileCubit = profileCubit,
+        _activityTracker = activityTracker,
         _driveDao = driveDao,
         _auth = auth,
         _configService = configService,
@@ -113,6 +117,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
+          if (_activityTracker.isUploading) {
+            return;
+          }
+
           final state = this.state is DriveDetailLoadSuccess
               ? this.state as DriveDetailLoadSuccess
               : null;

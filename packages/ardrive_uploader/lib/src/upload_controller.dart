@@ -556,6 +556,7 @@ class Worker {
       task = task.copyWith(
         status: UploadStatus.failed,
       );
+
       uploadController.updateProgress(
         task: task,
       );
@@ -812,5 +813,7 @@ abstract class UploadTask<T> {
     UploadStatus? status,
     String? id,
     List<ARFSUploadMetadata>? content,
+    SecretKey? encryptionKey,
+    StreamedUpload? streamedUpload,
   });
 }

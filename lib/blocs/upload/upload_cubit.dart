@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';
@@ -45,6 +46,7 @@ class UploadCubit extends Cubit<UploadState> {
   final UploadFileChecker _uploadFileChecker;
   final ArDriveAuth _auth;
   final ArDriveUploadPreparationManager _arDriveUploadManager;
+  final ActivityTracker _activityTracker;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -104,6 +106,7 @@ class UploadCubit extends Cubit<UploadState> {
     required UploadFileChecker uploadFileChecker,
     required ArDriveAuth auth,
     required ArDriveUploadPreparationManager arDriveUploadManager,
+    required ActivityTracker activityTracker,
     this.folder,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
@@ -114,6 +117,7 @@ class UploadCubit extends Cubit<UploadState> {
         _pst = pst,
         _auth = auth,
         _arDriveUploadManager = arDriveUploadManager,
+        _activityTracker = activityTracker,
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation({
@@ -569,6 +573,8 @@ class UploadCubit extends Cubit<UploadState> {
       entities.add((fileMetadata, file.ioFile));
     }
 
+    _activityTracker.setUploading(true);
+
     final uploadController = await ardriveUploader.uploadEntities(
       entities: entities,
       wallet: _auth.currentUser.wallet,
@@ -661,6 +667,8 @@ class UploadCubit extends Cubit<UploadState> {
       uploadFiles.add((args, file.ioFile));
     }
 
+    _activityTracker.setUploading(true);
+
     /// Creates the uploader and starts the upload.
     final uploadController = await ardriveUploader.uploadFiles(
       files: uploadFiles,
@@ -710,8 +718,8 @@ class UploadCubit extends Cubit<UploadState> {
       },
     );
 
-    uploadController.onCompleteTask((task) async {
-      await _saveEntityOnDB(task);
+    uploadController.onCompleteTask((task) {
+      unawaited(_saveEntityOnDB(task));
     });
   }
 
@@ -762,7 +770,7 @@ class UploadCubit extends Cubit<UploadState> {
 
           entity.txId = fileMetadata.metadataTxId!;
 
-          await _driveDao.transaction(() async {
+          _driveDao.transaction(() async {
             // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
             // TODO: Changed this logic. PLEASE REVIEW IT.
             final filePath = '${_targetFolder.path}/${metadata.name}';
