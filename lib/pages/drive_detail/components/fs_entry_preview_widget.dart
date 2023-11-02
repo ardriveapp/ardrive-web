@@ -272,13 +272,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    ScreenTypeLayout.builder(
-                      desktop: (context) => Row(children: [
-                        Text(currentTime),
-                        const SizedBox(width: 8),
-                      ]),
-                      mobile: (context) => const SizedBox.shrink(),
-                    ),
+                    if (widget.isSharePage)
+                      ScreenTypeLayout.builder(
+                        desktop: (context) => Row(children: [
+                          Text(currentTime),
+                          const SizedBox(width: 8),
+                        ]),
+                        mobile: (context) => const SizedBox.shrink(),
+                      ),
                     Expanded(
                       child: SliderTheme(
                         data: SliderThemeData(
@@ -350,13 +351,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                         ),
                       ),
                     ),
-                    ScreenTypeLayout.builder(
-                      desktop: (context) => Row(children: [
-                        const SizedBox(width: 8),
-                        Text(duration),
-                      ]),
-                      mobile: (context) => const SizedBox.shrink(),
-                    ),
+                    if (widget.isSharePage)
+                      ScreenTypeLayout.builder(
+                        desktop: (context) => Row(children: [
+                          const SizedBox(width: 8),
+                          Text(duration),
+                        ]),
+                        mobile: (context) => const SizedBox.shrink(),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 4),
