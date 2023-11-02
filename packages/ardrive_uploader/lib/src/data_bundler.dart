@@ -27,7 +27,7 @@ class DataBundlerFactory {
       case UploadType.d2n:
         return DataTransactionBundler(
           metadataGenerator,
-        UploadCostEstimateCalculatorForAR(
+          UploadCostEstimateCalculatorForAR(
             arCostToUsd: ConvertArToUSD(),
             arweaveService: arweaveService,
             pstService: pstService,
@@ -669,7 +669,6 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
     throw l;
   }, (fileDataItem) {
     metadata as ARFSFileUploadMetadata;
-    // print('File data item id: ${fileDataItem.id}');
     metadata.setDataTxId = fileDataItem.id;
   });
 
@@ -704,7 +703,6 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
 
     metadata.entityMetadataTags
         .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv!)));
-    // print('Encrypting metadata data item with cipher $metadataCipher');
 
     metadata.entityMetadataTags.add(Tag(EntityTag.cipher, metadataCipher));
   } else {

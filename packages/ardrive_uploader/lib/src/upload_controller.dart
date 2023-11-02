@@ -481,7 +481,6 @@ class Worker {
           wallet: wallet,
           driveKey: task.encryptionKey,
           onStartBundleCreation: () {
-            // print('Creating bundle');
             task = task.copyWith(
               status: UploadStatus.creatingBundle,
             );
@@ -491,7 +490,6 @@ class Worker {
             );
           },
           onStartMetadataCreation: () {
-            // print('Creating metadata');
             task = task.copyWith(
               status: UploadStatus.creatingMetadata,
             );
