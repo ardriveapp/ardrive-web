@@ -1,6 +1,7 @@
 @Tags(['broken'])
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -8,6 +9,8 @@ import 'package:test/test.dart';
 
 import '../test_utils/fakes.dart';
 import '../test_utils/utils.dart';
+
+class MockActivityTracker extends Mock implements ActivityTracker {}
 
 void main() {
   group('DrivesCubit', () {
@@ -26,6 +29,7 @@ void main() {
       profileCubit = MockProfileCubit();
 
       drivesCubit = DrivesCubit(
+        activityTracker: MockActivityTracker(),
         auth: MockArDriveAuth(),
         profileCubit: profileCubit,
         driveDao: driveDao,
