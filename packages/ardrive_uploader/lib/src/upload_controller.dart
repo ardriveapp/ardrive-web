@@ -171,6 +171,13 @@ class _UploadController implements UploadController {
   void addTask(UploadTask task) {
     if (task.content != null) {
       _numberOfItems += task.content!.length;
+
+      if (task is FileUploadTask) {
+        for (var content in task.content!) {
+          final fileMetadata = content as ARFSFileUploadMetadata;
+          _totalSize += fileMetadata.size;
+        }
+      }
     }
 
     tasks[task.id] = task;
@@ -313,16 +320,11 @@ class _UploadController implements UploadController {
 
   Future<void> _updateTotalSize(
       UploadTask task, UploadItem? uploadItem, UploadTask? existingTask) async {
-    if (existingTask?.uploadItem == null || existingTask?.content == null) {
-      if (task is FileUploadTask &&
-          uploadItem == null &&
-          task.content != null) {
-        _totalSize += await task.file.length;
+    if (existingTask?.uploadItem == null && uploadItem != null) {
+      if (task is FileUploadTask) {
+        _totalSize -= await task.file.length;
       }
-
-      if (uploadItem != null && task is FileUploadTask) {
-        _totalSize = _totalSize - await task.file.length + uploadItem.size;
-      }
+      _totalSize += uploadItem.size;
     }
   }
 
