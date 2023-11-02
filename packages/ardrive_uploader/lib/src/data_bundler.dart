@@ -366,7 +366,16 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
   }) async {
     // print('Creating bundle for file: ${file.path}');
     onStartMetadataCreation?.call();
-    // print('Creating metadata data item');
+    print('Creating metadata data item');
+    SecretKeyData? key;
+
+    if (driveKey != null) {
+      key = await deriveFileKey(
+        driveKey,
+        metadata.id,
+        keyByteLength,
+      );
+    }
 
     // returns the encrypted or not file read stream and the cipherIv if it was encrypted
     final dataGenerator = await _dataGenerator(
