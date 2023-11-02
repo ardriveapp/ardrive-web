@@ -37,13 +37,12 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         );
 
       case FsEntryPreviewImage:
-        return ArDriveImage(
-          fit: BoxFit.contain,
-          height: double.maxFinite,
-          width: double.maxFinite,
-          image: MemoryImage(
-            (widget.state as FsEntryPreviewImage).imageBytes,
-          ),
+        return ImagePreviewWidget(
+          filename: (widget.state as FsEntryPreviewImage).filename,
+          contentType: (widget.state as FsEntryPreviewImage).contentType,
+          imageBytes: (widget.state as FsEntryPreviewImage).imageBytes,
+          isSharePage: widget.isSharePage,
+          isFullScreen: false,
         );
 
       case FsEntryPreviewAudio:
@@ -1030,6 +1029,199 @@ class _FullScreenVideoPlayerWidgetState
             )),
       ],
     )));
+  }
+}
+
+class ImagePreviewFullScreenWidget extends StatefulWidget {
+  final Uint8List imageBytes;
+  final String filename;
+  final String contentType;
+
+  const ImagePreviewFullScreenWidget({
+    super.key,
+    required this.filename,
+    required this.contentType,
+    required this.imageBytes,
+  });
+
+  @override
+  State<StatefulWidget> createState() {
+    return _ImagePreviewFullScreenWidgetState();
+  }
+}
+
+class _ImagePreviewFullScreenWidgetState
+    extends State<ImagePreviewFullScreenWidget> {
+  bool fullScreenMode = false;
+
+  @override
+  void initState() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ImagePreviewWidget(
+        filename: widget.filename,
+        contentType: widget.contentType,
+        imageBytes: widget.imageBytes,
+        isFullScreen: true,
+      ),
+    );
+  }
+}
+
+class ImagePreviewWidget extends StatefulWidget {
+  final Uint8List imageBytes;
+  final String filename;
+  final String contentType;
+  final bool isSharePage;
+  final bool isFullScreen;
+
+  const ImagePreviewWidget({
+    super.key,
+    required this.filename,
+    required this.contentType,
+    required this.imageBytes,
+    this.isSharePage = false,
+    this.isFullScreen = false,
+  });
+
+  @override
+  State<StatefulWidget> createState() {
+    return _ImagePreviewWidgetState();
+  }
+}
+
+class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isSharePage && !widget.isFullScreen) {
+      return _buildImage();
+    } else {
+      final theme = ArDriveTheme.of(context);
+
+      return Column(
+        children: [
+          Flexible(child: _buildImage()),
+          Container(
+            color: theme.themeData.colors.themeBgCanvas,
+            child: _buildActionBar(),
+          ),
+        ],
+      );
+    }
+  }
+
+  Widget _buildImage() {
+    return ArDriveImage(
+      fit: BoxFit.contain,
+      height: double.maxFinite,
+      width: double.maxFinite,
+      image: MemoryImage(
+        widget.imageBytes,
+      ),
+    );
+  }
+
+  Widget _buildActionBar() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        SizedBox(
+          height: 96,
+          child: Padding(
+            padding: const EdgeInsets.only(
+              left: 24,
+              top: 24,
+              bottom: 24,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getFileNameWithNoExtension(),
+                  style: ArDriveTypography.body.smallBold700(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+                ),
+                Text(
+                  _getFileExtension(),
+                  style: ArDriveTypography.body.smallRegular(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDisabled,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(
+            right: 24,
+            top: 24,
+            bottom: 24,
+          ),
+          child: IconButton(
+            onPressed: goFullScreen,
+            icon: widget.isFullScreen
+                ? const Icon(Icons.fullscreen_exit_outlined)
+                : const Icon(Icons.fullscreen_outlined, size: 24),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getFileNameWithNoExtension() {
+    return widget.filename.substring(0, widget.filename.lastIndexOf('.'));
+  }
+
+  String _getFileExtension() {
+    return widget.contentType
+        .substring(
+          widget.contentType.lastIndexOf('/') + 1,
+        )
+        .toUpperCase();
+  }
+
+  void goFullScreen() {
+    if (widget.isFullScreen) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          pageBuilder: (context, _, __) => ImagePreviewFullScreenWidget(
+            filename: widget.filename,
+            contentType: widget.contentType,
+            imageBytes: widget.imageBytes,
+          ),
+        ),
+      );
+    }
   }
 }
 
