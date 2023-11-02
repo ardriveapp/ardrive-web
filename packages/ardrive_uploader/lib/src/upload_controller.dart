@@ -10,231 +10,6 @@ import 'package:uuid/uuid.dart';
 
 import '../ardrive_uploader.dart';
 
-abstract class UploadItem<T> {
-  final int size;
-  final T data;
-
-  UploadItem({required this.size, required this.data});
-}
-
-class BundleDataItemUploadItem extends UploadItem<DataItemResult> {
-  BundleDataItemUploadItem({required int size, required DataItemResult data})
-      : super(size: size, data: data);
-}
-
-class BundleTransactionUploadItem extends UploadItem<TransactionResult> {
-  BundleTransactionUploadItem(
-      {required int size, required TransactionResult data})
-      : super(size: size, data: data);
-}
-
-class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
-  final List<(ARFSFolderUploadMetatadata, IOEntity)> folders;
-
-  @override
-  final UploadItem? uploadItem;
-
-  @override
-  final StreamedUpload streamedUpload;
-
-  @override
-  final List<ARFSUploadMetadata>? content;
-
-  @override
-  final double progress;
-
-  @override
-  final String id;
-
-  @override
-  bool isProgressAvailable = true;
-
-  FolderUploadTask({
-    required this.folders,
-    this.uploadItem,
-    this.isProgressAvailable = true,
-    this.status = UploadStatus.notStarted,
-    this.content,
-    this.encryptionKey,
-    required this.streamedUpload,
-    this.progress = 0,
-    String? id,
-  }) : id = id ?? const Uuid().v4();
-
-  @override
-  UploadStatus status;
-
-  @override
-  FolderUploadTask copyWith({
-    UploadItem? uploadItem,
-    double? progress,
-    bool? isProgressAvailable,
-    UploadStatus? status,
-    String? id,
-    List<ARFSUploadMetadata>? content,
-    SecretKey? encryptionKey,
-    List<(ARFSFolderUploadMetatadata, IOEntity)>? folders,
-    StreamedUpload? streamedUpload,
-  }) {
-    return FolderUploadTask(
-      streamedUpload: streamedUpload ?? this.streamedUpload,
-      folders: folders ?? this.folders,
-      uploadItem: uploadItem ?? this.uploadItem,
-      content: content ?? this.content,
-      id: id ?? this.id,
-      progress: progress ?? this.progress,
-      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
-      status: status ?? this.status,
-    );
-  }
-
-  @override
-  final SecretKey? encryptionKey;
-}
-
-class FileUploadTask extends UploadTask {
-  final IOFile file;
-
-  final ARFSFileUploadMetadata metadata;
-
-  @override
-  final StreamedUpload streamedUpload;
-
-  @override
-  final UploadItem? uploadItem;
-
-  @override
-  final List<ARFSUploadMetadata>? content;
-
-  @override
-  final double progress;
-
-  @override
-  final String id;
-
-  @override
-  bool isProgressAvailable = true;
-
-  FileUploadTask({
-    this.uploadItem,
-    this.isProgressAvailable = true,
-    this.status = UploadStatus.notStarted,
-    this.content,
-    String? id,
-    required this.file,
-    required this.metadata,
-    this.encryptionKey,
-    required this.streamedUpload,
-    this.progress = 0,
-  }) : id = id ?? const Uuid().v4();
-
-  @override
-  UploadStatus status;
-
-  @override
-  FileUploadTask copyWith({
-    UploadItem? uploadItem,
-    double? progress,
-    bool? isProgressAvailable,
-    UploadStatus? status,
-    String? id,
-    ARFSFileUploadMetadata? metadata,
-    List<ARFSUploadMetadata>? content,
-    SecretKey? encryptionKey,
-    StreamedUpload? streamedUpload,
-  }) {
-    return FileUploadTask(
-      streamedUpload: streamedUpload ?? this.streamedUpload,
-      encryptionKey: encryptionKey ?? this.encryptionKey,
-      metadata: metadata ?? this.metadata,
-      uploadItem: uploadItem ?? this.uploadItem,
-      content: content ?? this.content,
-      id: id ?? this.id,
-      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
-      status: status ?? this.status,
-      file: file,
-      progress: progress ?? this.progress,
-    );
-  }
-
-  @override
-  final SecretKey? encryptionKey;
-}
-
-abstract class UploadTask<T> {
-  abstract final String id;
-  abstract final UploadItem? uploadItem;
-  abstract final List<ARFSUploadMetadata>? content;
-  abstract final double progress;
-  abstract final bool isProgressAvailable;
-  abstract final UploadStatus status;
-  abstract final SecretKey? encryptionKey;
-  abstract final StreamedUpload streamedUpload;
-
-  UploadTask copyWith({
-    UploadItem? uploadItem,
-    double? progress,
-    bool? isProgressAvailable,
-    UploadStatus? status,
-    String? id,
-    List<ARFSUploadMetadata>? content,
-  });
-}
-
-class ARFSUploadTask implements UploadTask<ARFSUploadMetadata> {
-  @override
-  final UploadItem? uploadItem;
-
-  @override
-  final List<ARFSUploadMetadata>? content;
-
-  @override
-  double progress = 0;
-
-  @override
-  final String id;
-
-  @override
-  bool isProgressAvailable = true;
-
-  ARFSUploadTask({
-    this.uploadItem,
-    this.isProgressAvailable = true,
-    this.status = UploadStatus.notStarted,
-    this.content,
-    this.encryptionKey,
-    String? id,
-  }) : id = id ?? const Uuid().v4();
-
-  @override
-  UploadStatus status;
-
-  @override
-  ARFSUploadTask copyWith({
-    UploadItem? uploadItem,
-    double? progress,
-    bool? isProgressAvailable,
-    UploadStatus? status,
-    String? id,
-    List<ARFSUploadMetadata>? content,
-  }) {
-    return ARFSUploadTask(
-      uploadItem: uploadItem ?? this.uploadItem,
-      content: content ?? this.content,
-      id: id ?? this.id,
-      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
-      status: status ?? this.status,
-    );
-  }
-
-  @override
-  final SecretKey? encryptionKey;
-
-  @override
-  // TODO: implement streamedUpload
-  StreamedUpload get streamedUpload => throw UnimplementedError();
-}
-
 abstract class UploadController {
   abstract final Map<String, UploadTask> tasks;
 
@@ -295,6 +70,21 @@ class _UploadController implements UploadController {
 
   WorkerPool? workerPool;
 
+  @override
+  final Map<String, UploadTask> tasks = {};
+
+  final Map<String, UploadTask> _completedTasks = {};
+  final Map<String, UploadTask> _failedTasks = {};
+  final Map<String, UploadTask> _canceledTasks = {};
+
+  int _totalSize = 0;
+  int _numberOfItems = 0;
+  double _totalProgress = 0;
+  int _totalUploaded = 0;
+  int _totalUploadedItems = 0;
+
+  final UploadProgress _uploadProgress = UploadProgress.notStarted();
+
   void init() {
     _isCanceled = false;
     late StreamSubscription subscription;
@@ -331,116 +121,20 @@ class _UploadController implements UploadController {
   }
 
   @override
-  Future<void> close() async {
-    await _progressStream.close();
-  }
+  void updateProgress({UploadTask? task}) async {
+    if (_progressStream.isClosed || task == null) return;
 
-  @override
-  Future<void> cancel() async {
-    workerPool?.cancel();
-    _isCanceled = true;
+    final taskId = task.id;
+    final existingTask = tasks[taskId];
+    final uploadItem = task.uploadItem;
 
-    final cancelableTask = tasks.values
-        .where((e) =>
-            e.status != UploadStatus.complete &&
-            e.status != UploadStatus.failed)
-        .toList();
-
-    final cancelTasksFuture = cancelableTask.map((task) async {
-      await task.streamedUpload.cancel(task, this);
-
-      task = task.copyWith(status: UploadStatus.canceled);
-
-      _canceledTasks.putIfAbsent(task.id, () => task);
-
-      updateProgress(task: task);
-    });
-
-    await Future.wait(cancelTasksFuture);
-
-    _onCancel(_canceledTasks.values.toList());
-
-    _progressStream.close();
-  }
-
-  @override
-  void onCancel(Function(List<UploadTask> tasks) callback) {
-    _onCancel = callback;
-  }
-
-  @override
-  void onDone(Function(List<UploadTask> tasks) callback) {
-    _onDone = callback;
-  }
-
-  @override
-  void updateProgress({
-    UploadTask? task,
-  }) async {
-    if (_progressStream.isClosed || task == null) {
-      return;
-    }
-
-    var taskId = task.id;
-    var existingTask = tasks[taskId];
-    var uploadItem = task.uploadItem;
-
-    if (task.status == UploadStatus.complete) {
-      _completedTasks[taskId] = task;
-      _totalUploadedItems += task.content!.length;
-    } else if (task.status == UploadStatus.failed) {
-      _failedTasks[taskId] = task;
-    }
-
-    if (existingTask == null ||
-        existingTask.uploadItem == null ||
-        existingTask.content == null) {
-      if (task is FileUploadTask &&
-          uploadItem == null &&
-          task.content != null) {
-        _totalSize += await task.file.length;
-      }
-
-      if (uploadItem != null && task is FileUploadTask) {
-        _totalSize -= await task.file.length;
-        _totalSize += uploadItem.size;
-      }
-    }
-
-    if (existingTask != null &&
-        existingTask.uploadItem != null &&
-        uploadItem != null) {
-      double diff = task.progress - existingTask.progress;
-      _totalUploaded += (diff * uploadItem.size).toInt();
-
-      if (diff > 0) {
-        _totalProgress += diff;
-      }
-    }
+    _updateTaskStatus(task, taskId);
+    _updateTotalSize(task, uploadItem, existingTask);
+    _updateProgress(task, uploadItem, existingTask);
 
     tasks[taskId] = task;
-
-    double progressInPercentage = _totalProgress / tasks.length;
-    _uploadProgress = _uploadProgress.copyWith(
-      task: tasks,
-      progressInPercentage: progressInPercentage,
-      totalSize: _totalSize,
-      totalUploaded: _totalUploaded,
-      startTime: _start,
-      numberOfItems: _numberOfItems,
-      numberOfUploadedItems: _totalUploadedItems,
-    );
-
-    _progressStream.add(_uploadProgress);
+    _progressStream.add(_generateUploadProgress());
   }
-
-  int _totalSize = 0;
-  int _numberOfItems = 0;
-  double _totalProgress = 0;
-  int _totalUploaded = 0;
-  int _totalUploadedItems = 0;
-
-  UploadProgress _uploadProgress = UploadProgress.notStarted();
 
   @override
   void onError(Function(List<UploadTask> tasks) callback) {}
@@ -448,75 +142,6 @@ class _UploadController implements UploadController {
   @override
   void onProgressChange(Function(UploadProgress progress) callback) {
     _onProgressChange = callback;
-  }
-
-  void Function(UploadProgress progress)? _onProgressChange = (progress) {};
-
-  void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {
-    print('Upload Finished');
-  };
-
-  void Function(List<UploadTask> tasks) _onCancel = (List<UploadTask> tasks) {
-    print('Upload Canceled');
-  };
-
-  @override
-  final Map<String, UploadTask> tasks = {};
-  final Map<String, UploadTask> _completedTasks = {};
-  final Map<String, UploadTask> _failedTasks = {};
-  final Map<String, UploadTask> _canceledTasks = {};
-
-  // TODO: CALCULATE BASED ON TOTAL SIZE NOT ONLY ON THE NUMBER OF TASKS
-  double calculateTotalProgress(List<UploadTask> tasks) {
-    return tasks
-            .map((e) => e.progress)
-            .reduce((value, element) => value + element) /
-        tasks.length;
-  }
-
-  int totalUploaded(List<UploadTask> tasks) {
-    int totalUploaded = 0;
-
-    for (var task in tasks) {
-      if (task.uploadItem != null) {
-        totalUploaded += (task.progress * task.uploadItem!.size).toInt();
-      }
-    }
-
-    return totalUploaded;
-  }
-
-  int totalSize() {
-    return _totalSize;
-  }
-
-  /// It is just an experimentation. It is not used yet, but it will be used in the future.
-  /// When this implementation is stable, we must add this method on its interface class: `UploadController`.
-  Future<void> retryFailedTasks(Wallet wallet) async {
-    final failedTasks =
-        tasks.values.where((e) => e.status == UploadStatus.failed).toList();
-
-    if (failedTasks.isEmpty) {
-      return Future.value();
-    }
-
-    for (var task in failedTasks) {
-      task.copyWith(status: UploadStatus.notStarted);
-
-      updateProgress(task: task);
-
-      _streamedUpload.send(task, wallet, this);
-    }
-  }
-
-  /// It is just an experimentation. It is not used yet, but it will be used in the future.
-  /// When this implementation is stable, we must add this method on its interface class: `UploadController`.
-  Future<void> retryTask(UploadTask task, Wallet wallet) async {
-    task.copyWith(status: UploadStatus.notStarted);
-
-    updateProgress(task: task);
-
-    _streamedUpload.send(task, wallet, this);
   }
 
   @override
@@ -560,6 +185,145 @@ class _UploadController implements UploadController {
         onTaskCompleted?.call();
       },
     ).addTask(task);
+  }
+
+  @override
+  void onCancel(Function(List<UploadTask> tasks) callback) {
+    _onCancel = callback;
+  }
+
+  @override
+  void onDone(Function(List<UploadTask> tasks) callback) {
+    _onDone = callback;
+  }
+
+  /// It is just an experimentation. It is not used yet, but it will be used in the future.
+  /// When this implementation is stable, we must add this method on its interface class: `UploadController`.
+  Future<void> retryFailedTasks(Wallet wallet) async {
+    final failedTasks =
+        tasks.values.where((e) => e.status == UploadStatus.failed).toList();
+
+    if (failedTasks.isEmpty) {
+      return Future.value();
+    }
+
+    for (var task in failedTasks) {
+      task.copyWith(status: UploadStatus.notStarted);
+
+      updateProgress(task: task);
+
+      _streamedUpload.send(task, wallet, this);
+    }
+  }
+
+  /// It is just an experimentation. It is not used yet, but it will be used in the future.
+  /// When this implementation is stable, we must add this method on its interface class: `UploadController`.
+  Future<void> retryTask(UploadTask task, Wallet wallet) async {
+    task.copyWith(status: UploadStatus.notStarted);
+
+    updateProgress(task: task);
+
+    _streamedUpload.send(task, wallet, this);
+  }
+
+  @override
+  Future<void> close() async {
+    await _progressStream.close();
+  }
+
+  @override
+  Future<void> cancel() async {
+    workerPool?.cancel();
+    _isCanceled = true;
+
+    final cancelableTask = tasks.values
+        .where((e) =>
+            e.status != UploadStatus.complete &&
+            e.status != UploadStatus.failed)
+        .toList();
+
+    final cancelTasksFuture = cancelableTask.map((task) async {
+      await task.streamedUpload.cancel(task, this);
+
+      task = task.copyWith(status: UploadStatus.canceled);
+
+      _canceledTasks.putIfAbsent(task.id, () => task);
+
+      updateProgress(task: task);
+    });
+
+    await Future.wait(cancelTasksFuture);
+
+    _onCancel(_canceledTasks.values.toList());
+
+    _progressStream.close();
+  }
+
+  int totalSize() {
+    return _totalSize;
+  }
+
+  void Function(UploadProgress progress)? _onProgressChange = (progress) {};
+
+  void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {
+    print('Upload Finished');
+  };
+
+  void Function(List<UploadTask> tasks) _onCancel = (List<UploadTask> tasks) {
+    print('Upload Canceled');
+  };
+
+  void _updateTaskStatus(UploadTask task, String taskId) {
+    switch (task.status) {
+      case UploadStatus.complete:
+        _completedTasks[taskId] = task;
+        _totalUploadedItems += task.content!.length;
+        break;
+      case UploadStatus.failed:
+        _failedTasks[taskId] = task;
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _updateProgress(
+      UploadTask task, UploadItem? uploadItem, UploadTask? existingTask) {
+    if (existingTask?.uploadItem != null && uploadItem != null) {
+      final diff = task.progress - existingTask!.progress;
+      if (diff > 0) {
+        _totalUploaded += (diff * uploadItem.size).toInt();
+        _totalProgress += diff;
+      }
+    }
+  }
+
+  Future<void> _updateTotalSize(
+      UploadTask task, UploadItem? uploadItem, UploadTask? existingTask) async {
+    if (existingTask?.uploadItem == null || existingTask?.content == null) {
+      if (task is FileUploadTask &&
+          uploadItem == null &&
+          task.content != null) {
+        _totalSize += await task.file.length;
+      }
+
+      if (uploadItem != null && task is FileUploadTask) {
+        _totalSize = _totalSize - await task.file.length + uploadItem.size;
+      }
+    }
+  }
+
+  UploadProgress _generateUploadProgress() {
+    final progressInPercentage = _totalProgress / tasks.length;
+    return _uploadProgress.copyWith(
+      task: tasks,
+      progressInPercentage: progressInPercentage,
+      totalSize: _totalSize,
+      totalUploaded: _totalUploaded,
+      startTime: _start,
+      numberOfItems: _numberOfItems,
+      numberOfUploadedItems: _totalUploadedItems,
+    );
   }
 }
 
@@ -689,7 +453,6 @@ class Worker {
   }
 
   Future<void> _performUpload(UploadTask task) async {
-    // Your upload logic here
     /// Can be either a DataItemResult or a TransactionResult
     dynamic bundle;
 
@@ -864,4 +627,175 @@ class WorkerPool {
   bool get isCanceled => _isCanceled;
 
   bool _isCanceled = false;
+}
+
+abstract class UploadItem<T> {
+  final int size;
+  final T data;
+
+  UploadItem({required this.size, required this.data});
+}
+
+class BundleDataItemUploadItem extends UploadItem<DataItemResult> {
+  BundleDataItemUploadItem({required int size, required DataItemResult data})
+      : super(size: size, data: data);
+}
+
+class BundleTransactionUploadItem extends UploadItem<TransactionResult> {
+  BundleTransactionUploadItem(
+      {required int size, required TransactionResult data})
+      : super(size: size, data: data);
+}
+
+class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
+  final List<(ARFSFolderUploadMetatadata, IOEntity)> folders;
+
+  @override
+  final UploadItem? uploadItem;
+
+  @override
+  final StreamedUpload streamedUpload;
+
+  @override
+  final List<ARFSUploadMetadata>? content;
+
+  @override
+  final double progress;
+
+  @override
+  final String id;
+
+  @override
+  bool isProgressAvailable = true;
+
+  FolderUploadTask({
+    required this.folders,
+    this.uploadItem,
+    this.isProgressAvailable = true,
+    this.status = UploadStatus.notStarted,
+    this.content,
+    this.encryptionKey,
+    required this.streamedUpload,
+    this.progress = 0,
+    String? id,
+  }) : id = id ?? const Uuid().v4();
+
+  @override
+  UploadStatus status;
+
+  @override
+  FolderUploadTask copyWith({
+    UploadItem? uploadItem,
+    double? progress,
+    bool? isProgressAvailable,
+    UploadStatus? status,
+    String? id,
+    List<ARFSUploadMetadata>? content,
+    SecretKey? encryptionKey,
+    List<(ARFSFolderUploadMetatadata, IOEntity)>? folders,
+    StreamedUpload? streamedUpload,
+  }) {
+    return FolderUploadTask(
+      streamedUpload: streamedUpload ?? this.streamedUpload,
+      folders: folders ?? this.folders,
+      uploadItem: uploadItem ?? this.uploadItem,
+      content: content ?? this.content,
+      id: id ?? this.id,
+      progress: progress ?? this.progress,
+      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
+      status: status ?? this.status,
+    );
+  }
+
+  @override
+  final SecretKey? encryptionKey;
+}
+
+class FileUploadTask extends UploadTask {
+  final IOFile file;
+
+  final ARFSFileUploadMetadata metadata;
+
+  @override
+  final StreamedUpload streamedUpload;
+
+  @override
+  final UploadItem? uploadItem;
+
+  @override
+  final List<ARFSUploadMetadata>? content;
+
+  @override
+  final double progress;
+
+  @override
+  final String id;
+
+  @override
+  bool isProgressAvailable = true;
+
+  FileUploadTask({
+    this.uploadItem,
+    this.isProgressAvailable = true,
+    this.status = UploadStatus.notStarted,
+    this.content,
+    String? id,
+    required this.file,
+    required this.metadata,
+    this.encryptionKey,
+    required this.streamedUpload,
+    this.progress = 0,
+  }) : id = id ?? const Uuid().v4();
+
+  @override
+  UploadStatus status;
+
+  @override
+  FileUploadTask copyWith({
+    UploadItem? uploadItem,
+    double? progress,
+    bool? isProgressAvailable,
+    UploadStatus? status,
+    String? id,
+    ARFSFileUploadMetadata? metadata,
+    List<ARFSUploadMetadata>? content,
+    SecretKey? encryptionKey,
+    StreamedUpload? streamedUpload,
+  }) {
+    return FileUploadTask(
+      streamedUpload: streamedUpload ?? this.streamedUpload,
+      encryptionKey: encryptionKey ?? this.encryptionKey,
+      metadata: metadata ?? this.metadata,
+      uploadItem: uploadItem ?? this.uploadItem,
+      content: content ?? this.content,
+      id: id ?? this.id,
+      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
+      status: status ?? this.status,
+      file: file,
+      progress: progress ?? this.progress,
+    );
+  }
+
+  @override
+  final SecretKey? encryptionKey;
+}
+
+abstract class UploadTask<T> {
+  abstract final String id;
+  abstract final UploadItem? uploadItem;
+  abstract final List<ARFSUploadMetadata>? content;
+  abstract final double progress;
+  abstract final bool isProgressAvailable;
+  abstract final UploadStatus status;
+  abstract final SecretKey? encryptionKey;
+  abstract final StreamedUpload streamedUpload;
+
+  UploadTask copyWith({
+    UploadItem? uploadItem,
+    double? progress,
+    bool? isProgressAvailable,
+    UploadStatus? status,
+    String? id,
+    List<ARFSUploadMetadata>? content,
+  });
 }
