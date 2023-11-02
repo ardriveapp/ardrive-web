@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
@@ -18,9 +19,11 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pst/pst.dart';
 
 import 'enums/conflicting_files_actions.dart';
 
@@ -360,8 +363,10 @@ class UploadCubit extends Cubit<UploadState> {
         'Is Zero Balance: $isTurboZeroBalance\n',
       );
 
-      final literalBalance = convertCreditsToLiteralString(
+      final literalBalance = convertWinstonToLiteralString(
           uploadPreparation.uploadPaymentInfo.turboBalance);
+      final literalARBalance =
+          convertWinstonToLiteralString(_auth.currentUser.walletBalance);
 
       bool isButtonEnabled = false;
       bool sufficientBalanceToPayWithAR =
@@ -399,8 +404,7 @@ class UploadCubit extends Cubit<UploadState> {
           costEstimateAr: paymentInfo.arCostEstimate,
           costEstimateTurbo: paymentInfo.turboCostEstimate,
           credits: literalBalance,
-          arBalance:
-              convertCreditsToLiteralString(_auth.currentUser.walletBalance),
+          arBalance: literalARBalance,
           uploadIsPublic: _targetDrive.isPublic,
           sufficientArBalance:
               profile.walletBalance >= paymentInfo.arCostEstimate.totalCost,
@@ -419,6 +423,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   bool hasEmittedError = false;
+  bool hasEmittedWarning = false;
 
   Future<void> startUpload({
     required UploadPlan uploadPlanForAr,
@@ -453,6 +458,26 @@ class UploadCubit extends Cubit<UploadState> {
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
     if (configService.config.useNewUploader) {
+      if (_uploadMethod == UploadMethod.turbo) {
+        await _verifyIfUploadContainsLargeFilesUsingTurbo();
+        if ((_containsLargeTurboUpload ?? false) &&
+            !hasEmittedWarning &&
+            kIsWeb &&
+            !await AppPlatform.isChrome()) {
+          emit(
+            UploadShowingWarning(
+              reason: UploadWarningReason.fileTooLargeOnNonChromeBrowser,
+              uploadPlanForAR: uploadPlanForAr,
+              uploadPlanForTurbo: uploadPlanForTurbo,
+            ),
+          );
+          hasEmittedWarning = true;
+          return;
+        }
+      } else {
+        _containsLargeTurboUpload = false;
+      }
+
       if (uploadFolders) {
         await _uploadFolderUsingArDriveUploader();
         return;
@@ -493,6 +518,10 @@ class UploadCubit extends Cubit<UploadState> {
           appInfoServices: AppInfoServices(),
         ),
       ),
+      arweave: Arweave(
+        gatewayUrl: Uri.parse(configService.config.defaultArweaveGatewayUrl!),
+      ),
+      pstService: _pst,
     );
 
     final private = _targetDrive.isPrivate;
@@ -563,6 +592,7 @@ class UploadCubit extends Cubit<UploadState> {
             progress: progress,
             controller: uploadController,
             uploadMethod: _uploadMethod!,
+            containsLargeTurboUpload: _containsLargeTurboUpload!,
           ),
         );
       },
@@ -589,11 +619,7 @@ class UploadCubit extends Cubit<UploadState> {
     );
   }
 
-  // TODO: implement this
-  void retryUploads(UploadController controller) {}
-
-  // TODO: implement this
-  void retryTask(UploadController controller, UploadTask task) {}
+  bool? _containsLargeTurboUpload;
 
   Future<void> _uploadUsingArDriveUploader() async {
     final ardriveUploader = ArDriveUploader(
@@ -603,6 +629,10 @@ class UploadCubit extends Cubit<UploadState> {
           appInfoServices: AppInfoServices(),
         ),
       ),
+      arweave: Arweave(
+        gatewayUrl: Uri.parse(configService.config.defaultArweaveGatewayUrl!),
+      ),
+      pstService: _pst,
     );
 
     final private = _targetDrive.isPrivate;
@@ -647,7 +677,7 @@ class UploadCubit extends Cubit<UploadState> {
     });
 
     uploadController.onProgressChange(
-      (progress) {
+      (progress) async {
         // TODO: Save as the file is finished the upload
 
         emit(
@@ -657,6 +687,7 @@ class UploadCubit extends Cubit<UploadState> {
             controller: uploadController,
             equatableBust: UniqueKey(),
             uploadMethod: _uploadMethod!,
+            containsLargeTurboUpload: _containsLargeTurboUpload!,
           ),
         );
       },
@@ -682,6 +713,19 @@ class UploadCubit extends Cubit<UploadState> {
     uploadController.onCompleteTask((task) async {
       await _saveEntityOnDB(task);
     });
+  }
+
+  Future<void> _verifyIfUploadContainsLargeFilesUsingTurbo() async {
+    if (_containsLargeTurboUpload == null) {
+      _containsLargeTurboUpload = false;
+
+      for (var file in files) {
+        if (await file.ioFile.length >= largeFileUploadSizeThreshold) {
+          _containsLargeTurboUpload = true;
+          break;
+        }
+      }
+    }
   }
 
   Future _saveEntityOnDB(UploadTask task) async {
@@ -872,7 +916,11 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       if (fileAboveWarningLimit) {
-        emit(UploadShowingWarning(reason: UploadWarningReason.fileTooLarge));
+        emit(UploadShowingWarning(
+          reason: UploadWarningReason.fileTooLarge,
+          uploadPlanForAR: null,
+          uploadPlanForTurbo: null,
+        ));
 
         return;
       }
@@ -915,6 +963,7 @@ class UploadCubit extends Cubit<UploadState> {
             totalProgress: state.totalProgress,
             isCanceling: true,
             uploadMethod: _uploadMethod!,
+            containsLargeTurboUpload: state.containsLargeTurboUpload,
           ),
         );
 
@@ -928,6 +977,7 @@ class UploadCubit extends Cubit<UploadState> {
             totalProgress: state.totalProgress,
             isCanceling: false,
             uploadMethod: _uploadMethod!,
+            containsLargeTurboUpload: state.containsLargeTurboUpload,
           ),
         );
 

@@ -26,6 +26,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
   bool signingIn = false;
 
+  bool gettingStarted = false;
+
   String? driveId;
   String? driveName;
   String? driveFolderId;
@@ -46,6 +48,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @override
   AppRoutePath get currentConfiguration => AppRoutePath(
         signingIn: signingIn,
+        getStarted: gettingStarted,
         driveId: driveId,
         driveName: driveName,
         sharedDriveKey: sharedDriveKey,
@@ -81,7 +84,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
       },
       builder: (context, _) => BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
-          // Clear state to prevent the last drive from being attached on new login
+          // Clear state to prevent the last drive from being attached on new
+          // login.
           if (state is ProfileLoggingOut) {
             logger.d('Logging out. Clearing state.');
 
@@ -91,24 +95,28 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           final anonymouslyShowDriveDetail =
               state is! ProfileLoggedIn && canAnonymouslyShowDriveDetail(state);
 
-          // If the user is not already signing in, not viewing a shared file and not anonymously viewing a drive,
-          // redirect them to sign in.
+          // If the user is not already signing in, not viewing a shared file
+          // and not anonymously viewing a drive, redirect them to sign in.
           //
           // Additionally, redirect the user to sign in if they are logging out.
           final showingAnonymousRoute =
               anonymouslyShowDriveDetail || isViewingSharedFile;
 
           if (!signingIn &&
+              !gettingStarted &&
               (!showingAnonymousRoute || state is ProfileLoggingOut)) {
             signingIn = true;
+            gettingStarted = false;
             notifyListeners();
           }
 
           // Redirect the user away from sign in if they are already signed in.
-          if (signingIn && state is ProfileLoggedIn) {
+          if ((signingIn || gettingStarted) && state is ProfileLoggedIn) {
             signingIn = false;
+            gettingStarted = false;
             notifyListeners();
           }
+
           // Cleans up any shared drives from previous sessions
           // TODO: Find a better place to do this
           final lastLoggedInUser =
@@ -136,6 +144,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             );
           } else if (signingIn) {
             shell = const LoginPage();
+          } else if (gettingStarted) {
+            shell = const LoginPage(gettingStarted: true);
           } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
               listener: (context, state) {
@@ -153,8 +163,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 Widget? shellPage;
                 if (state is DrivesLoadSuccess) {
                   shellPage = !state.hasNoDrives
-                      ? const DriveDetailPage()
-                      : const NoDrivesPage();
+                      ? DriveDetailPage(
+                          anonymouslyShowDriveDetail:
+                              anonymouslyShowDriveDetail,
+                        )
+                      : NoDrivesPage(
+                          anonymouslyShowDriveDetail:
+                              anonymouslyShowDriveDetail,
+                        );
+
                   driveId = state.selectedDriveId;
                 }
 
@@ -308,6 +325,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {
     signingIn = configuration.signingIn;
+    gettingStarted = configuration.getStarted;
     driveId = configuration.driveId;
     driveName = configuration.driveName;
     driveFolderId = configuration.driveFolderId;
@@ -320,6 +338,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   void clearState() {
     signingIn = true;
+    gettingStarted = false;
     driveId = null;
     driveName = null;
     driveFolderId = null;

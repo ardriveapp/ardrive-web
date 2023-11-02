@@ -3,12 +3,15 @@ part of '../drive_detail_page.dart';
 const List<double> _speedOptions = [.25, .5, .75, 1, 1.25, 1.5, 1.75, 2];
 
 class FsEntryPreviewWidget extends StatefulWidget {
+  final bool isSharePage;
+
   const FsEntryPreviewWidget({
     Key? key,
     required this.state,
+    required this.isSharePage,
   }) : super(key: key);
 
-  final FsEntryPreviewSuccess state;
+  final FsEntryPreviewState state;
 
   @override
   State<FsEntryPreviewWidget> createState() => _FsEntryPreviewWidgetState();
@@ -18,7 +21,13 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   @override
   Widget build(BuildContext context) {
     switch (widget.state.runtimeType) {
+      case FsEntryPreviewUnavailable:
+        return const Center(
+          child: Text('Preview unavailable'),
+        );
+
       case FsEntryPreviewLoading:
+      case FsEntryPreviewInitial:
         return const Center(
           child: SizedBox(
             height: 24,
@@ -41,6 +50,7 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         return AudioPlayerWidget(
           filename: (widget.state as FsEntryPreviewAudio).filename,
           audioUrl: (widget.state as FsEntryPreviewAudio).previewUrl,
+          isSharePage: widget.isSharePage,
         );
 
       default:
@@ -1026,10 +1036,14 @@ class _FullScreenVideoPlayerWidgetState
 class AudioPlayerWidget extends StatefulWidget {
   final String audioUrl;
   final String filename;
+  final bool isSharePage;
 
-  const AudioPlayerWidget(
-      {Key? key, required this.filename, required this.audioUrl})
-      : super(key: key);
+  const AudioPlayerWidget({
+    Key? key,
+    required this.filename,
+    required this.audioUrl,
+    required this.isSharePage,
+  }) : super(key: key);
 
   @override
   // ignore: library_private_types_in_public_api
@@ -1095,6 +1109,53 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
     var duration =
         player.duration != null ? getTimeString(player.duration!) : '0:00';
 
+    final slider = SliderTheme(
+        data: SliderThemeData(
+            trackHeight: 4,
+            trackShape: _NoAdditionalHeightRoundedRectSliderTrackShape(),
+            inactiveTrackColor: colors.themeBgSubtle,
+            disabledThumbColor: colors.themeAccentBrand,
+            disabledInactiveTrackColor: colors.themeBgSubtle,
+            overlayShape: SliderComponentShape.noOverlay,
+            thumbShape: const RoundSliderThumbShape(
+              enabledThumbRadius: 8,
+            )),
+        child: Slider(
+            value: _loadState == LoadState.failed
+                ? 0
+                : min(
+                    player.position.inMilliseconds.toDouble(),
+                    player.duration?.inMilliseconds.toDouble() ?? 0,
+                  ),
+            min: 0.0,
+            max: player.duration?.inMilliseconds.toDouble() ?? 0,
+            onChangeStart: _loadState == LoadState.failed
+                ? null
+                : (v) {
+                    setState(() {
+                      _wasPlaying = player.playing;
+                      if (_wasPlaying) {
+                        player.pause();
+                      }
+                    });
+                  },
+            onChanged: _loadState == LoadState.failed
+                ? null
+                : (v) {
+                    setState(() {
+                      player.seek(Duration(milliseconds: v.toInt()));
+                    });
+                  },
+            onChangeEnd: _loadState == LoadState.failed
+                ? null
+                : (v) {
+                    setState(() {
+                      if (_wasPlaying) {
+                        player.play();
+                      }
+                    });
+                  }));
+
     return VisibilityDetector(
         key: const Key('audio-player'),
         onVisibilityChanged: (VisibilityInfo info) {
@@ -1154,63 +1215,19 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                           textAlign: TextAlign.center,
                           style: ArDriveTypography.body
                               .smallBold700(color: colors.themeFgDefault)),
-                      const SizedBox(height: 8),
-                      SliderTheme(
-                          data: SliderThemeData(
-                              trackHeight: 4,
-                              trackShape:
-                                  _NoAdditionalHeightRoundedRectSliderTrackShape(),
-                              inactiveTrackColor: colors.themeBgSubtle,
-                              disabledThumbColor: colors.themeAccentBrand,
-                              disabledInactiveTrackColor: colors.themeBgSubtle,
-                              overlayShape: SliderComponentShape.noOverlay,
-                              thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 8,
-                              )),
-                          child: Slider(
-                              value: _loadState == LoadState.failed
-                                  ? 0
-                                  : min(
-                                      player.position.inMilliseconds.toDouble(),
-                                      player.duration?.inMilliseconds
-                                              .toDouble() ??
-                                          0,
-                                    ),
-                              min: 0.0,
-                              max: player.duration?.inMilliseconds.toDouble() ??
-                                  0,
-                              onChangeStart: _loadState == LoadState.failed
-                                  ? null
-                                  : (v) {
-                                      setState(() {
-                                        _wasPlaying = player.playing;
-                                        if (_wasPlaying) {
-                                          player.pause();
-                                        }
-                                      });
-                                    },
-                              onChanged: _loadState == LoadState.failed
-                                  ? null
-                                  : (v) {
-                                      setState(() {
-                                        player.seek(
-                                            Duration(milliseconds: v.toInt()));
-                                      });
-                                    },
-                              onChangeEnd: _loadState == LoadState.failed
-                                  ? null
-                                  : (v) {
-                                      setState(() {
-                                        if (_wasPlaying) {
-                                          player.play();
-                                        }
-                                      });
-                                    })),
+                      if (!widget.isSharePage) ...[
+                        const SizedBox(height: 8),
+                        slider,
+                      ],
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           Text(currentTime),
-                          const Expanded(child: SizedBox.shrink()),
+                          const SizedBox(width: 8),
+                          widget.isSharePage
+                              ? Expanded(child: slider)
+                              : const Expanded(child: SizedBox.shrink()),
+                          const SizedBox(width: 8),
                           Text(duration)
                         ],
                       ),

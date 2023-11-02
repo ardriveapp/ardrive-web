@@ -84,20 +84,20 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3699-uploads-large-files-for-public-drives
-      resolved-ref: "8c6ac43b14874b7078548b830ad1c8394109491c"
+      ref: "v1.4.1"
+      resolved-ref: "441c37764a1b120057ec2cd1e6eecb47bb35a37a"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
-    version: "1.4.0"
+    version: "1.4.1"
   ardrive_ui:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.12.0"
-      resolved-ref: e8af5815f7e1c27fa72544a379971d4630599805
+      ref: "v1.14.0"
+      resolved-ref: f2c75067ebb214200e507e269bddbfd7285720ab
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
-    version: "1.12.0"
+    version: "1.14.0"
   ardrive_uploader:
     dependency: "direct main"
     description:
@@ -139,11 +139,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-4812-cancel-button-fails-to-stop-file-upload-when-using-a-rs-only
-      resolved-ref: "0fd825555310a1a5bf5d256328c3f207ce148a5e"
+      ref: "v3.8.0"
+      resolved-ref: a61f9d73ee5eac1b6a169d6ccc6dc1948aa39b8f
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "3.7.0"
+    version: "3.8.0"
   async:
     dependency: "direct main"
     description:
@@ -569,7 +569,7 @@ packages:
     source: hosted
     version: "1.0.1"
   fetch_client:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       path: "."
       ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
@@ -1619,6 +1619,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.5"
+  pst:
+    dependency: "direct main"
+    description:
+      path: "packages/pst"
+      relative: true
+    source: path
+    version: "0.0.1"
   pub_semver:
     dependency: transitive
     description:
@@ -2299,5 +2306,5 @@ packages:
     source: hosted
     version: "3.1.2"
 sdks:
-  dart: ">=3.1.0 <4.0.0"
-  flutter: ">=3.13.2"
+  dart: ">=3.1.3 <4.0.0"
+  flutter: ">=3.13.6"

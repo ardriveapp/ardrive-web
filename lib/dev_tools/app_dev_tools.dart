@@ -6,6 +6,7 @@ import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -453,6 +454,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
             ListView.separated(
               padding: const EdgeInsets.all(16),
               shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) => buildOption(options[index]),
               separatorBuilder: (context, index) => const SizedBox(height: 16),
               itemCount: options.length,
@@ -573,8 +575,15 @@ class DraggableWindow extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final windowSize = useState<Size>(const Size(600, 600));
-    final windowPos = useState<Offset>(Offset.zero);
+    double height = 600;
+    double width = 600;
+    if (AppPlatform.isMobile) {
+      width = MediaQuery.of(context).size.width * 0.95;
+      height = MediaQuery.of(context).size.height * 0.8;
+    }
+
+    final windowSize = useState<Size>(Size(width, height));
+    final windowPos = useState<Offset>(const Offset(5, 32));
     final isWindowVisible = useState<bool>(true);
 
     if (!isWindowVisible.value) {

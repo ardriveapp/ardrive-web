@@ -4,24 +4,36 @@ import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/constants.dart';
+import 'package:ardrive_uploader/src/cost_calculator.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:pst/pst.dart';
 import 'package:uuid/uuid.dart';
 
 class DataBundlerFactory {
   DataBundler createDataBundler({
     required ARFSUploadMetadataGenerator metadataGenerator,
     required UploadType type,
+    required PstService pstService,
+    required Arweave arweaveService,
   }) {
     switch (type) {
       case UploadType.turbo:
         return BDIDataBundler(metadataGenerator);
       case UploadType.d2n:
-        return DataTransactionBundler(metadataGenerator);
+        return DataTransactionBundler(
+          metadataGenerator,
+          UploadCostEstimateCalculatorForAR(
+            arCostToUsd: ConvertArToUSD(),
+            arweaveService: arweaveService,
+            pstService: pstService,
+          ),
+          pstService,
+        );
       default:
         throw Exception('Invalid upload type');
     }
@@ -57,8 +69,14 @@ abstract class DataBundler<T> {
 
 class DataTransactionBundler implements DataBundler<TransactionResult> {
   final ARFSUploadMetadataGenerator metadataGenerator;
+  final UploadCostEstimateCalculatorForAR costCalculator;
+  final PstService pstService;
 
-  DataTransactionBundler(this.metadataGenerator);
+  DataTransactionBundler(
+    this.metadataGenerator,
+    this.costCalculator,
+    this.pstService,
+  );
 
   @override
   Future<TransactionResult> createDataBundle({
@@ -73,7 +91,14 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
   }) async {
+    SecretKey? key;
+
     if (driveKey != null) {
+      key = await deriveFileKey(
+        driveKey,
+        metadata.id,
+        keyByteLength,
+      );
       onStartEncryption?.call();
     } else {
       onStartBundling?.call();
@@ -85,7 +110,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       fileLength: await file.length,
       metadata: metadata,
       wallet: wallet,
-      encryptionKey: driveKey,
+      encryptionKey: key,
     );
 
     onStartMetadataCreation?.call();
@@ -270,11 +295,21 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
           size += chunk.length;
         }
 
+        print('Size of the bundled data item: $size bytes');
+
+        final uploadCost = await costCalculator.calculateCost(
+          totalSize: size,
+        );
+
+        final target = await pstService.getWeightedPstHolder();
+
         return createTransactionTaskEither(
+          quantity: uploadCost.pstFee,
           wallet: wallet,
           dataStreamGenerator: r.stream,
           dataSize: size,
           tags: bundledDataItemTags,
+          target: target.toString(),
         );
       },
     );
@@ -339,7 +374,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       fileLength: await file.length,
       metadata: metadata,
       wallet: wallet,
-      encryptionKey: driveKey,
+      encryptionKey: key,
     );
 
     final metadataDataItem = await _generateMetadataDataItemForFile(
