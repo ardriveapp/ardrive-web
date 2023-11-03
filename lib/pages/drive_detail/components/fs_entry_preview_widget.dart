@@ -166,6 +166,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     }
 
     Navigator.of(context).push(PageRouteBuilder(
+        barrierDismissible: true,
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
         pageBuilder: (context, animation, secondaryAnimation) {
@@ -1340,6 +1341,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     } else {
       Navigator.of(context).push(
         PageRouteBuilder(
+          barrierDismissible: true,
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
           pageBuilder: (context, _, __) => ImagePreviewFullScreenWidget(
