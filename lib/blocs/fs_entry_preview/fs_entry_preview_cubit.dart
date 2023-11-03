@@ -211,6 +211,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             }
           }
         });
+      } else {
+        emit(FsEntryPreviewUnavailable());
       }
     } else {
       emit(FsEntryPreviewUnavailable());

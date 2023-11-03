@@ -56,6 +56,7 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         return VideoPlayerWidget(
           filename: (widget.state as FsEntryPreviewVideo).filename,
           videoUrl: (widget.state as FsEntryPreviewVideo).previewUrl,
+          isSharePage: widget.isSharePage,
         );
     }
   }
@@ -87,10 +88,14 @@ String getTimeString(Duration duration) {
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
   final String filename;
+  final bool isSharePage;
 
-  const VideoPlayerWidget(
-      {Key? key, required this.filename, required this.videoUrl})
-      : super(key: key);
+  const VideoPlayerWidget({
+    Key? key,
+    required this.filename,
+    required this.videoUrl,
+    required this.isSharePage,
+  }) : super(key: key);
 
   @override
   // ignore: library_private_types_in_public_api
@@ -183,6 +188,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                     });
                   }
                 },
+                isSharePage: widget.isSharePage,
               ),
             ),
           );
@@ -264,82 +270,119 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                     style: ArDriveTypography.body
                         .smallBold700(color: colors.themeFgDefault)),
                 const SizedBox(height: 8),
-                SliderTheme(
-                    data: SliderThemeData(
-                        trackHeight: 4,
-                        trackShape:
-                            _NoAdditionalHeightRoundedRectSliderTrackShape(),
-                        inactiveTrackColor: colors.themeBgSubtle,
-                        disabledThumbColor: colors.themeAccentBrand,
-                        disabledInactiveTrackColor: colors.themeBgSubtle,
-                        overlayShape: SliderComponentShape.noOverlay,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 8,
-                        )),
-                    child: Slider(
-                        value: min(
-                            videoValue.position.inMilliseconds.toDouble(),
-                            videoValue.duration.inMilliseconds.toDouble()),
-                        secondaryTrackValue: bufferedValue,
-                        min: 0.0,
-                        max: videoValue.duration.inMilliseconds.toDouble(),
-                        onChangeStart: !controlsEnabled
-                            ? null
-                            : (v) async {
-                                if (_videoPlayerController.value.duration >
-                                    Duration.zero) {
-                                  _wasPlaying =
-                                      _videoPlayerController.value.isPlaying;
-                                  if (_wasPlaying) {
+                Row(
+                  children: [
+                    if (widget.isSharePage)
+                      ScreenTypeLayout.builder(
+                        desktop: (context) => Row(children: [
+                          Text(currentTime),
+                          const SizedBox(width: 8),
+                        ]),
+                        mobile: (context) => const SizedBox.shrink(),
+                      ),
+                    Expanded(
+                      child: SliderTheme(
+                        data: SliderThemeData(
+                            trackHeight: 4,
+                            trackShape:
+                                _NoAdditionalHeightRoundedRectSliderTrackShape(),
+                            inactiveTrackColor: colors.themeBgSubtle,
+                            disabledThumbColor: colors.themeAccentBrand,
+                            disabledInactiveTrackColor: colors.themeBgSubtle,
+                            overlayShape: SliderComponentShape.noOverlay,
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 8,
+                            )),
+                        child: Slider(
+                          value: min(
+                              videoValue.position.inMilliseconds.toDouble(),
+                              videoValue.duration.inMilliseconds.toDouble()),
+                          secondaryTrackValue: bufferedValue,
+                          min: 0.0,
+                          max: videoValue.duration.inMilliseconds.toDouble(),
+                          onChangeStart: !controlsEnabled
+                              ? null
+                              : (v) async {
+                                  if (_videoPlayerController.value.duration >
+                                      Duration.zero) {
+                                    _wasPlaying =
+                                        _videoPlayerController.value.isPlaying;
+                                    if (_wasPlaying) {
+                                      await _lock.synchronized(() async {
+                                        await _videoPlayerController
+                                            .pause()
+                                            .catchError((e) {
+                                          logger.e('Error pausing video: $e');
+                                        });
+                                      });
+                                      setState(() {});
+                                    }
+                                  }
+                                },
+                          onChanged: !controlsEnabled
+                              ? null
+                              : (v) async {
+                                  setState(() {
+                                    final milliseconds = v.toInt();
+
+                                    if (_videoPlayerController.value.duration >
+                                        Duration.zero) {
+                                      _videoPlayerController.seekTo(
+                                          Duration(milliseconds: milliseconds));
+                                    }
+                                  });
+                                },
+                          onChangeEnd: !controlsEnabled
+                              ? null
+                              : (v) async {
+                                  if (_videoPlayerController.value.duration >
+                                          Duration.zero &&
+                                      _wasPlaying) {
                                     await _lock.synchronized(() async {
                                       await _videoPlayerController
-                                          .pause()
+                                          .play()
                                           .catchError((e) {
-                                        logger.e('Error pausing video: $e');
+                                        logger.e('Error playing video: $e');
                                       });
                                     });
                                     setState(() {});
                                   }
-                                }
-                              },
-                        onChanged: !controlsEnabled
-                            ? null
-                            : (v) async {
-                                setState(() {
-                                  final milliseconds = v.toInt();
-
-                                  if (_videoPlayerController.value.duration >
-                                      Duration.zero) {
-                                    _videoPlayerController.seekTo(
-                                        Duration(milliseconds: milliseconds));
-                                  }
-                                });
-                              },
-                        onChangeEnd: !controlsEnabled
-                            ? null
-                            : (v) async {
-                                if (_videoPlayerController.value.duration >
-                                        Duration.zero &&
-                                    _wasPlaying) {
-                                  await _lock.synchronized(() async {
-                                    await _videoPlayerController
-                                        .play()
-                                        .catchError((e) {
-                                      logger.e('Error playing video: $e');
-                                    });
-                                  });
-                                  setState(() {});
-                                }
-                              })),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(currentTime),
-                    const Expanded(child: SizedBox.shrink()),
-                    Text(duration)
+                                },
+                        ),
+                      ),
+                    ),
+                    if (widget.isSharePage)
+                      ScreenTypeLayout.builder(
+                        desktop: (context) => Row(children: [
+                          const SizedBox(width: 8),
+                          Text(duration),
+                        ]),
+                        mobile: (context) => const SizedBox.shrink(),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
+                ScreenTypeLayout.builder(
+                  mobile: (BuildContext context) => const SizedBox.shrink(),
+                  desktop: (BuildContext context) {
+                    if (widget.isSharePage) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Column(
+                      children: [
+                        Row(
+                          children: [
+                            Text(currentTime),
+                            const Expanded(child: SizedBox.shrink()),
+                            Text(duration)
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    );
+                  },
+                ),
                 MouseRegion(
                   onExit: (event) {
                     setState(() {
@@ -354,14 +397,36 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           child: Align(
                               alignment: Alignment.centerLeft,
                               child: ScreenTypeLayout.builder(
-                                mobile: (context) => IconButton(
-                                    onPressed: !controlsEnabled
-                                        ? null
-                                        : () {
-                                            goFullScreen();
-                                          },
-                                    icon: const Icon(Icons.fullscreen_outlined,
-                                        size: 24)),
+                                mobile: (context) {
+                                  if (widget.isSharePage) {
+                                    return IconButton(
+                                      onPressed: () {
+                                        _displaySpeedOptionsModal(context, (v) {
+                                          setState(() {
+                                            _videoPlayerController
+                                                .setPlaybackSpeed(v);
+                                          });
+                                        });
+                                      },
+                                      icon: const Icon(
+                                        Icons.settings_outlined,
+                                        size: 24,
+                                      ),
+                                    );
+                                  } else {
+                                    return IconButton(
+                                      onPressed: !controlsEnabled
+                                          ? null
+                                          : () {
+                                              goFullScreen();
+                                            },
+                                      icon: const Icon(
+                                        Icons.fullscreen_outlined,
+                                        size: 24,
+                                      ),
+                                    );
+                                  }
+                                },
                                 desktop: (context) => VolumeSliderWidget(
                                   volume: _videoPlayerController.value.volume,
                                   setVolume: (v) {
@@ -377,6 +442,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                   },
                                 ),
                               ))),
+                      if (widget.isSharePage)
+                        ScreenTypeLayout.builder(
+                          desktop: (context) => IconButton.outlined(
+                            onPressed: () {
+                              setState(() {
+                                _videoPlayerController.seekTo(
+                                    _videoPlayerController.value.position -
+                                        const Duration(seconds: 10));
+                              });
+                            },
+                            icon: const Icon(Icons.replay_10, size: 24),
+                          ),
+                          mobile: (_) => const SizedBox.shrink(),
+                        ),
                       MaterialButton(
                         onPressed: !controlsEnabled
                             ? null
@@ -428,6 +507,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                     color: colors.themeFgOnAccent,
                                   )),
                       ),
+                      if (widget.isSharePage)
+                        ScreenTypeLayout.builder(
+                          desktop: (context) => IconButton.outlined(
+                            onPressed: () {
+                              setState(() {
+                                _videoPlayerController.seekTo(
+                                    _videoPlayerController.value.position +
+                                        const Duration(seconds: 10));
+                              });
+                            },
+                            icon: const Icon(Icons.forward_10, size: 24),
+                          ),
+                          mobile: (context) => const SizedBox.shrink(),
+                        ),
                       Expanded(
                           child: Align(
                         alignment: Alignment.centerRight,
@@ -435,41 +528,52 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             ScreenTypeLayout.builder(
-                                desktop: (context) => MenuAnchor(
-                                      menuChildren: [
-                                        ..._speedOptions.map((v) {
-                                          return ListTile(
-                                            tileColor: colors.themeBgSurface,
-                                            onTap: () {
-                                              setState(() {
-                                                _videoPlayerController
-                                                    .setPlaybackSpeed(v);
-                                                _menuController.close();
-                                              });
-                                            },
-                                            title: Text(
-                                              v == 1.0
-                                                  ? appLocalizationsOf(context)
-                                                      .normal
-                                                  : '$v',
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
-                                                      color: colors
-                                                          .themeFgDefault),
-                                            ),
-                                          );
-                                        })
-                                      ],
-                                      controller: _menuController,
-                                      child: IconButton(
-                                          onPressed: () {
-                                            _menuController.open();
+                              desktop: (context) => MenuAnchor(
+                                menuChildren: [
+                                  ..._speedOptions.map((v) {
+                                    return ListTile(
+                                      tileColor: colors.themeBgSurface,
+                                      onTap: () {
+                                        setState(() {
+                                          _videoPlayerController
+                                              .setPlaybackSpeed(v);
+                                          _menuController.close();
+                                        });
+                                      },
+                                      title: Text(
+                                        v == 1.0
+                                            ? appLocalizationsOf(context).normal
+                                            : '$v',
+                                        style: ArDriveTypography.body
+                                            .buttonNormalBold(
+                                                color: colors.themeFgDefault),
+                                      ),
+                                    );
+                                  })
+                                ],
+                                controller: _menuController,
+                                child: IconButton(
+                                    onPressed: () {
+                                      _menuController.open();
+                                    },
+                                    icon: const Icon(Icons.settings_outlined,
+                                        size: 24)),
+                              ),
+                              mobile: (context) {
+                                if (widget.isSharePage) {
+                                  return IconButton(
+                                    onPressed: !controlsEnabled
+                                        ? null
+                                        : () {
+                                            goFullScreen();
                                           },
-                                          icon: const Icon(
-                                              Icons.settings_outlined,
-                                              size: 24)),
+                                    icon: const Icon(
+                                      Icons.fullscreen_outlined,
+                                      size: 24,
                                     ),
-                                mobile: (context) => IconButton(
+                                  );
+                                } else {
+                                  return IconButton(
                                     onPressed: () {
                                       _displaySpeedOptionsModal(context, (v) {
                                         setState(() {
@@ -478,8 +582,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                         });
                                       });
                                     },
-                                    icon: const Icon(Icons.settings_outlined,
-                                        size: 24))),
+                                    icon: const Icon(
+                                      Icons.settings_outlined,
+                                      size: 24,
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
                             ScreenTypeLayout.builder(
                               desktop: (context) => IconButton(
                                   onPressed: !controlsEnabled
@@ -512,16 +622,18 @@ class FullScreenVideoPlayerWidget extends StatefulWidget {
   final bool initialIsPlaying;
   final double initialVolume;
   final Function(Duration, bool, double) onClose;
+  final bool isSharePage;
 
-  const FullScreenVideoPlayerWidget(
-      {Key? key,
-      required this.filename,
-      required this.videoUrl,
-      required this.initialPosition,
-      required this.initialIsPlaying,
-      required this.initialVolume,
-      required this.onClose})
-      : super(key: key);
+  const FullScreenVideoPlayerWidget({
+    Key? key,
+    required this.filename,
+    required this.videoUrl,
+    required this.initialPosition,
+    required this.initialIsPlaying,
+    required this.initialVolume,
+    required this.onClose,
+    required this.isSharePage,
+  }) : super(key: key);
 
   @override
   // ignore: library_private_types_in_public_api
@@ -820,7 +932,7 @@ class _FullScreenVideoPlayerWidgetState
                                               }
                                             }))),
                                 const SizedBox(width: 8),
-                                Text(duration)
+                                Text(duration),
                               ],
                             ),
                             const SizedBox(height: 8),
