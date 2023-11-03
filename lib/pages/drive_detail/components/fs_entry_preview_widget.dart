@@ -1250,6 +1250,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
 
   Widget _buildActionBar() {
     final isFileExplorer = !widget.isSharePage && !widget.isFullScreen;
+    final isFileExplorerFullScreen = !widget.isSharePage && widget.isFullScreen;
 
     if (isFileExplorer) {
       return Column(children: [
@@ -1260,6 +1261,26 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [_buildFullScreenButton(isFileExplorer: isFileExplorer)],
+        ),
+      ]);
+    } else if (isFileExplorerFullScreen) {
+      return Row(children: [
+        Flexible(
+          flex: 1,
+          child: Row(
+            children: [_buildNameAndExtension(isFileExplorer: isFileExplorer)],
+          ),
+        ),
+        Flexible(
+          flex: 1,
+          child: Center(child: _buildNavigationButtons()),
+        ),
+        Flexible(
+          flex: 1,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [_buildFullScreenButton(isFileExplorer: isFileExplorer)],
+          ),
         ),
       ]);
     }
@@ -1304,6 +1325,22 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.arrow_back_ios_outlined),
+        ),
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.arrow_forward_ios_outlined),
+        ),
+      ],
     );
   }
 
