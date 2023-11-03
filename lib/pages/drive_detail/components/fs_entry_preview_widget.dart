@@ -1139,8 +1139,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     final isFileExplorer = !widget.isSharePage && !widget.isFullScreen;
 
     if (isFileExplorer) {
-      return Expanded(
-          child: Column(children: [
+      return Column(children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [_buildNameAndExtension(isFileExplorer: isFileExplorer)],
@@ -1149,7 +1148,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [_buildFullScreenButton(isFileExplorer: isFileExplorer)],
         ),
-      ]));
+      ]);
     }
 
     return Row(
