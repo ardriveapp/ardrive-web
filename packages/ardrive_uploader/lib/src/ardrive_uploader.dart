@@ -152,8 +152,10 @@ class _ArDriveUploader implements ArDriveUploader {
     late int maxTasksPerWorker;
 
     if (await AppPlatform.isFireFox()) {
+      print('Firefox detected, using only one worker');
       maxTasksPerWorker = 1;
     } else {
+      print('Firefox not detected, using 5 workers');
       maxTasksPerWorker = driveKey != null ? 1 : 5;
     }
 

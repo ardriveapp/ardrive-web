@@ -31,8 +31,8 @@ abstract class UploadController {
     StreamController<UploadProgress> progressStream,
     StreamedUpload streamedUpload,
     DataBundler dataBundler, {
-    int numOfWorkers = 5,
-    int maxTasksPerWorker = 5,
+    int numOfWorkers = 1,
+    int maxTasksPerWorker = 1,
   }) {
     return _UploadController(
       progressStream: progressStream,
@@ -55,8 +55,8 @@ class _UploadController implements UploadController {
     required StreamController<UploadProgress> progressStream,
     required StreamedUpload streamedUpload,
     required DataBundler dataBundler,
-    int numOfWorkers = 5,
-    int maxTasksPerWorker = 5,
+    int numOfWorkers = 1,
+    int maxTasksPerWorker = 1,
   })  : _dataBundler = dataBundler,
         _numOfWorkers = numOfWorkers,
         _maxTasksPerWorker = maxTasksPerWorker,
