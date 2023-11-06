@@ -150,13 +150,16 @@ class _ArDriveUploader implements ArDriveUploader {
     print('Creating a new upload controller using the upload type $type');
 
     late int maxTasksPerWorker;
+    late int maxWorkers;
 
     if (await AppPlatform.isFireFox()) {
       print('Firefox detected, using only one worker');
       maxTasksPerWorker = 1;
+      maxWorkers = 1;
     } else {
       print('Firefox not detected, using 5 workers');
       maxTasksPerWorker = driveKey != null ? 1 : 5;
+      maxWorkers = driveKey != null ? 3 : 5;
     }
 
     final uploadController = UploadController(
@@ -168,7 +171,7 @@ class _ArDriveUploader implements ArDriveUploader {
         arweaveService: _arweave,
         pstService: _pstService,
       ),
-      numOfWorkers: driveKey != null ? 3 : 5,
+      numOfWorkers: maxWorkers,
       maxTasksPerWorker: maxTasksPerWorker,
     );
 
@@ -243,12 +246,25 @@ class _ArDriveUploader implements ArDriveUploader {
       }
     }
 
+    late int maxTasksPerWorker;
+    late int maxWorkers;
+
+    if (await AppPlatform.isFireFox()) {
+      print('Firefox detected, using only one worker');
+      maxTasksPerWorker = 1;
+      maxWorkers = 1;
+    } else {
+      print('Firefox not detected, using 5 workers');
+      maxTasksPerWorker = driveKey != null ? 1 : 5;
+      maxWorkers = driveKey != null ? 3 : 5;
+    }
+
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       streamedUpload,
       dataBundler,
-      numOfWorkers: driveKey != null ? 3 : 5,
-      maxTasksPerWorker: driveKey != null ? 1 : 5,
+      numOfWorkers: maxWorkers,
+      maxTasksPerWorker: maxTasksPerWorker,
     );
 
     if (folderMetadatas.isNotEmpty) {
