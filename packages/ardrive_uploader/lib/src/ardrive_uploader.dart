@@ -149,6 +149,14 @@ class _ArDriveUploader implements ArDriveUploader {
   }) async {
     print('Creating a new upload controller using the upload type $type');
 
+    late int maxTasksPerWorker;
+
+    if (await AppPlatform.isFireFox()) {
+      maxTasksPerWorker = 1;
+    } else {
+      maxTasksPerWorker = driveKey != null ? 1 : 5;
+    }
+
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       _streamedUploadFactory.fromUploadType(type, _turboUploadUri),
@@ -159,7 +167,7 @@ class _ArDriveUploader implements ArDriveUploader {
         pstService: _pstService,
       ),
       numOfWorkers: driveKey != null ? 3 : 5,
-      maxTasksPerWorker: driveKey != null ? 1 : 5,
+      maxTasksPerWorker: maxTasksPerWorker,
     );
 
     for (var f in files) {
