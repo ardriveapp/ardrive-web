@@ -43,6 +43,8 @@ class DetailsPanel extends StatefulWidget {
     this.fileKey,
     required this.isSharePage,
     this.currentDrive,
+    this.onPreviousImageNavigation,
+    this.onNextImageNavigation,
   });
 
   final ArDriveDataTableItem item;
@@ -52,6 +54,8 @@ class DetailsPanel extends StatefulWidget {
   final SecretKey? fileKey;
   final bool isSharePage;
   final Drive? currentDrive;
+  final Function()? onPreviousImageNavigation;
+  final Function()? onNextImageNavigation;
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
@@ -447,6 +451,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
         key: ValueKey(widget.item.id),
         state: previewState,
         isSharePage: widget.isSharePage,
+        onNextImageNavigation: widget.onNextImageNavigation,
+        onPreviousImageNavigation: widget.onPreviousImageNavigation,
       ),
     );
   }

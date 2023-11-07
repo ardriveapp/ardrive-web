@@ -4,14 +4,17 @@ const List<double> _speedOptions = [.25, .5, .75, 1, 1.25, 1.5, 1.75, 2];
 
 class FsEntryPreviewWidget extends StatefulWidget {
   final bool isSharePage;
+  final Function()? onPreviousImageNavigation;
+  final Function()? onNextImageNavigation;
+  final FsEntryPreviewState state;
 
   const FsEntryPreviewWidget({
     Key? key,
     required this.state,
     required this.isSharePage,
+    this.onPreviousImageNavigation,
+    this.onNextImageNavigation,
   }) : super(key: key);
-
-  final FsEntryPreviewState state;
 
   @override
   State<FsEntryPreviewWidget> createState() => _FsEntryPreviewWidgetState();
@@ -43,6 +46,8 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           imageBytes: (widget.state as FsEntryPreviewImage).imageBytes,
           isSharePage: widget.isSharePage,
           isFullScreen: false,
+          onNextImageNavigate: widget.onNextImageNavigation,
+          onPreviousImageNavigate: widget.onPreviousImageNavigation,
         );
 
       case FsEntryPreviewAudio:
@@ -1145,66 +1150,16 @@ class _FullScreenVideoPlayerWidgetState
   }
 }
 
-class ImagePreviewFullScreenWidget extends StatefulWidget {
-  final Uint8List imageBytes;
-  final String filename;
-  final String contentType;
-
-  const ImagePreviewFullScreenWidget({
-    super.key,
-    required this.filename,
-    required this.contentType,
-    required this.imageBytes,
-  });
-
-  @override
-  State<StatefulWidget> createState() {
-    return _ImagePreviewFullScreenWidgetState();
-  }
-}
-
-class _ImagePreviewFullScreenWidgetState
-    extends State<ImagePreviewFullScreenWidget> {
-  bool fullScreenMode = false;
-
-  @override
-  void initState() {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeRight,
-      DeviceOrientation.landscapeLeft,
-    ]);
-
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
-
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: ImagePreviewWidget(
-        filename: widget.filename,
-        contentType: widget.contentType,
-        imageBytes: widget.imageBytes,
-        isFullScreen: true,
-      ),
-    );
-  }
-}
-
 class ImagePreviewWidget extends StatefulWidget {
   final Uint8List imageBytes;
   final String filename;
   final String contentType;
   final bool isSharePage;
   final bool isFullScreen;
+  final Function? onPreviousImageNavigate;
+  final Function? onNextImageNavigate;
+  static final ValueNotifier<Map<String, dynamic>> fullScreenValueNotifier =
+      ValueNotifier<Map<String, dynamic>>({});
 
   const ImagePreviewWidget({
     super.key,
@@ -1213,6 +1168,8 @@ class ImagePreviewWidget extends StatefulWidget {
     required this.imageBytes,
     this.isSharePage = false,
     this.isFullScreen = false,
+    this.onPreviousImageNavigate,
+    this.onNextImageNavigate,
   });
 
   @override
@@ -1222,13 +1179,27 @@ class ImagePreviewWidget extends StatefulWidget {
 }
 
 class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
+  bool isFullScreen = false;
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ImagePreviewWidget.fullScreenValueNotifier.value = {
+        'filename': widget.filename,
+        'contentType': widget.contentType,
+        'imageBytes': widget.imageBytes,
+      };
+    });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = ArDriveTheme.of(context);
 
     return Column(
       children: [
-        Flexible(child: _buildImage()),
+        Flexible(flex: 1, child: _buildImage()),
         Container(
           color: theme.themeData.colors.themeBgCanvas,
           child: _buildActionBar(),
@@ -1249,21 +1220,38 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildActionBar() {
-    final isFileExplorer = !widget.isSharePage && !widget.isFullScreen;
-    final isFileExplorerFullScreen = !widget.isSharePage && widget.isFullScreen;
+    final isFileExplorer = !widget.isSharePage && !isFullScreen;
+    final isFileExplorerFullScreen = !widget.isSharePage && isFullScreen;
 
-    if (isFileExplorer) {
+    final navigationHandlersSet = widget.onPreviousImageNavigate != null &&
+        widget.onNextImageNavigate != null;
+
+    if (isFileExplorer && navigationHandlersSet) {
       return Column(children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [_buildNameAndExtension(isFileExplorer: isFileExplorer)],
         ),
         Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [_buildFullScreenButton(isFileExplorer: isFileExplorer)],
+          children: [
+            const Flexible(
+              flex: 1,
+              child: Center(child: SizedBox.shrink()),
+            ),
+            Flexible(
+              flex: 1,
+              child: Center(child: _buildNavigationButtons()),
+            ),
+            Flexible(
+              flex: 1,
+              child: Center(
+                child: _buildFullScreenButton(isFileExplorer: isFileExplorer),
+              ),
+            ),
+          ],
         ),
       ]);
-    } else if (isFileExplorerFullScreen) {
+    } else if (isFileExplorerFullScreen && navigationHandlersSet) {
       return Row(children: [
         Flexible(
           flex: 1,
@@ -1299,7 +1287,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       height: isFileExplorer ? null : 96,
       child: Padding(
         padding: EdgeInsets.only(
-          left: 24,
+          left: isFileExplorer ? 0 : 24,
           top: 24,
           bottom: isFileExplorer ? 0 : 24,
         ),
@@ -1333,11 +1321,11 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
-          onPressed: () {},
+          onPressed: () => widget.onPreviousImageNavigate?.call(),
           icon: const Icon(Icons.arrow_back_ios_outlined),
         ),
         IconButton(
-          onPressed: () {},
+          onPressed: () => widget.onNextImageNavigate?.call(),
           icon: const Icon(Icons.arrow_forward_ios_outlined),
         ),
       ],
@@ -1347,13 +1335,13 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   Widget _buildFullScreenButton({required bool isFileExplorer}) {
     return Padding(
       padding: EdgeInsets.only(
-        left: 24,
-        top: isFileExplorer ? 0 : 24,
-        bottom: 24,
+        left: isFileExplorer ? 0 : 24,
+        top: isFileExplorer ? 12 : 24,
+        bottom: isFileExplorer ? 12 : 24,
       ),
       child: IconButton(
         onPressed: _toggleFullScreen,
-        icon: widget.isFullScreen
+        icon: isFullScreen
             ? const Icon(Icons.fullscreen_exit_outlined)
             : const Icon(Icons.fullscreen_outlined, size: 24),
       ),
@@ -1372,23 +1360,48 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         .toUpperCase();
   }
 
-  void _toggleFullScreen() {
-    if (widget.isFullScreen) {
+  Future<void> _toggleFullScreen() async {
+    if (isFullScreen) {
       Navigator.of(context).pop();
     } else {
-      Navigator.of(context).push(
+      await Navigator.of(context).push(
         PageRouteBuilder(
           barrierDismissible: true,
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
-          pageBuilder: (context, _, __) => ImagePreviewFullScreenWidget(
-            filename: widget.filename,
-            contentType: widget.contentType,
-            imageBytes: widget.imageBytes,
+          pageBuilder: (context, _, __) => Scaffold(
+            body: ValueListenableBuilder(
+              valueListenable: ImagePreviewWidget.fullScreenValueNotifier,
+              builder: (context, value, child) {
+                return ImagePreviewWidget(
+                  filename: value['filename'] ?? widget.filename,
+                  contentType: value['contentType'] ?? widget.contentType,
+                  imageBytes: value['imageBytes'] ?? widget.imageBytes,
+                  isFullScreen: true,
+                  onPreviousImageNavigate: widget.onPreviousImageNavigate,
+                  onNextImageNavigate: widget.onNextImageNavigate,
+                );
+              },
+            ),
           ),
         ),
       );
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        isFullScreen = widget.isFullScreen;
+        ImagePreviewWidget.fullScreenValueNotifier.value = {
+          'filename': widget.filename,
+          'contentType': widget.contentType,
+          'imageBytes': widget.imageBytes,
+        };
+      });
+    });
+    super.didChangeDependencies();
   }
 }
 

@@ -51,13 +51,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         _fileKey = fileKey,
         super(FsEntryPreviewInitial()) {
     if (isSharedFile) {
-      sharedFilePreview(maybeSelectedItem!, fileKey);
+      _sharedFilePreview(maybeSelectedItem!, fileKey);
     } else {
-      preview();
+      _preview();
     }
   }
 
-  Future<void> sharedFilePreview(
+  Future<void> _sharedFilePreview(
     ArDriveDataTableItem selectedItem,
     SecretKey? fileKey,
   ) async {
@@ -161,7 +161,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     return dataTx;
   }
 
-  Future<void> preview() async {
+  Future<void> _preview() async {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
       if (selectedItem.runtimeType == FileDataTableItem) {
@@ -187,7 +187,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
             switch (previewType) {
               case 'image':
-                emitImagePreview(file, previewUrl);
+                _emitImagePreview(file, previewUrl);
                 break;
 
               case 'audio':
@@ -253,7 +253,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     emit(FsEntryPreviewUnavailable());
   }
 
-  Future<void> emitImagePreview(FileEntry file, String dataUrl) async {
+  Future<void> _emitImagePreview(FileEntry file, String dataUrl) async {
     try {
       emit(const FsEntryPreviewLoading());
 
@@ -371,8 +371,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   }
 
   @override
-  Future<void> close() {
-    _entrySubscription?.cancel();
+  Future<void> close() async {
+    await _entrySubscription?.cancel();
     return super.close();
   }
 }
