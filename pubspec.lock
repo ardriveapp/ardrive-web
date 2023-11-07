@@ -569,11 +569,11 @@ packages:
     source: hosted
     version: "1.0.1"
   fetch_client:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       path: "."
-      ref: PE-4966
-      resolved-ref: f14df5e7e5e87a77e076c46f32fb656a98a0266a
+      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
+      resolved-ref: "95241dd94f0f64bae7553e7a3bbaa5d0558f63ee"
       url: "https://github.com/thiagocarvalhodev/fetch_client.git"
     source: git
     version: "1.0.2"

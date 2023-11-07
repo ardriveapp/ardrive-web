@@ -141,10 +141,6 @@ dependency_overrides:
       url: https://github.com/ardriveapp/flutter_stripe/
       path: packages/stripe_platform_interface
       ref: main
-  fetch_client:
-    git:
-      url: https://github.com/thiagocarvalhodev/fetch_client.git
-      ref: PE-4966
   http: ^1.1.0
 
 dev_dependencies:

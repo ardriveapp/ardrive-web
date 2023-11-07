@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:fetch_client/fetch_client.dart';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class TurboUploadServiceImpl implements TurboUploadService {
@@ -21,14 +21,12 @@ class TurboUploadServiceImpl implements TurboUploadService {
   });
 
   final _fetchController = StreamController<List<int>>(sync: false);
-
   CancelToken _cancelToken = CancelToken();
 
   final client = FetchClient(
     mode: RequestMode.cors,
     streamRequests: true,
     cache: RequestCache.noCache,
-    handleBackPressure: true,
   );
 
   @override
@@ -82,11 +80,12 @@ class TurboUploadServiceImpl implements TurboUploadService {
         onSendProgress: (sent, total) {
           onSendProgress?.call(sent / total);
         },
-        data: controller.stream,
+        data: controller.stream, // Creates a Stream<List<int>>.
         options: Options(
           headers: {
+            // stream
             Headers.contentTypeHeader: 'application/octet-stream',
-            Headers.contentLengthHeader: size,
+            Headers.contentLengthHeader: size, // Set the content-length.
           }..addAll(headers),
         ),
         cancelToken: _cancelToken,
@@ -117,6 +116,20 @@ class TurboUploadServiceImpl implements TurboUploadService {
 
     int dataItemSize = 0;
 
+    StreamTransformer<Uint8List, Uint8List> createPassthroughTransformer() {
+      return StreamTransformer.fromHandlers(
+        handleData: (Uint8List data, EventSink<Uint8List> sink) {
+          sink.add(data);
+        },
+        handleError: (Object error, StackTrace stackTrace, EventSink sink) {
+          sink.addError(error, stackTrace);
+        },
+        handleDone: (EventSink sink) {
+          sink.close();
+        },
+      );
+    }
+
     final request = ArDriveStreamedRequest(
       'POST',
       Uri.parse(url),
@@ -125,29 +138,40 @@ class TurboUploadServiceImpl implements TurboUploadService {
         'content-type': 'application/octet-stream',
       });
 
-    _fetchController.addStream(dataItem.streamGenerator()).then((value) {
-      debugPrint('stream added to fetch controller and closed');
+    _fetchController
+        .addStream(
+      dataItem.streamGenerator().transform(
+            createPassthroughTransformer(),
+          ),
+    )
+        .then((value) {
+      print('Done');
       request.sink.close();
     });
 
     _fetchController.onPause = () {
-      debugPrint('fetch stream is paused');
+      print('Paused');
     };
 
     _fetchController.onResume = () {
-      debugPrint('fetch stream is resumed');
+      print('Resumed');
     };
 
-    request.contentLength = dataItemSize;
-    request.persistentConnection = false;
+    try {
+      request.contentLength = dataItemSize;
+      request.persistentConnection = false;
 
-    debugPrint('is persistent connection?${request.persistentConnection}');
+      print('is persistent connection?${request.persistentConnection}');
 
-    final response = await client.send(request);
+      final response = await client.send(request);
 
-    debugPrint(await utf8.decodeStream(response.stream));
+      print(await utf8.decodeStream(response.stream));
 
-    return response;
+      return response;
+    } catch (e) {
+      print('Error on turbo upload using FetchClient: $e');
+      rethrow;
+    }
   }
 
   @override
@@ -156,7 +180,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
     client.close();
     _fetchController.close();
     _isCanceled = true;
-    debugPrint('The network request has been canceled.');
+    print('Stream closed');
   }
 
   bool _isCanceled = false;
