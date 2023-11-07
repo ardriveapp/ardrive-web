@@ -41,7 +41,7 @@ dependencies:
   fetch_client:
     git:
       url: https://github.com/thiagocarvalhodev/fetch_client.git
-      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
+      ref: PE-4966
   http: ^1.1.0
 
 dev_dependencies:
@@ -51,3 +51,7 @@ dev_dependencies:
   build_runner: ^2.0.4
 
 dependency_overrides:
+  fetch_client:
+    git:
+      url: https://github.com/thiagocarvalhodev/fetch_client.git
+      ref: PE-4966
