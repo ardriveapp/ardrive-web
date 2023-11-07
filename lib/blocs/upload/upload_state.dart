@@ -227,7 +227,7 @@ class UploadInProgressUsingNewUploader extends UploadState {
   });
 
   @override
-  List<Object?> get props => [progress, totalProgress, equatableBust];
+  List<Object?> get props => [equatableBust];
 }
 
 class UploadFailure extends UploadState {

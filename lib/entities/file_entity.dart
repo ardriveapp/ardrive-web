@@ -93,8 +93,6 @@ class FileEntity extends EntityWithCustomMetadata {
           data,
           fileKey,
         );
-
-        logger.d('entityJson: $entityJson');
       }
 
       final commitTime = transaction.getCommitTime();
