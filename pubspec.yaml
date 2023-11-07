@@ -35,11 +35,11 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.1
+      ref: PE-4923
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: v1.14.0
+      ref: PE-4923
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:

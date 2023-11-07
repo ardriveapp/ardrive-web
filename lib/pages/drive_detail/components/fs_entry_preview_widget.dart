@@ -1289,13 +1289,15 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               : CrossAxisAlignment.start,
           children: [
             Text(
-              _getFileNameWithNoExtension(),
+              getBasenameWithoutExtension(filePath: widget.filename),
               style: ArDriveTypography.body.smallBold700(
                 color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
               ),
             ),
             Text(
-              _getFileTypeFromMime(),
+              getFileTypeFromMime(
+                contentType: widget.contentType,
+              ).toUpperCase(),
               style: ArDriveTypography.body.smallRegular(
                 color:
                     ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
@@ -1321,18 +1323,6 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
             : const Icon(Icons.fullscreen_outlined, size: 24),
       ),
     );
-  }
-
-  String _getFileNameWithNoExtension() {
-    return widget.filename.substring(0, widget.filename.lastIndexOf('.'));
-  }
-
-  String _getFileTypeFromMime() {
-    return widget.contentType
-        .substring(
-          widget.contentType.lastIndexOf('/') + 1,
-        )
-        .toUpperCase();
   }
 
   void _toggleFullScreen() {
