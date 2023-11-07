@@ -18,6 +18,9 @@ class FsEntryPreviewWidget extends StatefulWidget {
 
   @override
   State<FsEntryPreviewWidget> createState() => _FsEntryPreviewWidgetState();
+
+  static final ValueNotifier<Map<String, dynamic>> fullScreenValueNotifier =
+      ValueNotifier<Map<String, dynamic>>({});
 }
 
 class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
@@ -41,9 +44,6 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
 
       case FsEntryPreviewImage:
         return ImagePreviewWidget(
-          filename: (widget.state as FsEntryPreviewImage).filename,
-          contentType: (widget.state as FsEntryPreviewImage).contentType,
-          imageBytes: (widget.state as FsEntryPreviewImage).imageBytes,
           isSharePage: widget.isSharePage,
           isFullScreen: false,
           onNextImageNavigate: widget.onNextImageNavigation,
@@ -63,6 +63,44 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           videoUrl: (widget.state as FsEntryPreviewVideo).previewUrl,
           isSharePage: widget.isSharePage,
         );
+    }
+  }
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onImagePreviewLoaded();
+    });
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(FsEntryPreviewWidget oldWidget) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onImagePreviewLoaded();
+    });
+    super.didUpdateWidget(oldWidget);
+  }
+
+  void _onImagePreviewLoaded() {
+    final stateType = widget.state.runtimeType;
+    logger.d('State type: $stateType');
+
+    switch (stateType) {
+      case FsEntryPreviewImage:
+        FsEntryPreviewWidget.fullScreenValueNotifier.value = {
+          'filename': (widget.state as FsEntryPreviewImage).filename,
+          'contentType': (widget.state as FsEntryPreviewImage).contentType,
+          'imageBytes': (widget.state as FsEntryPreviewImage).imageBytes,
+          'loading': false,
+        };
+        break;
+
+      default:
+        FsEntryPreviewWidget.fullScreenValueNotifier.value = {
+          'loading': true,
+        };
+        break;
     }
   }
 }
@@ -1151,21 +1189,13 @@ class _FullScreenVideoPlayerWidgetState
 }
 
 class ImagePreviewWidget extends StatefulWidget {
-  final Uint8List imageBytes;
-  final String filename;
-  final String contentType;
   final bool isSharePage;
   final bool isFullScreen;
   final Function? onPreviousImageNavigate;
   final Function? onNextImageNavigate;
-  static final ValueNotifier<Map<String, dynamic>> fullScreenValueNotifier =
-      ValueNotifier<Map<String, dynamic>>({});
 
   const ImagePreviewWidget({
     super.key,
-    required this.filename,
-    required this.contentType,
-    required this.imageBytes,
     this.isSharePage = false,
     this.isFullScreen = false,
     this.onPreviousImageNavigate,
@@ -1179,24 +1209,9 @@ class ImagePreviewWidget extends StatefulWidget {
 }
 
 class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
-  bool isFullScreen = false;
-
-  @override
-  void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ImagePreviewWidget.fullScreenValueNotifier.value = {
-        'filename': widget.filename,
-        'contentType': widget.contentType,
-        'imageBytes': widget.imageBytes,
-      };
-    });
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = ArDriveTheme.of(context);
-
     return Column(
       children: [
         Flexible(flex: 1, child: _buildImage()),
@@ -1209,19 +1224,38 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildImage() {
-    return ArDriveImage(
-      fit: BoxFit.contain,
-      height: double.maxFinite,
-      width: double.maxFinite,
-      image: MemoryImage(
-        widget.imageBytes,
-      ),
+    return ValueListenableBuilder(
+      valueListenable: FsEntryPreviewWidget.fullScreenValueNotifier,
+      builder: (context, fullScreenNotification, child) {
+        final isLoading = fullScreenNotification['loading'] == true;
+        if (widget.isFullScreen) {
+          logger.d('Building image preview. isLoading: $isLoading');
+        }
+        if (isLoading) {
+          return const Center(
+            child: SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(),
+            ),
+          );
+        } else {
+          return ArDriveImage(
+            fit: BoxFit.contain,
+            height: double.maxFinite,
+            width: double.maxFinite,
+            image: MemoryImage(
+              fullScreenNotification['imageBytes'] as Uint8List,
+            ),
+          );
+        }
+      },
     );
   }
 
   Widget _buildActionBar() {
-    final isFileExplorer = !widget.isSharePage && !isFullScreen;
-    final isFileExplorerFullScreen = !widget.isSharePage && isFullScreen;
+    final isFileExplorer = !widget.isSharePage && !widget.isFullScreen;
+    final isFileExplorerFullScreen = !widget.isSharePage && widget.isFullScreen;
 
     final navigationHandlersSet = widget.onPreviousImageNavigate != null &&
         widget.onNextImageNavigate != null;
@@ -1291,26 +1325,51 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           top: 24,
           bottom: isFileExplorer ? 0 : 24,
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: isFileExplorer
-              ? CrossAxisAlignment.center
-              : CrossAxisAlignment.start,
-          children: [
-            Text(
-              _getFileNameWithNoExtension(),
-              style: ArDriveTypography.body.smallBold700(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-              ),
-            ),
-            Text(
-              _getFileTypeFromMime(),
-              style: ArDriveTypography.body.smallRegular(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-              ),
-            ),
-          ],
+        child: ValueListenableBuilder(
+          valueListenable: FsEntryPreviewWidget.fullScreenValueNotifier,
+          builder: (context, fullScreenNotification, child) {
+            final isLoading = fullScreenNotification['loading'] == true;
+            if (widget.isFullScreen) {
+              logger.d('Building name and extension. isLoading: $isLoading');
+            }
+            if (isLoading) {
+              return const Center(
+                child: SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            final filename = fullScreenNotification['filename'];
+            final contentType = fullScreenNotification['contentType'];
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: isFileExplorer
+                  ? CrossAxisAlignment.center
+                  : CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getFileNameWithNoExtension(filename),
+                  style: ArDriveTypography.body.smallBold700(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+                ),
+                Text(
+                  _getFileTypeFromMime(contentType),
+                  style: ArDriveTypography.body.smallRegular(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDisabled,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -1341,27 +1400,26 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       ),
       child: IconButton(
         onPressed: _toggleFullScreen,
-        icon: isFullScreen
+        icon: widget.isFullScreen
             ? const Icon(Icons.fullscreen_exit_outlined)
             : const Icon(Icons.fullscreen_outlined, size: 24),
       ),
     );
   }
 
-  String _getFileNameWithNoExtension() {
-    return widget.filename.substring(0, widget.filename.lastIndexOf('.'));
+  String _getFileNameWithNoExtension(String filename) {
+    final lastDotIndex = filename.lastIndexOf('.');
+    return filename.substring(0, lastDotIndex == -1 ? null : lastDotIndex);
   }
 
-  String _getFileTypeFromMime() {
-    return widget.contentType
-        .substring(
-          widget.contentType.lastIndexOf('/') + 1,
-        )
+  String _getFileTypeFromMime(String contentType) {
+    return contentType
+        .substring(contentType.lastIndexOf('/') + 1)
         .toUpperCase();
   }
 
   Future<void> _toggleFullScreen() async {
-    if (isFullScreen) {
+    if (widget.isFullScreen) {
       Navigator.of(context).pop();
     } else {
       await Navigator.of(context).push(
@@ -1370,38 +1428,15 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
           pageBuilder: (context, _, __) => Scaffold(
-            body: ValueListenableBuilder(
-              valueListenable: ImagePreviewWidget.fullScreenValueNotifier,
-              builder: (context, value, child) {
-                return ImagePreviewWidget(
-                  filename: value['filename'] ?? widget.filename,
-                  contentType: value['contentType'] ?? widget.contentType,
-                  imageBytes: value['imageBytes'] ?? widget.imageBytes,
-                  isFullScreen: true,
-                  onPreviousImageNavigate: widget.onPreviousImageNavigate,
-                  onNextImageNavigate: widget.onNextImageNavigate,
-                );
-              },
+            body: ImagePreviewWidget(
+              isFullScreen: true,
+              onPreviousImageNavigate: widget.onPreviousImageNavigate,
+              onNextImageNavigate: widget.onNextImageNavigate,
             ),
           ),
         ),
       );
     }
-  }
-
-  @override
-  void didChangeDependencies() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        isFullScreen = widget.isFullScreen;
-        ImagePreviewWidget.fullScreenValueNotifier.value = {
-          'filename': widget.filename,
-          'contentType': widget.contentType,
-          'imageBytes': widget.imageBytes,
-        };
-      });
-    });
-    super.didChangeDependencies();
   }
 }
 
