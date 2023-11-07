@@ -561,13 +561,14 @@ packages:
     source: hosted
     version: "1.3.1"
   fetch_api:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: fetch_api
-      sha256: "7896632eda5af40c4459d673ad601df21d4c3ae6a45997e300a92ca63ec9fe4c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.1"
+      path: "."
+      ref: PE-4966
+      resolved-ref: "71e8a3a0fbee679d309518c5b6975bce1353a4a0"
+      url: "https://github.com/thiagocarvalhodev/fetch_api.git"
+    source: git
+    version: "1.0.3"
   fetch_client:
     dependency: "direct overridden"
     description:

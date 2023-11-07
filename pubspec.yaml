@@ -145,6 +145,10 @@ dependency_overrides:
     git:
       url: https://github.com/thiagocarvalhodev/fetch_client.git
       ref: PE-4966
+  fetch_api:
+    git:
+      url: https://github.com/thiagocarvalhodev/fetch_api.git
+      ref: PE-4966
   http: ^1.1.0
 
 dev_dependencies:
