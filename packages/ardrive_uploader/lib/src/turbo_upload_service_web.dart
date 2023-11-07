@@ -64,16 +64,23 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required int size,
     required Map<String, dynamic> headers,
   }) async {
-    final url = '$turboUploadUri/v1/tx';
-
-    final dio = Dio();
     try {
+      final url = '$turboUploadUri/v1/tx';
+
+      final controller = StreamController<Uint8List>();
+
+      controller
+          .addStream(dataItem.streamGenerator())
+          .then((value) => controller.close());
+
+      final dio = Dio();
+
       final response = await dio.post(
         url,
         onSendProgress: (sent, total) {
           onSendProgress?.call(sent / total);
         },
-        data: dataItem.streamGenerator(), // Creates a Stream<List<int>>.
+        data: controller.stream, // Creates a Stream<List<int>>.
         options: Options(
           headers: {
             // stream
@@ -83,7 +90,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
         ),
         cancelToken: _cancelToken,
       );
-      
+
       print('Response from turbo: ${response.statusCode}');
 
       return response;

@@ -92,13 +92,9 @@ class ArDriveCrypto {
       final cipher = transaction.getTag(EntityTag.cipher);
       final cipherIvTag = transaction.getTag(EntityTag.cipherIv);
 
-      logger.d('starting decryption');
-
       if (cipher == null || cipherIvTag == null) {
         throw TransactionDecryptionException();
       }
-
-      logger.d('cipher: $cipher');
 
       final cipherIv = utils.decodeBase64ToBytes(cipherIvTag);
 

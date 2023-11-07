@@ -364,9 +364,8 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
   }) async {
-    print('Creating bundle for file: ${file.path}');
     onStartMetadataCreation?.call();
-    print('Creating metadata data item');
+
     SecretKeyData? key;
 
     if (driveKey != null) {
@@ -417,11 +416,9 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     onFinishBundleCreation?.call();
 
     return bundledDataItem.match((l) {
-      print('Error bundling the file: $l');
       print(StackTrace.current);
       throw l;
     }, (bdi) async {
-      print('BDI id: ${bdi.id}');
       return bdi;
     });
   }
@@ -464,7 +461,6 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       final bundledDataItem = await (await createBundledDataItem).run();
 
       return bundledDataItem.match((l) {
-        print('Error bundling the file: $l');
         print(StackTrace.current);
         throw l;
       }, (bdi) async {
@@ -530,8 +526,6 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
 
     // folder bdi
     final folderBDIResult = await folderBDITask.match((l) {
-      print('Error bundling the folder bdi: $l');
-      print(StackTrace.current);
       throw l;
     }, (bdi) async {
       return bdi;
@@ -602,7 +596,6 @@ Future<DataItemFile> _generateMetadataDataItem({
 
     metadata.entityMetadataTags
         .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv!)));
-    print('Encrypting metadata data item with cipher $cipher');
 
     metadata.entityMetadataTags.add(Tag(EntityTag.cipher, cipher));
     length = encryptedMetadata.$4;
@@ -623,7 +616,6 @@ Future<DataItemFile> _generateMetadataDataItem({
   final metadataTaskEither = await metadataTask.run();
 
   metadataTaskEither.match((l) {
-    print('Error creating metadata data item: $l');
     print(StackTrace.current);
     throw l;
   }, (metadataDataItem) {
@@ -674,11 +666,9 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   final fileDataItemResult = await fileDataItemEither.run();
 
   fileDataItemResult.match((l) {
-    print('Error: creating file data item: $l');
-    print(StackTrace.current);
+    throw l;
   }, (fileDataItem) {
     metadata as ARFSFileUploadMetadata;
-    print('File data item id: ${fileDataItem.id}');
     metadata.setDataTxId = fileDataItem.id;
   });
 
@@ -713,7 +703,6 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
 
     metadata.entityMetadataTags
         .add(Tag(EntityTag.cipherIv, encodeBytesToBase64(metadataCipherIv!)));
-    print('Encrypting metadata data item with cipher $metadataCipher');
 
     metadata.entityMetadataTags.add(Tag(EntityTag.cipher, metadataCipher));
   } else {
@@ -733,12 +722,9 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   final metadataTaskEither = await metadataTask.run();
 
   metadataTaskEither.match((l) {
-    print('Error: creating metadata data item: $l');
-    print(StackTrace.current);
     throw l;
   }, (metadataDataItem) {
     metadata.setMetadataTxId = metadataDataItem.id;
-    print('Metadata data item id: ${metadataDataItem.id}');
     return metadataDataItem;
   });
 
@@ -784,7 +770,6 @@ Future<
   Uint8List nonce;
   String cipher;
   int length;
-  print('File length before encryption: $fileLength');
 
   if (fileLength < maxSizeSupportedByGCMEncryption) {
     // uses GCM
@@ -806,8 +791,6 @@ Future<
     nonce = encryptStreamResult.nonce;
     length = fileLength;
   }
-
-  print('File length after encryption: $length');
 
   return (
     dataStreamGenerator,

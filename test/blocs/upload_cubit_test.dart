@@ -29,6 +29,7 @@ import 'package:pst/pst.dart';
 
 import '../core/upload/uploader_test.dart';
 import '../test_utils/utils.dart';
+import 'drives_cubit_test.dart';
 
 class MockArweaveService extends Mock implements ArweaveService {}
 
@@ -243,6 +244,7 @@ void main() {
 
   UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
     return UploadCubit(
+        activityTracker: MockActivityTracker(),
         arDriveUploadManager: mockArDriveUploadPreparationManager,
         uploadFileChecker: mockUploadFileChecker,
         driveId: tDriveId,
