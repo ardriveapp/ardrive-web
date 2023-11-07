@@ -1,0 +1,1 @@
+- Fixes the issue where the upload progress remained at 100% during uploads for some users.
