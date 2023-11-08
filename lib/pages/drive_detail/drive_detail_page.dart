@@ -604,8 +604,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     );
   }
 
-  Widget _mobileViewContent(DriveDetailLoadSuccess state, bool hasSubfolders,
-      bool hasFiles, List<ArDriveDataTableItem> items) {
+  Widget _mobileViewContent(
+    DriveDetailLoadSuccess state,
+    bool hasSubfolders,
+    bool hasFiles,
+    List<ArDriveDataTableItem> items,
+  ) {
     return Column(
       children: [
         Padding(
