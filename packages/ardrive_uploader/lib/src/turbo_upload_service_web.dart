@@ -116,6 +116,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
     final url = '$turboUploadUri/v1/tx';
 
     int dataItemSize = 0;
+    int bytesUploaded = 0;
 
     final request = ArDriveStreamedRequest(
       'POST',
@@ -125,7 +126,18 @@ class TurboUploadServiceImpl implements TurboUploadService {
         'content-type': 'application/octet-stream',
       });
 
-    _fetchController.addStream(dataItem.streamGenerator()).then((value) {
+    // pass through transformer so we can track progress
+    final transformer = StreamTransformer<Uint8List, Uint8List>.fromHandlers(
+      handleData: (data, sink) {
+        bytesUploaded += data.length;
+        onSendProgress?.call(bytesUploaded / size);
+        sink.add(data);
+      },
+    );
+
+    _fetchController
+        .addStream(dataItem.streamGenerator().transform(transformer))
+        .then((value) {
       debugPrint('stream added to fetch controller and closed');
       request.sink.close();
     });
