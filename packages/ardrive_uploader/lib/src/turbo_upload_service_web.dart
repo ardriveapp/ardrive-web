@@ -113,8 +113,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required int size,
     required Map<String, dynamic> headers,
   }) async {
-    final url = '$turboUploadUri/v1/tx';
-
     int dataItemSize = 0;
     int bytesUploaded = 0;
 
