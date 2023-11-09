@@ -120,7 +120,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
 
     final request = ArDriveStreamedRequest(
       'POST',
-      Uri.parse(url),
+      Uri.parse('https://localhost:3000/upload'),
       _fetchController,
     )..headers.addAll({
         'content-type': 'application/octet-stream',
