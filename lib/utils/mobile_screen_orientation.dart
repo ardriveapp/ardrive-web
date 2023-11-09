@@ -20,14 +20,14 @@ abstract class MobileScreenOrientation {
     throw UnimplementedError();
   }
 
-  static void blockInLandscape() {
+  static void lockInLandscape() {
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeRight,
       DeviceOrientation.landscapeLeft,
     ]);
   }
 
-  static void blockInPortraitUp() {
+  static void lockInPortraitUp() {
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
     ]);

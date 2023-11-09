@@ -58,7 +58,7 @@ late PaymentService _turboPayment;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  MobileScreenOrientation.blockInPortraitUp();
+  MobileScreenOrientation.lockInPortraitUp();
 
   final localStore = await LocalKeyValueStore.getInstance();
 
