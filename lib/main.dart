@@ -20,6 +20,7 @@ import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -56,6 +57,8 @@ late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  MobileStatusBar.show();
 
   final localStore = await LocalKeyValueStore.getInstance();
 

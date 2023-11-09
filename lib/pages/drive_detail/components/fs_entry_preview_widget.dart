@@ -689,11 +689,44 @@ class _FullScreenVideoPlayerWidgetState
 
     _hideControlsTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
-        setState(() {
-          _controlsVisible = false;
-        });
+        _hideControls();
       }
     });
+  }
+
+  void _resetHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        _hideControls();
+      }
+    });
+  }
+
+  void _cancelHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+  }
+
+  void _showControls() {
+    setState(() {
+      _controlsVisible = true;
+      MobileStatusBar.show();
+    });
+  }
+
+  void _hideControls() {
+    setState(() {
+      _controlsVisible = false;
+      MobileStatusBar.hide();
+    });
+  }
+
+  void _toggleControls() {
+    if (_controlsVisible) {
+      _hideControls();
+    } else {
+      _showControls();
+    }
   }
 
   void _listener() {
@@ -770,24 +803,15 @@ class _FullScreenVideoPlayerWidgetState
         MouseRegion(
           onHover: (event) {
             if (!AppPlatform.isMobile) {
-              setState(() {
-                _controlsVisible = true;
-                _hideControlsTimer?.cancel();
-                _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-                  if (mounted) {
-                    setState(() {
-                      _controlsVisible = false;
-                    });
-                  }
-                });
-              });
+              _showControls();
+              _resetHideControlsTimer();
             }
           },
           onExit: (event) {
             if (!AppPlatform.isMobile) {
               if (mounted) {
                 setState(() {
-                  _hideControlsTimer?.cancel();
+                  _cancelHideControlsTimer();
                 });
               }
             }
@@ -797,20 +821,11 @@ class _FullScreenVideoPlayerWidgetState
               : SystemMouseCursors.none,
           child: TapRegion(
             onTapInside: (event) {
-              setState(() {
-                _hideControlsTimer?.cancel();
-                _controlsVisible = !_controlsVisible;
-
-                if (_controlsVisible && !AppPlatform.isMobile) {
-                  _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-                    if (mounted) {
-                      setState(() {
-                        _controlsVisible = false;
-                      });
-                    }
-                  });
-                }
-              });
+              _cancelHideControlsTimer();
+              _toggleControls();
+              if (_controlsVisible && !AppPlatform.isMobile) {
+                _resetHideControlsTimer();
+              }
             },
             child: Container(color: Colors.black.withOpacity(0.0)),
           ),
@@ -823,20 +838,16 @@ class _FullScreenVideoPlayerWidgetState
                 const Expanded(child: SizedBox.shrink()),
                 MouseRegion(
                     onHover: (event) {
-                      _hideControlsTimer?.cancel();
+                      _cancelHideControlsTimer();
                       if (!AppPlatform.isMobile && !_controlsVisible) {
-                        setState(() {
-                          _controlsVisible = true;
-                        });
+                        _showControls();
                       }
                     },
                     child: TapRegion(
                         onTapInside: (event) {
                           if (AppPlatform.isMobile && !_controlsVisible) {
-                            _hideControlsTimer?.cancel();
-                            setState(() {
-                              _controlsVisible = true;
-                            });
+                            _cancelHideControlsTimer();
+                            _showControls();
                           }
                         },
                         child: Container(
