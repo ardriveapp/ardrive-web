@@ -124,6 +124,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
       _fetchController,
     )..headers.addAll({
         'content-type': 'application/octet-stream',
+        'content-length': size.toString(),
       });
 
     // pass through transformer so we can track progress
@@ -151,6 +152,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
     };
 
     request.contentLength = dataItemSize;
+    // request.persistentConnection = true;
     request.persistentConnection = false;
 
     debugPrint('is persistent connection?${request.persistentConnection}');
