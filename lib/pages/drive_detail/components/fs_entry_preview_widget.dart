@@ -1222,37 +1222,151 @@ class ImagePreviewWidget extends StatefulWidget {
 }
 
 class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
+  bool _controlsVisible = true;
+  Timer? _hideControlsTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetHideControlsTimer();
+  }
+
+  @override
+  void dispose() {
+    _cancelHideControlsTimer();
+    if (widget.isFullScreen) {
+      MobileStatusBar.show();
+    }
+    super.dispose();
+  }
+
+  void _resetHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        _hideControls();
+      }
+    });
+  }
+
+  void _cancelHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+  }
+
+  void _showControls() {
+    setState(() {
+      _controlsVisible = true;
+      if (widget.isFullScreen) {
+        MobileStatusBar.show();
+      }
+    });
+  }
+
+  void _hideControls() {
+    setState(() {
+      _controlsVisible = false;
+      if (widget.isFullScreen) {
+        MobileStatusBar.hide();
+      }
+    });
+  }
+
+  void _toggleControls() {
+    if (_controlsVisible) {
+      _hideControls();
+    } else {
+      _showControls();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = ArDriveTheme.of(context);
-
-    return Column(
-      children: [
-        Flexible(child: _buildImage()),
-        Container(
-          color: theme.themeData.colors.themeBgCanvas,
-          child: _buildActionBar(),
+    if (widget.isFullScreen) {
+      return Center(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Flexible(child: _buildImage()),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildActionBar(),
+            ),
+          ],
         ),
-      ],
-    );
+      );
+    } else {
+      return Column(
+        children: [
+          Flexible(child: _buildImage()),
+          _buildActionBar(),
+        ],
+      );
+    }
   }
 
   Widget _buildImage() {
-    return ArDriveImage(
-      fit: BoxFit.contain,
-      height: double.maxFinite,
-      width: double.maxFinite,
-      image: MemoryImage(
-        widget.imageBytes,
-      ),
-    );
+    if (!widget.isFullScreen) {
+      return ArDriveImage(
+        fit: BoxFit.contain,
+        height: double.maxFinite,
+        width: double.maxFinite,
+        image: MemoryImage(
+          widget.imageBytes,
+        ),
+      );
+    } else {
+      return MouseRegion(
+        onHover: (event) {
+          if (!AppPlatform.isMobile) {
+            _showControls();
+            _resetHideControlsTimer();
+          }
+        },
+        onExit: (event) {
+          if (!AppPlatform.isMobile) {
+            if (mounted) {
+              setState(() {
+                _cancelHideControlsTimer();
+              });
+            }
+          }
+        },
+        cursor: _controlsVisible
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.none,
+        child: TapRegion(
+          onTapInside: (event) {
+            setState(() {
+              _cancelHideControlsTimer();
+              _toggleControls();
+
+              if (_controlsVisible && !AppPlatform.isMobile) {
+                _resetHideControlsTimer();
+              }
+            });
+          },
+          child: ArDriveImage(
+            fit: BoxFit.contain,
+            height: double.maxFinite,
+            width: double.maxFinite,
+            image: MemoryImage(
+              widget.imageBytes,
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildActionBar() {
+    final theme = ArDriveTheme.of(context);
     final isFileExplorer = !widget.isSharePage && !widget.isFullScreen;
+    late Widget actionBar;
 
     if (isFileExplorer) {
-      return Column(children: [
+      actionBar = Column(children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [_buildNameAndExtension(isFileExplorer: isFileExplorer)],
@@ -1262,15 +1376,31 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           children: [_buildFullScreenButton(isFileExplorer: isFileExplorer)],
         ),
       ]);
+    } else {
+      actionBar = Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildNameAndExtension(isFileExplorer: isFileExplorer),
+          _buildFullScreenButton(isFileExplorer: isFileExplorer),
+        ],
+      );
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _buildNameAndExtension(isFileExplorer: isFileExplorer),
-        _buildFullScreenButton(isFileExplorer: isFileExplorer),
-      ],
-    );
+    if (widget.isFullScreen) {
+      return AnimatedOpacity(
+        opacity: _controlsVisible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 200),
+        child: Container(
+          color: theme.themeData.colors.themeBgCanvas,
+          child: actionBar,
+        ),
+      );
+    } else {
+      return Container(
+        color: theme.themeData.colors.themeBgCanvas,
+        child: actionBar,
+      );
+    }
   }
 
   Widget _buildNameAndExtension({required bool isFileExplorer}) {
