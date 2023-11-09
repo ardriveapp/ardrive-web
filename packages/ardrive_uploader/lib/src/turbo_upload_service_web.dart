@@ -113,12 +113,13 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required int size,
     required Map<String, dynamic> headers,
   }) async {
+    final url = '$turboUploadUri/v1/tx';
     int dataItemSize = 0;
     int bytesUploaded = 0;
 
     final request = ArDriveStreamedRequest(
       'POST',
-      Uri.parse('https://localhost:3000/v1/tx'),
+      Uri.parse(url),
       _fetchController,
     )..headers.addAll({
         'content-type': 'application/octet-stream',
