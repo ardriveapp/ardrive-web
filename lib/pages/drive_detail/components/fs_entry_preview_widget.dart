@@ -416,6 +416,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                     );
                                   } else {
                                     return IconButton(
+                                      tooltip:
+                                          appLocalizationsOf(context).expand,
                                       onPressed: !controlsEnabled
                                           ? null
                                           : () {
@@ -563,6 +565,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               mobile: (context) {
                                 if (widget.isSharePage) {
                                   return IconButton(
+                                    tooltip: appLocalizationsOf(context).expand,
                                     onPressed: !controlsEnabled
                                         ? null
                                         : () {
@@ -593,6 +596,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                             ),
                             ScreenTypeLayout.builder(
                               desktop: (context) => IconButton(
+                                  tooltip: appLocalizationsOf(context).expand,
                                   onPressed: !controlsEnabled
                                       ? null
                                       : () {
@@ -963,6 +967,9 @@ class _FullScreenVideoPlayerWidgetState
                                           alignment: Alignment.centerLeft,
                                           child: ScreenTypeLayout.builder(
                                             mobile: (context) => IconButton(
+                                                tooltip:
+                                                    appLocalizationsOf(context)
+                                                        .collapse,
                                                 onPressed: () {
                                                   Navigator.of(context).pop();
                                                 },
@@ -1131,6 +1138,9 @@ class _FullScreenVideoPlayerWidgetState
                                                     size: 24))),
                                         ScreenTypeLayout.builder(
                                           desktop: (context) => IconButton(
+                                              tooltip:
+                                                  appLocalizationsOf(context)
+                                                      .collapse,
                                               onPressed: () {
                                                 Navigator.of(context).pop();
                                               },
@@ -1458,6 +1468,9 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         bottom: 24,
       ),
       child: IconButton(
+        tooltip: widget.isFullScreen
+            ? appLocalizationsOf(context).collapse
+            : appLocalizationsOf(context).expand,
         onPressed: _toggleFullScreen,
         icon: widget.isFullScreen
             ? const Icon(Icons.fullscreen_exit_outlined)
