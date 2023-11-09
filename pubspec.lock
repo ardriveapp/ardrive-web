@@ -565,7 +565,7 @@ packages:
     description:
       path: "."
       ref: PE-4966
-      resolved-ref: "71e8a3a0fbee679d309518c5b6975bce1353a4a0"
+      resolved-ref: a443527c7805e155eb7889e0fa361b5862feeebd
       url: "https://github.com/thiagocarvalhodev/fetch_api.git"
     source: git
     version: "1.0.3"
