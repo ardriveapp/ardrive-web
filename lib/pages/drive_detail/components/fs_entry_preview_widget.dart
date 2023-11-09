@@ -682,10 +682,7 @@ class _FullScreenVideoPlayerWidgetState
     });
     _videoPlayerController.addListener(_listener);
 
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeRight,
-      DeviceOrientation.landscapeLeft,
-    ]);
+    MobileScreenOrientation.blockInLandscape();
 
     _hideControlsTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
@@ -709,9 +706,7 @@ class _FullScreenVideoPlayerWidgetState
 
   @override
   void dispose() {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
+    MobileScreenOrientation.blockInPortraitUp();
 
     // Calling onClose() here to work when user hits close zoom button or hits
     // system back button on Android.
@@ -1169,20 +1164,13 @@ class _ImagePreviewFullScreenWidgetState
 
   @override
   void initState() {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeRight,
-      DeviceOrientation.landscapeLeft,
-    ]);
-
+    MobileScreenOrientation.blockInLandscape();
     super.initState();
   }
 
   @override
   void dispose() {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
-
+    MobileScreenOrientation.blockInPortraitUp();
     super.dispose();
   }
 
