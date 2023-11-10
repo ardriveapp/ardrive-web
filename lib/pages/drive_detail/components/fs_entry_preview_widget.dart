@@ -1307,7 +1307,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Flexible(child: _buildImage()),
+            _buildImage(),
             Positioned(
               bottom: 0,
               left: 0,
@@ -1488,10 +1488,12 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           barrierDismissible: true,
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
-          pageBuilder: (context, _, __) => ImagePreviewFullScreenWidget(
-            filename: widget.filename,
-            contentType: widget.contentType,
-            imageBytes: widget.imageBytes,
+          pageBuilder: (context, _, __) => Scaffold(
+            body: ImagePreviewFullScreenWidget(
+              filename: widget.filename,
+              contentType: widget.contentType,
+              imageBytes: widget.imageBytes,
+            ),
           ),
         ),
       );
