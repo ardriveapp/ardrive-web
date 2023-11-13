@@ -86,7 +86,8 @@ class _LoginPageState extends State<LoginPage> {
           if (loginState is LoginOnBoarding) {
             preCacheOnBoardingAssets(context);
           } else if (loginState is LoginFailure) {
-            // TODO: Verify if the error is `NoConnectionException` and show an appropriate message after validating with UI/UX
+            // TODO: Verify if the error is `NoConnectionException` and show an
+            /// appropriate message after validating with UI/UX
 
             logger.e('Login Failure', loginState.error);
 
@@ -129,7 +130,9 @@ class _LoginPageState extends State<LoginPage> {
             logger.d('Login Success, unlocking default profile');
 
             context.read<ProfileCubit>().unlockDefaultProfile(
-                loginState.user.password, loginState.user.profileType);
+                  loginState.user.password,
+                  loginState.user.profileType,
+                );
           }
         },
         builder: (context, loginState) {
@@ -340,20 +343,13 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         final isOnBoarding = current is LoginOnBoarding;
         final isCreateNewWallet = current is LoginCreateNewWallet;
 
-        logger.d(
-          'LoginBloc buildWhen'
-          ' - isFailure: $isFailure'
-          ' - isSuccess: $isSuccess'
-          ' - isOnBoarding: $isOnBoarding'
-          ' - isCreateNewWallet: $isCreateNewWallet',
-        );
-
         return !(isFailure || isSuccess || isOnBoarding || isCreateNewWallet);
       },
       builder: (context, loginState) {
         late Widget content;
 
         if (loginState is PromptPassword) {
+          // HERE, Mati.
           content = PromptPasswordView(
             wallet: loginState.walletFile,
           );
@@ -405,12 +401,12 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
 }
 
 class PromptWalletView extends StatefulWidget {
+  final bool isArConnectAvailable;
+
   const PromptWalletView({
     super.key,
     required this.isArConnectAvailable,
   });
-
-  final bool isArConnectAvailable;
 
   @override
   State<PromptWalletView> createState() => _PromptWalletViewState();
@@ -732,16 +728,15 @@ class PromptPasswordView extends StatefulWidget {
 }
 
 class _PromptPasswordViewState extends State<PromptPasswordView> {
+  final _passwordController = TextEditingController();
+  bool _isPasswordValid = false;
+
   @override
   void initState() {
     super.initState();
 
     PlausibleEventTracker.track(event: PlausibleEvent.welcomeBackPage);
   }
-
-  final _passwordController = TextEditingController();
-
-  bool _isPasswordValid = false;
 
   @override
   Widget build(BuildContext context) {

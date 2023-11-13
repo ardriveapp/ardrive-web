@@ -8,9 +8,9 @@ abstract class LoginState extends Equatable {
 }
 
 class LoginInitial extends LoginState {
-  const LoginInitial(this.isArConnectAvailable);
-
   final bool isArConnectAvailable;
+
+  const LoginInitial({required this.isArConnectAvailable});
 }
 
 class LoginLoading extends LoginState {}

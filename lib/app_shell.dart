@@ -31,10 +31,19 @@ class AppShell extends StatefulWidget {
 class AppShellState extends State<AppShell> {
   bool _showProfileOverlay = false;
   bool _showWalletSwitchDialog = true;
+  Function()? _unregisterWalletSwitchListener;
+
+  @override
+  void dispose() {
+    _unregisterWalletSwitchListener?.call();
+    _unregisterWalletSwitchListener = null;
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, _) {
-          onArConnectWalletSwitch(() {
+          _unregisterWalletSwitchListener = onArConnectWalletSwitch(() {
             context
                 .read<ProfileCubit>()
                 .isCurrentProfileArConnect()
@@ -76,6 +85,8 @@ class AppShellState extends State<AppShell> {
                                       .isCurrentProfileArConnect(),
                                   builder: (BuildContext context,
                                       AsyncSnapshot snapshot) {
+                                    final isCurrentProfileArConnect =
+                                        snapshot.data == true;
                                     return Align(
                                       alignment: Alignment.center,
                                       child: Material(
@@ -92,7 +103,8 @@ class AppShellState extends State<AppShell> {
                                                     Text(appLocalizationsOf(
                                                             context)
                                                         .syncProgressPercentage(
-                                                            (syncProgress.progress *
+                                                            (syncProgress
+                                                                        .progress *
                                                                     100)
                                                                 .roundToDouble()
                                                                 .toString()))),
@@ -118,7 +130,7 @@ class AppShellState extends State<AppShell> {
                                                     .buttonNormalBold(),
                                               ),
                                             ),
-                                            title: snapshot.data ?? false
+                                            title: isCurrentProfileArConnect
                                                 ? appLocalizationsOf(context)
                                                     .syncingPleaseRemainOnThisTab
                                                 : appLocalizationsOf(context)

@@ -26,6 +26,7 @@ part 'login_state.dart';
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ArDriveAuth _arDriveAuth;
   final ArConnectService _arConnectService;
+  Function()? _unsubscribeFromWalletSwitch;
 
   bool ignoreNextWaletSwitch = false;
 
@@ -44,6 +45,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
+  }
+
+  @override
+  Future<void> close() {
+    _unsubscribeFromWalletSwitch?.call();
+    _unsubscribeFromWalletSwitch = null;
+    return super.close();
   }
 
   Future<void> _onLoginEvent(LoginEvent event, Emitter<LoginState> emit) async {
@@ -172,6 +180,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           logger.e('Failed to unlock user with biometrics', e);
         }
       }
+
+      logger.d('User is logged in, prompting for password');
       emit(const PromptPassword());
 
       return;
@@ -180,7 +190,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (event.gettingStarted) {
       _handleCreateNewWalletEvent(const CreateNewWallet(), emit);
     } else {
-      emit(LoginInitial(_arConnectService.isExtensionPresent()));
+      emit(LoginInitial(
+        isArConnectAvailable: _arConnectService.isExtensionPresent(),
+      ));
     }
   }
 
@@ -257,6 +269,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final wallet = ArConnectWallet(_arConnectService);
 
       profileType = ProfileType.arConnect;
+      logger.i('ArConnect wallet detected - profile type: $profileType');
 
       lastKnownWalletAddress = await wallet.getAddress();
 
@@ -267,6 +280,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
     } catch (e) {
       emit(LoginFailure(e));
+      logger.d(
+        'Failed to add wallet from ArConnect'
+        ' - Emmiting previous state',
+      );
       emit(previousState);
     }
   }
@@ -279,7 +296,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arDriveAuth.logout();
     }
 
-    emit(LoginInitial(_arConnectService.isExtensionPresent()));
+    emit(LoginInitial(
+      isArConnectAvailable: _arConnectService.isExtensionPresent(),
+    ));
   }
 
   Future<void> _handleFinishOnboardingEvent(
@@ -327,10 +346,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    onArConnectWalletSwitch(() async {
+    // This method is not prepared to take a future.
+    _unsubscribeFromWalletSwitch = onArConnectWalletSwitch(() async {
       final isUserLoggedIng = await _arDriveAuth.isUserLoggedIn();
       if (isUserLoggedIng && !_isArConnectWallet()) {
-        logger.d('Wallet switch detected. Is current profile ArConnect: false');
+        logger.d(
+          'Wallet switch detected for non-arconnect wallet'
+          ' ($profileType) - ignoring',
+        );
         return;
       }
 
@@ -339,14 +362,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         return;
       }
 
-      logger.i('ArConnect wallet switched');
-      // ignore: invalid_use_of_visible_for_testing_member
-      emit(const LoginFailure(WalletMismatchException()));
-
       await _arDriveAuth.logout();
 
-      // ignore: invalid_use_of_visible_for_testing_member
-      emit(const LoginInitial(true));
+      logger.i('ArConnect wallet switched');
+      // // ignore: invalid_use_of_visible_for_testing_member
+      // emit(const LoginFailure(WalletMismatchException()));
+
+      // // ignore: invalid_use_of_visible_for_testing_member
+      // emit(const LoginInitial(isArConnectAvailable: true));
     });
   }
 

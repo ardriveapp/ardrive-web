@@ -26,10 +26,16 @@ StreamSubscription<Event> onTabGetsFocused(Function onFocus) {
   return subscription;
 }
 
-void onWalletSwitch(Function onWalletSwitch) {
+Function() onWalletSwitch(Function onWalletSwitch) {
   window.addEventListener('walletSwitch', (event) {
     onWalletSwitch();
   });
+
+  return () {
+    window.removeEventListener('walletSwitch', (event) {
+      onWalletSwitch();
+    });
+  };
 }
 
 void reload() {

@@ -97,6 +97,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     return _currentUser!;
   }
 
+  @visibleForTesting
   set currentUser(User? user) {
     _currentUser = user;
   }
@@ -217,6 +218,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
     logger.i('Logging out user');
 
     try {
+      logger.d('Current user: $_currentUser');
+
       if (_currentUser != null) {
         await _secureKeyValueStore.remove('password');
         await _secureKeyValueStore.remove('biometricEnabled');
@@ -226,6 +229,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         _userStreamController.add(null);
       }
 
+      await _userRepository.deleteUser();
       await _databaseHelpers.deleteAllTables();
       (await _metadataCache).clear();
     } catch (e) {
