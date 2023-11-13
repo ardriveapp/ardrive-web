@@ -204,7 +204,6 @@ class AppState extends State<App> {
             communityOracle: CommunityOracle(
               ArDriveContractOracle(
                 [
-                  ContractOracle(VertoContractReader()),
                   ContractOracle(RedstoneContractReader()),
                   ContractOracle(ARNSContractReader()),
                 ],
