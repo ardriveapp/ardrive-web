@@ -184,7 +184,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
     final isChrome = await AppPlatform.isChrome();
 
-    await for (var progress in downloadStream) {
+    await for (var progress in await downloadStream) {
       if (state is FileDownloadAborted) {
         return;
       }

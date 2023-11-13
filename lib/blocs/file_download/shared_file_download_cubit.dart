@@ -85,7 +85,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       isManifest: revision.contentType == ContentType.manifest,
     );
 
-    await for (var progress in downloadStream) {
+    await for (var progress in await downloadStream) {
       if (state is FileDownloadAborted) {
         return;
       }
