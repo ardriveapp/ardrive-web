@@ -152,7 +152,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
 
     request.contentLength = dataItemSize;
     // request.persistentConnection = true;
-    request.persistentConnection = true;
+    request.persistentConnection = false;
 
     debugPrint('is persistent connection?${request.persistentConnection}');
 
