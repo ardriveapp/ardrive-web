@@ -139,8 +139,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.8.0"
-      resolved-ref: a61f9d73ee5eac1b6a169d6ccc6dc1948aa39b8f
+      ref: PE-4971-generate-optional-fields-if-missing
+      resolved-ref: "965224ff551191614d83f6ce01bf2340e9ed9980"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.8.0"
