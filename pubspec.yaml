@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.24.1
+version: 2.24.2
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -54,7 +54,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-4971-generate-optional-fields-if-missing
+      ref: v3.8.1
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   intersperse: ^2.0.0
