@@ -39,7 +39,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-4971-generate-optional-fields-if-missing
+      ref: v3.8.1
   ardrive_utils:
     path: ../../ardrive_utils
   # The following adds the Cupertino Icons font to your application.
