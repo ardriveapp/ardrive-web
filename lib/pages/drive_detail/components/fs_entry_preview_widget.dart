@@ -1420,8 +1420,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
 
   Widget _buildNameAndExtension({required bool isFileExplorer}) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(
-        minHeight: 96,
+      constraints: BoxConstraints(
+        minHeight: isFileExplorer ? 0 : 96,
       ),
       child: Padding(
         padding: EdgeInsets.only(
