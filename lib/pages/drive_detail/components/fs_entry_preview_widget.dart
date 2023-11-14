@@ -1378,7 +1378,11 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       actionBar = Column(children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [_buildNameAndExtension(isFileExplorer: isFileExplorer)],
+          children: [
+            Expanded(
+              child: _buildNameAndExtension(isFileExplorer: isFileExplorer),
+            )
+          ],
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -1389,7 +1393,9 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       actionBar = Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildNameAndExtension(isFileExplorer: isFileExplorer),
+          Expanded(
+            child: _buildNameAndExtension(isFileExplorer: isFileExplorer),
+          ),
           _buildFullScreenButton(isFileExplorer: isFileExplorer),
         ],
       );
@@ -1413,8 +1419,10 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildNameAndExtension({required bool isFileExplorer}) {
-    return SizedBox(
-      height: isFileExplorer ? null : 96,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: 96,
+      ),
       child: Padding(
         padding: EdgeInsets.only(
           left: 24,
@@ -1427,11 +1435,19 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               ? CrossAxisAlignment.center
               : CrossAxisAlignment.start,
           children: [
-            Text(
-              getBasenameWithoutExtension(filePath: widget.filename),
-              style: ArDriveTypography.body.smallBold700(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-              ),
+            Wrap(
+              direction: Axis.horizontal,
+              children: [
+                Text(
+                  getBasenameWithoutExtension(filePath: widget.filename),
+                  style: ArDriveTypography.body.smallBold700(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+                ),
+              ],
             ),
             Text(
               getFileTypeFromMime(
