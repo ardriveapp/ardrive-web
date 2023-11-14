@@ -26,7 +26,6 @@ part 'login_state.dart';
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ArDriveAuth _arDriveAuth;
   final ArConnectService _arConnectService;
-  Function()? _unsubscribeFromWalletSwitch;
 
   bool ignoreNextWaletSwitch = false;
 
@@ -45,13 +44,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
-  }
-
-  @override
-  Future<void> close() {
-    _unsubscribeFromWalletSwitch?.call();
-    _unsubscribeFromWalletSwitch = null;
-    return super.close();
   }
 
   Future<void> _onLoginEvent(LoginEvent event, Emitter<LoginState> emit) async {
@@ -338,7 +330,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    _unsubscribeFromWalletSwitch = onArConnectWalletSwitch(() async {
+    onArConnectWalletSwitch(() async {
       final isUserLoggedIng = await _arDriveAuth.isUserLoggedIn();
       if (isUserLoggedIng && !_isArConnectWallet()) {
         logger.d(

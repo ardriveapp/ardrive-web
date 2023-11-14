@@ -26,10 +26,8 @@ StreamSubscription<Event> onTabGetsFocused(Function onFocus) {
   return subscription;
 }
 
-Function() onWalletSwitch(Function onWalletSwitch) {
-  void listener(event) {
-    onWalletSwitch();
-  }
+Function() onWalletSwitch(Function callback) {
+  listener(event) => callback();
 
   window.addEventListener('walletSwitch', listener);
   return () => window.removeEventListener('walletSwitch', listener);

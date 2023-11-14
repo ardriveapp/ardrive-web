@@ -31,39 +31,35 @@ class AppShell extends StatefulWidget {
 class AppShellState extends State<AppShell> {
   bool _showProfileOverlay = false;
   bool _showWalletSwitchDialog = true;
-  Function()? _unregisterWalletSwitchListener;
 
   @override
-  void dispose() {
-    _unregisterWalletSwitchListener?.call();
-    _unregisterWalletSwitchListener = null;
-    super.dispose();
+  void initState() {
+    onArConnectWalletSwitch(() {
+      context.read<ProfileCubit>().isCurrentProfileArConnect().then(
+        (isCurrentProfileArConnect) {
+          if (_showWalletSwitchDialog) {
+            if (isCurrentProfileArConnect) {
+              showDialog(
+                context: context,
+                builder: (context) => const WalletSwitchDialog(),
+              );
+            } else {
+              logger.d('Wallet switch detected while not logged in'
+                  ' to ArConnect. Ignoring.');
+            }
+          }
+          // Used to prevent the dialog being shown multiple times.
+          _showWalletSwitchDialog = false;
+        },
+      );
+    });
+
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, _) {
-          _unregisterWalletSwitchListener = onArConnectWalletSwitch(() {
-            context
-                .read<ProfileCubit>()
-                .isCurrentProfileArConnect()
-                .then((isCurrentProfileArConnect) {
-              if (_showWalletSwitchDialog) {
-                if (isCurrentProfileArConnect) {
-                  showDialog(
-                    context: context,
-                    builder: (context) => const WalletSwitchDialog(),
-                  );
-                } else {
-                  logger.d('Wallet switch detected while not logged in'
-                      ' to ArConnect. Ignoring.');
-                }
-              }
-              //Used to prevent the dialog being shown multiple times.
-              _showWalletSwitchDialog = false;
-            });
-          });
-
           Widget buildPage(scaffold) => Material(
                 child: BlocBuilder<SyncCubit, SyncState>(
                   builder: (context, syncState) => syncState is SyncInProgress
