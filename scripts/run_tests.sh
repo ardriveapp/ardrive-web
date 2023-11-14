@@ -14,6 +14,7 @@ for dir in packages/*; do
       echo "Running tests in $dir"
       cd $dir
       flutter pub get
+      flutter analyze
       flutter test
       cd ../..
     else
