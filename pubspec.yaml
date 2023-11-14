@@ -20,6 +20,9 @@ script_runner:
   scripts:
     - setup: flutter clean && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
     - test: flutter test
+    - test-ardrive-uploader: cd packages/ardrive_uploader && flutter test
+    - test-ardrive-utils: cd packages/ardrive_utils && flutter test
+    - test-pst: cd packages/pst && flutter test
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
 
