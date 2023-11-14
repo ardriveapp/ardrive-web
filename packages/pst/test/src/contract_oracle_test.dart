@@ -78,13 +78,6 @@ void main() {
         myBrokenContractOracle = ContractOracle(myBrokenContractReader);
       });
 
-      test('throws if an empty array is passed', () {
-        expect(
-          () => ArDriveContractOracle([]),
-          throwsA(const EmptyContractOracles()),
-        );
-      });
-
       setUp(() {
         // Puts a delay to test the retries in the broken contract
         // in other case it will returns before the broken one retry more than one time

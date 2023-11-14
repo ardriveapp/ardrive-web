@@ -43,6 +43,7 @@ macos/flutter/ephemeral
 linux/flutter/ephemeral
 windows/flutter/ephemeral
 
+scripts/build/.last_build_id
 # Web related
 
 # Symbolication related

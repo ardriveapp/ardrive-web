@@ -126,6 +126,7 @@ class _UploadFormState extends State<UploadForm> {
         driveId: driveIdController.text,
         parentFolderId: parentFolderIdController.text,
         isPrivate: false,
+        type: UploadType.turbo,
       ),
       wallet: wallet,
     );

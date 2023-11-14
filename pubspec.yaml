@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.24.1
+version: 2.24.2
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -19,7 +19,7 @@ script_runner:
   line_length: 80
   scripts:
     - setup: flutter clean && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
-    - test: flutter test
+    - test: scripts/run_tests.sh
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
 
@@ -54,7 +54,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.0
+      ref: v3.8.1
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   intersperse: ^2.0.0

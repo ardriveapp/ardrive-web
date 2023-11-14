@@ -34,6 +34,8 @@ class EntityTag {
 
   static const pinnedDataTx = 'Pinned-Data-Tx';
   static const arFsPin = 'ArFS-Pin';
+
+  static const tipType = 'Tip-Type';
 }
 
 class ContentTypeTag {
