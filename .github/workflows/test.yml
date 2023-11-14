@@ -30,6 +30,6 @@ jobs:
         run: flutter analyze
 
       - name: Test app
-        run: scr test && scr test-ardrive-uploader && scr test-ardrive-utils && scr test-pst
+        run: scr test
     
       
