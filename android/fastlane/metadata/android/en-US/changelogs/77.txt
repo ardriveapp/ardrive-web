@@ -1,0 +1,3 @@
+- Including additional fields for wallets when generated in the Android app.
+- Fixing issue to include $U tags on D2N bundles.
+- Optimizing PST retrieval by excluding Verto and Redstone Cache.
