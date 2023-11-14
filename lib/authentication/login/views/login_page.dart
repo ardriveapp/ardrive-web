@@ -349,7 +349,6 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         late Widget content;
 
         if (loginState is PromptPassword) {
-          // HERE, Mati.
           content = PromptPasswordView(
             wallet: loginState.walletFile,
           );

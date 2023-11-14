@@ -180,10 +180,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           logger.e('Failed to unlock user with biometrics', e);
         }
       }
-
-      logger.d('User is logged in, prompting for password');
       emit(const PromptPassword());
-
       return;
     }
 
@@ -269,7 +266,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final wallet = ArConnectWallet(_arConnectService);
 
       profileType = ProfileType.arConnect;
-      logger.i('ArConnect wallet detected - profile type: $profileType');
 
       lastKnownWalletAddress = await wallet.getAddress();
 
@@ -280,10 +276,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
     } catch (e) {
       emit(LoginFailure(e));
-      logger.d(
-        'Failed to add wallet from ArConnect'
-        ' - Emmiting previous state',
-      );
       emit(previousState);
     }
   }
@@ -346,7 +338,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    // This method is not prepared to take a future.
     _unsubscribeFromWalletSwitch = onArConnectWalletSwitch(() async {
       final isUserLoggedIng = await _arDriveAuth.isUserLoggedIn();
       if (isUserLoggedIng && !_isArConnectWallet()) {
@@ -365,11 +356,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arDriveAuth.logout();
 
       logger.i('ArConnect wallet switched');
-      // // ignore: invalid_use_of_visible_for_testing_member
-      // emit(const LoginFailure(WalletMismatchException()));
-
-      // // ignore: invalid_use_of_visible_for_testing_member
-      // emit(const LoginInitial(isArConnectAvailable: true));
     });
   }
 

@@ -218,8 +218,6 @@ class ArDriveAuthImpl implements ArDriveAuth {
     logger.i('Logging out user');
 
     try {
-      logger.d('Current user: $_currentUser');
-
       if (_currentUser != null) {
         await _secureKeyValueStore.remove('password');
         await _secureKeyValueStore.remove('biometricEnabled');
