@@ -220,6 +220,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
           isPrivate: driveKey != null,
           driveId: driveId,
           parentFolderId: metadata.id,
+          type: this is BDIDataBundler ? UploadType.turbo : UploadType.d2n,
         ),
       );
 
