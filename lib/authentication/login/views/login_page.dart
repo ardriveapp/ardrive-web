@@ -1835,7 +1835,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                           padding: const EdgeInsets.all(44),
                           child: Column(
                             children: [
-                              ArDriveIcons.download(size: 40),
+                              ArDriveIcons.download2(size: 40),
                               const SizedBox(height: 4),
                               // TODO: create/update localization key
                               Text('Download Keyfile',

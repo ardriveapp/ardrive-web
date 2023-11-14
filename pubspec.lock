@@ -93,8 +93,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.14.0"
-      resolved-ref: f2c75067ebb214200e507e269bddbfd7285720ab
+      ref: PE-4751-update-icons
+      resolved-ref: c36f699e0ba5aa02e88a129236885099d62e5e76
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.14.0"
