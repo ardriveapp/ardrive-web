@@ -78,16 +78,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         case 'image':
           final data = await _getPreviewData(file, previewUrl);
 
-          if (data != null) {
-            emit(FsEntryPreviewImage(
-              imageBytes: data,
-              previewUrl: previewUrl,
-              filename: file.name,
-              contentType: file.contentType,
-            ));
-          } else {
-            emit(FsEntryPreviewUnavailable());
-          }
+          emit(FsEntryPreviewImage(
+            imageBytes: data,
+            previewUrl: previewUrl,
+            filename: file.name,
+            contentType: file.contentType,
+          ));
 
           break;
 
