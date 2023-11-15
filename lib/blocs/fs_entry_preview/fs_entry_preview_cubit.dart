@@ -76,23 +76,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
       switch (previewType) {
         case 'image':
-          try {
-            final data = await _getPreviewData(file, previewUrl);
-
-            emit(FsEntryPreviewImage(
-              imageBytes: data,
-              previewUrl: previewUrl,
-              filename: file.name,
-              contentType: file.contentType,
-            ));
-          } catch (e) {
-            emit(FsEntryPreviewImage(
-              imageBytes: null,
-              previewUrl: previewUrl,
-              filename: file.name,
-              contentType: file.contentType,
-            ));
-          }
+          _previewImage(
+            fileKey != null,
+            selectedItem,
+            previewUrl,
+          );
           break;
 
         case 'audio':
@@ -218,6 +206,30 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       }
     } else {
       emit(FsEntryPreviewUnavailable());
+    }
+  }
+
+  Future<void> _previewImage(
+    bool isPrivate,
+    FileDataTableItem file,
+    String previewUrl,
+  ) async {
+    try {
+      final data = await _getPreviewData(file, previewUrl);
+
+      emit(FsEntryPreviewImage(
+        imageBytes: data,
+        previewUrl: previewUrl,
+        filename: file.name,
+        contentType: file.contentType,
+      ));
+    } catch (e) {
+      emit(FsEntryPreviewImage(
+        imageBytes: null,
+        previewUrl: previewUrl,
+        filename: file.name,
+        contentType: file.contentType,
+      ));
     }
   }
 
