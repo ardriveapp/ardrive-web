@@ -20,7 +20,8 @@ class FsEntryPreviewWidget extends StatefulWidget {
 class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   @override
   Widget build(BuildContext context) {
-    switch (widget.state.runtimeType) {
+    final stateType = widget.state.runtimeType;
+    switch (stateType) {
       case FsEntryPreviewUnavailable:
         return const Center(
           child: Text('Preview unavailable'),
@@ -1162,7 +1163,7 @@ class _FullScreenVideoPlayerWidgetState
 }
 
 class ImagePreviewFullScreenWidget extends StatefulWidget {
-  final Uint8List imageBytes;
+  final Uint8List? imageBytes;
   final String filename;
   final String contentType;
 
@@ -1209,7 +1210,7 @@ class _ImagePreviewFullScreenWidgetState
 }
 
 class ImagePreviewWidget extends StatefulWidget {
-  final Uint8List imageBytes;
+  final Uint8List? imageBytes;
   final String filename;
   final String contentType;
   final bool isSharePage;
@@ -1317,12 +1318,15 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
 
   Widget _buildImage() {
     if (!widget.isFullScreen) {
+      if (widget.imageBytes == null) {
+        return _buildPreviewUnavailable();
+      }
       return ArDriveImage(
         fit: BoxFit.contain,
         height: double.maxFinite,
         width: double.maxFinite,
         image: MemoryImage(
-          widget.imageBytes,
+          widget.imageBytes!,
         ),
       );
     } else {
@@ -1356,17 +1360,38 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               }
             });
           },
-          child: ArDriveImage(
-            fit: BoxFit.contain,
-            height: double.maxFinite,
-            width: double.maxFinite,
-            image: MemoryImage(
-              widget.imageBytes,
-            ),
-          ),
+          child: widget.imageBytes == null
+              ? _buildPreviewUnavailable()
+              : ArDriveImage(
+                  fit: BoxFit.contain,
+                  height: double.maxFinite,
+                  width: double.maxFinite,
+                  image: MemoryImage(
+                    widget.imageBytes!,
+                  ),
+                ),
         ),
       );
     }
+  }
+
+  Widget _buildPreviewUnavailable() {
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline_outlined, size: 20),
+            Text(
+              appLocalizationsOf(context).couldNotLoadFile,
+              style: ArDriveTypography.body.smallBold700(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildActionBar() {

@@ -367,7 +367,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }
 
   Widget _buildPreview(FsEntryPreviewState previewState) {
-    if (previewState is FsEntryPreviewUnavailable) {
+    if (previewState is FsEntryPreviewUnavailable && widget.isSharePage) {
       return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(

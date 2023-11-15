@@ -113,8 +113,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     } else {
       emit(FsEntryPreviewUnavailable());
     }
-
-    return Future.value();
   }
 
   Future<Uint8List?> _getPreviewData(
@@ -259,23 +257,24 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
       final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
 
-      if (dataTx == null) {
-        emit(FsEntryPreviewFailure());
-        return;
-      }
+      late Uint8List? dataBytes;
 
-      late Uint8List dataBytes;
+      final cachedBytes = dataTx == null
+          ? null
+          : await _driveDao.getPreviewDataFromMemory(dataTx.id);
 
-      final cachedBytes = await _driveDao.getPreviewDataFromMemory(dataTx.id);
+      if (cachedBytes == null && dataTx != null) {
+        try {
+          final dataRes = await ArDriveHTTP().getAsBytes(dataUrl);
+          dataBytes = dataRes.data;
 
-      if (cachedBytes == null) {
-        final dataRes = await ArDriveHTTP().getAsBytes(dataUrl);
-        dataBytes = dataRes.data;
-
-        await _driveDao.putPreviewDataInMemory(
-          dataTxId: dataTx.id,
-          bytes: dataBytes,
-        );
+          await _driveDao.putPreviewDataInMemory(
+            dataTxId: dataTx.id,
+            bytes: dataBytes!,
+          );
+        } catch (_) {
+          dataBytes = null;
+        }
       } else {
         dataBytes = cachedBytes;
       }
@@ -299,6 +298,17 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           SecretKey? driveKey;
 
           final isPinFile = file.pinnedDataOwnerAddress != null;
+
+          if (dataBytes == null) {
+            emit(FsEntryPreviewImage(
+              imageBytes: null,
+              previewUrl: dataUrl,
+              filename: file.name,
+              contentType: file.dataContentType ??
+                  lookupMimeTypeWithDefaultType(file.name),
+            ));
+            return;
+          }
 
           if (isPinFile) {
             emit(
@@ -328,7 +338,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
           final fileKey = await _driveDao.getFileKey(file.id, driveKey);
           final decodedBytes = await _crypto.decryptDataFromTransaction(
-            dataTx,
+            dataTx!,
             dataBytes,
             fileKey,
           );
@@ -344,10 +354,22 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           break;
 
         default:
-          emit(FsEntryPreviewFailure());
+          emit(FsEntryPreviewImage(
+            imageBytes: null,
+            previewUrl: dataUrl,
+            filename: file.name,
+            contentType: file.dataContentType ??
+                lookupMimeTypeWithDefaultType(file.name),
+          ));
       }
     } catch (err) {
-      emit(FsEntryPreviewFailure());
+      emit(FsEntryPreviewImage(
+        imageBytes: null,
+        previewUrl: dataUrl,
+        filename: file.name,
+        contentType:
+            file.dataContentType ?? lookupMimeTypeWithDefaultType(file.name),
+      ));
     }
   }
 

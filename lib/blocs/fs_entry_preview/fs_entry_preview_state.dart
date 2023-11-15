@@ -25,7 +25,7 @@ class FsEntryPreviewLoading extends FsEntryPreviewSuccess {
 }
 
 class FsEntryPreviewImage extends FsEntryPreviewSuccess {
-  final Uint8List imageBytes;
+  final Uint8List? imageBytes;
   final String filename;
   final String contentType;
 
@@ -37,7 +37,7 @@ class FsEntryPreviewImage extends FsEntryPreviewSuccess {
   }) : super(previewUrl: previewUrl);
 
   @override
-  List<Object> get props => [imageBytes, previewUrl];
+  List<Object> get props => [imageBytes ?? '', previewUrl];
 }
 
 class FsEntryPreviewAudio extends FsEntryPreviewSuccess {
@@ -79,5 +79,3 @@ class FsEntryPreviewText extends FsEntryPreviewSuccess {
   @override
   List<Object> get props => [previewUrl];
 }
-
-class FsEntryPreviewFailure extends FsEntryPreviewState {}
