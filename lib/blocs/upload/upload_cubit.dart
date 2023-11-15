@@ -25,6 +25,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pst/pst.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'enums/conflicting_files_actions.dart';
 
@@ -605,6 +606,7 @@ class UploadCubit extends Cubit<UploadState> {
   bool? _containsLargeTurboUpload;
 
   Future<void> _uploadUsingArDriveUploader() async {
+    WakelockPlus.enable();
     final ardriveUploader = ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
       metadataGenerator: ARFSUploadMetadataGenerator(
