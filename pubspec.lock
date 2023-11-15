@@ -84,8 +84,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.1"
-      resolved-ref: "441c37764a1b120057ec2cd1e6eecb47bb35a37a"
+      ref: pick-file-through-worker
+      resolved-ref: "766651ebb7acc88fd8abe86d16728845c8822348"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.1"

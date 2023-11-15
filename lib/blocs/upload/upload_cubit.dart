@@ -461,57 +461,34 @@ class UploadCubit extends Cubit<UploadState> {
     logger.d(
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
-    if (configService.config.useNewUploader) {
-      if (_uploadMethod == UploadMethod.turbo) {
-        await _verifyIfUploadContainsLargeFilesUsingTurbo();
-        if ((_containsLargeTurboUpload ?? false) &&
-            !hasEmittedWarning &&
-            kIsWeb &&
-            !await AppPlatform.isChrome()) {
-          emit(
-            UploadShowingWarning(
-              reason: UploadWarningReason.fileTooLargeOnNonChromeBrowser,
-              uploadPlanForAR: uploadPlanForAr,
-              uploadPlanForTurbo: uploadPlanForTurbo,
-            ),
-          );
-          hasEmittedWarning = true;
-          return;
-        }
-      } else {
-        _containsLargeTurboUpload = false;
-      }
-
-      if (uploadFolders) {
-        await _uploadFolderUsingArDriveUploader();
+    if (_uploadMethod == UploadMethod.turbo) {
+      await _verifyIfUploadContainsLargeFilesUsingTurbo();
+      if ((_containsLargeTurboUpload ?? false) &&
+          !hasEmittedWarning &&
+          kIsWeb &&
+          !await AppPlatform.isChrome()) {
+        emit(
+          UploadShowingWarning(
+            reason: UploadWarningReason.fileTooLargeOnNonChromeBrowser,
+            uploadPlanForAR: uploadPlanForAr,
+            uploadPlanForTurbo: uploadPlanForTurbo,
+          ),
+        );
+        hasEmittedWarning = true;
         return;
       }
+    } else {
+      _containsLargeTurboUpload = false;
+    }
 
-      await _uploadUsingArDriveUploader();
-
+    if (uploadFolders) {
+      await _uploadFolderUsingArDriveUploader();
       return;
     }
 
-    logger.d('Uploading using the old uploader');
-    final uploader = _getUploader();
+    await _uploadUsingArDriveUploader();
 
-    await for (final progress in uploader.uploadFromHandles(
-      bundleHandles: uploadPlan.bundleUploadHandles,
-      fileV2Handles: uploadPlan.fileV2UploadHandles.values.toList(),
-    )) {
-      emit(
-        UploadInProgress(
-          uploadPlan: uploadPlan,
-          progress: progress,
-        ),
-      );
-    }
-
-    logger.d('Upload finished');
-
-    unawaited(_profileCubit.refreshBalance());
-
-    emit(UploadComplete());
+    return;
   }
 
   Future<void> _uploadFolderUsingArDriveUploader() async {
@@ -826,7 +803,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
-  ArDriveUploaderFromHandles _getUploader() {
+  ArDriveUploaderFromHandles getUploader() {
     final wallet = _auth.currentUser.wallet;
 
     final turboUploader = TurboUploader(_turbo, wallet);
