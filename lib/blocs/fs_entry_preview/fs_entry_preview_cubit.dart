@@ -176,28 +176,40 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   ) async {
     final isPinFile = file.pinnedDataOwnerAddress != null;
 
-    if (_fileKey != null && !isPinFile) {
+    final Uint8List? dataBytes = await _getBytesFromCache(
+      dataTxId: file.dataTxId,
+      dataUrl: previewUrl,
+      withDriveDao: false,
+    );
+
+    if (dataBytes == null) {
+      emit(FsEntryPreviewUnavailable());
+      return;
+    }
+
+    if (isPrivate && !isPinFile) {
       if (file.size! >= previewMaxFileSize) {
         emit(FsEntryPreviewUnavailable());
       }
+      final fileKey = await _getFileKey(
+        file.id,
+        driveId,
+        isPrivate,
+        isPinFile,
+      );
+      final decodedBytes = await _decodePrivateData(
+        dataBytes,
+        fileKey!,
+        file.dataTxId,
+      );
+      imagePreviewNotifier.value = ImagePreviewNotification(
+        dataBytes: decodedBytes,
+      );
+    } else {
+      imagePreviewNotifier.value = ImagePreviewNotification(
+        dataBytes: dataBytes,
+      );
     }
-
-    final fileKey = await _getFileKey(
-      file.id,
-      driveId,
-      isPrivate,
-      isPinFile,
-    );
-
-    final decodedBytes = await _decodePrivateData(
-      Uint8List(0),
-      fileKey!,
-      file.dataTxId,
-      previewUrl,
-    );
-    imagePreviewNotifier.value = ImagePreviewNotification(
-      dataBytes: decodedBytes,
-    );
 
     emit(FsEntryPreviewImage(
       previewUrl: previewUrl,
@@ -278,27 +290,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     try {
       emit(const FsEntryPreviewLoading());
 
-      late Uint8List? dataBytes;
-
-      final cachedBytes = await _driveDao.getPreviewDataFromMemory(
-        file.dataTxId,
+      final Uint8List? dataBytes = await _getBytesFromCache(
+        dataTxId: file.dataTxId,
+        dataUrl: dataUrl,
       );
-
-      if (cachedBytes == null) {
-        try {
-          final dataRes = await ArDriveHTTP().getAsBytes(dataUrl);
-          dataBytes = dataRes.data;
-
-          await _driveDao.putPreviewDataInMemory(
-            dataTxId: file.dataTxId,
-            bytes: dataBytes!,
-          );
-        } catch (_) {
-          dataBytes = null;
-        }
-      } else {
-        dataBytes = cachedBytes;
-      }
 
       final drive = await _driveDao.driveById(driveId: driveId).getSingle();
       final isPinFile = file.pinnedDataOwnerAddress != null;
@@ -324,9 +319,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             dataBytes,
             fileKey!,
             file.dataTxId,
-            dataUrl,
           );
-          _emitImagePreview(file, dataUrl, decodedBytes);
+          _emitImagePreview(file, dataUrl, dataBytes: decodedBytes);
           break;
 
         default:
@@ -337,11 +331,42 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
+  Future<Uint8List?> _getBytesFromCache({
+    required String dataTxId,
+    required String dataUrl,
+    bool withDriveDao = true,
+  }) async {
+    Uint8List? dataBytes;
+
+    final cachedBytes = withDriveDao
+        ? await _driveDao.getPreviewDataFromMemory(
+            dataTxId,
+          )
+        : null;
+
+    if (cachedBytes == null) {
+      try {
+        final dataRes = await ArDriveHTTP().getAsBytes(dataUrl);
+        dataBytes = dataRes.data;
+
+        await _driveDao.putPreviewDataInMemory(
+          dataTxId: dataTxId,
+          bytes: dataBytes!,
+        );
+      } catch (_) {
+        dataBytes = null;
+      }
+    } else {
+      dataBytes = cachedBytes;
+    }
+
+    return dataBytes;
+  }
+
   Future<Uint8List?> _decodePrivateData(
     Uint8List dataBytes,
     SecretKey fileKey,
     String dataTxId,
-    String previewUrl,
   ) async {
     final dataTx = await _getDataTx(dataTxId);
 
@@ -374,14 +399,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String dataUrl, {
     Uint8List? dataBytes,
   }) {
-    _emitImagePreview(file, dataUrl, dataBytes);
+    _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
   }
 
   void _emitImagePreview(
     FileEntry file,
-    String dataUrl,
+    String dataUrl, {
     Uint8List? dataBytes,
-  ) {
+  }) {
     imagePreviewNotifier.value = ImagePreviewNotification(
       dataBytes: dataBytes,
     );
