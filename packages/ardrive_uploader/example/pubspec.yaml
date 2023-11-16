@@ -35,7 +35,7 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.1
+      ref: PE-4923
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
@@ -50,7 +50,7 @@ dependencies:
   uuid: ^3.0.4
   cryptography: ^2.5.0
   dio: ^5.3.2
-  http: 
+  http:
 
 dev_dependencies:
   flutter_test:
