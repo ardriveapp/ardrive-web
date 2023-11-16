@@ -1322,9 +1322,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     return ValueListenableBuilder(
       valueListenable: widget.previewCubit.imagePreviewNotifier,
       builder: (context, imagePreview, _) {
-        logger.d('Image preview: ${imagePreview.dataBytes}');
         if (!widget.isFullScreen) {
-          logger.d('Widget is not full screen');
           if (imagePreview.dataBytes == null) {
             return const UnpreviewableContent();
           }
