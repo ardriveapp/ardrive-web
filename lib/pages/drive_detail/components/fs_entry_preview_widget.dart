@@ -4,11 +4,13 @@ const List<double> _speedOptions = [.25, .5, .75, 1, 1.25, 1.5, 1.75, 2];
 
 class FsEntryPreviewWidget extends StatefulWidget {
   final bool isSharePage;
+  final FsEntryPreviewCubit previewCubit;
 
   const FsEntryPreviewWidget({
     Key? key,
     required this.state,
     required this.isSharePage,
+    required this.previewCubit,
   }) : super(key: key);
 
   final FsEntryPreviewState state;
@@ -20,7 +22,8 @@ class FsEntryPreviewWidget extends StatefulWidget {
 class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   @override
   Widget build(BuildContext context) {
-    switch (widget.state.runtimeType) {
+    final stateType = widget.state.runtimeType;
+    switch (stateType) {
       case FsEntryPreviewUnavailable:
         return const Center(
           child: Text('Preview unavailable'),
@@ -40,9 +43,9 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         return ImagePreviewWidget(
           filename: (widget.state as FsEntryPreviewImage).filename,
           contentType: (widget.state as FsEntryPreviewImage).contentType,
-          imageBytes: (widget.state as FsEntryPreviewImage).imageBytes,
           isSharePage: widget.isSharePage,
           isFullScreen: false,
+          previewCubit: widget.previewCubit,
         );
 
       case FsEntryPreviewAudio:
@@ -1162,15 +1165,15 @@ class _FullScreenVideoPlayerWidgetState
 }
 
 class ImagePreviewFullScreenWidget extends StatefulWidget {
-  final Uint8List imageBytes;
   final String filename;
   final String contentType;
+  final FsEntryPreviewCubit previewCubit;
 
   const ImagePreviewFullScreenWidget({
     super.key,
     required this.filename,
     required this.contentType,
-    required this.imageBytes,
+    required this.previewCubit,
   });
 
   @override
@@ -1201,25 +1204,25 @@ class _ImagePreviewFullScreenWidgetState
       body: ImagePreviewWidget(
         filename: widget.filename,
         contentType: widget.contentType,
-        imageBytes: widget.imageBytes,
         isFullScreen: true,
+        previewCubit: widget.previewCubit,
       ),
     );
   }
 }
 
 class ImagePreviewWidget extends StatefulWidget {
-  final Uint8List imageBytes;
   final String filename;
   final String contentType;
   final bool isSharePage;
   final bool isFullScreen;
+  final FsEntryPreviewCubit previewCubit;
 
   const ImagePreviewWidget({
     super.key,
     required this.filename,
     required this.contentType,
-    required this.imageBytes,
+    required this.previewCubit,
     this.isSharePage = false,
     this.isFullScreen = false,
   });
@@ -1316,57 +1319,83 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildImage() {
-    if (!widget.isFullScreen) {
+    return ValueListenableBuilder(
+      valueListenable: widget.previewCubit.imagePreviewNotifier,
+      builder: (context, imagePreview, _) {
+        if (!widget.isFullScreen) {
+          if (imagePreview.dataBytes == null) {
+            return const UnpreviewableContent();
+          }
+          return _buildImageFromBytes(
+            imagePreview.dataBytes!,
+            withTapRegion: false,
+          );
+        } else {
+          if (imagePreview.dataBytes == null) {
+            return const UnpreviewableContent();
+          }
+          return _buildImageFromBytes(
+            imagePreview.dataBytes!,
+            withTapRegion: true,
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildImageFromBytes(
+    Uint8List imageBytes, {
+    required bool withTapRegion,
+  }) {
+    if (!withTapRegion) {
       return ArDriveImage(
         fit: BoxFit.contain,
         height: double.maxFinite,
         width: double.maxFinite,
         image: MemoryImage(
-          widget.imageBytes,
-        ),
-      );
-    } else {
-      return MouseRegion(
-        onHover: (event) {
-          if (!AppPlatform.isMobile) {
-            _showControls();
-            _resetHideControlsTimer();
-          }
-        },
-        onExit: (event) {
-          if (!AppPlatform.isMobile) {
-            if (mounted) {
-              setState(() {
-                _cancelHideControlsTimer();
-              });
-            }
-          }
-        },
-        cursor: _controlsVisible
-            ? SystemMouseCursors.click
-            : SystemMouseCursors.none,
-        child: TapRegion(
-          onTapInside: (event) {
-            setState(() {
-              _cancelHideControlsTimer();
-              _toggleControls();
-
-              if (_controlsVisible && !AppPlatform.isMobile) {
-                _resetHideControlsTimer();
-              }
-            });
-          },
-          child: ArDriveImage(
-            fit: BoxFit.contain,
-            height: double.maxFinite,
-            width: double.maxFinite,
-            image: MemoryImage(
-              widget.imageBytes,
-            ),
-          ),
+          imageBytes,
         ),
       );
     }
+    return MouseRegion(
+      onHover: (event) {
+        if (!AppPlatform.isMobile) {
+          _showControls();
+          _resetHideControlsTimer();
+        }
+      },
+      onExit: (event) {
+        if (!AppPlatform.isMobile) {
+          if (mounted) {
+            setState(() {
+              _cancelHideControlsTimer();
+            });
+          }
+        }
+      },
+      cursor:
+          _controlsVisible ? SystemMouseCursors.click : SystemMouseCursors.none,
+      child: TapRegion(
+        onTapInside: (event) {
+          setState(() {
+            _cancelHideControlsTimer();
+            _toggleControls();
+
+            if (_controlsVisible && !AppPlatform.isMobile) {
+              _resetHideControlsTimer();
+            }
+          });
+        },
+        child: ArDriveImage(
+          fit: BoxFit.contain,
+          height: double.maxFinite,
+          width: double.maxFinite,
+          image: MemoryImage(
+            imageBytes,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildActionBar() {
@@ -1378,7 +1407,11 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       actionBar = Column(children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [_buildNameAndExtension(isFileExplorer: isFileExplorer)],
+          children: [
+            Expanded(
+              child: _buildNameAndExtension(isFileExplorer: isFileExplorer),
+            )
+          ],
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -1389,7 +1422,9 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       actionBar = Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildNameAndExtension(isFileExplorer: isFileExplorer),
+          Expanded(
+            child: _buildNameAndExtension(isFileExplorer: isFileExplorer),
+          ),
           _buildFullScreenButton(isFileExplorer: isFileExplorer),
         ],
       );
@@ -1413,8 +1448,10 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildNameAndExtension({required bool isFileExplorer}) {
-    return SizedBox(
-      height: isFileExplorer ? null : 96,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: isFileExplorer ? 0 : 96,
+      ),
       child: Padding(
         padding: EdgeInsets.only(
           left: 24,
@@ -1427,11 +1464,19 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               ? CrossAxisAlignment.center
               : CrossAxisAlignment.start,
           children: [
-            Text(
-              getBasenameWithoutExtension(filePath: widget.filename),
-              style: ArDriveTypography.body.smallBold700(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-              ),
+            Wrap(
+              direction: Axis.horizontal,
+              children: [
+                Text(
+                  getBasenameWithoutExtension(filePath: widget.filename),
+                  style: ArDriveTypography.body.smallBold700(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+                ),
+              ],
             ),
             Text(
               getFileTypeFromMime(
@@ -1480,7 +1525,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
             body: ImagePreviewFullScreenWidget(
               filename: widget.filename,
               contentType: widget.contentType,
-              imageBytes: widget.imageBytes,
+              previewCubit: widget.previewCubit,
             ),
           ),
         ),
@@ -1645,19 +1690,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                           child: FittedBox(
                             fit: BoxFit.contain,
                             child: _loadState == LoadState.failed
-                                ? Column(
-                                    children: [
-                                      const Icon(Icons.error_outline_outlined,
-                                          size: 20),
-                                      Text(
-                                          appLocalizationsOf(context)
-                                              .couldNotLoadFile,
-                                          style: ArDriveTypography.body
-                                              .smallBold700(
-                                                  color: colors.themeFgMuted)
-                                              .copyWith(fontSize: 13)),
-                                    ],
-                                  )
+                                ? const UnpreviewableContent()
                                 : ArDriveIcons.music(
                                     size: 100, color: colors.themeFgMuted),
                           )),
