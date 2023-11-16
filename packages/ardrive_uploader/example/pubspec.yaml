@@ -39,7 +39,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.0
+      ref: v3.8.1
   ardrive_utils:
     path: ../../ardrive_utils
   # The following adds the Cupertino Icons font to your application.
@@ -50,7 +50,7 @@ dependencies:
   uuid: ^3.0.4
   cryptography: ^2.5.0
   dio: ^5.3.2
-  http: 
+  http:
 
 dev_dependencies:
   flutter_test:

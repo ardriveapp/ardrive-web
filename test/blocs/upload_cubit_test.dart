@@ -252,8 +252,6 @@ void main() {
         files: files,
         profileCubit: mockProfileCubit!,
         driveDao: mockDriveDao,
-        arweave: mockArweave,
-        turbo: DontUseUploadService(),
         auth: mockArDriveAuth,
         pst: mockPst);
   }
