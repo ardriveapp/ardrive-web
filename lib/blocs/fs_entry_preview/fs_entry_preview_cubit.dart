@@ -191,11 +191,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       if (file.size! >= previewMaxFileSize) {
         emit(FsEntryPreviewUnavailable());
       }
+
       final fileKey = await _getFileKey(
-        file.id,
-        driveId,
-        isPrivate,
-        isPinFile,
+        fileId: file.id,
+        driveId: driveId,
+        isPrivate: true,
+        isPin: false,
       );
       final decodedBytes = await _decodePrivateData(
         dataBytes,
@@ -218,12 +219,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     ));
   }
 
-  Future<SecretKey?> _getFileKey(
-    String fileId,
-    String driveId,
-    bool isPrivate,
-    bool isPin,
-  ) async {
+  Future<SecretKey?> _getFileKey({
+    required String fileId,
+    required String driveId,
+    required bool isPrivate,
+    required bool isPin,
+  }) async {
     if (!isPrivate || isPin) {
       return null;
     }
@@ -304,10 +305,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           break;
         case DrivePrivacyTag.private:
           final fileKey = await _getFileKey(
-            file.id,
-            driveId,
-            true,
-            isPinFile,
+            fileId: file.id,
+            driveId: driveId,
+            isPrivate: true,
+            isPin: isPinFile,
           );
 
           if (dataBytes == null || isPinFile) {
