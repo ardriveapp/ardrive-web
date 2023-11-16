@@ -1326,7 +1326,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         if (!widget.isFullScreen) {
           logger.d('Widget is not full screen');
           if (imagePreview.dataBytes == null) {
-            return _buildPreviewUnavailable();
+            return const UnpreviewableContent();
           }
           return _buildImageFromBytes(
             imagePreview.dataBytes!,
@@ -1334,7 +1334,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           );
         } else {
           if (imagePreview.dataBytes == null) {
-            return _buildPreviewUnavailable();
+            return const UnpreviewableContent();
           }
           return _buildImageFromBytes(
             imagePreview.dataBytes!,
@@ -1396,27 +1396,6 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
             imageBytes,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildPreviewUnavailable() {
-    final Widget content = Column(
-      children: [
-        const Icon(Icons.error_outline_outlined, size: 20),
-        Text(
-          appLocalizationsOf(context).couldNotLoadFile,
-          style: ArDriveTypography.body.smallBold700(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
-          ),
-        ),
-      ],
-    );
-
-    return Center(
-      child: FittedBox(
-        fit: BoxFit.contain,
-        child: content,
       ),
     );
   }
@@ -1713,19 +1692,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                           child: FittedBox(
                             fit: BoxFit.contain,
                             child: _loadState == LoadState.failed
-                                ? Column(
-                                    children: [
-                                      const Icon(Icons.error_outline_outlined,
-                                          size: 20),
-                                      Text(
-                                          appLocalizationsOf(context)
-                                              .couldNotLoadFile,
-                                          style: ArDriveTypography.body
-                                              .smallBold700(
-                                                  color: colors.themeFgMuted)
-                                              .copyWith(fontSize: 13)),
-                                    ],
-                                  )
+                                ? const UnpreviewableContent()
                                 : ArDriveIcons.music(
                                     size: 100, color: colors.themeFgMuted),
                           )),

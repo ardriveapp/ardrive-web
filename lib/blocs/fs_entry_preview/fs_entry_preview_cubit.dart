@@ -306,11 +306,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
       switch (drive.privacy) {
         case DrivePrivacyTag.public:
-          print('Drive privacy is public');
           _emitImagePreviewNoEncryption(file, dataUrl, dataBytes: dataBytes);
           break;
         case DrivePrivacyTag.private:
-          print('Drive privacy is private');
           final fileKey = await _getFileKey(
             file.id,
             driveId,
@@ -319,7 +317,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           );
 
           if (dataBytes == null || isPinFile) {
-            print('Data bytes is null or is pin file');
             _emitImagePreviewNoEncryption(file, dataUrl, dataBytes: dataBytes);
             return;
           }
@@ -330,16 +327,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             file.dataTxId,
             dataUrl,
           );
-          print('Decoded bytes: ${decodedBytes?.length}');
           _emitImagePreview(file, dataUrl, decodedBytes);
           break;
 
         default:
-          print('Drive privacy unknown');
           _emitImagePreviewNoEncryption(file, dataUrl, dataBytes: dataBytes);
       }
     } catch (err) {
-      print('Error: $err');
       _emitImagePreviewNoEncryption(file, dataUrl);
     }
   }
