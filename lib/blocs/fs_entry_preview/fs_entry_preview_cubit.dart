@@ -7,7 +7,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -366,11 +365,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   Future<TransactionCommonMixin?> _getDataTx(
     String fileDataTxId,
   ) async {
-    final dataTx = await _getTxDetails(fileDataTxId);
-    return dataTx;
-  }
-
-  Future<TransactionCommonMixin?> _getTxDetails(String fileDataTxId) async {
     final dataTx = await _arweave.getTransactionDetails(fileDataTxId);
     return dataTx;
   }
@@ -388,7 +382,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String dataUrl,
     Uint8List? dataBytes,
   ) {
-    logger.d('Emitting image preview - ${dataBytes?.length}');
     imagePreviewNotifier.value = ImagePreviewNotification(
       dataBytes: dataBytes,
     );
