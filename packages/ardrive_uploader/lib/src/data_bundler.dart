@@ -775,7 +775,7 @@ Future<
     // uses GCM
     final impl = cipherBufferImpl(AES256GCM);
     cipher = AES256GCM;
-    final data = await streamToUint8List(dataStream());
+    final data = await concatenateUint8ListStream(dataStream());
     final encryptStreamResult =
         await impl.encrypt(data.toList(), secretKey: encryptionKey);
     final encryptedData = encryptStreamResult.concatenation(nonce: false);
