@@ -301,7 +301,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
       switch (drive.privacy) {
         case DrivePrivacyTag.public:
-          _emitImagePreviewNoEncryption(file, dataUrl, dataBytes: dataBytes);
+          _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
           break;
         case DrivePrivacyTag.private:
           final fileKey = await _getFileKey(
@@ -312,7 +312,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           );
 
           if (dataBytes == null || isPinFile) {
-            _emitImagePreviewNoEncryption(file, dataUrl, dataBytes: dataBytes);
+            _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
             return;
           }
 
@@ -325,10 +325,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           break;
 
         default:
-          _emitImagePreviewNoEncryption(file, dataUrl, dataBytes: dataBytes);
+          _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
       }
     } catch (err) {
-      _emitImagePreviewNoEncryption(file, dataUrl);
+      _emitImagePreview(file, dataUrl);
     }
   }
 
@@ -393,14 +393,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   ) async {
     final dataTx = await _arweave.getTransactionDetails(fileDataTxId);
     return dataTx;
-  }
-
-  void _emitImagePreviewNoEncryption(
-    FileEntry file,
-    String dataUrl, {
-    Uint8List? dataBytes,
-  }) {
-    _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
   }
 
   void _emitImagePreview(
