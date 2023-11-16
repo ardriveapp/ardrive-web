@@ -4,11 +4,13 @@ const List<double> _speedOptions = [.25, .5, .75, 1, 1.25, 1.5, 1.75, 2];
 
 class FsEntryPreviewWidget extends StatefulWidget {
   final bool isSharePage;
+  final FsEntryPreviewCubit previewCubit;
 
   const FsEntryPreviewWidget({
     Key? key,
     required this.state,
     required this.isSharePage,
+    required this.previewCubit,
   }) : super(key: key);
 
   final FsEntryPreviewState state;
@@ -41,9 +43,9 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         return ImagePreviewWidget(
           filename: (widget.state as FsEntryPreviewImage).filename,
           contentType: (widget.state as FsEntryPreviewImage).contentType,
-          imageBytes: (widget.state as FsEntryPreviewImage).imageBytes,
           isSharePage: widget.isSharePage,
           isFullScreen: false,
+          previewCubit: widget.previewCubit,
         );
 
       case FsEntryPreviewAudio:
@@ -1163,15 +1165,15 @@ class _FullScreenVideoPlayerWidgetState
 }
 
 class ImagePreviewFullScreenWidget extends StatefulWidget {
-  final Uint8List? imageBytes;
   final String filename;
   final String contentType;
+  final FsEntryPreviewCubit previewCubit;
 
   const ImagePreviewFullScreenWidget({
     super.key,
     required this.filename,
     required this.contentType,
-    required this.imageBytes,
+    required this.previewCubit,
   });
 
   @override
@@ -1202,25 +1204,25 @@ class _ImagePreviewFullScreenWidgetState
       body: ImagePreviewWidget(
         filename: widget.filename,
         contentType: widget.contentType,
-        imageBytes: widget.imageBytes,
         isFullScreen: true,
+        previewCubit: widget.previewCubit,
       ),
     );
   }
 }
 
 class ImagePreviewWidget extends StatefulWidget {
-  final Uint8List? imageBytes;
   final String filename;
   final String contentType;
   final bool isSharePage;
   final bool isFullScreen;
+  final FsEntryPreviewCubit previewCubit;
 
   const ImagePreviewWidget({
     super.key,
     required this.filename,
     required this.contentType,
-    required this.imageBytes,
+    required this.previewCubit,
     this.isSharePage = false,
     this.isFullScreen = false,
   });
@@ -1317,79 +1319,104 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildImage() {
-    if (!widget.isFullScreen) {
-      if (widget.imageBytes == null) {
-        return _buildPreviewUnavailable();
-      }
+    return ValueListenableBuilder(
+      valueListenable: widget.previewCubit.imagePreviewNotifier,
+      builder: (context, imagePreview, _) {
+        logger.d('Image preview: ${imagePreview.dataBytes}');
+        if (!widget.isFullScreen) {
+          logger.d('Widget is not full screen');
+          if (imagePreview.dataBytes == null) {
+            return _buildPreviewUnavailable();
+          }
+          return _buildImageFromBytes(
+            imagePreview.dataBytes!,
+            withTapRegion: false,
+          );
+        } else {
+          if (imagePreview.dataBytes == null) {
+            return _buildPreviewUnavailable();
+          }
+          return _buildImageFromBytes(
+            imagePreview.dataBytes!,
+            withTapRegion: true,
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildImageFromBytes(
+    Uint8List imageBytes, {
+    required bool withTapRegion,
+  }) {
+    if (!withTapRegion) {
       return ArDriveImage(
         fit: BoxFit.contain,
         height: double.maxFinite,
         width: double.maxFinite,
         image: MemoryImage(
-          widget.imageBytes!,
-        ),
-      );
-    } else {
-      return MouseRegion(
-        onHover: (event) {
-          if (!AppPlatform.isMobile) {
-            _showControls();
-            _resetHideControlsTimer();
-          }
-        },
-        onExit: (event) {
-          if (!AppPlatform.isMobile) {
-            if (mounted) {
-              setState(() {
-                _cancelHideControlsTimer();
-              });
-            }
-          }
-        },
-        cursor: _controlsVisible
-            ? SystemMouseCursors.click
-            : SystemMouseCursors.none,
-        child: TapRegion(
-          onTapInside: (event) {
-            setState(() {
-              _cancelHideControlsTimer();
-              _toggleControls();
-
-              if (_controlsVisible && !AppPlatform.isMobile) {
-                _resetHideControlsTimer();
-              }
-            });
-          },
-          child: widget.imageBytes == null
-              ? _buildPreviewUnavailable()
-              : ArDriveImage(
-                  fit: BoxFit.contain,
-                  height: double.maxFinite,
-                  width: double.maxFinite,
-                  image: MemoryImage(
-                    widget.imageBytes!,
-                  ),
-                ),
+          imageBytes,
         ),
       );
     }
+    return MouseRegion(
+      onHover: (event) {
+        if (!AppPlatform.isMobile) {
+          _showControls();
+          _resetHideControlsTimer();
+        }
+      },
+      onExit: (event) {
+        if (!AppPlatform.isMobile) {
+          if (mounted) {
+            setState(() {
+              _cancelHideControlsTimer();
+            });
+          }
+        }
+      },
+      cursor:
+          _controlsVisible ? SystemMouseCursors.click : SystemMouseCursors.none,
+      child: TapRegion(
+        onTapInside: (event) {
+          setState(() {
+            _cancelHideControlsTimer();
+            _toggleControls();
+
+            if (_controlsVisible && !AppPlatform.isMobile) {
+              _resetHideControlsTimer();
+            }
+          });
+        },
+        child: ArDriveImage(
+          fit: BoxFit.contain,
+          height: double.maxFinite,
+          width: double.maxFinite,
+          image: MemoryImage(
+            imageBytes,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildPreviewUnavailable() {
+    final Widget content = Column(
+      children: [
+        const Icon(Icons.error_outline_outlined, size: 20),
+        Text(
+          appLocalizationsOf(context).couldNotLoadFile,
+          style: ArDriveTypography.body.smallBold700(
+            color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
+          ),
+        ),
+      ],
+    );
+
     return Center(
       child: FittedBox(
         fit: BoxFit.contain,
-        child: Column(
-          children: [
-            const Icon(Icons.error_outline_outlined, size: 20),
-            Text(
-              appLocalizationsOf(context).couldNotLoadFile,
-              style: ArDriveTypography.body.smallBold700(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
-              ),
-            ),
-          ],
-        ),
+        child: content,
       ),
     );
   }
@@ -1521,7 +1548,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
             body: ImagePreviewFullScreenWidget(
               filename: widget.filename,
               contentType: widget.contentType,
-              imageBytes: widget.imageBytes,
+              previewCubit: widget.previewCubit,
             ),
           ),
         ),

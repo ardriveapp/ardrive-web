@@ -1,17 +1,20 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/fs_entry_preview/image_preview_notification.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'fs_entry_preview_state.dart';
@@ -29,6 +32,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final SecretKey? _fileKey;
 
   StreamSubscription? _entrySubscription;
+  final ValueNotifier<ImagePreviewNotification> imagePreviewNotifier =
+      ValueNotifier<ImagePreviewNotification>(ImagePreviewNotification());
 
   final previewMaxFileSize = 1024 * 1024 * 100;
   final allowedPreviewContentTypes = [];
@@ -45,8 +50,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     bool isSharedFile = false,
   })  : _driveDao = driveDao,
         _configService = configService,
-        _arweave = arweave,
         _profileCubit = profileCubit,
+        _arweave = arweave,
         _crypto = crypto,
         _fileKey = fileKey,
         super(FsEntryPreviewInitial()) {
@@ -107,50 +112,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
-  Future<Uint8List?> _getPreviewData(
-    FileDataTableItem file,
-    String previewUrl,
-  ) async {
-    final dataTx = await _getTxDetails(file);
-
-    if (dataTx == null) {
-      emit(FsEntryPreviewUnavailable());
-      return null;
-    }
-
-    final dataRes = await ArDriveHTTP().getAsBytes(previewUrl);
-
-    final isPinFile = file.pinnedDataOwnerAddress != null;
-
-    if (_fileKey != null && !isPinFile) {
-      if (file.size! >= previewMaxFileSize) {
-        emit(FsEntryPreviewUnavailable());
-        return null;
-      }
-
-      try {
-        final decodedBytes = await _crypto.decryptDataFromTransaction(
-          dataTx,
-          dataRes.data,
-          _fileKey!,
-        );
-
-        return decodedBytes;
-      } catch (e) {
-        emit(FsEntryPreviewUnavailable());
-        return Future.value();
-      }
-    }
-
-    return dataRes.data;
-  }
-
-  Future<TransactionCommonMixin?> _getTxDetails(FileDataTableItem file) async {
-    final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
-
-    return dataTx;
-  }
-
   Future<void> preview() async {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
@@ -209,28 +170,75 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
-  Future<void> _previewImage(
+  void _previewImage(
     bool isPrivate,
     FileDataTableItem file,
     String previewUrl,
   ) async {
-    try {
-      final data = await _getPreviewData(file, previewUrl);
+    final isPinFile = file.pinnedDataOwnerAddress != null;
 
-      emit(FsEntryPreviewImage(
-        imageBytes: data,
-        previewUrl: previewUrl,
-        filename: file.name,
-        contentType: file.contentType,
-      ));
-    } catch (e) {
-      emit(FsEntryPreviewImage(
-        imageBytes: null,
-        previewUrl: previewUrl,
-        filename: file.name,
-        contentType: file.contentType,
-      ));
+    if (_fileKey != null && !isPinFile) {
+      if (file.size! >= previewMaxFileSize) {
+        emit(FsEntryPreviewUnavailable());
+      }
     }
+
+    final fileKey = await _getFileKey(
+      file.id,
+      driveId,
+      isPrivate,
+      isPinFile,
+    );
+
+    final decodedBytes = await _decodePrivateData(
+      Uint8List(0),
+      fileKey!,
+      file.dataTxId,
+      previewUrl,
+    );
+    imagePreviewNotifier.value = ImagePreviewNotification(
+      dataBytes: decodedBytes,
+    );
+
+    emit(FsEntryPreviewImage(
+      previewUrl: previewUrl,
+      filename: file.name,
+      contentType: file.contentType,
+    ));
+  }
+
+  Future<SecretKey?> _getFileKey(
+    String fileId,
+    String driveId,
+    bool isPrivate,
+    bool isPin,
+  ) async {
+    if (!isPrivate || isPin) {
+      return null;
+    }
+
+    if (_fileKey != null) {
+      return _fileKey;
+    }
+
+    final profile = _profileCubit.state;
+    late SecretKey? driveKey;
+
+    if (profile is ProfileLoggedIn) {
+      driveKey = await _driveDao.getDriveKey(
+        driveId,
+        profile.cipherKey,
+      );
+    } else {
+      driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+    }
+
+    if (driveKey == null) {
+      return null;
+    }
+
+    final fileKey = await _driveDao.getFileKey(fileId, driveKey);
+    return fileKey;
   }
 
   void _previewAudio(
@@ -271,21 +279,19 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     try {
       emit(const FsEntryPreviewLoading());
 
-      final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
-
       late Uint8List? dataBytes;
 
-      final cachedBytes = dataTx == null
-          ? null
-          : await _driveDao.getPreviewDataFromMemory(dataTx.id);
+      final cachedBytes = await _driveDao.getPreviewDataFromMemory(
+        file.dataTxId,
+      );
 
-      if (cachedBytes == null && dataTx != null) {
+      if (cachedBytes == null) {
         try {
           final dataRes = await ArDriveHTTP().getAsBytes(dataUrl);
           dataBytes = dataRes.data;
 
           await _driveDao.putPreviewDataInMemory(
-            dataTxId: dataTx.id,
+            dataTxId: file.dataTxId,
             bytes: dataBytes!,
           );
         } catch (_) {
@@ -296,97 +302,108 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       }
 
       final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+      final isPinFile = file.pinnedDataOwnerAddress != null;
 
       switch (drive.privacy) {
         case DrivePrivacyTag.public:
-          emit(
-            FsEntryPreviewImage(
-              imageBytes: dataBytes,
-              previewUrl: dataUrl,
-              filename: file.name,
-              contentType: file.dataContentType ??
-                  lookupMimeTypeWithDefaultType(file.name),
-            ),
-          );
+          print('Drive privacy is public');
+          _emitImagePreviewNoEncryption(file, dataUrl, dataBytes: dataBytes);
           break;
         case DrivePrivacyTag.private:
-          final profile = _profileCubit.state;
-          SecretKey? driveKey;
+          print('Drive privacy is private');
+          final fileKey = await _getFileKey(
+            file.id,
+            driveId,
+            true,
+            isPinFile,
+          );
 
-          final isPinFile = file.pinnedDataOwnerAddress != null;
-
-          if (dataBytes == null) {
-            emit(FsEntryPreviewImage(
-              imageBytes: null,
-              previewUrl: dataUrl,
-              filename: file.name,
-              contentType: file.dataContentType ??
-                  lookupMimeTypeWithDefaultType(file.name),
-            ));
+          if (dataBytes == null || isPinFile) {
+            print('Data bytes is null or is pin file');
+            _emitImagePreviewNoEncryption(file, dataUrl, dataBytes: dataBytes);
             return;
           }
 
-          if (isPinFile) {
-            emit(
-              FsEntryPreviewImage(
-                imageBytes: dataBytes,
-                previewUrl: dataUrl,
-                filename: file.name,
-                contentType: file.dataContentType ??
-                    lookupMimeTypeWithDefaultType(file.name),
-              ),
-            );
-            break;
-          }
-
-          if (profile is ProfileLoggedIn) {
-            driveKey = await _driveDao.getDriveKey(
-              drive.id,
-              profile.cipherKey,
-            );
-          } else {
-            driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
-          }
-
-          if (driveKey == null) {
-            throw StateError('Drive Key not found');
-          }
-
-          final fileKey = await _driveDao.getFileKey(file.id, driveKey);
-          final decodedBytes = await _crypto.decryptDataFromTransaction(
-            dataTx!,
+          final decodedBytes = await _decodePrivateData(
             dataBytes,
-            fileKey,
+            fileKey!,
+            file.dataTxId,
+            dataUrl,
           );
-          emit(
-            FsEntryPreviewImage(
-              imageBytes: decodedBytes,
-              previewUrl: dataUrl,
-              filename: file.name,
-              contentType: file.dataContentType ??
-                  lookupMimeTypeWithDefaultType(file.name),
-            ),
-          );
+          print('Decoded bytes: ${decodedBytes?.length}');
+          _emitImagePreview(file, dataUrl, decodedBytes);
           break;
 
         default:
-          emit(FsEntryPreviewImage(
-            imageBytes: null,
-            previewUrl: dataUrl,
-            filename: file.name,
-            contentType: file.dataContentType ??
-                lookupMimeTypeWithDefaultType(file.name),
-          ));
+          print('Drive privacy unknown');
+          _emitImagePreviewNoEncryption(file, dataUrl, dataBytes: dataBytes);
       }
     } catch (err) {
-      emit(FsEntryPreviewImage(
-        imageBytes: null,
-        previewUrl: dataUrl,
-        filename: file.name,
-        contentType:
-            file.dataContentType ?? lookupMimeTypeWithDefaultType(file.name),
-      ));
+      print('Error: $err');
+      _emitImagePreviewNoEncryption(file, dataUrl);
     }
+  }
+
+  Future<Uint8List?> _decodePrivateData(
+    Uint8List dataBytes,
+    SecretKey fileKey,
+    String dataTxId,
+    String previewUrl,
+  ) async {
+    final dataTx = await _getDataTx(dataTxId);
+
+    if (dataTx == null) {
+      return null;
+    }
+
+    try {
+      final decodedBytes = await _crypto.decryptDataFromTransaction(
+        dataTx,
+        dataBytes,
+        fileKey,
+      );
+
+      return decodedBytes;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<TransactionCommonMixin?> _getDataTx(
+    String fileDataTxId,
+  ) async {
+    final dataTx = await _getTxDetails(fileDataTxId);
+    return dataTx;
+  }
+
+  Future<TransactionCommonMixin?> _getTxDetails(String fileDataTxId) async {
+    final dataTx = await _arweave.getTransactionDetails(fileDataTxId);
+    return dataTx;
+  }
+
+  void _emitImagePreviewNoEncryption(
+    FileEntry file,
+    String dataUrl, {
+    Uint8List? dataBytes,
+  }) {
+    _emitImagePreview(file, dataUrl, dataBytes);
+  }
+
+  void _emitImagePreview(
+    FileEntry file,
+    String dataUrl,
+    Uint8List? dataBytes,
+  ) {
+    logger.d('Emitting image preview - ${dataBytes?.length}');
+    imagePreviewNotifier.value = ImagePreviewNotification(
+      dataBytes: dataBytes,
+    );
+    emit(FsEntryPreviewImage(
+      previewUrl: dataUrl,
+      filename: file.name,
+      contentType:
+          file.dataContentType ?? lookupMimeTypeWithDefaultType(file.name),
+    ));
   }
 
   bool _supportedExtension(String? previewType, String? fileExtension) {
@@ -411,6 +428,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   @override
   Future<void> close() {
     _entrySubscription?.cancel();
+    imagePreviewNotifier.dispose();
     return super.close();
   }
 }
