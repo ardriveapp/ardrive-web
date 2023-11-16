@@ -38,6 +38,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     try {
       _downloadFile(revision);
     } catch (err) {
+      logger.e('Failed to download shared file', err);
       addError(err);
     }
   }
@@ -56,24 +57,26 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
     final dataTxId = revision.dataTxId;
 
+    final dataTx = await _arweave.getTransactionDetails(revision.dataTxId!);
+
+    if (dataTx == null) {
+      throw StateError('Data transaction not found');
+    }
+
     if (dataTxId == null) {
       logger.e('Data transaction id is null');
       throw StateError('Data transaction id is null');
     }
 
     if (fileKey != null && !isPinFile) {
-      final dataTx = await _arweave.getTransactionDetails(revision.dataTxId!);
-
-      if (dataTx == null) {
-        throw StateError('Data transaction not found');
-      }
-
       cipherTag = dataTx.getTag(EntityTag.cipher);
       cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
     }
 
-    final downloadStream = _arDriveDownloader.downloadFile(
-      dataTx: dataTxId,
+    logger.d('File size: ${revision.size}');
+
+    final downloadStream = await _arDriveDownloader.downloadFile(
+      dataTx: dataTx,
       fileName: revision.name,
       fileSize: revision.size,
       lastModifiedDate: revision.lastModifiedDate,
@@ -85,36 +88,41 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       isManifest: revision.contentType == ContentType.manifest,
     );
 
-    await for (var progress in await downloadStream) {
-      if (state is FileDownloadAborted) {
-        return;
-      }
+    downloadStream.listen(
+      (progress) {
+        logger.d('Download progress: $progress');
 
-      if (progress == 100) {
-        emit(FileDownloadFinishedWithSuccess(fileName: revision.name));
+        if (state is FileDownloadAborted) {
+          return;
+        }
+
+        emit(
+          FileDownloadWithProgress(
+            fileName: revision.name,
+            progress: progress.toInt(),
+            fileSize: revision.size,
+            contentType: revision.contentType ??
+                lookupMimeTypeWithDefaultType(revision.name),
+          ),
+        );
+      },
+      onError: (err) {
+        logger.e('Failed to download shared file', err);
+
+        addError(err);
+      },
+      onDone: () {
         logger.d('Download finished');
-        return;
-      }
-
-      emit(
-        FileDownloadWithProgress(
-          fileName: revision.name,
-          progress: progress.toInt(),
-          fileSize: revision.size,
-          contentType: revision.contentType ??
-              lookupMimeTypeWithDefaultType(revision.name),
-        ),
-      );
-    }
-
-    logger.d('Download finished');
-
-    emit(FileDownloadFinishedWithSuccess(fileName: revision.name));
+        emit(FileDownloadFinishedWithSuccess(fileName: revision.name));
+      },
+      cancelOnError: true,
+    );
   }
 
   @override
   void abortDownload() {
     emit(FileDownloadAborted());
+    _arDriveDownloader.abortDownload();
   }
 
   @override

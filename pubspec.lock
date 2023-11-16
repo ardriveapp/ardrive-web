@@ -84,8 +84,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.1"
-      resolved-ref: "441c37764a1b120057ec2cd1e6eecb47bb35a37a"
+      ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
+      resolved-ref: fbf3f129de94a5a8e0cb78bc1044db065578404d
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.1"
@@ -139,11 +139,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.8.0"
-      resolved-ref: a61f9d73ee5eac1b6a169d6ccc6dc1948aa39b8f
+      ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
+      resolved-ref: "16f38dbd2abc2bb7071cb4de664543af487404dc"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "3.8.0"
+    version: "3.8.1"
   async:
     dependency: "direct main"
     description:
@@ -1734,10 +1734,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_linux
-      sha256: c2eb5bf57a2fe9ad6988121609e47d3e07bb3bdca5b6f8444e4cf302428a128a
+      sha256: "9f2cbcf46d4270ea8be39fa156d86379077c8a5228d9dfdb1164ae0bb93f1faa"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   shared_preferences_platform_interface:
     dependency: transitive
     description:
@@ -1758,10 +1758,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_windows
-      sha256: f763a101313bd3be87edffe0560037500967de9c394a714cd598d945517f694f
+      sha256: "841ad54f3c8381c480d0c9b508b89a34036f512482c407e6df7a9c4aa2ef8f59"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   shelf:
     dependency: transitive
     description:
