@@ -101,6 +101,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   mobileView: false,
                   previewState: previewState,
                   infoState: infoState,
+                  context: context,
                 ),
               ),
               mobile: (context) => Column(
@@ -108,6 +109,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   mobileView: true,
                   previewState: previewState,
                   infoState: infoState,
+                  context: context,
                 ),
               ),
             );
@@ -121,6 +123,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     required bool mobileView,
     required FsEntryPreviewState previewState,
     required FsEntryInfoState infoState,
+    required BuildContext context,
   }) {
     final isNotSharePageInMobileView = !(widget.isSharePage && !mobileView);
     final isPreviewUnavailable = previewState is FsEntryPreviewUnavailable;
@@ -137,7 +140,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           ),
           Column(
             children: [
-              Expanded(child: _buildPreview(previewState)),
+              Expanded(child: _buildPreview(previewState, context: context)),
             ],
           ),
         ),
@@ -194,7 +197,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   contentPadding: isSharePage
                       ? const EdgeInsets.only()
                       : const EdgeInsets.all(24),
-                  content: _buildPreview(previewState),
+                  content: _buildPreview(previewState, context: context),
                 ),
               ),
             ],
@@ -370,8 +373,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
     ];
   }
 
-  Widget _buildPreview(FsEntryPreviewState previewState) {
-    if (previewState is FsEntryPreviewUnavailable) {
+  Widget _buildPreview(
+    FsEntryPreviewState previewState, {
+    required BuildContext context,
+  }) {
+    if (previewState is FsEntryPreviewUnavailable && widget.isSharePage) {
       return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
@@ -453,6 +459,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         isSharePage: widget.isSharePage,
         onNextImageNavigation: widget.onNextImageNavigation,
         onPreviousImageNavigation: widget.onPreviousImageNavigation,
+        previewCubit: context.read<FsEntryPreviewCubit>(),
       ),
     );
   }

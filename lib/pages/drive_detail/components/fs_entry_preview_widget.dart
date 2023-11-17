@@ -7,6 +7,7 @@ class FsEntryPreviewWidget extends StatefulWidget {
   final Function()? onPreviousImageNavigation;
   final Function()? onNextImageNavigation;
   final FsEntryPreviewState state;
+  final FsEntryPreviewCubit previewCubit;
 
   const FsEntryPreviewWidget({
     Key? key,
@@ -14,19 +15,18 @@ class FsEntryPreviewWidget extends StatefulWidget {
     required this.isSharePage,
     this.onPreviousImageNavigation,
     this.onNextImageNavigation,
+    required this.previewCubit,
   }) : super(key: key);
 
   @override
   State<FsEntryPreviewWidget> createState() => _FsEntryPreviewWidgetState();
-
-  static final ValueNotifier<Map<String, dynamic>> fullScreenValueNotifier =
-      ValueNotifier<Map<String, dynamic>>({});
 }
 
 class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   @override
   Widget build(BuildContext context) {
-    switch (widget.state.runtimeType) {
+    final stateType = widget.state.runtimeType;
+    switch (stateType) {
       case FsEntryPreviewUnavailable:
         return const Center(
           child: Text('Preview unavailable'),
@@ -48,6 +48,9 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           isFullScreen: false,
           onNextImageNavigate: widget.onNextImageNavigation,
           onPreviousImageNavigate: widget.onPreviousImageNavigation,
+          // filename: (widget.state as FsEntryPreviewImage).filename,
+          // contentType: (widget.state as FsEntryPreviewImage).contentType,
+          previewCubit: widget.previewCubit,
         );
 
       case FsEntryPreviewAudio:
@@ -66,43 +69,50 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
     }
   }
 
-  @override
-  void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _onImagePreviewLoaded();
-    });
-    super.initState();
-  }
+  // @override
+  // void initState() {
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     _onImagePreviewLoaded();
+  //   });
+  //   super.initState();
+  // }
 
-  @override
-  void didUpdateWidget(FsEntryPreviewWidget oldWidget) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _onImagePreviewLoaded();
-    });
-    super.didUpdateWidget(oldWidget);
-  }
+  // @override
+  // void didUpdateWidget(FsEntryPreviewWidget oldWidget) {
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     _onImagePreviewLoaded();
+  //   });
+  //   super.didUpdateWidget(oldWidget);
+  // }
 
-  void _onImagePreviewLoaded() {
-    final stateType = widget.state.runtimeType;
-    logger.d('State type: $stateType');
+  // void _onImagePreviewLoaded() {
+  //   final stateType = widget.state.runtimeType;
+  //   logger.d('State type: $stateType');
 
-    switch (stateType) {
-      case FsEntryPreviewImage:
-        FsEntryPreviewWidget.fullScreenValueNotifier.value = {
-          'filename': (widget.state as FsEntryPreviewImage).filename,
-          'contentType': (widget.state as FsEntryPreviewImage).contentType,
-          'imageBytes': (widget.state as FsEntryPreviewImage).imageBytes,
-          'loading': false,
-        };
-        break;
+  //   switch (stateType) {
+  //     case FsEntryPreviewImage:
+  //       // FsEntryPreviewWidget.fullScreenValueNotifier.value = {
+  //       //   'filename': (widget.state as FsEntryPreviewImage).filename,
+  //       //   'contentType': (widget.state as FsEntryPreviewImage).contentType,
+  //       //   'imageBytes': (widget.state as FsEntryPreviewImage).imageBytes,
+  //       //   'loading': false,
+  //       // };
+  //       FsEntryPreviewWidget.fullScreenValueNotifier.value =
+  //           ImagePreviewNotification(
+  //         filename: (widget.state as FsEntryPreviewImage).filename,
+  //         contentType: (widget.state as FsEntryPreviewImage).contentType,
+  //         dataBytes: (widget.state as FsEntryPreviewImage).imageBytes,
+  //         isLoading: false,
+  //       );
+  //       break;
 
-      default:
-        FsEntryPreviewWidget.fullScreenValueNotifier.value = {
-          'loading': true,
-        };
-        break;
-    }
-  }
+  //     default:
+  //       FsEntryPreviewWidget.fullScreenValueNotifier.value = {
+  //         'loading': true,
+  //       };
+  //       break;
+  //   }
+  // }
 }
 
 String getTimeString(Duration duration) {
@@ -459,6 +469,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                     );
                                   } else {
                                     return IconButton(
+                                      tooltip:
+                                          appLocalizationsOf(context).expand,
                                       onPressed: !controlsEnabled
                                           ? null
                                           : () {
@@ -606,6 +618,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               mobile: (context) {
                                 if (widget.isSharePage) {
                                   return IconButton(
+                                    tooltip: appLocalizationsOf(context).expand,
                                     onPressed: !controlsEnabled
                                         ? null
                                         : () {
@@ -636,6 +649,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                             ),
                             ScreenTypeLayout.builder(
                               desktop: (context) => IconButton(
+                                  tooltip: appLocalizationsOf(context).expand,
                                   onPressed: !controlsEnabled
                                       ? null
                                       : () {
@@ -725,18 +739,48 @@ class _FullScreenVideoPlayerWidgetState
     });
     _videoPlayerController.addListener(_listener);
 
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeRight,
-      DeviceOrientation.landscapeLeft,
-    ]);
+    MobileScreenOrientation.lockInLandscape();
 
     _hideControlsTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
-        setState(() {
-          _controlsVisible = false;
-        });
+        _hideControls();
       }
     });
+  }
+
+  void _resetHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        _hideControls();
+      }
+    });
+  }
+
+  void _cancelHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+  }
+
+  void _showControls() {
+    setState(() {
+      _controlsVisible = true;
+      MobileStatusBar.show();
+    });
+  }
+
+  void _hideControls() {
+    setState(() {
+      _controlsVisible = false;
+      MobileStatusBar.hide();
+    });
+  }
+
+  void _toggleControls() {
+    if (_controlsVisible) {
+      _hideControls();
+    } else {
+      _showControls();
+    }
   }
 
   void _listener() {
@@ -752,9 +796,7 @@ class _FullScreenVideoPlayerWidgetState
 
   @override
   void dispose() {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
+    MobileScreenOrientation.lockInPortraitUp();
 
     // Calling onClose() here to work when user hits close zoom button or hits
     // system back button on Android.
@@ -813,24 +855,15 @@ class _FullScreenVideoPlayerWidgetState
         MouseRegion(
           onHover: (event) {
             if (!AppPlatform.isMobile) {
-              setState(() {
-                _controlsVisible = true;
-                _hideControlsTimer?.cancel();
-                _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-                  if (mounted) {
-                    setState(() {
-                      _controlsVisible = false;
-                    });
-                  }
-                });
-              });
+              _showControls();
+              _resetHideControlsTimer();
             }
           },
           onExit: (event) {
             if (!AppPlatform.isMobile) {
               if (mounted) {
                 setState(() {
-                  _hideControlsTimer?.cancel();
+                  _cancelHideControlsTimer();
                 });
               }
             }
@@ -840,20 +873,11 @@ class _FullScreenVideoPlayerWidgetState
               : SystemMouseCursors.none,
           child: TapRegion(
             onTapInside: (event) {
-              setState(() {
-                _hideControlsTimer?.cancel();
-                _controlsVisible = !_controlsVisible;
-
-                if (_controlsVisible && !AppPlatform.isMobile) {
-                  _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-                    if (mounted) {
-                      setState(() {
-                        _controlsVisible = false;
-                      });
-                    }
-                  });
-                }
-              });
+              _cancelHideControlsTimer();
+              _toggleControls();
+              if (_controlsVisible && !AppPlatform.isMobile) {
+                _resetHideControlsTimer();
+              }
             },
             child: Container(color: Colors.black.withOpacity(0.0)),
           ),
@@ -866,20 +890,16 @@ class _FullScreenVideoPlayerWidgetState
                 const Expanded(child: SizedBox.shrink()),
                 MouseRegion(
                     onHover: (event) {
-                      _hideControlsTimer?.cancel();
+                      _cancelHideControlsTimer();
                       if (!AppPlatform.isMobile && !_controlsVisible) {
-                        setState(() {
-                          _controlsVisible = true;
-                        });
+                        _showControls();
                       }
                     },
                     child: TapRegion(
                         onTapInside: (event) {
                           if (AppPlatform.isMobile && !_controlsVisible) {
-                            _hideControlsTimer?.cancel();
-                            setState(() {
-                              _controlsVisible = true;
-                            });
+                            _cancelHideControlsTimer();
+                            _showControls();
                           }
                         },
                         child: Container(
@@ -995,6 +1015,9 @@ class _FullScreenVideoPlayerWidgetState
                                           alignment: Alignment.centerLeft,
                                           child: ScreenTypeLayout.builder(
                                             mobile: (context) => IconButton(
+                                                tooltip:
+                                                    appLocalizationsOf(context)
+                                                        .collapse,
                                                 onPressed: () {
                                                   Navigator.of(context).pop();
                                                 },
@@ -1163,6 +1186,9 @@ class _FullScreenVideoPlayerWidgetState
                                                     size: 24))),
                                         ScreenTypeLayout.builder(
                                           desktop: (context) => IconButton(
+                                              tooltip:
+                                                  appLocalizationsOf(context)
+                                                      .collapse,
                                               onPressed: () {
                                                 Navigator.of(context).pop();
                                               },
@@ -1193,6 +1219,7 @@ class ImagePreviewWidget extends StatefulWidget {
   final bool isFullScreen;
   final Function? onPreviousImageNavigate;
   final Function? onNextImageNavigate;
+  final FsEntryPreviewCubit previewCubit;
 
   const ImagePreviewWidget({
     super.key,
@@ -1200,6 +1227,7 @@ class ImagePreviewWidget extends StatefulWidget {
     this.isFullScreen = false,
     this.onPreviousImageNavigate,
     this.onNextImageNavigate,
+    required this.previewCubit,
   });
 
   @override
@@ -1209,62 +1237,189 @@ class ImagePreviewWidget extends StatefulWidget {
 }
 
 class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
+  bool _controlsVisible = true;
+  Timer? _hideControlsTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetHideControlsTimer();
+  }
+
+  @override
+  void dispose() {
+    _cancelHideControlsTimer();
+    if (widget.isFullScreen) {
+      MobileStatusBar.show();
+    }
+    super.dispose();
+  }
+
+  void _resetHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        _hideControls();
+      }
+    });
+  }
+
+  void _cancelHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+  }
+
+  void _showControls() {
+    setState(() {
+      _controlsVisible = true;
+      if (widget.isFullScreen) {
+        MobileStatusBar.show();
+      }
+    });
+  }
+
+  void _hideControls() {
+    setState(() {
+      _controlsVisible = false;
+      if (widget.isFullScreen) {
+        MobileStatusBar.hide();
+      }
+    });
+  }
+
+  void _toggleControls() {
+    if (_controlsVisible) {
+      _hideControls();
+    } else {
+      _showControls();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = ArDriveTheme.of(context);
-    return Column(
-      children: [
-        Flexible(flex: 1, child: _buildImage()),
-        Container(
-          color: theme.themeData.colors.themeBgCanvas,
-          child: _buildActionBar(),
+    if (widget.isFullScreen) {
+      return Center(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildImage(),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildActionBar(),
+            ),
+          ],
         ),
-      ],
-    );
+      );
+    } else {
+      return Column(
+        children: [
+          Flexible(child: _buildImage()),
+          _buildActionBar(),
+        ],
+      );
+    }
   }
 
   Widget _buildImage() {
     return ValueListenableBuilder(
-      valueListenable: FsEntryPreviewWidget.fullScreenValueNotifier,
-      builder: (context, fullScreenNotification, child) {
-        final isLoading = fullScreenNotification['loading'] == true;
-        if (widget.isFullScreen) {
-          logger.d('Building image preview. isLoading: $isLoading');
-        }
-        if (isLoading) {
-          return const Center(
-            child: SizedBox(
-              height: 24,
-              width: 24,
-              child: CircularProgressIndicator(),
-            ),
+      valueListenable: FsEntryPreviewCubit.imagePreviewNotifier,
+      builder: (context, imagePreview, _) {
+        if (!widget.isFullScreen) {
+          if (imagePreview.dataBytes == null) {
+            return const UnpreviewableContent();
+          }
+          return _buildImageFromBytes(
+            imagePreview.dataBytes!,
+            withTapRegion: false,
           );
         } else {
-          return ArDriveImage(
-            fit: BoxFit.contain,
-            height: double.maxFinite,
-            width: double.maxFinite,
-            image: MemoryImage(
-              fullScreenNotification['imageBytes'] as Uint8List,
-            ),
+          if (imagePreview.dataBytes == null) {
+            return const UnpreviewableContent();
+          }
+          return _buildImageFromBytes(
+            imagePreview.dataBytes!,
+            withTapRegion: true,
           );
         }
       },
     );
   }
 
+  Widget _buildImageFromBytes(
+    Uint8List imageBytes, {
+    required bool withTapRegion,
+  }) {
+    if (!withTapRegion) {
+      return ArDriveImage(
+        fit: BoxFit.contain,
+        height: double.maxFinite,
+        width: double.maxFinite,
+        image: MemoryImage(
+          imageBytes,
+        ),
+      );
+    }
+    return MouseRegion(
+      onHover: (event) {
+        if (!AppPlatform.isMobile) {
+          _showControls();
+          _resetHideControlsTimer();
+        }
+      },
+      onExit: (event) {
+        if (!AppPlatform.isMobile) {
+          if (mounted) {
+            setState(() {
+              _cancelHideControlsTimer();
+            });
+          }
+        }
+      },
+      cursor:
+          _controlsVisible ? SystemMouseCursors.click : SystemMouseCursors.none,
+      child: TapRegion(
+        onTapInside: (event) {
+          setState(() {
+            _cancelHideControlsTimer();
+            _toggleControls();
+
+            if (_controlsVisible && !AppPlatform.isMobile) {
+              _resetHideControlsTimer();
+            }
+          });
+        },
+        child: ArDriveImage(
+          fit: BoxFit.contain,
+          height: double.maxFinite,
+          width: double.maxFinite,
+          image: MemoryImage(
+            imageBytes,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionBar() {
+    final theme = ArDriveTheme.of(context);
     final isFileExplorer = !widget.isSharePage && !widget.isFullScreen;
     final isFileExplorerFullScreen = !widget.isSharePage && widget.isFullScreen;
 
     final navigationHandlersSet = widget.onPreviousImageNavigate != null &&
         widget.onNextImageNavigate != null;
 
+    late Widget actionBar;
+
     if (isFileExplorer && navigationHandlersSet) {
       return Column(children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [_buildNameAndExtension(isFileExplorer: isFileExplorer)],
+          children: [
+            Expanded(
+              child: _buildNameAndExtension(isFileExplorer: isFileExplorer),
+            )
+          ],
         ),
         Row(
           children: [
@@ -1305,20 +1460,40 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           ),
         ),
       ]);
+    } else {
+      actionBar = Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: _buildNameAndExtension(isFileExplorer: isFileExplorer),
+          ),
+          _buildFullScreenButton(isFileExplorer: isFileExplorer),
+        ],
+      );
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _buildNameAndExtension(isFileExplorer: isFileExplorer),
-        _buildFullScreenButton(isFileExplorer: isFileExplorer),
-      ],
-    );
+    if (widget.isFullScreen) {
+      return AnimatedOpacity(
+        opacity: _controlsVisible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 200),
+        child: Container(
+          color: theme.themeData.colors.themeBgCanvas,
+          child: actionBar,
+        ),
+      );
+    } else {
+      return Container(
+        color: theme.themeData.colors.themeBgCanvas,
+        child: actionBar,
+      );
+    }
   }
 
   Widget _buildNameAndExtension({required bool isFileExplorer}) {
-    return SizedBox(
-      height: isFileExplorer ? null : 96,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: isFileExplorer ? 0 : 96,
+      ),
       child: Padding(
         padding: EdgeInsets.only(
           left: isFileExplorer ? 0 : 24,
@@ -1326,12 +1501,9 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           bottom: isFileExplorer ? 0 : 24,
         ),
         child: ValueListenableBuilder(
-          valueListenable: FsEntryPreviewWidget.fullScreenValueNotifier,
-          builder: (context, fullScreenNotification, child) {
-            final isLoading = fullScreenNotification['loading'] == true;
-            if (widget.isFullScreen) {
-              logger.d('Building name and extension. isLoading: $isLoading');
-            }
+          valueListenable: FsEntryPreviewCubit.imagePreviewNotifier,
+          builder: (context, imagePreview, _) {
+            final isLoading = imagePreview.isLoading;
             if (isLoading) {
               return const Center(
                 child: SizedBox(
@@ -1341,25 +1513,33 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                 ),
               );
             }
-            final filename = fullScreenNotification['filename'];
-            final contentType = fullScreenNotification['contentType'];
+
+            final filename = imagePreview.filename!;
+            final contentType = imagePreview.contentType!;
             return Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: isFileExplorer
                   ? CrossAxisAlignment.center
                   : CrossAxisAlignment.start,
               children: [
-                Text(
-                  getBasenameWithoutExtension(filePath: filename),
-                  style: ArDriveTypography.body.smallBold700(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
-                  ),
+                Wrap(
+                  direction: Axis.horizontal,
+                  children: [
+                    Text(
+                      getBasenameWithoutExtension(filePath: filename),
+                      style: ArDriveTypography.body.smallBold700(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
+                    ),
+                  ],
                 ),
                 Text(
-                  getFileTypeFromMime(contentType: contentType),
+                  getFileTypeFromMime(
+                    contentType: contentType,
+                  ).toUpperCase(),
                   style: ArDriveTypography.body.smallRegular(
                     color: ArDriveTheme.of(context)
                         .themeData
@@ -1399,6 +1579,9 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         bottom: isFileExplorer ? 12 : 24,
       ),
       child: IconButton(
+        tooltip: widget.isFullScreen
+            ? appLocalizationsOf(context).collapse
+            : appLocalizationsOf(context).expand,
         onPressed: _toggleFullScreen,
         icon: widget.isFullScreen
             ? const Icon(Icons.fullscreen_exit_outlined)
@@ -1421,6 +1604,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               isFullScreen: true,
               onPreviousImageNavigate: widget.onPreviousImageNavigate,
               onNextImageNavigate: widget.onNextImageNavigate,
+              previewCubit: widget.previewCubit,
             ),
           ),
         ),
@@ -1585,19 +1769,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                           child: FittedBox(
                             fit: BoxFit.contain,
                             child: _loadState == LoadState.failed
-                                ? Column(
-                                    children: [
-                                      const Icon(Icons.error_outline_outlined,
-                                          size: 20),
-                                      Text(
-                                          appLocalizationsOf(context)
-                                              .couldNotLoadFile,
-                                          style: ArDriveTypography.body
-                                              .smallBold700(
-                                                  color: colors.themeFgMuted)
-                                              .copyWith(fontSize: 13)),
-                                    ],
-                                  )
+                                ? const UnpreviewableContent()
                                 : ArDriveIcons.music(
                                     size: 100, color: colors.themeFgMuted),
                           )),
