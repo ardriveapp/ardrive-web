@@ -1325,8 +1325,18 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     return ValueListenableBuilder(
       valueListenable: FsEntryPreviewCubit.imagePreviewNotifier,
       builder: (context, imagePreview, _) {
+        final isLoading = imagePreview.isLoading;
+        if (isLoading) {
+          return const Center(
+            child: SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
         if (!widget.isFullScreen) {
-          if (imagePreview.dataBytes == null) {
+          if (!imagePreview.isPreviewable) {
             return const UnpreviewableContent();
           }
           return _buildImageFromBytes(
@@ -1334,7 +1344,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
             withTapRegion: false,
           );
         } else {
-          if (imagePreview.dataBytes == null) {
+          if (!imagePreview.isPreviewable) {
             return const UnpreviewableContent();
           }
           return _buildImageFromBytes(

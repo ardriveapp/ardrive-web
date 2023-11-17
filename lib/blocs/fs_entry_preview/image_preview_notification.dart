@@ -6,8 +6,7 @@ class ImagePreviewNotification {
   String? filename;
   String? contentType;
 
-  bool get isPreviewable =>
-      dataBytes != null && filename != null && contentType != null;
+  bool get isPreviewable => dataBytes != null;
 
   ImagePreviewNotification({
     this.dataBytes,
@@ -15,9 +14,4 @@ class ImagePreviewNotification {
     this.contentType,
     this.isLoading = false,
   });
-
-  @override
-  String toString() {
-    return 'ImagePreviewNotification{isLoading: $isLoading, dataBytes: $dataBytes, filename: $filename, contentType: $contentType}';
-  }
 }
