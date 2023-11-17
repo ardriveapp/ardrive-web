@@ -140,7 +140,7 @@ packages:
     description:
       path: "."
       ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
-      resolved-ref: "16f38dbd2abc2bb7071cb4de664543af487404dc"
+      resolved-ref: "573203136c170c5380d35cd699d5245316966d82"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.8.1"
