@@ -31,6 +31,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   List<ArDriveDataTableItem> _selectedItems = [];
   List<ArDriveDataTableItem> get selectedItems => _selectedItems;
 
+  List<FileDataTableItem>? _allImagesOfCurrentFolder;
+
   bool _forceDisableMultiselect = false;
 
   bool _refreshSelectedItem = false;
@@ -74,6 +76,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }) async {
     try {
       _selectedItem = null;
+      _allImagesOfCurrentFolder = null;
 
       emit(DriveDetailLoadInProgress());
 
@@ -419,11 +422,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   List<FileDataTableItem> getAllImagesOfCurrentFolder() {
+    if (_allImagesOfCurrentFolder != null) {
+      return _allImagesOfCurrentFolder!;
+    }
+
     final state = this.state as DriveDetailLoadSuccess;
     final allImagesForFolder = state.currentFolderContents
         .whereType<FileDataTableItem>()
         .where((element) => element.contentType.startsWith('image/'))
         .toList();
+
+    _allImagesOfCurrentFolder = allImagesForFolder;
 
     return allImagesForFolder;
   }
@@ -431,6 +440,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   @override
   Future<void> close() {
     _folderSubscription?.cancel();
+    _allImagesOfCurrentFolder = null;
     return super.close();
   }
 }
