@@ -85,7 +85,7 @@ packages:
     description:
       path: "."
       ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
-      resolved-ref: fbf3f129de94a5a8e0cb78bc1044db065578404d
+      resolved-ref: e9a88279e4fcaf5698c1e37055ca579f3a56f912
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.1"
@@ -140,7 +140,7 @@ packages:
     description:
       path: "."
       ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
-      resolved-ref: "573203136c170c5380d35cd699d5245316966d82"
+      resolved-ref: "50d34f9106c824dcff86e4d90bbc7408270a8799"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.8.1"
