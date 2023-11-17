@@ -1422,7 +1422,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     late Widget actionBar;
 
     if (isFileExplorer && navigationHandlersSet) {
-      return Column(children: [
+      actionBar = Column(children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1451,7 +1451,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         ),
       ]);
     } else if (isFileExplorerFullScreen && navigationHandlersSet) {
-      return Row(children: [
+      actionBar = Row(children: [
         Flexible(
           flex: 1,
           child: Row(
