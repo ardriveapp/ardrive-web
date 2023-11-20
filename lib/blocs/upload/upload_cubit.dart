@@ -12,7 +12,6 @@ import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -40,8 +39,6 @@ class UploadCubit extends Cubit<UploadState> {
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
-  final ArweaveService _arweave;
-  final TurboUploadService _turbo;
   final PstService _pst;
   final UploadFileChecker _uploadFileChecker;
   final ArDriveAuth _auth;
@@ -100,8 +97,6 @@ class UploadCubit extends Cubit<UploadState> {
     required this.files,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
-    required ArweaveService arweave,
-    required TurboUploadService turbo,
     required PstService pst,
     required UploadFileChecker uploadFileChecker,
     required ArDriveAuth auth,
@@ -112,8 +107,6 @@ class UploadCubit extends Cubit<UploadState> {
   })  : _profileCubit = profileCubit,
         _uploadFileChecker = uploadFileChecker,
         _driveDao = driveDao,
-        _arweave = arweave,
-        _turbo = turbo,
         _pst = pst,
         _auth = auth,
         _arDriveUploadManager = arDriveUploadManager,
@@ -461,57 +454,34 @@ class UploadCubit extends Cubit<UploadState> {
     logger.d(
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
-    if (configService.config.useNewUploader) {
-      if (_uploadMethod == UploadMethod.turbo) {
-        await _verifyIfUploadContainsLargeFilesUsingTurbo();
-        if ((_containsLargeTurboUpload ?? false) &&
-            !hasEmittedWarning &&
-            kIsWeb &&
-            !await AppPlatform.isChrome()) {
-          emit(
-            UploadShowingWarning(
-              reason: UploadWarningReason.fileTooLargeOnNonChromeBrowser,
-              uploadPlanForAR: uploadPlanForAr,
-              uploadPlanForTurbo: uploadPlanForTurbo,
-            ),
-          );
-          hasEmittedWarning = true;
-          return;
-        }
-      } else {
-        _containsLargeTurboUpload = false;
-      }
-
-      if (uploadFolders) {
-        await _uploadFolderUsingArDriveUploader();
+    if (_uploadMethod == UploadMethod.turbo) {
+      await _verifyIfUploadContainsLargeFilesUsingTurbo();
+      if ((_containsLargeTurboUpload ?? false) &&
+          !hasEmittedWarning &&
+          kIsWeb &&
+          !await AppPlatform.isChrome()) {
+        emit(
+          UploadShowingWarning(
+            reason: UploadWarningReason.fileTooLargeOnNonChromeBrowser,
+            uploadPlanForAR: uploadPlanForAr,
+            uploadPlanForTurbo: uploadPlanForTurbo,
+          ),
+        );
+        hasEmittedWarning = true;
         return;
       }
+    } else {
+      _containsLargeTurboUpload = false;
+    }
 
-      await _uploadUsingArDriveUploader();
-
+    if (uploadFolders) {
+      await _uploadFolderUsingArDriveUploader();
       return;
     }
 
-    logger.d('Uploading using the old uploader');
-    final uploader = _getUploader();
+    await _uploadUsingArDriveUploader();
 
-    await for (final progress in uploader.uploadFromHandles(
-      bundleHandles: uploadPlan.bundleUploadHandles,
-      fileV2Handles: uploadPlan.fileV2UploadHandles.values.toList(),
-    )) {
-      emit(
-        UploadInProgress(
-          uploadPlan: uploadPlan,
-          progress: progress,
-        ),
-      );
-    }
-
-    logger.d('Upload finished');
-
-    unawaited(_profileCubit.refreshBalance());
-
-    emit(UploadComplete());
+    return;
   }
 
   Future<void> _uploadFolderUsingArDriveUploader() async {
@@ -543,6 +513,9 @@ class UploadCubit extends Cubit<UploadState> {
         parentFolderId: folder.parentFolderId,
         privacy: _targetDrive.isPrivate ? 'private' : 'public',
         entityId: folder.id,
+        type: _uploadMethod == UploadMethod.ar
+            ? UploadType.d2n
+            : UploadType.turbo,
       );
 
       entities.add((
@@ -568,6 +541,9 @@ class UploadCubit extends Cubit<UploadState> {
         parentFolderId: file.parentFolderId,
         privacy: _targetDrive.isPrivate ? 'private' : 'public',
         entityId: id,
+        type: _uploadMethod == UploadMethod.ar
+            ? UploadType.d2n
+            : UploadType.turbo,
       );
 
       entities.add((fileMetadata, file.ioFile));
@@ -662,6 +638,9 @@ class UploadCubit extends Cubit<UploadState> {
         entityId: revisionAction == RevisionAction.uploadNewVersion
             ? conflictingFiles[file.getIdentifier()]
             : null,
+        type: _uploadMethod == UploadMethod.ar
+            ? UploadType.d2n
+            : UploadType.turbo,
       );
 
       uploadFiles.add((args, file.ioFile));
@@ -824,74 +803,6 @@ class UploadCubit extends Cubit<UploadState> {
         }
       }
     }
-  }
-
-  ArDriveUploaderFromHandles _getUploader() {
-    final wallet = _auth.currentUser.wallet;
-
-    final turboUploader = TurboUploader(_turbo, wallet);
-    final arweaveUploader = ArweaveBundleUploader(_arweave.client);
-
-    logger.d(
-        'Uploaders created: Turbo: $turboUploader, Arweave: $arweaveUploader');
-
-    final bundleUploader = BundleUploader(
-      turboUploader,
-      arweaveUploader,
-      _uploadMethod == UploadMethod.turbo,
-    );
-
-    final v2Uploader = FileV2Uploader(_arweave.client, _arweave);
-
-    final uploader = ArDriveUploaderFromHandles(
-      bundleUploader: bundleUploader,
-      fileV2Uploader: v2Uploader,
-      prepareBundle: (handle) async {
-        logger.d(
-            'Preparing bundle.. using turbo: ${_uploadMethod == UploadMethod.turbo}');
-
-        await handle.prepareAndSignBundleTransaction(
-          tabVisibilitySingleton: TabVisibilitySingleton(),
-          arweaveService: _arweave,
-          turboUploadService: _turbo,
-          pstService: _pst,
-          wallet: _auth.currentUser.wallet,
-          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
-          useTurbo: _uploadMethod == UploadMethod.turbo,
-        );
-
-        logger.d('Bundle preparation finished');
-      },
-      prepareFile: (handle) async {
-        logger.d('Preparing file...');
-
-        await handle.prepareAndSignTransactions(
-          arweaveService: _arweave,
-          wallet: wallet,
-          pstService: _pst,
-        );
-      },
-      onFinishFileUpload: (handle) async {
-        unawaited(handle.writeFileEntityToDatabase(driveDao: _driveDao));
-      },
-      onFinishBundleUpload: (handle) async {
-        unawaited(handle.writeBundleItemsToDatabase(driveDao: _driveDao));
-      },
-      onUploadBundleError: (handle, error) async {
-        if (!hasEmittedError) {
-          addError(error);
-          hasEmittedError = true;
-        }
-      },
-      onUploadFileError: (handle, error) async {
-        if (!hasEmittedError) {
-          addError(error);
-          hasEmittedError = true;
-        }
-      },
-    );
-
-    return uploader;
   }
 
   Future<void> skipLargeFilesAndCheckForConflicts() async {
