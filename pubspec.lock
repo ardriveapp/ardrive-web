@@ -84,8 +84,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.1"
-      resolved-ref: "441c37764a1b120057ec2cd1e6eecb47bb35a37a"
+      ref: PE-4923
+      resolved-ref: bd97a88d2aa356af75296727bb8883a9efd2b0f6
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.1"
@@ -94,7 +94,7 @@ packages:
     description:
       path: "."
       ref: PE-4751-update-icons
-      resolved-ref: c36f699e0ba5aa02e88a129236885099d62e5e76
+      resolved-ref: "0865c5e6eee75050a133b5bf659b831a43b5209f"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.14.0"
