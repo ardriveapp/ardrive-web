@@ -198,6 +198,10 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
+  "collapse": "Collapse",
+  "@collapse": {
+    "description": "E.g.: Collapse the image"
+  },
   "collapseSideBar": "Collapse Sidebar",
   "@collapseSideBar": {
     "description": "Collapse side bar tooltip"
@@ -669,6 +673,10 @@
   "@errorFetchingQuote": {},
   "estimatedStorage": "Estimated Storage",
   "@estimatedStorage": {},
+  "expand": "Expand",
+  "@expand": {
+    "description": "E.g.: Expand the image"
+  },
   "expandSideBar": "Expand sidebar",
   "@expandSideBar": {
     "description": "Expand side bar tooltip"

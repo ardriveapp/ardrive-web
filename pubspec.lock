@@ -84,8 +84,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.1"
-      resolved-ref: "441c37764a1b120057ec2cd1e6eecb47bb35a37a"
+      ref: PE-4923
+      resolved-ref: "51ad6b3c3c0f1912857427ce9e37561def3ea62f"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.1"
@@ -93,8 +93,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.14.0"
-      resolved-ref: f2c75067ebb214200e507e269bddbfd7285720ab
+      ref: PE-4923
+      resolved-ref: "038ae64470e5e92e4c4b88aed5f4ee02d90340a8"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.14.0"
