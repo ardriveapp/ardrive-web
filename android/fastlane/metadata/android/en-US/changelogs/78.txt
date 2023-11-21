@@ -1,0 +1,3 @@
+- Adding a new manifest icon and updating the download icon throughout the apps.
+- Fixing an issue with long File Types by wrapping the text.
+- Adding full screen image previews.
