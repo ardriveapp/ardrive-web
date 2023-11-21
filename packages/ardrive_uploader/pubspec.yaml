@@ -16,7 +16,7 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.1
+      ref: PE-4923
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
