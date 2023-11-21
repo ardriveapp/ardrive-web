@@ -193,7 +193,7 @@ class SharedFilePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   ArDriveButton(
-                    icon: ArDriveIcons.download(color: Colors.white),
+                    icon: ArDriveIcons.download2(color: Colors.white),
                     onPressed: () {
                       final file = ARFSFactory().getARFSFileFromFileRevision(
                         state.fileRevisions.first,

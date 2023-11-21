@@ -97,6 +97,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   mobileView: false,
                   previewState: previewState,
                   infoState: infoState,
+                  context: context,
                 ),
               ),
               mobile: (context) => Column(
@@ -104,6 +105,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   mobileView: true,
                   previewState: previewState,
                   infoState: infoState,
+                  context: context,
                 ),
               ),
             );
@@ -117,6 +119,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     required bool mobileView,
     required FsEntryPreviewState previewState,
     required FsEntryInfoState infoState,
+    required BuildContext context,
   }) {
     final isNotSharePageInMobileView = !(widget.isSharePage && !mobileView);
     final isPreviewUnavailable = previewState is FsEntryPreviewUnavailable;
@@ -133,7 +136,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           ),
           Column(
             children: [
-              Expanded(child: _buildPreview(previewState)),
+              Expanded(child: _buildPreview(previewState, context: context)),
             ],
           ),
         ),
@@ -190,7 +193,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   contentPadding: isSharePage
                       ? const EdgeInsets.only()
                       : const EdgeInsets.all(24),
-                  content: _buildPreview(previewState),
+                  content: _buildPreview(previewState, context: context),
                 ),
               ),
             ],
@@ -327,7 +330,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                 children: [
                                   Expanded(
                                     child: ArDriveButton(
-                                      icon: ArDriveIcons.download(
+                                      icon: ArDriveIcons.download2(
                                           color: Colors.white),
                                       onPressed: () {
                                         final file = ARFSFactory()
@@ -366,8 +369,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
     ];
   }
 
-  Widget _buildPreview(FsEntryPreviewState previewState) {
-    if (previewState is FsEntryPreviewUnavailable) {
+  Widget _buildPreview(
+    FsEntryPreviewState previewState, {
+    required BuildContext context,
+  }) {
+    if (previewState is FsEntryPreviewUnavailable && widget.isSharePage) {
       return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
@@ -416,7 +422,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
               ),
               const SizedBox(height: 24),
               ArDriveButton(
-                icon: ArDriveIcons.download(color: Colors.white),
+                icon: ArDriveIcons.download2(color: Colors.white),
                 onPressed: () {
                   final file = ARFSFactory().getARFSFileFromFileRevision(
                     widget.revisions!.last,
@@ -447,6 +453,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         key: ValueKey(widget.item.id),
         state: previewState,
         isSharePage: widget.isSharePage,
+        previewCubit: context.read<FsEntryPreviewCubit>(),
       ),
     );
   }
@@ -1071,7 +1078,7 @@ class _DownloadOrPreview extends StatelessWidget {
         );
       },
       tooltip: appLocalizationsOf(context).download,
-      icon: ArDriveIcons.download(size: 20),
+      icon: ArDriveIcons.download2(size: 20),
     );
   }
 }
@@ -1150,7 +1157,7 @@ class DetailsPanelToolbar extends StatelessWidget {
             ),
           _buildActionIcon(
               tooltip: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download(size: defaultIconSize),
+              icon: ArDriveIcons.download2(size: defaultIconSize),
               onTap: () {
                 if (item is FileDataTableItem) {
                   promptToDownloadProfileFile(
