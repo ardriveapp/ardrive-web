@@ -774,71 +774,71 @@ class _FullScreenVideoPlayerWidgetState
         : 0.0;
 
     return Scaffold(
-        body: Center(
-            child: Stack(
-      fit: StackFit.expand,
-      children: [
-        Container(color: Colors.black),
-        Center(
-            child: AspectRatio(
-          aspectRatio: _videoPlayerController.value.aspectRatio,
-          child: _errorMessage != null
-              ? Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    _errorMessage ?? '',
-                    textAlign: TextAlign.center,
-                    style: ArDriveTypography.body
-                        .smallBold700(color: colors.themeFgMuted)
-                        .copyWith(fontSize: 13),
-                  ))
-              : !videoValue.isInitialized
-                  ? const Center(
-                      child: SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(),
-                      ),
-                    )
-                  : _videoPlayer ?? const SizedBox.shrink(),
-        )),
-        MouseRegion(
-          onHover: (event) {
-            if (!AppPlatform.isMobile) {
-              _showControls();
-              _resetHideControlsTimer();
-            }
-          },
-          onExit: (event) {
-            if (!AppPlatform.isMobile) {
-              if (mounted) {
-                setState(() {
+      body: Center(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(color: Colors.black),
+            Center(
+                child: AspectRatio(
+              aspectRatio: _videoPlayerController.value.aspectRatio,
+              child: _errorMessage != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        _errorMessage ?? '',
+                        textAlign: TextAlign.center,
+                        style: ArDriveTypography.body
+                            .smallBold700(color: colors.themeFgMuted)
+                            .copyWith(fontSize: 13),
+                      ))
+                  : !videoValue.isInitialized
+                      ? const Center(
+                          child: SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      : _videoPlayer ?? const SizedBox.shrink(),
+            )),
+            MouseRegion(
+              onHover: (event) {
+                if (!AppPlatform.isMobile) {
+                  _showControls();
+                  _resetHideControlsTimer();
+                }
+              },
+              onExit: (event) {
+                if (!AppPlatform.isMobile) {
+                  if (mounted) {
+                    setState(() {
+                      _cancelHideControlsTimer();
+                    });
+                  }
+                }
+              },
+              cursor: _controlsVisible
+                  ? SystemMouseCursors.click
+                  : SystemMouseCursors.none,
+              child: TapRegion(
+                onTapInside: (event) {
                   _cancelHideControlsTimer();
-                });
-              }
-            }
-          },
-          cursor: _controlsVisible
-              ? SystemMouseCursors.click
-              : SystemMouseCursors.none,
-          child: TapRegion(
-            onTapInside: (event) {
-              _cancelHideControlsTimer();
-              _toggleControls();
-              if (_controlsVisible && !AppPlatform.isMobile) {
-                _resetHideControlsTimer();
-              }
-            },
-            child: Container(color: Colors.black.withOpacity(0.0)),
-          ),
-        ),
-        AnimatedOpacity(
-            opacity: _controlsVisible ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: Column(
-              children: [
-                const Expanded(child: SizedBox.shrink()),
-                MouseRegion(
+                  _toggleControls();
+                  if (_controlsVisible && !AppPlatform.isMobile) {
+                    _resetHideControlsTimer();
+                  }
+                },
+                child: Container(color: Colors.black.withOpacity(0.0)),
+              ),
+            ),
+            AnimatedOpacity(
+              opacity: _controlsVisible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Column(
+                children: [
+                  const Expanded(child: SizedBox.shrink()),
+                  MouseRegion(
                     onHover: (event) {
                       _cancelHideControlsTimer();
                       if (!AppPlatform.isMobile && !_controlsVisible) {
@@ -846,16 +846,17 @@ class _FullScreenVideoPlayerWidgetState
                       }
                     },
                     child: TapRegion(
-                        onTapInside: (event) {
-                          if (AppPlatform.isMobile && !_controlsVisible) {
-                            _cancelHideControlsTimer();
-                            _showControls();
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                          color: colors.themeBgCanvas,
-                          child: Column(children: [
+                      onTapInside: (event) {
+                        if (AppPlatform.isMobile && !_controlsVisible) {
+                          _cancelHideControlsTimer();
+                          _showControls();
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                        color: colors.themeBgCanvas,
+                        child: Column(
+                          children: [
                             Text(widget.filename,
                                 style: ArDriveTypography.body.smallBold700(
                                     color: colors.themeFgDefault)),
@@ -865,86 +866,81 @@ class _FullScreenVideoPlayerWidgetState
                                 Text(currentTime),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                    child: SliderTheme(
-                                        data: SliderThemeData(
-                                            trackHeight: 4,
-                                            trackShape:
-                                                _NoAdditionalHeightRoundedRectSliderTrackShape(),
-                                            inactiveTrackColor:
-                                                colors.themeBgSubtle,
-                                            disabledThumbColor:
-                                                colors.themeAccentBrand,
-                                            disabledInactiveTrackColor:
-                                                colors.themeBgSubtle,
-                                            overlayShape:
-                                                SliderComponentShape.noOverlay,
-                                            thumbShape:
-                                                const RoundSliderThumbShape(
-                                              enabledThumbRadius: 8,
-                                            )),
-                                        child: Slider(
-                                            value: min(
-                                                videoValue
-                                                    .position.inMilliseconds
-                                                    .toDouble(),
-                                                videoValue
-                                                    .duration.inMilliseconds
-                                                    .toDouble()),
-                                            secondaryTrackValue: bufferedValue,
-                                            min: 0.0,
-                                            max: videoValue
-                                                .duration.inMilliseconds
-                                                .toDouble(),
-                                            onChangeStart: (v) async {
-                                              if (_videoPlayerController
-                                                      .value.duration >
-                                                  Duration.zero) {
-                                                _wasPlaying =
-                                                    _videoPlayerController
-                                                        .value.isPlaying;
-                                                if (_wasPlaying) {
-                                                  await _lock
-                                                      .synchronized(() async {
-                                                    await _videoPlayerController
-                                                        .pause()
-                                                        .catchError((e) {
-                                                      logger.e(
-                                                          'Error pausing video: $e');
-                                                    });
+                                  child: SliderTheme(
+                                    data: SliderThemeData(
+                                        trackHeight: 4,
+                                        trackShape:
+                                            _NoAdditionalHeightRoundedRectSliderTrackShape(),
+                                        inactiveTrackColor:
+                                            colors.themeBgSubtle,
+                                        disabledThumbColor:
+                                            colors.themeAccentBrand,
+                                        disabledInactiveTrackColor:
+                                            colors.themeBgSubtle,
+                                        overlayShape:
+                                            SliderComponentShape.noOverlay,
+                                        thumbShape: const RoundSliderThumbShape(
+                                          enabledThumbRadius: 8,
+                                        )),
+                                    child: Slider(
+                                      value: min(
+                                          videoValue.position.inMilliseconds
+                                              .toDouble(),
+                                          videoValue.duration.inMilliseconds
+                                              .toDouble()),
+                                      secondaryTrackValue: bufferedValue,
+                                      min: 0.0,
+                                      max: videoValue.duration.inMilliseconds
+                                          .toDouble(),
+                                      onChangeStart: (v) async {
+                                        if (_videoPlayerController
+                                                .value.duration >
+                                            Duration.zero) {
+                                          _wasPlaying = _videoPlayerController
+                                              .value.isPlaying;
+                                          if (_wasPlaying) {
+                                            await _lock.synchronized(() async {
+                                              await _videoPlayerController
+                                                  .pause()
+                                                  .catchError((e) {
+                                                logger.e(
+                                                    'Error pausing video: $e');
+                                              });
 
-                                                    setState(() {});
-                                                  });
-                                                }
-                                              }
-                                            },
-                                            onChanged: (v) async {
-                                              if (_videoPlayerController
-                                                      .value.duration >
-                                                  Duration.zero) {
-                                                _videoPlayerController.seekTo(
-                                                    Duration(
-                                                        milliseconds:
-                                                            v.toInt()));
-                                                setState(() {});
-                                              }
-                                            },
-                                            onChangeEnd: (v) async {
-                                              if (_videoPlayerController
-                                                          .value.duration >
-                                                      Duration.zero &&
-                                                  _wasPlaying) {
-                                                await _lock
-                                                    .synchronized(() async {
-                                                  await _videoPlayerController
-                                                      .play()
-                                                      .catchError((e) {
-                                                    logger.e(
-                                                        'Error playing video: $e');
-                                                  });
-                                                });
-                                                setState(() {});
-                                              }
-                                            }))),
+                                              setState(() {});
+                                            });
+                                          }
+                                        }
+                                      },
+                                      onChanged: (v) async {
+                                        if (_videoPlayerController
+                                                .value.duration >
+                                            Duration.zero) {
+                                          _videoPlayerController.seekTo(
+                                              Duration(
+                                                  milliseconds: v.toInt()));
+                                          setState(() {});
+                                        }
+                                      },
+                                      onChangeEnd: (v) async {
+                                        if (_videoPlayerController
+                                                    .value.duration >
+                                                Duration.zero &&
+                                            _wasPlaying) {
+                                          await _lock.synchronized(() async {
+                                            await _videoPlayerController
+                                                .play()
+                                                .catchError((e) {
+                                              logger
+                                                  .e('Error playing video: $e');
+                                            });
+                                          });
+                                          setState(() {});
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
                                 const SizedBox(width: 8),
                                 Text(duration),
                               ],
@@ -961,48 +957,52 @@ class _FullScreenVideoPlayerWidgetState
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Expanded(
+                                    child: SafeArea(
                                       child: Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: ScreenTypeLayout.builder(
-                                            mobile: (context) => IconButton(
-                                                tooltip:
-                                                    appLocalizationsOf(context)
-                                                        .collapse,
-                                                onPressed: () {
-                                                  Navigator.of(context).pop();
-                                                },
-                                                icon: const Icon(
-                                                    Icons
-                                                        .fullscreen_exit_outlined,
-                                                    size: 24)),
-                                            desktop: (context) => Row(
-                                              children: [
-                                                SizedBox(
-                                                    width: 200,
-                                                    child: VolumeSliderWidget(
-                                                      volume:
-                                                          _videoPlayerController
-                                                              .value.volume,
-                                                      setVolume: (v) {
-                                                        setState(() {
-                                                          _videoPlayerController
-                                                              .setVolume(v);
-                                                        });
-                                                      },
-                                                      sliderVisible:
-                                                          _isVolumeSliderVisible,
-                                                      setSliderVisible: (v) {
-                                                        setState(() {
-                                                          _isVolumeSliderVisible =
-                                                              v;
-                                                        });
-                                                      },
-                                                    )),
-                                                const Expanded(
-                                                    child: SizedBox.shrink()),
-                                              ],
-                                            ),
-                                          ))),
+                                        alignment: Alignment.centerLeft,
+                                        child: ScreenTypeLayout.builder(
+                                          mobile: (context) => IconButton(
+                                              tooltip:
+                                                  appLocalizationsOf(context)
+                                                      .collapse,
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                              icon: const Icon(
+                                                  Icons
+                                                      .fullscreen_exit_outlined,
+                                                  size: 24)),
+                                          desktop: (context) => Row(
+                                            children: [
+                                              SizedBox(
+                                                  width: 200,
+                                                  child: VolumeSliderWidget(
+                                                    volume:
+                                                        _videoPlayerController
+                                                            .value.volume,
+                                                    setVolume: (v) {
+                                                      setState(() {
+                                                        _videoPlayerController
+                                                            .setVolume(v);
+                                                      });
+                                                    },
+                                                    sliderVisible:
+                                                        _isVolumeSliderVisible,
+                                                    setSliderVisible: (v) {
+                                                      setState(() {
+                                                        _isVolumeSliderVisible =
+                                                            v;
+                                                      });
+                                                    },
+                                                  )),
+                                              const Expanded(
+                                                  child: SizedBox.shrink()),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                   IconButton.outlined(
                                       onPressed: () {
                                         setState(() {
@@ -1036,13 +1036,18 @@ class _FullScreenVideoPlayerWidgetState
                                           _videoPlayerController
                                               .seekTo(Duration.zero);
                                         }
-                                        await _lock.synchronized(() async {
-                                          await _videoPlayerController
-                                              .play()
-                                              .catchError((e) {
-                                            logger.e('Error playing video: $e');
-                                          });
-                                        });
+                                        await _lock.synchronized(
+                                          () async {
+                                            await _videoPlayerController
+                                                .play()
+                                                .catchError(
+                                              (e) {
+                                                logger.e(
+                                                    'Error playing video: $e');
+                                              },
+                                            );
+                                          },
+                                        );
                                       }
                                       setState(() {});
                                     },
@@ -1064,103 +1069,117 @@ class _FullScreenVideoPlayerWidgetState
                                               )),
                                   ),
                                   IconButton.outlined(
-                                      onPressed: () {
-                                        setState(() {
-                                          _videoPlayerController.seekTo(
-                                              _videoPlayerController
-                                                      .value.position +
-                                                  const Duration(seconds: 10));
-                                        });
-                                      },
-                                      icon: const Icon(Icons.forward_10,
-                                          size: 24)),
+                                    onPressed: () {
+                                      setState(() {
+                                        _videoPlayerController.seekTo(
+                                            _videoPlayerController
+                                                    .value.position +
+                                                const Duration(seconds: 10));
+                                      });
+                                    },
+                                    icon: const Icon(
+                                      Icons.forward_10,
+                                      size: 24,
+                                    ),
+                                  ),
                                   Expanded(
-                                      child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        ScreenTypeLayout.builder(
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          ScreenTypeLayout.builder(
                                             desktop: (context) => MenuAnchor(
-                                                  menuChildren: [
-                                                    ..._speedOptions.map((v) {
-                                                      return ListTile(
-                                                        tileColor: colors
-                                                            .themeBgSurface,
-                                                        onTap: () {
-                                                          setState(() {
-                                                            _videoPlayerController
-                                                                .setPlaybackSpeed(
-                                                                    v);
-                                                            _menuController
-                                                                .close();
-                                                          });
-                                                        },
-                                                        title: Text(
-                                                          v == 1.0
-                                                              ? appLocalizationsOf(
-                                                                      context)
-                                                                  .normal
-                                                              : '$v',
-                                                          style: ArDriveTypography
-                                                              .body
-                                                              .buttonNormalBold(
-                                                                  color: colors
-                                                                      .themeFgDefault),
-                                                        ),
-                                                      );
-                                                    })
-                                                  ],
-                                                  controller: _menuController,
-                                                  child: IconButton(
-                                                      onPressed: () {
-                                                        _menuController.open();
-                                                      },
-                                                      icon: const Icon(
-                                                          Icons
-                                                              .settings_outlined,
-                                                          size: 24)),
-                                                ),
+                                              menuChildren: [
+                                                ..._speedOptions.map((v) {
+                                                  return ListTile(
+                                                    tileColor:
+                                                        colors.themeBgSurface,
+                                                    onTap: () {
+                                                      setState(() {
+                                                        _videoPlayerController
+                                                            .setPlaybackSpeed(
+                                                                v);
+                                                        _menuController.close();
+                                                      });
+                                                    },
+                                                    title: Text(
+                                                      v == 1.0
+                                                          ? appLocalizationsOf(
+                                                                  context)
+                                                              .normal
+                                                          : '$v',
+                                                      style: ArDriveTypography
+                                                          .body
+                                                          .buttonNormalBold(
+                                                              color: colors
+                                                                  .themeFgDefault),
+                                                    ),
+                                                  );
+                                                })
+                                              ],
+                                              controller: _menuController,
+                                              child: IconButton(
+                                                  onPressed: () {
+                                                    _menuController.open();
+                                                  },
+                                                  icon: const Icon(
+                                                      Icons.settings_outlined,
+                                                      size: 24)),
+                                            ),
                                             mobile: (context) => IconButton(
-                                                onPressed: () {
-                                                  _displaySpeedOptionsModal(
-                                                      context, (v) {
-                                                    setState(() {
-                                                      _videoPlayerController
-                                                          .setPlaybackSpeed(v);
-                                                    });
-                                                  });
-                                                },
-                                                icon: const Icon(
-                                                    Icons.settings_outlined,
-                                                    size: 24))),
-                                        ScreenTypeLayout.builder(
-                                          desktop: (context) => IconButton(
-                                              tooltip:
-                                                  appLocalizationsOf(context)
-                                                      .collapse,
                                               onPressed: () {
-                                                Navigator.of(context).pop();
+                                                _displaySpeedOptionsModal(
+                                                    context, (v) {
+                                                  setState(() {
+                                                    _videoPlayerController
+                                                        .setPlaybackSpeed(v);
+                                                  });
+                                                });
                                               },
                                               icon: const Icon(
-                                                  Icons
-                                                      .fullscreen_exit_outlined,
-                                                  size: 24)),
-                                          mobile: (context) =>
-                                              const SizedBox.shrink(),
-                                        )
-                                      ],
+                                                Icons.settings_outlined,
+                                                size: 24,
+                                              ),
+                                            ),
+                                          ),
+                                          SafeArea(
+                                            child: ScreenTypeLayout.builder(
+                                              desktop: (context) => IconButton(
+                                                  tooltip: appLocalizationsOf(
+                                                          context)
+                                                      .collapse,
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  icon: const Icon(
+                                                      Icons
+                                                          .fullscreen_exit_outlined,
+                                                      size: 24)),
+                                              mobile: (context) =>
+                                                  const SizedBox.shrink(),
+                                            ),
+                                          )
+                                        ],
+                                      ),
                                     ),
-                                  ))
+                                  )
                                 ],
                               ),
                             )
-                          ]),
-                        ))),
-              ],
-            )),
-      ],
-    )));
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -1494,20 +1513,22 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildFullScreenButton({required bool isFileExplorer}) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        top: isFileExplorer ? 0 : 24,
-        bottom: 24,
-      ),
-      child: IconButton(
-        tooltip: widget.isFullScreen
-            ? appLocalizationsOf(context).collapse
-            : appLocalizationsOf(context).expand,
-        onPressed: _toggleFullScreen,
-        icon: widget.isFullScreen
-            ? const Icon(Icons.fullscreen_exit_outlined)
-            : const Icon(Icons.fullscreen_outlined, size: 24),
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          top: isFileExplorer ? 0 : 24,
+          bottom: 24,
+        ),
+        child: IconButton(
+          tooltip: widget.isFullScreen
+              ? appLocalizationsOf(context).collapse
+              : appLocalizationsOf(context).expand,
+          onPressed: _toggleFullScreen,
+          icon: widget.isFullScreen
+              ? const Icon(Icons.fullscreen_exit_outlined)
+              : const Icon(Icons.fullscreen_outlined, size: 24),
+        ),
       ),
     );
   }
