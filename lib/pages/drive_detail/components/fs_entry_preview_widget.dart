@@ -1513,20 +1513,22 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildFullScreenButton({required bool isFileExplorer}) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        top: isFileExplorer ? 0 : 24,
-        bottom: 24,
-      ),
-      child: IconButton(
-        tooltip: widget.isFullScreen
-            ? appLocalizationsOf(context).collapse
-            : appLocalizationsOf(context).expand,
-        onPressed: _toggleFullScreen,
-        icon: widget.isFullScreen
-            ? const Icon(Icons.fullscreen_exit_outlined)
-            : const Icon(Icons.fullscreen_outlined, size: 24),
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          top: isFileExplorer ? 0 : 24,
+          bottom: 24,
+        ),
+        child: IconButton(
+          tooltip: widget.isFullScreen
+              ? appLocalizationsOf(context).collapse
+              : appLocalizationsOf(context).expand,
+          onPressed: _toggleFullScreen,
+          icon: widget.isFullScreen
+              ? const Icon(Icons.fullscreen_exit_outlined)
+              : const Icon(Icons.fullscreen_outlined, size: 24),
+        ),
       ),
     );
   }
