@@ -1,4 +1,4 @@
-class FileTypeHelper {
+abstract class FileTypeHelper {
   static const List<String> _imageTypes = ['image/'];
   static const List<String> _audioTypes = ['audio/'];
   static const List<String> _videoTypes = ['video/'];
@@ -36,6 +36,10 @@ class FileTypeHelper {
     'application/x-rar-compressed'
   ];
 
+  static const List<String> _manifestTypes = [
+    'application/x.arweave-manifest+json',
+  ];
+
   static bool isImage(String contentType) {
     return _imageTypes.any((type) => contentType.startsWith(type));
   }
@@ -58,5 +62,9 @@ class FileTypeHelper {
 
   static bool isZip(String contentType) {
     return _zipTypes.contains(contentType);
+  }
+
+  static bool isManifest(String contentType) {
+    return _manifestTypes.contains(contentType);
   }
 }

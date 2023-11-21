@@ -330,7 +330,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                 children: [
                                   Expanded(
                                     child: ArDriveButton(
-                                      icon: ArDriveIcons.download(
+                                      icon: ArDriveIcons.download2(
                                           color: Colors.white),
                                       onPressed: () {
                                         final file = ARFSFactory()
@@ -422,7 +422,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
               ),
               const SizedBox(height: 24),
               ArDriveButton(
-                icon: ArDriveIcons.download(color: Colors.white),
+                icon: ArDriveIcons.download2(color: Colors.white),
                 onPressed: () {
                   final file = ARFSFactory().getARFSFileFromFileRevision(
                     widget.revisions!.last,
@@ -1078,7 +1078,7 @@ class _DownloadOrPreview extends StatelessWidget {
         );
       },
       tooltip: appLocalizationsOf(context).download,
-      icon: ArDriveIcons.download(size: 20),
+      icon: ArDriveIcons.download2(size: 20),
     );
   }
 }
@@ -1157,7 +1157,7 @@ class DetailsPanelToolbar extends StatelessWidget {
             ),
           _buildActionIcon(
               tooltip: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download(size: defaultIconSize),
+              icon: ArDriveIcons.download2(size: defaultIconSize),
               onTap: () {
                 if (item is FileDataTableItem) {
                   promptToDownloadProfileFile(

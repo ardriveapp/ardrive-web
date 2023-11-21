@@ -316,7 +316,7 @@ class NewButton extends StatelessWidget {
                   driveDetailState.driveIsEmpty ||
                   !canUpload,
               name: appLocalizations.createManifest,
-              icon: ArDriveIcons.tournament(size: defaultIconSize),
+              icon: ArDriveIcons.manifest(size: defaultIconSize),
             ),
           if (context.read<ConfigService>().config.enableQuickSyncAuthoring)
             ArDriveNewButtonItem(
