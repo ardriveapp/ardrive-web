@@ -132,17 +132,22 @@ class _ArDriveDownloader implements ArDriveDownloader {
     );
 
     final finalize = Completer<bool>();
+
     Future.any([
       _cancelWithReason.future.then((_) => false),
     ]).then((value) => finalize.complete(value));
 
     bool? saveResult;
 
+    logger.i('Saving file...');
+
     await for (final saveStatus in _ardriveIo.saveFileStream(file, finalize)) {
       if (saveStatus.saveResult == null) {
         if (saveStatus.bytesSaved == 0) continue;
 
         final progress = saveStatus.bytesSaved / saveStatus.totalBytes;
+
+        logger.d('Saving file progress: ${progress * 100}%');
 
         yield progress * 100;
 
@@ -156,6 +161,8 @@ class _ArDriveDownloader implements ArDriveDownloader {
         saveResult = saveStatus.saveResult!;
       }
     }
+
+    logger.i('File saved');
 
     if (_cancelWithReason.isCompleted) {
       throw Exception('Download cancelled: ${await _cancelWithReason.future}');

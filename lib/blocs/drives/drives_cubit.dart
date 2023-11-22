@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -26,6 +27,7 @@ class DrivesCubit extends Cubit<DrivesState> {
     this.initialSelectedDriveId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
+    required ActivityTracker activityTracker,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _auth = auth,

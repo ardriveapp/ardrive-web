@@ -16,11 +16,11 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-4923
+      ref: v1.4.2
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.0
+      ref: v3.8.1
   ardrive_utils:
     path: ../ardrive_utils
   ardrive_crypto:
@@ -43,6 +43,8 @@ dependencies:
       url: https://github.com/thiagocarvalhodev/fetch_client.git
       ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
   http: ^1.1.0
+  mocktail: ^0.3.0
+  equatable: ^2.0.5
 
 dev_dependencies:
   lints: ^2.0.0

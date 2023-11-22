@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/upload_form.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
@@ -121,6 +122,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
           context,
           content: BlocProvider<UploadCubit>(
             create: (context) => UploadCubit(
+              activityTracker: context.read<ActivityTracker>(),
               arDriveUploadManager: ArDriveUploadPreparationManager(
                 uploadPreparePaymentOptions: UploadPaymentEvaluator(
                   appConfig: context.read<ConfigService>().config,
@@ -162,8 +164,6 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
               driveId: driveId,
               parentFolderId: parentFolderId,
               files: selectedFiles,
-              arweave: context.read<ArweaveService>(),
-              turbo: context.read<TurboUploadService>(),
               pst: context.read<PstService>(),
               profileCubit: context.read<ProfileCubit>(),
               driveDao: context.read<DriveDao>(),

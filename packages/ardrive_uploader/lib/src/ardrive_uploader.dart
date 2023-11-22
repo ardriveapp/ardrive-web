@@ -58,8 +58,6 @@ abstract class ArDriveUploader {
     pstService ??= PstService(
       communityOracle: CommunityOracle(
         ArDriveContractOracle([
-          ContractOracle(VertoContractReader()),
-          ContractOracle(RedstoneContractReader()),
           ContractOracle(SmartweaveContractReader()),
         ]),
       ),
@@ -122,9 +120,15 @@ class _ArDriveUploader implements ArDriveUploader {
       args,
     );
 
-    final uploadTask = ARFSUploadTask(
-      status: UploadStatus.notStarted,
+    final uploadTask = FileUploadTask(
+      file: file,
+      metadata: metadata as ARFSFileUploadMetadata,
       content: [metadata],
+      encryptionKey: driveKey,
+      streamedUpload: _streamedUploadFactory.fromUploadType(
+        type,
+        _turboUploadUri,
+      ),
     );
 
     uploadController.addTask(uploadTask);
