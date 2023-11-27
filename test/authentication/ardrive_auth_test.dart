@@ -59,6 +59,9 @@ void main() {
     when(() => mockArConnectService.checkPermissions()).thenAnswer(
       (invocation) => Future.value(true),
     );
+    when(() => mockArConnectService.isExtensionPresent()).thenAnswer(
+      (invocation) => true,
+    );
     when(() => mockArConnectService.disconnect()).thenAnswer(
       (invocation) => Future.value(null),
     );
