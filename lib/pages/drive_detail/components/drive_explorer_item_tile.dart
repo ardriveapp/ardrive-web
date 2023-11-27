@@ -141,6 +141,10 @@ ArDriveIcon getIconForContentType(String contentType, {double size = 18}) {
     return ArDriveIcons.fileOutlined(
       size: size,
     );
+  } else if (FileTypeHelper.isManifest(contentType)) {
+    return ArDriveIcons.manifest(
+      size: size,
+    );
   } else {
     return ArDriveIcons.fileOutlined(
       size: size,
@@ -254,7 +258,7 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).download,
-            ArDriveIcons.download(
+            ArDriveIcons.download2(
               size: defaultIconSize,
             ),
           ),
@@ -319,7 +323,7 @@ class _DriveExplorerItemTileTrailingState
         },
         content: _buildItem(
           appLocalizationsOf(context).download,
-          ArDriveIcons.download(
+          ArDriveIcons.download2(
             size: defaultIconSize,
           ),
         ),
@@ -459,7 +463,7 @@ class EntityActionsMenu extends StatelessWidget {
           },
           content: _buildItem(
             appLocalizationsOf(context).download,
-            ArDriveIcons.download(
+            ArDriveIcons.download2(
               size: defaultIconSize,
             ),
           ),
@@ -510,7 +514,7 @@ class EntityActionsMenu extends StatelessWidget {
             },
             content: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download(
+              icon: ArDriveIcons.download2(
                 size: defaultIconSize,
               ),
             )),
@@ -552,7 +556,7 @@ class EntityActionsMenu extends StatelessWidget {
           },
           content: ArDriveDropdownItemTile(
             name: appLocalizationsOf(context).exportDriveContents,
-            icon: ArDriveIcons.download(
+            icon: ArDriveIcons.download2(
               size: defaultIconSize,
             ),
           ),
@@ -589,7 +593,7 @@ class EntityActionsMenu extends StatelessWidget {
         },
         content: _buildItem(
           appLocalizationsOf(context).download,
-          ArDriveIcons.download(
+          ArDriveIcons.download2(
             size: defaultIconSize,
           ),
         ),

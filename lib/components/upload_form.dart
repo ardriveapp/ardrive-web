@@ -124,8 +124,6 @@ Future<void> promptToUpload(
           parentFolderId: parentFolderId,
           files: selectedFiles,
           profileCubit: context.read<ProfileCubit>(),
-          arweave: context.read<ArweaveService>(),
-          turbo: context.read<TurboUploadService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,

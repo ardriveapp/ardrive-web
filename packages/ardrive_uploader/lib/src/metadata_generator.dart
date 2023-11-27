@@ -1,8 +1,9 @@
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_uploader/src/arfs_upload_metadata.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arfs/arfs.dart';
 import 'package:arweave/arweave.dart';
+import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
 /// this class will get an `IOFile` and generate the metadata for it
@@ -45,9 +46,9 @@ class ARFSUploadMetadataGenerator
     }
 
     String id;
+
     if (arguments.entityId != null) {
       id = arguments.entityId!;
-      print('reusing id: $id');
     } else {
       id = const Uuid().v4();
     }
@@ -70,6 +71,14 @@ class ARFSUploadMetadataGenerator
 
       final file = entity;
 
+      List<Tag>? customBundleTags;
+
+      /// If the file is a D2N file, we need to add the $U tags to the
+      /// bundle tags
+      if (arguments.type == UploadType.d2n) {
+        customBundleTags = _uTags;
+      }
+
       final tags = _tagsGenerator.generateTags(
         ARFSTagsArgs(
           driveId: arguments.driveId!,
@@ -78,6 +87,7 @@ class ARFSUploadMetadataGenerator
           entity: EntityType.file,
           contentType: contentType,
           isPrivate: arguments.isPrivate,
+          customBundleTags: customBundleTags,
         ),
       );
 
@@ -169,24 +179,29 @@ class ARFSUploadMetadataArgs {
   final String? privacy;
   final bool isPrivate;
   final String? entityId;
+  final UploadType type;
 
   factory ARFSUploadMetadataArgs.file({
     required String driveId,
     required String parentFolderId,
     required bool isPrivate,
+    required UploadType type,
     String? entityId,
+    Map<String, String>? customBundleTags,
   }) {
     return ARFSUploadMetadataArgs(
       driveId: driveId,
       parentFolderId: parentFolderId,
       isPrivate: isPrivate,
       entityId: entityId,
+      type: type,
     );
   }
 
   factory ARFSUploadMetadataArgs.folder({
     required String driveId,
     required bool isPrivate,
+    required UploadType type,
     String? parentFolderId,
     String? entityId,
   }) {
@@ -195,19 +210,23 @@ class ARFSUploadMetadataArgs {
       isPrivate: isPrivate,
       entityId: entityId,
       parentFolderId: parentFolderId,
+      type: type,
     );
   }
 
   factory ARFSUploadMetadataArgs.drive({
     required bool isPrivate,
+    required UploadType type,
   }) {
     return ARFSUploadMetadataArgs(
       isPrivate: isPrivate,
+      type: type,
     );
   }
 
   ARFSUploadMetadataArgs({
     required this.isPrivate,
+    required this.type,
     this.driveId,
     this.parentFolderId,
     this.privacy,
@@ -223,10 +242,14 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
     required AppInfoServices appInfoServices,
   }) : _appInfoServices = appInfoServices;
 
-  // TODO: Review entity.dart file
   @override
   Map<String, List<Tag>> generateTags(ARFSTagsArgs arguments) {
     final bundleDataItemTags = _bundleDataItemTags;
+
+    if (arguments.customBundleTags != null) {
+      bundleDataItemTags.addAll(arguments.customBundleTags!);
+    }
+
     final entityTags = _entityTags(arguments);
     final appTags = _appTags;
 
@@ -307,7 +330,7 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
       EntityTag.unixTime,
       (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
     );
-    final appName = Tag(EntityTag.appName, 'ArDrive-App');
+    final appName = Tag(EntityTag.appName, appInfo.appName);
 
     return [
       appName,
@@ -320,19 +343,9 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
   List<Tag> get _bundleDataItemTags {
     return [
       ..._appTags,
-      Tag('Tip-Type', 'data upload'),
+      Tag(EntityTag.tipType, 'data upload'),
     ];
   }
-
-  // TODO: Review this
-  // List<Tag> get _uTags {
-  //   return [
-  //     Tag(EntityTag.appName, 'SmartWeaveAction'),
-  //     Tag(EntityTag.appVersion, '0.3.0'),
-  //     Tag(EntityTag.input, '{"function":"mint"}'),
-  //     Tag(EntityTag.contract, 'KTzTXT_ANmF84fWEK HzWURD1LWd9QaFR9yfYUwH2Lxw'),
-  //   ];
-  // }
 }
 
 class ARFSUploadMetadataArgsValidator {
@@ -400,13 +413,14 @@ class ARFSTagsValidator {
   }
 }
 
-class ARFSTagsArgs {
+class ARFSTagsArgs extends Equatable {
   final String? driveId;
   final String? parentFolderId;
   final String? entityId;
   final bool? isPrivate;
   final String contentType;
   final EntityType entity;
+  final List<Tag>? customBundleTags;
 
   ARFSTagsArgs({
     this.driveId,
@@ -415,5 +429,26 @@ class ARFSTagsArgs {
     this.entityId,
     required this.entity,
     required this.contentType,
+    this.customBundleTags,
   });
+
+  @override
+  List<Object?> get props => [
+        driveId,
+        parentFolderId,
+        entityId,
+        isPrivate,
+        contentType,
+        entity,
+        customBundleTags,
+      ];
+}
+
+List<Tag> get _uTags {
+  return [
+    Tag(EntityTag.appName, 'SmartWeaveAction'),
+    Tag(EntityTag.appVersion, '0.3.0'),
+    Tag(EntityTag.input, '{"function":"mint"}'),
+    Tag(EntityTag.contract, 'KTzTXT_ANmF84fWEK HzWURD1LWd9QaFR9yfYUwH2Lxw'),
+  ];
 }

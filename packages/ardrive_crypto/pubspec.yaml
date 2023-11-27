@@ -16,7 +16,7 @@ dependencies:
       url: https://github.com/ardriveapp/arweave-dart.git
       ref: v3.8.2
   ardrive_utils:
-    path: ../ardrive_utils 
+    path: ../ardrive_utils
   uuid: ^3.0.4
   webcrypto: ^0.5.3
   async: ^2.11.0

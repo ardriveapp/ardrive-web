@@ -50,7 +50,7 @@ dependencies:
   uuid: ^3.0.4
   cryptography: ^2.5.0
   dio: ^5.3.2
-  http: 
+  http:
 
 dev_dependencies:
   flutter_test:
