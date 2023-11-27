@@ -341,7 +341,10 @@ void main() {
       act: (bloc) async {
         bloc.add(const CheckIfUserIsLoggedIn());
       },
-      expect: () => [LoginLoading(), const LoginInitial(false)],
+      expect: () => [
+        LoginLoading(),
+        const LoginInitial(isArConnectAvailable: false),
+      ],
     );
   });
 
@@ -680,7 +683,7 @@ void main() {
       act: (bloc) async {
         bloc.add(const ForgetWallet());
       },
-      expect: () => [const LoginInitial(false)],
+      expect: () => [const LoginInitial(isArConnectAvailable: false)],
     );
     blocTest(
       'should emit the initial login state and not call logout when user is not logged in',
@@ -706,7 +709,7 @@ void main() {
         bloc.add(const ForgetWallet());
       },
       verify: (bloc) => verifyNever(() => mockArDriveAuth.logout()),
-      expect: () => [const LoginInitial(false)],
+      expect: () => [const LoginInitial(isArConnectAvailable: false)],
     );
   });
 

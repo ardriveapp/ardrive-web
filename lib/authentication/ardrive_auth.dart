@@ -97,6 +97,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     return _currentUser!;
   }
 
+  @visibleForTesting
   set currentUser(User? user) {
     _currentUser = user;
   }
@@ -226,8 +227,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
         _userStreamController.add(null);
       }
 
+      await _userRepository.deleteUser();
       await _databaseHelpers.deleteAllTables();
-      (await _metadataCache).clear();
+      await (await _metadataCache).clear();
     } catch (e) {
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');
