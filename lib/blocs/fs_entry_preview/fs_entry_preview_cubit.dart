@@ -7,6 +7,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -173,22 +174,24 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     FileEntry file,
     String dataUrl,
   ) async {
-    try {
-      imagePreviewNotifier.value = ImagePreviewNotification(
-        isLoading: true,
-      );
-      emit(FsEntryPreviewImage(
-        previewUrl: dataUrl,
-        filename: file.name,
-        contentType:
-            file.dataContentType ?? lookupMimeTypeWithDefaultType(file.name),
-      ));
-      final Uint8List? dataBytes = await _getBytesFromCache(
-        dataTxId: file.dataTxId,
-        dataUrl: dataUrl,
-      );
+    imagePreviewNotifier.value = ImagePreviewNotification(
+      isLoading: true,
+    );
 
-      final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+    emit(FsEntryPreviewImage(
+      previewUrl: dataUrl,
+      filename: file.name,
+      contentType:
+          file.dataContentType ?? lookupMimeTypeWithDefaultType(file.name),
+    ));
+
+    final Uint8List? dataBytes = await _getBytesFromCache(
+      dataTxId: file.dataTxId,
+      dataUrl: dataUrl,
+    );
+
+    try {
+      final drive = await _driveDao.driveById(driveId: 'lalalal').getSingle();
       final isPinFile = file.pinnedDataOwnerAddress != null;
 
       switch (drive.privacy) {
@@ -196,6 +199,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
           break;
         case DrivePrivacyTag.private:
+          if (dataBytes == null || isPinFile) {
+            _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
+            break;
+          }
+
           final fileKey = await _getFileKey(
             fileId: file.id,
             driveId: driveId,
@@ -203,23 +211,20 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             isPin: isPinFile,
           );
 
-          if (dataBytes == null || isPinFile) {
-            _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
-            return;
-          }
-
           final decodedBytes = await _decodePrivateData(
             dataBytes,
             fileKey!,
             file.dataTxId,
           );
+
           _emitImagePreview(file, dataUrl, dataBytes: decodedBytes);
           break;
 
         default:
+          logger.e('Unknown drive privacy tag');
           _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
       }
-    } catch (err) {
+    } catch (_) {
       _emitImagePreview(file, dataUrl);
     }
   }
