@@ -41,7 +41,7 @@ dependencies:
   fetch_client:
     git:
       url: https://github.com/ardriveapp/fetch_client.git
-      ref: PE-4966
+      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
   http: ^1.1.0
   mocktail: ^0.3.0
   equatable: ^2.0.5
@@ -51,3 +51,9 @@ dev_dependencies:
   test: ^1.21.0
   json_serializable:
   build_runner: ^2.0.4
+
+dependency_overrides:
+  fetch_client:
+    git:
+      url: https://github.com/ardriveapp/fetch_client.git
+      ref: master
