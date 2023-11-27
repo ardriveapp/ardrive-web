@@ -1,42 +1,63 @@
+import 'dart:async';
+
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/foundation.dart';
 
-class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
+class D2NStreamedUpload implements StreamedUpload<UploadTask> {
   UploadAborter? _aborter;
+  StreamedUploadResult? _result;
 
   @override
-  Future<dynamic> send(
+  Future<StreamedUploadResult> send(
     UploadTask handle,
     Wallet wallet,
     UploadController controller,
   ) async {
-    if (handle.uploadItem is! BundleTransactionUploadItem) {
+    if (handle.uploadItem is! TransactionUploadItem) {
       throw ArgumentError('handle must be of type TransactionUploadTask');
     }
 
     /// It is possible to cancel an upload before starting the network request.
     if (_isCanceled) {
-      print('Upload canceled on D2NStreamedUpload');
-      return;
+      debugPrint('Upload canceled on D2NStreamedUpload');
+      throw Exception('Upload canceled');
     }
 
-    print('D2NStreamedUpload.send');
+    debugPrint('D2NStreamedUpload.send');
 
-    handle = handle.copyWith(
-      progress: 0,
-      status: UploadStatus.inProgress,
+    // controller.updateProgress(
+    //   taskId: handle.id,
+    //   callback: (task) => task?.copyWith(
+    //     progress: 0,
+    //     status: UploadStatus.inProgress,
+    //   ),
+    // );
+    controller.updateProgress(
+      task: handle.copyWith(
+        progress: 0,
+        status: UploadStatus.inProgress,
+      ),
     );
 
-    controller.updateProgress(task: handle);
-
     final progressStreamTask = await uploadTransaction(
-            (handle.uploadItem as BundleTransactionUploadItem).data)
+            (handle.uploadItem as TransactionUploadItem).data)
         .run();
+    Completer upload = Completer();
 
     progressStreamTask.match((l) {
-      handle = handle.copyWith(status: UploadStatus.failed);
-      controller.updateProgress(task: handle);
+      controller.updateProgress(
+        task: handle.copyWith(
+          status: UploadStatus.failed,
+        ),
+      );
+      // controller.updateProgress(
+      //   taskId: handle.id,
+      //   callback: (task) => task?.copyWith(
+      //     status: UploadStatus.failed,
+      //   ),
+      // );
     }, (uploadProgressAndAborter) async {
       final uploadProgress = uploadProgressAndAborter.$1;
       _aborter = uploadProgressAndAborter.$2;
@@ -46,45 +67,68 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
           final total = progress.$2;
           final progressPercent = uploaded / total;
 
-          handle = handle.copyWith(
-            progress: progressPercent,
-            status: UploadStatus.inProgress,
+          // controller.updateProgress(
+          //   taskId: handle.id,
+          //   callback: (task) => task?.copyWith(
+          //     progress: progressPercent,
+          //     status: UploadStatus.inProgress,
+          //   ),
+          // );
+          controller.updateProgress(
+            task: handle.copyWith(
+              progress: progressPercent,
+              status: UploadStatus.inProgress,
+            ),
           );
 
-          controller.updateProgress(task: handle);
-
           if (progress.$1 == progress.$2) {
-            print('D2NStreamedUpload.send.onDone');
+            debugPrint('D2NStreamedUpload.send.onDone');
             // finishes the upload
-            handle = handle.copyWith(
-              status: UploadStatus.complete,
-              progress: 1,
-            );
 
-            controller.updateProgress(task: handle);
+            // controller.updateProgress(
+            //   taskId: handle.id,
+            //   callback: (task) {
+            //     return task?.copyWith(
+            //       status: UploadStatus.complete,
+            //       progress: 1,
+            //     );
+            //   },
+            // );
+            controller.updateProgress(
+              task: handle.copyWith(
+                status: UploadStatus.complete,
+                progress: 1,
+              ),
+            );
           }
         },
         onDone: () {
-          print('D2NStreamedUpload.send.onDone');
-          // finishes the upload
-          handle = handle.copyWith(
-            status: UploadStatus.complete,
-            progress: 1,
-          );
-
-          controller.updateProgress(task: handle);
+          // controller.updateProgress(
+          //     taskId: handle.id,
+          //     callback: (task) {
+          //       return task?.copyWith(
+          //         status: UploadStatus.complete,
+          //         progress: 1,
+          //       );
+          //     });
+          _result = StreamedUploadResult(success: true);
         },
         onError: (e) {
-          print('D2NStreamedUpload.send.onError: $e');
-          handle = handle.copyWith(
-            status: UploadStatus.failed,
+          controller.updateProgress(
+            task: handle.copyWith(
+              status: UploadStatus.failed,
+            ),
           );
-          controller.updateProgress(task: handle);
+          _result = StreamedUploadResult(success: false);
         },
       );
 
-      listen.asFuture();
+      await listen.asFuture();
+      upload.complete();
     });
+
+    await upload.future;
+    return _result!;
   }
 
   /// Cancel D2N uploads are not supported yet.

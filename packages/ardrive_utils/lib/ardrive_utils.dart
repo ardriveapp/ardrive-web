@@ -1,5 +1,6 @@
 library ardrive_utils;
 
+export 'src/add_debounce.dart';
 export 'src/app_info_services.dart';
 export 'src/app_platform.dart';
 export 'src/base2_size.dart';

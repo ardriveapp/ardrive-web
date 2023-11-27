@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_uploader/src/data_bundler.dart';
+import 'package:ardrive_uploader/src/factories.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -63,12 +63,18 @@ abstract class ArDriveUploader {
       ),
     );
 
+    final dataBundlerFactory = DataBundlerFactory(
+      arweaveService: arweave,
+      pstService: pstService,
+      metadataGenerator: metadataGenerator,
+    );
+
     return _ArDriveUploader(
       turboUploadUri: turboUploadUri,
-      dataBundlerFactory: DataBundlerFactory(),
+      dataBundlerFactory: dataBundlerFactory,
+      uploadFileStrategyFactory: UploadFileStrategyFactory(dataBundlerFactory),
+      streamedUploadFactory: StreamedUploadFactory(),
       metadataGenerator: metadataGenerator,
-      arweave: arweave,
-      pstService: pstService,
     );
   }
 }
@@ -78,19 +84,17 @@ class _ArDriveUploader implements ArDriveUploader {
     required DataBundlerFactory dataBundlerFactory,
     required ARFSUploadMetadataGenerator metadataGenerator,
     required Uri turboUploadUri,
-    required Arweave arweave,
-    required PstService pstService,
+    required StreamedUploadFactory streamedUploadFactory,
+    required UploadFileStrategyFactory uploadFileStrategyFactory,
   })  : _dataBundlerFactory = dataBundlerFactory,
         _turboUploadUri = turboUploadUri,
         _metadataGenerator = metadataGenerator,
-        _arweave = arweave,
-        _pstService = pstService,
-        _streamedUploadFactory = StreamedUploadFactory();
+        _uploadFileStrategyFactory = uploadFileStrategyFactory,
+        _streamedUploadFactory = streamedUploadFactory;
 
   final StreamedUploadFactory _streamedUploadFactory;
   final DataBundlerFactory _dataBundlerFactory;
-  final Arweave _arweave;
-  final PstService _pstService;
+  final UploadFileStrategyFactory _uploadFileStrategyFactory;
   final ARFSUploadMetadataGenerator _metadataGenerator;
   final Uri _turboUploadUri;
 
@@ -102,15 +106,14 @@ class _ArDriveUploader implements ArDriveUploader {
     SecretKey? driveKey,
     required UploadType type,
   }) async {
+    final bundler = _dataBundlerFactory.createDataBundler(
+      type,
+    );
+
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       _streamedUploadFactory.fromUploadType(type, _turboUploadUri),
-      _dataBundlerFactory.createDataBundler(
-        metadataGenerator: _metadataGenerator,
-        type: type,
-        arweaveService: _arweave,
-        pstService: _pstService,
-      ),
+      bundler,
       numOfWorkers: 1,
       maxTasksPerWorker: 1,
     );
@@ -133,7 +136,11 @@ class _ArDriveUploader implements ArDriveUploader {
 
     uploadController.addTask(uploadTask);
 
-    uploadController.sendTasks(wallet);
+    final strategy = _uploadFileStrategyFactory.createUploadStrategy(
+      type: type,
+    );
+
+    uploadController.sendTasks(wallet, strategy);
 
     return uploadController;
   }
@@ -147,15 +154,14 @@ class _ArDriveUploader implements ArDriveUploader {
   }) async {
     print('Creating a new upload controller using the upload type $type');
 
+    final bundler = _dataBundlerFactory.createDataBundler(
+      type,
+    );
+
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       _streamedUploadFactory.fromUploadType(type, _turboUploadUri),
-      _dataBundlerFactory.createDataBundler(
-        metadataGenerator: _metadataGenerator,
-        type: type,
-        arweaveService: _arweave,
-        pstService: _pstService,
-      ),
+      bundler,
       numOfWorkers: driveKey != null ? 3 : 5,
       maxTasksPerWorker: driveKey != null ? 1 : 5,
     );
@@ -185,7 +191,11 @@ class _ArDriveUploader implements ArDriveUploader {
 
     uploadController.updateProgress();
 
-    uploadController.sendTasks(wallet);
+    final strategy = _uploadFileStrategyFactory.createUploadStrategy(
+      type: type,
+    );
+
+    uploadController.sendTasks(wallet, strategy);
 
     return uploadController;
   }
@@ -201,10 +211,7 @@ class _ArDriveUploader implements ArDriveUploader {
     UploadType type = UploadType.turbo,
   }) async {
     final dataBundler = _dataBundlerFactory.createDataBundler(
-      metadataGenerator: _metadataGenerator,
-      type: type,
-      arweaveService: _arweave,
-      pstService: _pstService,
+      type,
     );
 
     final streamedUpload = _streamedUploadFactory.fromUploadType(
@@ -268,13 +275,18 @@ class _ArDriveUploader implements ArDriveUploader {
       uploadController.addTask(fileTask);
     }
 
+    final strategy = _uploadFileStrategyFactory.createUploadStrategy(
+      type: type,
+    );
+
     if (folderUploadTask != null) {
       // first sends the upload task for the folder and then uploads the files
-      uploadController.sendTask(folderUploadTask, wallet, onTaskCompleted: () {
-        uploadController.sendTasks(wallet);
+      uploadController.sendTask(folderUploadTask, wallet, strategy,
+          onTaskCompleted: () {
+        uploadController.sendTasks(wallet, strategy);
       });
     } else {
-      uploadController.sendTasks(wallet);
+      uploadController.sendTasks(wallet, strategy);
     }
 
     return uploadController;

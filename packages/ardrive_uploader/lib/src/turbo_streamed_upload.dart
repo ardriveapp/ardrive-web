@@ -7,9 +7,10 @@ import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
-class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
+class TurboStreamedUpload implements StreamedUpload<UploadTask> {
   final TurboUploadService _turbo;
   final TabVisibilitySingleton _tabVisibility;
+  StreamedUploadResult? _result;
 
   TurboStreamedUpload(
     this._turbo, {
@@ -17,7 +18,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
   }) : _tabVisibility = tabVisibilitySingleton ?? TabVisibilitySingleton();
 
   @override
-  Future<dynamic> send(
+  Future<StreamedUploadResult> send(
     uploadTask,
     Wallet wallet,
     UploadController controller,
@@ -52,7 +53,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     /// It is possible to cancel an upload before starting the network request.
     if (_isCanceled) {
       print('Upload canceled on StreamedUpload');
-      return;
+      throw Exception('Upload canceled');
     }
 
     /// If the file is larger than 500 MiB, we don't get progress updates.
@@ -62,9 +63,14 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     if (kIsWeb && uploadTask.uploadItem!.size > MiB(500).size) {
       uploadTask = uploadTask.copyWith(
           isProgressAvailable: false, status: UploadStatus.inProgress);
-    }
 
-    controller.updateProgress(task: uploadTask);
+      controller.updateProgress(
+        task: uploadTask.copyWith(
+          isProgressAvailable: false,
+          status: UploadStatus.inProgress,
+        ),
+      );
+    }
 
     // gets the streamed request
     final streamedRequest = _turbo
@@ -78,11 +84,12 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
             dataItem: uploadTask.uploadItem!.data,
             size: size,
             onSendProgress: (progress) {
-              uploadTask = uploadTask.copyWith(
-                progress: progress,
-                status: UploadStatus.inProgress,
+              controller.updateProgress(
+                task: uploadTask.copyWith(
+                  progress: progress,
+                  status: UploadStatus.inProgress,
+                ),
               );
-              controller.updateProgress(task: uploadTask);
             })
         .then((value) async {
       if (!uploadTask.isProgressAvailable) {
@@ -92,22 +99,24 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
         );
       }
 
-      uploadTask = uploadTask.copyWith(
-        status: UploadStatus.complete,
-      );
-
-      controller.updateProgress(task: uploadTask);
+      _result = StreamedUploadResult(success: true);
 
       return value;
     }).onError((e, s) {
       print('Error on TurboStreamedUpload.send: $e');
-      uploadTask = uploadTask.copyWith(
-        status: UploadStatus.failed,
+
+      controller.updateProgress(
+        task: uploadTask.copyWith(
+          status: UploadStatus.failed,
+        ),
       );
-      controller.updateProgress(task: uploadTask);
+
+      _result = StreamedUploadResult(success: false);
     });
 
-    return streamedRequest;
+    await streamedRequest;
+
+    return _result!;
   }
 
   @override
@@ -117,8 +126,12 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
   ) async {
     _isCanceled = true;
     await _turbo.cancel();
-    handle = handle.copyWith(status: UploadStatus.canceled);
-    controller.updateProgress(task: handle);
+
+    controller.updateProgress(
+      task: handle.copyWith(
+        status: UploadStatus.canceled,
+      ),
+    );
   }
 
   bool _isCanceled = false;

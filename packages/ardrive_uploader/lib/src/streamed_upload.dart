@@ -4,8 +4,16 @@ import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:arweave/arweave.dart';
 
-abstract class StreamedUpload<T, R> {
-  Future<R> send(
+class StreamedUploadResult {
+  final bool success;
+
+  StreamedUploadResult({
+    required this.success,
+  });
+}
+
+abstract class StreamedUpload<T> {
+  Future<StreamedUploadResult> send(
     T handle,
     Wallet wallet,
     UploadController controller,
