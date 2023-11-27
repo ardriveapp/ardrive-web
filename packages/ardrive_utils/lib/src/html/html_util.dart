@@ -23,7 +23,7 @@ class TabVisibilitySingleton {
 }
 
 // TODO: Move this code to the arconnect package.
-void onArConnectWalletSwitch(Function onWalletSwitch) =>
+Function() onArConnectWalletSwitch(Function onWalletSwitch) =>
     implementation.onWalletSwitch(onWalletSwitch);
 
 void triggerHTMLPageReload() => implementation.reload();

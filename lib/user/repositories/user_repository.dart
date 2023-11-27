@@ -90,7 +90,7 @@ class _UserRepository implements UserRepository {
     return profile != null;
   }
 
-  // Will return null if no user is not logged in - i.e. not present in the DB
+  // Will return null if no user is logged in - i.e. not present in the DB
   @override
   Future<String?> getOwnerOfDefaultProfile() async {
     final profile = await _profileDao.getDefaultProfile();

@@ -25,8 +25,8 @@ StreamSubscription onTabGetsFocused(Function onFocus) {
   return emptyStream.listen((event) {});
 }
 
-void onWalletSwitch(Function onSwitch) {
-  return;
+Function() onWalletSwitch(Function onSwitch) {
+  return () => null;
 }
 
 void reload() {

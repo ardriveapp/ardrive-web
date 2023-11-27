@@ -31,30 +31,35 @@ class AppShell extends StatefulWidget {
 class AppShellState extends State<AppShell> {
   bool _showProfileOverlay = false;
   bool _showWalletSwitchDialog = true;
+
+  @override
+  void initState() {
+    onArConnectWalletSwitch(() {
+      context.read<ProfileCubit>().isCurrentProfileArConnect().then(
+        (isCurrentProfileArConnect) {
+          if (_showWalletSwitchDialog) {
+            if (isCurrentProfileArConnect) {
+              showDialog(
+                context: context,
+                builder: (context) => const WalletSwitchDialog(),
+              );
+            } else {
+              logger.d('Wallet switch detected while not logged in'
+                  ' to ArConnect. Ignoring.');
+            }
+          }
+          // Used to prevent the dialog being shown multiple times.
+          _showWalletSwitchDialog = false;
+        },
+      );
+    });
+
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, _) {
-          onArConnectWalletSwitch(() {
-            context
-                .read<ProfileCubit>()
-                .isCurrentProfileArConnect()
-                .then((isCurrentProfileArConnect) {
-              if (_showWalletSwitchDialog) {
-                if (isCurrentProfileArConnect) {
-                  showDialog(
-                    context: context,
-                    builder: (context) => const WalletSwitchDialog(),
-                  );
-                } else {
-                  logger.d('Wallet switch detected while not logged in'
-                      ' to ArConnect. Ignoring.');
-                }
-              }
-              //Used to prevent the dialog being shown multiple times.
-              _showWalletSwitchDialog = false;
-            });
-          });
-
           Widget buildPage(scaffold) => Material(
                 child: BlocBuilder<SyncCubit, SyncState>(
                   builder: (context, syncState) => syncState is SyncInProgress
@@ -76,6 +81,8 @@ class AppShellState extends State<AppShell> {
                                       .isCurrentProfileArConnect(),
                                   builder: (BuildContext context,
                                       AsyncSnapshot snapshot) {
+                                    final isCurrentProfileArConnect =
+                                        snapshot.data == true;
                                     return Align(
                                       alignment: Alignment.center,
                                       child: Material(
@@ -92,7 +99,8 @@ class AppShellState extends State<AppShell> {
                                                     Text(appLocalizationsOf(
                                                             context)
                                                         .syncProgressPercentage(
-                                                            (syncProgress.progress *
+                                                            (syncProgress
+                                                                        .progress *
                                                                     100)
                                                                 .roundToDouble()
                                                                 .toString()))),
@@ -118,7 +126,7 @@ class AppShellState extends State<AppShell> {
                                                     .buttonNormalBold(),
                                               ),
                                             ),
-                                            title: snapshot.data ?? false
+                                            title: isCurrentProfileArConnect
                                                 ? appLocalizationsOf(context)
                                                     .syncingPleaseRemainOnThisTab
                                                 : appLocalizationsOf(context)
