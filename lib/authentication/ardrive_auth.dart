@@ -228,8 +228,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       await _databaseHelpers.deleteAllTables();
       await (await _metadataCache).clear();
-    } catch (e) {
-      logger.e('Failed to logout user', e);
+    } catch (e, s) {
+      logger.e('Failed to logout user', e, s);
       throw AuthenticationFailedException('Failed to logout user');
     }
   }
