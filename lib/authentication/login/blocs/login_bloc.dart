@@ -161,10 +161,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     CheckIfUserIsLoggedIn event,
     Emitter<LoginState> emit,
   ) async {
+    logger.d('Checking if user is logged in');
+
     emit(LoginLoading());
 
     if (await _arDriveAuth.isUserLoggedIn()) {
+      logger.d('User is logged in');
+
       if (await _arDriveAuth.isBiometricsEnabled()) {
+        logger.d('Biometrics is enabled');
+
         try {
           await _loginWithBiometrics(emit: emit);
           return;
