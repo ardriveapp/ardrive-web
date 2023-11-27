@@ -178,12 +178,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       isLoading: true,
     );
 
-    emit(FsEntryPreviewImage(
-      previewUrl: dataUrl,
-      filename: file.name,
-      contentType:
-          file.dataContentType ?? lookupMimeTypeWithDefaultType(file.name),
-    ));
+    emit(FsEntryPreviewImage(previewUrl: dataUrl));
 
     final Uint8List? dataBytes = await _getBytesFromCache(
       dataTxId: file.dataTxId,
@@ -280,11 +275,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       );
     }
 
-    emit(FsEntryPreviewImage(
-      previewUrl: previewUrl,
-      filename: file.name,
-      contentType: file.contentType,
-    ));
+    emit(FsEntryPreviewImage(previewUrl: previewUrl));
   }
 
   Future<SecretKey?> _getFileKey({
@@ -428,12 +419,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       filename: file.name,
       contentType: file.dataContentType,
     );
-    emit(FsEntryPreviewImage(
-      previewUrl: dataUrl,
-      filename: file.name,
-      contentType:
-          file.dataContentType ?? lookupMimeTypeWithDefaultType(file.name),
-    ));
+    emit(FsEntryPreviewImage(previewUrl: dataUrl));
   }
 
   bool _supportedExtension(String? previewType, String? fileExtension) {
