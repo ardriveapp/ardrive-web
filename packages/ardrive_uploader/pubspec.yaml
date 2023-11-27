@@ -11,16 +11,16 @@ dependencies:
     sdk: flutter
   ardrive_http:
     git:
-      url: https://github.com/ar-io/ardrive_http.git
+      url: https://github.com/ardriveapp/ardrive_http.git
       ref: v1.3.1
   ardrive_io:
     git:
-      url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.1
+      url: https://github.com/ardriveapp/ardrive_io.git
+      ref: v1.4.3
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.0
+      ref: v3.8.2
   ardrive_utils:
     path: ../ardrive_utils
   ardrive_crypto:
@@ -40,7 +40,7 @@ dependencies:
   fpdart: ^1.1.0
   fetch_client:
     git:
-      url: https://github.com/thiagocarvalhodev/fetch_client.git
+      url: https://github.com/ardriveapp/fetch_client.git
       ref: PE-4966
   http: ^1.1.0
 
@@ -53,5 +53,5 @@ dev_dependencies:
 dependency_overrides:
   fetch_client:
     git:
-      url: https://github.com/thiagocarvalhodev/fetch_client.git
+      url: https://github.com/ardriveapp/fetch_client.git
       ref: PE-4966
