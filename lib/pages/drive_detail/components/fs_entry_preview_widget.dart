@@ -48,8 +48,6 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           isFullScreen: false,
           onNextImageNavigate: widget.onNextImageNavigation,
           onPreviousImageNavigate: widget.onPreviousImageNavigation,
-          // filename: (widget.state as FsEntryPreviewImage).filename,
-          // contentType: (widget.state as FsEntryPreviewImage).contentType,
           previewCubit: widget.previewCubit,
         );
 
@@ -68,51 +66,6 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         );
     }
   }
-
-  // @override
-  // void initState() {
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     _onImagePreviewLoaded();
-  //   });
-  //   super.initState();
-  // }
-
-  // @override
-  // void didUpdateWidget(FsEntryPreviewWidget oldWidget) {
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     _onImagePreviewLoaded();
-  //   });
-  //   super.didUpdateWidget(oldWidget);
-  // }
-
-  // void _onImagePreviewLoaded() {
-  //   final stateType = widget.state.runtimeType;
-  //   logger.d('State type: $stateType');
-
-  //   switch (stateType) {
-  //     case FsEntryPreviewImage:
-  //       // FsEntryPreviewWidget.fullScreenValueNotifier.value = {
-  //       //   'filename': (widget.state as FsEntryPreviewImage).filename,
-  //       //   'contentType': (widget.state as FsEntryPreviewImage).contentType,
-  //       //   'imageBytes': (widget.state as FsEntryPreviewImage).imageBytes,
-  //       //   'loading': false,
-  //       // };
-  //       FsEntryPreviewWidget.fullScreenValueNotifier.value =
-  //           ImagePreviewNotification(
-  //         filename: (widget.state as FsEntryPreviewImage).filename,
-  //         contentType: (widget.state as FsEntryPreviewImage).contentType,
-  //         dataBytes: (widget.state as FsEntryPreviewImage).imageBytes,
-  //         isLoading: false,
-  //       );
-  //       break;
-
-  //     default:
-  //       FsEntryPreviewWidget.fullScreenValueNotifier.value = {
-  //         'loading': true,
-  //       };
-  //       break;
-  //   }
-  // }
 }
 
 String getTimeString(Duration duration) {

@@ -458,7 +458,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   @override
   Future<void> close() async {
     await _entrySubscription?.cancel();
-    // imagePreviewNotifier.dispose();
     return super.close();
   }
 }
