@@ -7,6 +7,7 @@ import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/user_utils.dart';
@@ -437,7 +438,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     final state = this.state as DriveDetailLoadSuccess;
     final allImagesForFolder = state.currentFolderContents
         .whereType<FileDataTableItem>()
-        .where((element) => element.contentType.startsWith('image/'))
+        .where(
+          (element) => supportedImageTypesInFilePreview.contains(
+            element.contentType,
+          ),
+        )
         .toList();
 
     _allImagesOfCurrentFolder = allImagesForFolder;
