@@ -235,12 +235,16 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   Future<void> _disconnectFromArConnect() async {
-    final hasArConnectPermissions = await _arConnectService.checkPermissions();
-    if (hasArConnectPermissions) {
-      try {
-        await _arConnectService.disconnect();
-      } catch (e) {
-        logger.e('Failed to disconnect from ArConnect', e);
+    final isExtensionAvailable = _arConnectService.isExtensionPresent();
+    if (isExtensionAvailable) {
+      final hasArConnectPermissions =
+          await _arConnectService.checkPermissions();
+      if (hasArConnectPermissions) {
+        try {
+          await _arConnectService.disconnect();
+        } catch (e) {
+          logger.e('Failed to disconnect from ArConnect', e);
+        }
       }
     }
   }
