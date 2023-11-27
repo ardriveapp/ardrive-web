@@ -186,7 +186,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     );
 
     try {
-      final drive = await _driveDao.driveById(driveId: 'lalalal').getSingle();
+      final driveId = file.driveId;
+      final drive = await _driveDao.driveById(driveId: driveId).getSingle();
       final isPinFile = file.pinnedDataOwnerAddress != null;
 
       switch (drive.privacy) {
