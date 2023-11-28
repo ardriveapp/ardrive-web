@@ -1,3 +1,6 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/app_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -22,9 +25,12 @@ class WalletSwitchDialog extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              await context.read<ArDriveAuth>().logout();
+              await context.read<ProfileCubit>().logoutProfile();
+
               Navigator.pop(context);
-              context.read<ProfileCubit>().logoutProfile();
+
               if (fromAuthPage) {
                 triggerHTMLPageReload();
                 context.read<ProfileAddCubit>().promptForWallet();
