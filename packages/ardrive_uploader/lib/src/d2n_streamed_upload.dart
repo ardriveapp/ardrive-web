@@ -27,13 +27,6 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask> {
 
     debugPrint('D2NStreamedUpload.send');
 
-    // controller.updateProgress(
-    //   taskId: handle.id,
-    //   callback: (task) => task?.copyWith(
-    //     progress: 0,
-    //     status: UploadStatus.inProgress,
-    //   ),
-    // );
     controller.updateProgress(
       task: handle.copyWith(
         progress: 0,
@@ -52,12 +45,6 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask> {
           status: UploadStatus.failed,
         ),
       );
-      // controller.updateProgress(
-      //   taskId: handle.id,
-      //   callback: (task) => task?.copyWith(
-      //     status: UploadStatus.failed,
-      //   ),
-      // );
     }, (uploadProgressAndAborter) async {
       final uploadProgress = uploadProgressAndAborter.$1;
       _aborter = uploadProgressAndAborter.$2;
@@ -67,13 +54,6 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask> {
           final total = progress.$2;
           final progressPercent = uploaded / total;
 
-          // controller.updateProgress(
-          //   taskId: handle.id,
-          //   callback: (task) => task?.copyWith(
-          //     progress: progressPercent,
-          //     status: UploadStatus.inProgress,
-          //   ),
-          // );
           controller.updateProgress(
             task: handle.copyWith(
               progress: progressPercent,
@@ -85,15 +65,6 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask> {
             debugPrint('D2NStreamedUpload.send.onDone');
             // finishes the upload
 
-            // controller.updateProgress(
-            //   taskId: handle.id,
-            //   callback: (task) {
-            //     return task?.copyWith(
-            //       status: UploadStatus.complete,
-            //       progress: 1,
-            //     );
-            //   },
-            // );
             controller.updateProgress(
               task: handle.copyWith(
                 status: UploadStatus.complete,
@@ -103,14 +74,6 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask> {
           }
         },
         onDone: () {
-          // controller.updateProgress(
-          //     taskId: handle.id,
-          //     callback: (task) {
-          //       return task?.copyWith(
-          //         status: UploadStatus.complete,
-          //         progress: 1,
-          //       );
-          //     });
           _result = StreamedUploadResult(success: true);
         },
         onError: (e) {
