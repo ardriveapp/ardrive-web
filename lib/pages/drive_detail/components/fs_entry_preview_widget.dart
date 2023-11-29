@@ -1427,7 +1427,12 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         Flexible(
           flex: 1,
           child: Row(
-            children: [_buildNameAndExtension(isFileExplorer: isFileExplorer)],
+            children: [
+              const SizedBox(
+                width: 18,
+              ),
+              _buildNameAndExtension(isFileExplorer: isFileExplorer),
+            ],
           ),
         ),
         Flexible(
@@ -1438,7 +1443,10 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           flex: 1,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
-            children: [_buildFullScreenButton(isFileExplorer: isFileExplorer)],
+            children: [
+              _buildFullScreenButton(isFileExplorer: isFileExplorer),
+              const SizedBox(width: 24),
+            ],
           ),
         ),
       ]);
