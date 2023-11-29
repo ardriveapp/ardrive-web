@@ -7,7 +7,7 @@ import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
-class TurboStreamedUpload implements StreamedUpload<UploadTask> {
+class TurboStreamedUpload implements StreamedUpload<UploadItem> {
   final TurboUploadService _turbo;
   final TabVisibilitySingleton _tabVisibility;
   StreamedUploadResult? _result;
@@ -19,9 +19,9 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask> {
 
   @override
   Future<StreamedUploadResult> send(
-    uploadTask,
+    uploadItem,
     Wallet wallet,
-    UploadController controller,
+    Function(double)? onProgress,
   ) async {
     final nonce = const Uuid().v4();
 
@@ -44,7 +44,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask> {
 
     int size = 0;
 
-    final task = uploadTask.uploadItem!.data as DataItemResult;
+    final task = uploadItem.data as DataItemResult;
 
     await for (final data in task.streamGenerator()) {
       size += data.length;
@@ -60,17 +60,19 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask> {
     ///
     /// The TurboUploadServiceImpl for web uses fetch_client for the upload of files
     /// larger than 500 MiB. fetch_client does not support progress updates.
-    if (kIsWeb && uploadTask.uploadItem!.size > MiB(500).size) {
-      uploadTask = uploadTask.copyWith(
-          isProgressAvailable: false, status: UploadStatus.inProgress);
 
-      controller.updateProgress(
-        task: uploadTask.copyWith(
-          isProgressAvailable: false,
-          status: UploadStatus.inProgress,
-        ),
-      );
-    }
+    // TODO: move this logic to the class above
+    // if (kIsWeb && uploadTask.uploadItem!.size > MiB(500).size) {
+    //   uploadTask = uploadTask.copyWith(
+    //       isProgressAvailable: false, status: UploadStatus.inProgress);
+
+    //   // controller.updateProgress(
+    //   //   task: uploadTask.copyWith(
+    //   //     isProgressAvailable: false,
+    //   //     status: UploadStatus.inProgress,
+    //   //   ),
+    //   // );
+    // }
 
     // gets the streamed request
     final streamedRequest = _turbo
@@ -81,35 +83,17 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask> {
               'x-address': publicKey,
               'x-signature': signature,
             },
-            dataItem: uploadTask.uploadItem!.data,
+            dataItem: uploadItem.data,
             size: size,
             onSendProgress: (progress) {
-              controller.updateProgress(
-                task: uploadTask.copyWith(
-                  progress: progress,
-                  status: UploadStatus.inProgress,
-                ),
-              );
+              onProgress?.call(progress);
             })
         .then((value) async {
-      if (!uploadTask.isProgressAvailable) {
-        uploadTask = uploadTask.copyWith(
-          progress: 1,
-          status: UploadStatus.complete,
-        );
-      }
-
       _result = StreamedUploadResult(success: true);
 
       return value;
     }).onError((e, s) {
-      print('Error on TurboStreamedUpload.send: $e');
-
-      controller.updateProgress(
-        task: uploadTask.copyWith(
-          status: UploadStatus.failed,
-        ),
-      );
+      debugPrint('Error on TurboStreamedUpload.send: $e');
 
       _result = StreamedUploadResult(success: false);
     });
@@ -121,17 +105,16 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask> {
 
   @override
   Future<void> cancel(
-    UploadTask handle,
-    UploadController controller,
+    UploadItem handle,
   ) async {
     _isCanceled = true;
     await _turbo.cancel();
 
-    controller.updateProgress(
-      task: handle.copyWith(
-        status: UploadStatus.canceled,
-      ),
-    );
+    // controller.updateProgress(
+    //   task: handle.copyWith(
+    //     status: UploadStatus.canceled,
+    //   ),
+    // );
   }
 
   bool _isCanceled = false;

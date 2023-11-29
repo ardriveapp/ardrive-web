@@ -12,20 +12,25 @@ class StreamedUploadResult {
   });
 }
 
-abstract class StreamedUpload<T> {
+abstract class StreamedUpload<T extends UploadItem> {
   Future<StreamedUploadResult> send(
     T handle,
     Wallet wallet,
-    UploadController controller,
+    void Function(double)? onProgress,
   );
 
-  Future<void> cancel(T handle, UploadController controller);
+  Future<void> cancel(T handle);
 }
 
 class StreamedUploadFactory {
+  final Uri turboUploadUri;
+
+  StreamedUploadFactory({
+    required this.turboUploadUri,
+  });
+
   StreamedUpload fromUploadType(
     UploadType type,
-    Uri turboUploadUri,
   ) {
     if (type == UploadType.d2n) {
       return D2NStreamedUpload();

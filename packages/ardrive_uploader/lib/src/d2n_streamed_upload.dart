@@ -5,17 +5,17 @@ import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 
-class D2NStreamedUpload implements StreamedUpload<UploadTask> {
+class D2NStreamedUpload implements StreamedUpload<UploadItem> {
   UploadAborter? _aborter;
   StreamedUploadResult? _result;
 
   @override
   Future<StreamedUploadResult> send(
-    UploadTask handle,
+    UploadItem uploadItem,
     Wallet wallet,
-    UploadController controller,
+    Function(double)? onProgress,
   ) async {
-    if (handle.uploadItem is! TransactionUploadItem) {
+    if (uploadItem is! TransactionUploadItem) {
       throw ArgumentError('handle must be of type TransactionUploadTask');
     }
 
@@ -27,24 +27,11 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask> {
 
     debugPrint('D2NStreamedUpload.send');
 
-    controller.updateProgress(
-      task: handle.copyWith(
-        progress: 0,
-        status: UploadStatus.inProgress,
-      ),
-    );
-
-    final progressStreamTask = await uploadTransaction(
-            (handle.uploadItem as TransactionUploadItem).data)
-        .run();
+    final progressStreamTask = await uploadTransaction((uploadItem).data).run();
     Completer upload = Completer();
 
     progressStreamTask.match((l) {
-      controller.updateProgress(
-        task: handle.copyWith(
-          status: UploadStatus.failed,
-        ),
-      );
+      return StreamedUploadResult(success: false);
     }, (uploadProgressAndAborter) async {
       final uploadProgress = uploadProgressAndAborter.$1;
       _aborter = uploadProgressAndAborter.$2;
@@ -54,34 +41,12 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask> {
           final total = progress.$2;
           final progressPercent = uploaded / total;
 
-          controller.updateProgress(
-            task: handle.copyWith(
-              progress: progressPercent,
-              status: UploadStatus.inProgress,
-            ),
-          );
-
-          if (progress.$1 == progress.$2) {
-            debugPrint('D2NStreamedUpload.send.onDone');
-            // finishes the upload
-
-            controller.updateProgress(
-              task: handle.copyWith(
-                status: UploadStatus.complete,
-                progress: 1,
-              ),
-            );
-          }
+          onProgress?.call(progressPercent);
         },
         onDone: () {
           _result = StreamedUploadResult(success: true);
         },
         onError: (e) {
-          controller.updateProgress(
-            task: handle.copyWith(
-              status: UploadStatus.failed,
-            ),
-          );
           _result = StreamedUploadResult(success: false);
         },
       );
@@ -96,7 +61,7 @@ class D2NStreamedUpload implements StreamedUpload<UploadTask> {
 
   /// Cancel D2N uploads are not supported yet.
   @override
-  Future<void> cancel(UploadTask handle, UploadController controller) async {
+  Future<void> cancel(UploadItem handle) async {
     print('D2NStreamedUpload.cancel');
     _isCanceled = true;
 

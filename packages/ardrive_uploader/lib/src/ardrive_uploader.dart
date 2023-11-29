@@ -7,6 +7,7 @@ import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
+import 'package:flutter/foundation.dart';
 import 'package:pst/pst.dart';
 
 enum UploadType { turbo, d2n }
@@ -69,11 +70,16 @@ abstract class ArDriveUploader {
       metadataGenerator: metadataGenerator,
     );
 
+    final streamedUploadFactory = StreamedUploadFactory(
+      turboUploadUri: turboUploadUri,
+    );
+
     return _ArDriveUploader(
       turboUploadUri: turboUploadUri,
       dataBundlerFactory: dataBundlerFactory,
-      uploadFileStrategyFactory: UploadFileStrategyFactory(dataBundlerFactory),
-      streamedUploadFactory: StreamedUploadFactory(),
+      uploadFileStrategyFactory:
+          UploadFileStrategyFactory(dataBundlerFactory, streamedUploadFactory),
+      streamedUploadFactory: streamedUploadFactory,
       metadataGenerator: metadataGenerator,
     );
   }
@@ -106,14 +112,16 @@ class _ArDriveUploader implements ArDriveUploader {
     SecretKey? driveKey,
     required UploadType type,
   }) async {
-    final bundler = _dataBundlerFactory.createDataBundler(
-      type,
-    );
-
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
-      _streamedUploadFactory.fromUploadType(type, _turboUploadUri),
-      bundler,
+      UploadSender(
+        dataBundler: _dataBundlerFactory.createDataBundler(
+          type,
+        ),
+        uploadStrategy: _uploadFileStrategyFactory.createUploadStrategy(
+          type: type,
+        ),
+      ),
       numOfWorkers: 1,
       maxTasksPerWorker: 1,
     );
@@ -128,10 +136,7 @@ class _ArDriveUploader implements ArDriveUploader {
       metadata: metadata as ARFSFileUploadMetadata,
       content: [metadata],
       encryptionKey: driveKey,
-      streamedUpload: _streamedUploadFactory.fromUploadType(
-        type,
-        _turboUploadUri,
-      ),
+      type: type,
     );
 
     uploadController.addTask(uploadTask);
@@ -152,18 +157,26 @@ class _ArDriveUploader implements ArDriveUploader {
     SecretKey? driveKey,
     required UploadType type,
   }) async {
-    print('Creating a new upload controller using the upload type $type');
+    debugPrint('Creating a new upload controller using the upload type $type');
 
-    final bundler = _dataBundlerFactory.createDataBundler(
+    final dataBundler = _dataBundlerFactory.createDataBundler(
       type,
+    );
+
+    final uploadStrategy = _uploadFileStrategyFactory.createUploadStrategy(
+      type: type,
+    );
+
+    final uploadSender = UploadSender(
+      dataBundler: dataBundler,
+      uploadStrategy: uploadStrategy,
     );
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
-      _streamedUploadFactory.fromUploadType(type, _turboUploadUri),
-      bundler,
+      uploadSender,
       numOfWorkers: driveKey != null ? 3 : 5,
-      maxTasksPerWorker: driveKey != null ? 1 : 5,
+      maxTasksPerWorker: driveKey != null ? 1 : 3,
     );
 
     for (var f in files) {
@@ -180,10 +193,7 @@ class _ArDriveUploader implements ArDriveUploader {
         metadata: metadata as ARFSFileUploadMetadata,
         content: [metadata],
         encryptionKey: driveKey,
-        streamedUpload: _streamedUploadFactory.fromUploadType(
-          type,
-          _turboUploadUri,
-        ),
+        type: type,
       );
 
       uploadController.addTask(fileTask);
@@ -214,9 +224,13 @@ class _ArDriveUploader implements ArDriveUploader {
       type,
     );
 
-    final streamedUpload = _streamedUploadFactory.fromUploadType(
-      type,
-      _turboUploadUri,
+    final uploadStrategy = _uploadFileStrategyFactory.createUploadStrategy(
+      type: type,
+    );
+
+    final uploadSender = UploadSender(
+      dataBundler: dataBundler,
+      uploadStrategy: uploadStrategy,
     );
 
     final filesWitMetadatas = <(ARFSFileUploadMetadata, IOFile)>[];
@@ -240,8 +254,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
-      streamedUpload,
-      dataBundler,
+      uploadSender,
       numOfWorkers: driveKey != null ? 3 : 5,
       maxTasksPerWorker: driveKey != null ? 1 : 5,
     );
@@ -251,10 +264,7 @@ class _ArDriveUploader implements ArDriveUploader {
         folders: folderMetadatas,
         content: folderMetadatas.map((e) => e.$1).toList(),
         encryptionKey: driveKey,
-        streamedUpload: _streamedUploadFactory.fromUploadType(
-          type,
-          _turboUploadUri,
-        ),
+        type: type,
       );
 
       uploadController.addTask(folderUploadTask);
@@ -265,11 +275,8 @@ class _ArDriveUploader implements ArDriveUploader {
         file: f.$2,
         metadata: f.$1,
         encryptionKey: driveKey,
-        streamedUpload: _streamedUploadFactory.fromUploadType(
-          type,
-          _turboUploadUri,
-        ),
         content: [f.$1],
+        type: type,
       );
 
       uploadController.addTask(fileTask);
