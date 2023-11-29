@@ -1493,17 +1493,6 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         child: ValueListenableBuilder(
           valueListenable: FsEntryPreviewCubit.imagePreviewNotifier,
           builder: (context, imagePreview, _) {
-            final isLoading = imagePreview.isLoading;
-            if (isLoading) {
-              return const Center(
-                child: SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-
             final filename = imagePreview.filename!;
             final contentType = imagePreview.contentType!;
             return Column(

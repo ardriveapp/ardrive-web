@@ -176,6 +176,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   ) async {
     imagePreviewNotifier.value = ImagePreviewNotification(
       isLoading: true,
+      filename: file.name,
+      contentType: file.dataContentType,
     );
 
     emit(FsEntryPreviewImage(previewUrl: dataUrl));
@@ -234,6 +236,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     imagePreviewNotifier.value = ImagePreviewNotification(
       isLoading: true,
+      filename: file.name,
+      contentType: file.contentType,
     );
 
     final Uint8List? dataBytes = await _getBytesFromCache(
