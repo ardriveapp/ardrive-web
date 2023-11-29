@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -356,6 +357,14 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                   openUrl(url: 'https://ardrive.io/'),
                               text: appLocalizationsOf(context).whatIsArDrive,
                             ),
+                            if (widget.isSharePage) ...[
+                              AppVersionWidget(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
+                              ),
+                            ]
                           ],
                         ),
                       ),
@@ -441,6 +450,12 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 onPressed: () => openUrl(url: 'https://ardrive.io/'),
                 text: appLocalizationsOf(context).whatIsArDrive,
               ),
+              if (widget.isSharePage) ...[
+                AppVersionWidget(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                ),
+              ]
             ],
           ),
         ),
