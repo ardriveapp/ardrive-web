@@ -116,19 +116,6 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.text,
     );
 
-    final ArDriveDevToolOption useTurboOption = ArDriveDevToolOption(
-      name: 'useTurboUpload',
-      value: config.useTurboUpload,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(useTurboUpload: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.bool,
-    );
-
     final ArDriveDevToolOption useTurboPaymentOption = ArDriveDevToolOption(
       name: 'useTurboPayment',
       value: config.useTurboPayment,
@@ -377,7 +364,6 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
     );
 
     final List<ArDriveDevToolOption> options = [
-      useTurboOption,
       useTurboPaymentOption,
       defaultTurboPaymentUrlOption,
       enableSyncFromSnapshotOption,

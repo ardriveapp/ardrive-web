@@ -344,43 +344,36 @@ class UploadPaymentEvaluator {
   }) async {
     UploadMethod uploadMethod;
 
-    int totalSize = 0;
+    int totalSize;
 
     BigInt turboBalance;
-
-    /// Even if this feature flag is off, it will be possible to upload using turbo
-    /// for free files
-    bool isTurboAvailableToUploadAllFiles = _appConfig.useTurboUpload;
-
-    if (isTurboAvailableToUploadAllFiles) {
-      /// Check the balance of the user
-      /// If we can't get the balance, turbo won't be available
-      try {
-        turboBalance =
-            await _turboBalanceRetriever.getBalance(_auth.currentUser.wallet);
-
-        logger.i('Turbo balance: $turboBalance');
-      } catch (e, stacktrace) {
-        logger.e(
-          'An error occured while getting the turbo balance',
-          e,
-          stacktrace,
-        );
-        isTurboAvailableToUploadAllFiles = false;
-        turboBalance = BigInt.zero;
-      }
-    } else {
-      turboBalance = BigInt.zero;
-    }
 
     final arBundleSizes = await sizeUtils
         .getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles);
     final arFileSizes = await sizeUtils
         .getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles);
 
+    /// If the `bundleUploadHandles` is empty means that we are over the limit that Turbo supports.
+    /// See method: [UploadPlan.createBundleHandlesFromDataItemHandles]
     bool isUploadEligibleToTurbo =
         uploadPlanForTurbo.fileV2UploadHandles.isEmpty &&
             uploadPlanForTurbo.bundleUploadHandles.isNotEmpty;
+
+    /// Check the balance of the user
+    /// If we can't get the balance, turbo won't be available
+    try {
+      turboBalance =
+          await _turboBalanceRetriever.getBalance(_auth.currentUser.wallet);
+      logger.i('Turbo balance: $turboBalance');
+    } catch (e, stacktrace) {
+      logger.e(
+        'An error occured while getting the turbo balance. The user won\'t be able to use turbo.',
+        e,
+        stacktrace,
+      );
+      isUploadEligibleToTurbo = false;
+      turboBalance = BigInt.zero;
+    }
 
     UploadCostEstimate turboCostEstimate = UploadCostEstimate.zero();
 
@@ -395,8 +388,13 @@ class UploadPaymentEvaluator {
         turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
           totalSize: turboBundleSizes,
         );
-      } catch (e) {
-        isTurboAvailableToUploadAllFiles = false;
+      } catch (e, stacktrace) {
+        logger.e(
+          'An error occured while getting the turbo balance. The user won\'t be able to use turbo.',
+          e,
+          stacktrace,
+        );
+        isUploadEligibleToTurbo = false;
       }
     }
 
@@ -420,8 +418,7 @@ class UploadPaymentEvaluator {
       );
     }
 
-    if ((isTurboAvailableToUploadAllFiles &&
-            isUploadEligibleToTurbo &&
+    if ((isUploadEligibleToTurbo &&
             turboBalance >= turboCostEstimate.totalCost) ||
         isFreeUploadPossibleUsingTurbo) {
       totalSize = turboBundleSizes;
@@ -432,7 +429,6 @@ class UploadPaymentEvaluator {
     }
 
     return UploadPaymentInfo(
-      isTurboAvailable: isTurboAvailableToUploadAllFiles,
       defaultPaymentMethod: uploadMethod,
       isUploadEligibleToTurbo: isUploadEligibleToTurbo,
       arCostEstimate: arCostEstimate,
@@ -458,7 +454,6 @@ class UploadPaymentInfo {
   final UploadMethod defaultPaymentMethod;
   final bool isUploadEligibleToTurbo;
   final bool isFreeUploadPossibleUsingTurbo;
-  final bool isTurboAvailable;
   final UploadCostEstimate arCostEstimate;
   final UploadCostEstimate turboCostEstimate;
   final int totalSize;
@@ -471,7 +466,6 @@ class UploadPaymentInfo {
     required this.turboCostEstimate,
     required this.isFreeUploadPossibleUsingTurbo,
     required this.totalSize,
-    required this.isTurboAvailable,
     required this.turboBalance,
   });
 }

@@ -228,7 +228,6 @@ void main() {
             turboCostEstimate: mockUploadCostEstimateTurbo,
             isFreeUploadPossibleUsingTurbo: false,
             totalSize: 100,
-            isTurboAvailable: true,
             turboBalance: BigInt.from(100),
           ),
         ),

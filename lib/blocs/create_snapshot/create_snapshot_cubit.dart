@@ -469,8 +469,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   void _computeIsTurboEnabled() async {
-    bool isTurboEnabled = appConfig.useTurboUpload;
-    _isTurboUploadPossible = isTurboEnabled && _sufficentCreditsBalance;
+    _isTurboUploadPossible = _sufficentCreditsBalance;
   }
 
   void _computeIsSufficientBalance() {

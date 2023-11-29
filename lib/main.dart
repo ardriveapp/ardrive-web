@@ -109,14 +109,12 @@ Future<void> _initialize() async {
     ),
     ArDriveCrypto(),
   );
-  _turboUpload = config.useTurboUpload
-      ? TurboUploadService(
-          tabVisibilitySingleton: TabVisibilitySingleton(),
-          turboUploadUri: Uri.parse(config.defaultTurboUploadUrl!),
-          allowedDataItemSize: config.allowedDataItemSizeForTurbo,
-          httpClient: ArDriveHTTP(),
-        )
-      : DontUseUploadService();
+  _turboUpload = TurboUploadService(
+    tabVisibilitySingleton: TabVisibilitySingleton(),
+    turboUploadUri: Uri.parse(config.defaultTurboUploadUrl!),
+    allowedDataItemSize: config.allowedDataItemSizeForTurbo,
+    httpClient: ArDriveHTTP(),
+  );
 
   _turboPayment = config.useTurboPayment
       ? PaymentService(

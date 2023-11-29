@@ -6,7 +6,6 @@ part 'app_config.g.dart';
 @JsonSerializable()
 class AppConfig {
   final String? defaultArweaveGatewayUrl;
-  final bool useTurboUpload;
   final bool useTurboPayment;
   final String? defaultTurboUploadUrl;
   final String? defaultTurboPaymentUrl;
@@ -25,7 +24,6 @@ class AppConfig {
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
-    this.useTurboUpload = false,
     this.useTurboPayment = false,
     this.defaultTurboUploadUrl,
     this.defaultTurboPaymentUrl,
@@ -71,7 +69,6 @@ class AppConfig {
     return AppConfig(
       defaultArweaveGatewayUrl:
           defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
-      useTurboUpload: useTurboUpload ?? this.useTurboUpload,
       useTurboPayment: useTurboPayment ?? this.useTurboPayment,
       defaultTurboUploadUrl:
           defaultTurboUploadUrl ?? this.defaultTurboUploadUrl,

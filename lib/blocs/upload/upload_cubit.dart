@@ -380,7 +380,6 @@ class UploadCubit extends Cubit<UploadState> {
         isButtonEnabled = true;
       } else if (_uploadMethod == UploadMethod.turbo &&
           paymentInfo.isUploadEligibleToTurbo &&
-          paymentInfo.isTurboAvailable &&
           sufficientBalanceToPayWithTurbo) {
         logger.d('Enabling button for Turbo payment method');
         isButtonEnabled = true;
@@ -393,8 +392,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       emit(
         UploadReady(
-          isTurboUploadPossible: paymentInfo.isUploadEligibleToTurbo &&
-              paymentInfo.isTurboAvailable,
+          isTurboUploadPossible: paymentInfo.isUploadEligibleToTurbo,
           isZeroBalance: isTurboZeroBalance,
           turboCredits: literalBalance,
           uploadSize: paymentInfo.totalSize,
