@@ -354,7 +354,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                             ArDriveButton(
                               style: ArDriveButtonStyle.tertiary,
                               onPressed: () =>
-                                  openUrl(url: 'https://ardrive.io/'),
+                                  openUrl(url: Resources.ardrivePublicSiteLink),
                               text: appLocalizationsOf(context).whatIsArDrive,
                             ),
                             if (widget.isSharePage) ...[
@@ -447,7 +447,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
               const SizedBox(height: 16),
               ArDriveButton(
                 style: ArDriveButtonStyle.tertiary,
-                onPressed: () => openUrl(url: 'https://ardrive.io/'),
+                onPressed: () => openUrl(url: Resources.ardrivePublicSiteLink),
                 text: appLocalizationsOf(context).whatIsArDrive,
               ),
               if (widget.isSharePage) ...[
