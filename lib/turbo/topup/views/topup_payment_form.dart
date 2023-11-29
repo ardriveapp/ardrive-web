@@ -258,16 +258,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                             ),
                           ),
                           if (state.hasPromoCodeApplied)
-                            TextSpan(
-                              text:
-                                  ' (${state.humanReadableDiscountPercentage}% discount applied)', // TODO: localize
-                              style: ArDriveTypography.body.buttonNormalRegular(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgDisabled,
-                              ),
-                            ),
+                            _buildDiscountText(context, state),
                         ],
                       ),
                     );
@@ -277,6 +268,28 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  TextSpan _buildDiscountText(BuildContext context, PaymentFormState state) {
+    late String text;
+    final hasReachedMaximumDiscount = state.hasReachedMaximumDiscount;
+
+    if (hasReachedMaximumDiscount) {
+      text = appLocalizationsOf(context).turboUsdDiscountApplied(
+        state.adjustmentAmount!,
+      );
+    } else {
+      text = appLocalizationsOf(context).turboPercentageDiscountApplied(
+        state.humanReadableDiscountPercentage!,
+      );
+    }
+
+    return TextSpan(
+      text: ' $text',
+      style: ArDriveTypography.body.buttonNormalRegular(
+        color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
       ),
     );
   }

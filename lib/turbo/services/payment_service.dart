@@ -288,6 +288,25 @@ class PriceForFiat extends Equatable {
   final int? quotedPaymentAmount;
   final List<Adjustment> adjustments;
 
+  bool get hasReachedMaximumDiscount {
+    final maxDiscount = adjustments.first.maxDiscount;
+    if (maxDiscount == null) {
+      return false;
+    }
+
+    final adjustmentAmount = adjustments.first.adjustmentAmount;
+    return maxDiscount + adjustmentAmount == 0;
+  }
+
+  String? get adjustmentAmount {
+    if (adjustments.isEmpty) {
+      return null;
+    }
+
+    final adjustmentAmount = -adjustments.first.adjustmentAmount / 100;
+    return adjustmentAmount.toStringAsFixed(2);
+  }
+
   String? get humanReadableDiscountPercentage {
     if (adjustments.isEmpty) {
       return null;
