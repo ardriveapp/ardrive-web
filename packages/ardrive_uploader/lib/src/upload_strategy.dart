@@ -2,67 +2,36 @@ import 'dart:async';
 
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
-import 'package:ardrive_uploader/src/streamed_upload.dart';
+import 'package:ardrive_uploader/src/factories.dart';
 import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 
-abstract class UploadStrategy {
-  Future<void> uploadFile(
-    List<DataItemFile> dataItems,
-    FileUploadTask task,
-    Wallet wallet,
-    UploadController controller,
-    bool Function() verifyCancel,
-  );
-
-  Future<void> uploadFolder({
-    required FolderUploadTask task,
+abstract class UploadFileStrategy {
+  Future<void> uploadFile({
+    required List<DataItemFile> dataItems,
+    required FileUploadTask task,
     required Wallet wallet,
     required UploadController controller,
     required bool Function() verifyCancel,
   });
+}
 
-  Future<void> upload({
-    required List<DataItemFile> dataItemFiles,
-    required UploadTask task,
+class UploadFileUsingDataItemFiles extends UploadFileStrategy {
+  final StreamedUploadFactory _streamedUploadFactory;
+
+  UploadFileUsingDataItemFiles({
+    required StreamedUploadFactory streamedUploadFactory,
+  }) : _streamedUploadFactory = streamedUploadFactory;
+
+  @override
+  Future<void> uploadFile({
+    required List<DataItemFile> dataItems,
+    required FileUploadTask task,
     required Wallet wallet,
     required UploadController controller,
     required bool Function() verifyCancel,
   }) async {
-    if (task is FileUploadTask) {
-      return uploadFile(dataItemFiles, task, wallet, controller, verifyCancel);
-    } else if (task is FolderUploadTask) {
-      return uploadFolder(
-        task: task,
-        wallet: wallet,
-        controller: controller,
-        verifyCancel: verifyCancel,
-      );
-    } else {
-      throw Exception('Unknown upload task type');
-    }
-  }
-}
-
-class UploadFileUsingDataItemFiles extends UploadStrategy {
-  final DataBundler _dataBundler;
-  final StreamedUploadFactory _streamedUploadFactory;
-
-  UploadFileUsingDataItemFiles({
-    required DataBundler dataBundler,
-    required StreamedUploadFactory streamedUploadFactory,
-  })  : _streamedUploadFactory = streamedUploadFactory,
-        _dataBundler = dataBundler;
-
-  @override
-  Future<void> uploadFile(
-    List<DataItemFile> dataItems,
-    FileUploadTask task,
-    Wallet wallet,
-    UploadController controller,
-    bool Function() verifyCancel,
-  ) async {
     /// sends the metadata item first
     final dataItemResults = await createDataItemResultFromDataItemFiles(
       dataItems,
@@ -158,25 +127,9 @@ class UploadFileUsingDataItemFiles extends UploadStrategy {
       ),
     );
   }
-
-  @override
-  Future<void> uploadFolder({
-    required FolderUploadTask task,
-    required Wallet wallet,
-    required UploadController controller,
-    required bool Function() verifyCancel,
-  }) async {
-    return _uploadFolder(
-      task: task,
-      wallet: wallet,
-      controller: controller,
-      verifyCancel: verifyCancel,
-      dataBundler: _dataBundler,
-    );
-  }
 }
 
-class UploadFileUsingBundleStrategy extends UploadStrategy {
+class UploadFileUsingBundleStrategy extends UploadFileStrategy {
   final DataBundler _dataBundler;
   final StreamedUploadFactory _streamedUploadFactory;
 
@@ -187,13 +140,13 @@ class UploadFileUsingBundleStrategy extends UploadStrategy {
         _streamedUploadFactory = streamedUploadFactory;
 
   @override
-  Future<void> uploadFile(
-    List<DataItemFile> dataItems,
-    FileUploadTask task,
-    Wallet wallet,
-    UploadController controller,
-    bool Function() verifyCancel,
-  ) async {
+  Future<void> uploadFile({
+    required List<DataItemFile> dataItems,
+    required FileUploadTask task,
+    required Wallet wallet,
+    required UploadController controller,
+    required bool Function() verifyCancel,
+  }) async {
     final bundle = await _dataBundler.createDataBundle(
       file: task.file,
       metadata: task.metadata,
@@ -266,22 +219,6 @@ class UploadFileUsingBundleStrategy extends UploadStrategy {
       ),
     );
   }
-
-  @override
-  Future<void> uploadFolder({
-    required FolderUploadTask task,
-    required Wallet wallet,
-    required UploadController controller,
-    required bool Function() verifyCancel,
-  }) {
-    return _uploadFolder(
-      task: task,
-      wallet: wallet,
-      controller: controller,
-      verifyCancel: verifyCancel,
-      dataBundler: _dataBundler,
-    );
-  }
 }
 
 Future<void> _uploadFolder({
@@ -292,40 +229,40 @@ Future<void> _uploadFolder({
   required DataBundler dataBundler,
 }) async {
   // creates the bundle for folders
-  // final bundle = await dataBundler.createDataBundleForEntities(
-  //   entities: task.folders,
-  //   wallet: wallet,
-  //   driveKey: task.encryptionKey,
-  // );
+  final bundle = await dataBundler.createDataBundleForEntities(
+    entities: task.folders,
+    wallet: wallet,
+    driveKey: task.encryptionKey,
+  );
 
-  // final folderBundle = (bundle).first.dataItemResult;
+  final folderBundle = (bundle).first.dataItemResult;
 
-  // if (folderBundle is TransactionResult) {
-  //   controller.updateProgress(
-  //     task: task.copyWith(
-  //       uploadItem: TransactionUploadItem(
-  //         size: folderBundle.dataSize,
-  //         data: folderBundle,
-  //       ),
-  //     ),
-  //   );
-  // } else if (bundle is DataItemResult) {
-  //   controller.updateProgress(
-  //     task: task.copyWith(
-  //       uploadItem: DataItemUploadItem(
-  //         size: folderBundle.dataItemSize,
-  //         data: folderBundle,
-  //       ),
-  //     ),
-  //   );
-  // } else {
-  //   throw Exception('Unknown bundle type');
-  // }
+  if (folderBundle is TransactionResult) {
+    controller.updateProgress(
+      task: task.copyWith(
+        uploadItem: TransactionUploadItem(
+          size: folderBundle.dataSize,
+          data: folderBundle,
+        ),
+      ),
+    );
+  } else if (bundle is DataItemResult) {
+    controller.updateProgress(
+      task: task.copyWith(
+        uploadItem: DataItemUploadItem(
+          size: folderBundle.dataItemSize,
+          data: folderBundle,
+        ),
+      ),
+    );
+  } else {
+    throw Exception('Unknown bundle type');
+  }
 
-  // if (verifyCancel()) {
-  //   print('Upload canceled after bundle creation and before upload');
-  //   throw Exception('Upload canceled');
-  // }
+  if (verifyCancel()) {
+    print('Upload canceled after bundle creation and before upload');
+    throw Exception('Upload canceled');
+  }
 
   // final result = await task.streamedUpload.send(task, wallet, (progress) {
   //   controller.updateProgress(

@@ -1,7 +1,10 @@
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/cost_calculator.dart';
+import 'package:ardrive_uploader/src/d2n_streamed_upload.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
+import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
+import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_uploader/src/upload_strategy.dart';
 import 'package:arweave/arweave.dart';
 import 'package:pst/pst.dart';
@@ -55,7 +58,7 @@ abstract class DataBundlerFactory {
 }
 
 abstract class UploadFileStrategyFactory {
-  UploadStrategy createUploadStrategy({
+  UploadFileStrategy createUploadStrategy({
     required UploadType type,
   });
 
@@ -74,15 +77,13 @@ class _UploadFileStrategyFactory implements UploadFileStrategyFactory {
       this._dataBundlerFactory, this._streamedUploadFactory);
 
   @override
-  UploadStrategy createUploadStrategy({
+  UploadFileStrategy createUploadStrategy({
     required UploadType type,
   }) {
     switch (type) {
       case UploadType.turbo:
         return UploadFileUsingDataItemFiles(
-          dataBundler: _dataBundlerFactory.createDataBundler(type),
-          streamedUploadFactory: _streamedUploadFactory,
-        );
+            streamedUploadFactory: _streamedUploadFactory);
       case UploadType.d2n:
         return UploadFileUsingBundleStrategy(
           dataBundler: _dataBundlerFactory.createDataBundler(type),
@@ -90,6 +91,30 @@ class _UploadFileStrategyFactory implements UploadFileStrategyFactory {
         );
       default:
         throw Exception('Invalid upload type');
+    }
+  }
+}
+
+class StreamedUploadFactory {
+  final Uri turboUploadUri;
+
+  StreamedUploadFactory({
+    required this.turboUploadUri,
+  });
+
+  StreamedUpload fromUploadType(
+    UploadType type,
+  ) {
+    if (type == UploadType.d2n) {
+      return D2NStreamedUpload();
+    } else if (type == UploadType.turbo) {
+      return TurboStreamedUpload(
+        TurboUploadServiceImpl(
+          turboUploadUri: turboUploadUri,
+        ),
+      );
+    } else {
+      throw Exception('Invalid upload type');
     }
   }
 }

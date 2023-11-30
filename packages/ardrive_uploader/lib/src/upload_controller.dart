@@ -24,12 +24,12 @@ abstract class UploadController {
   void onCompleteTask(Function(UploadTask tasks) callback);
   void sendTasks(
     Wallet wallet,
-    UploadStrategy strategy,
+    UploadFileStrategy strategy,
   );
   void sendTask(
     UploadTask task,
     Wallet wallet,
-    UploadStrategy strategy, {
+    UploadFileStrategy strategy, {
     Function()? onTaskCompleted,
   });
   void addTask(
@@ -152,7 +152,7 @@ class _UploadController implements UploadController {
   @override
   void sendTasks(
     Wallet wallet,
-    UploadStrategy strategy,
+    UploadFileStrategy strategy,
   ) {
     if (tasks.isEmpty) {
       throw Exception('No tasks to send');
@@ -202,7 +202,7 @@ class _UploadController implements UploadController {
   void sendTask(
     UploadTask task,
     Wallet wallet,
-    UploadStrategy strategy, {
+    UploadFileStrategy strategy, {
     Function()? onTaskCompleted,
   }) {
     UploadWorker(
@@ -789,11 +789,11 @@ class UploadTaskCancelToken {
 }
 
 class UploadSender {
-  final UploadStrategy _uploadStrategy;
+  final UploadFileStrategy _uploadStrategy;
   final DataBundler _dataBundler;
 
   UploadSender({
-    required UploadStrategy uploadStrategy,
+    required UploadFileStrategy uploadStrategy,
     required DataBundler dataBundler,
   })  : _dataBundler = dataBundler,
         _uploadStrategy = uploadStrategy;
@@ -825,8 +825,8 @@ class UploadSender {
         },
       );
 
-      return _uploadStrategy.upload(
-        dataItemFiles: dataItems,
+      return _uploadStrategy.uploadFile(
+        dataItems: dataItems,
         task: task,
         wallet: wallet,
         controller: controller,

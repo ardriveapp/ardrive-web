@@ -8,12 +8,13 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 class TurboStreamedUpload implements StreamedUpload<UploadItem> {
-  final TurboUploadService _turbo;
+  @visibleForTesting
+  final TurboUploadService service;
   final TabVisibilitySingleton _tabVisibility;
   StreamedUploadResult? _result;
 
   TurboStreamedUpload(
-    this._turbo, {
+    this.service, {
     TabVisibilitySingleton? tabVisibilitySingleton,
   }) : _tabVisibility = tabVisibilitySingleton ?? TabVisibilitySingleton();
 
@@ -75,7 +76,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadItem> {
     // }
 
     // gets the streamed request
-    final streamedRequest = _turbo
+    final streamedRequest = service
         .postStream(
             wallet: wallet,
             headers: {
@@ -111,13 +112,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadItem> {
     UploadItem handle,
   ) async {
     _isCanceled = true;
-    await _turbo.cancel();
-
-    // controller.updateProgress(
-    //   task: handle.copyWith(
-    //     status: UploadStatus.canceled,
-    //   ),
-    // );
+    await service.cancel();
   }
 
   bool _isCanceled = false;

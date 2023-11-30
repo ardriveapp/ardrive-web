@@ -1,6 +1,9 @@
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/d2n_streamed_upload.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/factories.dart';
+import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
+import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_uploader/src/upload_strategy.dart';
 import 'package:arweave/arweave.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,6 +20,8 @@ class MockPstService extends Mock implements PstService {}
 class MockDataBundlerFactory extends Mock implements DataBundlerFactory {}
 
 class MockDataBundler extends Mock implements DataBundler {}
+
+class MockStreamedUploadFactory extends Mock implements StreamedUploadFactory {}
 
 void main() {
   setUpAll(() {
@@ -54,10 +59,13 @@ void main() {
   group('UploadFileStrategyFactory', () {
     late MockDataBundlerFactory mockDataBundlerFactory;
     late UploadFileStrategyFactory strategyFactory;
+    late MockStreamedUploadFactory mockStreamedUploadFactory;
 
     setUp(() {
       mockDataBundlerFactory = MockDataBundlerFactory();
-      strategyFactory = UploadFileStrategyFactory(mockDataBundlerFactory);
+      mockStreamedUploadFactory = MockStreamedUploadFactory();
+      strategyFactory = UploadFileStrategyFactory(
+          mockDataBundlerFactory, mockStreamedUploadFactory);
     });
 
     test('should return UploadFileUsingDataItemFiles for UploadType.turbo', () {
@@ -77,6 +85,31 @@ void main() {
       var strategy = strategyFactory.createUploadStrategy(type: UploadType.d2n);
 
       expect(strategy, isA<UploadFileUsingBundleStrategy>());
+    });
+  });
+  group('StreamedUploadFactory', () {
+    late Uri mockUri;
+    late StreamedUploadFactory uploadFactory;
+
+    setUp(() {
+      mockUri = Uri.parse('https://example.com');
+      uploadFactory = StreamedUploadFactory(turboUploadUri: mockUri);
+    });
+
+    test('should return D2NStreamedUpload for UploadType.d2n', () {
+      var streamedUpload = uploadFactory.fromUploadType(UploadType.d2n);
+      expect(streamedUpload, isA<D2NStreamedUpload>());
+    });
+
+    test('should return TurboStreamedUpload for UploadType.turbo', () {
+      var streamedUpload = uploadFactory.fromUploadType(UploadType.turbo);
+      expect(streamedUpload, isA<TurboStreamedUpload>());
+
+      // Additional check to verify TurboUploadServiceImpl initialization
+      var turboUploadUri = ((streamedUpload as TurboStreamedUpload).service
+              as TurboUploadServiceImpl)
+          .turboUploadUri;
+      expect(turboUploadUri, equals(mockUri));
     });
   });
 }
