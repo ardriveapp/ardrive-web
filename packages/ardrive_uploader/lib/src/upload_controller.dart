@@ -24,12 +24,10 @@ abstract class UploadController {
   void onCompleteTask(Function(UploadTask tasks) callback);
   void sendTasks(
     Wallet wallet,
-    UploadFileStrategy strategy,
   );
   void sendTask(
     UploadTask task,
-    Wallet wallet,
-    UploadFileStrategy strategy, {
+    Wallet wallet, {
     Function()? onTaskCompleted,
   });
   void addTask(
@@ -152,7 +150,6 @@ class _UploadController implements UploadController {
   @override
   void sendTasks(
     Wallet wallet,
-    UploadFileStrategy strategy,
   ) {
     if (tasks.isEmpty) {
       throw Exception('No tasks to send');
@@ -201,11 +198,10 @@ class _UploadController implements UploadController {
   @override
   void sendTask(
     UploadTask task,
-    Wallet wallet,
-    UploadFileStrategy strategy, {
+    Wallet wallet, {
     Function()? onTaskCompleted,
   }) {
-    UploadWorker(
+    final worker = UploadWorker(
       onError: (task, e) {
         debugPrint('Error on UploadWorker: $e');
         final updatedTask = tasks[task.id]!;
@@ -224,7 +220,9 @@ class _UploadController implements UploadController {
       onTaskCompleted: () {
         onTaskCompleted?.call();
       },
-    ).addTask(task);
+    );
+
+    worker.addTask(task);
   }
 
   @override
@@ -547,7 +545,7 @@ class WorkerPool {
       final worker = UploadWorker(
         upload: upload,
         onError: (task, exception) => onWorkerError(task),
-        // maxTasks: maxTasksPerWorker,
+        maxTasks: maxTasksPerWorker,
         onTaskCompleted: () {
           if (_isCanceled) {
             return;
@@ -556,19 +554,16 @@ class WorkerPool {
           _assignNextTask(i);
         },
       );
-
-      if (taskQueue.isNotEmpty) {
-        worker.addTask(taskQueue.removeAt(0));
-      }
-
       return worker;
     });
   }
 
   void _initializeWorkers() {
     for (var i = 0; i < numWorkers; i++) {
+      debugPrint('Initializing worker with index $i');
+
       for (var j = 0; j < maxTasksPerWorker; j++) {
-        debugPrint('Initializing workers index $i');
+        debugPrint('Assigning task $j to worker with index $i');
 
         _assignNextTask(i);
       }
@@ -789,14 +784,17 @@ class UploadTaskCancelToken {
 }
 
 class UploadSender {
-  final UploadFileStrategy _uploadStrategy;
+  final UploadFileStrategy _uploadFileStrategy;
+  final UploadFolderStructureStrategy _uploadFolderStrategy;
   final DataBundler _dataBundler;
 
   UploadSender({
     required UploadFileStrategy uploadStrategy,
     required DataBundler dataBundler,
+    required UploadFolderStructureStrategy uploadFolderStrategy,
   })  : _dataBundler = dataBundler,
-        _uploadStrategy = uploadStrategy;
+        _uploadFolderStrategy = uploadFolderStrategy,
+        _uploadFileStrategy = uploadStrategy;
 
   Future<void> send({
     required UploadTask task,
@@ -825,8 +823,15 @@ class UploadSender {
         },
       );
 
-      return _uploadStrategy.uploadFile(
+      return _uploadFileStrategy.uploadFile(
         dataItems: dataItems,
+        task: task,
+        wallet: wallet,
+        controller: controller,
+        verifyCancel: verifyCancel,
+      );
+    } else if (task is FolderUploadTask) {
+      return _uploadFolderStrategy.uploadFolder(
         task: task,
         wallet: wallet,
         controller: controller,
@@ -834,6 +839,6 @@ class UploadSender {
       );
     }
 
-    // TODO: implement folder upload
+    throw Exception('Invalid task type');
   }
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/factories.dart';
+import 'package:ardrive_uploader/src/upload_strategy.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
@@ -78,6 +79,7 @@ abstract class ArDriveUploader {
       uploadFileStrategyFactory:
           UploadFileStrategyFactory(dataBundlerFactory, streamedUploadFactory),
       metadataGenerator: metadataGenerator,
+      streamedUploadFactory: streamedUploadFactory,
     );
   }
 }
@@ -87,13 +89,16 @@ class _ArDriveUploader implements ArDriveUploader {
     required DataBundlerFactory dataBundlerFactory,
     required ARFSUploadMetadataGenerator metadataGenerator,
     required UploadFileStrategyFactory uploadFileStrategyFactory,
+    required StreamedUploadFactory streamedUploadFactory,
   })  : _dataBundlerFactory = dataBundlerFactory,
+        _streamedUploadFactory = streamedUploadFactory,
         _metadataGenerator = metadataGenerator,
         _uploadFileStrategyFactory = uploadFileStrategyFactory;
 
   final DataBundlerFactory _dataBundlerFactory;
   final UploadFileStrategyFactory _uploadFileStrategyFactory;
   final ARFSUploadMetadataGenerator _metadataGenerator;
+  final StreamedUploadFactory _streamedUploadFactory;
 
   @override
   Future<UploadController> upload({
@@ -103,15 +108,23 @@ class _ArDriveUploader implements ArDriveUploader {
     SecretKey? driveKey,
     required UploadType type,
   }) async {
+    final dataBundler = _dataBundlerFactory.createDataBundler(
+      type,
+    );
+
+    final uploadFolderStrategy = UploadFolderStructureAsBundleStrategy(
+      dataBundler: dataBundler,
+      streamedUploadFactory: _streamedUploadFactory,
+    );
+
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       UploadSender(
-        dataBundler: _dataBundlerFactory.createDataBundler(
-          type,
-        ),
+        dataBundler: dataBundler,
         uploadStrategy: _uploadFileStrategyFactory.createUploadStrategy(
           type: type,
         ),
+        uploadFolderStrategy: uploadFolderStrategy,
       ),
       numOfWorkers: 1,
       maxTasksPerWorker: 1,
@@ -132,11 +145,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
     uploadController.addTask(uploadTask);
 
-    final strategy = _uploadFileStrategyFactory.createUploadStrategy(
-      type: type,
-    );
-
-    uploadController.sendTasks(wallet, strategy);
+    uploadController.sendTasks(wallet);
 
     return uploadController;
   }
@@ -154,13 +163,18 @@ class _ArDriveUploader implements ArDriveUploader {
       type,
     );
 
-    final uploadStrategy = _uploadFileStrategyFactory.createUploadStrategy(
+    final uploadFileStrategy = _uploadFileStrategyFactory.createUploadStrategy(
       type: type,
     );
 
+    final uploadFolderStrategy = UploadFolderStructureAsBundleStrategy(
+        dataBundler: dataBundler,
+        streamedUploadFactory: _streamedUploadFactory);
+
     final uploadSender = UploadSender(
       dataBundler: dataBundler,
-      uploadStrategy: uploadStrategy,
+      uploadStrategy: uploadFileStrategy,
+      uploadFolderStrategy: uploadFolderStrategy,
     );
 
     final uploadController = UploadController(
@@ -192,11 +206,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
     uploadController.updateProgress();
 
-    final strategy = _uploadFileStrategyFactory.createUploadStrategy(
-      type: type,
-    );
-
-    uploadController.sendTasks(wallet, strategy);
+    uploadController.sendTasks(wallet);
 
     return uploadController;
   }
@@ -219,9 +229,14 @@ class _ArDriveUploader implements ArDriveUploader {
       type: type,
     );
 
+    final uploadFolderStrategy = UploadFolderStructureAsBundleStrategy(
+        dataBundler: dataBundler,
+        streamedUploadFactory: _streamedUploadFactory);
+
     final uploadSender = UploadSender(
       dataBundler: dataBundler,
       uploadStrategy: uploadStrategy,
+      uploadFolderStrategy: uploadFolderStrategy,
     );
 
     final filesWitMetadatas = <(ARFSFileUploadMetadata, IOFile)>[];
@@ -273,18 +288,13 @@ class _ArDriveUploader implements ArDriveUploader {
       uploadController.addTask(fileTask);
     }
 
-    final strategy = _uploadFileStrategyFactory.createUploadStrategy(
-      type: type,
-    );
-
     if (folderUploadTask != null) {
       // first sends the upload task for the folder and then uploads the files
-      uploadController.sendTask(folderUploadTask, wallet, strategy,
-          onTaskCompleted: () {
-        uploadController.sendTasks(wallet, strategy);
+      uploadController.sendTask(folderUploadTask, wallet, onTaskCompleted: () {
+        uploadController.sendTasks(wallet);
       });
     } else {
-      uploadController.sendTasks(wallet, strategy);
+      uploadController.sendTasks(wallet);
     }
 
     return uploadController;

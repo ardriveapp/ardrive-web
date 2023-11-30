@@ -17,6 +17,15 @@ abstract class UploadFileStrategy {
   });
 }
 
+abstract class UploadFolderStructureStrategy {
+  Future<void> uploadFolder({
+    required FolderUploadTask task,
+    required Wallet wallet,
+    required UploadController controller,
+    required bool Function() verifyCancel,
+  });
+}
+
 class UploadFileUsingDataItemFiles extends UploadFileStrategy {
   final StreamedUploadFactory _streamedUploadFactory;
 
@@ -221,64 +230,80 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
   }
 }
 
-Future<void> _uploadFolder({
-  required FolderUploadTask task,
-  required Wallet wallet,
-  required UploadController controller,
-  required bool Function() verifyCancel,
-  required DataBundler dataBundler,
-}) async {
-  // creates the bundle for folders
-  final bundle = await dataBundler.createDataBundleForEntities(
-    entities: task.folders,
-    wallet: wallet,
-    driveKey: task.encryptionKey,
-  );
+class UploadFolderStructureAsBundleStrategy
+    extends UploadFolderStructureStrategy {
+  final DataBundler _dataBundler;
+  final StreamedUploadFactory _streamedUploadFactory;
 
-  final folderBundle = (bundle).first.dataItemResult;
+  UploadFolderStructureAsBundleStrategy({
+    required DataBundler dataBundler,
+    required StreamedUploadFactory streamedUploadFactory,
+  })  : _dataBundler = dataBundler,
+        _streamedUploadFactory = streamedUploadFactory;
 
-  if (folderBundle is TransactionResult) {
-    controller.updateProgress(
-      task: task.copyWith(
+  @override
+  Future<void> uploadFolder({
+    required FolderUploadTask task,
+    required Wallet wallet,
+    required UploadController controller,
+    required bool Function() verifyCancel,
+  }) async {
+    // creates the bundle for folders
+    final bundle = await _dataBundler.createDataBundleForEntities(
+      entities: task.folders,
+      wallet: wallet,
+      driveKey: task.encryptionKey,
+    );
+
+    final folderBundle = (bundle).first.dataItemResult;
+
+    FolderUploadTask folderTask = task;
+
+    if (folderBundle is TransactionResult) {
+      folderTask = folderTask.copyWith(
         uploadItem: TransactionUploadItem(
           size: folderBundle.dataSize,
           data: folderBundle,
         ),
-      ),
-    );
-  } else if (bundle is DataItemResult) {
-    controller.updateProgress(
-      task: task.copyWith(
+      );
+
+      controller.updateProgress(task: folderTask);
+    } else if (folderBundle is DataItemResult) {
+      folderTask = folderTask.copyWith(
         uploadItem: DataItemUploadItem(
-          size: folderBundle.dataItemSize,
+          size: folderBundle.dataSize,
           data: folderBundle,
         ),
+      );
+      controller.updateProgress(task: folderTask);
+    } else {
+      throw Exception('Unknown bundle type');
+    }
+
+    if (verifyCancel()) {
+      print('Upload canceled after bundle creation and before upload');
+      throw Exception('Upload canceled');
+    }
+
+    final streamedUpload =
+        _streamedUploadFactory.fromUploadType(folderTask.type);
+
+    final result =
+        await streamedUpload.send(folderTask.uploadItem!, wallet, (progress) {
+      folderTask = folderTask.copyWith(
+        progress: progress,
+      );
+      controller.updateProgress(task: folderTask);
+    });
+
+    if (!result.success) {
+      throw Exception('Failed to upload bundle');
+    }
+
+    controller.updateProgress(
+      task: folderTask.copyWith(
+        status: UploadStatus.complete,
       ),
     );
-  } else {
-    throw Exception('Unknown bundle type');
   }
-
-  if (verifyCancel()) {
-    print('Upload canceled after bundle creation and before upload');
-    throw Exception('Upload canceled');
-  }
-
-  // final result = await task.streamedUpload.send(task, wallet, (progress) {
-  //   controller.updateProgress(
-  //     task: task.copyWith(
-  //       progress: progress,
-  //     ),
-  //   );
-  // });
-
-  // if (!result.success) {
-  //   throw Exception('Failed to upload bundle');
-  // }
-
-  // controller.updateProgress(
-  //   task: task.copyWith(
-  //     status: UploadStatus.complete,
-  //   ),
-  // );
 }
