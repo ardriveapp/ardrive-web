@@ -664,6 +664,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           widget.item.contentType,
+          textAlign: TextAlign.right,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
         itemTitle: appLocalizationsOf(context).fileType,
@@ -919,7 +920,7 @@ class DetailsPanelItem extends StatelessWidget {
                   ],
                 ),
               ),
-              if (leading != null) leading!,
+              if (leading != null) Flexible(child: leading!),
             ],
           ),
         ),
