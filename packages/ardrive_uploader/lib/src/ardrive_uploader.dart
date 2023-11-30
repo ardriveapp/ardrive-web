@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/factories.dart';
-import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
@@ -75,11 +74,9 @@ abstract class ArDriveUploader {
     );
 
     return _ArDriveUploader(
-      turboUploadUri: turboUploadUri,
       dataBundlerFactory: dataBundlerFactory,
       uploadFileStrategyFactory:
           UploadFileStrategyFactory(dataBundlerFactory, streamedUploadFactory),
-      streamedUploadFactory: streamedUploadFactory,
       metadataGenerator: metadataGenerator,
     );
   }
@@ -89,20 +86,14 @@ class _ArDriveUploader implements ArDriveUploader {
   _ArDriveUploader({
     required DataBundlerFactory dataBundlerFactory,
     required ARFSUploadMetadataGenerator metadataGenerator,
-    required Uri turboUploadUri,
-    required StreamedUploadFactory streamedUploadFactory,
     required UploadFileStrategyFactory uploadFileStrategyFactory,
   })  : _dataBundlerFactory = dataBundlerFactory,
-        _turboUploadUri = turboUploadUri,
         _metadataGenerator = metadataGenerator,
-        _uploadFileStrategyFactory = uploadFileStrategyFactory,
-        _streamedUploadFactory = streamedUploadFactory;
+        _uploadFileStrategyFactory = uploadFileStrategyFactory;
 
-  final StreamedUploadFactory _streamedUploadFactory;
   final DataBundlerFactory _dataBundlerFactory;
   final UploadFileStrategyFactory _uploadFileStrategyFactory;
   final ARFSUploadMetadataGenerator _metadataGenerator;
-  final Uri _turboUploadUri;
 
   @override
   Future<UploadController> upload({
