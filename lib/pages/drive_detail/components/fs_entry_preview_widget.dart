@@ -1269,7 +1269,6 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
 
   @override
   void dispose() {
-    MobileScreenOrientation.lockInPortraitUp();
     _cancelHideControlsTimer();
     if (widget.isFullScreen) {
       MobileStatusBar.show();
@@ -1645,6 +1644,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
 
   Future<void> _toggleFullScreen() async {
     if (widget.isFullScreen) {
+      MobileScreenOrientation.lockInPortraitUp();
       Navigator.of(context).pop();
     } else {
       MobileScreenOrientation.lockInLandscape();
