@@ -513,12 +513,6 @@ class UploadWorker {
       onError(task, e);
     }
   }
-
-  void cancel() {
-    _isCanceled = true;
-  }
-
-  bool _isCanceled = false;
 }
 
 class WorkerPool {
@@ -579,9 +573,6 @@ class WorkerPool {
 
   void cancel() {
     _isCanceled = true;
-    for (var element in workers) {
-      element.cancel();
-    }
   }
 
   bool get isCanceled => _isCanceled;
