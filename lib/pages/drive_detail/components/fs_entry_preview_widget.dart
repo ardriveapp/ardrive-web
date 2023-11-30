@@ -1264,6 +1264,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
 
   @override
   void dispose() {
+    MobileScreenOrientation.lockInPortraitUp();
     _cancelHideControlsTimer();
     if (widget.isFullScreen) {
       MobileStatusBar.show();
@@ -1637,6 +1638,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     if (widget.isFullScreen) {
       Navigator.of(context).pop();
     } else {
+      MobileScreenOrientation.lockInLandscape();
       await Navigator.of(context).push(
         PageRouteBuilder(
           barrierDismissible: true,
