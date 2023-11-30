@@ -281,7 +281,7 @@ class UploadFolderStructureAsBundleStrategy
     }
 
     if (verifyCancel()) {
-      print('Upload canceled after bundle creation and before upload');
+      debugPrint('Upload canceled after bundle creation and before upload');
       throw Exception('Upload canceled');
     }
 
