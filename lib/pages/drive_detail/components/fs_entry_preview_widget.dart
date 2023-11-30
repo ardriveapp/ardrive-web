@@ -1298,27 +1298,18 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       valueListenable: FsEntryPreviewCubit.imagePreviewNotifier,
       builder: (context, imagePreview, _) {
         final isLoading = imagePreview.isLoading;
-        if (isLoading) {
-          return const Center(
-            child: SizedBox(
-              height: 24,
-              width: 24,
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-        if (!imagePreview.isPreviewable) {
-          return const UnpreviewableContent();
-        }
+
         if (!widget.isFullScreen) {
           return _buildImageFromBytes(
-            imagePreview.dataBytes!,
+            imagePreview.dataBytes,
             withTapRegion: false,
+            isLoading: isLoading,
           );
         } else {
           return _buildImageFromBytes(
-            imagePreview.dataBytes!,
+            imagePreview.dataBytes,
             withTapRegion: true,
+            isLoading: isLoading,
           );
         }
       },
@@ -1326,18 +1317,37 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildImageFromBytes(
-    Uint8List imageBytes, {
+    Uint8List? imageBytes, {
     required bool withTapRegion,
+    required bool isLoading,
   }) {
-    if (!withTapRegion) {
-      return ArDriveImage(
-        fit: BoxFit.contain,
-        height: double.maxFinite,
-        width: double.maxFinite,
-        image: MemoryImage(
-          imageBytes,
+    final Widget content;
+
+    if (isLoading) {
+      content = const Center(
+        child: SizedBox(
+          height: 24,
+          width: 24,
+          child: CircularProgressIndicator(),
         ),
       );
+    } else {
+      if (imageBytes == null) {
+        content = const UnpreviewableContent();
+      } else {
+        content = ArDriveImage(
+          fit: BoxFit.contain,
+          height: double.maxFinite,
+          width: double.maxFinite,
+          image: MemoryImage(
+            imageBytes,
+          ),
+        );
+      }
+    }
+
+    if (!withTapRegion) {
+      return content;
     }
     return MouseRegion(
       onHover: (event) {
@@ -1357,7 +1367,9 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       },
       cursor:
           _controlsVisible ? SystemMouseCursors.click : SystemMouseCursors.none,
+      hitTestBehavior: HitTestBehavior.opaque,
       child: TapRegion(
+        behavior: HitTestBehavior.opaque,
         onTapInside: (event) {
           setState(() {
             _cancelHideControlsTimer();
@@ -1368,14 +1380,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
             }
           });
         },
-        child: ArDriveImage(
-          fit: BoxFit.contain,
-          height: double.maxFinite,
-          width: double.maxFinite,
-          image: MemoryImage(
-            imageBytes,
-          ),
-        ),
+        child: content,
       ),
     );
   }
