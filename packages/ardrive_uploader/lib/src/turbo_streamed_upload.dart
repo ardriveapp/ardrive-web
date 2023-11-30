@@ -100,6 +100,9 @@ class TurboStreamedUpload implements StreamedUpload<UploadItem> {
 
     await streamedRequest;
 
+    debugPrint(
+        'TurboStreamedUpload.send completed with result: ${_result?.success}');
+
     return _result!;
   }
 

@@ -165,9 +165,11 @@ class _UploadController implements UploadController {
       taskQueue: tasks.values
           .where((element) => element.status == UploadStatus.notStarted)
           .toList(),
-      onError: (e) {
-        tasks[e.id] = e.copyWith(status: UploadStatus.failed);
-        updateProgress(task: e);
+      onWorkerError: (e) {
+        debugPrint('Error on WorkerPool: $e');
+        final updatedTask = tasks[e.id]!;
+
+        updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
       },
       upload: (task) async {
         return _uploadSender.send(
@@ -205,8 +207,9 @@ class _UploadController implements UploadController {
   }) {
     UploadWorker(
       onError: (task, e) {
-        tasks[task.id] = task.copyWith(status: UploadStatus.failed);
-        updateProgress(task: task);
+        debugPrint('Error on UploadWorker: $e');
+        final updatedTask = tasks[task.id]!;
+        updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
       },
       upload: (task) async {
         return _uploadSender.send(
@@ -526,14 +529,14 @@ class WorkerPool {
   final List<UploadTask> taskQueue;
   late List<UploadWorker> workers;
   final Function(UploadTask) upload;
-  final Function(UploadTask) onError;
+  final Function(UploadTask) onWorkerError;
 
   WorkerPool({
     required this.numWorkers,
     required this.maxTasksPerWorker,
     required this.taskQueue,
     required this.upload,
-    required this.onError,
+    required this.onWorkerError,
   }) {
     _setWorkerCallbacks();
     _initializeWorkers();
@@ -541,11 +544,10 @@ class WorkerPool {
 
   void _setWorkerCallbacks() {
     workers = List<UploadWorker>.generate(numWorkers, (i) {
-      return UploadWorker(
+      final worker = UploadWorker(
         upload: upload,
-        onError: (task, exception) => onError(task),
+        onError: (task, exception) => onWorkerError(task),
         // maxTasks: maxTasksPerWorker,
-        task: taskQueue.isNotEmpty ? taskQueue.removeAt(0) : null,
         onTaskCompleted: () {
           if (_isCanceled) {
             return;
@@ -554,6 +556,12 @@ class WorkerPool {
           _assignNextTask(i);
         },
       );
+
+      if (taskQueue.isNotEmpty) {
+        worker.addTask(taskQueue.removeAt(0));
+      }
+
+      return worker;
     });
   }
 

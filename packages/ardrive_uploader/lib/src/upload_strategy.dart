@@ -137,7 +137,6 @@ class UploadFileUsingDataItemFiles extends UploadStrategy {
       dataItemTask.uploadItem!,
       wallet,
       (progress) {
-        debugPrint('Progress: $progress');
         controller.updateProgress(
           task: dataItemTask.copyWith(
             progress: progress,
@@ -147,6 +146,7 @@ class UploadFileUsingDataItemFiles extends UploadStrategy {
     );
 
     if (!result.success) {
+      debugPrint('Failed to upload data item');
       throw Exception('Failed to upload data item');
     }
 
