@@ -273,7 +273,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   TextSpan _buildDiscountText(BuildContext context, PaymentFormState state) {
-    late String text;
+    final String text;
     final hasReachedMaximumDiscount = state.hasReachedMaximumDiscount;
 
     if (hasReachedMaximumDiscount) {
