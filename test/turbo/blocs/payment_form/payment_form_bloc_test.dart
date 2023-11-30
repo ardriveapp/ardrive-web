@@ -526,14 +526,12 @@ void main() {
           final discountFactor = validPromoCodes[promoCode];
           const maxDiscount = 5;
 
-          if (promoCode == 'NETWORK ERROR') {
-            throw Exception();
-          }
-
           if (isValidPromoCode) {
             final quotedAmount = (initialPriceEstimate.priceInCurrency).floor();
             final magnitude = (100 - (100 * discountFactor!)) / 100;
             int adjustmentAmount = (quotedAmount * discountFactor).floor();
+
+            // Here we simulate that the discount has reached the maximum
             if (adjustmentAmount > maxDiscount) {
               adjustmentAmount = maxDiscount;
             }
@@ -560,8 +558,6 @@ void main() {
               priceInCurrency: 10,
               estimatedStorage: 1,
             );
-
-            // estimateInState = priceEstimate;
 
             return priceEstimate;
           } else {
