@@ -1468,9 +1468,18 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       return AnimatedOpacity(
         opacity: _controlsVisible ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 200),
-        child: Container(
-          color: theme.themeData.colors.themeBgCanvas,
-          child: actionBar,
+        child: MouseRegion(
+          onHover: (event) {
+            _cancelHideControlsTimer();
+            if (!AppPlatform.isMobile && !_controlsVisible) {
+              _showControls();
+            }
+          },
+          child: Container(
+            color: theme.themeData.colors.themeBgCanvas,
+            child:
+                _controlsVisible ? actionBar : IgnorePointer(child: actionBar),
+          ),
         ),
       );
     } else {
