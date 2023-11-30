@@ -6,6 +6,7 @@ class FsEntryPreviewWidget extends StatefulWidget {
   final bool isSharePage;
   final Function()? onPreviousImageNavigation;
   final Function()? onNextImageNavigation;
+  final bool canNavigateThroughImages;
   final FsEntryPreviewState state;
   final FsEntryPreviewCubit previewCubit;
 
@@ -15,6 +16,7 @@ class FsEntryPreviewWidget extends StatefulWidget {
     required this.isSharePage,
     this.onPreviousImageNavigation,
     this.onNextImageNavigation,
+    required this.canNavigateThroughImages,
     required this.previewCubit,
   }) : super(key: key);
 
@@ -48,6 +50,7 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           isFullScreen: false,
           onNextImageNavigate: widget.onNextImageNavigation,
           onPreviousImageNavigate: widget.onPreviousImageNavigation,
+          canNavigateThroughImages: widget.canNavigateThroughImages,
           previewCubit: widget.previewCubit,
         );
 
@@ -1234,6 +1237,7 @@ class ImagePreviewWidget extends StatefulWidget {
   final bool isFullScreen;
   final Function? onPreviousImageNavigate;
   final Function? onNextImageNavigate;
+  final bool canNavigateThroughImages;
   final FsEntryPreviewCubit previewCubit;
 
   const ImagePreviewWidget({
@@ -1242,6 +1246,7 @@ class ImagePreviewWidget extends StatefulWidget {
     this.isFullScreen = false,
     this.onPreviousImageNavigate,
     this.onNextImageNavigate,
+    required this.canNavigateThroughImages,
     required this.previewCubit,
   });
 
@@ -1602,11 +1607,15 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
-          onPressed: () => widget.onPreviousImageNavigate?.call(),
+          onPressed: widget.canNavigateThroughImages
+              ? () => widget.onPreviousImageNavigate?.call()
+              : null,
           icon: const Icon(Icons.arrow_back_ios_outlined),
         ),
         IconButton(
-          onPressed: () => widget.onNextImageNavigate?.call(),
+          onPressed: widget.canNavigateThroughImages
+              ? () => widget.onNextImageNavigate?.call()
+              : null,
           icon: const Icon(Icons.arrow_forward_ios_outlined),
         ),
       ],
@@ -1649,6 +1658,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               isFullScreen: true,
               onPreviousImageNavigate: widget.onPreviousImageNavigate,
               onNextImageNavigate: widget.onNextImageNavigate,
+              canNavigateThroughImages: widget.canNavigateThroughImages,
               previewCubit: widget.previewCubit,
             ),
           ),

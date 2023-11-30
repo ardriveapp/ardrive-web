@@ -45,6 +45,7 @@ class DetailsPanel extends StatefulWidget {
     this.currentDrive,
     this.onPreviousImageNavigation,
     this.onNextImageNavigation,
+    required this.canNavigateThroughImages,
   });
 
   final ArDriveDataTableItem item;
@@ -56,6 +57,7 @@ class DetailsPanel extends StatefulWidget {
   final Drive? currentDrive;
   final Function()? onPreviousImageNavigation;
   final Function()? onNextImageNavigation;
+  final bool canNavigateThroughImages;
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
@@ -459,6 +461,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         isSharePage: widget.isSharePage,
         onNextImageNavigation: widget.onNextImageNavigation,
         onPreviousImageNavigation: widget.onPreviousImageNavigation,
+        canNavigateThroughImages: widget.canNavigateThroughImages,
         previewCubit: context.read<FsEntryPreviewCubit>(),
       ),
     );
