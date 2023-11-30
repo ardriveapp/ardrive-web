@@ -1307,18 +1307,15 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
             ),
           );
         }
+        if (!imagePreview.isPreviewable) {
+          return const UnpreviewableContent();
+        }
         if (!widget.isFullScreen) {
-          if (!imagePreview.isPreviewable) {
-            return const UnpreviewableContent();
-          }
           return _buildImageFromBytes(
             imagePreview.dataBytes!,
             withTapRegion: false,
           );
         } else {
-          if (!imagePreview.isPreviewable) {
-            return const UnpreviewableContent();
-          }
           return _buildImageFromBytes(
             imagePreview.dataBytes!,
             withTapRegion: true,
