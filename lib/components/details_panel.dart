@@ -129,7 +129,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }) {
     final isNotSharePageInMobileView = !(widget.isSharePage && !mobileView);
     final isPreviewUnavailable = previewState is FsEntryPreviewUnavailable;
-    final isPreviewSuccess = previewState is FsEntryPreviewSuccess;
     final isSharePage = widget.isSharePage;
 
     final tabs = [
