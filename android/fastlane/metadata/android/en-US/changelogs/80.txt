@@ -1,0 +1,2 @@
+- Fixes a typo in the $U contract ID
+- Fixes an issue with long File Types by wrapping the text.
