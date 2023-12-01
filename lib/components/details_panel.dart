@@ -252,7 +252,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     ],
                   ),
                 ),
-              if ((!isSharePage && isPreviewSuccess) ||
+              if (!isSharePage ||
                   (isSharePage && isPreviewUnavailable && !mobileView))
                 ArDriveCard(
                   contentPadding: const EdgeInsets.all(24),
