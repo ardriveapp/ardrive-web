@@ -373,7 +373,8 @@ class __LogoutButtonState extends State<_LogoutButton> {
           arDriveAuth.logout().then(
             (value) {
               profileCubit.logoutProfile();
-              PlausibleEventTracker.track(event: PlausibleEvent.logout);
+              PlausibleEventTracker.trackPageview(
+                  event: PlausiblePageView.logout);
             },
           );
         },

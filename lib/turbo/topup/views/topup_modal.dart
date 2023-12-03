@@ -62,7 +62,7 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
 
   activityTracker.setToppingUp(true);
 
-  PlausibleEventTracker.track(event: PlausibleEvent.turboTopUpModal);
+  PlausibleEventTracker.trackPageview(event: PlausiblePageView.turboTopUpModal);
 
   showAnimatedDialogWithBuilder(
     context,
@@ -93,12 +93,14 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
 
     if (turbo.paymentStatus == PaymentStatus.success) {
       logger.d('Turbo payment success');
-      PlausibleEventTracker.track(event: PlausibleEvent.turboTopUpSuccess);
+      PlausibleEventTracker.trackPageview(
+          event: PlausiblePageView.turboTopUpSuccess);
 
       onSuccess?.call();
     } else {
       logger.d('Turbo payment error');
-      PlausibleEventTracker.track(event: PlausibleEvent.turboTopUpCancel);
+      PlausibleEventTracker.trackPageview(
+          event: PlausiblePageView.turboTopUpCancel);
     }
 
     turbo.dispose();
@@ -176,8 +178,8 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         if (state is TurboTopupFlowShowingEstimationView) {
           view = const TopUpEstimationView();
         } else if (state is TurboTopupFlowShowingPaymentFormView) {
-          PlausibleEventTracker.track(
-            event: PlausibleEvent.turboPaymentDetails,
+          PlausibleEventTracker.trackPageview(
+            event: PlausiblePageView.turboPaymentDetails,
           );
           view = Stack(
             children: [
@@ -200,8 +202,8 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             ],
           );
         } else if (state is TurboTopupFlowShowingPaymentReviewView) {
-          PlausibleEventTracker.track(
-            event: PlausibleEvent.turboPurchaseReview,
+          PlausibleEventTracker.trackPageview(
+            event: PlausiblePageView.turboPurchaseReview,
           );
           view = Stack(
             children: [
