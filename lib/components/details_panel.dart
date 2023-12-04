@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -353,9 +354,17 @@ class _DetailsPanelState extends State<DetailsPanel> {
                             ArDriveButton(
                               style: ArDriveButtonStyle.tertiary,
                               onPressed: () =>
-                                  openUrl(url: 'https://ardrive.io/'),
+                                  openUrl(url: Resources.ardrivePublicSiteLink),
                               text: appLocalizationsOf(context).whatIsArDrive,
                             ),
+                            if (widget.isSharePage) ...[
+                              AppVersionWidget(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
+                              ),
+                            ]
                           ],
                         ),
                       ),
@@ -438,9 +447,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
               const SizedBox(height: 16),
               ArDriveButton(
                 style: ArDriveButtonStyle.tertiary,
-                onPressed: () => openUrl(url: 'https://ardrive.io/'),
+                onPressed: () => openUrl(url: Resources.ardrivePublicSiteLink),
                 text: appLocalizationsOf(context).whatIsArDrive,
               ),
+              if (widget.isSharePage) ...[
+                AppVersionWidget(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                ),
+              ]
             ],
           ),
         ),
@@ -658,6 +673,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           widget.item.contentType,
+          textAlign: TextAlign.right,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
         itemTitle: appLocalizationsOf(context).fileType,
@@ -913,7 +929,7 @@ class DetailsPanelItem extends StatelessWidget {
                   ],
                 ),
               ),
-              if (leading != null) leading!,
+              if (leading != null) Flexible(child: leading!),
             ],
           ),
         ),

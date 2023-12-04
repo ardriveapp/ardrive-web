@@ -59,6 +59,9 @@ void main() {
     when(() => mockArConnectService.checkPermissions()).thenAnswer(
       (invocation) => Future.value(true),
     );
+    when(() => mockArConnectService.isExtensionPresent()).thenAnswer(
+      (invocation) => true,
+    );
     when(() => mockArConnectService.disconnect()).thenAnswer(
       (invocation) => Future.value(null),
     );
@@ -531,8 +534,9 @@ void main() {
           () async {
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(false));
-
         when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((invocation) async {});
+        when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});
 
         await arDriveAuth.logout();
@@ -540,6 +544,7 @@ void main() {
         verifyNever(() => mockSecureKeyValueStore.remove('password'));
         verifyNever(() => mockSecureKeyValueStore.remove('biometricEnabled'));
         verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+        verify(() => mockUserRepository.deleteUser()).called(1);
         expect(() => arDriveAuth.currentUser,
             throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
       });
@@ -556,10 +561,8 @@ void main() {
         when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
                 maxRetries: any(named: 'maxRetries')))
             .thenAnswer((_) async => 'some_id');
-
         when(() => mockBiometricAuthentication.isEnabled())
             .thenAnswer((_) async => false);
-
         when(
           () => mockArDriveCrypto.deriveDriveKey(
             wallet,
@@ -567,27 +570,21 @@ void main() {
             any(),
           ),
         ).thenAnswer((invocation) => Future.value(SecretKey([])));
-
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
-
         when(() => mockArweaveService.getLatestDriveEntityWithId(
                 any(), any(), any()))
             .thenAnswer((invocation) => Future.value(DriveEntity(
                   id: 'some_id',
                   rootFolderId: 'some_id',
                 )));
-
         when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});
-
         when(() => mockUserRepository.saveUser(
                 'password', ProfileType.json, wallet))
             .thenAnswer((invocation) => Future.value(null));
-
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => loggedUser);
-
         when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});
         when(() => mockSecureKeyValueStore.remove('password'))
@@ -598,6 +595,8 @@ void main() {
             .thenAnswer((invocation) async {});
 
         await arDriveAuth.login(wallet, 'password', ProfileType.json);
+
+        verify(() => mockUserRepository.deleteUser()).called(1);
 
         await arDriveAuth.logout();
 
