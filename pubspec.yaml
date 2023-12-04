@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.25.2
+version: 2.26.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -30,16 +30,16 @@ dependencies:
     sdk: flutter
   ardrive_http:
     git:
-      url: https://github.com/ar-io/ardrive_http.git
+      url: https://github.com/ardriveapp/ardrive_http.git
       ref: v1.3.1
   ardrive_io:
     git:
-      url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.2
+      url: https://github.com/ardriveapp/ardrive_io.git
+      ref: v1.4.3
   ardrive_ui:
     git:
-      url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-4943
+      url: https://github.com/ardriveapp/ardrive_ui.git
+      ref: v1.16.0
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:
@@ -54,7 +54,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.1
+      ref: v3.8.2
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   intersperse: ^2.0.0
