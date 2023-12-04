@@ -30,14 +30,14 @@ abstract class PlausibleEventTracker {
     );
   }
 
-  static Future<void> trackEvent(
-    PlausibleEvents event,
+  static Future<void> trackEvent({
+    required PlausibleEvent event,
     Uri? url,
     Map<String, dynamic>? props,
-  ) async {
+  }) async {
     PlausibleEventData eventData = PlausibleEventData(
       name: event.name,
-      url: url ?? Uri.parse('https://${plausibleData.domain}'),
+      url: url ?? Uri.base,
     );
 
     eventData.props = {...(await _defaultEventProps()), ...?props};
@@ -159,15 +159,21 @@ enum PlausiblePageView {
   unknown,
 }
 
-enum PlausibleEvents {
-  newButton,
+enum PlausibleEvent {
+  uploadFile,
+  uploadFolder,
+  uploadReview,
 }
 
-extension PlausibleEventsNames on PlausibleEvents {
+extension PlausibleEventNames on PlausibleEvent {
   String get name {
     switch (this) {
-      case PlausibleEvents.newButton:
-        return 'New Button';
+      case PlausibleEvent.uploadFile:
+        return 'Upload File';
+      case PlausibleEvent.uploadFolder:
+        return 'Upload Folder';
+      case PlausibleEvent.uploadReview:
+        return 'Upload Review';
       default:
         return 'Unknown';
     }
