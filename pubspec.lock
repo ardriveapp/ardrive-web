@@ -93,8 +93,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.15.0"
-      resolved-ref: "0c088e5eb93cd2f3434e90080a91ec4ac2362da8"
+      ref: PE-4943
+      resolved-ref: "3bb1fe67b196c80427f1995935fc89dc9e3f2a94"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.15.0"
