@@ -5,6 +5,7 @@ import 'package:arfs/arfs.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
+import 'package:ardrive_uploader/src/constants.dart';
 
 /// this class will get an `IOFile` and generate the metadata for it
 ///
@@ -449,6 +450,6 @@ List<Tag> get _uTags {
     Tag(EntityTag.appName, 'SmartWeaveAction'),
     Tag(EntityTag.appVersion, '0.3.0'),
     Tag(EntityTag.input, '{"function":"mint"}'),
-    Tag(EntityTag.contract, 'KTzTXT_ANmF84fWEK HzWURD1LWd9QaFR9yfYUwH2Lxw'),
+    Tag(EntityTag.contract, uContractId.toString()),
   ];
 }

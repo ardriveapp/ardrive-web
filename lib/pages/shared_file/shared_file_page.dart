@@ -229,7 +229,7 @@ class SharedFilePage extends StatelessWidget {
   Widget _buildReturnToAppLink(BuildContext context) {
     return ArDriveButton(
       style: ArDriveButtonStyle.tertiary,
-      onPressed: () => openUrl(url: 'https://ardrive.io/'),
+      onPressed: () => openUrl(url: Resources.ardrivePublicSiteLink),
       text: appLocalizationsOf(context).whatIsArDrive,
     );
   }
