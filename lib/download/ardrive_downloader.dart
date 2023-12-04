@@ -69,7 +69,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
       final isPrivateFile =
           fileKey != null && cipher != null && cipherIvString != null;
 
-      if (isPrivateFile && cipherIvString == Cipher.aes256gcm) {
+      if (isPrivateFile && cipher == Cipher.aes256gcm) {
         return _getDartVMGCMDecryptStream(
           cipher,
           cipherIvString,
