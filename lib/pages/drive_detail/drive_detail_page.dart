@@ -497,6 +497,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         .read<DriveDetailCubit>()
                                         .selectPreviousImage();
                                   },
+                                  canNavigateThroughImages: context
+                                      .read<DriveDetailCubit>()
+                                      .canNavigateThroughImages(),
                                 )
                               : const SizedBox(),
                         ),
@@ -560,6 +563,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             onPreviousImageNavigation: () {
               context.read<DriveDetailCubit>().selectPreviousImage();
             },
+            canNavigateThroughImages:
+                context.read<DriveDetailCubit>().canNavigateThroughImages(),
           ),
         ),
       );

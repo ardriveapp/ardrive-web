@@ -45,6 +45,7 @@ class DetailsPanel extends StatefulWidget {
     this.currentDrive,
     this.onPreviousImageNavigation,
     this.onNextImageNavigation,
+    required this.canNavigateThroughImages,
   });
 
   final ArDriveDataTableItem item;
@@ -56,6 +57,7 @@ class DetailsPanel extends StatefulWidget {
   final Drive? currentDrive;
   final Function()? onPreviousImageNavigation;
   final Function()? onNextImageNavigation;
+  final bool canNavigateThroughImages;
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
@@ -127,7 +129,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }) {
     final isNotSharePageInMobileView = !(widget.isSharePage && !mobileView);
     final isPreviewUnavailable = previewState is FsEntryPreviewUnavailable;
-    final isPreviewSuccess = previewState is FsEntryPreviewSuccess;
     final isSharePage = widget.isSharePage;
 
     final tabs = [
@@ -250,7 +251,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     ],
                   ),
                 ),
-              if ((!isSharePage && isPreviewSuccess) ||
+              if (!isSharePage ||
                   (isSharePage && isPreviewUnavailable && !mobileView))
                 ArDriveCard(
                   contentPadding: const EdgeInsets.all(24),
@@ -459,6 +460,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         isSharePage: widget.isSharePage,
         onNextImageNavigation: widget.onNextImageNavigation,
         onPreviousImageNavigation: widget.onPreviousImageNavigation,
+        canNavigateThroughImages: widget.canNavigateThroughImages,
         previewCubit: context.read<FsEntryPreviewCubit>(),
       ),
     );

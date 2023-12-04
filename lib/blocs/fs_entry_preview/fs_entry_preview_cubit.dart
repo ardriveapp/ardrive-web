@@ -419,6 +419,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String dataUrl, {
     Uint8List? dataBytes,
   }) {
+    if (isClosed) {
+      return;
+    }
     imagePreviewNotifier.value = ImagePreviewNotification(
       dataBytes: dataBytes,
       filename: file.name,

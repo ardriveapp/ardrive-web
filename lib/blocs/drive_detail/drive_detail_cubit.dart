@@ -402,6 +402,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
+  bool canNavigateThroughImages() {
+    final numberOfImages = getAllImagesOfCurrentFolder().length;
+    return numberOfImages > 1;
+  }
+
   Future<void> selectNextImage() => _selectImageRelativeToCurrent(1);
   Future<void> selectPreviousImage() => _selectImageRelativeToCurrent(-1);
 
