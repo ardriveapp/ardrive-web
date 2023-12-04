@@ -133,6 +133,30 @@ void main() {
         final result =
             await paymentService.getPriceForBytes(byteSize: byteSize);
         expect(result, isA<BigInt>());
+
+        when(() => httpClient.get(url: '$fakeUrl/v1/price/bytes/$byteSize'))
+            .thenAnswer(
+          (_) async => ArDriveHTTPResponse(
+            statusCode: 202,
+            data: '{"winc": "1000000000000"}',
+            retryAttempts: 0,
+          ),
+        );
+        final result2 =
+            await paymentService.getPriceForBytes(byteSize: byteSize);
+        expect(result2, isA<BigInt>());
+
+        when(() => httpClient.get(url: '$fakeUrl/v1/price/bytes/$byteSize'))
+            .thenAnswer(
+          (_) async => ArDriveHTTPResponse(
+            statusCode: 204,
+            data: '{"winc": "1000000000000"}',
+            retryAttempts: 0,
+          ),
+        );
+        final result3 =
+            await paymentService.getPriceForBytes(byteSize: byteSize);
+        expect(result3, isA<BigInt>());
       });
 
       test('should throw an exception if the status code is not 200, 202, 204',
@@ -162,18 +186,19 @@ void main() {
         expect(result, isA<PriceForFiat>());
       });
 
-      test('should throw an exception if the status code is not 200, 202, 204',
+      test(
+          'should throw a PaymentServiceInvalidPromoCode exception if the status code is bad request',
           () async {
         when(
           () => httpClient.get(
             url: '$fakeUrl/v1/price/$currency/$amount?promoCode=$fakePromoCode',
             headers: any(named: 'headers'),
           ),
-        ).thenAnswer(
-          (_) async => ArDriveHTTPResponse(
-            statusCode: HttpStatus.badRequest,
-            data: null,
+        ).thenThrow(
+          ArDriveHTTPException(
+            statusCode: 400,
             retryAttempts: 0,
+            exception: Exception('400'),
           ),
         );
         expect(
@@ -183,7 +208,33 @@ void main() {
             wallet: wallet,
             promoCode: fakePromoCode,
           ),
-          throwsException,
+          throwsA(isA<PaymentServiceInvalidPromoCode>()),
+        );
+      });
+
+      test(
+          'should throw a PaymentServiceException exception if the status code is not 400',
+          () async {
+        when(
+          () => httpClient.get(
+            url: '$fakeUrl/v1/price/$currency/$amount?promoCode=$fakePromoCode',
+            headers: any(named: 'headers'),
+          ),
+        ).thenThrow(
+          ArDriveHTTPException(
+            statusCode: 500,
+            retryAttempts: 0,
+            exception: Exception('500'),
+          ),
+        );
+        expect(
+          () async => await paymentService.getPriceForFiat(
+            amount: amount,
+            currency: currency,
+            wallet: wallet,
+            promoCode: fakePromoCode,
+          ),
+          throwsA(isA<PaymentServiceException>()),
         );
       });
     });
@@ -194,7 +245,8 @@ void main() {
         expect(result, isA<BigInt>());
       });
 
-      test('should throw an exception if the status code is not 200, 202, 204',
+      test(
+          'should throw a TurboUserNotFound exception if the status code is 404',
           () async {
         when(
           () => httpClient.get(
@@ -208,7 +260,24 @@ void main() {
         ));
         expect(
           () async => await paymentService.getBalance(wallet: wallet),
-          throwsException,
+          throwsA(isA<TurboUserNotFound>()),
+        );
+      });
+
+      test('should throw an exception if the status code is not 404', () async {
+        when(
+          () => httpClient.get(
+            url: '$fakeUrl/v1/balance',
+            headers: any(named: 'headers'),
+          ),
+        ).thenThrow(ArDriveHTTPException(
+          statusCode: 500,
+          retryAttempts: 0,
+          exception: Exception('500'),
+        ));
+        expect(
+          () async => await paymentService.getBalance(wallet: wallet),
+          throwsA(isA<ArDriveHTTPException>()),
         );
       });
     });
@@ -224,8 +293,7 @@ void main() {
       expect(result, isA<PaymentModel>());
     });
 
-    test('should throw an exception if the status code is not 200, 202, 204',
-        () async {
+    test('should throw an exception if the request fails', () async {
       when(
         () => httpClient.get(
           url:
@@ -257,8 +325,7 @@ void main() {
       expect(result, isA<List<String>>());
     });
 
-    test('should throw an exception if the status code is not 200, 202, 204',
-        () async {
+    test('should throw an exception if the request fails', () async {
       when(
         () => httpClient.get(
           url: '$fakeUrl/v1/countries',
