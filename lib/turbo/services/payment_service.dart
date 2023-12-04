@@ -65,27 +65,29 @@ class PaymentService {
       nonce: nonce,
       wallet: wallet,
     );
-    final result = await httpClient.get(
-      url: '$turboPaymentUri/v1/balance',
-      headers: {
-        'x-nonce': nonce,
-        'x-signature': signature,
-        'x-public-key': publicKey,
-      },
-    ).onError((ArDriveHTTPException error, stackTrace) {
-      if (error.statusCode == 404) {
-        logger.w('user not found');
-        throw TurboUserNotFound();
+    try {
+      final result = await httpClient.get(
+        url: '$turboPaymentUri/v1/balance',
+        headers: {
+          'x-nonce': nonce,
+          'x-signature': signature,
+          'x-public-key': publicKey,
+        },
+      );
+
+      final price = BigInt.parse((json.decode(result.data)['winc']));
+
+      return price;
+    } catch (error, stackTrace) {
+      if (error is ArDriveHTTPException) {
+        if (error.statusCode == 404) {
+          logger.w('user not found');
+          throw TurboUserNotFound();
+        }
       }
-
       logger.e('error getting balance', error, stackTrace);
-
-      throw error;
-    });
-
-    final price = BigInt.parse((json.decode(result.data)['winc']));
-
-    return price;
+      rethrow;
+    }
   }
 
   Future<PaymentModel> getPaymentIntent({
@@ -159,30 +161,30 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
   final acceptedStatusCodes = [200, 202, 204];
   final String urlParams = _urlParamsForGetPriceForFiat(promoCode: promoCode);
 
-  final result = await httpClient
-      .get(
-    url: '$turboPaymentUri/v1/price/$currency/$amount$urlParams',
-    headers: signatureHeaders,
-  )
-      .onError(
-    (ArDriveHTTPException error, stackTrace) {
+  try {
+    final result = await httpClient.get(
+      url: '$turboPaymentUri/v1/price/$currency/$amount$urlParams',
+      headers: signatureHeaders,
+    );
+
+    if (!acceptedStatusCodes.contains(result.statusCode)) {
+      throw PaymentServiceException(
+        'Turbo price fetch failed with status code ${result.statusCode}',
+      );
+    }
+
+    return result;
+  } catch (error) {
+    if (error is ArDriveHTTPException) {
       if (error.statusCode == 400) {
         logger.e('Invalid promo code: $promoCode');
         throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
       }
-      throw PaymentServiceException(
-        'Turbo price fetch failed with exception: $error',
-      );
-    },
-  );
-
-  if (!acceptedStatusCodes.contains(result.statusCode)) {
+    }
     throw PaymentServiceException(
-      'Turbo price fetch failed with status code ${result.statusCode}',
+      'Turbo price fetch failed with exception: $error',
     );
   }
-
-  return result;
 }
 
 Future<Map<String, dynamic>> _signatureHeadersForGetPriceForFiat({
@@ -262,7 +264,7 @@ class TurboUserNotFound implements Exception {
   TurboUserNotFound();
 }
 
-class PaymentServiceException implements Exception {
+class PaymentServiceException implements Exception, Equatable {
   final String message;
 
   PaymentServiceException([this.message = '']);
@@ -271,15 +273,32 @@ class PaymentServiceException implements Exception {
   String toString() {
     return 'PaymentServiceException{message: $message}';
   }
+
+  @override
+  List<Object> get props => [message];
+
+  @override
+  bool? get stringify => true;
 }
 
 class PaymentServiceInvalidPromoCode implements PaymentServiceException {
   final String? promoCode;
 
-  PaymentServiceInvalidPromoCode({required this.promoCode});
+  const PaymentServiceInvalidPromoCode({required this.promoCode});
 
   @override
   String get message => 'Invalid promo code: "$promoCode"';
+
+  @override
+  String toString() {
+    return 'PaymentServiceInvalidPromoCode{promoCode: $promoCode}';
+  }
+
+  @override
+  List<Object> get props => [promoCode ?? ''];
+
+  @override
+  bool? get stringify => true;
 }
 
 class PriceForFiat extends Equatable {
