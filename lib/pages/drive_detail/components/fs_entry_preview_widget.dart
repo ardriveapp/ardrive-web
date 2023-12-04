@@ -1456,19 +1456,22 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           ],
         ),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const Flexible(
               flex: 1,
               child: Center(child: SizedBox.shrink()),
             ),
             Flexible(
-              flex: 1,
-              child: Center(child: _buildNavigationButtons()),
+              flex: 2,
+              child: Center(
+                child: _buildNavigationButtons(isFullScreen: false),
+              ),
             ),
             Flexible(
               flex: 1,
               child: Center(
-                child: _buildFullScreenButton(isFileExplorer: isFileExplorer),
+                child: _buildFullScreenButton(),
               ),
             ),
           ],
@@ -1489,14 +1492,16 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         ),
         Flexible(
           flex: 1,
-          child: Center(child: _buildNavigationButtons()),
+          child: Center(
+            child: _buildNavigationButtons(isFullScreen: true),
+          ),
         ),
         Flexible(
           flex: 1,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _buildFullScreenButton(isFileExplorer: isFileExplorer),
+              _buildFullScreenButton(),
               const SizedBox(width: 24),
             ],
           ),
@@ -1509,7 +1514,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           Expanded(
             child: _buildNameAndExtension(isFileExplorer: isFileExplorer),
           ),
-          _buildFullScreenButton(isFileExplorer: isFileExplorer),
+          _buildFullScreenButton(),
         ],
       );
     }
@@ -1602,9 +1607,13 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     );
   }
 
-  Widget _buildNavigationButtons() {
+  Widget _buildNavigationButtons({
+    required bool isFullScreen,
+  }) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: isFullScreen
+          ? MainAxisAlignment.spaceEvenly
+          : MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
           onPressed: widget.canNavigateThroughImages
@@ -1622,12 +1631,12 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     );
   }
 
-  Widget _buildFullScreenButton({required bool isFileExplorer}) {
+  Widget _buildFullScreenButton() {
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.only(
+        padding: const EdgeInsets.only(
           left: 24,
-          top: isFileExplorer ? 0 : 24,
+          top: 24,
           bottom: 24,
         ),
         child: IconButton(
