@@ -1,0 +1,1 @@
+- Corrects the top-up modal able to display proper promo code discounts details.
