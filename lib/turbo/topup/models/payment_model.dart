@@ -76,6 +76,7 @@ class Adjustment extends Equatable {
   final double operatorMagnitude;
   final String operator;
   final int adjustmentAmount;
+  final int? maxDiscount;
 
   const Adjustment({
     required this.name,
@@ -83,6 +84,7 @@ class Adjustment extends Equatable {
     required this.operatorMagnitude,
     required this.operator,
     required this.adjustmentAmount,
+    required this.maxDiscount,
   });
 
   String get humanReadableDiscountPercentage {
@@ -105,7 +107,7 @@ class Adjustment extends Equatable {
 
   @override
   String toString() {
-    return 'Adjustment{name: $name, description: $description, operatorMagnitude: $operatorMagnitude, operator: $operator, adjustmentAmount: $adjustmentAmount}';
+    return 'Adjustment{name: $name, description: $description, operatorMagnitude: $operatorMagnitude, operator: $operator, adjustmentAmount: $adjustmentAmount, maxDiscount: $maxDiscount}';
   }
 
   @override
@@ -115,5 +117,6 @@ class Adjustment extends Equatable {
         operatorMagnitude,
         operator,
         adjustmentAmount,
+        maxDiscount ?? '',
       ];
 }

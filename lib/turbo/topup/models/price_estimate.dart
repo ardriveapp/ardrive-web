@@ -19,6 +19,8 @@ class PriceEstimate extends Equatable {
       ? estimate.actualPaymentAmount! / 100
       : priceInCurrency;
   BigInt get winstonCredits => estimate.winstonCredits;
+  bool get hasReachedMaximumDiscount => estimate.hasReachedMaximumDiscount;
+  String? get adjustmentAmount => estimate.adjustmentAmount;
 
   factory PriceEstimate.zero() => PriceEstimate(
         estimate: PriceForFiat.zero(),

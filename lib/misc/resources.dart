@@ -8,6 +8,7 @@ class Resources {
       'https://pds-inc.typeform.com/UserSurvey';
 
   static const helpLink = 'https://ardrive.zendesk.com/hc/en-us';
+  static const ardrivePublicSiteLink = 'https://ardrive.io/';
   static const agreementLink = 'https://ardrive.io/tos-and-privacy/';
   static const getWalletLink = 'https://www.arconnect.io/';
 
