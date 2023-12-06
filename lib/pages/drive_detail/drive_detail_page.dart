@@ -80,10 +80,28 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
     if (widget.anonymouslyShowDriveDetail) {
       PlausibleEventTracker.trackPageview(
-          page: PlausiblePageView.fileExplorerNonLoggedInUser);
+        page: PlausiblePageView.fileExplorerPage,
+        props: {
+          'loggedIn': false,
+          'noDrives': false,
+        },
+      );
+      // FIXME: remove below
+      PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.fileExplorerNonLoggedInUser,
+      );
     } else {
       PlausibleEventTracker.trackPageview(
-          page: PlausiblePageView.fileExplorerLoggedInUser);
+        page: PlausiblePageView.fileExplorerPage,
+        props: {
+          'loggedIn': true,
+          'noDrives': false,
+        },
+      );
+      // FIXME: remove below
+      PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.fileExplorerLoggedInUser,
+      );
     }
   }
 

@@ -3,6 +3,7 @@ enum PlausibleCustomEvent {
   uploadFile,
   uploadFolder,
   uploadReview,
+  newButton,
 }
 
 extension PlausibleCustomEventNames on PlausibleCustomEvent {
@@ -16,6 +17,8 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
         return 'Upload Folder';
       case PlausibleCustomEvent.uploadReview:
         return 'Upload Review';
+      case PlausibleCustomEvent.newButton:
+        return 'New Button';
       default:
         return 'Unknown';
     }

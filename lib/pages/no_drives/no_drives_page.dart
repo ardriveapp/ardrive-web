@@ -22,9 +22,25 @@ class NoDrivesPage extends StatelessWidget {
       PlausibleEventTracker.trackPageview(
         page: PlausiblePageView.fileExplorerNonLoggedInUser,
       );
+
+      PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.fileExplorerPage,
+        props: {
+          'loggedIn': false,
+          'noDrives': true,
+        },
+      );
     } else {
       PlausibleEventTracker.trackPageview(
         page: PlausiblePageView.fileExplorerNewUserEmpty,
+      );
+
+      PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.fileExplorerPage,
+        props: {
+          'loggedIn': true,
+          'noDrives': true,
+        },
       );
     }
   }

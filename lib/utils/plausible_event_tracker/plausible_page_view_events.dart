@@ -1,4 +1,5 @@
 enum PlausiblePageView {
+  fileExplorerPage, // FIXME: deprecate the other fileExplorer ones
   fileExplorerLoggedInUser,
   fileExplorerNewUserEmpty,
   fileExplorerNonLoggedInUser,

@@ -100,7 +100,14 @@ abstract class PlausibleEventTracker {
     try {
       await http.post(data.api, body: jsonEncode(body));
 
-      logger.d('Sent plausible event: ${eventData.name}');
+      if (eventData.name == _plausiblePageViewEventName) {
+        logger.d('Sent plausible pageview: ${eventData.url}');
+      } else {
+        logger.d(
+          'Sent custom plausible event: ${eventData.name} (${eventData.url})'
+          ' - props: ${body['props']}',
+        );
+      }
     } catch (e, s) {
       logger.e('Plausible response error: $e $s');
     }

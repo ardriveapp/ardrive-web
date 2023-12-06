@@ -11,6 +11,7 @@ import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -64,6 +65,13 @@ class NewButton extends StatelessWidget {
               _getPlusButtonItems(context);
 
           _displayPlusModal(context, scrollController, items);
+
+          PlausibleEventTracker.trackCustomEvent(
+              page: PlausiblePageView.fileExplorerPage,
+              event: PlausibleCustomEvent.newButton,
+              props: {
+                'location': 'bottom',
+              });
         });
   }
 
@@ -74,6 +82,15 @@ class NewButton extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: ArDriveFAB(
+            onPressed: () {
+              PlausibleEventTracker.trackCustomEvent(
+                page: PlausiblePageView.fileExplorerPage,
+                event: PlausibleCustomEvent.newButton,
+                props: {
+                  'location': 'sidebar',
+                },
+              );
+            },
             backgroundColor:
                 ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
             child: ArDriveIcons.plus(
@@ -86,10 +103,28 @@ class NewButton extends StatelessWidget {
 
     return ScreenTypeLayout.builder(
       mobile: (_) => ArDriveSubmenu(
+        onOpen: () {
+          PlausibleEventTracker.trackCustomEvent(
+            page: PlausiblePageView.fileExplorerPage,
+            event: PlausibleCustomEvent.newButton,
+            props: {
+              'location': 'sidebar',
+            },
+          );
+        },
         menuChildren: menuItems,
         child: subMenuChild,
       ),
       desktop: (_) => ArDriveSubmenu(
+        onOpen: () {
+          PlausibleEventTracker.trackCustomEvent(
+            page: PlausiblePageView.fileExplorerPage,
+            event: PlausibleCustomEvent.newButton,
+            props: {
+              'location': 'sidebar',
+            },
+          );
+        },
         alignmentOffset: offset,
         menuChildren: menuItems,
         child: subMenuChild,
