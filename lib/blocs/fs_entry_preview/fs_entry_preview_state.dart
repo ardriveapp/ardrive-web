@@ -25,14 +25,7 @@ class FsEntryPreviewLoading extends FsEntryPreviewSuccess {
 }
 
 class FsEntryPreviewImage extends FsEntryPreviewSuccess {
-  final String filename;
-  final String contentType;
-
-  const FsEntryPreviewImage({
-    required this.filename,
-    required this.contentType,
-    required super.previewUrl,
-  });
+  const FsEntryPreviewImage({required super.previewUrl});
 
   @override
   List<Object> get props => [previewUrl];

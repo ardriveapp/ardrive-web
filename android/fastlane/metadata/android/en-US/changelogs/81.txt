@@ -1,0 +1,2 @@
+- Adding a feature to allow navigation back and forth between image previews.
+- Adding the application version number to the shared file page.

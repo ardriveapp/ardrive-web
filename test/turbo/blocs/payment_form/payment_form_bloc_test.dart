@@ -151,6 +151,7 @@ void main() {
     final validPromoCodes = {
       'BANANA': 0.1,
       'MANZANA': 0.2,
+      'FRUTILLA': 1.0,
     };
     late PriceEstimate initialPriceEstimate;
     // PriceEstimate? estimateInState;
@@ -205,6 +206,7 @@ void main() {
                   operatorMagnitude: magnitude,
                   operator: 'multiply',
                   adjustmentAmount: adjustmentAmount,
+                  maxDiscount: null,
                 )
               ],
               actualPaymentAmount: actualAmount,
@@ -275,6 +277,7 @@ void main() {
                   operatorMagnitude: 0.9,
                   operator: 'multiply',
                   adjustmentAmount: 1,
+                  maxDiscount: null,
                 )
               ],
               actualPaymentAmount: 9,
@@ -302,6 +305,7 @@ void main() {
                   operatorMagnitude: 0.9,
                   operator: 'multiply',
                   adjustmentAmount: 1,
+                  maxDiscount: null,
                 )
               ],
               actualPaymentAmount: 9,
@@ -328,6 +332,7 @@ void main() {
                   operatorMagnitude: 0.9,
                   operator: 'multiply',
                   adjustmentAmount: 1,
+                  maxDiscount: null,
                 )
               ],
               actualPaymentAmount: 9,
@@ -355,6 +360,7 @@ void main() {
                   operatorMagnitude: 0.9,
                   operator: 'multiply',
                   adjustmentAmount: 1,
+                  maxDiscount: null,
                 )
               ],
               actualPaymentAmount: 9,
@@ -381,6 +387,7 @@ void main() {
                   operatorMagnitude: 0.9,
                   operator: 'multiply',
                   adjustmentAmount: 1,
+                  maxDiscount: null,
                 )
               ],
               actualPaymentAmount: 9,
@@ -408,6 +415,7 @@ void main() {
                   operatorMagnitude: 0.9,
                   operator: 'multiply',
                   adjustmentAmount: 1,
+                  maxDiscount: null,
                 )
               ],
               actualPaymentAmount: 9,
@@ -434,6 +442,7 @@ void main() {
                   operatorMagnitude: 0.9,
                   operator: 'multiply',
                   adjustmentAmount: 1,
+                  maxDiscount: null,
                 )
               ],
               actualPaymentAmount: 9,
@@ -461,6 +470,7 @@ void main() {
                   operatorMagnitude: 0.9,
                   operator: 'multiply',
                   adjustmentAmount: 1,
+                  maxDiscount: null,
                 )
               ],
               actualPaymentAmount: 9,
@@ -487,9 +497,124 @@ void main() {
                   operatorMagnitude: 0.8,
                   operator: 'multiply',
                   adjustmentAmount: 2,
+                  maxDiscount: null,
                 )
               ],
               actualPaymentAmount: 8,
+              quotedPaymentAmount: 10,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
+          1234,
+          const [],
+          isPromoCodeInvalid: false,
+          isFetchingPromoCode: false,
+          errorFetchingPromoCode: false,
+        ),
+      ],
+    );
+
+    // has reached max discount
+    blocTest<PaymentFormBloc, PaymentFormState>(
+      'hasReachedMaximumDiscount is true when the discount reaches the maximum',
+      build: () {
+        when(() => mockTurbo.refreshPriceEstimate(
+            promoCode: any(named: 'promoCode'))).thenAnswer((_) async {
+          final promoCode = _.namedArguments[#promoCode] as String?;
+          final isValidPromoCode = validPromoCodes.containsKey(promoCode);
+          final discountFactor = validPromoCodes[promoCode];
+          const maxDiscount = 5;
+
+          if (isValidPromoCode) {
+            final quotedAmount = (initialPriceEstimate.priceInCurrency).floor();
+            final magnitude = (100 - (100 * discountFactor!)) / 100;
+            int adjustmentAmount = (quotedAmount * discountFactor).floor();
+
+            // Here we simulate that the discount has reached the maximum
+            if (adjustmentAmount > maxDiscount) {
+              adjustmentAmount = maxDiscount;
+            }
+            final actualAmount = quotedAmount - adjustmentAmount;
+
+            final estimate = PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: magnitude,
+                  operator: 'multiply',
+                  adjustmentAmount: adjustmentAmount,
+                  maxDiscount: maxDiscount,
+                )
+              ],
+              actualPaymentAmount: actualAmount,
+              quotedPaymentAmount: quotedAmount,
+            );
+
+            final priceEstimate = PriceEstimate(
+              estimate: estimate,
+              priceInCurrency: 10,
+              estimatedStorage: 1,
+            );
+
+            return priceEstimate;
+          } else {
+            throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
+          }
+        });
+
+        return paymentFormBloc;
+      },
+      seed: () {
+        return PaymentFormLoaded(
+          initialPriceEstimate,
+          DateTime.now()
+              .add(const Duration(days: 1))
+              .difference(DateTime.now())
+              .inSeconds,
+          const [],
+        );
+      },
+      act: (bloc) async {
+        bloc.add(const PaymentFormUpdatePromoCode('FRUTILLA'));
+      },
+      expect: () => [
+        // Fetching for FRUTILLA
+        PaymentFormLoaded(
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [],
+              actualPaymentAmount: null,
+              quotedPaymentAmount: null,
+            ),
+            priceInCurrency: 10,
+            estimatedStorage: 1,
+          ),
+          1234,
+          const [],
+          isPromoCodeInvalid: false,
+          isFetchingPromoCode: true,
+          errorFetchingPromoCode: false,
+        ),
+        // Valid result for FRUTILLA
+        PaymentFormLoaded(
+          PriceEstimate(
+            estimate: PriceForFiat(
+              winc: BigInt.from(10),
+              adjustments: const [
+                Adjustment(
+                  name: 'Promo code',
+                  description: 'Promo code',
+                  operatorMagnitude: 0,
+                  operator: 'multiply',
+                  adjustmentAmount: 5,
+                  maxDiscount: 5,
+                )
+              ],
+              actualPaymentAmount: 5,
               quotedPaymentAmount: 10,
             ),
             priceInCurrency: 10,
