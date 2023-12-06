@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.26.1
+version: 2.27.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -70,7 +70,7 @@ dependencies:
   uuid: ^3.0.4
   flutter_dropzone:
     git:
-      url: https://github.com/ar-io/flutter_dropzone
+      url: https://github.com/ardriveapp/flutter_dropzone
       ref: master
       path: flutter_dropzone
   responsive_builder: ^0.7.0
@@ -141,6 +141,14 @@ dependency_overrides:
       url: https://github.com/ardriveapp/flutter_stripe/
       path: packages/stripe_platform_interface
       ref: main
+  fetch_client:
+    git:
+      url: https://github.com/ardriveapp/fetch_client.git
+      ref: master
+  fetch_api:
+    git:
+      url: https://github.com/ardriveapp/fetch_api.git
+      ref: master
   http: ^1.1.0
 
 dev_dependencies:
