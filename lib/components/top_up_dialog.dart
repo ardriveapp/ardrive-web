@@ -269,11 +269,6 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     super.initState();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-  }
-
   void _onAmountChanged(String amount) {
     widget.onAmountSelected(double.parse(amount));
   }
