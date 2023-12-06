@@ -722,6 +722,7 @@ class _UploadFormState extends State<UploadForm> {
               ],
             );
           } else if (state is UploadFailure) {
+            logger.e('Upload failed: ${state.error}');
             if (state.error == UploadErrors.turboTimeout) {
               return ArDriveStandardModal(
                 title: appLocalizationsOf(context).uploadFailed,
@@ -737,12 +738,22 @@ class _UploadFormState extends State<UploadForm> {
             }
 
             return ArDriveStandardModal(
-              title: appLocalizationsOf(context).uploadFailed,
+              width: kLargeDialogWidth,
+              title: 'Problem with Upload',
               description: appLocalizationsOf(context).yourUploadFailed,
+              content: state.failedTasks != null
+                  ? _failedUploadList(state.failedTasks!)
+                  : null,
               actions: [
                 ModalAction(
                   action: () => Navigator.of(context).pop(false),
-                  title: appLocalizationsOf(context).okEmphasized,
+                  title: 'Do Not Fix',
+                ),
+                ModalAction(
+                  action: () {
+                    context.read<UploadCubit>().retryUploads();
+                  },
+                  title: 'Re-Upload',
                 ),
               ],
             );
@@ -1168,6 +1179,101 @@ class _UploadFormState extends State<UploadForm> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _failedUploadList(List<UploadTask> tasks) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+          maxHeight: 256 * 1.5, minWidth: kLargeDialogWidth),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+                'It seems there was a partial failure uploading the following file(s). The file(s) will show as failed in your drive. Please re-upload to fix.',
+                style: ArDriveTypography.body.buttonLargeBold()),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ArDriveScrollBar(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: tasks.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final task = tasks[index];
+
+                    if (task.content != null) {
+                      for (var file in task.content!) {
+                        return ListTile(
+                          leading: file is ARFSFileUploadMetadata
+                              ? getIconForContentType(
+                                  file.dataContentType,
+                                  size: 24,
+                                )
+                              : file is ARFSFolderUploadMetatadata
+                                  ? getIconForContentType(
+                                      'folder',
+                                      size: 24,
+                                    )
+                                  : null,
+                          contentPadding: EdgeInsets.zero,
+                          title: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.max,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                flex: 1,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      file.name,
+                                      style: ArDriveTypography.body
+                                          .buttonNormalBold(
+                                            color: ArDriveTheme.of(context)
+                                                .themeData
+                                                .colors
+                                                .themeFgDefault,
+                                          )
+                                          .copyWith(
+                                              fontWeight: FontWeight.bold),
+                                    ),
+                                    AnimatedSwitcher(
+                                      duration: const Duration(seconds: 1),
+                                      child: Column(
+                                        children: [
+                                          if (file is ARFSFileUploadMetadata)
+                                            Text(
+                                              filesize(file.size),
+                                              style: ArDriveTypography.body
+                                                  .buttonNormalBold(
+                                                color: ArDriveTheme.of(context)
+                                                    .themeData
+                                                    .colors
+                                                    .themeFgOnDisabled,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    }
+                    return const SizedBox();
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
