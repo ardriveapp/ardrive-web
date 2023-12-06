@@ -1,5 +1,6 @@
 import 'package:arconnect/arconnect.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -53,27 +54,9 @@ class TurboStreamedUpload implements StreamedUpload<UploadItem> {
 
     /// It is possible to cancel an upload before starting the network request.
     if (_isCanceled) {
-      print('Upload canceled on StreamedUpload');
-      throw Exception('Upload canceled');
+      throw UploadCanceledException(
+          'Upload canceled. Cancelling request before sending with TurboStreamedUpload');
     }
-
-    /// If the file is larger than 500 MiB, we don't get progress updates.
-    ///
-    /// The TurboUploadServiceImpl for web uses fetch_client for the upload of files
-    /// larger than 500 MiB. fetch_client does not support progress updates.
-
-    // TODO: move this logic to the class above
-    // if (kIsWeb && uploadTask.uploadItem!.size > MiB(500).size) {
-    //   uploadTask = uploadTask.copyWith(
-    //       isProgressAvailable: false, status: UploadStatus.inProgress);
-
-    //   // controller.updateProgress(
-    //   //   task: uploadTask.copyWith(
-    //   //     isProgressAvailable: false,
-    //   //     status: UploadStatus.inProgress,
-    //   //   ),
-    //   // );
-    // }
 
     // gets the streamed request
     final streamedRequest = service
@@ -96,7 +79,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadItem> {
     }).onError((e, s) {
       debugPrint('Error on TurboStreamedUpload.send: $e');
 
-      _result = StreamedUploadResult(success: false);
+      _result = StreamedUploadResult(success: false, error: e);
     });
 
     await streamedRequest;

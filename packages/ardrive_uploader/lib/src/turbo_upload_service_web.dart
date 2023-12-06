@@ -1,12 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:fetch_client/fetch_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class TurboUploadServiceImpl implements TurboUploadService {
@@ -80,10 +80,9 @@ class TurboUploadServiceImpl implements TurboUploadService {
         onSendProgress: (sent, total) {
           onSendProgress?.call(sent / total);
         },
-        data: controller.stream, // Creates a Stream<List<int>>.
+        data: controller.stream,
         options: Options(
           headers: {
-            // stream
             Headers.contentTypeHeader: 'application/octet-stream',
             Headers.contentLengthHeader: size, // Set the content-length.
           }..addAll(headers),
@@ -91,17 +90,26 @@ class TurboUploadServiceImpl implements TurboUploadService {
         cancelToken: _cancelToken,
       );
 
-      print('Response from turbo: ${response.statusCode}');
+      debugPrint('Response from turbo: ${response.statusCode}');
 
       return response;
-    } catch (e) {
-      print('Error on turbo upload: $e');
+    } on DioException catch (e) {
       if (_isCanceled) {
         _cancelToken = CancelToken();
 
         _cancelToken.cancel();
       }
-      rethrow;
+
+      throw DioClientException(
+        message: e.message ?? '',
+        statusCode: e.response?.statusCode,
+        error: e,
+      );
+    } catch (e) {
+      throw UnknownNetworkException(
+        message: e.toString(),
+        error: e,
+      );
     }
   }
 
@@ -113,8 +121,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required Map<String, dynamic> headers,
   }) async {
     final url = '$turboUploadUri/v1/tx';
-
-    int dataItemSize = 0;
 
     StreamTransformer<Uint8List, Uint8List> createPassthroughTransformer() {
       return StreamTransformer.fromHandlers(
@@ -145,32 +151,37 @@ class TurboUploadServiceImpl implements TurboUploadService {
           ),
     )
         .then((value) {
-      print('Done');
       request.sink.close();
     });
 
     _fetchController.onPause = () {
-      print('Paused');
+      debugPrint('Paused');
     };
 
     _fetchController.onResume = () {
-      print('Resumed');
+      debugPrint('Resumed');
     };
 
     try {
-      request.contentLength = dataItemSize;
       request.persistentConnection = false;
 
-      print('is persistent connection?${request.persistentConnection}');
+      debugPrint('is persistent connection?${request.persistentConnection}');
 
       final response = await client.send(request);
 
-      print(await utf8.decodeStream(response.stream));
-
       return response;
+    } on http.ClientException catch (e) {
+      throw FetchClientException(
+        message: e.message,
+        error: e,
+      );
     } catch (e) {
-      print('Error on turbo upload using FetchClient: $e');
-      rethrow;
+      throw FetchClientException(
+        message: e.toString(),
+        error: e,
+      );
+    } finally {
+      _fetchController.close();
     }
   }
 
@@ -180,7 +191,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
     client.close();
     _fetchController.close();
     _isCanceled = true;
-    print('Stream closed');
+    debugPrint('Stream for Dio or FetchClient is closed');
   }
 
   bool _isCanceled = false;

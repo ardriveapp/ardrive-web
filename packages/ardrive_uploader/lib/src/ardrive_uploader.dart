@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_uploader/src/factories.dart';
-import 'package:ardrive_uploader/src/upload_strategy.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
@@ -119,7 +117,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
-      UploadSender(
+      UploadDispatcher(
         dataBundler: dataBundler,
         uploadStrategy: _uploadFileStrategyFactory.createUploadStrategy(
           type: type,
@@ -171,7 +169,7 @@ class _ArDriveUploader implements ArDriveUploader {
         dataBundler: dataBundler,
         streamedUploadFactory: _streamedUploadFactory);
 
-    final uploadSender = UploadSender(
+    final uploadSender = UploadDispatcher(
       dataBundler: dataBundler,
       uploadStrategy: uploadFileStrategy,
       uploadFolderStrategy: uploadFolderStrategy,
@@ -233,7 +231,7 @@ class _ArDriveUploader implements ArDriveUploader {
         dataBundler: dataBundler,
         streamedUploadFactory: _streamedUploadFactory);
 
-    final uploadSender = UploadSender(
+    final uploadSender = UploadDispatcher(
       dataBundler: dataBundler,
       uploadStrategy: uploadStrategy,
       uploadFolderStrategy: uploadFolderStrategy,

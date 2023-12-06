@@ -3,9 +3,11 @@ import 'package:arweave/arweave.dart';
 
 class StreamedUploadResult {
   final bool success;
+  final Object? error;
 
   StreamedUploadResult({
     required this.success,
+    this.error,
   });
 }
 

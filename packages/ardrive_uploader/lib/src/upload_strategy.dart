@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
-import 'package:ardrive_uploader/src/factories.dart';
+import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 
 abstract class UploadFileStrategy {
-  Future<void> uploadFile({
+  Future<void> upload({
     required List<DataItemFile> dataItems,
     required FileUploadTask task,
     required Wallet wallet,
@@ -18,7 +18,7 @@ abstract class UploadFileStrategy {
 }
 
 abstract class UploadFolderStructureStrategy {
-  Future<void> uploadFolder({
+  Future<void> upload({
     required FolderUploadTask task,
     required Wallet wallet,
     required UploadController controller,
@@ -34,7 +34,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
   }) : _streamedUploadFactory = streamedUploadFactory;
 
   @override
-  Future<void> uploadFile({
+  Future<void> upload({
     required List<DataItemFile> dataItems,
     required FileUploadTask task,
     required Wallet wallet,
@@ -47,33 +47,59 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       wallet,
     );
 
-    final metadataItem = dataItemResults[0];
+    if (!task.metadataUploaded) {
+      debugPrint('uploading metadata for the file');
+
+      final metadataItem = dataItemResults[0];
+
+      /// The upload can be canceled while the bundle is being created
+      if (verifyCancel()) {
+        debugPrint('Upload canceled while data item was being created');
+        throw UploadCanceledException(
+          'Upload canceled while metadata item was being created',
+        );
+      }
+
+      final metadataStreamedUpload =
+          _streamedUploadFactory.fromUploadType(task.type);
+
+      final uploadResult = await metadataStreamedUpload.send(
+          DataItemUploadItem(
+            size: metadataItem.dataItemSize,
+            data: metadataItem,
+          ),
+          wallet, (progress) {
+        // we don't need to update the progress of the metadata item
+      });
+
+      debugPrint('metadata upload result: $uploadResult');
+
+      if (!uploadResult.success) {
+        throw MetadataUploadException(
+          message: 'Failed to upload metadata item. DataItem won\'t be sent',
+          error: uploadResult.error,
+        );
+      }
+    }
 
     final dataItem = dataItemResults[1];
 
-    /// The upload can be canceled while the bundle is being created
-    if (verifyCancel()) {
-      debugPrint('Upload canceled while data item was being created');
-      throw Exception('Upload canceled while metadata item was being created');
-    }
+    await _sendDataItem(
+      controller: controller,
+      dataItem: dataItem,
+      task: task,
+      verifyCancel: verifyCancel,
+      wallet: wallet,
+    );
+  }
 
-    final metadataStreamedUpload =
-        _streamedUploadFactory.fromUploadType(task.type);
-
-    final uploadResult = await metadataStreamedUpload.send(
-        DataItemUploadItem(
-          size: metadataItem.dataItemSize,
-          data: metadataItem,
-        ),
-        wallet, (progress) {
-      // we don't need to update the progress of the metadata item
-    });
-
-    if (!uploadResult.success) {
-      throw Exception(
-          'Failed to upload metadata item. DataItem won\'t be sent');
-    }
-
+  Future<void> _sendDataItem({
+    required FileUploadTask task,
+    required DataItemResult dataItem,
+    required UploadController controller,
+    required bool Function() verifyCancel,
+    required Wallet wallet,
+  }) async {
     /// sends the data item
     var dataItemTask = task.copyWith(
       uploadItem: DataItemUploadItem(
@@ -94,12 +120,12 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     /// The upload can be canceled while the bundle is being created
     if (verifyCancel()) {
       debugPrint('Upload canceled while data item was being created');
-      throw Exception('Upload canceled while data data item was being created');
+      throw UploadCanceledException(
+        'Upload canceled while data data item was being created',
+      );
     }
 
     final streamedUpload = _streamedUploadFactory.fromUploadType(task.type);
-
-    // TODO: review this. Should implement a new API for adding the token.
 
     dataItemTask = dataItemTask.copyWith(
       status: UploadStatus.inProgress,
@@ -124,8 +150,11 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     );
 
     if (!result.success) {
-      debugPrint('Failed to upload data item');
-      throw Exception('Failed to upload data item');
+      debugPrint('Failed to upload data item. Error: ${result.error}');
+      throw DataUploadException(
+        message: 'Failed to upload data item. Error: ${result.error}',
+        error: result.error,
+      );
     }
 
     final updatedTask = controller.tasks[task.id]!;
@@ -149,7 +178,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
         _streamedUploadFactory = streamedUploadFactory;
 
   @override
-  Future<void> uploadFile({
+  Future<void> upload({
     required List<DataItemFile> dataItems,
     required FileUploadTask task,
     required Wallet wallet,
@@ -204,7 +233,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
     /// The upload can be canceled while the bundle is being created
     if (verifyCancel()) {
       debugPrint('Upload canceled while bundle was being created');
-      throw Exception('Upload canceled');
+      throw UploadCanceledException('Upload canceled');
     }
 
     final streamedUpload = _streamedUploadFactory.fromUploadType(task.type);
@@ -219,7 +248,10 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
     });
 
     if (!result.success) {
-      throw Exception('Failed to upload bundle');
+      throw BundleUploadException(
+        message: 'Failed to upload bundle',
+        error: result.error,
+      );
     }
 
     controller.updateProgress(
@@ -242,7 +274,7 @@ class UploadFolderStructureAsBundleStrategy
         _streamedUploadFactory = streamedUploadFactory;
 
   @override
-  Future<void> uploadFolder({
+  Future<void> upload({
     required FolderUploadTask task,
     required Wallet wallet,
     required UploadController controller,
@@ -282,7 +314,7 @@ class UploadFolderStructureAsBundleStrategy
 
     if (verifyCancel()) {
       debugPrint('Upload canceled after bundle creation and before upload');
-      throw Exception('Upload canceled');
+      throw UploadCanceledException('Upload canceled on bundle creation');
     }
 
     final streamedUpload =
@@ -297,7 +329,7 @@ class UploadFolderStructureAsBundleStrategy
     });
 
     if (!result.success) {
-      throw Exception('Failed to upload bundle');
+      throw BundleUploadException(message: 'Failed to upload bundle');
     }
 
     controller.updateProgress(
@@ -305,5 +337,11 @@ class UploadFolderStructureAsBundleStrategy
         status: UploadStatus.complete,
       ),
     );
+  }
+}
+
+void _checkForCancellation(bool Function() verifyCancel) {
+  if (verifyCancel()) {
+    throw Exception('Upload canceled');
   }
 }
