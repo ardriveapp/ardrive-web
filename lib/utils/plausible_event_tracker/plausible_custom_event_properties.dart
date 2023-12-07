@@ -159,3 +159,29 @@ enum ResyncType {
   deepResync,
   partial,
 }
+
+@JsonSerializable()
+class DriveCreationProperties {
+  @JsonKey(
+    name: 'Drive Privacy',
+    fromJson: drivePrivacyFromJson,
+    toJson: drivePrivacyToJson,
+  )
+  final DrivePrivacy drivePrivacy;
+
+  DriveCreationProperties({
+    required this.drivePrivacy,
+  });
+
+  factory DriveCreationProperties.fromJson(Map<String, dynamic> json) =>
+      _$DriveCreationPropertiesFromJson(json);
+  Map<String, dynamic> toJson() => _$DriveCreationPropertiesToJson(this);
+
+  static DrivePrivacy drivePrivacyFromJson(String value) {
+    return DrivePrivacy.values.firstWhere((e) => e.toString() == value);
+  }
+
+  static String drivePrivacyToJson(DrivePrivacy drivePrivacy) {
+    return drivePrivacy.toString();
+  }
+}
