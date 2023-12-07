@@ -1,8 +1,9 @@
 enum PlausibleCustomEvent {
   appLoaded,
-  uploadFile,
-  uploadFolder,
   uploadReview,
+  uploadConfirm,
+  uploadSuccess,
+  uploadFailure,
   newButton,
 }
 
@@ -11,12 +12,14 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
     switch (this) {
       case PlausibleCustomEvent.appLoaded:
         return 'App Loaded';
-      case PlausibleCustomEvent.uploadFile:
-        return 'Upload File';
-      case PlausibleCustomEvent.uploadFolder:
-        return 'Upload Folder';
       case PlausibleCustomEvent.uploadReview:
         return 'Upload Review';
+      case PlausibleCustomEvent.uploadConfirm:
+        return 'Upload Confirm';
+      case PlausibleCustomEvent.uploadSuccess:
+        return 'Upload Success';
+      case PlausibleCustomEvent.uploadFailure:
+        return 'Upload Failure';
       case PlausibleCustomEvent.newButton:
         return 'New Button';
       default:

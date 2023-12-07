@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_api_data.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_events.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_data.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_page_view_events.dart';
@@ -37,7 +38,7 @@ abstract class PlausibleEventTracker {
     );
   }
 
-  static Future<void> trackCustomEvent({
+  static Future<void> _trackCustomEvent({
     required PlausiblePageView page,
     required PlausibleCustomEvent event,
     Map<String, dynamic>? props,
@@ -56,15 +57,28 @@ abstract class PlausibleEventTracker {
   }
 
   static Future<void> trackAppLoaded() async {
-    final props = await _initialEventProps();
-    await trackCustomEvent(
+    final props = await _getAppLoadedEventProps();
+    await _trackCustomEvent(
       page: PlausiblePageView.welcomePage,
       event: PlausibleCustomEvent.appLoaded,
       props: props,
     );
   }
 
-  static Future<Map<String, dynamic>> _initialEventProps() async {
+  static Future<void> trackNewButton({
+    required NewButtonLocation location,
+  }) async {
+    final props = NewButtonProperties(
+      location: location,
+    ).toJson();
+    await _trackCustomEvent(
+      page: PlausiblePageView.fileExplorerPage,
+      event: PlausibleCustomEvent.newButton,
+      props: props,
+    );
+  }
+
+  static Future<Map<String, dynamic>> _getAppLoadedEventProps() async {
     final String platform = AppPlatform.getPlatform().name;
     final String platformVersion = await AppPlatform.androidVersion() ??
         await AppPlatform.iosVersion() ??
@@ -72,11 +86,11 @@ abstract class PlausibleEventTracker {
         'Unknown';
     final String appVersion = (await PackageInfo.fromPlatform()).version;
 
-    Map<String, String> props = {
-      'App Version': appVersion,
-      'Platform': platform,
-      'Platform Version': platformVersion,
-    };
+    final props = AppLoadedProperties(
+      appVersion: appVersion,
+      platform: platform,
+      platformVersion: platformVersion,
+    ).toJson();
 
     return props;
   }

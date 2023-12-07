@@ -11,6 +11,7 @@ import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -66,12 +67,9 @@ class NewButton extends StatelessWidget {
 
           _displayPlusModal(context, scrollController, items);
 
-          PlausibleEventTracker.trackCustomEvent(
-              page: PlausiblePageView.fileExplorerPage,
-              event: PlausibleCustomEvent.newButton,
-              props: {
-                'location': 'bottom',
-              });
+          PlausibleEventTracker.trackNewButton(
+            location: NewButtonLocation.bottom,
+          );
         });
   }
 
@@ -83,12 +81,8 @@ class NewButton extends StatelessWidget {
           padding: const EdgeInsets.only(top: 8),
           child: ArDriveFAB(
             onPressed: () {
-              PlausibleEventTracker.trackCustomEvent(
-                page: PlausiblePageView.fileExplorerPage,
-                event: PlausibleCustomEvent.newButton,
-                props: {
-                  'location': 'sidebar',
-                },
+              PlausibleEventTracker.trackNewButton(
+                location: NewButtonLocation.sidebar,
               );
             },
             backgroundColor:
@@ -104,12 +98,8 @@ class NewButton extends StatelessWidget {
     return ScreenTypeLayout.builder(
       mobile: (_) => ArDriveSubmenu(
         onOpen: () {
-          PlausibleEventTracker.trackCustomEvent(
-            page: PlausiblePageView.fileExplorerPage,
-            event: PlausibleCustomEvent.newButton,
-            props: {
-              'location': 'sidebar',
-            },
+          PlausibleEventTracker.trackNewButton(
+            location: NewButtonLocation.sidebar,
           );
         },
         menuChildren: menuItems,
@@ -117,12 +107,8 @@ class NewButton extends StatelessWidget {
       ),
       desktop: (_) => ArDriveSubmenu(
         onOpen: () {
-          PlausibleEventTracker.trackCustomEvent(
-            page: PlausiblePageView.fileExplorerPage,
-            event: PlausibleCustomEvent.newButton,
-            props: {
-              'location': 'sidebar',
-            },
+          PlausibleEventTracker.trackNewButton(
+            location: NewButtonLocation.sidebar,
           );
         },
         alignmentOffset: offset,
