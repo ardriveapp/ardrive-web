@@ -744,18 +744,20 @@ class _UploadFormState extends State<UploadForm> {
               content: state.failedTasks != null
                   ? _failedUploadList(state.failedTasks!)
                   : null,
-              actions: [
-                ModalAction(
-                  action: () => Navigator.of(context).pop(false),
-                  title: 'Do Not Fix',
-                ),
-                ModalAction(
-                  action: () {
-                    context.read<UploadCubit>().retryUploads();
-                  },
-                  title: 'Re-Upload',
-                ),
-              ],
+              actions: state.failedTasks == null
+                  ? null
+                  : [
+                      ModalAction(
+                        action: () => Navigator.of(context).pop(false),
+                        title: 'Do Not Fix',
+                      ),
+                      ModalAction(
+                        action: () {
+                          context.read<UploadCubit>().retryUploads();
+                        },
+                        title: 'Re-Upload',
+                      ),
+                    ],
             );
           } else if (state is UploadShowingWarning) {
             return ArDriveStandardModal(

@@ -21,17 +21,9 @@ abstract class UploadController {
   void updateProgress({UploadTask? task});
   void onProgressChange(Function(UploadProgress progress) callback);
   void onCompleteTask(Function(UploadTask tasks) callback);
-  void sendTasks(
-    Wallet wallet,
-  );
-  void sendTask(
-    UploadTask task,
-    Wallet wallet, {
-    Function()? onTaskCompleted,
-  });
-  void addTask(
-    UploadTask task,
-  );
+  void sendTasks(Wallet wallet);
+  void sendTask(UploadTask task, Wallet wallet, {Function()? onTaskCompleted});
+  void addTask(UploadTask task);
   Future<void> retryFailedTasks(Wallet wallet);
 
   factory UploadController(
@@ -89,12 +81,6 @@ class _UploadController implements UploadController {
   final UploadProgress _uploadProgress = UploadProgress.notStarted();
 
   void init() {
-    _totalSize = 0;
-    _numberOfItems = 0;
-    _totalProgress = 0;
-    _totalUploaded = 0;
-    _totalUploadedItems = 0;
-
     _isCanceled = false;
     late StreamSubscription subscription;
 
@@ -104,8 +90,6 @@ class _UploadController implements UploadController {
         if (_isCanceled) {
           return;
         }
-
-        _start ??= DateTime.now();
 
         _onProgressChange!(event);
 
@@ -135,6 +119,10 @@ class _UploadController implements UploadController {
   @override
   void updateProgress({UploadTask? task}) async {
     if (_progressStream.isClosed || task == null) return;
+
+    if (_start == null && task.status == UploadStatus.inProgress) {
+      _start = DateTime.now();
+    }
 
     final taskId = task.id;
     final existingTask = tasks[taskId];
@@ -279,12 +267,20 @@ class _UploadController implements UploadController {
       return Future.value();
     }
 
+    _resetUploadProgress();
+
     _failedTasks.clear();
     _completedTasks.clear();
     tasks.clear();
 
     for (var task in failedTasks) {
-      addTask(task.copyWith(status: UploadStatus.notStarted));
+      addTask(
+        task.copyWith(
+          status: UploadStatus.notStarted,
+          progress: 0,
+          cancelToken: null,
+        ),
+      );
     }
 
     init();
@@ -373,6 +369,14 @@ class _UploadController implements UploadController {
 
   int totalSize() {
     return _totalSize;
+  }
+
+  void _resetUploadProgress() {
+    _numberOfItems = 0;
+    _totalProgress = 0;
+    _totalUploaded = 0;
+    _totalUploadedItems = 0;
+    _start = null;
   }
 
   void Function(UploadProgress progress)? _onProgressChange = (progress) {};

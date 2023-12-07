@@ -41,12 +41,16 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     required UploadController controller,
     required bool Function() verifyCancel,
   }) async {
-    /// sends the metadata item first
     final dataItemResults = await createDataItemResultFromDataItemFiles(
       dataItems,
       wallet,
     );
 
+    debugPrint('metadata uploaded for the file: ${task.metadataUploaded}');
+
+    /// uploads the metadata item if it hasn't been uploaded yet. It can happen
+    /// that the metadata item is uploaded but the data item is not, so we need
+    /// to check for that.
     if (!task.metadataUploaded) {
       debugPrint('uploading metadata for the file');
 
@@ -80,6 +84,9 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
           error: uploadResult.error,
         );
       }
+
+      task.metadataUploaded = true;
+      controller.updateProgress(task: task);
     }
 
     final dataItem = dataItemResults[1];
@@ -166,7 +173,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     );
   }
 }
-
+  
 class UploadFileUsingBundleStrategy extends UploadFileStrategy {
   final DataBundler _dataBundler;
   final StreamedUploadFactory _streamedUploadFactory;
