@@ -80,7 +80,7 @@ abstract class PlausibleEventTracker {
     );
   }
 
-  static Future<void> tradckUploadReview({
+  static Future<void> trackUploadReview({
     required DrivePrivacy drivePrivacy,
     required UploadType uploadType,
     required bool dragNDrop,
