@@ -1,42 +1,22 @@
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_uploader/src/d2n_streamed_upload.dart';
-import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
-import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:arweave/arweave.dart';
 
 class StreamedUploadResult {
   final bool success;
+  final Object? error;
 
   StreamedUploadResult({
     required this.success,
+    this.error,
   });
 }
 
-abstract class StreamedUpload<T> {
+abstract class StreamedUpload<T extends UploadItem> {
   Future<StreamedUploadResult> send(
     T handle,
     Wallet wallet,
-    UploadController controller,
+    void Function(double)? onProgress,
   );
 
-  Future<void> cancel(T handle, UploadController controller);
-}
-
-class StreamedUploadFactory {
-  StreamedUpload fromUploadType(
-    UploadType type,
-    Uri turboUploadUri,
-  ) {
-    if (type == UploadType.d2n) {
-      return D2NStreamedUpload();
-    } else if (type == UploadType.turbo) {
-      return TurboStreamedUpload(
-        TurboUploadServiceImpl(
-          turboUploadUri: turboUploadUri,
-        ),
-      );
-    } else {
-      throw Exception('Invalid upload type');
-    }
-  }
+  Future<void> cancel(T handle);
 }

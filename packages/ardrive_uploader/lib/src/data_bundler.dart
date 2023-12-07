@@ -311,15 +311,13 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       driveKey: driveKey,
     );
 
-    onFinishMetadataCreation?.call();
-
     final fileDataItem = _generateFileDataItem(
       metadata: metadata,
       dataStream: dataGenerator.$1,
       fileLength: dataGenerator.$4,
     );
 
-    onStartBundleCreation?.call();
+    onFinishMetadataCreation?.call();
 
     return [metadataDataItem, fileDataItem];
   }

@@ -603,6 +603,16 @@ class UploadCubit extends Cubit<UploadState> {
 
   bool? _containsLargeTurboUpload;
 
+  void retryUploads() {
+    if (state is UploadFailure) {
+      logger.d('Retrying uploads');
+
+      final controller = (state as UploadFailure).controller!;
+
+      controller.retryFailedTasks(_auth.currentUser.wallet);
+    }
+  }
+
   Future<void> _uploadUsingArDriveUploader() async {
     final ardriveUploader = ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
@@ -659,8 +669,15 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onError((tasks) {
       logger.e('Error uploading', tasks);
-      addError(Exception('Error uploading'));
+      logger.d('Error uploading emiting error');
       hasEmittedError = true;
+      emit(
+        UploadFailure(
+          error: UploadErrors.unknown,
+          failedTasks: tasks,
+          controller: uploadController,
+        ),
+      );
     });
 
     uploadController.onProgressChange(
