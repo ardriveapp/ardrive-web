@@ -80,7 +80,7 @@ abstract class PlausibleEventTracker {
     );
   }
 
-  static Future<void> trackFileUploadReview({
+  static Future<void> tradckUploadReview({
     required DrivePrivacy drivePrivacy,
     required UploadType uploadType,
     required bool dragNDrop,
@@ -132,6 +132,17 @@ abstract class PlausibleEventTracker {
     return _trackCustomEvent(
       page: PlausiblePageView.welcomeBackPage,
       event: PlausibleCustomEvent.login,
+      props: props.toJson(),
+    );
+  }
+
+  static Future<void> trackResync({
+    required ResyncType type,
+  }) {
+    final props = ResyncProperties(type: type);
+    return _trackCustomEvent(
+      page: PlausiblePageView.fileExplorerPage,
+      event: PlausibleCustomEvent.resync,
       props: props.toJson(),
     );
   }

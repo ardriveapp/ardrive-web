@@ -2,6 +2,7 @@ enum PlausibleCustomEvent {
   appLoaded,
   newButton,
   login,
+  resync,
   uploadReview,
   uploadConfirm,
   uploadSuccess,
@@ -17,6 +18,8 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
         return 'New Button';
       case PlausibleCustomEvent.login:
         return 'Login';
+      case PlausibleCustomEvent.resync:
+        return 'Resync';
       case PlausibleCustomEvent.uploadReview:
         return 'Upload Review';
       case PlausibleCustomEvent.uploadConfirm:

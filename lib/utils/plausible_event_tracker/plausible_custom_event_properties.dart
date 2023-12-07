@@ -128,3 +128,34 @@ enum LoginType {
   json,
   seedphrase,
 }
+
+@JsonSerializable()
+class ResyncProperties {
+  @JsonKey(
+    name: 'Resync Type',
+    fromJson: resyncTypeFromJson,
+    toJson: resyncTypeToJson,
+  )
+  final ResyncType type;
+
+  ResyncProperties({
+    required this.type,
+  });
+
+  factory ResyncProperties.fromJson(Map<String, dynamic> json) =>
+      _$ResyncPropertiesFromJson(json);
+  Map<String, dynamic> toJson() => _$ResyncPropertiesToJson(this);
+
+  static ResyncType resyncTypeFromJson(String value) {
+    return ResyncType.values.firstWhere((e) => e.toString() == value);
+  }
+
+  static String resyncTypeToJson(ResyncType resyncType) {
+    return resyncType.toString();
+  }
+}
+
+enum ResyncType {
+  deepResync,
+  resync,
+}

@@ -416,7 +416,7 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
 
-      PlausibleEventTracker.trackFileUploadReview(
+      PlausibleEventTracker.trackUploadReview(
         drivePrivacy:
             _targetDrive.isPrivate ? DrivePrivacy.private : DrivePrivacy.public,
         uploadType: _uploadMethod! == UploadMethod.ar
