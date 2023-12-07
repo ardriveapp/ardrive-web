@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';
@@ -15,6 +16,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
@@ -413,6 +415,18 @@ class UploadCubit extends Cubit<UploadState> {
           isButtonToUploadEnabled: isButtonEnabled,
         ),
       );
+
+      PlausibleEventTracker.trackFileUploadReview(
+        drivePrivacy:
+            _targetDrive.isPrivate ? DrivePrivacy.private : DrivePrivacy.public,
+        uploadType: _uploadMethod! == UploadMethod.ar
+            ? UploadType.d2n
+            : UploadType.turbo,
+        dragNDrop: false,
+        hasFolders: uploadFolders,
+        hasMultipleFiles: files.length > 1,
+        hasSingleFile: files.length == 1,
+      );
     } catch (error, stacktrace) {
       logger.e('error mounting the upload', error, stacktrace);
       addError(error);
@@ -450,6 +464,8 @@ class UploadCubit extends Cubit<UploadState> {
         isArConnect: await _profileCubit.isCurrentProfileArConnect(),
       ),
     );
+
+    PlausibleEventTracker.trackUploadConfirm();
 
     logger.d(
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
@@ -684,16 +700,25 @@ class UploadCubit extends Cubit<UploadState> {
       (tasks) async {
         logger.d('Upload finished');
 
+        bool uploadSucced = true;
+
         if (tasks.any((element) => element.status == UploadStatus.failed)) {
           logger.e('Error uploading');
           // if any of the files failed, we should throw an error
           addError(Exception('Error uploading'));
+
+          PlausibleEventTracker.trackUploadFailure();
+          uploadSucced = false;
         }
 
         unawaited(_profileCubit.refreshBalance());
 
         // all files are uploaded
         emit(UploadComplete());
+
+        if (uploadSucced) {
+          PlausibleEventTracker.trackUploadSuccess();
+        }
       },
     );
 

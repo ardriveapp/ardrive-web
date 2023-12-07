@@ -1,11 +1,13 @@
 import 'dart:convert';
 
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_api_data.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_events.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_data.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_page_view_events.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -75,6 +77,51 @@ abstract class PlausibleEventTracker {
       page: PlausiblePageView.fileExplorerPage,
       event: PlausibleCustomEvent.newButton,
       props: props,
+    );
+  }
+
+  static Future<void> trackFileUploadReview({
+    required DrivePrivacy drivePrivacy,
+    required UploadType uploadType,
+    required bool dragNDrop,
+    required bool hasFolders,
+    required bool hasSingleFile,
+    required bool hasMultipleFiles,
+  }) {
+    final props = UploadReviewProperties(
+      drivePrivacy: drivePrivacy,
+      uploadType: uploadType,
+      dragNDrop: dragNDrop,
+      hasFolders: hasFolders,
+      hasSingleFile: hasSingleFile,
+      hasMultipleFiles: hasMultipleFiles,
+    ).toJson();
+
+    return _trackCustomEvent(
+      page: PlausiblePageView.fileExplorerPage,
+      event: PlausibleCustomEvent.uploadReview,
+      props: props,
+    );
+  }
+
+  static Future<void> trackUploadConfirm() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.fileExplorerPage,
+      event: PlausibleCustomEvent.uploadConfirm,
+    );
+  }
+
+  static Future<void> trackUploadSuccess() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.fileExplorerPage,
+      event: PlausibleCustomEvent.uploadSuccess,
+    );
+  }
+
+  static Future<void> trackUploadFailure() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.fileExplorerPage,
+      event: PlausibleCustomEvent.uploadFailure,
     );
   }
 
