@@ -6,6 +6,7 @@ enum PlausibleCustomEvent {
   newButton,
   pinCreation,
   resync,
+  snapshotCreation,
   uploadReview,
   uploadConfirm,
   uploadSuccess,
@@ -29,6 +30,8 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
         return 'Pin Creation';
       case PlausibleCustomEvent.resync:
         return 'Resync';
+      case PlausibleCustomEvent.snapshotCreation:
+        return 'Snapshot Creation';
       case PlausibleCustomEvent.uploadReview:
         return 'Upload Review';
       case PlausibleCustomEvent.uploadConfirm:
