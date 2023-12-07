@@ -8,6 +8,8 @@ import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -34,6 +36,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   @visibleForTesting
   ProfileType? profileType;
+
+  bool usingSeedphrase = false;
 
   LoginBloc({
     required ArDriveAuth arDriveAuth,
@@ -91,8 +95,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     } catch (e) {
       logger.e('Failed to unlock user with biometrics.', e);
 
+      usingSeedphrase = false;
       emit(LoginFailure(e));
-
       emit(previousState);
     }
   }
@@ -130,6 +134,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit(LoginOnBoarding(wallet));
       }
     } catch (e) {
+      usingSeedphrase = false;
       emit(LoginFailure(e));
       emit(previousState);
     }
@@ -144,17 +149,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     try {
       emit(LoginLoading());
 
-      await _verifyArConnectWalletAddressAndLogin(
+      await _verifyArConnectWalletAddressAndLogIn(
         wallet: event.wallet,
         password: event.password,
         emit: emit,
         previousState: previousState,
         profileType: profileType!,
       );
-
-      // I can't determine the type
-      // PlausibleEventTracker.trackLogin(
     } catch (e) {
+      usingSeedphrase = false;
       emit(LoginFailure(e));
       emit(previousState);
     }
@@ -205,10 +208,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     try {
       final user = await _arDriveAuth.unlockUser(password: event.password);
 
+      final type = usingSeedphrase ? LoginType.seedphrase : LoginType.json;
+      PlausibleEventTracker.trackLogin(type: type);
+
       emit(LoginSuccess(user));
     } catch (e) {
       logger.e('Failed to unlock user with password', e);
 
+      usingSeedphrase = false;
       emit(LoginFailure(e));
       emit(previousState);
 
@@ -225,7 +232,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(LoginLoading());
 
     try {
-      await _verifyArConnectWalletAddressAndLogin(
+      await _verifyArConnectWalletAddressAndLogIn(
         wallet: event.wallet,
         password: event.password,
         emit: emit,
@@ -233,6 +240,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         profileType: profileType!,
       );
     } catch (e) {
+      usingSeedphrase = false;
       emit(LoginFailure(e));
       emit(previousState);
     }
@@ -243,6 +251,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     Emitter<LoginState> emit,
   ) async {
     final previousState = state;
+    usingSeedphrase = false;
 
     try {
       emit(LoginLoading());
@@ -289,6 +298,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arDriveAuth.logout();
     }
 
+    usingSeedphrase = false;
+
     emit(LoginInitial(
       isArConnectAvailable: _arConnectService.isExtensionPresent(),
     ));
@@ -303,7 +314,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     return lastKnownWalletAddress == await _arConnectService.getWalletAddress();
   }
 
-  Future<void> _verifyArConnectWalletAddressAndLogin({
+  Future<void> _verifyArConnectWalletAddressAndLogIn({
     required Wallet wallet,
     required String password,
     required ProfileType profileType,
@@ -314,6 +325,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final isArConnectAddressValid = await _verifyArConnectWalletAddress();
 
       if (!isArConnectAddressValid) {
+        usingSeedphrase = false;
         emit(const LoginFailure(WalletMismatchException()));
         emit(previousState);
 
@@ -326,6 +338,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       password,
       profileType,
     );
+
+    final type = profileType == ProfileType.arConnect
+        ? LoginType.arConnect
+        : usingSeedphrase
+            ? LoginType.seedphrase
+            : LoginType.json;
+    PlausibleEventTracker.trackLogin(type: type);
 
     emit(LoginSuccess(user));
   }
@@ -368,6 +387,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final user = await _arDriveAuth.unlockWithBiometrics(
         localizedReason: 'Login using credentials stored on this device');
 
+    const type = LoginType.json;
+    PlausibleEventTracker.trackLogin(type: type);
     emit(LoginSuccess(user));
 
     return;
@@ -383,6 +404,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleAddWalletFromMnemonicEvent(
       AddWalletFromMnemonic event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
+    usingSeedphrase = true;
 
     emit(const LoginGenerateWallet());
 
@@ -395,6 +417,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     Emitter<LoginState> emit,
   ) async {
     profileType = ProfileType.json;
+    usingSeedphrase = true;
 
     Completer<Wallet> completer = event.walletCompleter;
     Wallet wallet;
@@ -419,6 +442,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     Emitter<LoginState> emit,
   ) async {
     profileType = ProfileType.json;
+    usingSeedphrase = true;
     final mnemonic = bip39.generateMnemonic();
     emit(LoginCreateNewWallet(mnemonic));
   }
@@ -439,6 +463,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit(LoginOnBoarding(wallet));
       }
     } catch (e) {
+      usingSeedphrase = false;
       emit(LoginFailure(e));
       emit(previousState);
     }

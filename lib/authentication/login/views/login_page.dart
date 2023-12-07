@@ -131,11 +131,12 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
           } else if (loginState is LoginSuccess) {
+            final profileType = loginState.user.profileType;
             logger.d('Login Success, unlocking default profile');
 
             context.read<ProfileCubit>().unlockDefaultProfile(
                   loginState.user.password,
-                  loginState.user.profileType,
+                  profileType,
                 );
           }
         },
