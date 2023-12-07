@@ -1,10 +1,8 @@
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/d2n_streamed_upload.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
-import 'package:ardrive_uploader/src/factories.dart';
 import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
-import 'package:ardrive_uploader/src/upload_strategy.dart';
 import 'package:arweave/arweave.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';

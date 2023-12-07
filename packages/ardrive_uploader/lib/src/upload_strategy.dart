@@ -173,7 +173,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     );
   }
 }
-  
+
 class UploadFileUsingBundleStrategy extends UploadFileStrategy {
   final DataBundler _dataBundler;
   final StreamedUploadFactory _streamedUploadFactory;
@@ -344,11 +344,5 @@ class UploadFolderStructureAsBundleStrategy
         status: UploadStatus.complete,
       ),
     );
-  }
-}
-
-void _checkForCancellation(bool Function() verifyCancel) {
-  if (verifyCancel()) {
-    throw Exception('Upload canceled');
   }
 }
