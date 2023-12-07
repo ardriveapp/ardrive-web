@@ -157,7 +157,7 @@ class ResyncProperties {
 
 enum ResyncType {
   deepResync,
-  partial,
+  resync,
 }
 
 @JsonSerializable()
@@ -176,6 +176,33 @@ class DriveCreationProperties {
   factory DriveCreationProperties.fromJson(Map<String, dynamic> json) =>
       _$DriveCreationPropertiesFromJson(json);
   Map<String, dynamic> toJson() => _$DriveCreationPropertiesToJson(this);
+
+  static DrivePrivacy drivePrivacyFromJson(String value) {
+    return DrivePrivacy.values.firstWhere((e) => e.toString() == value);
+  }
+
+  static String drivePrivacyToJson(DrivePrivacy drivePrivacy) {
+    return drivePrivacy.toString();
+  }
+}
+
+@JsonSerializable()
+class FolderCreationProperties {
+  @JsonKey(
+    name: 'Drive Privacy',
+    fromJson: drivePrivacyFromJson,
+    toJson: drivePrivacyToJson,
+  )
+  final DrivePrivacy drivePrivacy;
+
+  FolderCreationProperties({
+    required this.drivePrivacy,
+  });
+
+  factory FolderCreationProperties.fromJson(Map<String, dynamic> json) =>
+      _$FolderCreationPropertiesFromJson(json);
+
+  Map<String, dynamic> toJson() => _$FolderCreationPropertiesToJson(this);
 
   static DrivePrivacy drivePrivacyFromJson(String value) {
     return DrivePrivacy.values.firstWhere((e) => e.toString() == value);

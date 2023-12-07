@@ -160,6 +160,19 @@ abstract class PlausibleEventTracker {
     );
   }
 
+  static Future<void> trackFolderCreation({
+    required DrivePrivacy drivePrivacy,
+  }) {
+    final props = FolderCreationProperties(
+      drivePrivacy: drivePrivacy,
+    );
+    return _trackCustomEvent(
+      page: PlausiblePageView.fileExplorerPage,
+      event: PlausibleCustomEvent.folderCreation,
+      props: props.toJson(),
+    );
+  }
+
   static Future<AppLoadedProperties> _getAppLoadedEventProps() async {
     final String platform = AppPlatform.getPlatform().name;
     final String platformVersion = await AppPlatform.androidVersion() ??
