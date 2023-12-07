@@ -1,0 +1,1 @@
+- Corrects issue of ArConnect wallets incorrectly logging out profiles when the selected wallet is changed in the browser extension.

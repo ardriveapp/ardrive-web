@@ -1,0 +1,2 @@
+- Fixes Tab-Switch upload failure in Turbo Web App
+- Increases the limit of Turbo Uploads to 10GiB

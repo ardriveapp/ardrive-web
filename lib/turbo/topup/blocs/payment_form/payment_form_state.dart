@@ -14,6 +14,8 @@ abstract class PaymentFormState extends Equatable {
       priceEstimate.humanReadableDiscountPercentage;
   String get paymentAmount => priceEstimate.paymentAmount.toStringAsFixed(2);
   BigInt get winstonCredits => priceEstimate.winstonCredits;
+  bool get hasReachedMaximumDiscount => priceEstimate.hasReachedMaximumDiscount;
+  String? get adjustmentAmount => priceEstimate.adjustmentAmount;
 
   @override
   List<Object> get props => [

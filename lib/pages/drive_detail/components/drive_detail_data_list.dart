@@ -254,6 +254,7 @@ Widget _buildDataListContent(
         );
       },
       rows: items,
+      selectedRow: context.watch<DriveDetailCubit>().selectedItem,
     );
   });
 }
