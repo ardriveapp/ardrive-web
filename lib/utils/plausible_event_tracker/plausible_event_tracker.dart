@@ -63,7 +63,7 @@ abstract class PlausibleEventTracker {
     await _trackCustomEvent(
       page: PlausiblePageView.welcomePage,
       event: PlausibleCustomEvent.appLoaded,
-      props: props,
+      props: props.toJson(),
     );
   }
 
@@ -72,11 +72,11 @@ abstract class PlausibleEventTracker {
   }) async {
     final props = NewButtonProperties(
       location: location,
-    ).toJson();
+    );
     await _trackCustomEvent(
       page: PlausiblePageView.fileExplorerPage,
       event: PlausibleCustomEvent.newButton,
-      props: props,
+      props: props.toJson(),
     );
   }
 
@@ -95,12 +95,12 @@ abstract class PlausibleEventTracker {
       hasFolders: hasFolders,
       hasSingleFile: hasSingleFile,
       hasMultipleFiles: hasMultipleFiles,
-    ).toJson();
+    );
 
     return _trackCustomEvent(
       page: PlausiblePageView.fileExplorerPage,
       event: PlausibleCustomEvent.uploadReview,
-      props: props,
+      props: props.toJson(),
     );
   }
 
@@ -125,7 +125,18 @@ abstract class PlausibleEventTracker {
     );
   }
 
-  static Future<Map<String, dynamic>> _getAppLoadedEventProps() async {
+  static Future<void> trackLogin({
+    required LoginType type,
+  }) {
+    final props = LoginProperties(type: type);
+    return _trackCustomEvent(
+      page: PlausiblePageView.welcomeBackPage,
+      event: PlausibleCustomEvent.login,
+      props: props.toJson(),
+    );
+  }
+
+  static Future<AppLoadedProperties> _getAppLoadedEventProps() async {
     final String platform = AppPlatform.getPlatform().name;
     final String platformVersion = await AppPlatform.androidVersion() ??
         await AppPlatform.iosVersion() ??
@@ -137,7 +148,7 @@ abstract class PlausibleEventTracker {
       appVersion: appVersion,
       platform: platform,
       platformVersion: platformVersion,
-    ).toJson();
+    );
 
     return props;
   }

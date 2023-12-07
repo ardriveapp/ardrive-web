@@ -151,6 +151,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         previousState: previousState,
         profileType: profileType!,
       );
+
+      // I can't determine the type
+      // PlausibleEventTracker.trackLogin(
     } catch (e) {
       emit(LoginFailure(e));
       emit(previousState);

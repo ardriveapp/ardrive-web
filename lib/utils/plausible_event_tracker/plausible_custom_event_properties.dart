@@ -96,3 +96,35 @@ enum NewButtonLocation {
   bottom,
   sidebar,
 }
+
+@JsonSerializable()
+class LoginProperties {
+  @JsonKey(
+    name: 'Login Type',
+    fromJson: loginTypeFromJson,
+    toJson: loginTypeToJson,
+  )
+  final LoginType type;
+
+  LoginProperties({
+    required this.type,
+  });
+
+  factory LoginProperties.fromJson(Map<String, dynamic> json) =>
+      _$LoginPropertiesFromJson(json);
+  Map<String, dynamic> toJson() => _$LoginPropertiesToJson(this);
+
+  static LoginType loginTypeFromJson(String value) {
+    return LoginType.values.firstWhere((e) => e.toString() == value);
+  }
+
+  static String loginTypeToJson(LoginType loginType) {
+    return loginType.toString();
+  }
+}
+
+enum LoginType {
+  arConnect,
+  json,
+  seedphrase,
+}
