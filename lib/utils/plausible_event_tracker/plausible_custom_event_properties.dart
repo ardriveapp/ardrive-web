@@ -212,3 +212,30 @@ class FolderCreationProperties {
     return drivePrivacy.toString();
   }
 }
+
+@JsonSerializable()
+class PinCreationProperties {
+  @JsonKey(
+    name: 'Drive Privacy',
+    fromJson: drivePrivacyFromJson,
+    toJson: drivePrivacyToJson,
+  )
+  final DrivePrivacy drivePrivacy;
+
+  PinCreationProperties({
+    required this.drivePrivacy,
+  });
+
+  factory PinCreationProperties.fromJson(Map<String, dynamic> json) =>
+      _$PinCreationPropertiesFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PinCreationPropertiesToJson(this);
+
+  static DrivePrivacy drivePrivacyFromJson(String value) {
+    return DrivePrivacy.values.firstWhere((e) => e.toString() == value);
+  }
+
+  static String drivePrivacyToJson(DrivePrivacy drivePrivacy) {
+    return drivePrivacy.toString();
+  }
+}

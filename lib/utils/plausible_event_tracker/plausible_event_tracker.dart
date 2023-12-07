@@ -173,6 +173,19 @@ abstract class PlausibleEventTracker {
     );
   }
 
+  static Future<void> trackPinCreation({
+    required DrivePrivacy drivePrivacy,
+  }) {
+    final props = PinCreationProperties(
+      drivePrivacy: drivePrivacy,
+    );
+    return _trackCustomEvent(
+      page: PlausiblePageView.fileExplorerPage,
+      event: PlausibleCustomEvent.pinCreation,
+      props: props.toJson(),
+    );
+  }
+
   static Future<AppLoadedProperties> _getAppLoadedEventProps() async {
     final String platform = AppPlatform.getPlatform().name;
     final String platformVersion = await AppPlatform.androidVersion() ??
