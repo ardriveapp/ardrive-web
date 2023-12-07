@@ -266,3 +266,30 @@ class SnapshotCreationProperties {
     return drivePrivacy.toString();
   }
 }
+
+@JsonSerializable()
+class AttachDriveProperties {
+  @JsonKey(
+    name: 'Drive Privacy',
+    fromJson: drivePrivacyFromJson,
+    toJson: drivePrivacyToJson,
+  )
+  final DrivePrivacy drivePrivacy;
+
+  AttachDriveProperties({
+    required this.drivePrivacy,
+  });
+
+  factory AttachDriveProperties.fromJson(Map<String, dynamic> json) =>
+      _$AttachDrivePropertiesFromJson(json);
+
+  Map<String, dynamic> toJson() => _$AttachDrivePropertiesToJson(this);
+
+  static DrivePrivacy drivePrivacyFromJson(String value) {
+    return DrivePrivacy.values.firstWhere((e) => e.toString() == value);
+  }
+
+  static String drivePrivacyToJson(DrivePrivacy drivePrivacy) {
+    return drivePrivacy.toString();
+  }
+}

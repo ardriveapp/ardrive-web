@@ -1,5 +1,6 @@
 enum PlausibleCustomEvent {
   appLoaded,
+  attachDrive,
   driveCreation,
   folderCreation,
   login,
@@ -18,6 +19,8 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
     switch (this) {
       case PlausibleCustomEvent.appLoaded:
         return 'App Loaded';
+      case PlausibleCustomEvent.attachDrive:
+        return 'Attach Drive';
       case PlausibleCustomEvent.driveCreation:
         return 'Drive Creation';
       case PlausibleCustomEvent.folderCreation:
