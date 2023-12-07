@@ -157,5 +157,5 @@ class ResyncProperties {
 
 enum ResyncType {
   deepResync,
-  resync,
+  partial,
 }
