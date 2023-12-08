@@ -38,6 +38,7 @@ enum UploadMethod { ar, turbo }
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String parentFolderId;
+  final bool isDragNDrop;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
@@ -106,6 +107,7 @@ class UploadCubit extends Cubit<UploadState> {
     required ActivityTracker activityTracker,
     this.folder,
     this.uploadFolders = false,
+    this.isDragNDrop = false,
   })  : _profileCubit = profileCubit,
         _uploadFileChecker = uploadFileChecker,
         _driveDao = driveDao,
@@ -419,7 +421,7 @@ class UploadCubit extends Cubit<UploadState> {
       PlausibleEventTracker.trackUploadReview(
         drivePrivacy:
             _targetDrive.isPrivate ? DrivePrivacy.private : DrivePrivacy.public,
-        dragNDrop: false,
+        dragNDrop: isDragNDrop,
       );
     } catch (error, stacktrace) {
       logger.e('error mounting the upload', error, stacktrace);
