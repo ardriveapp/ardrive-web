@@ -40,31 +40,14 @@ class NewButtonProperties {
 
 @JsonSerializable()
 class UploadReviewProperties {
-  @JsonKey(
-    name: 'Drive Privacy',
-  )
+  @JsonKey(name: 'Drive Privacy')
   DrivePrivacy drivePrivacy;
-  @JsonKey(
-    name: 'Upload Type',
-  )
-  UploadType uploadType;
   @JsonKey(name: 'Drag n Drop')
   bool dragNDrop;
 
-  @JsonKey(name: 'Has Folders')
-  bool hasFolders;
-  @JsonKey(name: 'Single File')
-  bool hasSingleFile;
-  @JsonKey(name: 'Multiple Files')
-  bool hasMultipleFiles;
-
   UploadReviewProperties({
     required this.drivePrivacy,
-    required this.uploadType,
     required this.dragNDrop,
-    required this.hasFolders,
-    required this.hasSingleFile,
-    required this.hasMultipleFiles,
   });
 
   factory UploadReviewProperties.fromJson(Map<String, dynamic> json) =>
@@ -78,10 +61,31 @@ enum NewButtonLocation {
 }
 
 @JsonSerializable()
+class UploadConfirmProperties {
+  @JsonKey(name: 'Upload Type')
+  UploadType uploadType;
+  @JsonKey(name: 'Has Folders')
+  bool hasFolders;
+  @JsonKey(name: 'Single File')
+  bool hasSingleFile;
+  @JsonKey(name: 'Multiple Files')
+  bool hasMultipleFiles;
+
+  UploadConfirmProperties({
+    required this.uploadType,
+    required this.hasFolders,
+    required this.hasSingleFile,
+    required this.hasMultipleFiles,
+  });
+
+  factory UploadConfirmProperties.fromJson(Map<String, dynamic> json) =>
+      _$UploadConfirmPropertiesFromJson(json);
+  Map<String, dynamic> toJson() => _$UploadConfirmPropertiesToJson(this);
+}
+
+@JsonSerializable()
 class LoginProperties {
-  @JsonKey(
-    name: 'Login Type',
-  )
+  @JsonKey(name: 'Login Type')
   final LoginType type;
 
   LoginProperties({
@@ -101,9 +105,7 @@ enum LoginType {
 
 @JsonSerializable()
 class ResyncProperties {
-  @JsonKey(
-    name: 'Resync Type',
-  )
+  @JsonKey(name: 'Resync Type')
   final ResyncType type;
 
   ResyncProperties({
@@ -122,9 +124,7 @@ enum ResyncType {
 
 @JsonSerializable()
 class DriveCreationProperties {
-  @JsonKey(
-    name: 'Drive Privacy',
-  )
+  @JsonKey(name: 'Drive Privacy')
   final DrivePrivacy drivePrivacy;
 
   DriveCreationProperties({
@@ -138,9 +138,7 @@ class DriveCreationProperties {
 
 @JsonSerializable()
 class FolderCreationProperties {
-  @JsonKey(
-    name: 'Drive Privacy',
-  )
+  @JsonKey(name: 'Drive Privacy')
   final DrivePrivacy drivePrivacy;
 
   FolderCreationProperties({
@@ -155,9 +153,7 @@ class FolderCreationProperties {
 
 @JsonSerializable()
 class PinCreationProperties {
-  @JsonKey(
-    name: 'Drive Privacy',
-  )
+  @JsonKey(name: 'Drive Privacy')
   final DrivePrivacy drivePrivacy;
 
   PinCreationProperties({
@@ -172,9 +168,7 @@ class PinCreationProperties {
 
 @JsonSerializable()
 class SnapshotCreationProperties {
-  @JsonKey(
-    name: 'Drive Privacy',
-  )
+  @JsonKey(name: 'Drive Privacy')
   final DrivePrivacy drivePrivacy;
 
   SnapshotCreationProperties({
@@ -189,9 +183,7 @@ class SnapshotCreationProperties {
 
 @JsonSerializable()
 class AttachDriveProperties {
-  @JsonKey(
-    name: 'Drive Privacy',
-  )
+  @JsonKey(name: 'Drive Privacy')
   final DrivePrivacy drivePrivacy;
 
   AttachDriveProperties({

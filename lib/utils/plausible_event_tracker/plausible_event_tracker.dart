@@ -82,19 +82,11 @@ abstract class PlausibleEventTracker {
 
   static Future<void> trackUploadReview({
     required DrivePrivacy drivePrivacy,
-    required UploadType uploadType,
     required bool dragNDrop,
-    required bool hasFolders,
-    required bool hasSingleFile,
-    required bool hasMultipleFiles,
   }) {
     final props = UploadReviewProperties(
       drivePrivacy: drivePrivacy,
-      uploadType: uploadType,
       dragNDrop: dragNDrop,
-      hasFolders: hasFolders,
-      hasSingleFile: hasSingleFile,
-      hasMultipleFiles: hasMultipleFiles,
     );
 
     return _trackCustomEvent(
@@ -104,10 +96,22 @@ abstract class PlausibleEventTracker {
     );
   }
 
-  static Future<void> trackUploadConfirm() {
+  static Future<void> trackUploadConfirm({
+    required UploadType uploadType,
+    required bool hasFolders,
+    required bool hasSingleFile,
+    required bool hasMultipleFiles,
+  }) {
+    final props = UploadConfirmProperties(
+      uploadType: uploadType,
+      hasFolders: hasFolders,
+      hasSingleFile: hasSingleFile,
+      hasMultipleFiles: hasMultipleFiles,
+    );
     return _trackCustomEvent(
       page: PlausiblePageView.fileExplorerPage,
       event: PlausibleCustomEvent.uploadConfirm,
+      props: props.toJson(),
     );
   }
 

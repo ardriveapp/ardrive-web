@@ -419,13 +419,7 @@ class UploadCubit extends Cubit<UploadState> {
       PlausibleEventTracker.trackUploadReview(
         drivePrivacy:
             _targetDrive.isPrivate ? DrivePrivacy.private : DrivePrivacy.public,
-        uploadType: _uploadMethod! == UploadMethod.ar
-            ? UploadType.d2n
-            : UploadType.turbo,
         dragNDrop: false,
-        hasFolders: uploadFolders,
-        hasMultipleFiles: files.length > 1,
-        hasSingleFile: files.length == 1,
       );
     } catch (error, stacktrace) {
       logger.e('error mounting the upload', error, stacktrace);
@@ -465,7 +459,14 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    PlausibleEventTracker.trackUploadConfirm();
+    final type =
+        _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo;
+    PlausibleEventTracker.trackUploadConfirm(
+      uploadType: type,
+      hasFolders: uploadFolders,
+      hasMultipleFiles: files.length > 1,
+      hasSingleFile: files.length == 1,
+    );
 
     logger.d(
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
