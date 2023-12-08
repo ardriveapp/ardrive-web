@@ -42,14 +42,10 @@ class NewButtonProperties {
 class UploadReviewProperties {
   @JsonKey(
     name: 'Drive Privacy',
-    fromJson: drivePrivacyFromJson,
-    toJson: drivePrivacyToJson,
   )
   DrivePrivacy drivePrivacy;
   @JsonKey(
     name: 'Upload Type',
-    fromJson: uploadTypeFromJson,
-    toJson: uploadTypeToJson,
   )
   UploadType uploadType;
   @JsonKey(name: 'Drag n Drop')
@@ -74,22 +70,6 @@ class UploadReviewProperties {
   factory UploadReviewProperties.fromJson(Map<String, dynamic> json) =>
       _$UploadReviewPropertiesFromJson(json);
   Map<String, dynamic> toJson() => _$UploadReviewPropertiesToJson(this);
-
-  static DrivePrivacy drivePrivacyFromJson(String value) {
-    return DrivePrivacy.values.firstWhere((e) => e.toString() == value);
-  }
-
-  static String drivePrivacyToJson(DrivePrivacy drivePrivacy) {
-    return drivePrivacy.toString();
-  }
-
-  static UploadType uploadTypeFromJson(String value) {
-    return UploadType.values.firstWhere((e) => e.toString() == value);
-  }
-
-  static String uploadTypeToJson(UploadType uploadType) {
-    return uploadType.toString();
-  }
 }
 
 enum NewButtonLocation {
@@ -101,8 +81,6 @@ enum NewButtonLocation {
 class LoginProperties {
   @JsonKey(
     name: 'Login Type',
-    fromJson: loginTypeFromJson,
-    toJson: loginTypeToJson,
   )
   final LoginType type;
 
@@ -113,14 +91,6 @@ class LoginProperties {
   factory LoginProperties.fromJson(Map<String, dynamic> json) =>
       _$LoginPropertiesFromJson(json);
   Map<String, dynamic> toJson() => _$LoginPropertiesToJson(this);
-
-  static LoginType loginTypeFromJson(String value) {
-    return LoginType.values.firstWhere((e) => e.toString() == value);
-  }
-
-  static String loginTypeToJson(LoginType loginType) {
-    return loginType.toString();
-  }
 }
 
 enum LoginType {
@@ -133,8 +103,6 @@ enum LoginType {
 class ResyncProperties {
   @JsonKey(
     name: 'Resync Type',
-    fromJson: resyncTypeFromJson,
-    toJson: resyncTypeToJson,
   )
   final ResyncType type;
 
@@ -145,14 +113,6 @@ class ResyncProperties {
   factory ResyncProperties.fromJson(Map<String, dynamic> json) =>
       _$ResyncPropertiesFromJson(json);
   Map<String, dynamic> toJson() => _$ResyncPropertiesToJson(this);
-
-  static ResyncType resyncTypeFromJson(String value) {
-    return ResyncType.values.firstWhere((e) => e.toString() == value);
-  }
-
-  static String resyncTypeToJson(ResyncType resyncType) {
-    return resyncType.toString();
-  }
 }
 
 enum ResyncType {
@@ -164,8 +124,6 @@ enum ResyncType {
 class DriveCreationProperties {
   @JsonKey(
     name: 'Drive Privacy',
-    fromJson: drivePrivacyFromJson,
-    toJson: drivePrivacyToJson,
   )
   final DrivePrivacy drivePrivacy;
 
@@ -176,22 +134,12 @@ class DriveCreationProperties {
   factory DriveCreationProperties.fromJson(Map<String, dynamic> json) =>
       _$DriveCreationPropertiesFromJson(json);
   Map<String, dynamic> toJson() => _$DriveCreationPropertiesToJson(this);
-
-  static DrivePrivacy drivePrivacyFromJson(String value) {
-    return DrivePrivacy.values.firstWhere((e) => e.toString() == value);
-  }
-
-  static String drivePrivacyToJson(DrivePrivacy drivePrivacy) {
-    return drivePrivacy.toString();
-  }
 }
 
 @JsonSerializable()
 class FolderCreationProperties {
   @JsonKey(
     name: 'Drive Privacy',
-    fromJson: drivePrivacyFromJson,
-    toJson: drivePrivacyToJson,
   )
   final DrivePrivacy drivePrivacy;
 
@@ -203,22 +151,12 @@ class FolderCreationProperties {
       _$FolderCreationPropertiesFromJson(json);
 
   Map<String, dynamic> toJson() => _$FolderCreationPropertiesToJson(this);
-
-  static DrivePrivacy drivePrivacyFromJson(String value) {
-    return DrivePrivacy.values.firstWhere((e) => e.toString() == value);
-  }
-
-  static String drivePrivacyToJson(DrivePrivacy drivePrivacy) {
-    return drivePrivacy.toString();
-  }
 }
 
 @JsonSerializable()
 class PinCreationProperties {
   @JsonKey(
     name: 'Drive Privacy',
-    fromJson: drivePrivacyFromJson,
-    toJson: drivePrivacyToJson,
   )
   final DrivePrivacy drivePrivacy;
 
@@ -230,22 +168,12 @@ class PinCreationProperties {
       _$PinCreationPropertiesFromJson(json);
 
   Map<String, dynamic> toJson() => _$PinCreationPropertiesToJson(this);
-
-  static DrivePrivacy drivePrivacyFromJson(String value) {
-    return DrivePrivacy.values.firstWhere((e) => e.toString() == value);
-  }
-
-  static String drivePrivacyToJson(DrivePrivacy drivePrivacy) {
-    return drivePrivacy.toString();
-  }
 }
 
 @JsonSerializable()
 class SnapshotCreationProperties {
   @JsonKey(
     name: 'Drive Privacy',
-    fromJson: drivePrivacyFromJson,
-    toJson: drivePrivacyToJson,
   )
   final DrivePrivacy drivePrivacy;
 
@@ -257,22 +185,12 @@ class SnapshotCreationProperties {
       _$SnapshotCreationPropertiesFromJson(json);
 
   Map<String, dynamic> toJson() => _$SnapshotCreationPropertiesToJson(this);
-
-  static DrivePrivacy drivePrivacyFromJson(String value) {
-    return DrivePrivacy.values.firstWhere((e) => e.toString() == value);
-  }
-
-  static String drivePrivacyToJson(DrivePrivacy drivePrivacy) {
-    return drivePrivacy.toString();
-  }
 }
 
 @JsonSerializable()
 class AttachDriveProperties {
   @JsonKey(
     name: 'Drive Privacy',
-    fromJson: drivePrivacyFromJson,
-    toJson: drivePrivacyToJson,
   )
   final DrivePrivacy drivePrivacy;
 
@@ -284,12 +202,4 @@ class AttachDriveProperties {
       _$AttachDrivePropertiesFromJson(json);
 
   Map<String, dynamic> toJson() => _$AttachDrivePropertiesToJson(this);
-
-  static DrivePrivacy drivePrivacyFromJson(String value) {
-    return DrivePrivacy.values.firstWhere((e) => e.toString() == value);
-  }
-
-  static String drivePrivacyToJson(DrivePrivacy drivePrivacy) {
-    return drivePrivacy.toString();
-  }
 }
