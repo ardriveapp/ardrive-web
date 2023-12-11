@@ -51,6 +51,10 @@ class FsEntryLicenseBloc
       addError(Exception('selectedItems cannot be empty'));
     }
 
+    if (selectedItems.any((item) => item is! FileDataTableItem)) {
+      addError(Exception('selectedItems must only contain files'));
+    }
+
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     on<FsEntryLicenseEvent>(
