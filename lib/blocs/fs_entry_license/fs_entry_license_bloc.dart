@@ -9,7 +9,6 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // ignore: depend_on_referenced_packages
@@ -28,7 +27,6 @@ class FsEntryLicenseBloc
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
-  final ArDriveCrypto _crypto;
 
   FsEntryLicenseBloc({
     required this.driveId,
@@ -45,7 +43,6 @@ class FsEntryLicenseBloc
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
-        _crypto = crypto,
         super(const FsEntryLicenseLoadInProgress()) {
     if (selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
@@ -107,50 +104,32 @@ class FsEntryLicenseBloc
 
   Future<void> licenseEntities({
     required FolderEntry parentFolder,
-    List<ArDriveDataTableItem> conflictingItems = const [],
     required ProfileLoggedIn profile,
   }) async {
-    final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
-    final moveTxDataItems = <DataItem>[];
+    final licenseAssertionTxDataItems = <DataItem>[];
 
-    final filesToMove = selectedItems
-        .whereType<FileDataTableItem>()
-        .where((file) => conflictingItems
-            .where((conflictingFile) => conflictingFile.id == file.id)
-            .isEmpty)
-        .toList();
-
-    final foldersToMove = selectedItems
-        .whereType<FolderDataTableItem>()
-        .where((folder) => conflictingItems
-            .where((conflictingFolder) => conflictingFolder.id == folder.id)
-            .isEmpty)
-        .toList();
-
-    final folderMap = <String, FolderEntriesCompanion>{};
+    final filesToLicense =
+        selectedItems.whereType<FileDataTableItem>().toList();
 
     await _driveDao.transaction(() async {
-      for (var fileToMove in filesToMove) {
+      for (var fileToLicense in filesToLicense) {
+        // TODO: Change from move to license
         var file = await _driveDao
-            .fileById(driveId: driveId, fileId: fileToMove.id)
+            .fileById(driveId: driveId, fileId: fileToLicense.id)
             .getSingle();
         file = file.copyWith(
             parentFolderId: parentFolder.id,
             path: '${parentFolder.path}/${file.name}',
             lastUpdated: DateTime.now());
-        final fileKey = driveKey != null
-            ? await _crypto.deriveFileKey(driveKey, file.id)
-            : null;
 
         final fileEntity = file.asEntity();
 
         final fileDataItem = await _arweave.prepareEntityDataItem(
           fileEntity,
           profile.wallet,
-          key: fileKey,
         );
 
-        moveTxDataItems.add(fileDataItem);
+        licenseAssertionTxDataItems.add(fileDataItem);
 
         await _driveDao.writeToFile(file);
         fileEntity.txId = fileDataItem.id;
@@ -158,42 +137,12 @@ class FsEntryLicenseBloc
         await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
           performedAction: RevisionAction.move,
         ));
-      }
-
-      for (var folderToMove in foldersToMove) {
-        var folder = await _driveDao
-            .folderById(driveId: driveId, folderId: folderToMove.id)
-            .getSingle();
-        folder = folder.copyWith(
-          parentFolderId: Value(parentFolder.id),
-          path: '${parentFolder.path}/${folder.name}',
-          lastUpdated: DateTime.now(),
-        );
-
-        final folderEntity = folder.asEntity();
-
-        final folderDataItem = await _arweave.prepareEntityDataItem(
-          folderEntity,
-          profile.wallet,
-          key: driveKey,
-        );
-
-        moveTxDataItems.add(folderDataItem);
-
-        await _driveDao.writeToFolder(folder);
-
-        folderEntity.txId = folderDataItem.id;
-
-        await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
-          performedAction: RevisionAction.move,
-        ));
-
-        folderMap.addAll({folder.id: folder.toCompanion(false)});
+        // END TODO: Change from move to license
       }
     });
 
     if (_turboUploadService.useTurboUpload) {
-      for (var dataItem in moveTxDataItems) {
+      for (var dataItem in licenseAssertionTxDataItems) {
         await _turboUploadService.postDataItem(
           dataItem: dataItem,
           wallet: profile.wallet,
@@ -202,13 +151,13 @@ class FsEntryLicenseBloc
     } else {
       final moveTx = await _arweave.prepareDataBundleTx(
         await DataBundle.fromDataItems(
-          items: moveTxDataItems,
+          items: licenseAssertionTxDataItems,
         ),
         profile.wallet,
       );
       await _arweave.postTx(moveTx);
     }
 
-    await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
+    await _syncCubit.generateFsEntryPaths(driveId, {}, {});
   }
 }
