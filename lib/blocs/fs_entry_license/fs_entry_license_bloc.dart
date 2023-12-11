@@ -18,7 +18,8 @@ import 'package:platform/platform.dart';
 part 'fs_entry_license_event.dart';
 part 'fs_entry_license_state.dart';
 
-class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
+class FsEntryLicenseBloc
+    extends Bloc<FsEntryLicenseEvent, FsEntryLicenseState> {
   final String driveId;
   final List<ArDriveDataTableItem> selectedItems;
 
@@ -29,7 +30,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final SyncCubit _syncCubit;
   final ArDriveCrypto _crypto;
 
-  FsEntryMoveBloc({
+  FsEntryLicenseBloc({
     required this.driveId,
     required this.selectedItems,
     required ArweaveService arweave,
@@ -45,26 +46,26 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
         _crypto = crypto,
-        super(const FsEntryMoveLoadInProgress()) {
+        super(const FsEntryLicenseLoadInProgress()) {
     if (selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
     }
 
     final profile = _profileCubit.state as ProfileLoggedIn;
 
-    on<FsEntryMoveEvent>(
+    on<FsEntryLicenseEvent>(
       (event, emit) async {
         if (await _profileCubit.logoutIfWalletMismatch()) {
-          emit(const FsEntryMoveWalletMismatch());
+          emit(const FsEntryLicenseWalletMismatch());
           return;
         }
 
-        if (event is FsEntryMoveInitial) {
+        if (event is FsEntryLicenseInitial) {
           final drive = await _driveDao.driveById(driveId: driveId).getSingle();
           await loadFolder(folderId: drive.rootFolderId, emit: emit);
         }
 
-        if (event is FsEntryMoveSubmit) {
+        if (event is FsEntryLicenseSubmit) {
           final folderInView = event.folderInView;
           final conflictingItems = await checkForConflicts(
             parentFolder: folderInView,
@@ -72,7 +73,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
           );
 
           if (conflictingItems.isEmpty) {
-            emit(const FsEntryMoveLoadInProgress());
+            emit(const FsEntryLicenseLoadInProgress());
 
             try {
               await moveEntities(
@@ -83,10 +84,10 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             } catch (err) {
               logger.e('Error moving items', err);
             }
-            emit(const FsEntryMoveSuccess());
+            emit(const FsEntryLicenseSuccess());
           } else {
             emit(
-              FsEntryMoveNameConflict(
+              FsEntryLicenseNameConflict(
                 conflictingItems: conflictingItems,
                 folderInView: folderInView,
                 allItems: selectedItems,
@@ -95,22 +96,22 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
           }
         }
 
-        if (event is FsEntryMoveSkipConflicts) {
-          emit(const FsEntryMoveLoadInProgress());
+        if (event is FsEntryLicenseSkipConflicts) {
+          emit(const FsEntryLicenseLoadInProgress());
           final folderInView = event.folderInView;
           await moveEntities(
             parentFolder: folderInView,
             conflictingItems: event.conflictingItems,
             profile: profile,
           );
-          emit(const FsEntryMoveSuccess());
+          emit(const FsEntryLicenseSuccess());
         }
 
-        if (event is FsEntryMoveUpdateTargetFolder) {
+        if (event is FsEntryLicenseUpdateTargetFolder) {
           await loadFolder(folderId: event.folderId, emit: emit);
         }
 
-        if (event is FsEntryMoveGoBackToParent) {
+        if (event is FsEntryLicenseGoBackToParent) {
           await loadParentFolder(folder: event.folderInView, emit: emit);
         }
       },
@@ -120,7 +121,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
   Future<void> loadParentFolder({
     required FolderEntry folder,
-    required Emitter<FsEntryMoveState> emit,
+    required Emitter<FsEntryLicenseState> emit,
   }) async {
     final parentFolder = folder.parentFolderId;
     if (parentFolder != null) {
@@ -130,16 +131,17 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
   Future<void> loadFolder({
     required String folderId,
-    required Emitter<FsEntryMoveState> emit,
+    required Emitter<FsEntryLicenseState> emit,
   }) async {
     final folderStream =
         _driveDao.watchFolderContents(driveId, folderId: folderId);
     await emit.forEach(
       folderStream,
-      onData: (FolderWithContents folderWithContents) => FsEntryMoveLoadSuccess(
+      onData: (FolderWithContents folderWithContents) =>
+          FsEntryLicenseLoadSuccess(
         viewingRootFolder: folderWithContents.folder.parentFolderId == null,
         viewingFolder: folderWithContents,
-        itemsToMove: selectedItems,
+        itemsToLicense: selectedItems,
       ),
     );
   }

@@ -1,43 +1,43 @@
 part of 'fs_entry_license_bloc.dart';
 
-abstract class FsEntryMoveEvent extends Equatable {
-  const FsEntryMoveEvent();
+abstract class FsEntryLicenseEvent extends Equatable {
+  const FsEntryLicenseEvent();
 
   @override
   List<Object> get props => [];
 }
 
-class FsEntryMoveInitial extends FsEntryMoveEvent {
-  const FsEntryMoveInitial() : super();
+class FsEntryLicenseInitial extends FsEntryLicenseEvent {
+  const FsEntryLicenseInitial() : super();
 }
 
-class FsEntryMoveUpdateTargetFolder extends FsEntryMoveEvent {
+class FsEntryLicenseUpdateTargetFolder extends FsEntryLicenseEvent {
   final String folderId;
-  const FsEntryMoveUpdateTargetFolder({required this.folderId}) : super();
+  const FsEntryLicenseUpdateTargetFolder({required this.folderId}) : super();
   @override
   List<Object> get props => [folderId];
 }
 
-class FsEntryMoveGoBackToParent extends FsEntryMoveEvent {
+class FsEntryLicenseGoBackToParent extends FsEntryLicenseEvent {
   final FolderEntry folderInView;
-  const FsEntryMoveGoBackToParent({required this.folderInView}) : super();
+  const FsEntryLicenseGoBackToParent({required this.folderInView}) : super();
   @override
   List<Object> get props => [folderInView];
 }
 
-class FsEntryMoveSubmit extends FsEntryMoveEvent {
+class FsEntryLicenseSubmit extends FsEntryLicenseEvent {
   final FolderEntry folderInView;
-  const FsEntryMoveSubmit({
+  const FsEntryLicenseSubmit({
     required this.folderInView,
   }) : super();
   @override
   List<Object> get props => [folderInView];
 }
 
-class FsEntryMoveSkipConflicts extends FsEntryMoveEvent {
+class FsEntryLicenseSkipConflicts extends FsEntryLicenseEvent {
   final FolderEntry folderInView;
   final List<ArDriveDataTableItem> conflictingItems;
-  const FsEntryMoveSkipConflicts({
+  const FsEntryLicenseSkipConflicts({
     required this.folderInView,
     required this.conflictingItems,
   }) : super();

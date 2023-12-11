@@ -1,47 +1,47 @@
 part of 'fs_entry_license_bloc.dart';
 
-abstract class FsEntryMoveState extends Equatable {
-  const FsEntryMoveState();
+abstract class FsEntryLicenseState extends Equatable {
+  const FsEntryLicenseState();
 
   @override
   List<Object> get props => [];
 }
 
-class FsEntryMoveLoadInProgress extends FsEntryMoveState {
-  const FsEntryMoveLoadInProgress() : super();
+class FsEntryLicenseLoadInProgress extends FsEntryLicenseState {
+  const FsEntryLicenseLoadInProgress() : super();
 }
 
-class FsEntryMoveLoadSuccess extends FsEntryMoveState {
+class FsEntryLicenseLoadSuccess extends FsEntryLicenseState {
   final bool viewingRootFolder;
   final FolderWithContents viewingFolder;
 
-  /// The id of the folder/file entry being moved.
-  final List<ArDriveDataTableItem> itemsToMove;
+  /// The id of the folder/file entry being licensed.
+  final List<ArDriveDataTableItem> itemsToLicense;
 
-  const FsEntryMoveLoadSuccess({
+  const FsEntryLicenseLoadSuccess({
     required this.viewingRootFolder,
     required this.viewingFolder,
-    required this.itemsToMove,
+    required this.itemsToLicense,
   }) : super();
   @override
-  List<Object> get props => [viewingRootFolder, viewingFolder, itemsToMove];
+  List<Object> get props => [viewingRootFolder, viewingFolder, itemsToLicense];
 }
 
-class FsEntryMoveWalletMismatch extends FsEntryMoveState {
-  const FsEntryMoveWalletMismatch() : super();
+class FsEntryLicenseWalletMismatch extends FsEntryLicenseState {
+  const FsEntryLicenseWalletMismatch() : super();
 }
 
-class FsEntryMoveSuccess extends FsEntryMoveState {
-  const FsEntryMoveSuccess() : super();
+class FsEntryLicenseSuccess extends FsEntryLicenseState {
+  const FsEntryLicenseSuccess() : super();
 }
 
-class FsEntryMoveNameConflict extends FsEntryMoveState {
+class FsEntryLicenseNameConflict extends FsEntryLicenseState {
   final List<ArDriveDataTableItem> conflictingItems;
   final FolderEntry folderInView;
 
   final List<ArDriveDataTableItem> allItems;
 
-  const FsEntryMoveNameConflict({
+  const FsEntryLicenseNameConflict({
     required this.conflictingItems,
     required this.folderInView,
     required this.allItems,
