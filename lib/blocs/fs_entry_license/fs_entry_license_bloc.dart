@@ -67,66 +67,22 @@ class FsEntryLicenseBloc
 
         if (event is FsEntryLicenseSubmit) {
           final folderInView = event.folderInView;
-          final conflictingItems = await checkForConflicts(
-            parentFolder: folderInView,
-            profile: profile,
-          );
 
-          if (conflictingItems.isEmpty) {
-            emit(const FsEntryLicenseLoadInProgress());
-
-            try {
-              await moveEntities(
-                conflictingItems: conflictingItems,
-                profile: profile,
-                parentFolder: folderInView,
-              );
-            } catch (err) {
-              logger.e('Error moving items', err);
-            }
-            emit(const FsEntryLicenseSuccess());
-          } else {
-            emit(
-              FsEntryLicenseNameConflict(
-                conflictingItems: conflictingItems,
-                folderInView: folderInView,
-                allItems: selectedItems,
-              ),
-            );
-          }
-        }
-
-        if (event is FsEntryLicenseSkipConflicts) {
           emit(const FsEntryLicenseLoadInProgress());
-          final folderInView = event.folderInView;
-          await moveEntities(
-            parentFolder: folderInView,
-            conflictingItems: event.conflictingItems,
-            profile: profile,
-          );
+
+          try {
+            await licenseEntities(
+              profile: profile,
+              parentFolder: folderInView,
+            );
+          } catch (err) {
+            logger.e('Error moving items', err);
+          }
           emit(const FsEntryLicenseSuccess());
-        }
-
-        if (event is FsEntryLicenseUpdateTargetFolder) {
-          await loadFolder(folderId: event.folderId, emit: emit);
-        }
-
-        if (event is FsEntryLicenseGoBackToParent) {
-          await loadParentFolder(folder: event.folderInView, emit: emit);
         }
       },
       transformer: restartable(),
     );
-  }
-
-  Future<void> loadParentFolder({
-    required FolderEntry folder,
-    required Emitter<FsEntryLicenseState> emit,
-  }) async {
-    final parentFolder = folder.parentFolderId;
-    if (parentFolder != null) {
-      return loadFolder(folderId: parentFolder, emit: emit);
-    }
   }
 
   Future<void> loadFolder({
@@ -139,38 +95,13 @@ class FsEntryLicenseBloc
       folderStream,
       onData: (FolderWithContents folderWithContents) =>
           FsEntryLicenseLoadSuccess(
-        viewingRootFolder: folderWithContents.folder.parentFolderId == null,
         viewingFolder: folderWithContents,
         itemsToLicense: selectedItems,
       ),
     );
   }
 
-  Future<List<ArDriveDataTableItem>> checkForConflicts({
-    required final FolderEntry parentFolder,
-    required ProfileLoggedIn profile,
-  }) async {
-    final conflictingItems = <ArDriveDataTableItem>[];
-    try {
-      for (var itemToMove in selectedItems) {
-        final entityWithSameNameExists =
-            await _driveDao.doesEntityWithNameExist(
-          name: itemToMove.name,
-          driveId: driveId,
-          parentFolderId: parentFolder.id,
-        );
-
-        if (entityWithSameNameExists) {
-          conflictingItems.add(itemToMove);
-        }
-      }
-    } catch (err) {
-      addError(err);
-    }
-    return conflictingItems;
-  }
-
-  Future<void> moveEntities({
+  Future<void> licenseEntities({
     required FolderEntry parentFolder,
     List<ArDriveDataTableItem> conflictingItems = const [],
     required ProfileLoggedIn profile,
