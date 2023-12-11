@@ -1,0 +1,25 @@
+import 'network_transactions.drift';
+
+CREATE TABLE license_assertions (
+    fileId TEXT NOT NULL,
+    driveId TEXT NOT NULL,
+
+    lastModifiedDate DATETIME NOT NULL,
+
+    metadataTxId TEXT NOT NULL,
+    dataTxId TEXT NOT NULL,
+
+    bundledIn TEXT,
+
+    dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
+
+    licenseType TEXT NOT NULL,
+
+    customGQLTags TEXT,
+
+    pinnedDataOwnerAddress TEXT,
+
+    PRIMARY KEY (fileId, driveId, dateCreated),
+    FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id),
+    FOREIGN KEY (dataTxId) REFERENCES network_transactions(id)
+);
