@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/user_utils.dart';
@@ -17,6 +19,7 @@ part 'drives_state.dart';
 /// It works even if the user profile is unavailable.
 class DrivesCubit extends Cubit<DrivesState> {
   final ProfileCubit _profileCubit;
+  final PromptToSnapshotBloc _promptToSnapshotBloc;
   final DriveDao _driveDao;
   final ArDriveAuth _auth;
 
@@ -26,9 +29,11 @@ class DrivesCubit extends Cubit<DrivesState> {
     required ArDriveAuth auth,
     this.initialSelectedDriveId,
     required ProfileCubit profileCubit,
+    required PromptToSnapshotBloc promptToSnapshotBloc,
     required DriveDao driveDao,
     required ActivityTracker activityTracker,
   })  : _profileCubit = profileCubit,
+        _promptToSnapshotBloc = promptToSnapshotBloc,
         _driveDao = driveDao,
         _auth = auth,
         super(DrivesLoadInProgress()) {
@@ -71,6 +76,8 @@ class DrivesCubit extends Cubit<DrivesState> {
       final sharedDrives =
           drives.where((d) => !isDriveOwner(auth, d.ownerAddress)).toList();
 
+      _promptToSnapshotBloc.add(SelectedDrive(driveId: selectedDriveId));
+
       emit(
         DrivesLoadSuccess(
           selectedDriveId: selectedDriveId,
@@ -90,14 +97,25 @@ class DrivesCubit extends Cubit<DrivesState> {
 
   void selectDrive(String driveId) {
     final canCreateNewDrive = _profileCubit.state is ProfileLoggedIn;
-    final state = this.state is DrivesLoadSuccess
-        ? (this.state as DrivesLoadSuccess).copyWith(selectedDriveId: driveId)
-        : DrivesLoadedWithNoDrivesFound(canCreateNewDrive: canCreateNewDrive);
+    final DrivesState state;
+    if (this.state is DrivesLoadSuccess) {
+      state = (this.state as DrivesLoadSuccess).copyWith(
+        selectedDriveId: driveId,
+      );
+      _promptToSnapshotBloc.add(SelectedDrive(driveId: driveId));
+    } else {
+      state = DrivesLoadedWithNoDrivesFound(
+        canCreateNewDrive: canCreateNewDrive,
+      );
+      _promptToSnapshotBloc.add(const SelectedDrive(driveId: null));
+    }
     emit(state);
   }
 
   void cleanDrives() {
     initialSelectedDriveId = null;
+
+    _promptToSnapshotBloc.add(const SelectedDrive(driveId: null));
 
     final state = DrivesLoadSuccess(
         selectedDriveId: null,
@@ -121,10 +139,13 @@ class DrivesCubit extends Cubit<DrivesState> {
               ? state.sharedDrives.first.id
               : null;
       if (firstOrNullDrive != null) {
+        _promptToSnapshotBloc.add(SelectedDrive(driveId: firstOrNullDrive));
         emit(state.copyWith(selectedDriveId: firstOrNullDrive));
         return;
       }
     }
+
+    _promptToSnapshotBloc.add(const SelectedDrive(driveId: null));
     emit(DrivesLoadedWithNoDrivesFound(canCreateNewDrive: canCreateNewDrive));
   }
 

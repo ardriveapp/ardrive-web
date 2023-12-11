@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
@@ -280,6 +281,7 @@ class AppState extends State<App> {
               BlocProvider(
                 create: (context) => ActivityCubit(),
               ),
+              BlocProvider(create: (context) => PromptToSnapshotBloc()),
               BlocProvider(
                 create: (context) =>
                     FeedbackSurveyCubit(FeedbackSurveyInitialState()),

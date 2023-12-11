@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/constants.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -52,6 +54,7 @@ const _pendingWaitTime = Duration(days: 1);
 class SyncCubit extends Cubit<SyncState> {
   final ProfileCubit _profileCubit;
   final ActivityCubit _activityCubit;
+  final PromptToSnapshotBloc _promptToSnapshotBloc;
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final Database _db;
@@ -71,6 +74,7 @@ class SyncCubit extends Cubit<SyncState> {
   SyncCubit({
     required ProfileCubit profileCubit,
     required ActivityCubit activityCubit,
+    required PromptToSnapshotBloc promptToSnapshotBloc,
     required ArweaveService arweave,
     required DriveDao driveDao,
     required Database db,
@@ -79,6 +83,7 @@ class SyncCubit extends Cubit<SyncState> {
     required ActivityTracker activityTracker,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
+        _promptToSnapshotBloc = promptToSnapshotBloc,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
@@ -274,6 +279,7 @@ class SyncCubit extends Cubit<SyncState> {
                   (_syncProgress.drivesCount - _syncProgress.drivesSynced),
               ownerAddress: drive.ownerAddress,
               configService: _configService,
+              promptToSnapshotBloc: _promptToSnapshotBloc,
             );
           } catch (error, stackTrace) {
             logger.e(
