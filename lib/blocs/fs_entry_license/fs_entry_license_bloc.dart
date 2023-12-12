@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/license_assertion.dart';
 import 'package:ardrive/models/license_assertion.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
@@ -27,6 +26,7 @@ class FsEntryLicenseBloc
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
+  final LicenseService _licenseService;
 
   FsEntryLicenseBloc({
     required this.driveId,
@@ -35,11 +35,13 @@ class FsEntryLicenseBloc
     required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
+    required LicenseService licenseService,
     Platform platform = const LocalPlatform(),
   })  : _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
+        _licenseService = licenseService,
         super(const FsEntryLicenseConfiguring()) {
     if (selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
@@ -88,17 +90,14 @@ class FsEntryLicenseBloc
             .fileById(driveId: driveId, fileId: fileToLicense.id)
             .getSingle();
 
-        final licenseAssertionEntity = LicenseAssertionEntity(
+        final licenseAssertionEntity = _licenseService.toEntity(
           dataTxId: file.dataTxId,
-          licenseTxId: licenseInfo.licenseTxId,
-          additionalTags: licenseParams.toAdditionalTags(),
-        );
-        licenseAssertionEntity.ownerAddress = profile.walletAddress;
+          licenseInfo: licenseInfo,
+          licenseParams: licenseParams,
+        )..ownerAddress = profile.walletAddress;
 
-        final licenseAssertionDataItem =
-            await licenseAssertionEntity.asPreparedDataItem(
-          owner: licenseAssertionEntity.ownerAddress,
-        );
+        final licenseAssertionDataItem = await licenseAssertionEntity
+            .asPreparedDataItem(owner: licenseAssertionEntity.ownerAddress);
         await licenseAssertionDataItem.sign(profile.wallet);
         licenseAssertionTxDataItems.add(licenseAssertionDataItem);
 

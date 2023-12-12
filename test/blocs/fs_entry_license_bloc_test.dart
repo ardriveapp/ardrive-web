@@ -27,6 +27,7 @@ void main() {
     late DriveDao driveDao;
     late ArweaveService arweave;
     late TurboUploadService turboUploadService;
+    late LicenseService licenseService;
 
     late ProfileCubit profileCubit;
     final driveId = const Uuid().v4();
@@ -232,6 +233,7 @@ void main() {
             await getTestTransaction('test/fixtures/signed_v2_tx.json'),
       );
       turboUploadService = DontUseUploadService();
+      licenseService = MockLicenseService();
       profileCubit = MockProfileCubit();
 
       final keyBytes = Uint8List(32);
@@ -271,6 +273,7 @@ void main() {
         driveId: driveId,
         driveDao: driveDao,
         profileCubit: profileCubit,
+        licenseService: licenseService,
         selectedItems: [],
       ),
       errors: () => [isA<Exception>()],
@@ -283,6 +286,7 @@ void main() {
         driveId: driveId,
         driveDao: driveDao,
         profileCubit: profileCubit,
+        licenseService: licenseService,
         // TODO: revisit this when we have a better way to mock the selected items
         selectedItems: [],
         platform: FakePlatform(operatingSystem: 'android'),
