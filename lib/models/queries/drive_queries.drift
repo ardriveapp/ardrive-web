@@ -166,14 +166,14 @@ latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY rev.dateCreated DESC;
 
-oldestLicenseAssertionByFileId:
+oldestLicenseAssertionByFileIdAndDataTxId:
     SELECT * FROM license_assertions
-    WHERE driveId = :driveId AND fileId = :fileId
+    WHERE driveId = :driveId AND fileId = :fileId AND dataTxId = :dataTxId
     ORDER BY dateCreated ASC
     LIMIT 1;
-latestLicenseAssertionByFileId:
+latestLicenseAssertionByFileIdAndDataTxId:
     SELECT * FROM license_assertions
-    WHERE driveId = :driveId AND fileId = :fileId
+    WHERE driveId = :driveId AND fileId = :fileId AND dataTxId = :dataTxId
     ORDER BY dateCreated DESC
     LIMIT 1;
 

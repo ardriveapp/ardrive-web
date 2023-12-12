@@ -10,8 +10,6 @@ extension LicenseAssertionsCompanionExtensions on LicenseAssertionsCompanion {
   /// of this entity.
   List<NetworkTransactionsCompanion> getTransactionCompanions() => [
         NetworkTransactionsCompanion.insert(
-            id: metadataTxId.value, dateCreated: dateCreated),
-        NetworkTransactionsCompanion.insert(
-            id: dataTxId.value, dateCreated: dateCreated),
+            id: licenseAssertionTxId.value, dateCreated: dateCreated),
       ];
 }
