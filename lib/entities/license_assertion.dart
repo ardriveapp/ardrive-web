@@ -22,6 +22,8 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
   final String licenseTx;
   final Map<String, String> additionalTags;
 
+  DateTime blockTimestamp = DateTime.now();
+
   LicenseAssertionEntity({
     required this.dataTx,
     required this.licenseTx,
@@ -36,7 +38,7 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
       final additionalTags = Map.fromEntries(transaction.tags
           .where((tag) => !licenseAssertionTxBaseTagKeys.contains(tag.name))
           .map((tag) => MapEntry(tag.name, tag.value)));
-      return LicenseAssertionEntity(
+      final licenseAssertionEntity = LicenseAssertionEntity(
         dataTx: transaction.getTag('Original')!,
         licenseTx: transaction.getTag('License')!,
         additionalTags: additionalTags,
@@ -44,6 +46,11 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id;
+      if (transaction.block != null) {
+        licenseAssertionEntity.blockTimestamp =
+            DateTime.fromMillisecondsSinceEpoch(transaction.block!.timestamp);
+      }
+      return licenseAssertionEntity;
     } catch (_) {
       throw LicenseAssertionTransactionParseException(
         transactionId: transaction.id,
