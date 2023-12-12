@@ -22,7 +22,7 @@ class UdlLicenseParams extends LicenseParams {
       'Commerical-Use': commercialUse,
     };
     tags.removeWhere((key, value) => value == null);
-    return tags as Map<String, String>;
+    return tags.map((key, value) => MapEntry(key, value!));
   }
 
   static UdlLicenseParams fromAdditionalTags(
