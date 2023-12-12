@@ -173,8 +173,7 @@ Stream<double> _syncDrive(
   promptToSnapshotBloc.add(
     CountSyncedTxs(
       driveId: driveId,
-      // txsSyncedWithGqlCount: gqlDriveHistory.txCount,
-      txsSyncedWithGqlCount: 1000,
+      txsSyncedWithGqlCount: gqlDriveHistory.txCount,
       wasDeepSync: lastBlockHeight == 0,
     ),
   );
