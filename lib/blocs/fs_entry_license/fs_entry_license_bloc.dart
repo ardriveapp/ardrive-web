@@ -40,7 +40,7 @@ class FsEntryLicenseBloc
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
-        super(const FsEntryLicenseLoadInProgress()) {
+        super(const FsEntryLicenseConfiguring()) {
     if (selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
     }
@@ -60,7 +60,6 @@ class FsEntryLicenseBloc
 
         if (event is FsEntryLicenseSubmit) {
           emit(const FsEntryLicenseLoadInProgress());
-
           await licenseEntities(
             profile: profile,
             licenseInfo: event.licenseInfo,

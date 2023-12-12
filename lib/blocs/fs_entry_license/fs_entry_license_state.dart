@@ -7,22 +7,12 @@ abstract class FsEntryLicenseState extends Equatable {
   List<Object> get props => [];
 }
 
-class FsEntryLicenseLoadInProgress extends FsEntryLicenseState {
-  const FsEntryLicenseLoadInProgress() : super();
+class FsEntryLicenseConfiguring extends FsEntryLicenseState {
+  const FsEntryLicenseConfiguring() : super();
 }
 
-class FsEntryLicenseLoadSuccess extends FsEntryLicenseState {
-  final FolderWithContents viewingFolder;
-
-  /// The id of the folder/file entry being licensed.
-  final List<ArDriveDataTableItem> itemsToLicense;
-
-  const FsEntryLicenseLoadSuccess({
-    required this.viewingFolder,
-    required this.itemsToLicense,
-  }) : super();
-  @override
-  List<Object> get props => [viewingFolder, itemsToLicense];
+class FsEntryLicenseLoadInProgress extends FsEntryLicenseState {
+  const FsEntryLicenseLoadInProgress() : super();
 }
 
 class FsEntryLicenseWalletMismatch extends FsEntryLicenseState {
