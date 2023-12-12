@@ -1,6 +1,6 @@
 import '../license_types.dart';
 
-final udlLicenseInfo = LicenseInfo(
+const udlLicenseInfo = LicenseInfo(
   licenseTxId: 'yRj4a5KMctX_uOmKWCFJIjmY8DeJcusVk6-HzLiM_t8',
   name: 'Universal Data License',
   shortName: 'UDL',

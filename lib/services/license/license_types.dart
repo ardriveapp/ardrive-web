@@ -11,7 +11,7 @@ class LicenseInfo {
   final String shortName;
   final String version;
 
-  LicenseInfo({
+  const LicenseInfo({
     required this.licenseTxId,
     required this.name,
     required this.shortName,
