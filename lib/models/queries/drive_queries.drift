@@ -5,6 +5,7 @@ import '../tables/folder_revisions.drift';
 import '../tables/file_entries.drift';
 import '../tables/file_revisions.drift';
 import '../tables/network_transactions.drift';
+import '../tables/license_assertions.drift';
 
 allDrives ($order = ''):
     SELECT * FROM drives
@@ -79,6 +80,9 @@ fileById:
 
 fileRevisionByDataTx:
     SELECT * FROM file_revisions
+    WHERE dataTxId = :tx;
+licenseAssertionByDataTx:
+    SELECT * FROM license_assertions
     WHERE dataTxId = :tx;
 
 filesInFolder ($order = ''):
@@ -162,6 +166,17 @@ latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY rev.dateCreated DESC;
 
+oldestLicenseAssertionByFileId:
+    SELECT * FROM license_assertions
+    WHERE driveId = :driveId AND fileId = :fileId
+    ORDER BY dateCreated ASC
+    LIMIT 1;
+latestLicenseAssertionByFileId:
+    SELECT * FROM license_assertions
+    WHERE driveId = :driveId AND fileId = :fileId
+    ORDER BY dateCreated DESC
+    LIMIT 1;
+
 pendingTransactions:
     SELECT * FROM network_transactions
     WHERE status = 'pending';
@@ -181,4 +196,7 @@ deleteFilesForDriveId:
     WHERE driveId = :driveId;
 deleteFileRevisionsByDriveId:
     DELETE FROM file_revisions
+    WHERE driveId = :driveId;
+deleteLicenseAssertionsByDriveId:
+    DELETE FROM license_assertions
     WHERE driveId = :driveId;
