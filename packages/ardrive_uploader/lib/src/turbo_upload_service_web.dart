@@ -21,12 +21,14 @@ class TurboUploadServiceImpl implements TurboUploadService {
   });
 
   final _fetchController = StreamController<List<int>>(sync: false);
+
   CancelToken _cancelToken = CancelToken();
 
   final client = FetchClient(
     mode: RequestMode.cors,
     streamRequests: true,
     cache: RequestCache.noCache,
+    handleBackPressure: true,
   );
 
   @override
@@ -84,7 +86,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
         options: Options(
           headers: {
             Headers.contentTypeHeader: 'application/octet-stream',
-            Headers.contentLengthHeader: size, // Set the content-length.
+            Headers.contentLengthHeader: size,
           }..addAll(headers),
         ),
         cancelToken: _cancelToken,
@@ -122,19 +124,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
   }) async {
     final url = '$turboUploadUri/v1/tx';
 
-    StreamTransformer<Uint8List, Uint8List> createPassthroughTransformer() {
-      return StreamTransformer.fromHandlers(
-        handleData: (Uint8List data, EventSink<Uint8List> sink) {
-          sink.add(data);
-        },
-        handleError: (Object error, StackTrace stackTrace, EventSink sink) {
-          sink.addError(error, stackTrace);
-        },
-        handleDone: (EventSink sink) {
-          sink.close();
-        },
-      );
-    }
+    int bytesUploaded = 0;
 
     final request = ArDriveStreamedRequest(
       'POST',
@@ -144,12 +134,17 @@ class TurboUploadServiceImpl implements TurboUploadService {
         'content-type': 'application/octet-stream',
       });
 
+    // pass through transformer so we can track progress
+    final transformer = StreamTransformer<Uint8List, Uint8List>.fromHandlers(
+      handleData: (data, sink) {
+        bytesUploaded += data.length;
+        onSendProgress?.call(bytesUploaded / size);
+        sink.add(data);
+      },
+    );
+
     _fetchController
-        .addStream(
-      dataItem.streamGenerator().transform(
-            createPassthroughTransformer(),
-          ),
-    )
+        .addStream(dataItem.streamGenerator().transform(transformer))
         .then((value) {
       request.sink.close();
     });

@@ -1822,6 +1822,15 @@
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageUnknown": {},
+  "turboPercentageDiscountApplied": "({percentage}% discount applied)",
+  "@turboPercentageDiscountApplied": {
+    "description": "E.g. \"50% discount applied\"",
+    "placeholders": {
+      "percentage": {
+        "type": "String"
+      }
+    }
+  },
   "turboPleaseEnterAmountBetween": "Please enter an amount between {min} - {max}",
   "@turboPleaseEnterAmountBetween": {
     "description": "Error message for when the given amount is not in range",
@@ -1833,6 +1842,15 @@
       "min": {
         "type": "String",
         "example": "$5"
+      }
+    }
+  },
+  "turboUsdDiscountApplied": "(${amount} discount applied)",
+  "@turboUsdDiscountApplied": {
+    "description": "E.g. \"10$ discount applied\"",
+    "placeholders": {
+      "amount": {
+        "type": "String"
       }
     }
   },

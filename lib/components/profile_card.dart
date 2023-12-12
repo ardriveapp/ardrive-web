@@ -367,9 +367,12 @@ class __LogoutButtonState extends State<_LogoutButton> {
       },
       child: InkWell(
         onTap: () {
-          context.read<ArDriveAuth>().logout().then(
+          final arDriveAuth = context.read<ArDriveAuth>();
+          final profileCubit = context.read<ProfileCubit>();
+
+          arDriveAuth.logout().then(
             (value) {
-              context.read<ProfileCubit>().logoutProfile();
+              profileCubit.logoutProfile();
               PlausibleEventTracker.track(event: PlausibleEvent.logout);
             },
           );
