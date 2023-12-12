@@ -6,12 +6,14 @@ enum LicenseType {
 }
 
 class LicenseInfo {
+  final LicenseType licenseType;
   final String licenseTxId;
   final String name;
   final String shortName;
   final String version;
 
   const LicenseInfo({
+    required this.licenseType,
     required this.licenseTxId,
     required this.name,
     required this.shortName,
