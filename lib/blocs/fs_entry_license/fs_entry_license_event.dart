@@ -13,8 +13,13 @@ class FsEntryLicenseInitial extends FsEntryLicenseEvent {
 
 class FsEntryLicenseSubmit extends FsEntryLicenseEvent {
   final FolderEntry folderInView;
+  final LicenseInfo licenseInfo;
+  final LicenseParams licenseParams;
+
   const FsEntryLicenseSubmit({
     required this.folderInView,
+    required this.licenseInfo,
+    required this.licenseParams,
   }) : super();
   @override
   List<Object> get props => [folderInView];

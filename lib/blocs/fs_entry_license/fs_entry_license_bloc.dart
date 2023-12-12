@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/license_assertion.dart';
+import 'package:ardrive/models/license_assertion.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/services/license/license_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
@@ -75,6 +78,8 @@ class FsEntryLicenseBloc
             await licenseEntities(
               profile: profile,
               parentFolder: folderInView,
+              licenseInfo: event.licenseInfo,
+              licenseParams: event.licenseParams,
             );
           } catch (err) {
             logger.e('Error moving items', err);
@@ -105,6 +110,8 @@ class FsEntryLicenseBloc
   Future<void> licenseEntities({
     required FolderEntry parentFolder,
     required ProfileLoggedIn profile,
+    required LicenseInfo licenseInfo,
+    required LicenseParams licenseParams,
   }) async {
     final licenseAssertionTxDataItems = <DataItem>[];
 
@@ -113,31 +120,36 @@ class FsEntryLicenseBloc
 
     await _driveDao.transaction(() async {
       for (var fileToLicense in filesToLicense) {
-        // TODO: Change from move to license
         var file = await _driveDao
             .fileById(driveId: driveId, fileId: fileToLicense.id)
             .getSingle();
-        file = file.copyWith(
-            parentFolderId: parentFolder.id,
-            path: '${parentFolder.path}/${file.name}',
-            lastUpdated: DateTime.now());
 
-        final fileEntity = file.asEntity();
+        final licenseAssertionEntity = LicenseAssertionEntity(
+          dataTxId: file.dataTxId,
+          licenseTxId: licenseInfo.licenseTxId,
+          additionalTags: licenseParams.toAdditionalTags(),
+        );
+        licenseAssertionEntity.ownerAddress = profile.walletAddress;
 
-        final fileDataItem = await _arweave.prepareEntityDataItem(
-          fileEntity,
-          profile.wallet,
+        final licenseAssertionDataItem =
+            await licenseAssertionEntity.asPreparedDataItem(
+          owner: licenseAssertionEntity.ownerAddress,
+        );
+        await licenseAssertionDataItem.sign(profile.wallet);
+        licenseAssertionTxDataItems.add(licenseAssertionDataItem);
+
+        licenseAssertionEntity.txId = licenseAssertionDataItem.id;
+
+        await _driveDao.insertLicenseAssertion(
+          licenseAssertionEntity.toLicenseAssertionsCompanion(
+            fileId: file.id,
+            driveId: driveId,
+            licenseType: licenseInfo.licenseType,
+          ),
         );
 
-        licenseAssertionTxDataItems.add(fileDataItem);
-
-        await _driveDao.writeToFile(file);
-        fileEntity.txId = fileDataItem.id;
-
-        await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
-          performedAction: RevisionAction.move,
-        ));
-        // END TODO: Change from move to license
+        // TODO: Update FileEntry with latest license info?
+        // await _driveDao.writeToFile(file);
       }
     });
 
