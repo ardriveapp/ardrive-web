@@ -58,11 +58,6 @@ class FsEntryLicenseBloc
           return;
         }
 
-        if (event is FsEntryLicenseInitial) {
-          final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-          await loadFolder(folderId: drive.rootFolderId, emit: emit);
-        }
-
         if (event is FsEntryLicenseSubmit) {
           emit(const FsEntryLicenseLoadInProgress());
 
@@ -75,22 +70,6 @@ class FsEntryLicenseBloc
         }
       },
       transformer: restartable(),
-    );
-  }
-
-  Future<void> loadFolder({
-    required String folderId,
-    required Emitter<FsEntryLicenseState> emit,
-  }) async {
-    final folderStream =
-        _driveDao.watchFolderContents(driveId, folderId: folderId);
-    await emit.forEach(
-      folderStream,
-      onData: (FolderWithContents folderWithContents) =>
-          FsEntryLicenseLoadSuccess(
-        viewingFolder: folderWithContents,
-        itemsToLicense: selectedItems,
-      ),
     );
   }
 
