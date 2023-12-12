@@ -18,15 +18,15 @@ const licenseAssertionTxBaseTagKeys = [
 ];
 
 class LicenseAssertionEntity with TransactionPropertiesMixin {
-  final String dataTx;
-  final String licenseTx;
+  final String dataTxId;
+  final String licenseTxId;
   final Map<String, String> additionalTags;
 
   DateTime blockTimestamp = DateTime.now();
 
   LicenseAssertionEntity({
-    required this.dataTx,
-    required this.licenseTx,
+    required this.dataTxId,
+    required this.licenseTxId,
     this.additionalTags = const {},
   });
 
@@ -39,8 +39,8 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
           .where((tag) => !licenseAssertionTxBaseTagKeys.contains(tag.name))
           .map((tag) => MapEntry(tag.name, tag.value)));
       final licenseAssertionEntity = LicenseAssertionEntity(
-        dataTx: transaction.getTag('Original')!,
-        licenseTx: transaction.getTag('License')!,
+        dataTxId: transaction.getTag('Original')!,
+        licenseTxId: transaction.getTag('License')!,
         additionalTags: additionalTags,
       )
         ..txId = transaction.id
@@ -66,8 +66,8 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
 
     final baseTags = {
       EntityTag.appName: 'License-Assertion',
-      'Original': dataTx,
-      'License': licenseTx,
+      'Original': dataTxId,
+      'License': licenseTxId,
     };
 
     baseTags.forEach((key, value) {

@@ -33,8 +33,8 @@ class LicenseService {
     LicenseParams? licenseParams,
   }) {
     return LicenseAssertionEntity(
-      dataTx: dataTxId,
-      licenseTx: licenseInfo.licenseTxId,
+      dataTxId: dataTxId,
+      licenseTxId: licenseInfo.licenseTxId,
       additionalTags: licenseParams?.toAdditionalTags() ?? {},
     );
   }
