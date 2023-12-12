@@ -65,6 +65,28 @@ class _ArDriveDownloader implements ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
   }) async {
+    if (AppPlatform.isMobile) {
+      final isPrivateFile =
+          fileKey != null && cipher != null && cipherIvString != null;
+
+      if (isPrivateFile && cipher == Cipher.aes256gcm) {
+        return _getDartVMGCMDecryptStream(
+          cipher,
+          cipherIvString,
+          (await arweave.download(
+            txId: dataTx.id,
+            onProgress: (progress, speed) => logger.d(progress.toString()),
+          ))
+              .$1,
+          fileSize,
+          fileName,
+          lastModifiedDate,
+          contentType,
+          fileKey,
+        );
+      }
+    }
+
     Stream<Uint8List> saveStream;
 
     if (isManifest) {
@@ -215,5 +237,39 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
     logger.d('No cipher found. Saving file as is...');
     return streamDownload.transform(listIntToUint8ListTransformer);
+  }
+
+  Stream<double> _getDartVMGCMDecryptStream(
+    String cipher,
+    String cipherIvString,
+    Stream<List<int>> streamDownload,
+    int fileSize,
+    String fileName,
+    DateTime lastModifiedDate,
+    String contentType,
+    SecretKey fileKey,
+  ) async* {
+    List<int> bytes = [];
+
+    await for (var chunk in streamDownload) {
+      bytes.addAll(chunk);
+      yield bytes.length / fileSize * 100;
+    }
+
+    final encryptedData = await decryptTransactionData(
+      cipher,
+      cipherIvString,
+      Uint8List.fromList(bytes),
+      fileKey,
+    );
+
+    _ardriveIo.saveFile(
+      await IOFile.fromData(encryptedData,
+          name: fileName,
+          lastModifiedDate: lastModifiedDate,
+          contentType: contentType),
+    );
+
+    return;
   }
 }
