@@ -4,7 +4,6 @@ import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +13,6 @@ Future<void> promptToSnapshot(
   required Drive drive,
   required PromptToSnapshotBloc bloc,
 }) async {
-  logger.d('Prompting to snapshot');
   return showArDriveDialog(
     context,
     content: PromptToSnapshotDialog(

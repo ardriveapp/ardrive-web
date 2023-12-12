@@ -53,8 +53,6 @@ class PromptToSnapshotBloc
     SelectedDrive event,
     Emitter<PromptToSnapshotState> emit,
   ) async {
-    logger.d('Selected drive: ${event.driveId}');
-
     if (event.driveId == null) {
       if (state is PromptToSnapshotIdle) {
         emit(const PromptToSnapshotIdle(driveId: null));
@@ -64,11 +62,6 @@ class PromptToSnapshotBloc
 
     final wouldDriveBenefitFromSnapshot =
         CountOfTxsSyncedWithGql.wouldDriveBenefitFromSnapshot(event.driveId!);
-
-    logger.d(
-      'Debouncing prompt to snapshot (${event.driveId}): '
-      'should prompt: $wouldDriveBenefitFromSnapshot, is closed: $isClosed',
-    );
 
     await _debouncer.run(() async {
       final shouldAskAgain = await _shouldAskToSnapshotAgain();
@@ -80,7 +73,7 @@ class PromptToSnapshotBloc
         emit(PromptToSnapshotPrompting(driveId: event.driveId!));
       }
     }).catchError((e) {
-      logger.d('Debouncer cancelled: $e');
+      // It was cancelled
     });
   }
 
@@ -136,24 +129,15 @@ abstract class CountOfTxsSyncedWithGql {
       count: currentCount + count,
       driveId: driveId,
     ));
-    logger.d(
-      'Count of txs synced with gql for $driveId: $count,'
-      ' total: ${currentCount + count}}',
-    );
   }
 
   static void resetForDrive(DriveID driveId) {
     _countOfTxsSynceWithGqlOfDrive.removeWhere((e) => e.driveId == driveId);
-    logger.d('Reset count of txs synced with gql for $driveId');
   }
 
   static bool wouldDriveBenefitFromSnapshot(DriveID driveId) {
     final count = _getForDrive(driveId);
     final wouldBenefit = count >= numberOfTxsBeforeSnapshot;
-    logger.d(
-      'Would drive $driveId benefit from snapshot? $wouldBenefit,'
-      ' count: $count',
-    );
     return wouldBenefit;
   }
 }
