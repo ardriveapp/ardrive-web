@@ -182,6 +182,7 @@ class AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
+    final promptToSnapshotBloc = PromptToSnapshotBloc();
     return MultiRepositoryProvider(
       providers: [
         ChangeNotifierProvider<ActivityTracker>(
@@ -251,6 +252,7 @@ class AppState extends State<App> {
             crypto: ArDriveCrypto(),
             arweave: _arweave,
             userRepository: context.read<UserRepository>(),
+            promptToSnapshotBloc: promptToSnapshotBloc,
           ),
         ),
         RepositoryProvider(
@@ -281,7 +283,7 @@ class AppState extends State<App> {
               BlocProvider(
                 create: (context) => ActivityCubit(),
               ),
-              BlocProvider(create: (context) => PromptToSnapshotBloc()),
+              BlocProvider(create: (context) => promptToSnapshotBloc),
               BlocProvider(
                 create: (context) =>
                     FeedbackSurveyCubit(FeedbackSurveyInitialState()),

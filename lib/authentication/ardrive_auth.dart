@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -40,6 +42,7 @@ abstract class ArDriveAuth {
     required SecureKeyValueStore secureKeyValueStore,
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
+    required PromptToSnapshotBloc promptToSnapshotBloc,
     MetadataCache? metadataCache,
   }) =>
       ArDriveAuthImpl(
@@ -50,6 +53,7 @@ abstract class ArDriveAuth {
         biometricAuthentication: biometricAuthentication,
         secureKeyValueStore: secureKeyValueStore,
         arConnectService: arConnectService,
+        promptToSnapshotBloc: promptToSnapshotBloc,
         metadataCache: metadataCache,
       );
 }
@@ -63,6 +67,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     required SecureKeyValueStore secureKeyValueStore,
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
+    required PromptToSnapshotBloc promptToSnapshotBloc,
     MetadataCache? metadataCache,
   })  : _arweave = arweave,
         _crypto = crypto,
@@ -71,6 +76,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         _secureKeyValueStore = secureKeyValueStore,
         _biometricAuthentication = biometricAuthentication,
         _userRepository = userRepository,
+        _promptToSnapshotBloc = promptToSnapshotBloc,
         _maybeMetadataCache = metadataCache;
 
   final UserRepository _userRepository;
@@ -80,6 +86,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
   final SecureKeyValueStore _secureKeyValueStore;
   final ArConnectService _arConnectService;
   final DatabaseHelpers _databaseHelpers;
+  final PromptToSnapshotBloc _promptToSnapshotBloc;
   MetadataCache? _maybeMetadataCache;
 
   User? _currentUser;
@@ -230,6 +237,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       await _userRepository.deleteUser();
       await _databaseHelpers.deleteAllTables();
       await (await _metadataCache).clear();
+      _promptToSnapshotBloc.add(const DismissDontAskAgain(dontAskAgain: false));
     } catch (e) {
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');

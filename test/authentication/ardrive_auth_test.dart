@@ -24,6 +24,7 @@ void main() {
   late MockSecureKeyValueStore mockSecureKeyValueStore;
   late MockArConnectService mockArConnectService;
   late MockDatabaseHelpers mockDatabaseHelpers;
+  late MockPromptToSnapshotBloc mockPromptToSnapshotBloc;
 
   final wallet = getTestWallet();
 
@@ -35,6 +36,7 @@ void main() {
     mockSecureKeyValueStore = MockSecureKeyValueStore();
     mockArConnectService = MockArConnectService();
     mockDatabaseHelpers = MockDatabaseHelpers();
+    mockPromptToSnapshotBloc = MockPromptToSnapshotBloc();
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newMemoryCacheStore(),
@@ -49,6 +51,7 @@ void main() {
       biometricAuthentication: mockBiometricAuthentication,
       secureKeyValueStore: mockSecureKeyValueStore,
       metadataCache: metadataCache,
+      promptToSnapshotBloc: mockPromptToSnapshotBloc,
     );
 
     registerFallbackValue(DriveEntity(
