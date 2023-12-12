@@ -169,7 +169,5 @@ class FsEntryLicenseBloc
       );
       await _arweave.postTx(moveTx);
     }
-
-    await _syncCubit.generateFsEntryPaths(driveId, {}, {});
   }
 }
