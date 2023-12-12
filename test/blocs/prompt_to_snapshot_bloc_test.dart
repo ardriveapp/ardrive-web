@@ -100,7 +100,21 @@ void main() {
       'selecting a drive after choosing not to be asked again does nothing',
       build: () => promptToSnapshotBloc,
       act: (PromptToSnapshotBloc bloc) async {
-        bloc.add(const DismissDontAskAgain());
+        bloc.add(const DismissDontAskAgain(dontAskAgain: false));
+        bloc.add(const SelectedDrive(driveId: driveId));
+        const durationAfterPrompting = Duration(milliseconds: 250);
+        await Future<void>.delayed(durationAfterPrompting);
+      },
+      expect: () => [
+        const PromptToSnapshotIdle(driveId: null),
+      ],
+    );
+
+    blocTest(
+      'selecting a drive after choosing to be asked again does prompt',
+      build: () => promptToSnapshotBloc,
+      act: (PromptToSnapshotBloc bloc) async {
+        bloc.add(const DismissDontAskAgain(dontAskAgain: true));
         bloc.add(const SelectedDrive(driveId: driveId));
         const durationAfterPrompting = Duration(milliseconds: 250);
         await Future<void>.delayed(durationAfterPrompting);
