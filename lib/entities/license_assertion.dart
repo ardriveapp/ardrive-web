@@ -10,7 +10,7 @@ class LicenseAssertionTransactionParseException implements Exception {
   LicenseAssertionTransactionParseException({required this.transactionId});
 }
 
-const licenseAssertionTags = [
+const licenseAssertionTxBaseTagKeys = [
   'App-Name',
   'Original',
   'License',
@@ -33,7 +33,7 @@ class LicenseAssertionEntity {
     try {
       assert(transaction.getTag('App-Name') == 'License-Assertion');
       final additionalTags = Map.fromEntries(transaction.tags
-          .where((tag) => !licenseAssertionTags.contains(tag.name))
+          .where((tag) => !licenseAssertionTxBaseTagKeys.contains(tag.name))
           .map((tag) => MapEntry(tag.name, tag.value)));
       return LicenseAssertionEntity(
         dataTx: transaction.getTag('Original')!,
