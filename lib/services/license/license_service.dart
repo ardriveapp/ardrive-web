@@ -18,7 +18,7 @@ class LicenseService {
     return licenseInfo[licenseType]!;
   }
 
-  LicenseParams licenseParamsForType(
+  LicenseParams paramsForType(
     LicenseType licenseType,
     Map<String, String> additionalTags,
   ) {
@@ -28,6 +28,26 @@ class LicenseService {
       default:
         throw ArgumentError('Unknown license type: $licenseType');
     }
+  }
+
+  LicenseParams paramsFromEntity(
+      LicenseAssertionEntity licenseAssertionEntity) {
+    final licenseType = licenseTypeByTxId(licenseAssertionEntity.licenseTxId)!;
+    final additionalTags = licenseAssertionEntity.additionalTags;
+
+    return paramsForType(licenseType, additionalTags);
+  }
+
+  LicenseParams paramsFromCompanion(
+      LicenseAssertionsCompanion licenseAssertionsCompanion) {
+    final licenseType = LicenseType.values.firstWhere(
+      (element) => element.name == licenseAssertionsCompanion.licenseType.value,
+    );
+    final additionalTags = licenseAssertionsCompanion.customGQLTags.present
+        ? jsonDecode(licenseAssertionsCompanion.customGQLTags.value ?? '{}')
+        : {};
+
+    return paramsForType(licenseType, additionalTags);
   }
 
   LicenseAssertionEntity toEntity({
@@ -53,36 +73,5 @@ class LicenseService {
       licenseAssertionTxId: Value(licenseInfo.licenseTxId),
       customGQLTags: Value(jsonEncode(licenseParams?.toAdditionalTags() ?? {})),
     );
-  }
-
-  LicenseParams paramsFromEntity(
-      LicenseAssertionEntity licenseAssertionEntity) {
-    switch (licenseTypeByTxId(licenseAssertionEntity.licenseTxId)) {
-      case LicenseType.udl:
-        return UdlLicenseParams.fromAdditionalTags(
-          licenseAssertionEntity.additionalTags,
-        );
-      default:
-        throw ArgumentError(
-          'Unknown license type for txId: ${licenseAssertionEntity.licenseTxId}',
-        );
-    }
-  }
-
-  LicenseParams paramsFromCompanion(
-      LicenseAssertionsCompanion licenseAssertionsCompanion) {
-    final additionalTags =
-        jsonDecode(licenseAssertionsCompanion.customGQLTags.value ?? '{}');
-
-    switch (LicenseType.values.firstWhere(
-      (element) => element.name == licenseAssertionsCompanion.licenseType.value,
-    )) {
-      case LicenseType.udl:
-        return UdlLicenseParams.fromAdditionalTags(additionalTags);
-      default:
-        throw ArgumentError(
-          'Unknown LicenseType : ${licenseAssertionsCompanion.licenseType.value}',
-        );
-    }
   }
 }
