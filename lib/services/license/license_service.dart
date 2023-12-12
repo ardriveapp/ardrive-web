@@ -18,10 +18,10 @@ class LicenseService {
     return licenseInfo[licenseType]!;
   }
 
-  LicenseParams paramsForType(
-    LicenseType licenseType,
-    Map<String, String> additionalTags,
-  ) {
+  LicenseParams paramsFromAdditionalTags({
+    required LicenseType licenseType,
+    required Map<String, String> additionalTags,
+  }) {
     switch (licenseType) {
       case LicenseType.udl:
         return UdlLicenseParams.fromAdditionalTags(additionalTags);
@@ -35,7 +35,10 @@ class LicenseService {
     final licenseType = licenseTypeByTxId(licenseAssertionEntity.licenseTxId)!;
     final additionalTags = licenseAssertionEntity.additionalTags;
 
-    return paramsForType(licenseType, additionalTags);
+    return paramsFromAdditionalTags(
+      licenseType: licenseType,
+      additionalTags: additionalTags,
+    );
   }
 
   LicenseParams paramsFromCompanion(
@@ -47,7 +50,10 @@ class LicenseService {
         ? jsonDecode(licenseAssertionsCompanion.customGQLTags.value ?? '{}')
         : {};
 
-    return paramsForType(licenseType, additionalTags);
+    return paramsFromAdditionalTags(
+      licenseType: licenseType,
+      additionalTags: additionalTags,
+    );
   }
 
   LicenseAssertionEntity toEntity({
