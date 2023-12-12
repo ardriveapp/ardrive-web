@@ -276,6 +276,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
               child: Column(children: [
                 Text(widget.filename,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                     textAlign: TextAlign.center,
                     style: ArDriveTypography.body
                         .smallBold700(color: colors.themeFgDefault)),
@@ -1579,6 +1581,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                   children: [
                     Text(
                       getBasenameWithoutExtension(filePath: filename),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                       style: ArDriveTypography.body.smallBold700(
                         color: ArDriveTheme.of(context)
                             .themeData
