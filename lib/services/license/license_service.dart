@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:ardrive/entities/license_assertion.dart';
+import 'package:drift/drift.dart';
 
 import '../../models/models.dart';
 import 'license_types.dart';
@@ -27,7 +30,7 @@ class LicenseService {
     }
   }
 
-  LicenseAssertionEntity toLicenseAssertionEntity({
+  LicenseAssertionEntity toEntity({
     required String dataTxId,
     required LicenseInfo licenseInfo,
     LicenseParams? licenseParams,
@@ -39,10 +42,47 @@ class LicenseService {
     );
   }
 
-  LicenseAssertionsCompanion toLicenseAssertionModel(
-    LicenseAssertionEntity licenseAssertionEntity,
-  ) {
-    // TODO: implement toLicenseAssertionModel
-    throw UnimplementedError('TODO: implement toLicenseAssertionModel');
+  LicenseAssertionsCompanion toCompanion({
+    required String dataTxId,
+    required LicenseInfo licenseInfo,
+    LicenseParams? licenseParams,
+  }) {
+    return LicenseAssertionsCompanion(
+      dataTxId: Value(dataTxId),
+      licenseType: Value(licenseInfo.licenseType.name),
+      licenseAssertionTxId: Value(licenseInfo.licenseTxId),
+      customGQLTags: Value(jsonEncode(licenseParams?.toAdditionalTags() ?? {})),
+    );
+  }
+
+  LicenseParams paramsFromEntity(
+      LicenseAssertionEntity licenseAssertionEntity) {
+    switch (licenseTypeByTxId(licenseAssertionEntity.licenseTxId)) {
+      case LicenseType.udl:
+        return UdlLicenseParams.fromAdditionalTags(
+          licenseAssertionEntity.additionalTags,
+        );
+      default:
+        throw ArgumentError(
+          'Unknown license type for txId: ${licenseAssertionEntity.licenseTxId}',
+        );
+    }
+  }
+
+  LicenseParams paramsFromCompanion(
+      LicenseAssertionsCompanion licenseAssertionsCompanion) {
+    final additionalTags =
+        jsonDecode(licenseAssertionsCompanion.customGQLTags.value ?? '{}');
+
+    switch (LicenseType.values.firstWhere(
+      (element) => element.name == licenseAssertionsCompanion.licenseType.value,
+    )) {
+      case LicenseType.udl:
+        return UdlLicenseParams.fromAdditionalTags(additionalTags);
+      default:
+        throw ArgumentError(
+          'Unknown LicenseType : ${licenseAssertionsCompanion.licenseType.value}',
+        );
+    }
   }
 }
