@@ -70,7 +70,6 @@ class LicenseService {
     return LicenseAssertionsCompanion(
       dataTxId: Value(dataTxId),
       licenseType: Value(licenseInfo.licenseType.name),
-      licenseAssertionTxId: Value(licenseInfo.licenseTxId),
       customGQLTags: Value(jsonEncode(licenseParams?.toAdditionalTags() ?? {})),
     );
   }
