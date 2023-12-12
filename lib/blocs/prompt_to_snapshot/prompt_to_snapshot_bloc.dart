@@ -8,21 +8,25 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-const int secondsBeforePrompting = 20;
-const int numberOfTxsBeforeSnapshot = 1000;
+const Duration defaultDurationBeforePrompting = Duration(seconds: 20);
+const int defaultNumberOfTxsBeforeSnapshot = 1000;
 
 class PromptToSnapshotBloc
     extends Bloc<PromptToSnapshotEvent, PromptToSnapshotState> {
-  final Debouncer _debouncer = Debouncer(
-    delay: const Duration(seconds: secondsBeforePrompting),
-  );
+  late Duration _durationBeforePrompting;
+  late Debouncer _debouncer;
+  late int _numberOfTxsBeforeSnapshot;
+
   static KeyValueStore? _maybeStore;
   // Should be per-drive?
   static const storeKey = 'dont-ask-to-snapshot-again';
 
+  Duration get durationBeforePrompting => _durationBeforePrompting;
+
   PromptToSnapshotBloc({
-    /// takes a KeyValueStore for testing purposes
     KeyValueStore? store,
+    Duration durationBeforePrompting = defaultDurationBeforePrompting,
+    int numberOfTxsBeforeSnapshot = defaultNumberOfTxsBeforeSnapshot,
   }) : super(const PromptToSnapshotIdle(driveId: null)) {
     on<CountSyncedTxs>(_onCountSyncedTxs);
     on<SelectedDrive>(_onDriveSelected);
@@ -31,6 +35,9 @@ class PromptToSnapshotBloc
     on<DismissDontAskAgain>(_onDismissDontAskAgain);
 
     _maybeStore ??= store;
+    _durationBeforePrompting = durationBeforePrompting;
+    _debouncer = Debouncer(delay: durationBeforePrompting);
+    _numberOfTxsBeforeSnapshot = numberOfTxsBeforeSnapshot;
   }
 
   Future<KeyValueStore> get _store async {
@@ -57,11 +64,13 @@ class PromptToSnapshotBloc
       if (state is PromptToSnapshotIdle) {
         emit(const PromptToSnapshotIdle(driveId: null));
       }
-      return;
     }
 
-    final wouldDriveBenefitFromSnapshot =
-        CountOfTxsSyncedWithGql.wouldDriveBenefitFromSnapshot(event.driveId!);
+    final wouldDriveBenefitFromSnapshot = event.driveId != null &&
+        CountOfTxsSyncedWithGql.wouldDriveBenefitFromSnapshot(
+          event.driveId!,
+          _numberOfTxsBeforeSnapshot,
+        );
 
     await _debouncer.run(() async {
       final shouldAskAgain = await _shouldAskToSnapshotAgain();
@@ -135,7 +144,10 @@ abstract class CountOfTxsSyncedWithGql {
     _countOfTxsSynceWithGqlOfDrive.removeWhere((e) => e.driveId == driveId);
   }
 
-  static bool wouldDriveBenefitFromSnapshot(DriveID driveId) {
+  static bool wouldDriveBenefitFromSnapshot(
+    DriveID driveId,
+    int numberOfTxsBeforeSnapshot,
+  ) {
     final count = _getForDrive(driveId);
     final wouldBenefit = count >= numberOfTxsBeforeSnapshot;
     return wouldBenefit;
