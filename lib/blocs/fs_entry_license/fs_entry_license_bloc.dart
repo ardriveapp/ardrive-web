@@ -152,13 +152,13 @@ class FsEntryLicenseBloc
         );
       }
     } else {
-      final moveTx = await _arweave.prepareDataBundleTx(
+      final licenseTx = await _arweave.prepareDataBundleTx(
         await DataBundle.fromDataItems(
           items: licenseAssertionTxDataItems,
         ),
         profile.wallet,
       );
-      await _arweave.postTx(moveTx);
+      await _arweave.postTx(licenseTx);
     }
   }
 }
