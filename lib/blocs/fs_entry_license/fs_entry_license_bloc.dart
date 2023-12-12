@@ -9,7 +9,6 @@ import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/license/license_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
@@ -70,20 +69,13 @@ class FsEntryLicenseBloc
         }
 
         if (event is FsEntryLicenseSubmit) {
-          final folderInView = event.folderInView;
-
           emit(const FsEntryLicenseLoadInProgress());
 
-          try {
-            await licenseEntities(
-              profile: profile,
-              parentFolder: folderInView,
-              licenseInfo: event.licenseInfo,
-              licenseParams: event.licenseParams,
-            );
-          } catch (err) {
-            logger.e('Error moving items', err);
-          }
+          await licenseEntities(
+            profile: profile,
+            licenseInfo: event.licenseInfo,
+            licenseParams: event.licenseParams,
+          );
           emit(const FsEntryLicenseSuccess());
         }
       },
@@ -108,7 +100,6 @@ class FsEntryLicenseBloc
   }
 
   Future<void> licenseEntities({
-    required FolderEntry parentFolder,
     required ProfileLoggedIn profile,
     required LicenseInfo licenseInfo,
     required LicenseParams licenseParams,
