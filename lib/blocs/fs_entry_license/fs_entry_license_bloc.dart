@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/license_assertion.dart';
 import 'package:ardrive/models/license_assertion.dart';
 import 'package:ardrive/models/models.dart';
@@ -28,7 +27,6 @@ class FsEntryLicenseBloc
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
-  final SyncCubit _syncCubit;
 
   FsEntryLicenseBloc({
     required this.driveId,
@@ -37,14 +35,11 @@ class FsEntryLicenseBloc
     required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
-    required SyncCubit syncCubit,
-    required ArDriveCrypto crypto,
     Platform platform = const LocalPlatform(),
   })  : _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
-        _syncCubit = syncCubit,
         super(const FsEntryLicenseLoadInProgress()) {
     if (selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
