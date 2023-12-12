@@ -15,8 +15,16 @@ class LicenseService {
     return licenseInfo[licenseType]!;
   }
 
-  UdlLicenseParams udlParamsFromTags(Map<String, String> tags) {
-    return UdlLicenseParams.fromTags(tags);
+  LicenseParams licenseParamsForType(
+    LicenseType licenseType,
+    Map<String, String> additionalTags,
+  ) {
+    switch (licenseType) {
+      case LicenseType.udl:
+        return UdlLicenseParams.fromAdditionalTags(additionalTags);
+      default:
+        throw ArgumentError('Unknown license type: $licenseType');
+    }
   }
 
   LicenseAssertionEntity toLicenseAssertionEntity({

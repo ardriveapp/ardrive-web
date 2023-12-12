@@ -7,13 +7,14 @@ final udlLicenseInfo = LicenseInfo(
   version: '1.0',
 );
 
-class UdlLicenseParams {
+class UdlLicenseParams extends LicenseParams {
   final String? derivations;
   final String? commercialUse;
 
   UdlLicenseParams({this.derivations, this.commercialUse});
 
-  Map<String, String> toTags() {
+  @override
+  Map<String, String> toAdditionalTags() {
     // Null keys should be filtered
     final tags = {
       'Derivation': derivations,
@@ -23,7 +24,7 @@ class UdlLicenseParams {
     return tags as Map<String, String>;
   }
 
-  static UdlLicenseParams fromTags<T>(
+  static UdlLicenseParams fromAdditionalTags(
     Map<String, String> additionalTags,
   ) {
     return UdlLicenseParams(

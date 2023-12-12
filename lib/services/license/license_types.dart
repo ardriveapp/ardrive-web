@@ -19,7 +19,7 @@ class LicenseInfo {
   });
 }
 
-class LicenseParams {
+abstract class LicenseParams {
   Map<String, String> toAdditionalTags() => {};
 }
 
