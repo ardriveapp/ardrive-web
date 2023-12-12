@@ -1,6 +1,8 @@
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_state.dart';
 import 'package:ardrive/utils/debouncer.dart';
+import 'package:ardrive/utils/key_value_store.dart';
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:collection/collection.dart';
@@ -14,12 +16,27 @@ class PromptToSnapshotBloc
   final Debouncer _debouncer = Debouncer(
     delay: const Duration(seconds: secondsBeforePrompting),
   );
+  static KeyValueStore? _maybeStore;
+  // Should be per-drive?
+  static const storeKey = 'dont-ask-to-snapshot-again';
 
-  PromptToSnapshotBloc() : super(const PromptToSnapshotIdle(driveId: null)) {
+  PromptToSnapshotBloc({
+    /// takes a KeyValueStore for testing purposes
+    KeyValueStore? store,
+  }) : super(const PromptToSnapshotIdle(driveId: null)) {
     on<CountSyncedTxs>(_onCountSyncedTxs);
-    on<SelectedDrive>(_onSelectedDrive);
+    on<SelectedDrive>(_onDriveSelected);
     on<DriveSnapshotting>(_onDriveSnapshotting);
     on<DriveSnapshotted>(_onDriveSnapshotted);
+    on<DismissDontAskAgain>(_onDismissDontAskAgain);
+
+    _maybeStore ??= store;
+  }
+
+  Future<KeyValueStore> get _store async {
+    /// lazily initialize KeyValueStore
+    _maybeStore ??= await LocalKeyValueStore.getInstance();
+    return _maybeStore!;
   }
 
   Future<void> _onCountSyncedTxs(
@@ -32,7 +49,7 @@ class PromptToSnapshotBloc
     );
   }
 
-  Future<void> _onSelectedDrive(
+  Future<void> _onDriveSelected(
     SelectedDrive event,
     Emitter<PromptToSnapshotState> emit,
   ) async {
@@ -45,17 +62,20 @@ class PromptToSnapshotBloc
       return;
     }
 
-    final shouldPrompt =
+    final wouldDriveBenefitFromSnapshot =
         CountOfTxsSyncedWithGql.wouldDriveBenefitFromSnapshot(event.driveId!);
 
     logger.d(
       'Debouncing prompt to snapshot (${event.driveId}): '
-      'should prompt: $shouldPrompt, is closed: $isClosed',
+      'should prompt: $wouldDriveBenefitFromSnapshot, is closed: $isClosed',
     );
 
-    await _debouncer.run(() {
-      logger.d('Debouncer finished for ${event.driveId}');
-      if (shouldPrompt && !isClosed && state is PromptToSnapshotIdle) {
+    await _debouncer.run(() async {
+      final shouldAskAgain = await _shouldAskToSnapshotAgain();
+      if (shouldAskAgain &&
+          wouldDriveBenefitFromSnapshot &&
+          !isClosed &&
+          state is PromptToSnapshotIdle) {
         logger.d('Prompting to snapshot for ${event.driveId}');
         emit(PromptToSnapshotPrompting(driveId: event.driveId!));
       }
@@ -77,6 +97,24 @@ class PromptToSnapshotBloc
   ) async {
     CountOfTxsSyncedWithGql.resetForDrive(event.driveId);
     emit(PromptToSnapshotIdle(driveId: event.driveId));
+  }
+
+  Future<void> _onDismissDontAskAgain(
+    DismissDontAskAgain event,
+    Emitter<PromptToSnapshotState> emit,
+  ) async {
+    await _dontAskToSnapshotAgain();
+    emit(PromptToSnapshotIdle(driveId: event.driveId));
+  }
+
+  Future<void> _dontAskToSnapshotAgain() async {
+    await (await _store).putBool(storeKey, true);
+  }
+
+  Future<bool> _shouldAskToSnapshotAgain() async {
+    final store = await _store;
+    final value = await store.getBool(storeKey);
+    return value != true;
   }
 }
 
@@ -110,9 +148,6 @@ abstract class CountOfTxsSyncedWithGql {
   }
 
   static bool wouldDriveBenefitFromSnapshot(DriveID driveId) {
-    // TODO: remove this
-    return true;
-
     final count = _getForDrive(driveId);
     final wouldBenefit = count >= numberOfTxsBeforeSnapshot;
     logger.d(

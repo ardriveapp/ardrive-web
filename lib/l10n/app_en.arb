@@ -360,9 +360,9 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "New Snapshot",
+  "createSnapshot": "Create snapshot",
   "@createSnapshot": {
-    "description": "The action of snapshotting a drive"
+    "description": "The action of creating a snapshot"
   },
   "createSnapshotExplanation": "Snapshots reduce the time it takes for the drive to load. Do you want to create a snapshot of your drive {driveName}?",
   "@createSnapshotExplanation": {
@@ -474,6 +474,10 @@
   "doneEmphasized": "DONE",
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
+  },
+  "dontAskMeAgain": "Don’t ask me again.",
+  "@dontAskMeAgain": {
+    "description": "Don't ask me for it again"
   },
   "dontHaveAWallet1Part": "Don't have a wallet? Get one ",
   "@dontHaveAWallet1Part": {
@@ -1282,6 +1286,10 @@
   "@newFolder": {
     "description": "Create a new folder entity"
   },
+  "newSnapshot": "New Snapshot",
+  "@newSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
   "newString": "New",
   "@newString": {
     "description": "New entity (folder, file, drive, manifest, attached drive)"
@@ -1684,6 +1692,14 @@
       }
     }
   },
+  "snapshotRecommended": "Snapshot Recommended",
+  "@snapshotRecommended": {
+    "description": "Indicates that making a drive snapshot is recommended "
+  },
+  "snapshotRecommendedBody": "Snapshots help speed up the time it takes to sync your large drives. Would you like to try?",
+  "@snapshotRecommendedBody": {
+    "description": "Explains how the snapshots improves the syncing time of a drive"
+  },
   "snapshotSize": "Snapshot Size: {size}",
   "@snapshotSize": {
     "description": "Snapshot Size",
@@ -1847,7 +1863,7 @@
   },
   "turboUsdDiscountApplied": "(${amount} discount applied)",
   "@turboUsdDiscountApplied": {
-    "description": "E.g. \"10$ discount applied\"",
+    "description": "E.g. \"$10 discount applied\"",
     "placeholders": {
       "amount": {
         "type": "String"

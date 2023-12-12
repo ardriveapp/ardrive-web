@@ -90,7 +90,7 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
 
   return ArDriveStandardModal(
-    title: appLocalizationsOf(context).createSnapshot,
+    title: appLocalizationsOf(context).newSnapshot,
     content: SizedBox(
       width: kMediumDialogWidth,
       child: Row(
@@ -340,7 +340,7 @@ Widget _confirmDialog(
   CreateSnapshotState state,
 ) {
   return ArDriveStandardModal(
-    title: appLocalizationsOf(context).createSnapshot,
+    title: appLocalizationsOf(context).newSnapshot,
     content: SizedBox(
         width: kMediumDialogWidth,
         child: Row(

@@ -328,7 +328,7 @@ class NewButton extends StatelessWidget {
               },
               isDisabled: !driveDetailState.hasWritePermissions ||
                   driveDetailState.driveIsEmpty,
-              name: appLocalizations.createSnapshot,
+              name: appLocalizations.newSnapshot,
               icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
             ),
         ]

@@ -51,3 +51,7 @@ class DriveSnapshotted extends PromptToSnapshotEvent {
   @override
   List<Object> get props => [driveId, txsSyncedWithGqlCount];
 }
+
+class DismissDontAskAgain extends PromptToSnapshotEvent {
+  const DismissDontAskAgain() : super(driveId: null);
+}
