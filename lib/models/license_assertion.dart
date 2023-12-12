@@ -7,7 +7,7 @@ import 'package:drift/drift.dart';
 
 extension LicenseAssertionsCompanionExtensions on LicenseAssertionsCompanion {
   /// Converts the assertion to an instance of [LicenseAssertionEntity].
-  LicenseAssertionEntity asEntity() {
+  LicenseAssertionEntity asEntity({String? ownerAddress}) {
     final Map<String, String> additionalTags =
         jsonDecode(customGQLTags.value ?? '{}');
 
@@ -20,8 +20,8 @@ extension LicenseAssertionsCompanionExtensions on LicenseAssertionsCompanion {
       ..blockTimestamp = dateCreated.value
       ..bundledIn = bundledIn.value;
 
-    if (pinnedDataOwnerAddress.value != null) {
-      licenseAssertion.ownerAddress = pinnedDataOwnerAddress.value!.toString();
+    if (ownerAddress != null) {
+      licenseAssertion.ownerAddress = ownerAddress;
     }
 
     return licenseAssertion;
