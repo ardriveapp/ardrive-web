@@ -8,9 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-abstract class Entity {
-  final ArDriveCrypto _crypto;
-
+mixin TransactionPropertiesMixin {
   /// The id of the transaction that represents this entity.
   @JsonKey(includeFromJson: false, includeToJson: false)
   late String txId;
@@ -22,6 +20,10 @@ abstract class Entity {
   /// The bundle this entity is a part of.
   @JsonKey(includeFromJson: false, includeToJson: false)
   String? bundledIn;
+}
+
+abstract class Entity with TransactionPropertiesMixin {
+  final ArDriveCrypto _crypto;
 
   /// The time this entity was created at ie. its `Unix-Time`.
   @JsonKey(includeFromJson: false, includeToJson: false)

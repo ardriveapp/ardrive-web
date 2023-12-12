@@ -3,6 +3,7 @@ import 'package:arweave/arweave.dart';
 import 'package:drift/drift.dart';
 
 import '../services/services.dart';
+import 'entity.dart';
 
 class LicenseAssertionTransactionParseException implements Exception {
   final String transactionId;
@@ -16,7 +17,7 @@ const licenseAssertionTxBaseTagKeys = [
   'License',
 ];
 
-class LicenseAssertionEntity {
+class LicenseAssertionEntity with TransactionPropertiesMixin {
   final String dataTx;
   final String licenseTx;
   final Map<String, String> additionalTags;
@@ -39,7 +40,10 @@ class LicenseAssertionEntity {
         dataTx: transaction.getTag('Original')!,
         licenseTx: transaction.getTag('License')!,
         additionalTags: additionalTags,
-      );
+      )
+        ..txId = transaction.id
+        ..ownerAddress = transaction.owner.address
+        ..bundledIn = transaction.bundledIn?.id;
     } catch (_) {
       throw LicenseAssertionTransactionParseException(
         transactionId: transaction.id,
