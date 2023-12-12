@@ -22,7 +22,7 @@ Future<void> promptToSnapshot(
   );
 }
 
-class PromptToSnapshotDialog extends StatelessWidget {
+class PromptToSnapshotDialog extends StatefulWidget {
   final PromptToSnapshotBloc bloc;
   final Drive drive;
 
@@ -33,33 +33,58 @@ class PromptToSnapshotDialog extends StatelessWidget {
   });
 
   @override
+  PromptToSnapshotDialogState createState() => PromptToSnapshotDialogState();
+}
+
+class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
+  bool _dontAskAgain = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.bloc.add(SelectedDrive(driveId: widget.drive.id));
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ArDriveStandardModal(
       hasCloseButton: true,
-      title: appLocalizationsOf(context).snapshotRecommended,
+      title: _dontAskAgain
+          ? appLocalizationsOf(context).weWontRemindYou
+          : appLocalizationsOf(context).snapshotRecommended,
       content: SizedBox(
         width: kMediumDialogWidth,
         child: Text(
-          appLocalizationsOf(context).snapshotRecommendedBody,
+          _dontAskAgain
+              ? 'You can always create a snapshot under the Advanced section of the New menu in the future.' // TODO: get a wording for this
+              : appLocalizationsOf(context).snapshotRecommendedBody,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
       ),
       actions: [
         ModalAction(
           action: () {
-            Navigator.of(context).pop();
-            // TODO: are you sure?
-            bloc.add(const DismissDontAskAgain());
+            if (_dontAskAgain) {
+              Navigator.of(context).pop();
+            } else {
+              setState(() {
+                _dontAskAgain = true;
+                widget.bloc.add(const DismissDontAskAgain(dontAskAgain: true));
+              });
+            }
           },
-          title: appLocalizationsOf(context).dontAskMeAgain,
+          title: _dontAskAgain
+              ? appLocalizationsOf(context).okEmphasized
+              : appLocalizationsOf(context).dontAskMeAgain,
         ),
-        ModalAction(
-          action: () {
-            Navigator.of(context).pop();
-            promptToCreateSnapshot(context, drive);
-          },
-          title: appLocalizationsOf(context).createSnapshot,
-        ),
+        if (!_dontAskAgain)
+          ModalAction(
+            action: () {
+              Navigator.of(context).pop();
+              promptToCreateSnapshot(context, widget.drive);
+            },
+            title: appLocalizationsOf(context).createSnapshot,
+          ),
       ],
     );
   }

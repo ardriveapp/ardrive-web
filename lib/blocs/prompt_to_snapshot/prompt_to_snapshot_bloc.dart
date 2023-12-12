@@ -105,12 +105,14 @@ class PromptToSnapshotBloc
     DismissDontAskAgain event,
     Emitter<PromptToSnapshotState> emit,
   ) async {
-    await _dontAskToSnapshotAgain();
+    await _dontAskToSnapshotAgain(event.dontAskAgain);
     emit(PromptToSnapshotIdle(driveId: event.driveId));
   }
 
-  Future<void> _dontAskToSnapshotAgain() async {
-    await (await _store).putBool(storeKey, true);
+  Future<void> _dontAskToSnapshotAgain(
+    bool dontAskAgain,
+  ) async {
+    await (await _store).putBool(storeKey, dontAskAgain);
   }
 
   Future<bool> _shouldAskToSnapshotAgain() async {

@@ -53,5 +53,9 @@ class DriveSnapshotted extends PromptToSnapshotEvent {
 }
 
 class DismissDontAskAgain extends PromptToSnapshotEvent {
-  const DismissDontAskAgain() : super(driveId: null);
+  final bool dontAskAgain;
+
+  const DismissDontAskAgain({
+    required this.dontAskAgain,
+  }) : super(driveId: null);
 }
