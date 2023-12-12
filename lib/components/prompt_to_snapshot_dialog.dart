@@ -56,7 +56,7 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
         width: kMediumDialogWidth,
         child: Text(
           _dontAskAgain
-              ? 'You can always create a snapshot under the Advanced section of the New menu in the future.' // TODO: get a wording for this
+              ? appLocalizationsOf(context).snapshotRecommendedDontAskAgain
               : appLocalizationsOf(context).snapshotRecommendedBody,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),

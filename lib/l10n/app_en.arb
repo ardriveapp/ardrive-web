@@ -1700,6 +1700,10 @@
   "@snapshotRecommendedBody": {
     "description": "Explains how the snapshots improves the syncing time of a drive"
   },
+  "snapshotRecommendedDontAskAgain": "You can always create a snapshot under the Advanced section of the New menu in the future.",
+  "@snapshotRecommendedDontAskAgain": {
+    "description": "Explains where you can make a snapshot."
+  },
   "snapshotSize": "Snapshot Size: {size}",
   "@snapshotSize": {
     "description": "Snapshot Size",
