@@ -21,7 +21,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/plausible_event_tracker.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
@@ -58,7 +58,11 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.trackPageview(event: PlausiblePageView.welcomePage);
+    PlausibleEventTracker.trackPageview(
+      page: PlausiblePageView.welcomePage,
+    ).then(
+      (value) => PlausibleEventTracker.trackAppLoaded(),
+    );
   }
 
   @override
@@ -127,11 +131,12 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
           } else if (loginState is LoginSuccess) {
+            final profileType = loginState.user.profileType;
             logger.d('Login Success, unlocking default profile');
 
             context.read<ProfileCubit>().unlockDefaultProfile(
                   loginState.user.password,
-                  loginState.user.profileType,
+                  profileType,
                 );
           }
         },
@@ -735,7 +740,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
     super.initState();
 
     PlausibleEventTracker.trackPageview(
-        event: PlausiblePageView.welcomeBackPage);
+        page: PlausiblePageView.welcomeBackPage);
   }
 
   @override
@@ -864,7 +869,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     super.initState();
 
     PlausibleEventTracker.trackPageview(
-      event: PlausiblePageView.createAndConfirmPasswordPage,
+      page: PlausiblePageView.createAndConfirmPasswordPage,
     );
   }
 
@@ -1084,7 +1089,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     }
 
     PlausibleEventTracker.trackPageview(
-      event: PlausiblePageView.createdAndConfirmedPassword,
+      page: PlausiblePageView.createdAndConfirmedPassword,
     );
 
     context.read<LoginBloc>().add(
@@ -1114,11 +1119,11 @@ class OnBoardingViewState extends State<OnBoardingView> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.trackPageview(event: PlausiblePageView.onboardingPage)
+    PlausibleEventTracker.trackPageview(page: PlausiblePageView.onboardingPage)
         .then(
       (value) {
         PlausibleEventTracker.trackPageview(
-            event: PlausiblePageView.tutorialsPage1);
+            page: PlausiblePageView.tutorialsPage1);
       },
     );
   }
@@ -1138,7 +1143,7 @@ class OnBoardingViewState extends State<OnBoardingView> {
                   ),
                 );
             PlausibleEventTracker.trackPageview(
-                event: PlausiblePageView.tutorialSkipped);
+                page: PlausiblePageView.tutorialSkipped);
           },
           title: appLocalizationsOf(context).onboarding1Title,
           description: appLocalizationsOf(context).onboarding1Description,
@@ -1191,13 +1196,13 @@ class OnBoardingViewState extends State<OnBoardingView> {
 
     if (_currentPage == 0) {
       PlausibleEventTracker.trackPageview(
-          event: PlausiblePageView.tutorialsPage1);
+          page: PlausiblePageView.tutorialsPage1);
     } else if (_currentPage == 1) {
       PlausibleEventTracker.trackPageview(
-          event: PlausiblePageView.tutorialsPage2);
+          page: PlausiblePageView.tutorialsPage2);
     } else if (_currentPage == 2) {
       PlausibleEventTracker.trackPageview(
-          event: PlausiblePageView.tutorialsPage3);
+          page: PlausiblePageView.tutorialsPage3);
     }
   }
 
@@ -1474,7 +1479,7 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
     super.initState();
 
     PlausibleEventTracker.trackPageview(
-        event: PlausiblePageView.enterSeedPhrasePage);
+        page: PlausiblePageView.enterSeedPhrasePage);
   }
 
   @override
@@ -1637,7 +1642,7 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
     super.initState();
 
     PlausibleEventTracker.trackPageview(
-        event: PlausiblePageView.walletGenerationPage);
+        page: PlausiblePageView.walletGenerationPage);
 
     // TODO: create/update localization key
     _message = 'Did you know?\n\n${_messages[0]}';
@@ -1752,7 +1757,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
     super.initState();
 
     PlausibleEventTracker.trackPageview(
-        event: PlausiblePageView.walletDownloadPage);
+        page: PlausiblePageView.walletDownloadPage);
   }
 
   @override
@@ -1810,7 +1815,7 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                     onTap: () {
                       _onDownload();
                       PlausibleEventTracker.trackPageview(
-                        event: PlausiblePageView.walletDownloaded,
+                        page: PlausiblePageView.walletDownloaded,
                       );
                     },
                     child: Container(
@@ -1985,12 +1990,12 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
     switch (_currentPage) {
       case 1:
         PlausibleEventTracker.trackPageview(
-          event: PlausiblePageView.writeDownSeedPhrasePage,
+          page: PlausiblePageView.writeDownSeedPhrasePage,
         );
         break;
       case 2:
         PlausibleEventTracker.trackPageview(
-          event: PlausiblePageView.verifySeedPhrasePage,
+          page: PlausiblePageView.verifySeedPhrasePage,
         );
         break;
     }
@@ -2606,7 +2611,7 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
 
   Widget _buildGettingStarted() {
     PlausibleEventTracker.trackPageview(
-        event: PlausiblePageView.gettingStartedPage);
+        page: PlausiblePageView.gettingStartedPage);
 
     // TODO: create/update localization keys
     var cardInfos = [

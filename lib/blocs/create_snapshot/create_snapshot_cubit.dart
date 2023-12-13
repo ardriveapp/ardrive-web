@@ -6,6 +6,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/models/daos/daos.dart';
@@ -16,6 +17,7 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
@@ -600,6 +602,15 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       } else {
         await _arweave.postTx(_preparedTx!);
       }
+
+      final drive =
+          await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
+      final drivePrivacy = drive?.privacy == DrivePrivacyTag.public
+          ? DrivePrivacy.public
+          : DrivePrivacy.private;
+      PlausibleEventTracker.trackSnapshotCreation(
+        drivePrivacy: drivePrivacy,
+      );
 
       emit(SnapshotUploadSuccess());
     } catch (err, stacktrace) {
