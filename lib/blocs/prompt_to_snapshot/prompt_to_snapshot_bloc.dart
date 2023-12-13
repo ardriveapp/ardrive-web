@@ -18,7 +18,6 @@ class PromptToSnapshotBloc
   late int _numberOfTxsBeforeSnapshot;
 
   static KeyValueStore? _maybeStore;
-  // Should be per-drive?
   static const storeKey = 'dont-ask-to-snapshot-again';
 
   Duration get durationBeforePrompting => _durationBeforePrompting;
