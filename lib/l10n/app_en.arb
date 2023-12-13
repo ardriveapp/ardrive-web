@@ -1822,6 +1822,14 @@
   "@turboErrorMessageSessionExpired": {},
   "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageUnknown": {},
+  "turboModalBrowserLimit": "Upload sizes are limited by browsers and other factors. Learn more.",
+  "@turboModalBrowserLimit": {
+    "description": "Explains there's platform-specific limitations for uploading"
+  },
+  "turboModalBrowserLimit_link": "Learn more.",
+  "@turboModalBrowserLimit_link": {
+    "description": "Should perfectly match the segment of text from turboModalBrowserLimit."
+  },
   "turboPercentageDiscountApplied": "({percentage}% discount applied)",
   "@turboPercentageDiscountApplied": {
     "description": "E.g. \"50% discount applied\"",
