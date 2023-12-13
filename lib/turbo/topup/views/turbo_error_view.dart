@@ -38,31 +38,56 @@ class TurboErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ErrorView(
+      errorMessage: _getErrorMessageForErrorType(context),
+      errorTitle: appLocalizationsOf(context).theresBeenAProblem,
+      onDismiss: () => onDismiss(),
+      onTryAgain: () => onTryAgain(),
+    );
+  }
+}
+
+class ErrorView extends StatelessWidget {
+  const ErrorView({
+    super.key,
+    required this.errorMessage,
+    required this.errorTitle,
+    this.onTryAgain,
+    required this.onDismiss,
+  });
+
+  final String errorMessage;
+  final String errorTitle;
+  final VoidCallback? onTryAgain;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
     return ArDriveCard(
       height: 513,
       contentPadding: EdgeInsets.zero,
       content: Column(
         children: [
           Flexible(
-            flex: 1,
             child: Align(
               alignment: Alignment.topRight,
               child: Padding(
                 padding: const EdgeInsets.only(top: 26, right: 26),
                 child: ArDriveClickArea(
                   child: GestureDetector(
-                      onTap: () {
-                        onDismiss();
-                        Navigator.pop(context);
-                      },
-                      child: ArDriveIcons.x()),
+                    onTap: () {
+                      onDismiss();
+                      Navigator.pop(context);
+                    },
+                    child: ArDriveIcons.x(),
+                  ),
                 ),
               ),
             ),
           ),
           Flexible(
-            flex: 1,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ArDriveIcons.triangle(
                   size: 50,
@@ -71,12 +96,12 @@ class TurboErrorView extends StatelessWidget {
                       .colors
                       .themeErrorDefault,
                 ),
-                Text(appLocalizationsOf(context).theresBeenAProblem,
-                    style: ArDriveTypography.body.leadBold()),
+                Text(errorTitle, style: ArDriveTypography.body.leadBold()),
                 const SizedBox(height: 16),
                 Text(
-                  _getErrorMessageForErrorType(context),
-                  style: ArDriveTypography.body.buttonNormalRegular(
+                  errorMessage,
+                  textAlign: TextAlign.center,
+                  style: ArDriveTypography.body.buttonNormalBold(
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
@@ -87,7 +112,6 @@ class TurboErrorView extends StatelessWidget {
             ),
           ),
           Flexible(
-            flex: 1,
             child: Align(
               alignment: Alignment.center,
               child: ArDriveButton(
@@ -97,9 +121,7 @@ class TurboErrorView extends StatelessWidget {
                 fontStyle: ArDriveTypography.body.buttonLargeBold(
                   color: Colors.white,
                 ),
-                onPressed: () {
-                  onTryAgain();
-                },
+                onPressed: onTryAgain,
               ),
             ),
           ),

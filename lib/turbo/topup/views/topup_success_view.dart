@@ -1,9 +1,59 @@
+import 'dart:math';
+
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 
 class TurboSuccessView extends StatelessWidget {
   const TurboSuccessView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SuccessView(
+      successMessage: appLocalizationsOf(context).paymentSuccessful,
+      detailMessage:
+          appLocalizationsOf(context).yourCreditsWillBeAddedToYourAccount,
+      closeButtonLabel: appLocalizationsOf(context).close,
+    );
+  }
+}
+
+class SuccessView extends StatefulWidget {
+  final String successMessage;
+  final String detailMessage;
+  final String closeButtonLabel;
+  final bool showConfetti;
+
+  const SuccessView({
+    super.key,
+    required this.successMessage,
+    required this.detailMessage,
+    required this.closeButtonLabel,
+    this.showConfetti = false,
+  });
+
+  @override
+  State<SuccessView> createState() => _SuccessViewState();
+}
+
+class _SuccessViewState extends State<SuccessView> {
+  final ConfettiController? confettiController1 = ConfettiController(
+    duration: const Duration(seconds: 5),
+  );
+
+  final ConfettiController? confettiController2 = ConfettiController(
+    duration: const Duration(seconds: 5),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showConfetti) {
+      confettiController1!.play();
+      confettiController2!.play();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +62,35 @@ class TurboSuccessView extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       content: Column(
         children: [
+          if (widget.showConfetti)
+            Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ConfettiWidget(
+                  numberOfParticles: 10,
+                  blastDirection: -pi / 2,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  confettiController: confettiController1!,
+                  maxBlastForce: 40,
+                  child: Container(
+                    height: 0,
+                    width: 0,
+                  ),
+                ),
+                ConfettiWidget(
+                  numberOfParticles: 10,
+                  blastDirection: pi / 2,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  confettiController: confettiController2!,
+                  maxBlastForce: 40,
+                  child: Container(
+                    height: 0,
+                    width: 0,
+                  ),
+                ),
+              ],
+            ),
           Flexible(
             flex: 1,
             child: Align(
@@ -37,18 +116,19 @@ class TurboSuccessView extends StatelessWidget {
                       .colors
                       .themeSuccessDefault,
                 ),
-                Text(appLocalizationsOf(context).paymentSuccessful,
+                Text(widget.successMessage,
                     style: ArDriveTypography.body.leadBold()),
                 const SizedBox(height: 16),
                 Text(
-                  appLocalizationsOf(context)
-                      .yourCreditsWillBeAddedToYourAccount,
-                  style: ArDriveTypography.body.buttonNormalRegular(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
-                  ),
+                  widget.detailMessage,
+                  style: ArDriveTypography.body
+                      .buttonNormalRegular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      )
+                      .copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -60,7 +140,7 @@ class TurboSuccessView extends StatelessWidget {
               child: ArDriveButton(
                 maxHeight: 44,
                 maxWidth: 143,
-                text: appLocalizationsOf(context).close,
+                text: widget.closeButtonLabel,
                 fontStyle: ArDriveTypography.body.buttonLargeBold(
                   color: Colors.white,
                 ),

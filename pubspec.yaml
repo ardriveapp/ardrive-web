@@ -129,6 +129,7 @@ dependencies:
   just_audio: ^0.9.34
   loading_animation_widget: ^1.2.0+4
   synchronized: ^3.1.0
+  confetti: ^0.7.0
 
 dependency_overrides:
   stripe_js:
@@ -150,6 +151,14 @@ dependency_overrides:
       url: https://github.com/ardriveapp/fetch_api.git
       ref: master
   http: ^1.1.0
+  ardrive_ui:
+    git:
+      url: https://github.com/ardriveapp/ardrive_ui.git
+      ref: PE-5216-add-gift-icon-to-ardrive-ui
+  ardrive_http:
+    git:
+      url: https://github.com/ardriveapp/ardrive_http.git
+      ref: PE-5220-return-response-data-for-http-exceptions-on-ardrive-http
 
 dev_dependencies:
   integration_test:

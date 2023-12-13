@@ -5,6 +5,7 @@ import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
+import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
@@ -128,6 +129,40 @@ class PaymentService {
 
     return List<String>.from(jsonDecode(result.data));
   }
+
+  Future<int> redeemGift({
+    required String email,
+    required String giftCode,
+    required String destinationAddress,
+  }) async {
+    try {
+      final result = await httpClient.get(
+        url:
+            '$turboPaymentUri/v1/redeem?id=$giftCode&email=$email&destinationAddress=$destinationAddress',
+        responseType: ResponseType.json,
+      );
+
+      logger.d('Gift redeem result: ${result.data}');
+
+      if (result.statusCode != 200) {
+        throw Exception(
+            'Gift redeem failed with status code ${result.statusCode}');
+      }
+
+      final newBalance = result.data['userBalance'] as String;
+
+      return int.parse(newBalance);
+    } on ArDriveHTTPException catch (e) {
+      if (e.data == 'Gift has already been redeemed!') {
+        logger.e('Gift has already been redeemed!');
+        throw GiftAlreadyRedeemed();
+      }
+      rethrow;
+    } catch (e) {
+      logger.d(e.toString());
+      rethrow;
+    }
+  }
 }
 
 PriceForFiat _parseHttpResponseForPriceForFiat(
@@ -217,51 +252,12 @@ String _urlParamsForGetPriceForFiat({
   return urlParams;
 }
 
-class DontUsePaymentService implements PaymentService {
-  @override
-  late ArDriveHTTP httpClient;
-
-  @override
-  Future<BigInt> getPriceForBytes({required int byteSize}) =>
-      throw UnimplementedError();
-
-  @override
-  Future<BigInt> getBalance({required Wallet wallet}) =>
-      throw UnimplementedError();
-
-  @override
-  Future<PaymentModel> getPaymentIntent({
-    required Wallet wallet,
-    required double amount,
-    String currency = 'usd',
-    String? promoCode,
-  }) async {
-    throw UnimplementedError();
-  }
-
-  @override
-  Uri get turboPaymentUri => throw UnimplementedError();
-
-  @override
-  bool get useTurboPayment => false;
-
-  @override
-  Future<PriceForFiat> getPriceForFiat({
-    required wallet,
-    required double amount,
-    required String currency,
-    String? promoCode,
-  }) =>
-      throw UnimplementedError();
-
-  @override
-  Future<List<String>> getSupportedCountries() {
-    throw UnimplementedError();
-  }
-}
-
 class TurboUserNotFound implements Exception {
   TurboUserNotFound();
+}
+
+class GiftAlreadyRedeemed implements Exception {
+  GiftAlreadyRedeemed();
 }
 
 class PaymentServiceException implements Exception, Equatable {
