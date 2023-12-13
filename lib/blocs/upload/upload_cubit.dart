@@ -574,7 +574,6 @@ class UploadCubit extends Cubit<UploadState> {
             progress: progress,
             controller: uploadController,
             uploadMethod: _uploadMethod!,
-            containsLargeTurboUpload: _containsLargeTurboUpload!,
           ),
         );
       },
@@ -674,7 +673,6 @@ class UploadCubit extends Cubit<UploadState> {
             controller: uploadController,
             equatableBust: UniqueKey(),
             uploadMethod: _uploadMethod!,
-            containsLargeTurboUpload: _containsLargeTurboUpload!,
           ),
         );
       },
@@ -882,7 +880,6 @@ class UploadCubit extends Cubit<UploadState> {
             totalProgress: state.totalProgress,
             isCanceling: true,
             uploadMethod: _uploadMethod!,
-            containsLargeTurboUpload: state.containsLargeTurboUpload,
           ),
         );
 
@@ -896,7 +893,6 @@ class UploadCubit extends Cubit<UploadState> {
             totalProgress: state.totalProgress,
             isCanceling: false,
             uploadMethod: _uploadMethod!,
-            containsLargeTurboUpload: state.containsLargeTurboUpload,
           ),
         );
 
