@@ -297,10 +297,10 @@ void main() async {
             ArDriveHTTPResponse(
               statusCode: HttpStatus.ok,
               data: {
-                "message": "Payment receipt redeemed for 1000 winc!",
-                "userBalance": "1000",
-                "userAddress": "abcdefghijklmnopqrxtuvwxyz123456789ABCDEFGH",
-                "userCreationDate": "2023-05-17T21:46:38.404Z"
+                'message': 'Payment receipt redeemed for 1000 winc!',
+                'userBalance': '1000',
+                'userAddress': 'abcdefghijklmnopqrxtuvwxyz123456789ABCDEFGH',
+                'userCreationDate': '2023-05-17T21:46:38.404Z'
               },
               retryAttempts: 0,
             ),

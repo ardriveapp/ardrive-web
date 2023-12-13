@@ -73,7 +73,7 @@ class _SuccessViewState extends State<SuccessView> {
                   blastDirectionality: BlastDirectionality.explosive,
                   confettiController: confettiController1!,
                   maxBlastForce: 40,
-                  child: Container(
+                  child: const SizedBox(
                     height: 0,
                     width: 0,
                   ),
@@ -84,7 +84,7 @@ class _SuccessViewState extends State<SuccessView> {
                   blastDirectionality: BlastDirectionality.explosive,
                   confettiController: confettiController2!,
                   maxBlastForce: 40,
-                  child: Container(
+                  child: const SizedBox(
                     height: 0,
                     width: 0,
                   ),
