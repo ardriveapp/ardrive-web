@@ -6,7 +6,6 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/activity_tracker.dart';
-import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';
@@ -415,13 +414,8 @@ class UploadCubit extends Cubit<UploadState> {
           sufficentCreditsBalance: sufficientBalanceToPayWithTurbo,
           uploadMethod: _uploadMethod!,
           isButtonToUploadEnabled: isButtonEnabled,
+          isDragNDrop: isDragNDrop,
         ),
-      );
-
-      PlausibleEventTracker.trackUploadReview(
-        drivePrivacy:
-            _targetDrive.isPrivate ? DrivePrivacy.private : DrivePrivacy.public,
-        dragNDrop: isDragNDrop,
       );
     } catch (error, stacktrace) {
       logger.e('error mounting the upload', error, stacktrace);
