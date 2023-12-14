@@ -30,6 +30,17 @@ class SelectedDrive extends PromptToSnapshotEvent {
   const SelectedDrive({required super.driveId});
 }
 
+class SyncRunning extends PromptToSnapshotEvent {
+  final bool isRunning;
+
+  const SyncRunning({
+    required this.isRunning,
+  }) : super(driveId: null);
+
+  @override
+  List<Object> get props => [driveId ?? '', isRunning];
+}
+
 class DriveSnapshotting extends PromptToSnapshotEvent {
   @override
   String get driveId => super.driveId!;

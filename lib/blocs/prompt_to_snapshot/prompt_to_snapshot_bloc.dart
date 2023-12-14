@@ -17,6 +17,8 @@ class PromptToSnapshotBloc
   late Debouncer _debouncer;
   late int _numberOfTxsBeforeSnapshot;
 
+  bool _isSyncRunning = false;
+
   static KeyValueStore? _maybeStore;
   static const storeKey = 'dont-ask-to-snapshot-again';
 
@@ -30,6 +32,7 @@ class PromptToSnapshotBloc
     on<CountSyncedTxs>(_onCountSyncedTxs);
     on<SelectedDrive>(_onDriveSelected);
     on<DriveSnapshotting>(_onDriveSnapshotting);
+    on<SyncRunning>(_onSyncRunning);
     on<DriveSnapshotted>(_onDriveSnapshotted);
     on<DismissDontAskAgain>(_onDismissDontAskAgain);
 
@@ -49,6 +52,15 @@ class PromptToSnapshotBloc
     CountSyncedTxs event,
     Emitter<PromptToSnapshotState> emit,
   ) async {
+    logger.d(
+      '[PROMPT TO SNAPSHOT] Counting ${event.txsSyncedWithGqlCount} TXs for drive ${event.driveId}',
+    );
+
+    if (event.wasDeepSync) {
+      logger.d('[PROMPT TO SNAPSHOT] The count came from a deep sync');
+      CountOfTxsSyncedWithGql.resetForDrive(event.driveId);
+    }
+
     CountOfTxsSyncedWithGql.countForDrive(
       event.driveId,
       event.txsSyncedWithGqlCount,
@@ -59,37 +71,71 @@ class PromptToSnapshotBloc
     SelectedDrive event,
     Emitter<PromptToSnapshotState> emit,
   ) async {
+    if (_isSyncRunning) {
+      return;
+    }
+
+    logger.d('[PROMPT TO SNAPSHOT] Selected drive ${event.driveId}');
+
     if (event.driveId == null) {
       if (state is PromptToSnapshotIdle) {
+        logger.d(
+            '[PROMPT TO SNAPSHOT] The drive id is null and the state is idle');
         emit(const PromptToSnapshotIdle(driveId: null));
       }
     }
 
-    final wouldDriveBenefitFromSnapshot = event.driveId != null &&
-        CountOfTxsSyncedWithGql.wouldDriveBenefitFromSnapshot(
-          event.driveId!,
-          _numberOfTxsBeforeSnapshot,
-        );
+    final shouldAskAgain = await _shouldAskToSnapshotAgain();
+    final stateIsIdle = state is PromptToSnapshotIdle;
+
+    logger.d(
+      '[PROMPT TO SNAPSHOT] Will attempt to prompt for drive ${event.driveId}'
+      ' in ${_durationBeforePrompting.inSeconds}s',
+    );
 
     await _debouncer.run(() async {
-      final shouldAskAgain = await _shouldAskToSnapshotAgain();
-      if (shouldAskAgain &&
+      final wouldDriveBenefitFromSnapshot = event.driveId != null &&
+          CountOfTxsSyncedWithGql.wouldDriveBenefitFromSnapshot(
+            event.driveId!,
+            _numberOfTxsBeforeSnapshot,
+          );
+      if (!_isSyncRunning &&
+          shouldAskAgain &&
           wouldDriveBenefitFromSnapshot &&
           !isClosed &&
-          state is PromptToSnapshotIdle) {
-        logger.d('Prompting to snapshot for ${event.driveId}');
+          stateIsIdle) {
+        logger.d(
+            '[PROMPT TO SNAPSHOT] Prompting to snapshot for ${event.driveId}');
         emit(PromptToSnapshotPrompting(driveId: event.driveId!));
+      } else {
+        logger.d(
+          '[PROMPT TO SNAPSHOT] Didn\'t prompt for ${event.driveId}.'
+          ' isSyncRunning: $_isSyncRunning'
+          ' shoudAskAgain: $shouldAskAgain'
+          ' wouldDriveBenefitFromSnapshot: $wouldDriveBenefitFromSnapshot'
+          ' isBlocClosed: $isClosed'
+          ' stateIsIdle: $stateIsIdle',
+        );
       }
     }).catchError((e) {
       // It was cancelled
     });
   }
 
-  Future<void> _onDriveSnapshotting(
+  void _onDriveSnapshotting(
     DriveSnapshotting event,
     Emitter<PromptToSnapshotState> emit,
-  ) async {
+  ) {
     emit(PromptToSnapshotPrompting(driveId: event.driveId));
+  }
+
+  void _onSyncRunning(
+    SyncRunning event,
+    Emitter<PromptToSnapshotState> emit,
+  ) {
+    logger.d('[PROMPT TO SNAPSHOT] Sync status changed: ${event.isRunning}');
+
+    _isSyncRunning = event.isRunning;
   }
 
   Future<void> _onDriveSnapshotted(
@@ -104,6 +150,9 @@ class PromptToSnapshotBloc
     DismissDontAskAgain event,
     Emitter<PromptToSnapshotState> emit,
   ) async {
+    logger.d(
+        '[PROMPT TO SNAPSHOT] Asked not to prompt again: ${event.dontAskAgain}');
+
     await _dontAskToSnapshotAgain(event.dontAskAgain);
     emit(PromptToSnapshotIdle(driveId: event.driveId));
   }
@@ -151,6 +200,13 @@ abstract class CountOfTxsSyncedWithGql {
   ) {
     final count = _getForDrive(driveId);
     final wouldBenefit = count >= numberOfTxsBeforeSnapshot;
+
+    logger.d(
+      '[PROMPT TO SNAPSHOT] Would drive $driveId'
+      ' ($count / $numberOfTxsBeforeSnapshot TXs) benefit from a snapshot:'
+      ' $wouldBenefit',
+    );
+
     return wouldBenefit;
   }
 }

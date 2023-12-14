@@ -121,7 +121,8 @@ class SyncCubit extends Cubit<SyncState> {
 
   void _restartSync() {
     logger.d(
-        'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
+        'Trying to create a sync subscription when window get focused again.'
+        ' This Cubit is active? ${!isClosed}');
     if (_lastSync != null) {
       final syncInterval = _configService.config.autoSyncIntervalInSeconds;
       final minutesSinceLastSync =
@@ -130,7 +131,10 @@ class SyncCubit extends Cubit<SyncState> {
 
       if (!isTimerDurationReadyToSync) {
         logger.d(
-            "Can't restart sync when window is focused. Is current active? ${!isClosed}. Last sync was $minutesSinceLastSync seconds ago. It should be $syncInterval.");
+          'Can\'t restart sync when window is focused. Is current active?'
+          ' ${!isClosed}. Last sync was $minutesSinceLastSync seconds ago.'
+          ' It should be $syncInterval.',
+        );
 
         return;
       }
@@ -258,6 +262,8 @@ class SyncCubit extends Cubit<SyncState> {
         ),
       );
 
+      _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
+
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
       logger.d('Current block height number $currentBlockHeight');
       final driveSyncProcesses = drives.map(
@@ -360,8 +366,14 @@ class SyncCubit extends Cubit<SyncState> {
     _lastSync = DateTime.now();
 
     logger.i(
-        'Syncing drives finished. Drives quantity: ${_syncProgress.drivesCount}. The total progress was ${(_syncProgress.progress * 100).roundToDouble()}%. The sync process took: ${_lastSync!.difference(_initSync).inMilliseconds}ms to finish');
+      'Syncing drives finished. Drives quantity: ${_syncProgress.drivesCount}.'
+      ' The total progress was'
+      ' ${(_syncProgress.progress * 100).roundToDouble()}%.'
+      ' The sync process took:'
+      ' ${_lastSync!.difference(_initSync).inMilliseconds}ms to finish',
+    );
 
+    _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
     emit(SyncIdle());
   }
 
