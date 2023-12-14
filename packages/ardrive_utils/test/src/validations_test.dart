@@ -54,4 +54,37 @@ void main() {
       expect(isValidUuidV4('ffffffff-ffff-1fff-bfff-ffffffffffff'), isFalse);
     });
   });
+
+  group('isValidUuidFormat Tests', () {
+    test('Valid UUID format', () {
+      expect(isValidUuidFormat('123e4567-e89b-12d3-a456-426614174000'), isTrue);
+    });
+
+    test('Invalid UUID format - missing parts', () {
+      expect(isValidUuidFormat('123e4567-e89b-12d3-a456'), isFalse);
+    });
+
+    test('Invalid UUID format - extra parts', () {
+      expect(isValidUuidFormat('123e4567-e89b-12d3-a456-426614174000-1234'),
+          isFalse);
+    });
+
+    test('Invalid UUID format - wrong separator', () {
+      expect(
+          isValidUuidFormat('123e4567:e89b:12d3:a456:426614174000'), isFalse);
+    });
+
+    test('Invalid UUID format - invalid characters', () {
+      expect(
+          isValidUuidFormat('123e4567-e89b-12d3-a456-42661417g000'), isFalse);
+    });
+
+    test('Invalid UUID format - wrong length', () {
+      expect(isValidUuidFormat('123e4567-e89b-12d3-a456-42661417400'), isFalse);
+    });
+
+    test('Invalid UUID format - empty string', () {
+      expect(isValidUuidFormat(''), isFalse);
+    });
+  });
 }

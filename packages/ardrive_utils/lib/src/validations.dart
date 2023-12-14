@@ -4,3 +4,10 @@ bool isValidUuidV4(String uuid) {
 
   return uuidV4Pattern.hasMatch(uuid.toLowerCase());
 }
+
+bool isValidUuidFormat(String uuid) {
+  final RegExp uuidPattern =
+      RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+
+  return uuidPattern.hasMatch(uuid.toLowerCase());
+}

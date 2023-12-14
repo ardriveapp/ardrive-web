@@ -1,5 +1,3 @@
-// unit tests for PaymentService
-
 import 'dart:io';
 
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -342,30 +340,28 @@ void main() async {
       test(
           'should throw GiftAlreadyRedeemed if the response contains the already redeemed message',
           () {
-        test('should throw an exception if the request fails', () async {
-          when(
-            () => httpClient.get(
-              url:
-                  '$fakeUrl/v1/redeem?id=$fakeGiftCode&email=$email&destinationAddress=$walletAddress',
-              responseType: ResponseType.json,
-            ),
-          ).thenThrow(
-            ArDriveHTTPException(
-              statusCode: 400,
-              retryAttempts: 0,
-              exception: Exception('404'),
-              data: 'Gift has already been redeemed!',
-            ),
-          );
-          expect(
-            () async => await paymentService.redeemGift(
-              email: email,
-              giftCode: fakeGiftCode,
-              destinationAddress: walletAddress,
-            ),
-            throwsA(isA<GiftAlreadyRedeemed>()),
-          );
-        });
+        when(
+          () => httpClient.get(
+            url:
+                '$fakeUrl/v1/redeem?id=$fakeGiftCode&email=$email&destinationAddress=$walletAddress',
+            responseType: ResponseType.json,
+          ),
+        ).thenThrow(
+          ArDriveHTTPException(
+            statusCode: 400,
+            retryAttempts: 0,
+            exception: Exception('Gift has already been redeemed!'),
+            data: 'Gift has already been redeemed!',
+          ),
+        );
+        expect(
+          () async => await paymentService.redeemGift(
+            email: email,
+            giftCode: fakeGiftCode,
+            destinationAddress: walletAddress,
+          ),
+          throwsA(isA<GiftAlreadyRedeemed>()),
+        );
       });
     });
 
