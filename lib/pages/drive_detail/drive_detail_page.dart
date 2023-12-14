@@ -101,7 +101,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             final driveDetailState = context.read<DriveDetailCubit>().state;
             if (driveDetailState is DriveDetailLoadSuccess) {
               final drive = driveDetailState.currentDrive;
-              // FIXME: The dialog shouldn't appear if the drive is syncing
               promptToSnapshot(
                 context,
                 bloc: bloc,
