@@ -7,6 +7,7 @@ import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/user_utils.dart';
@@ -32,6 +33,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   List<ArDriveDataTableItem> _selectedItems = [];
   List<ArDriveDataTableItem> get selectedItems => _selectedItems;
+
+  List<FileDataTableItem>? _allImagesOfCurrentFolder;
 
   bool _forceDisableMultiselect = false;
 
@@ -78,6 +81,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }) async {
     try {
       _selectedItem = null;
+      _allImagesOfCurrentFolder = null;
 
       emit(DriveDetailLoadInProgress());
 
@@ -303,11 +307,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _selectedItems = items;
 
     if (items.isEmpty) {
-      state = state.copyWith(multiselect: false, hasFoldersSelected: false);
-      emit(state);
+      emit(state.copyWith(multiselect: false, hasFoldersSelected: false));
     } else {
       emit(state.copyWith(
-          multiselect: true, hasFoldersSelected: hasFolderSelected));
+        multiselect: true,
+        hasFoldersSelected: hasFolderSelected,
+      ));
     }
   }
 
@@ -397,9 +402,63 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
+  bool canNavigateThroughImages() {
+    final numberOfImages = getAllImagesOfCurrentFolder().length;
+    return numberOfImages > 1;
+  }
+
+  Future<void> selectNextImage() => _selectImageRelativeToCurrent(1);
+  Future<void> selectPreviousImage() => _selectImageRelativeToCurrent(-1);
+
+  Future<void> _selectImageRelativeToCurrent(int offset) async {
+    final currentIndex = getIndexForImage(_selectedItem as FileDataTableItem);
+    final nextIndex = currentIndex + offset;
+    final nextImage = getImageForIndex(nextIndex);
+
+    await selectDataItem(nextImage);
+  }
+
+  FileDataTableItem getImageForIndex(int index) {
+    final allImagesOfCurrentFolder = getAllImagesOfCurrentFolder();
+    final cyclicIndex = index % allImagesOfCurrentFolder.length;
+    final image = allImagesOfCurrentFolder[cyclicIndex];
+
+    return image;
+  }
+
+  int getIndexForImage(FileDataTableItem image) {
+    final allImagesOfCurrentFolder = getAllImagesOfCurrentFolder();
+    final index = allImagesOfCurrentFolder.indexWhere(
+      (element) => element.id == image.id,
+    );
+
+    return index;
+  }
+
+  List<FileDataTableItem> getAllImagesOfCurrentFolder() {
+    if (_allImagesOfCurrentFolder != null) {
+      return _allImagesOfCurrentFolder!;
+    }
+
+    final state = this.state as DriveDetailLoadSuccess;
+    final allImagesForFolder = state.currentFolderContents
+        .whereType<FileDataTableItem>()
+        .where(
+          (element) => supportedImageTypesInFilePreview.contains(
+            element.contentType,
+          ),
+        )
+        .toList();
+
+    _allImagesOfCurrentFolder = allImagesForFolder;
+
+    return allImagesForFolder;
+  }
+
   @override
   Future<void> close() {
     _folderSubscription?.cancel();
+    _allImagesOfCurrentFolder = null;
     return super.close();
   }
 }

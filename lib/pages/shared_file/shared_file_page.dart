@@ -56,6 +56,7 @@ class SharedFilePage extends StatelessWidget {
               fileKey: state.fileKey,
               revisions: state.fileRevisions,
               drivePrivacy: state.fileKey != null ? 'private' : 'public',
+              canNavigateThroughImages: false,
             );
           }
 
@@ -193,7 +194,7 @@ class SharedFilePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   ArDriveButton(
-                    icon: ArDriveIcons.download(color: Colors.white),
+                    icon: ArDriveIcons.download2(color: Colors.white),
                     onPressed: () {
                       final file = ARFSFactory().getARFSFileFromFileRevision(
                         state.fileRevisions.first,
@@ -229,7 +230,7 @@ class SharedFilePage extends StatelessWidget {
   Widget _buildReturnToAppLink(BuildContext context) {
     return ArDriveButton(
       style: ArDriveButtonStyle.tertiary,
-      onPressed: () => openUrl(url: 'https://ardrive.io/'),
+      onPressed: () => openUrl(url: Resources.ardrivePublicSiteLink),
       text: appLocalizationsOf(context).whatIsArDrive,
     );
   }

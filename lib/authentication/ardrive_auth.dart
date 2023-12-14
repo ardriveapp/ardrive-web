@@ -97,6 +97,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     return _currentUser!;
   }
 
+  @visibleForTesting
   set currentUser(User? user) {
     _currentUser = user;
   }
@@ -226,8 +227,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
         _userStreamController.add(null);
       }
 
+      await _userRepository.deleteUser();
       await _databaseHelpers.deleteAllTables();
-      (await _metadataCache).clear();
+      await (await _metadataCache).clear();
     } catch (e) {
       logger.e('Failed to logout user', e);
       throw AuthenticationFailedException('Failed to logout user');
@@ -235,12 +237,16 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   Future<void> _disconnectFromArConnect() async {
-    final hasArConnectPermissions = await _arConnectService.checkPermissions();
-    if (hasArConnectPermissions) {
-      try {
-        await _arConnectService.disconnect();
-      } catch (e) {
-        logger.e('Failed to disconnect from ArConnect', e);
+    final isExtensionAvailable = _arConnectService.isExtensionPresent();
+    if (isExtensionAvailable) {
+      final hasArConnectPermissions =
+          await _arConnectService.checkPermissions();
+      if (hasArConnectPermissions) {
+        try {
+          await _arConnectService.disconnect();
+        } catch (e) {
+          logger.e('Failed to disconnect from ArConnect', e);
+        }
       }
     }
   }

@@ -161,10 +161,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     CheckIfUserIsLoggedIn event,
     Emitter<LoginState> emit,
   ) async {
+    logger.d('Checking if user is logged in');
+
     emit(LoginLoading());
 
     if (await _arDriveAuth.isUserLoggedIn()) {
+      logger.d('User is logged in');
+
       if (await _arDriveAuth.isBiometricsEnabled()) {
+        logger.d('Biometrics is enabled');
+
         try {
           await _loginWithBiometrics(emit: emit);
           return;
@@ -173,14 +179,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         }
       }
       emit(const PromptPassword());
-
       return;
     }
 
     if (event.gettingStarted) {
       _handleCreateNewWalletEvent(const CreateNewWallet(), emit);
     } else {
-      emit(LoginInitial(_arConnectService.isExtensionPresent()));
+      emit(LoginInitial(
+        isArConnectAvailable: _arConnectService.isExtensionPresent(),
+      ));
     }
   }
 
@@ -279,7 +286,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _arDriveAuth.logout();
     }
 
-    emit(LoginInitial(_arConnectService.isExtensionPresent()));
+    emit(LoginInitial(
+      isArConnectAvailable: _arConnectService.isExtensionPresent(),
+    ));
   }
 
   Future<void> _handleFinishOnboardingEvent(
@@ -330,7 +339,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     onArConnectWalletSwitch(() async {
       final isUserLoggedIng = await _arDriveAuth.isUserLoggedIn();
       if (isUserLoggedIng && !_isArConnectWallet()) {
-        logger.d('Wallet switch detected. Is current profile ArConnect: false');
+        logger.d(
+          'Wallet switch detected for non-arconnect wallet'
+          ' ($profileType) - ignoring',
+        );
         return;
       }
 
@@ -339,14 +351,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         return;
       }
 
-      logger.i('ArConnect wallet switched');
-      // ignore: invalid_use_of_visible_for_testing_member
-      emit(const LoginFailure(WalletMismatchException()));
-
       await _arDriveAuth.logout();
 
-      // ignore: invalid_use_of_visible_for_testing_member
-      emit(const LoginInitial(true));
+      logger.i('ArConnect wallet switched');
     });
   }
 

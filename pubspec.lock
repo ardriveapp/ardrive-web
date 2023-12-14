@@ -77,7 +77,7 @@ packages:
       path: "."
       ref: "v1.3.1"
       resolved-ref: "355a6113774a926e4d5df8ee9e63d8434623c7e9"
-      url: "https://github.com/ar-io/ardrive_http.git"
+      url: "https://github.com/ardriveapp/ardrive_http.git"
     source: git
     version: "1.3.0"
   ardrive_io:
@@ -88,16 +88,16 @@ packages:
       resolved-ref: e9a88279e4fcaf5698c1e37055ca579f3a56f912
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
-    version: "1.4.1"
+    version: "1.4.3"
   ardrive_ui:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.14.0"
-      resolved-ref: f2c75067ebb214200e507e269bddbfd7285720ab
-      url: "https://github.com/ar-io/ardrive_ui.git"
+      ref: "v1.16.0"
+      resolved-ref: bd66276b7875a8c47f7f630b2f045f99694fed70
+      url: "https://github.com/ardriveapp/ardrive_ui.git"
     source: git
-    version: "1.14.0"
+    version: "1.16.0"
   ardrive_uploader:
     dependency: "direct main"
     description:
@@ -561,20 +561,21 @@ packages:
     source: hosted
     version: "1.3.1"
   fetch_api:
-    dependency: transitive
-    description:
-      name: fetch_api
-      sha256: "7896632eda5af40c4459d673ad601df21d4c3ae6a45997e300a92ca63ec9fe4c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.1"
-  fetch_client:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       path: "."
-      ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
-      resolved-ref: "95241dd94f0f64bae7553e7a3bbaa5d0558f63ee"
-      url: "https://github.com/thiagocarvalhodev/fetch_client.git"
+      ref: master
+      resolved-ref: ef5e490d063644d0e875a5402bcd9236e37bd2b1
+      url: "https://github.com/ardriveapp/fetch_api.git"
+    source: git
+    version: "1.0.3"
+  fetch_client:
+    dependency: "direct overridden"
+    description:
+      path: "."
+      ref: master
+      resolved-ref: bb61a9c832f04a3939f1f7f4850f137bf4ee679b
+      url: "https://github.com/ardriveapp/fetch_client.git"
     source: git
     version: "1.0.2"
   ffi:
@@ -599,7 +600,7 @@ packages:
       path: "."
       ref: master
       resolved-ref: "688300aaeae4dce397252d403800c92ee9523e95"
-      url: "https://github.com/ar-io/flutter_file_picker"
+      url: "https://github.com/ardriveapp/flutter_file_picker"
     source: git
     version: "5.5.0"
   file_saver:
@@ -608,7 +609,7 @@ packages:
       path: "."
       ref: fix-extension
       resolved-ref: "8f54519083145cdded6554c37e4050b71fac681e"
-      url: "https://github.com/thiagocarvalhodev/file_saver"
+      url: "https://github.com/ardriveapp/file_saver"
     source: git
     version: "0.1.1"
   file_selector:
@@ -771,7 +772,7 @@ packages:
       path: flutter_dropzone
       ref: master
       resolved-ref: cf486176da4efa1367130efc902fa5935a069968
-      url: "https://github.com/ar-io/flutter_dropzone"
+      url: "https://github.com/ardriveapp/flutter_dropzone"
     source: git
     version: "3.0.5"
   flutter_dropzone_platform_interface:

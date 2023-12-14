@@ -44,7 +44,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --release --dart-define=environment=production
+          flutter build web --release --dart-define=environment=production --pwa-strategy=none --no-web-resources-cdn
           
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0

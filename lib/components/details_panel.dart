@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -43,6 +44,9 @@ class DetailsPanel extends StatefulWidget {
     this.fileKey,
     required this.isSharePage,
     this.currentDrive,
+    this.onPreviousImageNavigation,
+    this.onNextImageNavigation,
+    required this.canNavigateThroughImages,
   });
 
   final ArDriveDataTableItem item;
@@ -52,6 +56,9 @@ class DetailsPanel extends StatefulWidget {
   final SecretKey? fileKey;
   final bool isSharePage;
   final Drive? currentDrive;
+  final Function()? onPreviousImageNavigation;
+  final Function()? onNextImageNavigation;
+  final bool canNavigateThroughImages;
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
@@ -97,6 +104,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   mobileView: false,
                   previewState: previewState,
                   infoState: infoState,
+                  context: context,
                 ),
               ),
               mobile: (context) => Column(
@@ -104,6 +112,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   mobileView: true,
                   previewState: previewState,
                   infoState: infoState,
+                  context: context,
                 ),
               ),
             );
@@ -117,10 +126,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
     required bool mobileView,
     required FsEntryPreviewState previewState,
     required FsEntryInfoState infoState,
+    required BuildContext context,
   }) {
     final isNotSharePageInMobileView = !(widget.isSharePage && !mobileView);
     final isPreviewUnavailable = previewState is FsEntryPreviewUnavailable;
-    final isPreviewSuccess = previewState is FsEntryPreviewSuccess;
     final isSharePage = widget.isSharePage;
 
     final tabs = [
@@ -133,7 +142,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           ),
           Column(
             children: [
-              Expanded(child: _buildPreview(previewState)),
+              Expanded(child: _buildPreview(previewState, context: context)),
             ],
           ),
         ),
@@ -190,7 +199,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   contentPadding: isSharePage
                       ? const EdgeInsets.only()
                       : const EdgeInsets.all(24),
-                  content: _buildPreview(previewState),
+                  content: _buildPreview(previewState, context: context),
                 ),
               ),
             ],
@@ -243,7 +252,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     ],
                   ),
                 ),
-              if ((!isSharePage && isPreviewSuccess) ||
+              if (!isSharePage ||
                   (isSharePage && isPreviewUnavailable && !mobileView))
                 ArDriveCard(
                   contentPadding: const EdgeInsets.all(24),
@@ -327,7 +336,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                 children: [
                                   Expanded(
                                     child: ArDriveButton(
-                                      icon: ArDriveIcons.download(
+                                      icon: ArDriveIcons.download2(
                                           color: Colors.white),
                                       onPressed: () {
                                         final file = ARFSFactory()
@@ -350,9 +359,17 @@ class _DetailsPanelState extends State<DetailsPanel> {
                             ArDriveButton(
                               style: ArDriveButtonStyle.tertiary,
                               onPressed: () =>
-                                  openUrl(url: 'https://ardrive.io/'),
+                                  openUrl(url: Resources.ardrivePublicSiteLink),
                               text: appLocalizationsOf(context).whatIsArDrive,
                             ),
+                            if (widget.isSharePage) ...[
+                              AppVersionWidget(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
+                              ),
+                            ]
                           ],
                         ),
                       ),
@@ -366,8 +383,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
     ];
   }
 
-  Widget _buildPreview(FsEntryPreviewState previewState) {
-    if (previewState is FsEntryPreviewUnavailable) {
+  Widget _buildPreview(
+    FsEntryPreviewState previewState, {
+    required BuildContext context,
+  }) {
+    if (previewState is FsEntryPreviewUnavailable && widget.isSharePage) {
       return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
@@ -416,7 +436,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
               ),
               const SizedBox(height: 24),
               ArDriveButton(
-                icon: ArDriveIcons.download(color: Colors.white),
+                icon: ArDriveIcons.download2(color: Colors.white),
                 onPressed: () {
                   final file = ARFSFactory().getARFSFileFromFileRevision(
                     widget.revisions!.last,
@@ -432,9 +452,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
               const SizedBox(height: 16),
               ArDriveButton(
                 style: ArDriveButtonStyle.tertiary,
-                onPressed: () => openUrl(url: 'https://ardrive.io/'),
+                onPressed: () => openUrl(url: Resources.ardrivePublicSiteLink),
                 text: appLocalizationsOf(context).whatIsArDrive,
               ),
+              if (widget.isSharePage) ...[
+                AppVersionWidget(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                ),
+              ]
             ],
           ),
         ),
@@ -447,6 +473,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
         key: ValueKey(widget.item.id),
         state: previewState,
         isSharePage: widget.isSharePage,
+        onNextImageNavigation: widget.onNextImageNavigation,
+        onPreviousImageNavigation: widget.onPreviousImageNavigation,
+        canNavigateThroughImages: widget.canNavigateThroughImages,
+        previewCubit: context.read<FsEntryPreviewCubit>(),
       ),
     );
   }
@@ -651,6 +681,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           widget.item.contentType,
+          textAlign: TextAlign.right,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
         itemTitle: appLocalizationsOf(context).fileType,
@@ -906,7 +937,7 @@ class DetailsPanelItem extends StatelessWidget {
                   ],
                 ),
               ),
-              if (leading != null) leading!,
+              if (leading != null) Flexible(child: leading!),
             ],
           ),
         ),
@@ -1071,7 +1102,7 @@ class _DownloadOrPreview extends StatelessWidget {
         );
       },
       tooltip: appLocalizationsOf(context).download,
-      icon: ArDriveIcons.download(size: 20),
+      icon: ArDriveIcons.download2(size: 20),
     );
   }
 }
@@ -1150,7 +1181,7 @@ class DetailsPanelToolbar extends StatelessWidget {
             ),
           _buildActionIcon(
               tooltip: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download(size: defaultIconSize),
+              icon: ArDriveIcons.download2(size: defaultIconSize),
               onTap: () {
                 if (item is FileDataTableItem) {
                   promptToDownloadProfileFile(

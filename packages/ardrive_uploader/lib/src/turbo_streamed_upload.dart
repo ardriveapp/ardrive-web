@@ -4,7 +4,6 @@ import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
-import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
@@ -53,15 +52,6 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
     if (_isCanceled) {
       print('Upload canceled on StreamedUpload');
       return;
-    }
-
-    /// If the file is larger than 500 MiB, we don't get progress updates.
-    ///
-    /// The TurboUploadServiceImpl for web uses fetch_client for the upload of files
-    /// larger than 500 MiB. fetch_client does not support progress updates.
-    if (kIsWeb && uploadTask.uploadItem!.size > MiB(500).size) {
-      uploadTask = uploadTask.copyWith(
-          isProgressAvailable: false, status: UploadStatus.inProgress);
     }
 
     controller.updateProgress(task: uploadTask);
