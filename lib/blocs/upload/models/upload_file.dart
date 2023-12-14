@@ -1,11 +1,19 @@
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 
 class UploadFile {
-  const UploadFile({
+  UploadFile({
     required this.ioFile,
     required this.parentFolderId,
     this.relativeTo,
-  });
+  }) {
+    logger.d(
+      'Instantiating UploadFile. filePath: ${ioFile.path},'
+      ' fileName: ${ioFile.name},'
+      ' parentFolderId: $parentFolderId,'
+      ' relativeTo: $relativeTo',
+    );
+  }
 
   final String? relativeTo;
   final IOFile ioFile;

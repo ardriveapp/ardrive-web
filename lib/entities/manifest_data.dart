@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
@@ -97,6 +98,8 @@ class ManifestData {
             rootFolderPath: rootFolderPath): ManifestPath(file.dataTxId)
     };
 
+    logger.d('Files relative to root folder $rootFolderPath: $paths');
+
     return ManifestData(index, paths);
   }
 
@@ -107,7 +110,9 @@ class ManifestData {
 
 /// Utility function to remove base path of the target folder and
 /// replace spaces with underscores for arweave.net URL compatibility
-String prepareManifestPath(
-    {required String filePath, required String rootFolderPath}) {
+String prepareManifestPath({
+  required String filePath,
+  required String rootFolderPath,
+}) {
   return filePath.substring(rootFolderPath.length + 1).replaceAll(' ', '_');
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -46,18 +47,30 @@ Future<void> promptToUpload(
 }) async {
   final selectedFiles = <UploadFile>[];
   final io = ArDriveIO();
-  IOFolder? ioFolder;
+  final IOFolder? ioFolder;
   if (isFolderUpload) {
     ioFolder = await io.pickFolder();
     final ioFiles = await ioFolder.listFiles();
-    final uploadFiles = ioFiles.map((file) {
-      return UploadFile(
-        ioFile: file,
-        parentFolderId: parentFolderId,
-        relativeTo: ioFolder!.path.isEmpty ? null : getDirname(ioFolder.path),
-      );
-    }).toList();
+
+    // PE-2317
+    final isMobilePlatform =
+        true || !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    final shouldUseRelativePath = isMobilePlatform && ioFolder.path.isNotEmpty;
+    final relativeTo = shouldUseRelativePath ? getDirname(ioFolder.path) : null;
+    final uploadFiles = ioFiles
+        .map(
+          (file) => UploadFile(
+            ioFile: file,
+            parentFolderId: parentFolderId,
+            relativeTo: relativeTo,
+          ),
+        )
+        .toList();
     selectedFiles.addAll(uploadFiles);
+    logger.d('Selected files: ${selectedFiles.length},'
+        ' with relativeTo: $relativeTo');
+    final fileNames = selectedFiles.map((e) => e.ioFile.name).toList();
+    logger.d('Selected files: $fileNames');
   } else {
     // Display multiple options on Mobile
     // Open file picker on Web
@@ -65,12 +78,11 @@ Future<void> promptToUpload(
         ? await io.pickFiles(fileSource: FileSource.fileSystem)
         // ignore: use_build_context_synchronously
         : await showMultipleFilesFilePickerModal(context);
-
     final uploadFiles = ioFiles
         .map((file) => UploadFile(ioFile: file, parentFolderId: parentFolderId))
         .toList();
-
     selectedFiles.addAll(uploadFiles);
+    ioFolder = null;
   }
 
   // ignore: use_build_context_synchronously

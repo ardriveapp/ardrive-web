@@ -48,6 +48,7 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
   final String dataContentType;
   final String driveId;
   final String parentFolderId;
+  final String? path;
 
   ARFSFileUploadMetadata({
     required this.size,
@@ -61,6 +62,7 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
     required super.isPrivate,
     required super.dataItemTags,
     required super.bundleTags,
+    required this.path,
   });
 
   String? _dataTxId;

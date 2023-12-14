@@ -264,9 +264,7 @@ class UploadCubit extends Cubit<UploadState> {
           .filesInFolderWithName(
             driveId: driveId,
             name: folder.name,
-            parentFolderId: folders[folder.parentFolderPath] != null
-                ? folders[folder.parentFolderPath]!.id
-                : _targetFolder.id,
+            parentFolderId: folder.parentFolderId,
           )
           .map((f) => f.id)
           .getSingleOrNull();
@@ -516,6 +514,7 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
+        path: folder.path,
       );
 
       entities.add((
@@ -544,6 +543,7 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
+        path: file.getIdentifier(),
       );
 
       entities.add((fileMetadata, file.ioFile));
@@ -641,6 +641,7 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
+        path: file.getIdentifier(),
       );
 
       uploadFiles.add((args, file.ioFile));
@@ -752,7 +753,10 @@ class UploadCubit extends Cubit<UploadState> {
           _driveDao.transaction(() async {
             // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
             // TODO: Changed this logic. PLEASE REVIEW IT.
-            final filePath = '${_targetFolder.path}/${metadata.name}';
+
+            // Hey, Mati
+            final filePath =
+                '${_targetFolder.path}/${metadata.path ?? metadata.name}';
             logger.d('File path: $filePath');
             await _driveDao.writeFileEntity(entity, filePath);
             await _driveDao.insertFileRevision(
