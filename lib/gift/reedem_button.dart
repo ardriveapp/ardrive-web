@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
 import 'package:ardrive/gift/redeem_gift_modal.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -24,7 +25,7 @@ class RedeemButton extends StatelessWidget {
       items: [
         ArDriveDropdownItem(
           onClick: () {
-            openUrl(url: 'http://gift.ardrive.io/');
+            openUrl(url: Resources.sendGiftLink);
           },
           content: ArDriveDropdownItemTile(
             name: appLocalizationsOf(context).sendGift,

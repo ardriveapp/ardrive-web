@@ -11,6 +11,7 @@ class Resources {
   static const ardrivePublicSiteLink = 'https://ardrive.io/';
   static const agreementLink = 'https://ardrive.io/tos-and-privacy/';
   static const getWalletLink = 'https://www.arconnect.io/';
+  static const sendGiftLink = 'http://gift.ardrive.io/';
 
   static const howDoesKeyFileLoginWork =
       'https://help.ardrive.io/hc/en-us/articles/15412384724251-How-Do-Keyfile-and-Seed-Phrase-Login-Work-';
