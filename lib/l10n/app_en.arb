@@ -999,7 +999,7 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "giftCode": "Gift Code\n",
+  "giftCode": "Gift Code",
   "@giftCode": {},
   "giftRedeemed": "Gift Redeemed!",
   "@giftRedeemed": {},
