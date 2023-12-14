@@ -751,14 +751,10 @@ class UploadCubit extends Cubit<UploadState> {
           entity.txId = fileMetadata.metadataTxId!;
 
           _driveDao.transaction(() async {
-            // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
-            // TODO: Changed this logic. PLEASE REVIEW IT.
-
-            // Hey, Mati
-            final filePath =
-                '${_targetFolder.path}/${metadata.path ?? metadata.name}';
-            logger.d('File path: $filePath');
-            await _driveDao.writeFileEntity(entity, filePath);
+            final fileRelativePath = fileMetadata.path ?? fileMetadata.name;
+            final fileAbsolutePath = '${_targetFolder.path}/$fileRelativePath';
+            logger.d('File path: $fileAbsolutePath');
+            await _driveDao.writeFileEntity(entity, fileAbsolutePath);
             await _driveDao.insertFileRevision(
               entity.toRevisionCompanion(
                 performedAction: revisionAction,
