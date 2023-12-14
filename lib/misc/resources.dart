@@ -21,6 +21,9 @@ class Resources {
   static const helpCenterLink =
       'https://help.ardrive.io/hc/en-us/articles/9350732157723-Contact-Us';
   static const discordLink = 'https://discord.gg/KkTqDe4GAF';
+
+  static const ardriveAppLimits =
+      'https://help.ardrive.io/hc/en-us/articles/5300389777179-ArDrive-App-';
 }
 
 class Images {
