@@ -126,6 +126,8 @@ class PromptToSnapshotBloc
     DriveSnapshotting event,
     Emitter<PromptToSnapshotState> emit,
   ) {
+    logger.d('[PROMPT TO SNAPSHOT] Drive ${event.driveId} is snapshotting}');
+
     emit(PromptToSnapshotPrompting(driveId: event.driveId));
   }
 
@@ -142,7 +144,16 @@ class PromptToSnapshotBloc
     DriveSnapshotted event,
     Emitter<PromptToSnapshotState> emit,
   ) async {
+    logger.d(
+      '[PROMPT TO SNAPSHOT] Drive ${event.driveId} was snapshotted'
+      ' with ${event.txsSyncedWithGqlCount} TXs',
+    );
+
     CountOfTxsSyncedWithGql.resetForDrive(event.driveId);
+    CountOfTxsSyncedWithGql.countForDrive(
+      event.driveId,
+      event.txsSyncedWithGqlCount,
+    );
     emit(PromptToSnapshotIdle(driveId: event.driveId));
   }
 
