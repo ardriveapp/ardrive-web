@@ -44,7 +44,7 @@ class ARFSUploadMetadataGenerator
     IOEntity entity, {
     required ARFSUploadMetadataArgs arguments,
   }) async {
-    String id;
+    final String id;
 
     if (arguments.entityId != null) {
       id = arguments.entityId!;
@@ -52,7 +52,7 @@ class ARFSUploadMetadataGenerator
       id = const Uuid().v4();
     }
 
-    String contentType;
+    final String contentType;
 
     if (arguments.isPrivate) {
       contentType = 'application/octet-stream';
@@ -70,12 +70,14 @@ class ARFSUploadMetadataGenerator
 
       final file = entity;
 
-      List<Tag>? customBundleTags;
+      final List<Tag>? customBundleTags;
 
       /// If the file is a D2N file, we need to add the $U tags to the
       /// bundle tags
       if (arguments.type == UploadType.d2n) {
         customBundleTags = _uTags;
+      } else {
+        customBundleTags = null;
       }
 
       final tags = _tagsGenerator.generateTags(
@@ -145,7 +147,7 @@ class ARFSUploadMetadataGenerator
   }) async {
     final id = const Uuid().v4();
 
-    String contentType;
+    final String contentType;
 
     if (isPrivate) {
       contentType = 'application/octet-stream';
@@ -279,7 +281,7 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
   ) {
     ARFSTagsValidator.validate(arguments);
 
-    List<Tag> tags = [];
+    final List<Tag> tags = [];
 
     final driveId = Tag(EntityTag.driveId, arguments.driveId!);
 
@@ -287,7 +289,7 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
 
     final appInfo = _appInfoServices.appInfo;
 
-    String contentType;
+    final String contentType;
 
     if (arguments.isPrivate!) {
       contentType = 'application/octet-stream';
