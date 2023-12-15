@@ -190,7 +190,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         final latestRevision = await _driveDao
             .latestFileRevisionByFileId(
               driveId: drive.id,
-              fileId: m.fileId,
+              fileId: m.fileId!,
             )
             .getSingle();
         return latestRevision.metadataTxId;

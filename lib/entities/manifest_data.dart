@@ -29,13 +29,13 @@ class ManifestIndex {
 class ManifestTx {
   @JsonKey()
   final String id;
-  @JsonKey()
-  final String fileId;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final String? fileId;
 
   ManifestTx(
-    this.id,
+    this.id, {
     this.fileId,
-  );
+  });
 
   factory ManifestTx.fromJson(Map<String, dynamic> json) =>
       _$ManifestTxFromJson(json);
@@ -108,7 +108,7 @@ class ManifestData {
         prepareManifestPath(
           filePath: file.path,
           rootFolderPath: rootFolderPath,
-        ): ManifestTx(file.dataTxId, file.id)
+        ): ManifestTx(file.dataTxId, fileId: file.id)
     };
 
     logger.d('Files relative to root folder $rootFolderPath: $paths');
