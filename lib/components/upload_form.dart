@@ -53,8 +53,7 @@ Future<void> promptToUpload(
     final ioFiles = await ioFolder.listFiles();
 
     // PE-2317
-    final isMobilePlatform =
-        true || !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    final isMobilePlatform = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
     final shouldUseRelativePath = isMobilePlatform && ioFolder.path.isNotEmpty;
     final relativeTo = shouldUseRelativePath ? getDirname(ioFolder.path) : null;
     final uploadFiles = ioFiles

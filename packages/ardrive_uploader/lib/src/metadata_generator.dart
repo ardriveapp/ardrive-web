@@ -13,7 +13,7 @@ import 'package:uuid/uuid.dart';
 ///
 /// `T` is the type of the metadata that will be generated
 abstract class UploadMetadataGenerator<T extends UploadMetadata, A> {
-  Future<T> generateMetadata(IOEntity entity, [A arguments]);
+  Future<T> generateMetadata(IOEntity entity, {required A arguments});
 }
 
 abstract class TagsGenerator<T> {
@@ -40,12 +40,10 @@ class ARFSUploadMetadataGenerator
   final ARFSTagsGenetator _tagsGenerator;
 
   @override
-  Future<ARFSUploadMetadata> generateMetadata(IOEntity entity,
-      [ARFSUploadMetadataArgs? arguments]) async {
-    if (arguments == null) {
-      throw ArgumentError('arguments must not be null');
-    }
-
+  Future<ARFSUploadMetadata> generateMetadata(
+    IOEntity entity, {
+    required ARFSUploadMetadataArgs arguments,
+  }) async {
     String id;
 
     if (arguments.entityId != null) {
