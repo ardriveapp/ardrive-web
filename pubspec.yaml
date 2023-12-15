@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.27.0
+version: 2.28.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ardriveapp/ardrive_http.git
-      ref: v1.3.1
+      ref: v1.3.2
   ardrive_io:
     git:
       url: https://github.com/ardriveapp/ardrive_io.git
@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ardriveapp/ardrive_ui.git
-      ref: v1.16.0
+      ref: v1.17.0
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:
@@ -151,14 +151,6 @@ dependency_overrides:
       url: https://github.com/ardriveapp/fetch_api.git
       ref: master
   http: ^1.1.0
-  ardrive_ui:
-    git:
-      url: https://github.com/ardriveapp/ardrive_ui.git
-      ref: PE-5216-add-gift-icon-to-ardrive-ui
-  ardrive_http:
-    git:
-      url: https://github.com/ardriveapp/ardrive_http.git
-      ref: PE-5220-return-response-data-for-http-exceptions-on-ardrive-http
 
 dev_dependencies:
   integration_test:
