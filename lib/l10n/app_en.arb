@@ -1001,6 +1001,8 @@
   },
   "giftCode": "Gift Code",
   "@giftCode": {},
+  "giftCredits": "Gift Credits",
+  "@giftCredits": {},
   "giftRedeemed": "Gift Redeemed!",
   "@giftRedeemed": {},
   "gotIt": "Got it!",
