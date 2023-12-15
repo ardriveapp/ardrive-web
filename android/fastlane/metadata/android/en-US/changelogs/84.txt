@@ -1,0 +1,3 @@
+- Adds browser limit info to Top Up modal
+- Removes unneeded upload warning
+- Enables sending and redeeming gifted Credits

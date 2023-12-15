@@ -460,8 +460,10 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
   }
 
   IdValidationResult validateId(String value) {
+    // TODO: Replace this with isValidUuidFormat from `ardrive_utils`
     const kFileIdRegex =
         r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+    // TODO: Implement this method on `ardrive_utils`
     const kTransactionIdRegex = r'^[\w-+]{43}$';
 
     final fileIdRegex = RegExp(kFileIdRegex);
