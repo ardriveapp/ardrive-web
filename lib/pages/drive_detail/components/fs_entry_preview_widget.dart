@@ -1488,7 +1488,9 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               const SizedBox(
                 width: 18,
               ),
-              _buildNameAndExtension(isFileExplorer: isFileExplorer),
+              Flexible(
+                  child:
+                      _buildNameAndExtension(isFileExplorer: isFileExplorer)),
             ],
           ),
         ),
@@ -1576,21 +1578,16 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                   ? CrossAxisAlignment.center
                   : CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  direction: Axis.horizontal,
-                  children: [
-                    Text(
-                      getBasenameWithoutExtension(filePath: filename),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 2,
-                      style: ArDriveTypography.body.smallBold700(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      ),
-                    ),
-                  ],
+                Text(
+                  getBasenameWithoutExtension(filePath: filename),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  style: ArDriveTypography.body.smallBold700(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
                 ),
                 Text(
                   getFileTypeFromMime(
