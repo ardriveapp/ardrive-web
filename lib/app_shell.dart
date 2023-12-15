@@ -225,10 +225,12 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
             const SizedBox(
               width: 24,
             ),
-            const RedeemButton(),
-            const SizedBox(
-              width: 24,
-            ),
+            if (AppPlatform.isMobileWeb()) ...[
+              const RedeemButton(),
+              const SizedBox(
+                width: 24,
+              ),
+            ],
             const Padding(
               padding: EdgeInsets.only(right: 12.0),
               child: ProfileCard(),

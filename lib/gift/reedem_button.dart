@@ -49,10 +49,12 @@ class RedeemButton extends StatelessWidget {
         ),
       ],
       child: ArDriveIconButton(
-          icon: ArDriveIcons.gift(
-        size: 20,
-        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-      )),
+        icon: ArDriveIcons.gift(
+          size: 20,
+          color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+        ),
+        tooltip: appLocalizationsOf(context).giftCredits,
+      ),
     );
   }
 }
