@@ -256,15 +256,27 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ));
         }
         if (state is CreateManifestTurboUploadConfirmation) {
+          final hasPendingFiles = state.folderHasPendingFiles;
+
           Navigator.pop(context);
           return ArDriveStandardModal(
             width: kMediumDialogWidth,
-            title: appLocalizationsOf(context).createManifestEmphasized,
+            title: hasPendingFiles
+                ? appLocalizationsOf(context).filesPending
+                : appLocalizationsOf(context).createManifestEmphasized,
             content: SizedBox(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (hasPendingFiles) ...[
+                    Text(
+                      appLocalizationsOf(context)
+                          .filesPendingManifestExplanation,
+                      style: textStyle,
+                    ),
+                    const Divider(),
+                  ],
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxHeight: 256),
                     child: Scrollbar(

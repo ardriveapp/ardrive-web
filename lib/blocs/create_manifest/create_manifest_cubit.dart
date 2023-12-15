@@ -175,9 +175,43 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       final folderNode = rootFolderNode.searchForFolder(parentFolder.id) ??
           await _driveDao.getFolderTree(drive.id, parentFolder.id);
 
+      final folderPendingFiles = _driveDao.pendingTransactionsForDrive(
+        driveId: drive.id,
+      );
+
       final arweaveManifest = ManifestData.fromFolderNode(
         folderNode: folderNode,
       );
+
+      // final fileDataTxIds =
+      //     arweaveManifest.paths.values.map((e) => e.id).toSet();
+      final fileMetadataTxIds =
+          await Future.wait(arweaveManifest.paths.values.map((m) async {
+        final latestRevision = await _driveDao
+            .latestFileRevisionByFileId(
+              driveId: drive.id,
+              fileId: m.fileId,
+            )
+            .getSingle();
+        return latestRevision.metadataTxId;
+      }));
+
+      final doesFolderHasPendingFiles = await folderPendingFiles.get().then(
+            (txs) => txs.any(
+              (tx) => fileMetadataTxIds.contains(tx.id),
+            ),
+          );
+
+      if (!doesFolderHasPendingFiles) {
+        logger.d(
+          'No pending files for folder ${parentFolder.id}.'
+          ' File data txs: ${arweaveManifest.paths.entries.map((e) => (
+                e.key,
+                e.value.id
+              ))}'
+          ' Pending txs: ${(await folderPendingFiles.get()).map((e) => e.id)}',
+        );
+      }
 
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
@@ -211,7 +245,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       addManifestToDatabase() => _driveDao.transaction(
             () async {
               await _driveDao.writeFileEntity(
-                  manifestFileEntity, '${parentFolder.path}/$manifestName');
+                manifestFileEntity,
+                '${parentFolder.path}/$manifestName',
+              );
               await _driveDao.insertFileRevision(
                 manifestFileEntity.toRevisionCompanion(
                   performedAction: existingManifestFileId == null
@@ -221,6 +257,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
               );
             },
           );
+
+      logger.d('Manifest has pending files: $doesFolderHasPendingFiles');
+
       final canUseTurbo = _turboUploadService.useTurboUpload &&
           arweaveManifest.size < _turboUploadService.allowedDataItemSize;
       if (canUseTurbo) {
@@ -228,6 +267,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           CreateManifestTurboUploadConfirmation(
             manifestSize: arweaveManifest.size,
             manifestName: manifestName,
+            folderHasPendingFiles: doesFolderHasPendingFiles,
             manifestDataItems: [manifestDataItem, manifestMetaDataItem],
             addManifestToDatabase: addManifestToDatabase,
           ),
@@ -275,6 +315,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         CreateManifestUploadConfirmation(
           manifestSize: arweaveManifest.size,
           manifestName: manifestName,
+          folderHasPendingFiles: doesFolderHasPendingFiles,
           arUploadCost: arUploadCost,
           usdUploadCost: usdUploadCost,
           uploadManifestParams: uploadManifestParams,

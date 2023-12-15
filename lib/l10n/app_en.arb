@@ -360,9 +360,9 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "New Snapshot",
+  "createSnapshot": "Create snapshot",
   "@createSnapshot": {
-    "description": "The action of snapshotting a drive"
+    "description": "The action of creating a snapshot"
   },
   "createSnapshotExplanation": "Snapshots reduce the time it takes for the drive to load. Do you want to create a snapshot of your drive {driveName}?",
   "@createSnapshotExplanation": {
@@ -783,6 +783,14 @@
   "fileSize": "File size",
   "@fileSize": {
     "description": "The size of a file"
+  },
+  "filesPending": "Files Pending",
+  "@filesPending": {
+    "description": "E.g. \"there are some files pending\""
+  },
+  "filesPendingManifestExplanation": "Some of the files in this folder are still pending. We do not recommend creating a manifest with pending files. Would you like to proceed?",
+  "@filesPendingManifestExplanation": {
+    "description": "Warns the user about creating manifests with pending files"
   },
   "filesTooLarge": "{numberOfFiles, plural, zero{} one{1 file too large} other{{numberOfFiles} files too large}}",
   "@filesTooLarge": {
