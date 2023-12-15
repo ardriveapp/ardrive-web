@@ -18,7 +18,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ardriveapp/ardrive_http.git
-      ref: v1.3.1
+      ref: v1.3.2
   universal_html: ^2.2.4
   ardrive_utils:
     path: ../ardrive_utils

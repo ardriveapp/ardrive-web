@@ -75,11 +75,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-5220-return-response-data-for-http-exceptions-on-ardrive-http
-      resolved-ref: db3edd99fb62f9e832dc8cd38bc43c8add632537
+      ref: "v1.3.2"
+      resolved-ref: "0bc4711331004c99d41a9de361467a23beb9216c"
       url: "https://github.com/ardriveapp/ardrive_http.git"
     source: git
-    version: "1.3.0"
+    version: "1.3.2"
   ardrive_io:
     dependency: "direct main"
     description:
@@ -93,11 +93,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-5216-add-gift-icon-to-ardrive-ui
-      resolved-ref: "2736d796f02e5c4f30e0ecfb78225d712ba6cb9e"
+      ref: "v1.17.0"
+      resolved-ref: "4c6dcf1c22fb888a41a16ebe5f7f4c39d51b2dd3"
       url: "https://github.com/ardriveapp/ardrive_ui.git"
     source: git
-    version: "1.16.0"
+    version: "1.17.0"
   ardrive_uploader:
     dependency: "direct main"
     description:
