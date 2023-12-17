@@ -95,13 +95,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                     LicenseFileList(fileList: fileItems),
                     const Divider(),
                     ReactiveForm(
-                      formGroup: FormGroup({
-                        'licenseType': FormControl<LicenseInfo>(
-                          validators: [
-                            Validators.required,
-                          ],
-                        ),
-                      }),
+                      formGroup: context.watch<FsEntryLicenseBloc>().selectForm,
                       child: ReactiveDropdownField(
                         formControlName: 'licenseType',
                         decoration: InputDecoration(
@@ -128,14 +122,13 @@ class FsEntryLicenseForm extends StatelessWidget {
                         validationMessages:
                             kValidationMessages(appLocalizationsOf(context)),
                         items: licenseInfo.values
-                            .map((value) => DropdownMenuItem(
-                                  value: value,
-                                  child: Text(value.name),
-                                ))
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value.name),
+                              ),
+                            )
                             .toList(),
-                        onChanged: (_) {
-                          // context.read<DriveCreateCubit>().onPrivacyChanged();
-                        },
                       ),
                     ),
                     const Expanded(child: SizedBox()),
@@ -160,7 +153,11 @@ class FsEntryLicenseForm extends StatelessWidget {
               ],
             );
           } else if (state is FsEntryLicenseConfiguring) {
-            return const SizedBox();
+            final licenseInfo = context.read<FsEntryLicenseBloc>().licenseInfo;
+            return ArDriveStandardModal(
+              title: 'Configuring ${licenseInfo.name}',
+              content: const SizedBox(),
+            );
           } else {
             return const SizedBox();
           }

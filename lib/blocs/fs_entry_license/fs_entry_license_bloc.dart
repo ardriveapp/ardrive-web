@@ -5,6 +5,7 @@ import 'package:ardrive/models/license_assertion.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/license/license_types.dart';
+import 'package:ardrive/services/license/licenses/udl.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:arweave/arweave.dart';
@@ -13,6 +14,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // ignore: depend_on_referenced_packages
 import 'package:platform/platform.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 
 part 'fs_entry_license_event.dart';
 part 'fs_entry_license_state.dart';
@@ -21,6 +23,14 @@ class FsEntryLicenseBloc
     extends Bloc<FsEntryLicenseEvent, FsEntryLicenseState> {
   final String driveId;
   final List<ArDriveDataTableItem> selectedItems;
+
+  final selectForm = FormGroup({
+    'licenseType': FormControl<LicenseInfo>(
+      validators: [Validators.required],
+      value: udlLicenseInfo,
+    ),
+  });
+  LicenseInfo get licenseInfo => selectForm.control('licenseType').value;
 
   final ArweaveService _arweave;
   final TurboUploadService _turboUploadService;
