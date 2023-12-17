@@ -60,6 +60,10 @@ class FsEntryLicenseBloc
           return;
         }
 
+        if (event is FsEntryLicenseSelect) {
+          emit(FsEntryLicenseConfiguring(licenseInfo: event.licenseInfo));
+        }
+
         if (event is FsEntryLicenseSubmit) {
           emit(const FsEntryLicenseLoadInProgress());
           await licenseEntities(
