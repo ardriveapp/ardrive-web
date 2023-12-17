@@ -1,13 +1,17 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/license/license_types.dart';
 import 'package:ardrive/services/license/licenses/udl.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 
 import '../pages/drive_detail/drive_detail_page.dart';
 import 'components.dart';
@@ -53,12 +57,14 @@ class FsEntryLicenseForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fileItems = selectedItems.whereType<FileDataTableItem>().toList();
+
     return BlocConsumer<FsEntryLicenseBloc, FsEntryLicenseState>(
       listener: (context, state) {
         if (state is FsEntryLicenseLoadInProgress) {
           showProgressDialog(
             context,
-            title: 'licensingItemsEmphasized',
+            title: 'Licensing Items',
             // TODO: Localize
             // title: appLocalizationsOf(context).licensingItemsEmphasized,
           );
@@ -72,365 +78,137 @@ class FsEntryLicenseForm extends StatelessWidget {
       builder: (context, state) {
         return Builder(builder: (context) {
           if (state is FsEntryLicenseSelecting) {
-            final items = [
-              ...selectedItems.map(
-                (f) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16.0, horizontal: 16),
-                    child: GestureDetector(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ArDriveIcons.folderOutline(
-                            size: 16,
+            return ArDriveStandardModal(
+              width: kMediumDialogWidth,
+              title:
+                  "Add license to ${fileItems.length} file${fileItems.length > 1 ? 's' : ''}",
+              // TODO: Localize
+              // title: appLocalizationsOf(context).renameFolderEmphasized,
+              content: SizedBox(
+                height: 225,
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    LicenseFileList(fileList: fileItems),
+                    const Divider(),
+                    ReactiveForm(
+                      formGroup: FormGroup({
+                        'licenseType': FormControl<LicenseInfo>(
+                          validators: [
+                            Validators.required,
+                          ],
+                        ),
+                      }),
+                      child: ReactiveDropdownField(
+                        formControlName: 'licenseType',
+                        decoration: InputDecoration(
+                          label: Text(
+                            'License Type',
+                            // TODO: Localize
+                            // appLocalizationsOf(context).licenseType,
+                            style: ArDriveTheme.of(context)
+                                .themeData
+                                .textFieldTheme
+                                .inputTextStyle
+                                .copyWith(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgDisabled,
+                                  fontSize: 16,
+                                ),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              f.name,
-                              style:
-                                  ArDriveTypography.body.inputNormalRegular(),
-                            ),
-                          ),
-                          ArDriveIcons.carretRight(
-                            size: 18,
-                          ),
-                        ],
+                          focusedBorder: InputBorder.none,
+                        ),
+                        showErrors: (control) =>
+                            control.dirty && control.invalid,
+                        validationMessages:
+                            kValidationMessages(appLocalizationsOf(context)),
+                        items: licenseInfo.values
+                            .map((value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value.name),
+                                ))
+                            .toList(),
+                        onChanged: (_) {
+                          // context.read<DriveCreateCubit>().onPrivacyChanged();
+                        },
                       ),
                     ),
-                  );
-                },
-              ),
-              ...selectedItems.map(
-                (f) => Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16.0,
-                    horizontal: 16,
-                  ),
-                  child: Row(
-                    children: [
-                      ArDriveIcons.fileOutlined(
-                        size: 16,
-                        color: _colorDisabled(context),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          f.name,
-                          style: ArDriveTypography.body.inputNormalRegular(
-                            color: _colorDisabled(context),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    const Expanded(child: SizedBox()),
+                  ],
                 ),
               ),
-            ];
-
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ArDriveCard(
-                height: 441,
-                width: kMediumDialogWidth,
-                contentPadding: EdgeInsets.zero,
-                content: SizedBox(
-                  height: 325,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.only(left: 16, right: 16),
-                        width: double.infinity,
-                        height: 77,
-                        alignment: Alignment.centerLeft,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeBgCanvas,
-                        child: Row(
-                          children: [
-                            AnimatedContainer(
-                              width: 0,
-                              duration: const Duration(milliseconds: 200),
-                              child: AnimatedScale(
-                                duration: const Duration(milliseconds: 200),
-                                scale: 0,
-                                child: ArDriveIcons.arrowLeft(
-                                  size: 32,
-                                ),
-                              ),
-                            ),
-                            AnimatedPadding(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.only(left: 0),
-                              child: Text(
-                                'licenseItems',
-                                // TODO: Localize
-                                // appLocalizationsOf(context).licenseItems,
-                                style:
-                                    ArDriveTypography.headline.headline5Bold(),
-                              ),
-                            ),
-                            const Spacer(),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.pop(context);
-                              },
-                              child: ArDriveIcons.x(
-                                size: 24,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          itemCount: items.length,
-                          itemBuilder: (context, index) {
-                            return items[index];
-                          },
-                        ),
-                      ),
-                      const Divider(),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeBgSurface,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            ArDriveButton(
-                              maxHeight: 36,
-                              backgroundColor: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDefault,
-                              fontStyle:
-                                  ArDriveTypography.body.buttonNormalRegular(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeAccentSubtle,
-                              ),
-                              text: 'licenseHereEmphasized',
-                              // TODO: Localize
-                              // text: appLocalizationsOf(context)
-                              // .licenseHereEmphasized,
-                              onPressed: () {
-                                context.read<FsEntryLicenseBloc>().add(
-                                      const FsEntryLicenseSelect(
-                                        licenseInfo: udlLicenseInfo,
-                                      ),
-                                    );
-                                context
-                                    .read<DriveDetailCubit>()
-                                    .forceDisableMultiselect = true;
-                              },
-                            ),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
+              actions: [
+                ModalAction(
+                  action: () => Navigator.of(context).pop(),
+                  title: appLocalizationsOf(context).cancelEmphasized,
                 ),
-              ),
+                ModalAction(
+                  action: () => context
+                      .read<FsEntryLicenseBloc>()
+                      .add(const FsEntryLicenseSelect(
+                        licenseInfo: udlLicenseInfo,
+                      )),
+                  title: 'Next',
+                  // title: appLocalizationsOf(context).licenseHereEmphasized,
+                  // isEnable: _validForm,
+                ),
+              ],
             );
           } else if (state is FsEntryLicenseConfiguring) {
-            final items = [
-              ...selectedItems.map(
-                (f) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16.0, horizontal: 16),
-                    child: GestureDetector(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ArDriveIcons.folderOutline(
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              f.name,
-                              style:
-                                  ArDriveTypography.body.inputNormalRegular(),
-                            ),
-                          ),
-                          ArDriveIcons.carretRight(
-                            size: 18,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              ...selectedItems.map(
-                (f) => Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16.0,
-                    horizontal: 16,
-                  ),
-                  child: Row(
-                    children: [
-                      ArDriveIcons.fileOutlined(
-                        size: 16,
-                        color: _colorDisabled(context),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          f.name,
-                          style: ArDriveTypography.body.inputNormalRegular(
-                            color: _colorDisabled(context),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ];
-
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ArDriveCard(
-                height: 441,
-                width: kMediumDialogWidth,
-                contentPadding: EdgeInsets.zero,
-                content: SizedBox(
-                  height: 325,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.only(left: 16, right: 16),
-                        width: double.infinity,
-                        height: 77,
-                        alignment: Alignment.centerLeft,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeBgCanvas,
-                        child: Row(
-                          children: [
-                            AnimatedContainer(
-                              width: 0,
-                              duration: const Duration(milliseconds: 200),
-                              child: AnimatedScale(
-                                duration: const Duration(milliseconds: 200),
-                                scale: 0,
-                                child: ArDriveIcons.arrowLeft(
-                                  size: 32,
-                                ),
-                              ),
-                            ),
-                            AnimatedPadding(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.only(left: 0),
-                              child: Text(
-                                'licenseItems',
-                                // TODO: Localize
-                                // appLocalizationsOf(context).licenseItems,
-                                style:
-                                    ArDriveTypography.headline.headline5Bold(),
-                              ),
-                            ),
-                            const Spacer(),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.pop(context);
-                              },
-                              child: ArDriveIcons.x(
-                                size: 24,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          itemCount: items.length,
-                          itemBuilder: (context, index) {
-                            return items[index];
-                          },
-                        ),
-                      ),
-                      const Divider(),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeBgSurface,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            ArDriveButton(
-                              maxHeight: 36,
-                              backgroundColor: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDefault,
-                              fontStyle:
-                                  ArDriveTypography.body.buttonNormalRegular(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeAccentSubtle,
-                              ),
-                              text: 'licenseHereEmphasized',
-                              // TODO: Localize
-                              // text: appLocalizationsOf(context)
-                              // .licenseHereEmphasized,
-                              onPressed: () {
-                                context.read<FsEntryLicenseBloc>().add(
-                                      FsEntryLicenseSubmit(
-                                        licenseInfo: state.licenseInfo,
-                                        licenseParams: UdlLicenseParams(
-                                          derivations: 'Allowed',
-                                        ),
-                                      ),
-                                    );
-                                context
-                                    .read<DriveDetailCubit>()
-                                    .forceDisableMultiselect = true;
-                              },
-                            ),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            );
+            return const SizedBox();
           } else {
             return const SizedBox();
           }
         });
       },
+    );
+  }
+}
+
+class LicenseFileList extends StatelessWidget {
+  final List<FileDataTableItem> fileList;
+
+  const LicenseFileList({
+    super.key,
+    required this.fileList,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 100),
+      child: ListView.builder(
+        padding: EdgeInsets.zero,
+        itemCount: fileList.length,
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: 16.0,
+            horizontal: 16,
+          ),
+          child: Row(
+            children: [
+              ArDriveIcons.fileOutlined(
+                size: 16,
+                color: _colorDisabled(context),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  fileList[index].name,
+                  style: ArDriveTypography.body.inputNormalRegular(
+                    color: _colorDisabled(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
