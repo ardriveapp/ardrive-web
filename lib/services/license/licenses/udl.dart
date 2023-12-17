@@ -6,6 +6,7 @@ const udlLicenseInfo = LicenseInfo(
   name: 'Universal Data License',
   shortName: 'UDL',
   version: '1.0',
+  hasParams: true,
 );
 
 class UdlLicenseParams extends LicenseParams {

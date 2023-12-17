@@ -14,6 +14,7 @@ class LicenseInfo {
   final String name;
   final String shortName;
   final String version;
+  final bool hasParams;
 
   const LicenseInfo({
     required this.licenseType,
@@ -21,6 +22,7 @@ class LicenseInfo {
     required this.name,
     required this.shortName,
     required this.version,
+    this.hasParams = false,
   });
 }
 

@@ -81,7 +81,7 @@ class FsEntryLicenseBloc
   Future<void> licenseEntities({
     required ProfileLoggedIn profile,
     required LicenseInfo licenseInfo,
-    required LicenseParams licenseParams,
+    LicenseParams? licenseParams,
   }) async {
     final licenseAssertionTxDataItems = <DataItem>[];
 
