@@ -30,7 +30,9 @@ class FsEntryLicenseBloc
       value: udlLicenseInfo,
     ),
   });
-  LicenseInfo get licenseInfo => selectForm.control('licenseType').value;
+  LicenseInfo get selectFormLicenseInfo =>
+      selectForm.control('licenseType').value;
+  LicenseParams? licenseParams;
 
   final ArweaveService _arweave;
   final TurboUploadService _turboUploadService;
@@ -71,15 +73,24 @@ class FsEntryLicenseBloc
         }
 
         if (event is FsEntryLicenseSelect) {
-          emit(FsEntryLicenseConfiguring(licenseInfo: event.licenseInfo));
+          if (selectFormLicenseInfo.hasParams) {
+            emit(const FsEntryLicenseConfiguring());
+          } else {
+            emit(const FsEntryLicenseReviewing());
+          }
         }
 
-        if (event is FsEntryLicenseSubmit) {
+        if (event is FsEntryLicenseSubmitConfiguration) {
+          licenseParams = event.licenseParams;
+          emit(const FsEntryLicenseReviewing());
+        }
+
+        if (event is FsEntryLicenseReviewConfirm) {
           emit(const FsEntryLicenseLoadInProgress());
           await licenseEntities(
             profile: profile,
-            licenseInfo: event.licenseInfo,
-            licenseParams: event.licenseParams,
+            licenseInfo: selectFormLicenseInfo,
+            licenseParams: licenseParams,
           );
           emit(const FsEntryLicenseSuccess());
         }

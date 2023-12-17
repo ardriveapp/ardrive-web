@@ -9,13 +9,13 @@ import 'licenses/udl.dart';
 
 class LicenseService {
   LicenseType? licenseTypeByTxId(String txId) {
-    return licenseInfo.entries
+    return licenseInfoMap.entries
         .firstWhere((element) => element.value.licenseTxId == txId)
         .key;
   }
 
   LicenseInfo licenseInfoByType(LicenseType licenseType) {
-    return licenseInfo[licenseType]!;
+    return licenseInfoMap[licenseType]!;
   }
 
   LicenseParams paramsFromAdditionalTags({

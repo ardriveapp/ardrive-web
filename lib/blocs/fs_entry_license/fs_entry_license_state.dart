@@ -12,9 +12,11 @@ class FsEntryLicenseSelecting extends FsEntryLicenseState {
 }
 
 class FsEntryLicenseConfiguring extends FsEntryLicenseState {
-  final LicenseInfo licenseInfo;
+  const FsEntryLicenseConfiguring() : super();
+}
 
-  const FsEntryLicenseConfiguring({required this.licenseInfo}) : super();
+class FsEntryLicenseReviewing extends FsEntryLicenseState {
+  const FsEntryLicenseReviewing() : super();
 }
 
 class FsEntryLicenseLoadInProgress extends FsEntryLicenseState {

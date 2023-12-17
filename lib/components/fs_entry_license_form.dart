@@ -2,7 +2,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/license/license_types.dart';
-import 'package:ardrive/services/license/licenses/udl.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -77,6 +76,8 @@ class FsEntryLicenseForm extends StatelessWidget {
       },
       builder: (context, state) {
         return Builder(builder: (context) {
+          final licenseInfo =
+              context.read<FsEntryLicenseBloc>().selectFormLicenseInfo;
           if (state is FsEntryLicenseSelecting) {
             return ArDriveStandardModal(
               width: kMediumDialogWidth,
@@ -121,7 +122,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                             control.dirty && control.invalid,
                         validationMessages:
                             kValidationMessages(appLocalizationsOf(context)),
-                        items: licenseInfo.values
+                        items: licenseInfoMap.values
                             .map(
                               (value) => DropdownMenuItem(
                                 value: value,
@@ -143,20 +144,51 @@ class FsEntryLicenseForm extends StatelessWidget {
                 ModalAction(
                   action: () => context
                       .read<FsEntryLicenseBloc>()
-                      .add(const FsEntryLicenseSelect(
-                        licenseInfo: udlLicenseInfo,
-                      )),
-                  title: 'Next',
-                  // title: appLocalizationsOf(context).licenseHereEmphasized,
-                  // isEnable: _validForm,
+                      .add(const FsEntryLicenseSelect()),
+                  title: appLocalizationsOf(context).nextEmphasized,
                 ),
               ],
             );
           } else if (state is FsEntryLicenseConfiguring) {
-            final licenseInfo = context.read<FsEntryLicenseBloc>().licenseInfo;
             return ArDriveStandardModal(
               title: 'Configuring ${licenseInfo.name}',
               content: const SizedBox(),
+              actions: [
+                ModalAction(
+                  action: () => Navigator.of(context).pop(),
+                  title: appLocalizationsOf(context).cancelEmphasized,
+                ),
+                ModalAction(
+                  action: () => context
+                      .read<FsEntryLicenseBloc>()
+                      .add(const FsEntryLicenseSubmitConfiguration()),
+                  title: appLocalizationsOf(context).nextEmphasized,
+                ),
+              ],
+            );
+          } else if (state is FsEntryLicenseReviewing) {
+            return ArDriveStandardModal(
+              title: 'Reviewing ${licenseInfo.name}',
+              content: const SizedBox(),
+              actions: [
+                licenseInfo.hasParams
+                    ? ModalAction(
+                        action: () => context
+                            .read<FsEntryLicenseBloc>()
+                            .add(const FsEntryLicenseSelect()),
+                        title: appLocalizationsOf(context).backEmphasized,
+                      )
+                    : ModalAction(
+                        action: () => Navigator.of(context).pop(),
+                        title: appLocalizationsOf(context).cancelEmphasized,
+                      ),
+                ModalAction(
+                  action: () => context
+                      .read<FsEntryLicenseBloc>()
+                      .add(const FsEntryLicenseReviewConfirm()),
+                  title: appLocalizationsOf(context).confirmEmphasized,
+                ),
+              ],
             );
           } else {
             return const SizedBox();

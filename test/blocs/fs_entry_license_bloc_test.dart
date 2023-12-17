@@ -292,8 +292,7 @@ void main() {
         platform: FakePlatform(operatingSystem: 'android'),
       ),
       act: (FsEntryLicenseBloc bloc) async {
-        bloc.add(FsEntryLicenseSubmit(
-          licenseInfo: udlLicenseInfo,
+        bloc.add(FsEntryLicenseSubmitConfiguration(
           licenseParams: UdlLicenseParams(commercialUse: 'Allowed'),
         ));
       },
