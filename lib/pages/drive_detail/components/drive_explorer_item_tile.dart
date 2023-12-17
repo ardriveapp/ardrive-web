@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
@@ -385,6 +386,23 @@ class _DriveExplorerItemTileTrailingState
           content: _buildItem(
             appLocalizationsOf(context).move,
             ArDriveIcons.move(
+              size: defaultIconSize,
+            ),
+          ),
+        ),
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToLicense(
+              context,
+              driveId: item.driveId,
+              selectedItems: [item],
+            );
+          },
+          content: _buildItem(
+            // TODO: Localization
+            // appLocalizationsOf(context).license,
+            'Add license',
+            ArDriveIcons.license(
               size: defaultIconSize,
             ),
           ),
