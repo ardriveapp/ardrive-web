@@ -42,7 +42,7 @@ class FsEntryLicenseBloc
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _licenseService = licenseService,
-        super(const FsEntryLicenseConfiguring()) {
+        super(const FsEntryLicenseSelecting()) {
     if (selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
     }
