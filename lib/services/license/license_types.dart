@@ -1,8 +1,11 @@
+import 'package:ardrive/services/license/licenses/cc0.dart';
+
 import 'licenses/udl.dart';
 
 enum LicenseType {
   unknown,
   udl,
+  ccBy,
 }
 
 class LicenseInfo {
@@ -27,4 +30,5 @@ abstract class LicenseParams {
 
 final licenseInfo = {
   LicenseType.udl: udlLicenseInfo,
+  LicenseType.ccBy: ccByLicenseInfo,
 };
