@@ -101,7 +101,7 @@ class FsEntryLicenseBloc
         )..ownerAddress = profile.walletAddress;
 
         final licenseAssertionDataItem = await licenseAssertionEntity
-            .asPreparedDataItem(owner: licenseAssertionEntity.ownerAddress);
+            .asPreparedDataItem(owner: await profile.wallet.getOwner());
         await licenseAssertionDataItem.sign(profile.wallet);
         licenseAssertionTxDataItems.add(licenseAssertionDataItem);
 
