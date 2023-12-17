@@ -7,6 +7,16 @@ abstract class FsEntryLicenseEvent extends Equatable {
   List<Object> get props => [];
 }
 
+class FsEntryLicenseSelect extends FsEntryLicenseEvent {
+  final LicenseInfo licenseInfo;
+
+  const FsEntryLicenseSelect({
+    required this.licenseInfo,
+  }) : super();
+  @override
+  List<Object> get props => [licenseInfo];
+}
+
 class FsEntryLicenseSubmit extends FsEntryLicenseEvent {
   final LicenseInfo licenseInfo;
   final LicenseParams licenseParams;
