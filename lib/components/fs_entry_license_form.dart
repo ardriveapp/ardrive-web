@@ -80,21 +80,19 @@ class FsEntryLicenseForm extends StatelessWidget {
               context.read<FsEntryLicenseBloc>().selectFormLicenseInfo;
           if (state is FsEntryLicenseSelecting) {
             return ArDriveStandardModal(
-              width: kMediumDialogWidth,
               title:
                   "Add license to ${fileItems.length} file${fileItems.length > 1 ? 's' : ''}",
               // TODO: Localize
               // title: appLocalizationsOf(context).renameFolderEmphasized,
               content: SizedBox(
-                height: 225,
                 width: kMediumDialogWidth,
                 child: Column(
-                  mainAxisSize: MainAxisSize.max,
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     LicenseFileList(fileList: fileItems),
-                    const Divider(),
+                    const Divider(height: 24),
                     ReactiveForm(
                       formGroup: context.watch<FsEntryLicenseBloc>().selectForm,
                       child: ReactiveDropdownField(
@@ -126,13 +124,34 @@ class FsEntryLicenseForm extends StatelessWidget {
                             .map(
                               (value) => DropdownMenuItem(
                                 value: value,
-                                child: Text(value.name),
+                                child:
+                                    Text('${value.name} (${value.shortName})'),
                               ),
                             )
                             .toList(),
                       ),
                     ),
-                    const Expanded(child: SizedBox()),
+                    const Divider(height: 32),
+                    Text(
+                      // TODO: Localize
+                      'Cost: 0 AR',
+                      style: ArDriveTypography.body.buttonLargeRegular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
+                    ),
+                    Text(
+                      // TODO: Localize
+                      'Free for now, maybe paid later.',
+                      style: ArDriveTypography.body.captionRegular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgSubtle,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -210,8 +229,12 @@ class LicenseFileList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 100),
+      constraints: const BoxConstraints(
+        minHeight: 50,
+        maxHeight: 100,
+      ),
       child: ListView.builder(
+        shrinkWrap: true,
         padding: EdgeInsets.zero,
         itemCount: fileList.length,
         itemBuilder: (context, index) => Padding(
