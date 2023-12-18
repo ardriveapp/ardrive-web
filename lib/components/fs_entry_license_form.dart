@@ -187,7 +187,8 @@ class FsEntryLicenseForm extends StatelessWidget {
                               .licenseType ==
                           LicenseType.udl
                       ? UdlParamsForm(
-                          formGroup: context.read<FsEntryLicenseBloc>().udlForm,
+                          formGroup:
+                              context.watch<FsEntryLicenseBloc>().udlForm,
                         )
                       : const Text('Unsupported license type'),
                 ],
