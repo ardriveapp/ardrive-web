@@ -268,6 +268,38 @@ class FsEntryLicenseForm extends StatelessWidget {
                 ),
               ],
             );
+          } else if (state is FsEntryLicenseSuccess) {
+            return const ArDriveStandardModal(
+              title: 'Success',
+              width: kMediumDialogWidth,
+              content: SizedBox(
+                height: 250,
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text('Success'),
+                  ],
+                ),
+              ),
+            );
+          } else if (state is FsEntryLicenseFailure) {
+            return const ArDriveStandardModal(
+              title: 'Failure',
+              width: kMediumDialogWidth,
+              content: SizedBox(
+                height: 250,
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text('Failure'),
+                  ],
+                ),
+              ),
+            );
           } else {
             return const SizedBox();
           }
