@@ -208,7 +208,16 @@ class FsEntryLicenseForm extends StatelessWidget {
           } else if (state is FsEntryLicenseReviewing) {
             return ArDriveStandardModal(
               title: 'Reviewing ${licenseInfo.name}',
-              content: const SizedBox(),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  LicenseFileList(fileList: fileItems),
+                  const Divider(height: 24),
+                  UdlParamsForm(),
+                ],
+              ),
               actions: [
                 ModalAction(
                   action: () => context
@@ -285,7 +294,7 @@ class LicenseFileList extends StatelessWidget {
 
 class UdlParamsForm extends StatelessWidget {
   final formGroup = FormGroup({
-    'currencyAmount': FormControl<String>(
+    'licenseFeeAmount': FormControl<String>(
       validators: [
         Validators.composeOR([
           Validators.pattern(
@@ -296,7 +305,7 @@ class UdlParamsForm extends StatelessWidget {
         ]),
       ],
     ),
-    'currencyType': FormControl<UdlCurrency>(
+    'licenseFeeCurrency': FormControl<UdlCurrency>(
       validators: [Validators.required],
       value: UdlCurrency.u,
     ),
@@ -335,7 +344,7 @@ class UdlParamsForm extends StatelessWidget {
               children: [
                 Expanded(
                   child: ReactiveTextField(
-                    formControlName: 'currencyAmount',
+                    formControlName: 'licenseFeeAmount',
                     showErrors: (control) => control.dirty && control.invalid,
                     decoration: InputDecoration(
                       label: Text(
@@ -363,7 +372,7 @@ class UdlParamsForm extends StatelessWidget {
                   width: kMediumDialogWidth * 0.5,
                   padding: const EdgeInsets.only(left: 24),
                   child: ReactiveDropdownField(
-                    formControlName: 'currencyType',
+                    formControlName: 'licenseFeeCurrency',
                     decoration: InputDecoration(
                       label: Text(
                         appLocalizationsOf(context).currency,
