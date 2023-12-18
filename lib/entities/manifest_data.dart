@@ -26,20 +26,20 @@ class ManifestIndex {
 }
 
 @JsonSerializable()
-class ManifestTx {
+class ManifestPath {
   @JsonKey()
   final String id;
   @JsonKey(includeFromJson: false, includeToJson: false)
   final String? fileId;
 
-  ManifestTx(
+  ManifestPath(
     this.id, {
     this.fileId,
   });
 
-  factory ManifestTx.fromJson(Map<String, dynamic> json) =>
-      _$ManifestTxFromJson(json);
-  Map<String, dynamic> toJson() => _$ManifestTxToJson(this);
+  factory ManifestPath.fromJson(Map<String, dynamic> json) =>
+      _$ManifestPathFromJson(json);
+  Map<String, dynamic> toJson() => _$ManifestPathToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -51,7 +51,7 @@ class ManifestData {
   @JsonKey()
   final ManifestIndex index;
   @JsonKey()
-  final Map<String, ManifestTx> paths;
+  final Map<String, ManifestPath> paths;
 
   ManifestData(
     this.index,
@@ -107,7 +107,7 @@ class ManifestData {
         prepareManifestPath(
           filePath: file.path,
           rootFolderPath: rootFolderPath,
-        ): ManifestTx(file.dataTxId, fileId: file.id)
+        ): ManifestPath(file.dataTxId, fileId: file.id)
     };
 
     logger.d('Files relative to root folder $rootFolderPath: $paths');
