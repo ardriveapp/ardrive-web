@@ -101,14 +101,16 @@ void main() {
     registerFallbackValue(Wallet());
     registerFallbackValue(getFakeUser());
     registerFallbackValue(FolderEntry(
-        id: '',
-        dateCreated: tDefaultDate,
-        driveId: '',
-        isGhost: false,
-        lastUpdated: tDefaultDate,
-        name: '',
-        parentFolderId: '',
-        path: ''));
+      id: '',
+      dateCreated: tDefaultDate,
+      driveId: '',
+      isGhost: false,
+      lastUpdated: tDefaultDate,
+      name: '',
+      parentFolderId: '',
+      path: '',
+      isHidden: false,
+    ));
 
     registerFallbackValue(Drive(
         id: '',

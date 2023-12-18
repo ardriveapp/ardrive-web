@@ -992,6 +992,7 @@ FolderEntry getFakeFolder() => FolderEntry(
       dateCreated: DateTime.now(),
       lastUpdated: DateTime.now(),
       isGhost: false,
+      isHidden: false,
     );
 
 Drive getFakeDrive() => Drive(
