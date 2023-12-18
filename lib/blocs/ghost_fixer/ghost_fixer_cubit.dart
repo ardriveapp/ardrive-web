@@ -129,6 +129,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
           isGhost: false,
           lastUpdated: ghostFolder.lastUpdated,
           dateCreated: ghostFolder.dateCreated,
+          isHidden: ghostFolder.isHidden,
         );
 
         final folderEntity = folder.asEntity();

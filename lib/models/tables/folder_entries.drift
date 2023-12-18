@@ -10,9 +10,10 @@ CREATE TABLE folder_entries (
     lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     isGhost BOOLEAN NOT NULL DEFAULT FALSE,
 
-
     customJsonMetadata TEXT,
     customGQLTags TEXT,
+
+    isHidden BOOLEAN NOT NULL DEFAULT 0,
 
     PRIMARY KEY (id, driveId)
 ) As FolderEntry;

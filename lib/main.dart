@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
@@ -281,6 +282,15 @@ class AppState extends State<App> {
               BlocProvider(
                 create: (context) =>
                     FeedbackSurveyCubit(FeedbackSurveyInitialState()),
+              ),
+              BlocProvider(
+                create: (context) => HideBloc(
+                  arweaveService: context.read<ArweaveService>(),
+                  crypto: ArDriveCrypto(),
+                  turboUploadService: context.read<TurboUploadService>(),
+                  driveDao: context.read<DriveDao>(),
+                  profileCubit: context.read<ProfileCubit>(),
+                ),
               ),
             ],
             child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(

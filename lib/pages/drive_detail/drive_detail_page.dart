@@ -5,6 +5,8 @@ import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/blocs/hide/hide_bloc.dart';
+import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/components/app_bottom_bar.dart';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/components/components.dart';
@@ -244,6 +246,17 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       );
                                     },
                                   ),
+                                ArDriveIconButton(
+                                  tooltip: 'Hide this file',
+                                  icon: ArDriveIcons.x(),
+                                  onPressed: () {
+                                    final hideBloc = context.read<HideBloc>();
+                                    hideBloc.add(HideFileEvent(
+                                      driveId: driveDetailState.currentDrive.id,
+                                      fileId: driveDetailState.selectedItem!.id,
+                                    ));
+                                  },
+                                ),
                                 const SizedBox(width: 8),
                                 if (canDownloadMultipleFiles &&
                                     context
