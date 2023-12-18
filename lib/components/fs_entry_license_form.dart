@@ -174,13 +174,22 @@ class FsEntryLicenseForm extends StatelessWidget {
               title:
                   'Configuring ${licenseInfo.name} (${licenseInfo.shortName})',
               width: kMediumDialogWidth,
-              content: context
-                          .read<FsEntryLicenseBloc>()
-                          .selectFormLicenseInfo
-                          .licenseType ==
-                      LicenseType.udl
-                  ? UdlParamsForm()
-                  : const Text('Unsupported license type'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  LicenseFileList(fileList: fileItems),
+                  const Divider(height: 24),
+                  context
+                              .read<FsEntryLicenseBloc>()
+                              .selectFormLicenseInfo
+                              .licenseType ==
+                          LicenseType.udl
+                      ? UdlParamsForm()
+                      : const Text('Unsupported license type'),
+                ],
+              ),
               actions: [
                 ModalAction(
                   action: () => Navigator.of(context).pop(),
