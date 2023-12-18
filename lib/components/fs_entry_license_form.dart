@@ -364,6 +364,7 @@ class FsEntryLicenseForm extends StatelessWidget {
               ),
             );
           } else if (state is FsEntryLicenseFailure) {
+            // TODO
             return const ArDriveStandardModal(
               title: 'Failure',
               width: kMediumDialogWidth,
