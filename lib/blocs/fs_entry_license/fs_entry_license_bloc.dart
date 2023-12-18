@@ -195,6 +195,8 @@ class FsEntryLicenseBloc
             .fileById(driveId: driveId, fileId: fileToLicense.id)
             .getSingle();
 
+        // TODO: Create License-Assertions for all previous Data Txs?
+
         final licenseAssertionEntity = _licenseService.toEntity(
           dataTxId: file.dataTxId,
           licenseInfo: licenseInfo,
