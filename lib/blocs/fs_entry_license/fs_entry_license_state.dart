@@ -30,3 +30,11 @@ class FsEntryLicenseWalletMismatch extends FsEntryLicenseState {
 class FsEntryLicenseSuccess extends FsEntryLicenseState {
   const FsEntryLicenseSuccess() : super();
 }
+
+class FsEntryLicenseFailure extends FsEntryLicenseState {
+  const FsEntryLicenseFailure() : super();
+}
+
+class FsEntryLicenseComplete extends FsEntryLicenseState {
+  const FsEntryLicenseComplete() : super();
+}

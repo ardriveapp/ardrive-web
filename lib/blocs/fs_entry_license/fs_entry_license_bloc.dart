@@ -114,7 +114,7 @@ class FsEntryLicenseBloc
 
         if (event is FsEntryLicenseConfigurationSubmit) {
           if (selectFormLicenseInfo.licenseType == LicenseType.udl) {
-            licenseParams = await formToUdlLicenseParams(udlForm);
+            licenseParams = await udlFormToLicenseParams(udlForm);
           } else {
             addError(
                 'Unsupported license configuration: ${selectFormLicenseInfo.licenseType}');
@@ -133,19 +133,32 @@ class FsEntryLicenseBloc
 
         if (event is FsEntryLicenseReviewConfirm) {
           emit(const FsEntryLicenseLoadInProgress());
-          await licenseEntities(
-            profile: profile,
-            licenseInfo: selectFormLicenseInfo,
-            licenseParams: licenseParams,
-          );
-          emit(const FsEntryLicenseSuccess());
+          try {
+            await licenseEntities(
+              profile: profile,
+              licenseInfo: selectFormLicenseInfo,
+              licenseParams: licenseParams,
+            );
+            emit(const FsEntryLicenseSuccess());
+          } catch (_, trace) {
+            addError('Error licensing entities', trace);
+            emit(const FsEntryLicenseFailure());
+          }
+        }
+
+        if (event is FsEntryLicenseSuccessClose) {
+          emit(const FsEntryLicenseComplete());
+        }
+
+        if (event is FsEntryLicenseFailureTryAgain) {
+          emit(const FsEntryLicenseReviewing());
         }
       },
       transformer: restartable(),
     );
   }
 
-  Future<UdlLicenseParams> formToUdlLicenseParams(FormGroup udlForm) async {
+  Future<UdlLicenseParams> udlFormToLicenseParams(FormGroup udlForm) async {
     final String? licenseFeeAmountString =
         udlForm.control('licenseFeeAmount').value;
     final double? licenseFeeAmount = licenseFeeAmountString == null

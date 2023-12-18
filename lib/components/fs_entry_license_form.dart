@@ -70,8 +70,12 @@ class FsEntryLicenseForm extends StatelessWidget {
             // TODO: Localize
             // title: appLocalizationsOf(context).licensingItemsEmphasized,
           );
-        } else if (state is FsEntryLicenseSuccess) {
+        } else if (state is FsEntryLicenseSuccess ||
+            state is FsEntryLicenseFailure) {
+          // close progressDialog
           Navigator.pop(context);
+        } else if (state is FsEntryLicenseComplete) {
+          // close LicenseForm
           Navigator.pop(context);
         } else if (state is FsEntryLicenseWalletMismatch) {
           Navigator.pop(context);

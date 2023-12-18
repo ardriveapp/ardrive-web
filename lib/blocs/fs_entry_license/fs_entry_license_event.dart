@@ -26,3 +26,11 @@ class FsEntryLicenseReviewBack extends FsEntryLicenseEvent {
 class FsEntryLicenseReviewConfirm extends FsEntryLicenseEvent {
   const FsEntryLicenseReviewConfirm() : super();
 }
+
+class FsEntryLicenseSuccessClose extends FsEntryLicenseEvent {
+  const FsEntryLicenseSuccessClose() : super();
+}
+
+class FsEntryLicenseFailureTryAgain extends FsEntryLicenseEvent {
+  const FsEntryLicenseFailureTryAgain() : super();
+}
