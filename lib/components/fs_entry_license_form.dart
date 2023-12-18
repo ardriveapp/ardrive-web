@@ -281,8 +281,11 @@ class UdlParamsForm extends StatelessWidget {
     'currencyAmount': FormControl<String>(
       validators: [
         Validators.composeOR([
-          Validators.number,
-          Validators.maxLength(0),
+          Validators.pattern(
+            r'^\d+\.?\d*$',
+            validationMessage: 'Invalid amount',
+          ),
+          Validators.equals(''),
         ]),
       ],
     ),
