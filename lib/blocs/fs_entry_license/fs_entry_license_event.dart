@@ -11,15 +11,23 @@ class FsEntryLicenseSelect extends FsEntryLicenseEvent {
   const FsEntryLicenseSelect() : super();
 }
 
-class FsEntryLicenseSubmitConfiguration extends FsEntryLicenseEvent {
+class FsEntryLicenseConfigurationBack extends FsEntryLicenseEvent {
+  const FsEntryLicenseConfigurationBack() : super();
+}
+
+class FsEntryLicenseConfigurationSubmit extends FsEntryLicenseEvent {
   final LicenseParams? licenseParams;
 
-  const FsEntryLicenseSubmitConfiguration({
+  const FsEntryLicenseConfigurationSubmit({
     this.licenseParams,
   }) : super();
 
   @override
   List<Object?> get props => [licenseParams];
+}
+
+class FsEntryLicenseReviewBack extends FsEntryLicenseEvent {
+  const FsEntryLicenseReviewBack() : super();
 }
 
 class FsEntryLicenseReviewConfirm extends FsEntryLicenseEvent {

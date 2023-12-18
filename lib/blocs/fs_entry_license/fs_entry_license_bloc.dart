@@ -80,9 +80,21 @@ class FsEntryLicenseBloc
           }
         }
 
-        if (event is FsEntryLicenseSubmitConfiguration) {
+        if (event is FsEntryLicenseConfigurationBack) {
+          emit(const FsEntryLicenseSelecting());
+        }
+
+        if (event is FsEntryLicenseConfigurationSubmit) {
           licenseParams = event.licenseParams;
           emit(const FsEntryLicenseReviewing());
+        }
+
+        if (event is FsEntryLicenseReviewBack) {
+          if (selectFormLicenseInfo.hasParams) {
+            emit(const FsEntryLicenseConfiguring());
+          } else {
+            emit(const FsEntryLicenseSelecting());
+          }
         }
 
         if (event is FsEntryLicenseReviewConfirm) {

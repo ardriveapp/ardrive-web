@@ -192,13 +192,15 @@ class FsEntryLicenseForm extends StatelessWidget {
               ),
               actions: [
                 ModalAction(
-                  action: () => Navigator.of(context).pop(),
-                  title: appLocalizationsOf(context).cancelEmphasized,
+                  action: () => context
+                      .read<FsEntryLicenseBloc>()
+                      .add(const FsEntryLicenseConfigurationBack()),
+                  title: appLocalizationsOf(context).backEmphasized,
                 ),
                 ModalAction(
                   action: () => context
                       .read<FsEntryLicenseBloc>()
-                      .add(const FsEntryLicenseSubmitConfiguration()),
+                      .add(const FsEntryLicenseConfigurationSubmit()),
                   title: appLocalizationsOf(context).nextEmphasized,
                 ),
               ],
@@ -208,17 +210,12 @@ class FsEntryLicenseForm extends StatelessWidget {
               title: 'Reviewing ${licenseInfo.name}',
               content: const SizedBox(),
               actions: [
-                licenseInfo.hasParams
-                    ? ModalAction(
-                        action: () => context
-                            .read<FsEntryLicenseBloc>()
-                            .add(const FsEntryLicenseSelect()),
-                        title: appLocalizationsOf(context).backEmphasized,
-                      )
-                    : ModalAction(
-                        action: () => Navigator.of(context).pop(),
-                        title: appLocalizationsOf(context).cancelEmphasized,
-                      ),
+                ModalAction(
+                  action: () => context
+                      .read<FsEntryLicenseBloc>()
+                      .add(const FsEntryLicenseReviewBack()),
+                  title: appLocalizationsOf(context).backEmphasized,
+                ),
                 ModalAction(
                   action: () => context
                       .read<FsEntryLicenseBloc>()
