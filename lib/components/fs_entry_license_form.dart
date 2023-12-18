@@ -486,6 +486,7 @@ class UdlParamsForm extends StatelessWidget {
                       enabledBorder: inputBorder,
                       focusedBorder: inputBorder,
                     ),
+                    style: const TextStyle(height: 1.5),
                   ),
                 ),
                 Container(
