@@ -146,9 +146,9 @@ class FsEntryLicenseBloc
   }
 
   Future<UdlLicenseParams> formToUdlLicenseParams(FormGroup udlForm) async {
-    final String licenseFeeAmountString =
+    final String? licenseFeeAmountString =
         udlForm.control('licenseFeeAmount').value;
-    final double? licenseFeeAmount = licenseFeeAmountString.isEmpty
+    final double? licenseFeeAmount = licenseFeeAmountString == null
         ? null
         : double.tryParse(licenseFeeAmountString);
 
