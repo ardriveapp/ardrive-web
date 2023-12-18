@@ -7,8 +7,10 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -545,6 +547,12 @@ class LicenseSummary extends StatelessWidget {
                     .copyWith(
                       decoration: TextDecoration.underline,
                     ),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () async {
+                    final url =
+                        'https://viewblock.io/arweave/tx/${licenseInfo.licenseTxId}';
+                    await openUrl(url: url);
+                  },
               ),
             ],
           ),
