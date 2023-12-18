@@ -99,6 +99,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     LicenseFileList(fileList: fileItems),
+                    const SizedBox(height: 16),
                     const Divider(height: 24),
                     ReactiveForm(
                       formGroup: context.watch<FsEntryLicenseBloc>().selectForm,
@@ -106,7 +107,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                         formControlName: 'licenseType',
                         decoration: InputDecoration(
                           label: Text(
-                            'License Type',
+                            'License',
                             // TODO: Localize
                             // appLocalizationsOf(context).licenseType,
                             style: ArDriveTheme.of(context)
@@ -186,6 +187,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   LicenseFileList(fileList: fileItems),
+                  const SizedBox(height: 16),
                   const Divider(height: 24),
                   context
                               .read<FsEntryLicenseBloc>()
@@ -224,7 +226,9 @@ class FsEntryLicenseForm extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   LicenseFileList(fileList: fileItems),
+                  const SizedBox(height: 16),
                   const Divider(height: 24),
+                  const SizedBox(height: 16),
                   LicenseSummary(
                     licenseInfo: licenseInfo,
                     licenseParams:
@@ -401,7 +405,6 @@ class LicenseFileList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ConstrainedBox(
       constraints: const BoxConstraints(
-        minHeight: 50,
         maxHeight: 100,
       ),
       child: ListView.builder(
@@ -410,25 +413,13 @@ class LicenseFileList extends StatelessWidget {
         itemCount: fileList.length,
         itemBuilder: (context, index) => Padding(
           padding: const EdgeInsets.symmetric(
-            vertical: 16.0,
-            horizontal: 16,
+            horizontal: 4,
           ),
-          child: Row(
-            children: [
-              ArDriveIcons.fileOutlined(
-                size: 16,
-                color: _colorDisabled(context),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  fileList[index].name,
-                  style: ArDriveTypography.body.inputNormalRegular(
-                    color: _colorDisabled(context),
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            fileList[index].name,
+            style: ArDriveTypography.body.inputNormalRegular(
+              color: _colorDisabled(context),
+            ),
           ),
         ),
       ),
