@@ -57,6 +57,12 @@ class Database extends _$Database {
               fileRevisions,
               fileRevisions.pinnedDataOwnerAddress,
             );
+          } else if (from == 17 && to == 18) {
+            // Then we're adding the isHidden column
+            logger.i('Migrating schema from v17 to v18');
+
+            await m.addColumn(folderRevisions, folderRevisions.isHidden);
+            await m.addColumn(fileRevisions, fileRevisions.isHidden);
           } else if (from >= 1 && from < schemaVersion) {
             logger.i(
               'No strategy set for migration v$from to v$to'

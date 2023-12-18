@@ -23,6 +23,9 @@ class FolderEntity extends EntityWithCustomMetadata {
 
   String? name;
 
+  @JsonKey()
+  bool? isHidden;
+
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedGqlTags = [
@@ -42,6 +45,7 @@ class FolderEntity extends EntityWithCustomMetadata {
     this.driveId,
     this.parentFolderId,
     this.name,
+    this.isHidden,
   }) : super(ArDriveCrypto());
 
   static Future<FolderEntity> fromTransaction(

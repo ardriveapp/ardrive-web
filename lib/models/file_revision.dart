@@ -57,6 +57,7 @@ extension FileEntityExtensions on FileEntity {
         customGQLTags: Value(customGqlTagsAsString),
         customJsonMetadata: Value(customJsonMetadataAsString),
         pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
+        isHidden: Value(isHidden ?? false),
       );
 
   FileRevision toRevision({
@@ -78,6 +79,7 @@ extension FileEntityExtensions on FileEntity {
         customGQLTags: customGqlTagsAsString,
         customJsonMetadata: customJsonMetadataAsString,
         pinnedDataOwnerAddress: pinnedDataOwnerAddress,
+        isHidden: isHidden ?? false,
       );
 
   /// Returns the action performed on the file that lead to the new revision.
