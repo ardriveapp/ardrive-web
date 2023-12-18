@@ -24,6 +24,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final String driveId;
   final String path;
   final bool isOwner;
+  final bool isHidden;
 
   ArDriveDataTableItem({
     required this.id,
@@ -37,6 +38,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     required this.path,
     required int index,
     required this.isOwner,
+    this.isHidden = false,
   }) : super(index);
 }
 
@@ -148,8 +150,16 @@ Widget _buildDataListContent(
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
   Drive drive,
-  bool isMultiselecting,
-) {
+  bool isMultiselecting, {
+  bool showHiddenFiles = false,
+}) {
+  final List<ArDriveDataTableItem> filteredItems;
+  if (showHiddenFiles) {
+    filteredItems = items;
+  } else {
+    filteredItems = items.where((item) => !item.isHidden).toList();
+  }
+
   return LayoutBuilder(builder: (context, constraints) {
     return ArDriveDataTable<ArDriveDataTableItem>(
       key: ValueKey(folder.id),
@@ -257,7 +267,7 @@ Widget _buildDataListContent(
           },
         );
       },
-      rows: items,
+      rows: filteredItems,
       selectedRow: context.watch<DriveDetailCubit>().selectedItem,
     );
   });
