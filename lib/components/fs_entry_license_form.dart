@@ -218,6 +218,32 @@ class FsEntryLicenseForm extends StatelessWidget {
                 children: [
                   LicenseFileList(fileList: fileItems),
                   const Divider(height: 24),
+                  LicenseSummary(
+                    licenseInfo: licenseInfo,
+                    licenseParams:
+                        context.read<FsEntryLicenseBloc>().licenseParams,
+                  ),
+                  const Divider(height: 32),
+                  Text(
+                    // TODO: Localize
+                    'Cost: 0 AR',
+                    style: ArDriveTypography.body.buttonLargeRegular(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
+                  ),
+                  Text(
+                    // TODO: Localize
+                    'Free for now, maybe paid later.',
+                    style: ArDriveTypography.body.captionRegular(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgSubtle,
+                    ),
+                  ),
                 ],
               ),
               actions: [
@@ -464,5 +490,56 @@ class UdlParamsForm extends StatelessWidget {
               )
               .toList(),
         ));
+  }
+}
+
+class LicenseSummary extends StatelessWidget {
+  final LicenseInfo licenseInfo;
+  final LicenseParams? licenseParams;
+  late final Map<String, String> summaryItems;
+
+  LicenseSummary({
+    super.key,
+    required this.licenseInfo,
+    this.licenseParams,
+  }) {
+    summaryItems = licenseParams is UdlLicenseParams
+        ? udlLicenseSummary(licenseParams as UdlLicenseParams)
+        : {};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('License'),
+        Text(licenseInfo.name),
+        ...summaryItems.entries
+            .map((entry) => Text('${entry.key}: ${entry.value}'))
+      ],
+    );
+  }
+
+  Map<String, String> udlLicenseSummary(UdlLicenseParams udlLicenseParams) {
+    final summary = <String, String>{};
+
+    if (udlLicenseParams.licenseFeeAmount != null) {
+      summary['License Fee'] = '${udlLicenseParams.licenseFeeAmount}';
+      summary['License Currency'] =
+          udlCurrencyValues[udlLicenseParams.licenseFeeCurrency]!;
+    }
+    if (udlLicenseParams.commercialUse != UdlCommercialUse.unspecified) {
+      summary['Commercial Use'] =
+          udlCommercialUseValues[udlLicenseParams.commercialUse]!;
+    }
+    if (udlLicenseParams.derivations != UdlDerivation.unspecified) {
+      summary['Derivations'] =
+          udlDerivationValues[udlLicenseParams.derivations]!;
+    }
+
+    return summary;
   }
 }
