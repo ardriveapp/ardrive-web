@@ -183,8 +183,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         folderNode: folderNode,
       );
 
-      // final fileDataTxIds =
-      //     arweaveManifest.paths.values.map((e) => e.id).toSet();
       final fileMetadataTxIds =
           await Future.wait(arweaveManifest.paths.values.map((m) async {
         final latestRevision = await _driveDao

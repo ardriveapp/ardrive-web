@@ -76,7 +76,6 @@ class ManifestData {
 
   static ManifestData fromFolderNode({
     required FolderNode folderNode,
-    // required Selectable<NetworkTransaction>? pendingTransactions,
   }) {
     final fileList = folderNode
         .getRecursiveFiles()
@@ -113,22 +112,9 @@ class ManifestData {
 
     logger.d('Files relative to root folder $rootFolderPath: $paths');
 
-    // final fileDataTxIds = fileList.map((f) => f.dataTxId).toSet();
-    // final Future<bool>? hasPendingTransactions;
-    // if (pendingTransactions == null) {
-    //   hasPendingTransactions = null;
-    // } else {
-    //   hasPendingTransactions = pendingTransactions.get().then(
-    //         (txs) => txs.any(
-    //           (tx) => fileDataTxIds.contains(tx.id),
-    //         ),
-    //       );
-    // }
-
     return ManifestData(
       index,
       paths,
-      // hasPendingTransactions: hasPendingTransactions,
     );
   }
 
