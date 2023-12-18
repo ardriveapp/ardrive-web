@@ -515,10 +515,58 @@ class LicenseSummary extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('License'),
-        Text(licenseInfo.name),
-        ...summaryItems.entries
-            .map((entry) => Text('${entry.key}: ${entry.value}'))
+        Text(
+          // TODO: Localize
+          'License',
+          style: ArDriveTypography.body.smallRegular(
+            color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+          ),
+        ),
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: '${licenseInfo.name} (${licenseInfo.shortName})',
+                style: ArDriveTypography.body.buttonLargeBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                ),
+              ),
+              const TextSpan(text: '   '),
+              TextSpan(
+                text: 'View',
+                style: ArDriveTypography.body
+                    .buttonLargeRegular(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgSubtle,
+                    )
+                    .copyWith(
+                      decoration: TextDecoration.underline,
+                    ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        ...summaryItems.entries.expand(
+          (entry) => [
+            Text(
+              entry.key,
+              style: ArDriveTypography.body.smallRegular(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+              ),
+            ),
+            Text(
+              entry.value,
+              style: ArDriveTypography.body.buttonLargeBold(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        )
       ],
     );
   }
