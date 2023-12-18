@@ -15,11 +15,12 @@ void main() {
   const stubDataTxId = '0000000000000000000000000000000000000000001';
   const stubLicenseTxId = 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
   const stubOwner = '8888';
-  final stubCurrentDate = DateTime.now();
+  // final stubCurrentDate = DateTime.now();
 
   final stubLicenseParams = UdlLicenseParams(
-    derivations: 'Allowed',
-    commercialUse: 'Allowed',
+    licenseFeeCurrency: UdlCurrency.u,
+    commercialUse: UdlCommercialUse.unspecified,
+    derivations: UdlDerivation.unspecified,
   );
   final stubAdditionalTags = stubLicenseParams.toAdditionalTags();
   final stubAdditionalTxTags = stubAdditionalTags.entries.map(

@@ -1,7 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/license/licenses/udl.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -292,12 +291,13 @@ void main() {
         platform: FakePlatform(operatingSystem: 'android'),
       ),
       act: (FsEntryLicenseBloc bloc) async {
-        bloc.add(FsEntryLicenseConfigurationSubmit(
-          licenseParams: UdlLicenseParams(commercialUse: 'Allowed'),
-        ));
+        bloc.add(const FsEntryLicenseConfigurationSubmit());
+        await Future.delayed(const Duration(seconds: 2));
+        bloc.add(const FsEntryLicenseReviewConfirm());
       },
       wait: const Duration(seconds: 4),
       expect: () => [
+        isA<FsEntryLicenseReviewing>(),
         isA<FsEntryLicenseLoadInProgress>(),
         isA<FsEntryLicenseSuccess>(),
       ],
