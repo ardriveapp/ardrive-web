@@ -83,10 +83,10 @@ class FsEntryLicenseForm extends StatelessWidget {
             return ArDriveStandardModal(
               title:
                   "Add license to ${fileItems.length} file${fileItems.length > 1 ? 's' : ''}",
+              width: kMediumDialogWidth,
               // TODO: Localize
               // title: appLocalizationsOf(context).renameFolderEmphasized,
               content: SizedBox(
-                width: kMediumDialogWidth,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,6 +173,7 @@ class FsEntryLicenseForm extends StatelessWidget {
             return ArDriveStandardModal(
               title:
                   'Configuring ${licenseInfo.name} (${licenseInfo.shortName})',
+              width: kMediumDialogWidth,
               content: context
                           .read<FsEntryLicenseBloc>()
                           .selectFormLicenseInfo
@@ -307,7 +308,7 @@ class UdlParamsForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textBorder = OutlineInputBorder(
+    final inputBorder = OutlineInputBorder(
       borderSide: BorderSide(
         color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
       ),
@@ -321,62 +322,74 @@ class UdlParamsForm extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ReactiveTextField(
-              formControlName: 'currencyAmount',
-              showErrors: (control) => control.dirty && control.invalid,
-              decoration: InputDecoration(
-                label: Text(
-                  'License Fee',
-                  // TODO: Localize
-                  // appLocalizationsOf(context).udlLicenseFee,
-                  style: ArDriveTheme.of(context)
-                      .themeData
-                      .textFieldTheme
-                      .inputTextStyle
-                      .copyWith(
-                        color: ArDriveTheme.of(context)
+            Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ReactiveTextField(
+                    formControlName: 'currencyAmount',
+                    showErrors: (control) => control.dirty && control.invalid,
+                    decoration: InputDecoration(
+                      label: Text(
+                        'License Fee',
+                        // TODO: Localize
+                        // appLocalizationsOf(context).udlLicenseFee,
+                        style: ArDriveTheme.of(context)
                             .themeData
-                            .colors
-                            .themeFgDisabled,
-                        fontSize: 16,
+                            .textFieldTheme
+                            .inputTextStyle
+                            .copyWith(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgDisabled,
+                              fontSize: 16,
+                            ),
                       ),
-                ),
-                border: textBorder,
-                enabledBorder: textBorder,
-                focusedBorder: textBorder,
-                disabledBorder: textBorder,
-              ),
-            ),
-            ReactiveDropdownField(
-              formControlName: 'currencyType',
-              decoration: InputDecoration(
-                label: Text(
-                  appLocalizationsOf(context).currency,
-                  style: ArDriveTheme.of(context)
-                      .themeData
-                      .textFieldTheme
-                      .inputTextStyle
-                      .copyWith(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDisabled,
-                        fontSize: 16,
-                      ),
-                ),
-                focusedBorder: InputBorder.none,
-              ),
-              showErrors: (control) => control.dirty && control.invalid,
-              validationMessages:
-                  kValidationMessages(appLocalizationsOf(context)),
-              items: udlCurrencyNames.entries
-                  .map(
-                    (entry) => DropdownMenuItem(
-                      value: entry.key,
-                      child: Text(entry.value),
+                      enabledBorder: inputBorder,
+                      focusedBorder: inputBorder,
                     ),
-                  )
-                  .toList(),
+                  ),
+                ),
+                Container(
+                  width: kMediumDialogWidth * 0.5,
+                  padding: const EdgeInsets.only(left: 24),
+                  child: ReactiveDropdownField(
+                    formControlName: 'currencyType',
+                    decoration: InputDecoration(
+                      label: Text(
+                        appLocalizationsOf(context).currency,
+                        style: ArDriveTheme.of(context)
+                            .themeData
+                            .textFieldTheme
+                            .inputTextStyle
+                            .copyWith(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgDisabled,
+                              fontSize: 16,
+                            ),
+                      ),
+                      enabledBorder: inputBorder,
+                      focusedBorder: inputBorder,
+                    ),
+                    showErrors: (control) => control.dirty && control.invalid,
+                    validationMessages:
+                        kValidationMessages(appLocalizationsOf(context)),
+                    items: udlCurrencyNames.entries
+                        .map(
+                          (entry) => DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(entry.value),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ],
             ),
             ReactiveDropdownField(
               formControlName: 'commercialUse',
@@ -397,7 +410,8 @@ class UdlParamsForm extends StatelessWidget {
                         fontSize: 16,
                       ),
                 ),
-                focusedBorder: InputBorder.none,
+                enabledBorder: inputBorder,
+                focusedBorder: inputBorder,
               ),
               showErrors: (control) => control.dirty && control.invalid,
               validationMessages:
@@ -430,7 +444,8 @@ class UdlParamsForm extends StatelessWidget {
                         fontSize: 16,
                       ),
                 ),
-                focusedBorder: InputBorder.none,
+                enabledBorder: inputBorder,
+                focusedBorder: inputBorder,
               ),
               showErrors: (control) => control.dirty && control.invalid,
               validationMessages:
@@ -444,7 +459,11 @@ class UdlParamsForm extends StatelessWidget {
                   )
                   .toList(),
             ),
-          ],
+          ]
+              .expand(
+                (element) => [element, const SizedBox(height: 32)],
+              )
+              .toList(),
         ));
   }
 }
