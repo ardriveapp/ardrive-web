@@ -350,8 +350,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                                 .themeData
                                 .colors
                                 .themeFgDefault,
-                            fontStyle:
-                                ArDriveTypography.body.buttonNormalRegular(
+                            fontStyle: ArDriveTypography.body.buttonNormalBold(
                               color: ArDriveTheme.of(context)
                                   .themeData
                                   .colors
