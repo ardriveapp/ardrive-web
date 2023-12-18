@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/license/license_types.dart';
+import 'package:ardrive/services/license/licenses/udl.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -170,8 +171,15 @@ class FsEntryLicenseForm extends StatelessWidget {
             );
           } else if (state is FsEntryLicenseConfiguring) {
             return ArDriveStandardModal(
-              title: 'Configuring ${licenseInfo.name}',
-              content: const SizedBox(),
+              title:
+                  'Configuring ${licenseInfo.name} (${licenseInfo.shortName})',
+              content: context
+                          .read<FsEntryLicenseBloc>()
+                          .selectFormLicenseInfo
+                          .licenseType ==
+                      LicenseType.udl
+                  ? UdlParamsForm()
+                  : const Text('Unsupported license type'),
               actions: [
                 ModalAction(
                   action: () => Navigator.of(context).pop(),
@@ -266,4 +274,97 @@ class LicenseFileList extends StatelessWidget {
 
   Color _colorDisabled(BuildContext context) =>
       ArDriveTheme.of(context).themeData.colors.themeInputPlaceholder;
+}
+
+class UdlParamsForm extends StatelessWidget {
+  final formGroup = FormGroup({
+    'currencyAmount': FormControl<String>(
+      validators: [
+        Validators.composeOR([
+          Validators.number,
+          Validators.maxLength(0),
+        ]),
+      ],
+    ),
+    'currencyType': FormControl<UdlCurrency>(
+      validators: [Validators.required],
+      value: UdlCurrency.u,
+    ),
+  });
+
+  UdlParamsForm({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final textBorder = OutlineInputBorder(
+      borderSide: BorderSide(
+        color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+      ),
+      borderRadius: BorderRadius.circular(4),
+    );
+
+    return ReactiveForm(
+        formGroup: formGroup,
+        child: Column(
+          children: [
+            ReactiveTextField(
+              formControlName: 'currencyAmount',
+              showErrors: (control) => control.dirty && control.invalid,
+              decoration: InputDecoration(
+                label: Text(
+                  'License Fee',
+                  // TODO: Localize
+                  // appLocalizationsOf(context).licenseFee,
+                  style: ArDriveTheme.of(context)
+                      .themeData
+                      .textFieldTheme
+                      .inputTextStyle
+                      .copyWith(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDisabled,
+                        fontSize: 16,
+                      ),
+                ),
+                border: textBorder,
+                enabledBorder: textBorder,
+                focusedBorder: textBorder,
+                disabledBorder: textBorder,
+              ),
+            ),
+            ReactiveDropdownField(
+              formControlName: 'currencyType',
+              decoration: InputDecoration(
+                label: Text(
+                  appLocalizationsOf(context).currency,
+                  style: ArDriveTheme.of(context)
+                      .themeData
+                      .textFieldTheme
+                      .inputTextStyle
+                      .copyWith(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDisabled,
+                        fontSize: 16,
+                      ),
+                ),
+                focusedBorder: InputBorder.none,
+              ),
+              showErrors: (control) => control.dirty && control.invalid,
+              validationMessages:
+                  kValidationMessages(appLocalizationsOf(context)),
+              items: udlCurrencyNames.entries
+                  .map(
+                    (entry) => DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ));
+  }
 }

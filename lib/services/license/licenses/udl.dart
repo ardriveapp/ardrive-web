@@ -9,6 +9,36 @@ const udlLicenseInfo = LicenseInfo(
   hasParams: true,
 );
 
+enum UdlCurrency {
+  u,
+  ar,
+}
+
+Map<UdlCurrency, String> udlCurrencyNames = {
+  UdlCurrency.u: 'U',
+  UdlCurrency.ar: 'AR',
+};
+
+enum UdlCommercialUse {
+  unspecified,
+  allowed,
+}
+
+Map<UdlCommercialUse, String> udlCommercialUseNames = {
+  UdlCommercialUse.unspecified: '',
+  UdlCommercialUse.allowed: 'Allowed',
+};
+
+enum UdlDerivation {
+  unspecified,
+  allowed,
+}
+
+Map<UdlDerivation, String> udlDerivationNames = {
+  UdlDerivation.unspecified: '',
+  UdlDerivation.allowed: 'Allowed',
+};
+
 class UdlLicenseParams extends LicenseParams {
   final String? derivations;
   final String? commercialUse;
