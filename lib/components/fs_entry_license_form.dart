@@ -213,6 +213,7 @@ class FsEntryLicenseForm extends StatelessWidget {
           } else if (state is FsEntryLicenseReviewing) {
             return ArDriveStandardModal(
               title: 'Review',
+              width: kMediumDialogWidth,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
