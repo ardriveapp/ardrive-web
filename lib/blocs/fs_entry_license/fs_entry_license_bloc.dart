@@ -32,6 +32,33 @@ class FsEntryLicenseBloc
   });
   LicenseInfo get selectFormLicenseInfo =>
       selectForm.control('licenseType').value;
+
+  final udlForm = FormGroup({
+    'licenseFeeAmount': FormControl<String>(
+      validators: [
+        Validators.composeOR([
+          Validators.pattern(
+            r'^\d+\.?\d*$',
+            validationMessage: 'Invalid amount',
+          ),
+          Validators.equals(''),
+        ]),
+      ],
+    ),
+    'licenseFeeCurrency': FormControl<UdlCurrency>(
+      validators: [Validators.required],
+      value: UdlCurrency.u,
+    ),
+    'commercialUse': FormControl<UdlCommercialUse>(
+      validators: [Validators.required],
+      value: UdlCommercialUse.unspecified,
+    ),
+    'derivations': FormControl<UdlDerivation>(
+      validators: [Validators.required],
+      value: UdlDerivation.unspecified,
+    ),
+  });
+
   LicenseParams? licenseParams;
 
   final ArweaveService _arweave;
@@ -76,6 +103,7 @@ class FsEntryLicenseBloc
           if (selectFormLicenseInfo.hasParams) {
             emit(const FsEntryLicenseConfiguring());
           } else {
+            licenseParams = null;
             emit(const FsEntryLicenseReviewing());
           }
         }
@@ -85,12 +113,18 @@ class FsEntryLicenseBloc
         }
 
         if (event is FsEntryLicenseConfigurationSubmit) {
-          licenseParams = event.licenseParams;
+          if (selectFormLicenseInfo.licenseType == LicenseType.udl) {
+            licenseParams = await formToUdlLicenseParams(udlForm);
+          } else {
+            addError(
+                'Unsupported license configuration: ${selectFormLicenseInfo.licenseType}');
+          }
           emit(const FsEntryLicenseReviewing());
         }
 
         if (event is FsEntryLicenseReviewBack) {
           if (selectFormLicenseInfo.hasParams) {
+            licenseParams = null;
             emit(const FsEntryLicenseConfiguring());
           } else {
             emit(const FsEntryLicenseSelecting());
@@ -108,6 +142,27 @@ class FsEntryLicenseBloc
         }
       },
       transformer: restartable(),
+    );
+  }
+
+  Future<UdlLicenseParams> formToUdlLicenseParams(FormGroup udlForm) async {
+    final String licenseFeeAmountString =
+        udlForm.control('licenseFeeAmount').value;
+    final double? licenseFeeAmount = licenseFeeAmountString.isEmpty
+        ? null
+        : double.tryParse(licenseFeeAmountString);
+
+    final UdlCurrency licenseFeeCurrency =
+        udlForm.control('licenseFeeCurrency').value;
+    final UdlCommercialUse commercialUse =
+        udlForm.control('commercialUse').value;
+    final UdlDerivation derivations = udlForm.control('derivations').value;
+
+    return UdlLicenseParams(
+      licenseFeeAmount: licenseFeeAmount,
+      licenseFeeCurrency: licenseFeeCurrency,
+      commercialUse: commercialUse,
+      derivations: derivations,
     );
   }
 

@@ -186,7 +186,9 @@ class FsEntryLicenseForm extends StatelessWidget {
                               .selectFormLicenseInfo
                               .licenseType ==
                           LicenseType.udl
-                      ? UdlParamsForm()
+                      ? UdlParamsForm(
+                          formGroup: context.read<FsEntryLicenseBloc>().udlForm,
+                        )
                       : const Text('Unsupported license type'),
                 ],
               ),
@@ -215,7 +217,6 @@ class FsEntryLicenseForm extends StatelessWidget {
                 children: [
                   LicenseFileList(fileList: fileItems),
                   const Divider(height: 24),
-                  UdlParamsForm(),
                 ],
               ),
               actions: [
@@ -293,33 +294,9 @@ class LicenseFileList extends StatelessWidget {
 }
 
 class UdlParamsForm extends StatelessWidget {
-  final formGroup = FormGroup({
-    'licenseFeeAmount': FormControl<String>(
-      validators: [
-        Validators.composeOR([
-          Validators.pattern(
-            r'^\d+\.?\d*$',
-            validationMessage: 'Invalid amount',
-          ),
-          Validators.equals(''),
-        ]),
-      ],
-    ),
-    'licenseFeeCurrency': FormControl<UdlCurrency>(
-      validators: [Validators.required],
-      value: UdlCurrency.u,
-    ),
-    'commercialUse': FormControl<UdlCommercialUse>(
-      validators: [Validators.required],
-      value: UdlCommercialUse.unspecified,
-    ),
-    'derivations': FormControl<UdlDerivation>(
-      validators: [Validators.required],
-      value: UdlDerivation.unspecified,
-    ),
-  });
+  final FormGroup formGroup;
 
-  UdlParamsForm({super.key});
+  const UdlParamsForm({super.key, required this.formGroup});
 
   @override
   Widget build(BuildContext context) {
@@ -400,7 +377,7 @@ class UdlParamsForm extends StatelessWidget {
                     showErrors: (control) => control.dirty && control.invalid,
                     validationMessages:
                         kValidationMessages(appLocalizationsOf(context)),
-                    items: udlCurrencyNames.entries
+                    items: udlCurrencyValues.entries
                         .map(
                           (entry) => DropdownMenuItem(
                             value: entry.key,
@@ -437,7 +414,7 @@ class UdlParamsForm extends StatelessWidget {
               showErrors: (control) => control.dirty && control.invalid,
               validationMessages:
                   kValidationMessages(appLocalizationsOf(context)),
-              items: udlCommercialUseNames.entries
+              items: udlCommercialUseValues.entries
                   .map(
                     (entry) => DropdownMenuItem(
                       value: entry.key,
@@ -471,7 +448,7 @@ class UdlParamsForm extends StatelessWidget {
               showErrors: (control) => control.dirty && control.invalid,
               validationMessages:
                   kValidationMessages(appLocalizationsOf(context)),
-              items: udlDerivationNames.entries
+              items: udlDerivationValues.entries
                   .map(
                     (entry) => DropdownMenuItem(
                       value: entry.key,

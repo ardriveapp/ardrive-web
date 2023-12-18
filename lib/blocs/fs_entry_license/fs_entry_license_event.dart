@@ -16,14 +16,7 @@ class FsEntryLicenseConfigurationBack extends FsEntryLicenseEvent {
 }
 
 class FsEntryLicenseConfigurationSubmit extends FsEntryLicenseEvent {
-  final LicenseParams? licenseParams;
-
-  const FsEntryLicenseConfigurationSubmit({
-    this.licenseParams,
-  }) : super();
-
-  @override
-  List<Object?> get props => [licenseParams];
+  const FsEntryLicenseConfigurationSubmit() : super();
 }
 
 class FsEntryLicenseReviewBack extends FsEntryLicenseEvent {
