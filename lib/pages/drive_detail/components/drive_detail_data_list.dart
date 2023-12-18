@@ -62,7 +62,6 @@ class DriveDataItem extends ArDriveDataTableItem {
 class FolderDataTableItem extends ArDriveDataTableItem {
   final String? parentFolderId;
   final bool isGhostFolder;
-  final bool isHidden;
 
   FolderDataTableItem({
     required String driveId,
@@ -75,7 +74,7 @@ class FolderDataTableItem extends ArDriveDataTableItem {
     String? fileStatusFromTransactions,
     this.parentFolderId,
     this.isGhostFolder = false,
-    this.isHidden = false,
+    super.isHidden = false,
     required int index,
     required bool isOwner,
   }) : super(
@@ -105,7 +104,6 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final NetworkTransaction? metadataTx;
   final NetworkTransaction? dataTx;
   final String? pinnedDataOwnerAddress;
-  final bool isHidden;
 
   FileDataTableItem({
     required this.fileId,
@@ -117,12 +115,12 @@ class FileDataTableItem extends ArDriveDataTableItem {
     required this.metadataTx,
     required this.dataTx,
     required this.pinnedDataOwnerAddress,
-    required this.isHidden,
     required String name,
     required int size,
     required DateTime dateCreated,
     required String contentType,
     required String path,
+    super.isHidden = false,
     String? fileStatusFromTransactions,
     this.bundledIn,
     required int index,
