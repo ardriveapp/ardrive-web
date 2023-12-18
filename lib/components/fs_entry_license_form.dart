@@ -290,6 +290,14 @@ class UdlParamsForm extends StatelessWidget {
       validators: [Validators.required],
       value: UdlCurrency.u,
     ),
+    'commercialUse': FormControl<UdlCommercialUse>(
+      validators: [Validators.required],
+      value: UdlCommercialUse.unspecified,
+    ),
+    'derivations': FormControl<UdlDerivation>(
+      validators: [Validators.required],
+      value: UdlDerivation.unspecified,
+    ),
   });
 
   UdlParamsForm({super.key});
@@ -306,6 +314,9 @@ class UdlParamsForm extends StatelessWidget {
     return ReactiveForm(
         formGroup: formGroup,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ReactiveTextField(
               formControlName: 'currencyAmount',
@@ -314,7 +325,7 @@ class UdlParamsForm extends StatelessWidget {
                 label: Text(
                   'License Fee',
                   // TODO: Localize
-                  // appLocalizationsOf(context).licenseFee,
+                  // appLocalizationsOf(context).udlLicenseFee,
                   style: ArDriveTheme.of(context)
                       .themeData
                       .textFieldTheme
@@ -356,6 +367,72 @@ class UdlParamsForm extends StatelessWidget {
               validationMessages:
                   kValidationMessages(appLocalizationsOf(context)),
               items: udlCurrencyNames.entries
+                  .map(
+                    (entry) => DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    ),
+                  )
+                  .toList(),
+            ),
+            ReactiveDropdownField(
+              formControlName: 'commercialUse',
+              decoration: InputDecoration(
+                label: Text(
+                  'Commercial Use',
+                  // TODO: Localize
+                  // appLocalizationsOf(context).udlCommercialUse,
+                  style: ArDriveTheme.of(context)
+                      .themeData
+                      .textFieldTheme
+                      .inputTextStyle
+                      .copyWith(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDisabled,
+                        fontSize: 16,
+                      ),
+                ),
+                focusedBorder: InputBorder.none,
+              ),
+              showErrors: (control) => control.dirty && control.invalid,
+              validationMessages:
+                  kValidationMessages(appLocalizationsOf(context)),
+              items: udlCommercialUseNames.entries
+                  .map(
+                    (entry) => DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    ),
+                  )
+                  .toList(),
+            ),
+            ReactiveDropdownField(
+              formControlName: 'derivations',
+              decoration: InputDecoration(
+                label: Text(
+                  'Derivations',
+                  // TODO: Localize
+                  // appLocalizationsOf(context).udlDerivations,
+                  style: ArDriveTheme.of(context)
+                      .themeData
+                      .textFieldTheme
+                      .inputTextStyle
+                      .copyWith(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDisabled,
+                        fontSize: 16,
+                      ),
+                ),
+                focusedBorder: InputBorder.none,
+              ),
+              showErrors: (control) => control.dirty && control.invalid,
+              validationMessages:
+                  kValidationMessages(appLocalizationsOf(context)),
+              items: udlDerivationNames.entries
                   .map(
                     (entry) => DropdownMenuItem(
                       value: entry.key,

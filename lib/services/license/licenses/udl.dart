@@ -25,7 +25,7 @@ enum UdlCommercialUse {
 }
 
 Map<UdlCommercialUse, String> udlCommercialUseNames = {
-  UdlCommercialUse.unspecified: '',
+  UdlCommercialUse.unspecified: '---',
   UdlCommercialUse.allowed: 'Allowed',
 };
 
@@ -35,7 +35,7 @@ enum UdlDerivation {
 }
 
 Map<UdlDerivation, String> udlDerivationNames = {
-  UdlDerivation.unspecified: '',
+  UdlDerivation.unspecified: '---',
   UdlDerivation.allowed: 'Allowed',
 };
 
