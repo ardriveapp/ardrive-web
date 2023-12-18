@@ -345,6 +345,11 @@ class UdlParamsForm extends StatelessWidget {
                 Expanded(
                   child: ReactiveTextField(
                     formControlName: 'licenseFeeAmount',
+                    cursorColor: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                    keyboardType: TextInputType.number,
                     showErrors: (control) => control.dirty && control.invalid,
                     decoration: InputDecoration(
                       label: Text(
@@ -363,6 +368,7 @@ class UdlParamsForm extends StatelessWidget {
                               fontSize: 16,
                             ),
                       ),
+                      border: inputBorder,
                       enabledBorder: inputBorder,
                       focusedBorder: inputBorder,
                     ),
