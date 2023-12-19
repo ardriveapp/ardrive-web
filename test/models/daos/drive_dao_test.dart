@@ -41,8 +41,11 @@ void main() {
     });
     // Any empty string is a root path
     test("watchFolder() with root path ('') returns root folder", () async {
-      final folderStream =
-          driveDao.watchFolderContents(driveId, folderPath: rootPath);
+      final folderStream = driveDao.watchFolderContents(
+        driveId,
+        folderPath: rootPath,
+        showHiddenFiles: true,
+      );
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder.id), emits(rootFolderId)),
@@ -50,8 +53,11 @@ void main() {
     });
     test('watchFolder() returns correct number of files in root folder',
         () async {
-      final folderStream =
-          driveDao.watchFolderContents(driveId, folderPath: rootPath);
+      final folderStream = driveDao.watchFolderContents(
+        driveId,
+        folderPath: rootPath,
+        showHiddenFiles: true,
+      );
 
       await Future.wait([
         expectLater(
@@ -64,8 +70,11 @@ void main() {
     });
     test('watchFolder() returns correct number of folders in root folder',
         () async {
-      final folderStream =
-          driveDao.watchFolderContents(driveId, folderPath: rootPath);
+      final folderStream = driveDao.watchFolderContents(
+        driveId,
+        folderPath: rootPath,
+        showHiddenFiles: true,
+      );
 
       await Future.wait([
         expectLater(
@@ -78,8 +87,11 @@ void main() {
 
     test('watchFolder() with subfolder path returns correct subfolder',
         () async {
-      final folderStream = driveDao.watchFolderContents(driveId,
-          folderPath: '/$emptyNestedFolderIdPrefix' '0');
+      final folderStream = driveDao.watchFolderContents(
+        driveId,
+        folderPath: '/$emptyNestedFolderIdPrefix' '0',
+        showHiddenFiles: true,
+      );
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder.id),
@@ -87,8 +99,11 @@ void main() {
       ]);
     });
     test('watchFolder() returns correct folders inside empty folder', () async {
-      final folderStream = driveDao.watchFolderContents(driveId,
-          folderPath: '/$emptyNestedFolderIdPrefix' '0');
+      final folderStream = driveDao.watchFolderContents(
+        driveId,
+        folderPath: '/$emptyNestedFolderIdPrefix' '0',
+        showHiddenFiles: true,
+      );
 
       await Future.wait([
         expectLater(
@@ -98,8 +113,11 @@ void main() {
       ]);
     });
     test('watchFolder() returns correct files inside empty folder', () async {
-      final folderStream = driveDao.watchFolderContents(driveId,
-          folderPath: '/$emptyNestedFolderIdPrefix' '0');
+      final folderStream = driveDao.watchFolderContents(
+        driveId,
+        folderPath: '/$emptyNestedFolderIdPrefix' '0',
+        showHiddenFiles: true,
+      );
 
       await Future.wait([
         expectLater(

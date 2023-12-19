@@ -1,5 +1,5 @@
 // implement a widget that has 145 of height and maximum widget, and has a row as child
-import 'package:ardrive/blocs/sync/sync_cubit.dart';
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -14,22 +14,63 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       height: 110,
       width: double.maxFinite,
       child: Padding(
-        padding: EdgeInsets.only(right: 24.0),
+        padding: const EdgeInsets.only(right: 24.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            SyncButton(),
-            SizedBox(width: 24),
-            RedeemButton(),
-            SizedBox(width: 24),
-            ProfileCard(),
+            ShowHiddenFilesButton(
+              driveDetailCubit: context.read<DriveDetailCubit>(),
+            ),
+            const SizedBox(width: 24),
+            const SyncButton(),
+            const SizedBox(width: 24),
+            const RedeemButton(),
+            const SizedBox(width: 24),
+            const ProfileCard(),
           ],
         ),
       ),
+    );
+  }
+}
+
+class ShowHiddenFilesButton extends StatelessWidget {
+  final DriveDetailCubit driveDetailCubit;
+
+  const ShowHiddenFilesButton({
+    super.key,
+    required this.driveDetailCubit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<DriveDetailCubit, DriveDetailState>(
+      bloc: driveDetailCubit,
+      builder: (context, state) {
+        if (state is DriveDetailLoadSuccess) {
+          final isShowingHiddenFiles = state.isShowingHiddenFiles;
+          return HoverWidget(
+            tooltip: isShowingHiddenFiles
+                ? 'appLocalizationsOf(context).hideHiddenFilesTooltip'
+                : 'appLocalizationsOf(context).showHiddenFilesTooltip',
+            child: ArDriveButton(
+              text: '',
+              icon: isShowingHiddenFiles
+                  ? ArDriveIcons.eyeOpen()
+                  : ArDriveIcons.eyeClosed(),
+              onPressed: () {
+                driveDetailCubit.toggleHiddenFiles();
+              },
+            ),
+          );
+        } else {
+          return const SizedBox();
+        }
+      },
     );
   }
 }

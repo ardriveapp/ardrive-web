@@ -86,15 +86,20 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   Future<void> loadFolder(String folderId) async {
     await _selectedFolderSubscription?.cancel();
 
-    _selectedFolderSubscription =
-        _driveDao.watchFolderContents(drive.id, folderId: folderId).listen(
-              (f) => emit(
-                CreateManifestFolderLoadSuccess(
-                  viewingRootFolder: f.folder.parentFolderId == null,
-                  viewingFolder: f,
-                ),
-              ),
-            );
+    _selectedFolderSubscription = _driveDao
+        .watchFolderContents(
+          drive.id,
+          folderId: folderId,
+          showHiddenFiles: true,
+        )
+        .listen(
+          (f) => emit(
+            CreateManifestFolderLoadSuccess(
+              viewingRootFolder: f.folder.parentFolderId == null,
+              viewingFolder: f,
+            ),
+          ),
+        );
   }
 
   /// User selected a new name due to name conflict, confirm that form is valid and check for conflicts again

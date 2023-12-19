@@ -149,21 +149,8 @@ Widget _buildDataListContent(
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
   Drive drive,
-  bool isMultiselecting, {
-  bool showHiddenFiles = false,
-}) {
-  final List<ArDriveDataTableItem> filteredItems;
-  if (showHiddenFiles) {
-    filteredItems = items;
-  } else {
-    filteredItems = items.where((item) {
-      if (item.isHidden) {
-        logger.d('Found hidden item: ${item.name}');
-      }
-      return !item.isHidden;
-    }).toList();
-  }
-
+  bool isMultiselecting,
+) {
   return LayoutBuilder(builder: (context, constraints) {
     return ArDriveDataTable<ArDriveDataTableItem>(
       key: ValueKey(folder.id),
@@ -271,7 +258,7 @@ Widget _buildDataListContent(
           },
         );
       },
-      rows: filteredItems,
+      rows: items,
       selectedRow: context.watch<DriveDetailCubit>().selectedItem,
     );
   });

@@ -52,7 +52,11 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     await _selectedFolderSubscription?.cancel();
 
     _selectedFolderSubscription = _driveDao
-        .watchFolderContents(ghostFolder.driveId, folderId: folderId)
+        .watchFolderContents(
+          ghostFolder.driveId,
+          folderId: folderId,
+          showHiddenFiles: true,
+        )
         .listen(
           (f) => emit(
             GhostFixerFolderLoadSuccess(

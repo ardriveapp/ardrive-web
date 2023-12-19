@@ -132,8 +132,11 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required String folderId,
     required Emitter<FsEntryMoveState> emit,
   }) async {
-    final folderStream =
-        _driveDao.watchFolderContents(driveId, folderId: folderId);
+    final folderStream = _driveDao.watchFolderContents(
+      driveId,
+      folderId: folderId,
+      showHiddenFiles: true,
+    );
     await emit.forEach(
       folderStream,
       onData: (FolderWithContents folderWithContents) => FsEntryMoveLoadSuccess(

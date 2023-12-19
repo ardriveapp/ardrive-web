@@ -40,6 +40,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   bool _refreshSelectedItem = false;
 
+  bool _showHiddenFiles = false;
+
   DriveDetailCubit({
     required this.driveId,
     String? initialFolderId,
@@ -72,6 +74,16 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     } else {
       openFolder(path: rootPath);
     }
+  }
+
+  void toggleHiddenFiles() {
+    _showHiddenFiles = !_showHiddenFiles;
+    final state = this.state as DriveDetailLoadSuccess;
+    openFolder(
+      path: state.folderInView.folder.path,
+      contentOrderBy: state.contentOrderBy,
+      contentOrderingMode: state.contentOrderingMode,
+    );
   }
 
   void openFolder({
@@ -118,6 +130,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           folderPath: path,
           orderBy: contentOrderBy,
           orderingMode: contentOrderingMode,
+          showHiddenFiles: _showHiddenFiles,
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         // Hey, Mati
@@ -195,6 +208,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
                 currentFolderContents: currentFolderContents,
+                isShowingHiddenFiles: _showHiddenFiles,
               ),
             );
           } else {
@@ -212,6 +226,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 driveIsEmpty: rootFolderNode.isEmpty(),
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
+                isShowingHiddenFiles: _showHiddenFiles,
               ),
             );
           }

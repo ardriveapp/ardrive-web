@@ -292,6 +292,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     String? folderPath,
     DriveOrder orderBy = DriveOrder.name,
     OrderingMode orderingMode = OrderingMode.asc,
+    required bool showHiddenFiles,
   }) {
     assert(folderId != null || folderPath != null);
     final folderStream = (folderId != null
@@ -371,6 +372,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         folder: folder,
         subfolders: subfolders,
         files: files,
+        showHiddenFiles: showHiddenFiles,
       );
     });
   }

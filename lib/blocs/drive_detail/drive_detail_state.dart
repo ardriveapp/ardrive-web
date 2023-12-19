@@ -35,6 +35,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final List<ArDriveDataTableItem> currentFolderContents;
 
+  final bool isShowingHiddenFiles;
+
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
@@ -51,6 +53,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.driveIsEmpty,
     this.selectedItem,
     required this.currentFolderContents,
+    required this.isShowingHiddenFiles,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -69,6 +72,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     bool? hasFoldersSelected,
     ArDriveDataTableItem? selectedItem,
     List<ArDriveDataTableItem>? currentFolderContents,
+    bool? isShowingHiddenFiles,
   }) =>
       DriveDetailLoadSuccess(
         selectedItem: selectedItem ?? this.selectedItem,
@@ -89,6 +93,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         driveIsEmpty: driveIsEmpty ?? this.driveIsEmpty,
         currentFolderContents:
             currentFolderContents ?? this.currentFolderContents,
+        isShowingHiddenFiles: isShowingHiddenFiles ?? this.isShowingHiddenFiles,
       );
 
   @override
