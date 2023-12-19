@@ -62,16 +62,20 @@ Future<void> addTestFilesToDb(
       db.folderEntries,
       [
         FolderEntriesCompanion.insert(
-            id: rootFolderId,
-            driveId: driveId,
-            name: 'fake-drive-name',
-            path: ''),
+          id: rootFolderId,
+          driveId: driveId,
+          name: 'fake-drive-name',
+          path: '',
+          isHidden: false,
+        ),
         FolderEntriesCompanion.insert(
-            id: nestedFolderId,
-            driveId: driveId,
-            parentFolderId: Value(rootFolderId),
-            name: nestedFolderId,
-            path: '/$nestedFolderId'),
+          id: nestedFolderId,
+          driveId: driveId,
+          parentFolderId: Value(rootFolderId),
+          name: nestedFolderId,
+          path: '/$nestedFolderId',
+          isHidden: false,
+        ),
         ...List.generate(
           emptyNestedFolderCount,
           (i) {
@@ -82,6 +86,7 @@ Future<void> addTestFilesToDb(
               parentFolderId: Value(rootFolderId),
               name: folderId,
               path: '/$folderId',
+              isHidden: false,
             );
           },
         )..shuffle(Random(0)),
@@ -106,6 +111,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
+              isHidden: false,
             );
           },
         )..shuffle(Random(0)),
@@ -124,6 +130,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
+              isHidden: false,
             );
           },
         )..shuffle(Random(0)),
@@ -149,6 +156,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
+              isHidden: false,
             );
           },
         )..shuffle(Random(0)),
@@ -168,6 +176,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
+              isHidden: false,
             );
           },
         )..shuffle(Random(0)),

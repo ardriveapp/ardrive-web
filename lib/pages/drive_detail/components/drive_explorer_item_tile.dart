@@ -1,4 +1,6 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/blocs/hide/hide_bloc.dart';
+import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -236,7 +238,9 @@ class _DriveExplorerItemTileTrailingState
   }
 
   List<ArDriveDropdownItem> _getItems(
-      ArDriveDataTableItem item, BuildContext context) {
+    ArDriveDataTableItem item,
+    BuildContext context,
+  ) {
     final isOwner = item.isOwner;
 
     if (item is FolderDataTableItem) {
@@ -293,6 +297,28 @@ class _DriveExplorerItemTileTrailingState
             content: _buildItem(
               appLocalizationsOf(context).rename,
               ArDriveIcons.editFilled(
+                size: defaultIconSize,
+              ),
+            ),
+          ),
+          ArDriveDropdownItem(
+            onClick: () {
+              final hideBloc = context.read<HideBloc>();
+              if (item.isHidden) {
+                hideBloc.add(UnhideFolderEvent(
+                  driveId: widget.drive.id,
+                  folderId: item.id,
+                ));
+              } else {
+                hideBloc.add(HideFolderEvent(
+                  driveId: widget.drive.id,
+                  folderId: item.id,
+                ));
+              }
+            },
+            content: _buildItem(
+              item.isHidden ? 'Unhide this folder' : 'Hide this folder',
+              ArDriveIcons.x(
                 size: defaultIconSize,
               ),
             ),
@@ -385,6 +411,28 @@ class _DriveExplorerItemTileTrailingState
           content: _buildItem(
             appLocalizationsOf(context).move,
             ArDriveIcons.move(
+              size: defaultIconSize,
+            ),
+          ),
+        ),
+        ArDriveDropdownItem(
+          onClick: () {
+            final hideBloc = context.read<HideBloc>();
+            if (item.isHidden) {
+              hideBloc.add(UnhideFileEvent(
+                driveId: widget.drive.id,
+                fileId: item.id,
+              ));
+            } else {
+              hideBloc.add(HideFileEvent(
+                driveId: widget.drive.id,
+                fileId: item.id,
+              ));
+            }
+          },
+          content: _buildItem(
+            item.isHidden ? 'Unhide this file' : 'Hide this file',
+            ArDriveIcons.x(
               size: defaultIconSize,
             ),
           ),

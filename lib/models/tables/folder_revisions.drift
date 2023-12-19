@@ -16,7 +16,7 @@ CREATE TABLE folder_revisions (
     customJsonMetadata TEXT,
     customGQLTags TEXT,
 
-    isHidden BOOLEAN NOT NULL DEFAULT 0,
+    isHidden BOOLEAN NOT NULL,
 
     PRIMARY KEY (folderId, driveId, dateCreated),
     FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id)

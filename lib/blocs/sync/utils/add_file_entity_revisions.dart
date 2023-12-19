@@ -89,9 +89,17 @@ Future<Map<String, FileEntriesCompanion>>
         .oldestFileRevisionByFileId(driveId: driveId, fileId: fileId)
         .getSingleOrNull();
 
+    final dateCreated = oldestRevision?.dateCreated ??
+        updatedFilesById[fileId]!.dateCreated.value;
+    final isHidden = updatedFilesById[fileId]!.isHidden.value;
+
+    if (isHidden) {
+      logger.d('Found hidden file: $fileId');
+    }
+
     updatedFilesById[fileId] = updatedFilesById[fileId]!.copyWith(
-        dateCreated: Value(oldestRevision?.dateCreated ??
-            updatedFilesById[fileId]!.dateCreated as DateTime));
+      dateCreated: Value<DateTime>(dateCreated),
+    );
   }
 
   return updatedFilesById;

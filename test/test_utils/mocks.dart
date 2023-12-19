@@ -236,18 +236,20 @@ FolderDataTableItem createMockFolderDataTableItem(
     index = 0,
     isOwner = true}) {
   return FolderDataTableItem(
-      driveId: driveId,
-      folderId: folderId,
-      name: name,
-      lastUpdated: lastUpdated ?? DateTime.now(),
-      dateCreated: dateCreated ?? DateTime.now(),
-      contentType: contentType,
-      path: path,
-      fileStatusFromTransactions: fileStatusFromTransactions,
-      parentFolderId: parentFolderId,
-      isGhostFolder: isGhostFolder,
-      index: index,
-      isOwner: isOwner);
+    driveId: driveId,
+    folderId: folderId,
+    name: name,
+    lastUpdated: lastUpdated ?? DateTime.now(),
+    dateCreated: dateCreated ?? DateTime.now(),
+    contentType: contentType,
+    path: path,
+    fileStatusFromTransactions: fileStatusFromTransactions,
+    parentFolderId: parentFolderId,
+    isGhostFolder: isGhostFolder,
+    index: index,
+    isOwner: isOwner,
+    isHidden: false,
+  );
 }
 
 DriveDataItem createMockDriveDataItem(
@@ -266,6 +268,7 @@ DriveDataItem createMockDriveDataItem(
     dateCreated: dateCreated ?? DateTime.now(),
     index: index,
     isOwner: isOwner,
+    isHidden: false,
   );
 }
 

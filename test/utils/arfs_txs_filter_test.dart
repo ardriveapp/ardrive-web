@@ -12,6 +12,7 @@ void main() {
         Tag(arFsTagName, '0.11'),
         Tag(arFsTagName, '0.12'),
         Tag(arFsTagName, '0.13'),
+        Tag(arFsTagName, '0.14'),
       ];
 
       for (final tag in tags) {

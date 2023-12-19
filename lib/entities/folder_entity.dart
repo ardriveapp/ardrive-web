@@ -22,8 +22,7 @@ class FolderEntity extends EntityWithCustomMetadata {
   String? parentFolderId;
 
   String? name;
-
-  @JsonKey()
+  @JsonKey(includeIfNull: false)
   bool? isHidden;
 
   @override
@@ -38,6 +37,7 @@ class FolderEntity extends EntityWithCustomMetadata {
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedJsonMetadataKeys = [
     ...EntityWithCustomMetadata.sharedReservedJsonMetadataKeys,
+    'isHidden',
   ];
 
   FolderEntity({
@@ -103,6 +103,10 @@ class FolderEntity extends EntityWithCustomMetadata {
     if (parentFolderId != null) {
       tx.addTag(EntityTag.parentFolderId, parentFolderId!);
     }
+
+    // if (isHidden == true) {
+    //   tx.addTag('Is-Hidden', 'true');
+    // }
   }
 
   factory FolderEntity.fromJson(Map<String, dynamic> json) {

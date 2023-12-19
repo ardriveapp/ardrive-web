@@ -30,14 +30,11 @@ class FileEntity extends EntityWithCustomMetadata {
   int? size;
   @JsonKey(fromJson: _msToDateTime, toJson: _dateTimeToMs)
   DateTime? lastModifiedDate;
-
   String? dataTxId;
   String? dataContentType;
-
-  @JsonKey(name: 'pinnedDataOwner')
+  @JsonKey(name: 'pinnedDataOwner', includeIfNull: false)
   String? pinnedDataOwnerAddress;
-
-  @JsonKey()
+  @JsonKey(includeIfNull: false)
   bool? isHidden;
 
   @override
@@ -56,6 +53,7 @@ class FileEntity extends EntityWithCustomMetadata {
     'lastModifiedDate',
     'dataTxId',
     'dataContentType',
+    'isHidden',
   ];
 
   FileEntity({
@@ -69,7 +67,11 @@ class FileEntity extends EntityWithCustomMetadata {
     this.dataContentType,
     this.pinnedDataOwnerAddress,
     this.isHidden,
-  }) : super(ArDriveCrypto());
+  }) : super(ArDriveCrypto()) {
+    if (isHidden == true) {
+      logger.d('FileEntity: ${toJson()}');
+    }
+  }
 
   FileEntity.withUserProvidedDetails({
     required this.name,
@@ -101,7 +103,13 @@ class FileEntity extends EntityWithCustomMetadata {
 
       final commitTime = transaction.getCommitTime();
 
-      final file = FileEntity.fromJson(entityJson!)
+      final file = FileEntity.fromJson(entityJson!);
+
+      if (file.isHidden == true) {
+        logger.d('File entity from JSON: $entityJson');
+      }
+
+      file
         ..id = transaction.getTag(EntityTag.fileId)
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
@@ -110,6 +118,7 @@ class FileEntity extends EntityWithCustomMetadata {
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
         ..createdAt = commitTime;
+      // ..isHidden = transaction.getTag('Is-Hidden') == 'true' ? true : false;
 
       final tags = transaction.tags
           .map(
@@ -142,6 +151,10 @@ class FileEntity extends EntityWithCustomMetadata {
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.parentFolderId, parentFolderId!)
       ..addTag(EntityTag.fileId, id!);
+
+    // if (isHidden == true) {
+    //   tx.addTag('Is-Hidden', 'true');
+    // }
   }
 
   factory FileEntity.fromJson(Map<String, dynamic> json) {
@@ -152,6 +165,7 @@ class FileEntity extends EntityWithCustomMetadata {
     );
     return entity;
   }
+
   Map<String, dynamic> toJson() {
     final thisJson = _$FileEntityToJson(this);
     final custom = customJsonMetadata ?? {};

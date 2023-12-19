@@ -48,4 +48,4 @@ class AppInfoServices {
 }
 
 const String appName = 'ArDrive-App';
-const String arfsVersion = '0.13';
+const String arfsVersion = '0.14';

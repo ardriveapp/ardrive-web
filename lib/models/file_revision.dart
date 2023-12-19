@@ -22,6 +22,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         customGQLTags: customGQLTags,
         customJsonMetadata: customJsonMetadata,
         pinnedDataOwnerAddress: pinnedDataOwnerAddress,
+        isHidden: isHidden.value,
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -57,7 +58,7 @@ extension FileEntityExtensions on FileEntity {
         customGQLTags: Value(customGqlTagsAsString),
         customJsonMetadata: Value(customJsonMetadataAsString),
         pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
-        isHidden: Value(isHidden ?? false),
+        isHidden: isHidden ?? false,
       );
 
   FileRevision toRevision({
@@ -93,6 +94,10 @@ extension FileEntityExtensions on FileEntity {
       return RevisionAction.move;
     } else if (dataTxId != previousRevision.dataTxId.value) {
       return RevisionAction.uploadNewVersion;
+    } else if (isHidden == true && previousRevision.isHidden.value == false) {
+      return RevisionAction.hide;
+    } else if (isHidden == false && previousRevision.isHidden.value == true) {
+      return RevisionAction.unhide;
     }
 
     return null;

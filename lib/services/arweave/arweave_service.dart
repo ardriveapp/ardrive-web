@@ -253,7 +253,7 @@ class ArweaveService {
 
     // MAYBE FIX: set a narrow concurrency limit
 
-    final List<Uint8List> responses = await Future.wait(
+    final List<Uint8List> entityDatas = await Future.wait(
       entityTxs.map(
         (entity) async {
           final tags = entity.tags;
@@ -300,8 +300,7 @@ class ArweaveService {
 
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
-        final entityResponse = responses[i];
-        final rawEntityData = entityResponse;
+        final rawEntityData = entityDatas[i];
 
         await metadataCache.put(transaction.id, rawEntityData);
 

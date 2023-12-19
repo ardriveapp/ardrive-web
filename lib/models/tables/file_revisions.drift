@@ -25,7 +25,7 @@ CREATE TABLE file_revisions (
 
     pinnedDataOwnerAddress TEXT,
 
-    isHidden BOOLEAN NOT NULL DEFAULT 0,
+    isHidden BOOLEAN NOT NULL,
 
     PRIMARY KEY (fileId, driveId, dateCreated),
     FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id),

@@ -120,6 +120,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           orderingMode: contentOrderingMode,
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
+        // Hey, Mati
         (drive, folderContents, _) async {
           if (_activityTracker.isUploading) {
             return;

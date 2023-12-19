@@ -38,7 +38,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     required this.path,
     required int index,
     required this.isOwner,
-    this.isHidden = false,
+    required this.isHidden,
   }) : super(index);
 }
 
@@ -53,6 +53,7 @@ class DriveDataItem extends ArDriveDataTableItem {
     super.path = '',
     required super.index,
     required super.isOwner,
+    required super.isHidden,
   });
 
   @override
@@ -74,7 +75,7 @@ class FolderDataTableItem extends ArDriveDataTableItem {
     String? fileStatusFromTransactions,
     this.parentFolderId,
     this.isGhostFolder = false,
-    super.isHidden = false,
+    required super.isHidden,
     required int index,
     required bool isOwner,
   }) : super(
@@ -92,7 +93,7 @@ class FolderDataTableItem extends ArDriveDataTableItem {
         );
 
   @override
-  List<Object?> get props => [id, name];
+  List<Object?> get props => [id, name, isHidden];
 }
 
 class FileDataTableItem extends ArDriveDataTableItem {
@@ -120,7 +121,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
     required DateTime dateCreated,
     required String contentType,
     required String path,
-    super.isHidden = false,
+    required super.isHidden,
     String? fileStatusFromTransactions,
     this.bundledIn,
     required int index,
@@ -140,7 +141,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
         );
 
   @override
-  List<Object?> get props => [fileId, name];
+  List<Object?> get props => [fileId, name, isHidden];
 }
 
 Widget _buildDataListContent(
@@ -155,7 +156,12 @@ Widget _buildDataListContent(
   if (showHiddenFiles) {
     filteredItems = items;
   } else {
-    filteredItems = items.where((item) => !item.isHidden).toList();
+    filteredItems = items.where((item) {
+      if (item.isHidden) {
+        logger.d('Found hidden item: ${item.name}');
+      }
+      return !item.isHidden;
+    }).toList();
   }
 
   return LayoutBuilder(builder: (context, constraints) {
@@ -359,6 +365,7 @@ class DriveDataTableItemMapper {
       dateCreated: folderEntry.dateCreated,
       contentType: 'folder',
       fileStatusFromTransactions: null,
+      isHidden: folderEntry.isHidden,
     );
   }
 
@@ -377,6 +384,7 @@ class DriveDataTableItemMapper {
       dateCreated: drive.dateCreated,
       contentType: 'drive',
       id: drive.id,
+      isHidden: false,
     );
   }
 
