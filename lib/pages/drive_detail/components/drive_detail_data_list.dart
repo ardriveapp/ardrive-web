@@ -240,6 +240,7 @@ Widget _buildDataListContent(
           size: row.size == null ? '-' : filesize(row.size),
           lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
           dateCreated: yMMdDateFormatter.format(row.dateCreated),
+          isHidden: row.isHidden,
           onPressed: () {
             final cubit = context.read<DriveDetailCubit>();
             if (row is FolderDataTableItem) {

@@ -55,10 +55,9 @@ class ShowHiddenFilesButton extends StatelessWidget {
           final isShowingHiddenFiles = state.isShowingHiddenFiles;
           return HoverWidget(
             tooltip: isShowingHiddenFiles
-                ? 'appLocalizationsOf(context).hideHiddenFilesTooltip'
-                : 'appLocalizationsOf(context).showHiddenFilesTooltip',
-            child: ArDriveButton(
-              text: '',
+                ? 'Hide hidden files'
+                : 'Show hidden files',
+            child: ArDriveIconButton(
               icon: isShowingHiddenFiles
                   ? ArDriveIcons.eyeOpen()
                   : ArDriveIcons.eyeClosed(),

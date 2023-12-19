@@ -413,7 +413,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
               IntrinsicWidth(
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: DriveExplorerItemTileLeading(item: widget.item),
+                  leading: DriveExplorerItemTileLeading(
+                    item: widget.item,
+                  ),
                   title: Text(
                     widget.item.name,
                     style: ArDriveTypography.body.buttonLargeBold(

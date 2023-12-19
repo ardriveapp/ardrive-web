@@ -26,29 +26,46 @@ class DriveExplorerItemTile extends TableRowWidget {
     required String lastUpdated,
     required String dateCreated,
     required Function() onPressed,
+    required bool isHidden,
   }) : super(
           [
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Text(
                 name,
-                style: ArDriveTypography.body.buttonNormalBold(),
+                style: ArDriveTypography.body.buttonNormalBold().copyWith(
+                      color: isHidden ? Colors.grey : null,
+                    ),
                 overflow: TextOverflow.fade,
                 maxLines: 1,
                 softWrap: false,
               ),
             ),
-            Text(size, style: ArDriveTypography.body.captionRegular()),
-            Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),
-            Text(dateCreated, style: ArDriveTypography.body.captionRegular()),
+            Text(size,
+                style: ArDriveTypography.body.captionRegular().copyWith(
+                      color: isHidden ? Colors.grey : null,
+                    )),
+            Text(lastUpdated,
+                style: ArDriveTypography.body.captionRegular().copyWith(
+                      color: isHidden ? Colors.grey : null,
+                    )),
+            Text(dateCreated,
+                style: ArDriveTypography.body.captionRegular().copyWith(
+                      color: isHidden ? Colors.grey : null,
+                    )),
           ],
         );
 }
 
 class DriveExplorerItemTileLeading extends StatelessWidget {
-  const DriveExplorerItemTileLeading({super.key, required this.item});
+  const DriveExplorerItemTileLeading({
+    super.key,
+    required this.item,
+  });
 
   final ArDriveDataTableItem item;
+
+  bool get isHidden => item.isHidden;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +87,8 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
             alignment: Alignment.center,
             child: getIconForContentType(
               item.contentType,
+            ).copyWith(
+              color: isHidden ? Colors.grey : null,
             ),
           ),
           if (item.fileStatusFromTransactions != null)
