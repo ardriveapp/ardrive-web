@@ -59,6 +59,10 @@ extension FolderEntityExtensions on FolderEntity {
       return RevisionAction.rename;
     } else if (parentFolderId != previousRevision.parentFolderId.value) {
       return RevisionAction.move;
+    } else if (isHidden == true && previousRevision.isHidden.value == false) {
+      return RevisionAction.hide;
+    } else if (isHidden == false && previousRevision.isHidden.value == true) {
+      return RevisionAction.unhide;
     }
 
     return null;
