@@ -24,6 +24,13 @@ import flutter_downloader
         result(flavor)
     })
 
+    let sharingIntent = SwiftFlutterSharingIntentPlugin.instance
+     /// if the url is made from SwiftFlutterSharingIntentPlugin then handle it with plugin [SwiftFlutterSharingIntentPlugin]
+     if sharingIntent.hasSameSchemePrefix(url: url) {
+         return sharingIntent.application(app, open: url, options: options)
+     }
+
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }

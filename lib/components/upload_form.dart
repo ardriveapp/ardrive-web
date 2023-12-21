@@ -43,34 +43,46 @@ Future<void> promptToUpload(
   required String driveId,
   required String parentFolderId,
   required bool isFolderUpload,
+  List<IOFile>? files,
 }) async {
   final selectedFiles = <UploadFile>[];
   final io = ArDriveIO();
   IOFolder? ioFolder;
-  if (isFolderUpload) {
-    ioFolder = await io.pickFolder();
-    final ioFiles = await ioFolder.listFiles();
-    final uploadFiles = ioFiles.map((file) {
+
+  if (files == null) {
+    if (isFolderUpload) {
+      ioFolder = await io.pickFolder();
+      final ioFiles = await ioFolder.listFiles();
+      final uploadFiles = ioFiles.map((file) {
+        return UploadFile(
+          ioFile: file,
+          parentFolderId: parentFolderId,
+          relativeTo: ioFolder!.path.isEmpty ? null : getDirname(ioFolder.path),
+        );
+      }).toList();
+      selectedFiles.addAll(uploadFiles);
+    } else {
+      // Display multiple options on Mobile
+      // Open file picker on Web
+      final ioFiles = kIsWeb
+          ? await io.pickFiles(fileSource: FileSource.fileSystem)
+          // ignore: use_build_context_synchronously
+          : await showMultipleFilesFilePickerModal(context);
+
+      final uploadFiles = ioFiles
+          .map((file) =>
+              UploadFile(ioFile: file, parentFolderId: parentFolderId))
+          .toList();
+
+      selectedFiles.addAll(uploadFiles);
+    }
+  } else {
+    selectedFiles.addAll(files.map((file) {
       return UploadFile(
         ioFile: file,
         parentFolderId: parentFolderId,
-        relativeTo: ioFolder!.path.isEmpty ? null : getDirname(ioFolder.path),
       );
-    }).toList();
-    selectedFiles.addAll(uploadFiles);
-  } else {
-    // Display multiple options on Mobile
-    // Open file picker on Web
-    final ioFiles = kIsWeb
-        ? await io.pickFiles(fileSource: FileSource.fileSystem)
-        // ignore: use_build_context_synchronously
-        : await showMultipleFilesFilePickerModal(context);
-
-    final uploadFiles = ioFiles
-        .map((file) => UploadFile(ioFile: file, parentFolderId: parentFolderId))
-        .toList();
-
-    selectedFiles.addAll(uploadFiles);
+    }));
   }
 
   // ignore: use_build_context_synchronously
@@ -911,7 +923,7 @@ class _UploadFormState extends State<UploadForm> {
                           status = 'Complete';
                           break;
                         case UploadStatus.failed:
-                          status = 'Failed';
+                          status = '';
                           break;
                         case UploadStatus.preparationDone:
                           status = 'Preparation done';

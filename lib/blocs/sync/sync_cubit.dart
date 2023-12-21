@@ -68,6 +68,8 @@ class SyncCubit extends Cubit<SyncState> {
   late DateTime _initSync;
   late SyncProgress _syncProgress;
 
+  bool _blockSync = true;
+
   SyncCubit({
     required ProfileCubit profileCubit,
     required ActivityCubit activityCubit,
@@ -85,6 +87,13 @@ class SyncCubit extends Cubit<SyncState> {
         _configService = configService,
         _tabVisibility = tabVisibility,
         super(SyncIdle()) {
+    if (_blockSync) {
+      Future.delayed(Duration(seconds: 1000), () {
+        _blockSync = false;
+        // startSync();
+      });
+      return;
+    }
     // Sync the user's drives on start and periodically.
     createSyncStream();
     restartSyncOnFocus();
