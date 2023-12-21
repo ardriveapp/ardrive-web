@@ -92,6 +92,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
         await _arweave.postTx(hideTx);
       }
     });
+
+    // event.onDone();
   }
 
   Future<void> _onHideFolderEvent(
@@ -151,6 +153,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
         await _arweave.postTx(hideTx);
       }
     });
+
+    // event.onDone();
   }
 
   Future<void> _onUnhideFileEvent(
@@ -206,6 +210,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
         await _arweave.postTx(hideTx);
       }
     });
+
+    // event.onDone();
   }
 
   Future<void> _onUnhideFolderEvent(
@@ -260,5 +266,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
         await _arweave.postTx(hideTx);
       }
     });
+
+    // event.onDone();
   }
 }

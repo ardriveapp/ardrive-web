@@ -132,15 +132,39 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               ),
             );
           } else if (driveDetailState is DriveDetailLoadSuccess) {
-            final hasSubfolders =
-                driveDetailState.folderInView.subfolders.isNotEmpty;
+            final isShowingHiddenFiles = driveDetailState.isShowingHiddenFiles;
+            final bool hasSubfolders;
+            final bool hasFiles;
+
+            if (isShowingHiddenFiles) {
+              final amountOfHiddenFiles = driveDetailState.folderInView.files
+                  .where((e) => e.isHidden)
+                  .length;
+              final amountOfHiddenFolders = driveDetailState
+                  .folderInView.subfolders
+                  .where((e) => e.isHidden)
+                  .length;
+              logger.d(
+                'Drive details page is showing hidden files -'
+                ' Amount of hidden files: $amountOfHiddenFiles,'
+                ' Amount of hidden folders: $amountOfHiddenFolders',
+              );
+              hasSubfolders =
+                  driveDetailState.folderInView.subfolders.isNotEmpty;
+              hasFiles = driveDetailState.folderInView.files.isNotEmpty;
+            } else {
+              hasSubfolders = driveDetailState.folderInView.subfolders
+                  .where((e) => !e.isHidden)
+                  .isNotEmpty;
+              hasFiles = driveDetailState.folderInView.files
+                  .where((e) => !e.isHidden)
+                  .isNotEmpty;
+            }
 
             final isOwner = isDriveOwner(
               context.read<ArDriveAuth>(),
               driveDetailState.currentDrive.ownerAddress,
             );
-
-            final hasFiles = driveDetailState.folderInView.files.isNotEmpty;
 
             final canDownloadMultipleFiles = driveDetailState.multiselect &&
                 context.read<DriveDetailCubit>().selectedItems.isNotEmpty;
@@ -173,7 +197,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   driveDetailState,
                   hasSubfolders,
                   hasFiles,
-                  driveDetailState.currentFolderContents,
                 ),
               ),
             );
@@ -437,7 +460,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Hey, Mati
+                                  // Hey, Mati!!
                                   Expanded(
                                     child: _buildDataList(
                                       context,
@@ -542,8 +565,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     DriveDetailLoadSuccess state,
     bool hasSubfolders,
     bool hasFiles,
-    List<ArDriveDataTableItem> items,
   ) {
+    final items = state.currentFolderContents;
+
     if (state.showSelectedItemDetails &&
         context.read<DriveDetailCubit>().selectedItem != null) {
       return Material(

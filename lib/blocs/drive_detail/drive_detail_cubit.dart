@@ -91,6 +91,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
+    logger.d('Opening folder $path in drive $driveId');
     try {
       _selectedItem = null;
       _allImagesOfCurrentFolder = null;
@@ -130,7 +131,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           folderPath: path,
           orderBy: contentOrderBy,
           orderingMode: contentOrderingMode,
-          showHiddenFiles: _showHiddenFiles,
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         // Hey, Mati
@@ -195,7 +195,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             isOwner: isDriveOwner(_auth, drive.ownerAddress),
           );
 
+          logger.d('Current folder contents: $currentFolderContents');
+          logger.d('Folder contents: $folderContents');
+
           if (state != null) {
+            logger.d(
+                'State is not null, updating state - ${this.state.runtimeType}');
+            logger.d('Current folder contents: $currentFolderContents');
             emit(
               state.copyWith(
                 selectedItem: _selectedItem,
@@ -212,6 +218,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               ),
             );
           } else {
+            logger.d(
+                'State is null, emitting new state - ${this.state.runtimeType}');
+            logger.d('Current folder contents: $currentFolderContents');
             emit(
               DriveDetailLoadSuccess(
                 selectedItem: _selectedItem,
@@ -230,6 +239,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               ),
             );
           }
+          logger.d('Done opening folder $path in drive $driveId');
         },
       ).listen((_) {});
     } catch (e, stacktrace) {
@@ -410,11 +420,22 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
   }
 
-  void refreshDriveDataTable() {
+  void refreshDriveDataTable({
+    bool reComputeFolderContents = false,
+  }) {
     _refreshSelectedItem = true;
 
     if (state is DriveDetailLoadSuccess) {
-      emit((state as DriveDetailLoadSuccess).copyWith());
+      final state = this.state as DriveDetailLoadSuccess;
+      if (reComputeFolderContents) {
+        openFolder(
+          path: state.folderInView.folder.path,
+          contentOrderBy: state.contentOrderBy,
+          contentOrderingMode: state.contentOrderingMode,
+        );
+      } else {
+        emit(state.copyWith());
+      }
     }
   }
 

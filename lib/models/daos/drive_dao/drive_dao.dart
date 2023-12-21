@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -292,7 +293,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     String? folderPath,
     DriveOrder orderBy = DriveOrder.name,
     OrderingMode orderingMode = OrderingMode.asc,
-    required bool showHiddenFiles,
   }) {
     assert(folderId != null || folderPath != null);
     final folderStream = (folderId != null
@@ -368,12 +368,18 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           files = files.reversed.toList();
         }
       }
-      return FolderWithContents(
+
+      logger.d('Re-computed folder contents for folder ${folder.id}');
+
+      final v = FolderWithContents(
         folder: folder,
         subfolders: subfolders,
         files: files,
-        showHiddenFiles: showHiddenFiles,
       );
+
+      logger.d('Re-computed folder contents: $v');
+
+      return v;
     });
   }
 

@@ -100,6 +100,9 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   List<Object?> get props => [
         currentDrive,
         hasWritePermissions,
+        folderInView,
+        currentFolderContents,
+        isShowingHiddenFiles,
         contentOrderBy,
         contentOrderingMode,
         showSelectedItemDetails,

@@ -4,12 +4,14 @@ Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
 ) {
+  // The items here are not being updated in the state
   return _buildDataListContent(
     context,
     state.currentFolderContents,
     state.folderInView.folder,
     state.currentDrive,
-    state.multiselect,
+    isMultiselecting: state.multiselect,
+    isShowingHiddenFiles: state.isShowingHiddenFiles,
   );
 }
 
@@ -93,7 +95,12 @@ class FolderDataTableItem extends ArDriveDataTableItem {
         );
 
   @override
-  List<Object?> get props => [id, name, isHidden];
+  List<Object> get props => [id, name, isHidden];
+
+  @override
+  String toString() {
+    return 'FolderDataTableItem{parentFolderId: $parentFolderId, isGhostFolder: $isGhostFolder}';
+  }
 }
 
 class FileDataTableItem extends ArDriveDataTableItem {
@@ -141,19 +148,36 @@ class FileDataTableItem extends ArDriveDataTableItem {
         );
 
   @override
-  List<Object?> get props => [fileId, name, isHidden];
+  List<Object> get props => [fileId, name, isHidden];
+
+  @override
+  String toString() {
+    return 'FileDataTableItem{fileId: $fileId, parentFolderId: $parentFolderId, dataTxId: $dataTxId, bundledIn: $bundledIn, lastModifiedDate: $lastModifiedDate, metadataTx: $metadataTx, dataTx: $dataTx, pinnedDataOwnerAddress: $pinnedDataOwnerAddress}';
+  }
 }
 
 Widget _buildDataListContent(
   BuildContext context,
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
-  Drive drive,
-  bool isMultiselecting,
-) {
+  Drive drive, {
+  required bool isMultiselecting,
+  required bool isShowingHiddenFiles,
+}) {
+  final List<ArDriveDataTableItem> filteredItems;
+  if (isShowingHiddenFiles) {
+    filteredItems = items;
+  } else {
+    filteredItems = items.where((item) => !item.isHidden).toList();
+  }
+
+  final itemsHash = filteredItems.hashCode;
+
+  logger.d('Building data list for ${filteredItems.length} items');
+
   return LayoutBuilder(builder: (context, constraints) {
     return ArDriveDataTable<ArDriveDataTableItem>(
-      key: ValueKey(folder.id),
+      key: ValueKey('${folder.id}-$itemsHash'),
       lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
           !context.watch<ActivityTracker>().isMultiSelectEnabled,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
@@ -235,6 +259,12 @@ Widget _buildDataListContent(
         return folders + files;
       },
       buildRow: (row) {
+        final isHidden = row.isHidden;
+
+        if (isHidden) {
+          logger.d('Building hidden item: ${row.name}');
+        }
+
         return DriveExplorerItemTile(
           name: row.name,
           size: row.size == null ? '-' : filesize(row.size),
@@ -259,7 +289,7 @@ Widget _buildDataListContent(
           },
         );
       },
-      rows: items,
+      rows: filteredItems,
       selectedRow: context.watch<DriveDetailCubit>().selectedItem,
     );
   });

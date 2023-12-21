@@ -55,7 +55,6 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         .watchFolderContents(
           ghostFolder.driveId,
           folderId: folderId,
-          showHiddenFiles: true,
         )
         .listen(
           (f) => emit(

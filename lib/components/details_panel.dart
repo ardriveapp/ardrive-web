@@ -790,6 +790,12 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 case RevisionAction.move:
                   title = appLocalizationsOf(context).folderWasMoved;
                   break;
+                case RevisionAction.hide:
+                  title = 'This folder was hidden';
+                  break;
+                case RevisionAction.unhide:
+                  title = 'This folder was unhidden';
+                  break;
                 default:
                   title = appLocalizationsOf(context).folderWasModified;
               }
@@ -813,6 +819,12 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 case RevisionAction.rename:
                   title = appLocalizationsOf(context)
                       .driveWasRenamed(revision.name);
+                  break;
+                case RevisionAction.hide:
+                  title = 'This drive was hidden';
+                  break;
+                case RevisionAction.unhide:
+                  title = 'This drive was unhidden';
                   break;
                 default:
                   title = appLocalizationsOf(context).driveWasModified;
@@ -871,6 +883,12 @@ class _DetailsPanelState extends State<DetailsPanel> {
           fileRevision: file,
           fileKey: key,
         );
+        break;
+      case RevisionAction.hide:
+        title = 'This file was hidden';
+        break;
+      case RevisionAction.unhide:
+        title = 'This file was unhidden';
         break;
       default:
         title = appLocalizationsOf(context).fileWasModified;

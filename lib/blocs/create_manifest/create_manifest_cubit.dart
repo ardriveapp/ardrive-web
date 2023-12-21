@@ -90,7 +90,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         .watchFolderContents(
           drive.id,
           folderId: folderId,
-          showHiddenFiles: true,
         )
         .listen(
           (f) => emit(

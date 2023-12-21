@@ -14,6 +14,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_helper.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -323,15 +324,27 @@ class _DriveExplorerItemTileTrailingState
           ArDriveDropdownItem(
             onClick: () {
               final hideBloc = context.read<HideBloc>();
+              void onDone() {
+                if (mounted) {
+                  final driveDetailCubit = context.read<DriveDetailCubit>();
+                  logger.d('Refreshing drive data table on folder hide/unhide');
+                  driveDetailCubit.refreshDriveDataTable(
+                    reComputeFolderContents: true,
+                  );
+                }
+              }
+
               if (item.isHidden) {
                 hideBloc.add(UnhideFolderEvent(
                   driveId: widget.drive.id,
                   folderId: item.id,
+                  onDone: onDone,
                 ));
               } else {
                 hideBloc.add(HideFolderEvent(
                   driveId: widget.drive.id,
                   folderId: item.id,
+                  onDone: onDone,
                 ));
               }
             },
@@ -437,15 +450,28 @@ class _DriveExplorerItemTileTrailingState
         ArDriveDropdownItem(
           onClick: () {
             final hideBloc = context.read<HideBloc>();
+
+            void onDone() {
+              if (mounted) {
+                final driveDetailCubit = context.read<DriveDetailCubit>();
+                logger.d('Refreshing drive data table on file hide/unhide');
+                driveDetailCubit.refreshDriveDataTable(
+                  reComputeFolderContents: true,
+                );
+              }
+            }
+
             if (item.isHidden) {
               hideBloc.add(UnhideFileEvent(
                 driveId: widget.drive.id,
                 fileId: item.id,
+                onDone: onDone,
               ));
             } else {
               hideBloc.add(HideFileEvent(
                 driveId: widget.drive.id,
                 fileId: item.id,
+                onDone: onDone,
               ));
             }
           },
