@@ -87,8 +87,9 @@ class SyncCubit extends Cubit<SyncState> {
         _configService = configService,
         _tabVisibility = tabVisibility,
         super(SyncIdle()) {
+    // TODO: verify
     if (_blockSync) {
-      Future.delayed(Duration(seconds: 1000), () {
+      Future.delayed(const Duration(seconds: 1000), () {
         _blockSync = false;
         // startSync();
       });
