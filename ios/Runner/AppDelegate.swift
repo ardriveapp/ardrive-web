@@ -1,7 +1,7 @@
 import UIKit
 import Flutter
 import flutter_downloader
-
+import flutter_sharing_intent
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {

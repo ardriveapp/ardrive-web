@@ -12,7 +12,7 @@ final class LoadDrivesEvent extends FolderSelectorEvent {}
 final class SelectDriveEvent extends FolderSelectorEvent {
   final Drive drive;
 
-  SelectDriveEvent(this.drive);
+  const SelectDriveEvent(this.drive);
 
   @override
   List<Object> get props => [drive];
@@ -21,7 +21,7 @@ final class SelectDriveEvent extends FolderSelectorEvent {
 final class ConfirmDriveEvent extends FolderSelectorEvent {
   final Drive drive;
 
-  ConfirmDriveEvent(this.drive);
+  const ConfirmDriveEvent(this.drive);
 
   @override
   List<Object> get props => [drive];
@@ -30,7 +30,7 @@ final class ConfirmDriveEvent extends FolderSelectorEvent {
 final class ConfirmFolderEvent extends FolderSelectorEvent {
   final FolderEntry folder;
 
-  ConfirmFolderEvent(this.folder);
+  const ConfirmFolderEvent(this.folder);
 
   @override
   List<Object> get props => [folder];
@@ -39,7 +39,7 @@ final class ConfirmFolderEvent extends FolderSelectorEvent {
 final class SelectFolderEvent extends FolderSelectorEvent {
   final FolderEntry folder;
 
-  SelectFolderEvent(this.folder);
+  const SelectFolderEvent(this.folder);
 
   @override
   List<Object> get props => [folder];

@@ -15,7 +15,7 @@ final class SelectingDriveState extends FolderSelectorState {
   final List<Drive> drives;
   final Drive? selectedDrive;
 
-  SelectingDriveState({required this.drives, this.selectedDrive});
+  const SelectingDriveState({required this.drives, this.selectedDrive});
 
   @override
   List<Object> get props => [drives, selectedDrive ?? ''];
@@ -25,7 +25,7 @@ final class SelectingFolderState extends FolderSelectorState {
   final List<FolderEntry> folders;
   final FolderEntry? selectedFolder;
 
-  SelectingFolderState({required this.folders, this.selectedFolder});
+  const SelectingFolderState({required this.folders, this.selectedFolder});
 
   @override
   List<Object> get props => [folders, selectedFolder ?? ''];
