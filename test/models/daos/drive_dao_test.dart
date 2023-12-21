@@ -44,7 +44,6 @@ void main() {
       final folderStream = driveDao.watchFolderContents(
         driveId,
         folderPath: rootPath,
-        showHiddenFiles: true,
       );
 
       await Future.wait([
@@ -56,7 +55,6 @@ void main() {
       final folderStream = driveDao.watchFolderContents(
         driveId,
         folderPath: rootPath,
-        showHiddenFiles: true,
       );
 
       await Future.wait([
@@ -73,7 +71,6 @@ void main() {
       final folderStream = driveDao.watchFolderContents(
         driveId,
         folderPath: rootPath,
-        showHiddenFiles: true,
       );
 
       await Future.wait([
@@ -90,7 +87,6 @@ void main() {
       final folderStream = driveDao.watchFolderContents(
         driveId,
         folderPath: '/$emptyNestedFolderIdPrefix' '0',
-        showHiddenFiles: true,
       );
 
       await Future.wait([
@@ -102,7 +98,6 @@ void main() {
       final folderStream = driveDao.watchFolderContents(
         driveId,
         folderPath: '/$emptyNestedFolderIdPrefix' '0',
-        showHiddenFiles: true,
       );
 
       await Future.wait([
@@ -116,7 +111,6 @@ void main() {
       final folderStream = driveDao.watchFolderContents(
         driveId,
         folderPath: '/$emptyNestedFolderIdPrefix' '0',
-        showHiddenFiles: true,
       );
 
       await Future.wait([

@@ -89,7 +89,7 @@ void main() {
 
         expect(transaction.tags.length, 8);
         expect(decodeBase64ToString(transaction.tags[0].name), equals('ArFS'));
-        expect(decodeBase64ToString(transaction.tags[0].value), equals('0.13'));
+        expect(decodeBase64ToString(transaction.tags[0].value), equals('0.14'));
         expect(decodeBase64ToString(transaction.tags[1].name),
             equals('Entity-Type'));
         expect(decodeBase64ToString(transaction.tags[1].value),
