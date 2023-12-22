@@ -643,6 +643,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     bool hasFiles,
     List<ArDriveDataTableItem> items,
   ) {
+    final isShowingHiddenFiles = state.isShowingHiddenFiles;
+
+    final List<ArDriveDataTableItem> filteredItems;
+    if (isShowingHiddenFiles) {
+      filteredItems = items;
+    } else {
+      filteredItems = items.where((e) => !e.isHidden).toList();
+    }
+
     return Column(
       children: [
         Padding(
@@ -670,12 +679,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                     separatorBuilder: (context, index) => const SizedBox(
                       height: 5,
                     ),
-                    itemCount: items.length,
+                    itemCount: filteredItems.length,
                     itemBuilder: (context, index) {
                       return ArDriveItemListTile(
-                        key: ObjectKey([items[index]]),
+                        key: ObjectKey([filteredItems[index]]),
                         drive: state.currentDrive,
-                        item: items[index],
+                        item: filteredItems[index],
                       );
                     },
                   )
@@ -704,6 +713,8 @@ class ArDriveItemListTile extends StatelessWidget {
 
   final ArDriveDataTableItem item;
   final Drive drive;
+
+  bool get isHidden => item.isHidden;
 
   @override
   Widget build(BuildContext context) {
@@ -738,9 +749,10 @@ class ArDriveItemListTile extends StatelessWidget {
                 children: [
                   Text(
                     item.name,
-                    style: ArDriveTypography.body
-                        .captionRegular()
-                        .copyWith(fontWeight: FontWeight.w700),
+                    style: ArDriveTypography.body.captionRegular().copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: isHidden ? Colors.grey : null,
+                        ),
                   ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
