@@ -1,12 +1,9 @@
+import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class HideEvent extends Equatable {
-  final void Function() onDone;
-
-  const HideEvent({
-    required this.onDone,
-  });
+  const HideEvent();
 }
 
 class HideFileEvent extends HideEvent {
@@ -16,7 +13,6 @@ class HideFileEvent extends HideEvent {
   const HideFileEvent({
     required this.driveId,
     required this.fileId,
-    required super.onDone,
   });
 
   @override
@@ -30,7 +26,6 @@ class HideFolderEvent extends HideEvent {
   const HideFolderEvent({
     required this.driveId,
     required this.folderId,
-    required super.onDone,
   });
 
   @override
@@ -44,7 +39,6 @@ class UnhideFileEvent extends HideEvent {
   const UnhideFileEvent({
     required this.driveId,
     required this.fileId,
-    required super.onDone,
   });
 
   @override
@@ -58,9 +52,33 @@ class UnhideFolderEvent extends HideEvent {
   const UnhideFolderEvent({
     required this.driveId,
     required this.folderId,
-    required super.onDone,
   });
 
   @override
   List<Object> get props => [driveId, folderId];
+}
+
+class ConfirmUploadEvent extends HideEvent {
+  const ConfirmUploadEvent();
+
+  @override
+  List<Object> get props => [];
+}
+
+class SelectUploadMethodEvent extends HideEvent {
+  final UploadMethod uploadMethod;
+
+  const SelectUploadMethodEvent({
+    required this.uploadMethod,
+  });
+
+  @override
+  List<Object> get props => [uploadMethod];
+}
+
+class RefreshTurboBalanceEvent extends HideEvent {
+  const RefreshTurboBalanceEvent();
+
+  @override
+  List<Object> get props => [];
 }

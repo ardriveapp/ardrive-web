@@ -16,6 +16,7 @@ import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
@@ -290,6 +291,13 @@ class AppState extends State<App> {
                   turboUploadService: context.read<TurboUploadService>(),
                   driveDao: context.read<DriveDao>(),
                   profileCubit: context.read<ProfileCubit>(),
+                  turboBalanceRetriever: TurboBalanceRetriever(
+                    paymentService: context.read<PaymentService>(),
+                  ),
+                  paymentService: context.read<PaymentService>(),
+                  pst: context.read<PstService>(),
+                  auth: context.read<ArDriveAuth>(),
+                  configService: context.read<ConfigService>(),
                 ),
               ),
             ],

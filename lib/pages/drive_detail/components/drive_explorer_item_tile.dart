@@ -1,10 +1,14 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_event.dart';
+import 'package:ardrive/blocs/hide/hide_state.dart';
+import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
+import 'package:ardrive/components/hide_dialog.dart';
+import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/models/models.dart';
@@ -14,7 +18,6 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_helper.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -194,11 +197,6 @@ class DriveExplorerItemTileTrailing extends StatefulWidget {
 class _DriveExplorerItemTileTrailingState
     extends State<DriveExplorerItemTileTrailing> {
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final item = widget.item;
 
@@ -252,6 +250,80 @@ class _DriveExplorerItemTileTrailingState
             tooltip: appLocalizationsOf(context).showMenu,
             child: ArDriveIcons.kebabMenu(),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingDialog(BuildContext context) {
+    return const ArDriveStandardModal(
+      title: 'Loading',
+      description: 'Hello!',
+      content: Column(
+        children: [
+          Center(
+            child: CircularProgressIndicator(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConfirmHideDialog(
+    BuildContext context,
+    ConfirmingHideState state,
+  ) {
+    return ArDriveStandardModal(
+      title: 'Confirm Hide',
+      description: 'Hello!',
+      content: Column(
+        children: [
+          PaymentMethodSelector(
+            uploadMethod: state.uploadMethod,
+            costEstimateAr: state.costEstimateAr,
+            costEstimateTurbo: state.costEstimateTurbo,
+            hasNoTurboBalance: state.hasNoTurboBalance,
+            isTurboUploadPossible: state.isTurboUploadPossible,
+            arBalance: state.arBalance,
+            sufficientArBalance: state.sufficientArBalance,
+            turboCredits: state.turboCredits,
+            sufficentCreditsBalance: state.sufficentCreditsBalance,
+            isFreeThanksToTurbo: state.isFreeThanksToTurbo,
+            onArSelect: () {
+              context.read<HideBloc>().add(
+                    const SelectUploadMethodEvent(
+                      uploadMethod: UploadMethod.ar,
+                    ),
+                  );
+            },
+            onTurboSelect: () {
+              context.read<HideBloc>().add(
+                    const SelectUploadMethodEvent(
+                      uploadMethod: UploadMethod.turbo,
+                    ),
+                  );
+            },
+            onTurboTopupSucess: () {
+              context.read<HideBloc>().add(
+                    const RefreshTurboBalanceEvent(),
+                  );
+            },
+          )
+        ],
+      ),
+      actions: [
+        ModalAction(
+          action: () {
+            Navigator.of(context).pop();
+          },
+          title: 'Cancel',
+        ),
+        ModalAction(
+          action: () {
+            context.read<HideBloc>().add(const ConfirmUploadEvent());
+            Navigator.of(context).pop();
+          },
+          title: 'Confirm',
         ),
       ],
     );
@@ -324,28 +396,19 @@ class _DriveExplorerItemTileTrailingState
           ArDriveDropdownItem(
             onClick: () {
               final hideBloc = context.read<HideBloc>();
-              void onDone() {
-                if (mounted) {
-                  final driveDetailCubit = context.read<DriveDetailCubit>();
-                  logger.d('Refreshing drive data table on folder hide/unhide');
-                  driveDetailCubit.refreshDriveDataTable(
-                    reComputeFolderContents: true,
-                  );
-                }
-              }
 
               if (item.isHidden) {
                 hideBloc.add(UnhideFolderEvent(
                   driveId: widget.drive.id,
                   folderId: item.id,
-                  onDone: onDone,
                 ));
+                promptToHide(context);
               } else {
                 hideBloc.add(HideFolderEvent(
                   driveId: widget.drive.id,
                   folderId: item.id,
-                  onDone: onDone,
                 ));
+                promptToHide(context);
               }
             },
             content: _buildItem(
@@ -451,28 +514,18 @@ class _DriveExplorerItemTileTrailingState
           onClick: () {
             final hideBloc = context.read<HideBloc>();
 
-            void onDone() {
-              if (mounted) {
-                final driveDetailCubit = context.read<DriveDetailCubit>();
-                logger.d('Refreshing drive data table on file hide/unhide');
-                driveDetailCubit.refreshDriveDataTable(
-                  reComputeFolderContents: true,
-                );
-              }
-            }
-
             if (item.isHidden) {
               hideBloc.add(UnhideFileEvent(
                 driveId: widget.drive.id,
                 fileId: item.id,
-                onDone: onDone,
               ));
+              promptToHide(context);
             } else {
               hideBloc.add(HideFileEvent(
                 driveId: widget.drive.id,
                 fileId: item.id,
-                onDone: onDone,
               ));
+              promptToHide(context);
             }
           },
           content: _buildItem(
