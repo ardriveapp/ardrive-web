@@ -1,14 +1,11 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_event.dart';
-import 'package:ardrive/blocs/hide/hide_state.dart';
-import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
-import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/models/models.dart';
@@ -250,80 +247,6 @@ class _DriveExplorerItemTileTrailingState
             tooltip: appLocalizationsOf(context).showMenu,
             child: ArDriveIcons.kebabMenu(),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoadingDialog(BuildContext context) {
-    return const ArDriveStandardModal(
-      title: 'Loading',
-      description: 'Hello!',
-      content: Column(
-        children: [
-          Center(
-            child: CircularProgressIndicator(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConfirmHideDialog(
-    BuildContext context,
-    ConfirmingHideState state,
-  ) {
-    return ArDriveStandardModal(
-      title: 'Confirm Hide',
-      description: 'Hello!',
-      content: Column(
-        children: [
-          PaymentMethodSelector(
-            uploadMethod: state.uploadMethod,
-            costEstimateAr: state.costEstimateAr,
-            costEstimateTurbo: state.costEstimateTurbo,
-            hasNoTurboBalance: state.hasNoTurboBalance,
-            isTurboUploadPossible: state.isTurboUploadPossible,
-            arBalance: state.arBalance,
-            sufficientArBalance: state.sufficientArBalance,
-            turboCredits: state.turboCredits,
-            sufficentCreditsBalance: state.sufficentCreditsBalance,
-            isFreeThanksToTurbo: state.isFreeThanksToTurbo,
-            onArSelect: () {
-              context.read<HideBloc>().add(
-                    const SelectUploadMethodEvent(
-                      uploadMethod: UploadMethod.ar,
-                    ),
-                  );
-            },
-            onTurboSelect: () {
-              context.read<HideBloc>().add(
-                    const SelectUploadMethodEvent(
-                      uploadMethod: UploadMethod.turbo,
-                    ),
-                  );
-            },
-            onTurboTopupSucess: () {
-              context.read<HideBloc>().add(
-                    const RefreshTurboBalanceEvent(),
-                  );
-            },
-          )
-        ],
-      ),
-      actions: [
-        ModalAction(
-          action: () {
-            Navigator.of(context).pop();
-          },
-          title: 'Cancel',
-        ),
-        ModalAction(
-          action: () {
-            context.read<HideBloc>().add(const ConfirmUploadEvent());
-            Navigator.of(context).pop();
-          },
-          title: 'Confirm',
         ),
       ],
     );
