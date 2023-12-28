@@ -182,6 +182,11 @@ latestLicenseAssertionByFileIdAndDataTxId:
     WHERE driveId = :driveId AND fileId = :fileId AND dataTxId = :dataTxId
     ORDER BY dateCreated DESC
     LIMIT 1;
+allRevisionsWithLicenseDelcaredButNotSynced:
+    SELECT * FROM file_revisions
+    WHERE licenseTxId NOT IN (
+        SELECT licenseAssertionTxId FROM license_assertions
+    );
 
 pendingTransactions:
     SELECT * FROM network_transactions
