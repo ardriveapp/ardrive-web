@@ -894,6 +894,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
           fileKey: key,
         );
         break;
+      case RevisionAction.assertLicense:
+        title = 'File had license updated';
+        // TODO: Localize
+        // title = appLocalizationsOf(context).fileHadALicenseAsserted;
+        break;
       default:
         title = appLocalizationsOf(context).fileWasModified;
     }
