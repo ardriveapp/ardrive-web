@@ -46,7 +46,7 @@ void main() {
       });
     });
 
-    group('asPreparedDataItem method', () {
+    group('toLicenseAssertionsCompanion method', () {
       test('returns a companion with expected fields', () async {
         final companion = stubLicenseAssertion.toLicenseAssertionsCompanion(
           driveId: stubDriveId,
