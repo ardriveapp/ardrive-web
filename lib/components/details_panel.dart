@@ -4,6 +4,7 @@ import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
@@ -732,6 +733,29 @@ class _DetailsPanelState extends State<DetailsPanel> {
           ],
         ),
         itemTitle: appLocalizationsOf(context).dataTxID,
+      ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArDriveButton(
+              text: 'Add',
+              // TODO: Localize
+              // text: appLocalizationsOf(context).add,
+              icon: ArDriveIcons.license(size: 16),
+              style: ArDriveButtonStyle.inverted,
+              onPressed: () => promptToLicense(
+                context,
+                driveId: widget.item.driveId,
+                selectedItems: [widget.item],
+              ),
+            ),
+          ],
+        ),
+        itemTitle: 'License',
+        // TODO: Localize
+        // itemTitle: appLocalizationsOf(context).license,
       ),
       if (pinnedDataOwnerAddress != null) ...[
         sizedBoxHeight16px,
