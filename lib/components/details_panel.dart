@@ -79,6 +79,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             driveId: widget.item.driveId,
             maybeSelectedItem: widget.item,
             driveDao: context.read<DriveDao>(),
+            licenseService: context.read<LicenseService>(),
           ),
         ),
         BlocProvider<FsEntryPreviewCubit>(
