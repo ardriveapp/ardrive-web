@@ -27,9 +27,8 @@ Future<void> _updateLicenses({
 
     await driveDao.transaction(
       () async => {
-        licenseAssertionCompanions.map(
-          (l) async => await driveDao.insertLicenseAssertion(l),
-        ),
+        for (final licenseAssertionCompanion in licenseAssertionCompanions)
+          {await driveDao.insertLicenseAssertion(licenseAssertionCompanion)}
       },
     );
   }
