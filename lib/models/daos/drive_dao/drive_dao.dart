@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/models/license_assertion.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -494,13 +494,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   Future<void> insertLicenseAssertion(
-    LicenseAssertionsCompanion licenseAssertion,
+    LicensesCompanion licenseAssertion,
   ) async {
     await db.transaction(() async {
       await Future.wait(licenseAssertion
           .getTransactionCompanions()
           .map((tx) => writeTransaction(tx)));
-      await into(licenseAssertions).insert(licenseAssertion);
+      await into(licenses).insert(licenseAssertion);
     });
   }
 

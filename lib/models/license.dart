@@ -3,17 +3,20 @@ import 'dart:convert';
 import 'package:ardrive/entities/license_assertion.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/license/license_types.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:drift/drift.dart';
 
-extension LicenseAssertionsCompanionExtensions on LicenseAssertionsCompanion {
+extension LicensesCompanionExtensions on LicensesCompanion {
   /// Converts the assertion to an instance of [LicenseAssertionEntity].
-  LicenseAssertionEntity asEntity({String? ownerAddress}) {
+  LicenseAssertionEntity asEntity(LicenseService licenseService,
+      {String? ownerAddress}) {
     final Map<String, String> additionalTags =
         jsonDecode(customGQLTags.value ?? '{}');
 
+    final licenseInfo = licenseService.licenseInfoByType(licenseTypeEnum);
     final licenseAssertion = LicenseAssertionEntity(
       dataTxId: dataTxId.value,
-      licenseTxId: licenseAssertionTxId.value,
+      licenseDefinitionTxId: licenseInfo.licenseDefinitionTxId,
       additionalTags: additionalTags,
     )
       ..txId = dataTxId.value
@@ -35,22 +38,23 @@ extension LicenseAssertionsCompanionExtensions on LicenseAssertionsCompanion {
   /// of this entity.
   List<NetworkTransactionsCompanion> getTransactionCompanions() => [
         NetworkTransactionsCompanion.insert(
-            id: licenseAssertionTxId.value, dateCreated: dateCreated),
+            id: licenseTxId.value, dateCreated: dateCreated),
       ];
 }
 
 extension LicenseAssertionEntityExtensions on LicenseAssertionEntity {
   /// Converts the entity to an instance of [LicenseAssertionsCompanion].
-  LicenseAssertionsCompanion toLicenseAssertionsCompanion({
+  LicensesCompanion toLicensesCompanion({
     required String fileId,
     required String driveId,
     required LicenseType licenseType,
   }) =>
-      LicenseAssertionsCompanion.insert(
+      LicensesCompanion.insert(
         fileId: fileId,
         driveId: driveId,
         dataTxId: dataTxId,
-        licenseAssertionTxId: txId,
+        licenseTxType: LicenseTxType.assertion.name,
+        licenseTxId: txId,
         dateCreated: Value(blockTimestamp),
         licenseType: licenseType.name,
       );

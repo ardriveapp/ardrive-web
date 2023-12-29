@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:ardrive/models/license_assertion.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/license/license_types.dart';
@@ -69,7 +69,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               LicenseParams? licenseParams;
               if (latestRevision.licenseTxId != null) {
                 final licenseAssertion = await _driveDao
-                    .licenseAssertionByDataTx(tx: latestRevision.licenseTxId!)
+                    .licenseByDataTx(tx: latestRevision.licenseTxId!)
                     .getSingle();
                 final companion = licenseAssertion.toCompanion(true);
                 licenseInfo = _licenseService

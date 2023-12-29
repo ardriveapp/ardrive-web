@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/models/license_assertion.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/license/license_types.dart';
@@ -226,7 +226,7 @@ class FsEntryLicenseBloc
           licenseAssertionEntity.txId = licenseAssertionDataItem.id;
 
           await _driveDao.insertLicenseAssertion(
-            licenseAssertionEntity.toLicenseAssertionsCompanion(
+            licenseAssertionEntity.toLicensesCompanion(
               fileId: file.id,
               driveId: driveId,
               licenseType: licenseInfo.licenseType,

@@ -8,7 +8,7 @@ import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/license_assertion.dart';
-import 'package:ardrive/models/license_assertion.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/license/license_types.dart';
 import 'package:ardrive/services/services.dart';

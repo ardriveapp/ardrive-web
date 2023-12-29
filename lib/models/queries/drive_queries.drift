@@ -5,7 +5,7 @@ import '../tables/folder_revisions.drift';
 import '../tables/file_entries.drift';
 import '../tables/file_revisions.drift';
 import '../tables/network_transactions.drift';
-import '../tables/license_assertions.drift';
+import '../tables/licenses.drift';
 
 allDrives ($order = ''):
     SELECT * FROM drives
@@ -81,8 +81,8 @@ fileById:
 fileRevisionByDataTx:
     SELECT * FROM file_revisions
     WHERE dataTxId = :tx;
-licenseAssertionByDataTx:
-    SELECT * FROM license_assertions
+licenseByDataTx:
+    SELECT * FROM licenses
     WHERE dataTxId = :tx;
 
 filesInFolder ($order = ''):
@@ -165,7 +165,7 @@ latestFileRevisionByFileId:
     LIMIT 1;
 latestFileRevisionByFileIdWithLicense AS FileRevisionWithLicense:
     SELECT rev.*, license.** FROM file_revisions AS rev
-    JOIN license_assertions AS license ON license.licenseAssertionTxId = rev.licenseTxId
+    JOIN licenses AS license ON license.licenseTxId = rev.licenseTxId
     WHERE rev.driveId = :driveId AND rev.fileId = :fileId
     ORDER BY rev.dateCreated DESC
     LIMIT 1;
@@ -176,20 +176,20 @@ latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY rev.dateCreated DESC;
 
-oldestLicenseAssertionByFileIdAndDataTxId:
-    SELECT * FROM license_assertions
+oldestLicenseByFileIdAndDataTxId:
+    SELECT * FROM licenses
     WHERE driveId = :driveId AND fileId = :fileId AND dataTxId = :dataTxId
     ORDER BY dateCreated ASC
     LIMIT 1;
-latestLicenseAssertionByFileIdAndDataTxId:
-    SELECT * FROM license_assertions
+latestLicenseByFileIdAndDataTxId:
+    SELECT * FROM licenses
     WHERE driveId = :driveId AND fileId = :fileId AND dataTxId = :dataTxId
     ORDER BY dateCreated DESC
     LIMIT 1;
 allFileRevisionsWithLicenseReferencedButNotSynced:
     SELECT * FROM file_revisions
     WHERE licenseTxId NOT NULL AND licenseTxId NOT IN (
-        SELECT licenseAssertionTxId FROM license_assertions
+        SELECT licenseTxId FROM licenses
     );
 
 pendingTransactions:
@@ -212,6 +212,6 @@ deleteFilesForDriveId:
 deleteFileRevisionsByDriveId:
     DELETE FROM file_revisions
     WHERE driveId = :driveId;
-deleteLicenseAssertionsByDriveId:
-    DELETE FROM license_assertions
+deleteLicensesByDriveId:
+    DELETE FROM licenses
     WHERE driveId = :driveId;
