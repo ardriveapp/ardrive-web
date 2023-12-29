@@ -34,6 +34,7 @@ part 'utils/generate_paths.dart';
 part 'utils/get_all_file_entities.dart';
 part 'utils/parse_drive_transactions.dart';
 part 'utils/sync_drive.dart';
+part 'utils/update_licenses.dart';
 part 'utils/update_transaction_statuses.dart';
 
 // TODO: PE-2782: Abstract auto-generated GQL types
@@ -335,6 +336,13 @@ class SyncCubit extends Cubit<SyncState> {
           .map((file) => file.dataTxId)
           .toList();
 
+      final licenseAssertionTxIdsToSync = (await _driveDao
+              .allFileRevisionsWithLicenseReferencedButNotSynced()
+              .get())
+          .map((rev) => rev.licenseTxId!)
+          .toSet()
+          .toList();
+
       await Future.wait(
         [
           if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
@@ -342,6 +350,11 @@ class SyncCubit extends Cubit<SyncState> {
             driveDao: _driveDao,
             arweave: _arweave,
             txsIdsToSkip: confirmedFileTxIds,
+          ),
+          _updateLicenses(
+            driveDao: _driveDao,
+            arweave: _arweave,
+            licenseTxIds: licenseAssertionTxIdsToSync,
           ),
         ],
       );
