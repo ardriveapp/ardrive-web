@@ -13,7 +13,7 @@ Future<void> _updateLicenses({
       in arweave.getLicenseAssertions(licenseTxIds)) {
     final licenseAssertionEntities = licenseAssertionTxsBatch.map((tx) =>
         LicenseAssertionEntity.fromTransaction(tx as TransactionCommonMixin));
-    final licenseServiceCompanions = licenseAssertionEntities.map((entity) {
+    final licenseAssertionCompanions = licenseAssertionEntities.map((entity) {
       final revision = revisionsToSyncLicense.firstWhere(
         (rev) => rev.licenseTxId == entity.licenseTxId,
       );
@@ -27,7 +27,7 @@ Future<void> _updateLicenses({
 
     await driveDao.transaction(
       () async => {
-        licenseServiceCompanions.map(
+        licenseAssertionCompanions.map(
           (l) async => await driveDao.insertLicenseAssertion(l),
         ),
       },
