@@ -192,7 +192,7 @@ class FsEntryLicenseBloc
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
     final licenseAssertionTxDataItems = <DataItem>[];
-    final licenseRevisionTxDataItems = <DataItem>[];
+    final fileRevisionTxDataItems = <DataItem>[];
 
     final filesToLicense =
         selectedItems.whereType<FileDataTableItem>().toList();
@@ -240,7 +240,7 @@ class FsEntryLicenseBloc
           key: fileKey,
         );
 
-        licenseRevisionTxDataItems.add(fileDataItem);
+        fileRevisionTxDataItems.add(fileDataItem);
 
         await _driveDao.writeToFile(file);
 
@@ -250,21 +250,22 @@ class FsEntryLicenseBloc
       }
     });
 
+    final dataItems = licenseAssertionTxDataItems + fileRevisionTxDataItems;
     if (_turboUploadService.useTurboUpload) {
-      for (var dataItem in licenseAssertionTxDataItems) {
+      for (var dataItem in dataItems) {
         await _turboUploadService.postDataItem(
           dataItem: dataItem,
           wallet: profile.wallet,
         );
       }
     } else {
-      final licenseTx = await _arweave.prepareDataBundleTx(
+      final dataBundle = await _arweave.prepareDataBundleTx(
         await DataBundle.fromDataItems(
-          items: licenseAssertionTxDataItems,
+          items: dataItems,
         ),
         profile.wallet,
       );
-      await _arweave.postTx(licenseTx);
+      await _arweave.postTx(dataBundle);
     }
   }
 }
