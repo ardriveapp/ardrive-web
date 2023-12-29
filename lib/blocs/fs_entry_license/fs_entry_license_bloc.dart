@@ -203,13 +203,13 @@ class FsEntryLicenseBloc
             .fileById(driveId: driveId, fileId: fileToLicense.id)
             .getSingle();
 
-        final allReivisions = await _driveDao
+        final allRevisions = await _driveDao
             .oldestFileRevisionsByFileId(
               driveId: driveId,
               fileId: fileToLicense.id,
             )
             .get();
-        final dataTxIdsSet = allReivisions.map((rev) => rev.dataTxId).toSet();
+        final dataTxIdsSet = allRevisions.map((rev) => rev.dataTxId).toSet();
 
         for (final dataTxId in dataTxIdsSet) {
           final licenseAssertionEntity = _licenseService.toEntity(
