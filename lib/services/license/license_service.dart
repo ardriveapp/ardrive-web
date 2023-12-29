@@ -7,10 +7,15 @@ import '../../models/models.dart';
 import 'license_types.dart';
 import 'licenses/udl.dart';
 
+enum LicenseTxType {
+  bundled,
+  assertion,
+}
+
 class LicenseService {
   LicenseType? licenseTypeByTxId(String txId) {
     return licenseInfoMap.entries
-        .firstWhere((element) => element.value.licenseTxId == txId)
+        .firstWhere((element) => element.value.licenseDefinitionTxId == txId)
         .key;
   }
 
@@ -32,7 +37,8 @@ class LicenseService {
 
   LicenseParams paramsFromEntity(
       LicenseAssertionEntity licenseAssertionEntity) {
-    final licenseType = licenseTypeByTxId(licenseAssertionEntity.licenseTxId)!;
+    final licenseType =
+        licenseTypeByTxId(licenseAssertionEntity.licenseDefinitionTxId)!;
     final additionalTags = licenseAssertionEntity.additionalTags;
 
     return paramsFromAdditionalTags(
@@ -41,13 +47,12 @@ class LicenseService {
     );
   }
 
-  LicenseParams paramsFromCompanion(
-      LicenseAssertionsCompanion licenseAssertionsCompanion) {
+  LicenseParams paramsFromCompanion(LicensesCompanion licensesCompanion) {
     final licenseType = LicenseType.values.firstWhere(
-      (element) => element.name == licenseAssertionsCompanion.licenseType.value,
+      (element) => element.name == licensesCompanion.licenseType.value,
     );
-    final additionalTags = licenseAssertionsCompanion.customGQLTags.present
-        ? jsonDecode(licenseAssertionsCompanion.customGQLTags.value ?? '{}')
+    final additionalTags = licensesCompanion.customGQLTags.present
+        ? jsonDecode(licensesCompanion.customGQLTags.value!)
         : {};
 
     return paramsFromAdditionalTags(
@@ -63,17 +68,17 @@ class LicenseService {
   }) {
     return LicenseAssertionEntity(
       dataTxId: dataTxId,
-      licenseTxId: licenseInfo.licenseTxId,
+      licenseDefinitionTxId: licenseInfo.licenseDefinitionTxId,
       additionalTags: licenseParams?.toAdditionalTags() ?? {},
     );
   }
 
-  LicenseAssertionsCompanion toCompanion({
+  LicensesCompanion toCompanion({
     required String dataTxId,
     required LicenseInfo licenseInfo,
     LicenseParams? licenseParams,
   }) {
-    return LicenseAssertionsCompanion(
+    return LicensesCompanion(
       dataTxId: Value(dataTxId),
       licenseType: Value(licenseInfo.licenseType.name),
       customGQLTags: licenseParams != null

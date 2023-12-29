@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -26,6 +27,7 @@ void main() {
     late DriveDao driveDao;
     late ArweaveService arweave;
     late TurboUploadService turboUploadService;
+    late ArDriveCrypto crypto;
     late LicenseService licenseService;
 
     late ProfileCubit profileCubit;
@@ -232,6 +234,7 @@ void main() {
             await getTestTransaction('test/fixtures/signed_v2_tx.json'),
       );
       turboUploadService = DontUseUploadService();
+      crypto = ArDriveCrypto();
       licenseService = MockLicenseService();
       profileCubit = MockProfileCubit();
 
@@ -272,6 +275,7 @@ void main() {
         driveId: driveId,
         driveDao: driveDao,
         profileCubit: profileCubit,
+        crypto: crypto,
         licenseService: licenseService,
         selectedItems: [],
       ),
@@ -285,6 +289,7 @@ void main() {
         driveId: driveId,
         driveDao: driveDao,
         profileCubit: profileCubit,
+        crypto: crypto,
         licenseService: licenseService,
         // TODO: revisit this when we have a better way to mock the selected items
         selectedItems: [],

@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/license/license_types.dart';
@@ -35,6 +36,7 @@ Future<void> promptToLicense(
             turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
+            crypto: context.read<ArDriveCrypto>(),
             licenseService: context.read<LicenseService>(),
           ),
         ),
@@ -658,7 +660,7 @@ class LicenseSummary extends StatelessWidget {
                 recognizer: TapGestureRecognizer()
                   ..onTap = () async {
                     final url =
-                        'https://viewblock.io/arweave/tx/${licenseInfo.licenseTxId}';
+                        'https://viewblock.io/arweave/tx/${licenseInfo.licenseDefinitionTxId}';
                     await openUrl(url: url);
                   },
               ),

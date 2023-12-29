@@ -41,6 +41,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
         return RevisionAction.move;
       } else if (entity.dataTxId != previousRevision.dataTxId) {
         return RevisionAction.uploadNewVersion;
+      } else if (entity.licenseTxId != previousRevision.licenseTxId) {
+        return RevisionAction.assertLicense;
       }
     }
 

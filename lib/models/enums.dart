@@ -3,6 +3,7 @@ abstract class RevisionAction {
   static const uploadNewVersion = 'upload-new-version';
   static const rename = 'rename';
   static const move = 'move';
+  static const assertLicense = 'assert-license';
 }
 
 abstract class TransactionStatus {

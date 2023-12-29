@@ -278,6 +278,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   create: (context) => SyncCubit(
                     activityTracker: context.read<ActivityTracker>(),
                     configService: context.read<ConfigService>(),
+                    licenseService: context.read<LicenseService>(),
                     profileCubit: context.read<ProfileCubit>(),
                     activityCubit: context.read<ActivityCubit>(),
                     arweave: context.read<ArweaveService>(),

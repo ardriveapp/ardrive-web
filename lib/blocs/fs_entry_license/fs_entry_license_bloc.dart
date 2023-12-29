@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/models/license_assertion.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/license/license_types.dart';
@@ -10,6 +11,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // ignore: depend_on_referenced_packages
@@ -65,6 +67,7 @@ class FsEntryLicenseBloc
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
+  final ArDriveCrypto _crypto;
   final LicenseService _licenseService;
 
   FsEntryLicenseBloc({
@@ -74,12 +77,14 @@ class FsEntryLicenseBloc
     required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
+    required ArDriveCrypto crypto,
     required LicenseService licenseService,
     Platform platform = const LocalPlatform(),
   })  : _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
+        _crypto = crypto,
         _licenseService = licenseService,
         super(const FsEntryLicenseSelecting()) {
     if (selectedItems.isEmpty) {
@@ -184,7 +189,10 @@ class FsEntryLicenseBloc
     required LicenseInfo licenseInfo,
     LicenseParams? licenseParams,
   }) async {
+    final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
+
     final licenseAssertionTxDataItems = <DataItem>[];
+    final fileRevisionTxDataItems = <DataItem>[];
 
     final filesToLicense =
         selectedItems.whereType<FileDataTableItem>().toList();
@@ -195,49 +203,78 @@ class FsEntryLicenseBloc
             .fileById(driveId: driveId, fileId: fileToLicense.id)
             .getSingle();
 
-        // TODO: Create License-Assertions for all previous Data Txs?
+        final allRevisions = await _driveDao
+            .oldestFileRevisionsByFileId(
+              driveId: driveId,
+              fileId: fileToLicense.id,
+            )
+            .get();
+        final dataTxIdsSet = allRevisions.map((rev) => rev.dataTxId).toSet();
 
-        final licenseAssertionEntity = _licenseService.toEntity(
-          dataTxId: file.dataTxId,
-          licenseInfo: licenseInfo,
-          licenseParams: licenseParams,
-        )..ownerAddress = profile.walletAddress;
+        for (final dataTxId in dataTxIdsSet) {
+          final licenseAssertionEntity = _licenseService.toEntity(
+            dataTxId: dataTxId,
+            licenseInfo: licenseInfo,
+            licenseParams: licenseParams,
+          )..ownerAddress = profile.walletAddress;
 
-        final licenseAssertionDataItem = await licenseAssertionEntity
-            .asPreparedDataItem(owner: await profile.wallet.getOwner());
-        await licenseAssertionDataItem.sign(profile.wallet);
-        licenseAssertionTxDataItems.add(licenseAssertionDataItem);
+          final licenseAssertionDataItem = await licenseAssertionEntity
+              .asPreparedDataItem(owner: await profile.wallet.getOwner());
+          await licenseAssertionDataItem.sign(profile.wallet);
+          licenseAssertionTxDataItems.add(licenseAssertionDataItem);
 
-        licenseAssertionEntity.txId = licenseAssertionDataItem.id;
+          licenseAssertionEntity.txId = licenseAssertionDataItem.id;
 
-        await _driveDao.insertLicenseAssertion(
-          licenseAssertionEntity.toLicenseAssertionsCompanion(
-            fileId: file.id,
-            driveId: driveId,
-            licenseType: licenseInfo.licenseType,
-          ),
+          await _driveDao.insertLicenseAssertion(
+            licenseAssertionEntity.toLicensesCompanion(
+              fileId: file.id,
+              driveId: driveId,
+              licenseType: licenseInfo.licenseType,
+            ),
+          );
+        }
+
+        final latestLicenseAssertionTxId = licenseAssertionTxDataItems.last.id;
+        file = file.copyWith(
+            licenseTxId: Value(latestLicenseAssertionTxId),
+            lastUpdated: DateTime.now());
+
+        final fileEntity = file.asEntity();
+        final fileKey = driveKey != null
+            ? await _crypto.deriveFileKey(driveKey, file.id)
+            : null;
+        final fileDataItem = await _arweave.prepareEntityDataItem(
+          fileEntity,
+          profile.wallet,
+          key: fileKey,
         );
 
-        // TODO: Update FileEntry with latest license info?
-        // await _driveDao.writeToFile(file);
+        fileRevisionTxDataItems.add(fileDataItem);
+
+        await _driveDao.writeToFile(file);
+
+        await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
+          performedAction: RevisionAction.assertLicense,
+        ));
       }
     });
 
+    final dataItems = licenseAssertionTxDataItems + fileRevisionTxDataItems;
     if (_turboUploadService.useTurboUpload) {
-      for (var dataItem in licenseAssertionTxDataItems) {
+      for (var dataItem in dataItems) {
         await _turboUploadService.postDataItem(
           dataItem: dataItem,
           wallet: profile.wallet,
         );
       }
     } else {
-      final licenseTx = await _arweave.prepareDataBundleTx(
+      final dataBundle = await _arweave.prepareDataBundleTx(
         await DataBundle.fromDataItems(
-          items: licenseAssertionTxDataItems,
+          items: dataItems,
         ),
         profile.wallet,
       );
-      await _arweave.postTx(licenseTx);
+      await _arweave.postTx(dataBundle);
     }
   }
 }

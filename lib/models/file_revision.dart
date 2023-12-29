@@ -13,6 +13,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         parentFolderId: parentFolderId.value,
         name: name.value,
         dataTxId: dataTxId.value,
+        licenseTxId: Value(licenseTxId.value),
         size: size.value,
         path: rootPath,
         lastUpdated: dateCreated,
@@ -50,6 +51,7 @@ extension FileEntityExtensions on FileEntity {
         lastModifiedDate: lastModifiedDate ?? DateTime.now(),
         metadataTxId: txId,
         dataTxId: dataTxId!,
+        licenseTxId: Value(licenseTxId),
         dateCreated: Value(createdAt),
         dataContentType: Value(dataContentType),
         action: performedAction,
@@ -71,6 +73,7 @@ extension FileEntityExtensions on FileEntity {
         lastModifiedDate: lastModifiedDate ?? DateTime.now(),
         metadataTxId: txId,
         dataTxId: dataTxId!,
+        licenseTxId: licenseTxId,
         dateCreated: createdAt,
         dataContentType: dataContentType,
         action: performedAction,
@@ -91,6 +94,8 @@ extension FileEntityExtensions on FileEntity {
       return RevisionAction.move;
     } else if (dataTxId != previousRevision.dataTxId.value) {
       return RevisionAction.uploadNewVersion;
+    } else if (licenseTxId != previousRevision.licenseTxId.value) {
+      return RevisionAction.assertLicense;
     }
 
     return null;

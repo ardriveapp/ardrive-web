@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/services/license/license_types.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,6 +16,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
   final ArDriveDataTableItem? maybeSelectedItem;
 
   final DriveDao _driveDao;
+  final LicenseService _licenseService;
 
   StreamSubscription? _entrySubscription;
 
@@ -20,7 +24,9 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     required this.driveId,
     this.maybeSelectedItem,
     required DriveDao driveDao,
+    required LicenseService licenseService,
   })  : _driveDao = driveDao,
+        _licenseService = licenseService,
         super(FsEntryInfoInitial()) {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
@@ -54,17 +60,31 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               .watchSingle()
               .listen(
             (f) async {
-              final metadataTxId = await _driveDao
+              final latestRevision = await _driveDao
                   .latestFileRevisionByFileId(
                       driveId: driveId, fileId: selectedItem.id)
                   .getSingle();
 
-              emit(FsEntryInfoSuccess<FileEntry>(
+              LicenseInfo? licenseInfo;
+              LicenseParams? licenseParams;
+              if (latestRevision.licenseTxId != null) {
+                final licenseAssertion = await _driveDao
+                    .licenseByDataTx(tx: latestRevision.licenseTxId!)
+                    .getSingle();
+                final companion = licenseAssertion.toCompanion(true);
+                licenseInfo = _licenseService
+                    .licenseInfoByType(companion.licenseTypeEnum);
+                licenseParams = _licenseService.paramsFromCompanion(companion);
+              }
+
+              emit(FsEntryFileInfoSuccess(
                 name: f.name,
                 lastUpdated: f.lastUpdated,
                 dateCreated: f.dateCreated,
                 entry: f,
-                metadataTxId: metadataTxId.metadataTxId,
+                metadataTxId: latestRevision.metadataTxId,
+                licenseInfo: licenseInfo,
+                licenseParams: licenseParams,
               ));
             },
           );

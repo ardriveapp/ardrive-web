@@ -232,6 +232,32 @@ class ArweaveService {
     }
   }
 
+  Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge>>
+      getLicenseAssertions(List<String> licenseAssertionTxIds) async* {
+    var chunks = [];
+    const chunkSize = 100;
+    for (var i = 0; i < licenseAssertionTxIds.length; i += chunkSize) {
+      chunks.add(
+        licenseAssertionTxIds.sublist(
+          i,
+          i + chunkSize > licenseAssertionTxIds.length
+              ? licenseAssertionTxIds.length
+              : i + chunkSize,
+        ),
+      );
+    }
+    for (final chunk in chunks) {
+      // Get a page of 100 transactions
+      final driveEntityHistoryQuery = await _graphQLRetry.execute(
+        LicenseAssertionsQuery(
+          variables: LicenseAssertionsArguments(transactionIds: chunk),
+        ),
+      );
+
+      yield driveEntityHistoryQuery.data!.transactions.edges.toList();
+    }
+  }
+
   /// Get the metadata of transactions
   ///
   /// mounts the `blockHistory`
