@@ -5,14 +5,7 @@ query LicenseAssertions($transactionIds: [ID!]) {
   ) {
     edges {
       node {
-        id
-        owner {
-          address
-        }
-        tags {
-          name
-          value
-        }
+        ...TransactionCommon
       }
     }
   }

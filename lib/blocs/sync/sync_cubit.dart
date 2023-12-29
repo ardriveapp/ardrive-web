@@ -7,7 +7,10 @@ import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/license_assertion.dart';
+import 'package:ardrive/models/license_assertion.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/license/license_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
@@ -58,6 +61,7 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
+  final LicenseService _licenseService;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -77,6 +81,7 @@ class SyncCubit extends Cubit<SyncState> {
     required Database db,
     required TabVisibilitySingleton tabVisibility,
     required ConfigService configService,
+    required LicenseService licenseService,
     required ActivityTracker activityTracker,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
@@ -84,6 +89,7 @@ class SyncCubit extends Cubit<SyncState> {
         _driveDao = driveDao,
         _db = db,
         _configService = configService,
+        _licenseService = licenseService,
         _tabVisibility = tabVisibility,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
@@ -336,12 +342,11 @@ class SyncCubit extends Cubit<SyncState> {
           .map((file) => file.dataTxId)
           .toList();
 
-      final licenseAssertionTxIdsToSync = (await _driveDao
-              .allFileRevisionsWithLicenseReferencedButNotSynced()
-              .get())
-          .map((rev) => rev.licenseTxId!)
-          .toSet()
-          .toList();
+      final licenseTxIds = <String>{};
+      final revisionsToSyncLicense = (await _driveDao
+          .allFileRevisionsWithLicenseReferencedButNotSynced()
+          .get())
+        ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
 
       await Future.wait(
         [
@@ -354,7 +359,8 @@ class SyncCubit extends Cubit<SyncState> {
           _updateLicenses(
             driveDao: _driveDao,
             arweave: _arweave,
-            licenseTxIds: licenseAssertionTxIdsToSync,
+            licenseService: _licenseService,
+            revisionsToSyncLicense: revisionsToSyncLicense,
           ),
         ],
       );
