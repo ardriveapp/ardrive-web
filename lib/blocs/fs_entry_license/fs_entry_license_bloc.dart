@@ -234,10 +234,9 @@ class FsEntryLicenseBloc
           );
         }
 
-        final latestDataLicenseAssertionTxId =
-            licenseAssertionTxDataItems.last.id;
+        final latestLicenseAssertionTxId = licenseAssertionTxDataItems.last.id;
         file = file.copyWith(
-            licenseTxId: Value(latestDataLicenseAssertionTxId),
+            licenseTxId: Value(latestLicenseAssertionTxId),
             lastUpdated: DateTime.now());
 
         final fileEntity = file.asEntity();
