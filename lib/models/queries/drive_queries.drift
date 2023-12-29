@@ -149,7 +149,7 @@ JOIN network_transactions AS dataTx ON dataTx.id = (
 WHERE driveId = :driveId
 ORDER BY $order;
 
-oldestFileRevisionsByFileId as FileRevisions:
+oldestFileRevisionsByFileId:
     SELECT * FROM file_revisions
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY dateCreated ASC;
@@ -166,7 +166,7 @@ latestFileRevisionByFileId:
 latestFileRevisionByFileIdWithLicense AS FileRevisionWithLicense:
     SELECT rev.*, license.** FROM file_revisions AS rev
     JOIN license_assertions AS license ON license.licenseAssertionTxId = rev.licenseTxId
-    WHERE driveId = :driveId AND fileId = :fileId
+    WHERE rev.driveId = :driveId AND rev.fileId = :fileId
     ORDER BY rev.dateCreated DESC
     LIMIT 1;
 latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
@@ -186,9 +186,9 @@ latestLicenseAssertionByFileIdAndDataTxId:
     WHERE driveId = :driveId AND fileId = :fileId AND dataTxId = :dataTxId
     ORDER BY dateCreated DESC
     LIMIT 1;
-allRevisionsWithLicenseDelcaredButNotSynced:
+allFileRevisionsWithLicenseReferencedButNotSynced:
     SELECT * FROM file_revisions
-    WHERE licenseTxId NOT IN (
+    WHERE licenseTxId NOT NULL AND licenseTxId NOT IN (
         SELECT licenseAssertionTxId FROM license_assertions
     );
 
