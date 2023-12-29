@@ -736,28 +736,34 @@ class _DetailsPanelState extends State<DetailsPanel> {
         itemTitle: appLocalizationsOf(context).dataTxID,
       ),
       sizedBoxHeight16px,
-      DetailsPanelItem(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ArDriveButton(
-              text: 'Add',
-              // TODO: Localize
-              // text: appLocalizationsOf(context).add,
-              icon: ArDriveIcons.license(size: 16),
-              style: ArDriveButtonStyle.inverted,
-              onPressed: () => promptToLicense(
-                context,
-                driveId: widget.item.driveId,
-                selectedItems: [widget.item],
-              ),
-            ),
-          ],
+      if (state is FsEntryFileInfoSuccess && pinnedDataOwnerAddress == null)
+        DetailsPanelItem(
+          itemTitle: 'License',
+          // TODO: Localize
+          // itemTitle: appLocalizationsOf(context).license,
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              state.licenseInfo == null
+                  ? ArDriveButton(
+                      text: 'Add',
+                      // TODO: Localize
+                      // text: appLocalizationsOf(context).add,
+                      icon: ArDriveIcons.license(size: 16),
+                      style: ArDriveButtonStyle.inverted,
+                      onPressed: () => promptToLicense(
+                        context,
+                        driveId: widget.item.driveId,
+                        selectedItems: [widget.item],
+                      ),
+                    )
+                  : ArDriveButton(
+                      text: state.licenseInfo!.shortName,
+                      style: ArDriveButtonStyle.tertiary,
+                    )
+            ],
+          ),
         ),
-        itemTitle: 'License',
-        // TODO: Localize
-        // itemTitle: appLocalizationsOf(context).license,
-      ),
       if (pinnedDataOwnerAddress != null) ...[
         sizedBoxHeight16px,
         DetailsPanelItem(
