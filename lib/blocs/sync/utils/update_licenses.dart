@@ -5,5 +5,5 @@ Future<void> _updateLicenses({
   required ArweaveService arweave,
   required List<TxID> licenseTxIds,
 }) async {
-  // TODO
+  arweave.getLicenseAssertions(licenseTxIds);
 }

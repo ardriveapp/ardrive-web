@@ -233,11 +233,7 @@ class ArweaveService {
   }
 
   Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge>>
-      getLicenseAssertions(
-    List<String> licenseAssertionTxIds, {
-    required String ownerAddress,
-    int? lastBlockHeight,
-  }) async* {
+      getLicenseAssertions(List<String> licenseAssertionTxIds) async* {
     var chunks = [];
     const chunkSize = 100;
     for (var i = 0; i < licenseAssertionTxIds.length; i += chunkSize) {
