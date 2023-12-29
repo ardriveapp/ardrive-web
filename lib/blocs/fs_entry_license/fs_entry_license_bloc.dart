@@ -203,31 +203,41 @@ class FsEntryLicenseBloc
             .fileById(driveId: driveId, fileId: fileToLicense.id)
             .getSingle();
 
-        // TODO: Create License-Assertions for all previous Data Txs?
+        final allReivisions = await _driveDao
+            .oldestFileRevisionsByFileId(
+              driveId: driveId,
+              fileId: fileToLicense.id,
+            )
+            .get();
+        final dataTxIdsSet = allReivisions.map((rev) => rev.dataTxId).toSet();
 
-        final licenseAssertionEntity = _licenseService.toEntity(
-          dataTxId: file.dataTxId,
-          licenseInfo: licenseInfo,
-          licenseParams: licenseParams,
-        )..ownerAddress = profile.walletAddress;
+        for (final dataTxId in dataTxIdsSet) {
+          final licenseAssertionEntity = _licenseService.toEntity(
+            dataTxId: dataTxId,
+            licenseInfo: licenseInfo,
+            licenseParams: licenseParams,
+          )..ownerAddress = profile.walletAddress;
 
-        final licenseAssertionDataItem = await licenseAssertionEntity
-            .asPreparedDataItem(owner: await profile.wallet.getOwner());
-        await licenseAssertionDataItem.sign(profile.wallet);
-        licenseAssertionTxDataItems.add(licenseAssertionDataItem);
+          final licenseAssertionDataItem = await licenseAssertionEntity
+              .asPreparedDataItem(owner: await profile.wallet.getOwner());
+          await licenseAssertionDataItem.sign(profile.wallet);
+          licenseAssertionTxDataItems.add(licenseAssertionDataItem);
 
-        licenseAssertionEntity.txId = licenseAssertionDataItem.id;
+          licenseAssertionEntity.txId = licenseAssertionDataItem.id;
 
-        await _driveDao.insertLicenseAssertion(
-          licenseAssertionEntity.toLicenseAssertionsCompanion(
-            fileId: file.id,
-            driveId: driveId,
-            licenseType: licenseInfo.licenseType,
-          ),
-        );
+          await _driveDao.insertLicenseAssertion(
+            licenseAssertionEntity.toLicenseAssertionsCompanion(
+              fileId: file.id,
+              driveId: driveId,
+              licenseType: licenseInfo.licenseType,
+            ),
+          );
+        }
 
+        final latestDataLicenseAssertionTxId =
+            licenseAssertionTxDataItems.last.id;
         file = file.copyWith(
-            licenseTxId: Value(licenseAssertionDataItem.id),
+            licenseTxId: Value(latestDataLicenseAssertionTxId),
             lastUpdated: DateTime.now());
 
         final fileEntity = file.asEntity();
