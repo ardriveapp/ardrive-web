@@ -19,7 +19,7 @@ Future<void> _updateLicenses({
       );
       final licenseType =
           licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
-      return entity.toLicensesCompanion(
+      return entity.toCompanion(
         fileId: revision.fileId,
         driveId: revision.driveId,
         licenseType: licenseType ?? LicenseType.unknown,
@@ -29,7 +29,7 @@ Future<void> _updateLicenses({
     await driveDao.transaction(
       () async => {
         for (final licenseAssertionCompanion in licenseCompanions)
-          {await driveDao.insertLicenseAssertion(licenseAssertionCompanion)}
+          {await driveDao.insertLicense(licenseAssertionCompanion)}
       },
     );
   }

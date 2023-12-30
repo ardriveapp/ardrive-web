@@ -225,8 +225,8 @@ class FsEntryLicenseBloc
 
           licenseAssertionEntity.txId = licenseAssertionDataItem.id;
 
-          await _driveDao.insertLicenseAssertion(
-            licenseAssertionEntity.toLicensesCompanion(
+          await _driveDao.insertLicense(
+            licenseAssertionEntity.toCompanion(
               fileId: file.id,
               driveId: driveId,
               licenseType: licenseInfo.licenseType,

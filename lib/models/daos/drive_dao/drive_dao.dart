@@ -493,14 +493,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
-  Future<void> insertLicenseAssertion(
-    LicensesCompanion licenseAssertion,
+  Future<void> insertLicense(
+    LicensesCompanion license,
   ) async {
     await db.transaction(() async {
-      await Future.wait(licenseAssertion
-          .getTransactionCompanions()
-          .map((tx) => writeTransaction(tx)));
-      await into(licenses).insert(licenseAssertion);
+      await Future.wait(
+          license.getTransactionCompanions().map((tx) => writeTransaction(tx)));
+      await into(licenses).insert(license);
     });
   }
 

@@ -50,7 +50,7 @@ void main() {
 
     group('toLicenseAssertionsCompanion method', () {
       test('returns a companion with expected fields', () async {
-        final companion = stubLicenseAssertion.toLicensesCompanion(
+        final companion = stubLicenseAssertion.toCompanion(
           driveId: stubDriveId,
           fileId: stubFileId,
           licenseType: LicenseType.udl,

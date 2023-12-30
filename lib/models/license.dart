@@ -8,7 +8,7 @@ import 'package:drift/drift.dart';
 
 extension LicensesCompanionExtensions on LicensesCompanion {
   /// Converts the assertion to an instance of [LicenseAssertionEntity].
-  LicenseAssertionEntity asAssertion(LicenseService licenseService,
+  LicenseAssertionEntity asAssertionEntity(LicenseService licenseService,
       {String? ownerAddress}) {
     final Map<String, String> additionalTags =
         jsonDecode(customGQLTags.value ?? '{}');
@@ -44,7 +44,7 @@ extension LicensesCompanionExtensions on LicensesCompanion {
 
 extension LicenseAssertionEntityExtensions on LicenseAssertionEntity {
   /// Converts the entity to an instance of [LicenseAssertionsCompanion].
-  LicensesCompanion toLicensesCompanion({
+  LicensesCompanion toCompanion({
     required String fileId,
     required String driveId,
     required LicenseType licenseType,
