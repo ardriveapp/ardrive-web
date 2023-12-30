@@ -252,6 +252,7 @@ class FsEntryLicenseBloc
         fileRevisionTxDataItems.add(fileDataItem);
 
         await _driveDao.writeToFile(file);
+        fileEntity.txId = fileDataItem.id;
 
         await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
           performedAction: RevisionAction.assertLicense,
