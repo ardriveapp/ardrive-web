@@ -30,13 +30,13 @@ Future<void> promptToLicense(
       providers: [
         BlocProvider(
           create: (context) => FsEntryLicenseBloc(
+            crypto: ArDriveCrypto(),
             driveId: driveId,
             selectedItems: selectedItems,
             arweave: context.read<ArweaveService>(),
             turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
-            crypto: context.read<ArDriveCrypto>(),
             licenseService: context.read<LicenseService>(),
           ),
         ),
