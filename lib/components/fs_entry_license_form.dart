@@ -302,7 +302,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                               ),
                             ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -330,12 +330,14 @@ class FsEntryLicenseForm extends StatelessWidget {
                           const SizedBox(height: 16),
                           Flexible(
                             child: Text(
+                              // TODO: Localize
                               'You little licenser, you.',
                               style: ArDriveTypography.headline.headline4Bold(),
                             ),
                           ),
                           const SizedBox(height: 16),
                           Text(
+                            // TODO: Localize
                             'Your files have successfully been licensed. You can go ahead and do your thing now.',
                             textAlign: TextAlign.center,
                             style: ArDriveTypography.body.buttonLargeRegular(
@@ -352,15 +354,17 @@ class FsEntryLicenseForm extends StatelessWidget {
                                 .themeData
                                 .colors
                                 .themeFgDefault,
-                            fontStyle: ArDriveTypography.body.buttonNormalBold(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeAccentSubtle,
-                            ),
-                            text: appLocalizationsOf(context).closeEmphasized,
+                            fontStyle: ArDriveTypography.body
+                                .buttonNormalBold(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeAccentSubtle,
+                                )
+                                .copyWith(fontWeight: FontWeight.bold),
+                            text: appLocalizationsOf(context).close,
                             onPressed: () => Navigator.of(context).pop(),
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -370,19 +374,103 @@ class FsEntryLicenseForm extends StatelessWidget {
             );
           } else if (state is FsEntryLicenseFailure) {
             // TODO
-            return const ArDriveStandardModal(
-              title: 'Failure',
+            return ArDriveCard(
+              height: 400,
               width: kMediumDialogWidth,
-              content: SizedBox(
-                height: 250,
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text('Failure'),
-                  ],
-                ),
+              contentPadding: EdgeInsets.zero,
+              content: Column(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.only(left: 16, right: 16),
+                    width: double.infinity,
+                    height: 77,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ArDriveClickArea(
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: const Align(
+                              alignment: Alignment.centerRight,
+                              child: ArDriveIcon(
+                                icon: ArDriveIconsData.x,
+                                size: 32,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 77,
+                      ),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          ArDriveIcon(
+                            icon: ArDriveIconsData.close_circle,
+                            size: 64,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeErrorOnEmphasis,
+                          ),
+                          const SizedBox(height: 16),
+                          Flexible(
+                            child: Text(
+                              // TODO: Localize
+                              'No dice.',
+                              style: ArDriveTypography.headline.headline4Bold(),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            // TODO: Localize
+                            'Your attempted licensing failed, want to try again now?',
+                            textAlign: TextAlign.center,
+                            style: ArDriveTypography.body.buttonLargeRegular(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgDefault,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          ArDriveButton(
+                            maxHeight: 36,
+                            backgroundColor: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                            fontStyle: ArDriveTypography.body
+                                .buttonNormalBold(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeAccentSubtle,
+                                )
+                                .copyWith(fontWeight: FontWeight.bold),
+                            text: appLocalizationsOf(context).tryAgain,
+                            onPressed: () => context
+                                .read<FsEntryLicenseBloc>()
+                                .add(const FsEntryLicenseFailureTryAgain()),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           } else {
