@@ -232,7 +232,7 @@ class ArweaveService {
     }
   }
 
-  Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge>>
+  Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
       getLicenseAssertions(List<String> licenseAssertionTxIds) async* {
     var chunks = [];
     const chunkSize = 100;
@@ -254,7 +254,9 @@ class ArweaveService {
         ),
       );
 
-      yield driveEntityHistoryQuery.data!.transactions.edges.toList();
+      yield driveEntityHistoryQuery.data!.transactions.edges
+          .map((e) => e.node)
+          .toList();
     }
   }
 

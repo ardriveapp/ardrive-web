@@ -70,6 +70,8 @@ class FsEntryLicenseBloc
   final ArDriveCrypto _crypto;
   final LicenseService _licenseService;
 
+  final List<String> errorLog = [];
+
   FsEntryLicenseBloc({
     required this.driveId,
     required this.selectedItems,
@@ -277,5 +279,13 @@ class FsEntryLicenseBloc
       );
       await _arweave.postTx(dataBundle);
     }
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    print(error);
+    print(stackTrace);
+    errorLog.add(error.toString());
+    super.onError(error, stackTrace);
   }
 }

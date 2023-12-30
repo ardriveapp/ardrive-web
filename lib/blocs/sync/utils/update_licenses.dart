@@ -11,8 +11,8 @@ Future<void> _updateLicenses({
 
   await for (final licenseAssertionTxsBatch
       in arweave.getLicenseAssertions(licenseTxIds)) {
-    final licenseAssertionEntities = licenseAssertionTxsBatch.map((tx) =>
-        LicenseAssertionEntity.fromTransaction(tx as TransactionCommonMixin));
+    final licenseAssertionEntities = licenseAssertionTxsBatch
+        .map((tx) => LicenseAssertionEntity.fromTransaction(tx));
     final licenseCompanions = licenseAssertionEntities.map((entity) {
       final revision = revisionsToSyncLicense.firstWhere(
         (rev) => rev.licenseTxId == entity.licenseDefinitionTxId,
