@@ -64,23 +64,23 @@ enum NewButtonLocation {
 class UploadConfirmProperties {
   @JsonKey(name: 'Upload Type')
   UploadType uploadType;
-  @JsonKey(name: 'Has Folders')
-  bool hasFolders;
-  @JsonKey(name: 'Single File')
-  bool hasSingleFile;
-  @JsonKey(name: 'Multiple Files')
-  bool hasMultipleFiles;
+  @JsonKey(name: 'Upload Contains')
+  UploadContains uploadContains;
 
   UploadConfirmProperties({
     required this.uploadType,
-    required this.hasFolders,
-    required this.hasSingleFile,
-    required this.hasMultipleFiles,
+    required this.uploadContains,
   });
 
   factory UploadConfirmProperties.fromJson(Map<String, dynamic> json) =>
       _$UploadConfirmPropertiesFromJson(json);
   Map<String, dynamic> toJson() => _$UploadConfirmPropertiesToJson(this);
+}
+
+enum UploadContains {
+  folder,
+  singleFile,
+  multipleFiles,
 }
 
 @JsonSerializable()

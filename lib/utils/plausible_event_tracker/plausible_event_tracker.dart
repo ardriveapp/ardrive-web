@@ -98,15 +98,11 @@ abstract class PlausibleEventTracker {
 
   static Future<void> trackUploadConfirm({
     required UploadType uploadType,
-    required bool hasFolders,
-    required bool hasSingleFile,
-    required bool hasMultipleFiles,
+    required UploadContains uploadContains,
   }) {
     final props = UploadConfirmProperties(
       uploadType: uploadType,
-      hasFolders: hasFolders,
-      hasSingleFile: hasSingleFile,
-      hasMultipleFiles: hasMultipleFiles,
+      uploadContains: uploadContains,
     );
     return _trackCustomEvent(
       page: PlausiblePageView.fileExplorerPage,

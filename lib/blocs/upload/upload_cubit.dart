@@ -15,6 +15,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -457,11 +458,14 @@ class UploadCubit extends Cubit<UploadState> {
 
     final type =
         _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo;
+    final UploadContains contains = uploadFolders
+        ? UploadContains.folder
+        : files.length == 1
+            ? UploadContains.singleFile
+            : UploadContains.multipleFiles;
     PlausibleEventTracker.trackUploadConfirm(
       uploadType: type,
-      hasFolders: uploadFolders,
-      hasMultipleFiles: files.length > 1,
-      hasSingleFile: files.length == 1,
+      uploadContains: contains,
     );
 
     logger.d(
