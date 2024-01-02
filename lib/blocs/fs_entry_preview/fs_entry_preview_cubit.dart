@@ -114,6 +114,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   Future<void> _preview() async {
     final selectedItem = maybeSelectedItem;
+
+    // initially set to no preview available to help reduce tab flickering
+    emit(FsEntryPreviewUnavailable());
+
     if (selectedItem != null) {
       if (selectedItem.runtimeType == FileDataTableItem) {
         _entrySubscription = _driveDao
@@ -160,6 +164,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
               default:
                 emit(FsEntryPreviewUnavailable());
             }
+          } else {
+            emit(FsEntryPreviewUnavailable());
           }
         });
       } else {
