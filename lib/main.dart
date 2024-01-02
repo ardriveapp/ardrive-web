@@ -118,12 +118,10 @@ Future<void> _initialize() async {
         )
       : DontUseUploadService();
 
-  _turboPayment = config.useTurboPayment
-      ? PaymentService(
-          turboPaymentUri: Uri.parse(config.defaultTurboPaymentUrl!),
-          httpClient: ArDriveHTTP(),
-        )
-      : DontUsePaymentService();
+  _turboPayment = PaymentService(
+    turboPaymentUri: Uri.parse(config.defaultTurboPaymentUrl!),
+    httpClient: ArDriveHTTP(),
+  );
 
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));

@@ -426,11 +426,18 @@ class UploadCubit extends Cubit<UploadState> {
 
   bool hasEmittedError = false;
   bool hasEmittedWarning = false;
+  bool uploadIsInProgress = false;
 
   Future<void> startUpload({
     required UploadPlan uploadPlanForAr,
     UploadPlan? uploadPlanForTurbo,
   }) async {
+    if (uploadIsInProgress) {
+      return;
+    }
+
+    uploadIsInProgress = true;
+
     UploadPlan uploadPlan;
 
     if (_uploadMethod == UploadMethod.ar || uploadPlanForTurbo == null) {
@@ -591,7 +598,6 @@ class UploadCubit extends Cubit<UploadState> {
             progress: progress,
             controller: uploadController,
             uploadMethod: _uploadMethod!,
-            containsLargeTurboUpload: _containsLargeTurboUpload!,
           ),
         );
       },
@@ -691,7 +697,6 @@ class UploadCubit extends Cubit<UploadState> {
             controller: uploadController,
             equatableBust: UniqueKey(),
             uploadMethod: _uploadMethod!,
-            containsLargeTurboUpload: _containsLargeTurboUpload!,
           ),
         );
       },
@@ -908,7 +913,6 @@ class UploadCubit extends Cubit<UploadState> {
             totalProgress: state.totalProgress,
             isCanceling: true,
             uploadMethod: _uploadMethod!,
-            containsLargeTurboUpload: state.containsLargeTurboUpload,
           ),
         );
 
@@ -922,7 +926,6 @@ class UploadCubit extends Cubit<UploadState> {
             totalProgress: state.totalProgress,
             isCanceling: false,
             uploadMethod: _uploadMethod!,
-            containsLargeTurboUpload: state.containsLargeTurboUpload,
           ),
         );
 

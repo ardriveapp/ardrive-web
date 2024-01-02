@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.27.0
+version: 2.28.2
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ardriveapp/ardrive_http.git
-      ref: v1.3.1
+      ref: v1.3.2
   ardrive_io:
     git:
       url: https://github.com/ardriveapp/ardrive_io.git
@@ -129,6 +129,7 @@ dependencies:
   just_audio: ^0.9.34
   loading_animation_widget: ^1.2.0+4
   synchronized: ^3.1.0
+  confetti: ^0.7.0
 
 dependency_overrides:
   stripe_js:
