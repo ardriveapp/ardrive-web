@@ -45,7 +45,7 @@ jobs:
           scr setup
           flutter config --enable-web
           flutter build web --release --dart-define=environment=production --pwa-strategy=none --no-web-resources-cdn
-          
+
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -54,6 +54,8 @@ jobs:
           channelId: live
 
   build-ios:
+    # skipped for now
+    if: false
     needs: pre-build
     runs-on: macos-latest
     steps:
