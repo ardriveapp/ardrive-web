@@ -246,8 +246,6 @@ Widget _buildDataListContent(
         return folders + files;
       },
       buildRow: (row) {
-        final isHidden = row.isHidden;
-
         return DriveExplorerItemTile(
           name: row.name,
           size: row.size == null ? '-' : filesize(row.size),

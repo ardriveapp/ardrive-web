@@ -76,7 +76,6 @@ Future<Map<String, FolderEntriesCompanion>>
 
     final dateCreated = oldestRevision?.dateCreated ??
         updatedFoldersById[folderId]!.dateCreated.value;
-    final isHidden = updatedFoldersById[folderId]!.isHidden.value;
 
     updatedFoldersById[folderId] = updatedFoldersById[folderId]!.copyWith(
       dateCreated: Value<DateTime>(dateCreated),

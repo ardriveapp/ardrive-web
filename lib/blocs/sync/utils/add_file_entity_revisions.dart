@@ -91,7 +91,6 @@ Future<Map<String, FileEntriesCompanion>>
 
     final dateCreated = oldestRevision?.dateCreated ??
         updatedFilesById[fileId]!.dateCreated.value;
-    final isHidden = updatedFilesById[fileId]!.isHidden.value;
 
     updatedFilesById[fileId] = updatedFilesById[fileId]!.copyWith(
       dateCreated: Value<DateTime>(dateCreated),
