@@ -421,11 +421,18 @@ class UploadCubit extends Cubit<UploadState> {
 
   bool hasEmittedError = false;
   bool hasEmittedWarning = false;
+  bool uploadIsInProgress = false;
 
   Future<void> startUpload({
     required UploadPlan uploadPlanForAr,
     UploadPlan? uploadPlanForTurbo,
   }) async {
+    if (uploadIsInProgress) {
+      return;
+    }
+
+    uploadIsInProgress = true;
+
     UploadPlan uploadPlan;
 
     if (_uploadMethod == UploadMethod.ar || uploadPlanForTurbo == null) {
