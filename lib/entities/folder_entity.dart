@@ -103,10 +103,6 @@ class FolderEntity extends EntityWithCustomMetadata {
     if (parentFolderId != null) {
       tx.addTag(EntityTag.parentFolderId, parentFolderId!);
     }
-
-    // if (isHidden == true) {
-    //   tx.addTag('Is-Hidden', 'true');
-    // }
   }
 
   factory FolderEntity.fromJson(Map<String, dynamic> json) {

@@ -67,11 +67,7 @@ class FileEntity extends EntityWithCustomMetadata {
     this.dataContentType,
     this.pinnedDataOwnerAddress,
     this.isHidden,
-  }) : super(ArDriveCrypto()) {
-    if (isHidden == true) {
-      logger.d('FileEntity: ${toJson()}');
-    }
-  }
+  }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({
     required this.name,
@@ -105,10 +101,6 @@ class FileEntity extends EntityWithCustomMetadata {
 
       final file = FileEntity.fromJson(entityJson!);
 
-      if (file.isHidden == true) {
-        logger.d('File entity from JSON: $entityJson');
-      }
-
       file
         ..id = transaction.getTag(EntityTag.fileId)
         ..driveId = transaction.getTag(EntityTag.driveId)
@@ -118,7 +110,6 @@ class FileEntity extends EntityWithCustomMetadata {
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
         ..createdAt = commitTime;
-      // ..isHidden = transaction.getTag('Is-Hidden') == 'true' ? true : false;
 
       final tags = transaction.tags
           .map(
@@ -151,10 +142,6 @@ class FileEntity extends EntityWithCustomMetadata {
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.parentFolderId, parentFolderId!)
       ..addTag(EntityTag.fileId, id!);
-
-    // if (isHidden == true) {
-    //   tx.addTag('Is-Hidden', 'true');
-    // }
   }
 
   factory FileEntity.fromJson(Map<String, dynamic> json) {

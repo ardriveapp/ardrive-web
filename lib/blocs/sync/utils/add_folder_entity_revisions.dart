@@ -78,10 +78,6 @@ Future<Map<String, FolderEntriesCompanion>>
         updatedFoldersById[folderId]!.dateCreated.value;
     final isHidden = updatedFoldersById[folderId]!.isHidden.value;
 
-    if (isHidden) {
-      logger.d('Found hidden folder: $folderId');
-    }
-
     updatedFoldersById[folderId] = updatedFoldersById[folderId]!.copyWith(
       dateCreated: Value<DateTime>(dateCreated),
     );

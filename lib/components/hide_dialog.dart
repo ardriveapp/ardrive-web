@@ -12,7 +12,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 Future<void> promptToHide(
   BuildContext context,
 ) async {
-  logger.d('Prompting to hide');
   return showAnimatedDialog(
     context,
     barrierDismissible: false,

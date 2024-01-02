@@ -137,18 +137,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             final bool hasFiles;
 
             if (isShowingHiddenFiles) {
-              final amountOfHiddenFiles = driveDetailState.folderInView.files
-                  .where((e) => e.isHidden)
-                  .length;
-              final amountOfHiddenFolders = driveDetailState
-                  .folderInView.subfolders
-                  .where((e) => e.isHidden)
-                  .length;
-              logger.d(
-                'Drive details page is showing hidden files -'
-                ' Amount of hidden files: $amountOfHiddenFiles,'
-                ' Amount of hidden folders: $amountOfHiddenFolders',
-              );
               hasSubfolders =
                   driveDetailState.folderInView.subfolders.isNotEmpty;
               hasFiles = driveDetailState.folderInView.files.isNotEmpty;
@@ -460,7 +448,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Hey, Mati!!
                                   Expanded(
                                     child: _buildDataList(
                                       context,

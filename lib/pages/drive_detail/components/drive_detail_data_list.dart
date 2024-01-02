@@ -4,7 +4,6 @@ Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
 ) {
-  // The items here are not being updated in the state
   return _buildDataListContent(
     context,
     state.currentFolderContents,
@@ -96,11 +95,6 @@ class FolderDataTableItem extends ArDriveDataTableItem {
 
   @override
   List<Object> get props => [id, name, isHidden];
-
-  @override
-  String toString() {
-    return 'FolderDataTableItem{parentFolderId: $parentFolderId, isGhostFolder: $isGhostFolder}';
-  }
 }
 
 class FileDataTableItem extends ArDriveDataTableItem {
@@ -149,11 +143,6 @@ class FileDataTableItem extends ArDriveDataTableItem {
 
   @override
   List<Object> get props => [fileId, name, isHidden];
-
-  @override
-  String toString() {
-    return 'FileDataTableItem{fileId: $fileId, parentFolderId: $parentFolderId, dataTxId: $dataTxId, bundledIn: $bundledIn, lastModifiedDate: $lastModifiedDate, metadataTx: $metadataTx, dataTx: $dataTx, pinnedDataOwnerAddress: $pinnedDataOwnerAddress}';
-  }
 }
 
 Widget _buildDataListContent(
@@ -172,8 +161,6 @@ Widget _buildDataListContent(
   }
 
   final itemsHash = filteredItems.hashCode;
-
-  logger.d('Building data list for ${filteredItems.length} items');
 
   return LayoutBuilder(builder: (context, constraints) {
     return ArDriveDataTable<ArDriveDataTableItem>(
@@ -260,10 +247,6 @@ Widget _buildDataListContent(
       },
       buildRow: (row) {
         final isHidden = row.isHidden;
-
-        if (isHidden) {
-          logger.d('Building hidden item: ${row.name}');
-        }
 
         return DriveExplorerItemTile(
           name: row.name,

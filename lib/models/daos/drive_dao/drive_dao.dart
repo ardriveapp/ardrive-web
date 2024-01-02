@@ -369,15 +369,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         }
       }
 
-      logger.d('Re-computed folder contents for folder ${folder.id}');
-
       final v = FolderWithContents(
         folder: folder,
         subfolders: subfolders,
         files: files,
       );
-
-      logger.d('Re-computed folder contents: $v');
 
       return v;
     });

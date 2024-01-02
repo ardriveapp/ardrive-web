@@ -93,10 +93,6 @@ Future<Map<String, FileEntriesCompanion>>
         updatedFilesById[fileId]!.dateCreated.value;
     final isHidden = updatedFilesById[fileId]!.isHidden.value;
 
-    if (isHidden) {
-      logger.d('Found hidden file: $fileId');
-    }
-
     updatedFilesById[fileId] = updatedFilesById[fileId]!.copyWith(
       dateCreated: Value<DateTime>(dateCreated),
     );
