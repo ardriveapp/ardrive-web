@@ -1,0 +1,2 @@
+- Fixes the file preview for txt files in private drives
+- Prevent double-upload on rapid button click
