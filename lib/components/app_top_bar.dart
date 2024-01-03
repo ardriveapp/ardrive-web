@@ -18,7 +18,7 @@ class AppTopBar extends StatelessWidget {
       height: 110,
       width: double.maxFinite,
       child: Padding(
-        padding: const EdgeInsets.only(right: 24.0),
+        padding: EdgeInsets.only(right: 24.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
