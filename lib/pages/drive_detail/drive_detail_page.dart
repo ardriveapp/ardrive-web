@@ -203,6 +203,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     required bool isDriveOwner,
     required bool canDownloadMultipleFiles,
   }) {
+    final driveDetailCubit = context.read<DriveDetailCubit>();
+
     return Column(
       children: [
         const AppTopBar(),
@@ -407,6 +409,37 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             ArDriveIcons.info(
                                               size: defaultIconSize,
                                             ),
+                                          ),
+                                        ),
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            driveDetailCubit
+                                                .toggleHiddenFiles();
+                                          },
+                                          content: BlocBuilder<DriveDetailCubit,
+                                              DriveDetailState>(
+                                            bloc: driveDetailCubit,
+                                            builder: (context, state) {
+                                              if (state
+                                                  is DriveDetailLoadSuccess) {
+                                                final isShowingHiddenFiles =
+                                                    state.isShowingHiddenFiles;
+                                                return _buildItem(
+                                                  isShowingHiddenFiles
+                                                      ? 'Conceal hidden files'
+                                                      : 'Reveal hidden files',
+                                                  isShowingHiddenFiles
+                                                      ? ArDriveIcons.eyeClosed(
+                                                          size: defaultIconSize,
+                                                        )
+                                                      : ArDriveIcons.eyeOpen(
+                                                          size: defaultIconSize,
+                                                        ),
+                                                );
+                                              } else {
+                                                return const SizedBox();
+                                              }
+                                            },
                                           ),
                                         ),
                                         if (!driveDetailState
@@ -854,6 +887,7 @@ class MobileFolderNavigation extends StatelessWidget {
           ),
           BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {
+              final driveDetailCubit = context.read<DriveDetailCubit>();
               if (state is DriveDetailLoadSuccess) {
                 final isOwner = isDriveOwner(context.read<ArDriveAuth>(),
                     state.currentDrive.ownerAddress);
@@ -941,6 +975,34 @@ class MobileFolderNavigation extends StatelessWidget {
                         ArDriveIcons.info(
                           size: defaultIconSize,
                         ),
+                      ),
+                    ),
+                    ArDriveDropdownItem(
+                      onClick: () {
+                        driveDetailCubit.toggleHiddenFiles();
+                      },
+                      content: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                        bloc: driveDetailCubit,
+                        builder: (context, state) {
+                          if (state is DriveDetailLoadSuccess) {
+                            final isShowingHiddenFiles =
+                                state.isShowingHiddenFiles;
+                            return _buildItem(
+                              isShowingHiddenFiles
+                                  ? 'Conceal hidden files'
+                                  : 'Reveal hidden files',
+                              isShowingHiddenFiles
+                                  ? ArDriveIcons.eyeClosed(
+                                      size: defaultIconSize,
+                                    )
+                                  : ArDriveIcons.eyeOpen(
+                                      size: defaultIconSize,
+                                    ),
+                            );
+                          } else {
+                            return const SizedBox();
+                          }
+                        },
                       ),
                     ),
                     if (!state.hasWritePermissions &&
