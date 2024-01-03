@@ -426,8 +426,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                     state.isShowingHiddenFiles;
                                                 return _buildItem(
                                                   isShowingHiddenFiles
-                                                      ? 'Conceal hidden files'
-                                                      : 'Reveal hidden files',
+                                                      ? appLocalizationsOf(
+                                                              context)
+                                                          .concealHiddenItems
+                                                      : appLocalizationsOf(
+                                                              context)
+                                                          .revealHiddenItems,
                                                   isShowingHiddenFiles
                                                       ? ArDriveIcons.eyeClosed(
                                                           size: defaultIconSize,
@@ -989,8 +993,10 @@ class MobileFolderNavigation extends StatelessWidget {
                                 state.isShowingHiddenFiles;
                             return _buildItem(
                               isShowingHiddenFiles
-                                  ? 'Conceal hidden files'
-                                  : 'Reveal hidden files',
+                                  ? appLocalizationsOf(context)
+                                      .concealHiddenItems
+                                  : appLocalizationsOf(context)
+                                      .revealHiddenItems,
                               isShowingHiddenFiles
                                   ? ArDriveIcons.eyeClosed(
                                       size: defaultIconSize,
