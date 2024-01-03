@@ -4,25 +4,33 @@ import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class HideState extends Equatable {
-  const HideState();
+  final HideAction hideAction;
+
+  const HideState({
+    required this.hideAction,
+  });
 }
 
 class InitialHideState extends HideState {
-  const InitialHideState();
+  const InitialHideState() : super(hideAction: HideAction.hideFile);
 
   @override
   List<Object?> get props => [];
 }
 
 class UploadingHideState extends HideState {
-  const UploadingHideState();
+  const UploadingHideState({
+    required super.hideAction,
+  });
 
   @override
   List<Object?> get props => [];
 }
 
 class PreparingAndSigningHideState extends HideState {
-  const PreparingAndSigningHideState();
+  const PreparingAndSigningHideState({
+    required super.hideAction,
+  });
 
   @override
   List<Object?> get props => [];
@@ -40,7 +48,6 @@ class ConfirmingHideState extends HideState {
   final bool sufficentCreditsBalance;
   final bool isFreeThanksToTurbo;
   final bool isButtonToUploadEnabled;
-  final HideAction hideAction;
 
   final List<DataItem> dataItems;
   final Future<void> Function() saveEntitiesToDb;
@@ -57,7 +64,7 @@ class ConfirmingHideState extends HideState {
     required this.sufficentCreditsBalance,
     required this.isFreeThanksToTurbo,
     required this.isButtonToUploadEnabled,
-    required this.hideAction,
+    required super.hideAction,
     required this.dataItems,
     required this.saveEntitiesToDb,
   });
@@ -115,7 +122,9 @@ class ConfirmingHideState extends HideState {
 }
 
 class SuccessHideState extends HideState {
-  const SuccessHideState();
+  const SuccessHideState({
+    required super.hideAction,
+  });
 
   @override
   List<Object?> get props => [];
@@ -126,6 +135,7 @@ class FailureHideState extends HideState {
 
   const FailureHideState({
     required this.message,
+    required super.hideAction,
   });
 
   @override

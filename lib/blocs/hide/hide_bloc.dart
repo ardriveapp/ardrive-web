@@ -65,7 +65,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
         _auth = auth,
         _configService = configService,
         super(const InitialHideState()) {
-    on<HideFileEvent>(_newOnHideFileEvent);
+    on<HideFileEvent>(_onHideFileEvent);
     on<HideFolderEvent>(_onHideFolderEvent);
     on<UnhideFileEvent>(_onUnhideFileEvent);
     on<UnhideFolderEvent>(_onUnhideFolderEvent);
@@ -79,11 +79,11 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
   AppConfig get _appConfig => _configService.config;
 
-  Future<void> _newOnHideFileEvent(
+  Future<void> _onHideFileEvent(
     HideFileEvent event,
     Emitter<HideState> emit,
   ) async {
-    emit(const PreparingAndSigningHideState());
+    emit(const PreparingAndSigningHideState(hideAction: HideAction.hideFile));
 
     final profile = _profileCubit.state as ProfileLoggedIn;
     late DataItem fileDataItem;
@@ -159,7 +159,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     HideFolderEvent event,
     Emitter<HideState> emit,
   ) async {
-    emit(const PreparingAndSigningHideState());
+    emit(const PreparingAndSigningHideState(hideAction: HideAction.hideFolder));
 
     logger.d('Hiding folder ${event.folderId} in drive ${event.driveId}');
     final profile = _profileCubit.state as ProfileLoggedIn;
@@ -228,7 +228,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     UnhideFileEvent event,
     Emitter<HideState> emit,
   ) async {
-    emit(const PreparingAndSigningHideState());
+    emit(const PreparingAndSigningHideState(hideAction: HideAction.unhideFile));
 
     final profile = _profileCubit.state as ProfileLoggedIn;
     late DataItem fileDataItem;
@@ -298,7 +298,9 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     UnhideFolderEvent event,
     Emitter<HideState> emit,
   ) async {
-    emit(const PreparingAndSigningHideState());
+    emit(const PreparingAndSigningHideState(
+      hideAction: HideAction.unhideFolder,
+    ));
 
     logger.d('Unhiding folder ${event.folderId} in drive ${event.driveId}');
     final profile = _profileCubit.state as ProfileLoggedIn;
@@ -371,7 +373,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final dataItems = state.dataItems;
 
-    emit(const UploadingHideState());
+    emit(UploadingHideState(hideAction: state.hideAction));
 
     await _driveDao.transaction(() async {
       final dataBundle = await DataBundle.fromDataItems(
@@ -397,7 +399,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
       await state.saveEntitiesToDb();
 
-      emit(const SuccessHideState());
+      emit(SuccessHideState(hideAction: state.hideAction));
     });
   }
 
