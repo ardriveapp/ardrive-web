@@ -32,7 +32,6 @@ class HideDialog extends StatelessWidget {
         return ArDriveStandardModal(
           title: _buildTitle(context, state),
           content: _buildContent(context, state),
-          // actions: _buildActions(context, state),
         );
       },
     );
@@ -67,100 +66,4 @@ class HideDialog extends StatelessWidget {
       ],
     );
   }
-
-  // List<ModalAction> _buildActions(
-  //   BuildContext context,
-  //   HideState state,
-  // ) {
-  //   if (state is ConfirmingHideState) {
-  //     return [
-  //       ModalAction(
-  //         title: 'Cancel', // TODO: localize
-  //         action: () {
-  //           Navigator.of(context).pop();
-  //         },
-  //       ),
-  //       ModalAction(
-  //         title: 'Confirm', // TODO: localize
-  //         action: () {
-  //           context.read<HideBloc>().add(
-  //                 const ConfirmUploadEvent(),
-  //               );
-  //         },
-  //       ),
-  //     ];
-  //   } else {
-  //     return [];
-  //   }
-  // }
-
-  // Widget _buildConfirmingContent(
-  //   BuildContext context,
-  //   ConfirmingHideState state,
-  // ) {
-  //   return Column(
-  //     children: [
-  //       if (state.isFreeThanksToTurbo) ...{
-  //         Text(
-  //           appLocalizationsOf(context).freeTurboTransaction,
-  //           style: ArDriveTypography.body.buttonNormalRegular(
-  //             color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-  //           ),
-  //         ),
-  //       } else ...{
-  //         PaymentMethodSelector(
-  //           uploadMethod: state.uploadMethod,
-  //           costEstimateAr: state.costEstimateAr,
-  //           costEstimateTurbo: state.costEstimateTurbo,
-  //           hasNoTurboBalance: state.hasNoTurboBalance,
-  //           isTurboUploadPossible: state.isTurboUploadPossible,
-  //           arBalance: state.arBalance,
-  //           sufficientArBalance: state.sufficientArBalance,
-  //           turboCredits: state.turboCredits,
-  //           sufficentCreditsBalance: state.sufficentCreditsBalance,
-  //           isFreeThanksToTurbo: state.isFreeThanksToTurbo,
-  //           onArSelect: () {
-  //             context.read<HideBloc>().add(
-  //                   const SelectUploadMethodEvent(
-  //                     uploadMethod: UploadMethod.ar,
-  //                   ),
-  //                 );
-  //           },
-  //           onTurboSelect: () {
-  //             context.read<HideBloc>().add(
-  //                   const SelectUploadMethodEvent(
-  //                     uploadMethod: UploadMethod.turbo,
-  //                   ),
-  //                 );
-  //           },
-  //           onTurboTopupSucess: () {
-  //             context.read<HideBloc>().add(
-  //                   const RefreshTurboBalanceEvent(),
-  //                 );
-  //           },
-  //         )
-  //       }
-  //     ],
-  //   );
-  // }
-
-  // Widget _buildPreparingAndSigningContent(BuildContext context) {
-  //   return const Column(
-  //     children: [
-  //       Center(
-  //         child: CircularProgressIndicator(),
-  //       ),
-  //     ],
-  //   );
-  // }
-
-  // Widget _buildUploadingContent(BuildContext context) {
-  //   return const Column(
-  //     children: [
-  //       Center(
-  //         child: CircularProgressIndicator(),
-  //       ),
-  //     ],
-  //   );
-  // }
 }
