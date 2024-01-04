@@ -9,6 +9,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
@@ -373,6 +374,10 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         // FIXME: this is gonna change when we allow to ovewrite an existing file
         performedAction: RevisionAction.create,
       ));
+
+      final drivePrivacy =
+          driveKey != null ? DrivePrivacy.private : DrivePrivacy.public;
+      PlausibleEventTracker.trackPinCreation(drivePrivacy: drivePrivacy);
     }).then((value) {
       emit(PinFileSuccess(
         id: state.id,
