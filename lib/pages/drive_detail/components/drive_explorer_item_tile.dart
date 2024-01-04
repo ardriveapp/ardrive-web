@@ -298,6 +298,23 @@ class _DriveExplorerItemTileTrailingState
               ),
             ),
           ),
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToLicense(
+                context,
+                driveId: item.driveId,
+                selectedItems: [item],
+              );
+            },
+            content: _buildItem(
+              // TODO: Localization
+              // appLocalizationsOf(context).license,
+              'Add license',
+              ArDriveIcons.license(
+                size: defaultIconSize,
+              ),
+            ),
+          ),
         ],
         ArDriveDropdownItem(
           onClick: () {
