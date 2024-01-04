@@ -32,6 +32,7 @@ class FileEntity extends EntityWithCustomMetadata {
   DateTime? lastModifiedDate;
 
   String? dataTxId;
+  @JsonKey(includeIfNull: false)
   String? licenseTxId;
   String? dataContentType;
 
