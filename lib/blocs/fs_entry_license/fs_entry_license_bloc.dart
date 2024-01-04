@@ -61,6 +61,7 @@ class FsEntryLicenseBloc
     ),
   });
 
+  List<FileEntry>? filesToLicense;
   LicenseParams? licenseParams;
 
   final ArweaveService _arweave;
@@ -88,13 +89,9 @@ class FsEntryLicenseBloc
         _profileCubit = profileCubit,
         _crypto = crypto,
         _licenseService = licenseService,
-        super(const FsEntryLicenseSelecting()) {
+        super(const FsEntryLicenseLoadInProgress()) {
     if (selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
-    }
-
-    if (selectedItems.any((item) => item is! FileDataTableItem)) {
-      addError(Exception('selectedItems must only contain files'));
     }
 
     final profile = _profileCubit.state as ProfileLoggedIn;
@@ -104,6 +101,12 @@ class FsEntryLicenseBloc
         if (await _profileCubit.logoutIfWalletMismatch()) {
           emit(const FsEntryLicenseWalletMismatch());
           return;
+        }
+
+        if (event is FsEntryLicenseInitial) {
+          filesToLicense =
+              await enumerateFiles(items: selectedItems, emit: emit);
+          emit(const FsEntryLicenseSelecting());
         }
 
         if (event is FsEntryLicenseSelect) {
@@ -186,6 +189,45 @@ class FsEntryLicenseBloc
     );
   }
 
+  Future<List<FileEntry>> enumerateFiles({
+    required List<ArDriveDataTableItem> items,
+    required Emitter<FsEntryLicenseState> emit,
+  }) async {
+    final files = <FileEntry>[];
+
+    Future<List<FileEntry>> enumerateFilesFromTree(
+      FolderNode folderTree,
+    ) async {
+      final treeFiles = <FileEntry>[];
+
+      treeFiles.addAll(folderTree.files.values);
+
+      for (final subfolder in folderTree.subfolders) {
+        final subfolderFiles = await enumerateFilesFromTree(subfolder);
+        treeFiles.addAll(subfolderFiles);
+      }
+
+      return treeFiles;
+    }
+
+    for (final item in items) {
+      if (item is FileDataTableItem) {
+        final file = await _driveDao
+            .fileById(driveId: driveId, fileId: item.id)
+            .getSingle();
+        files.add(file);
+      } else if (item is FolderDataTableItem) {
+        final folderTree = await _driveDao.getFolderTree(driveId, item.id);
+        final subFiles = await enumerateFilesFromTree(folderTree);
+        files.addAll(subFiles);
+      } else {
+        addError('Unsupported item type: ${item.runtimeType}');
+      }
+    }
+
+    return files;
+  }
+
   Future<void> licenseEntities({
     required ProfileLoggedIn profile,
     required LicenseInfo licenseInfo,
@@ -196,19 +238,12 @@ class FsEntryLicenseBloc
     final licenseAssertionTxDataItems = <DataItem>[];
     final fileRevisionTxDataItems = <DataItem>[];
 
-    final filesToLicense =
-        selectedItems.whereType<FileDataTableItem>().toList();
-
     await _driveDao.transaction(() async {
-      for (var fileToLicense in filesToLicense) {
-        var file = await _driveDao
-            .fileById(driveId: driveId, fileId: fileToLicense.id)
-            .getSingle();
-
+      for (var file in filesToLicense!) {
         final allRevisions = await _driveDao
             .oldestFileRevisionsByFileId(
               driveId: driveId,
-              fileId: fileToLicense.id,
+              fileId: file.id,
             )
             .get();
         final dataTxIdsSet = allRevisions.map((rev) => rev.dataTxId).toSet();

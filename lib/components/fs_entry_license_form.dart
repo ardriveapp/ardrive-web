@@ -38,7 +38,7 @@ Future<void> promptToLicense(
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             licenseService: context.read<LicenseService>(),
-          ),
+          )..add(const FsEntryLicenseInitial()),
         ),
         BlocProvider.value(
           value: context.read<DriveDetailCubit>(),
@@ -61,8 +61,6 @@ class FsEntryLicenseForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fileItems = selectedItems.whereType<FileDataTableItem>().toList();
-
     return BlocConsumer<FsEntryLicenseBloc, FsEntryLicenseState>(
       listener: (context, state) {
         if (state is FsEntryLicenseLoadInProgress) {
@@ -72,7 +70,8 @@ class FsEntryLicenseForm extends StatelessWidget {
             // TODO: Localize
             // title: appLocalizationsOf(context).licensingItemsEmphasized,
           );
-        } else if (state is FsEntryLicenseSuccess ||
+        } else if (state is FsEntryLicenseSelecting ||
+            state is FsEntryLicenseSuccess ||
             state is FsEntryLicenseFailure) {
           // close progressDialog
           Navigator.pop(context);
@@ -88,9 +87,11 @@ class FsEntryLicenseForm extends StatelessWidget {
           final licenseInfo =
               context.read<FsEntryLicenseBloc>().selectFormLicenseInfo;
           if (state is FsEntryLicenseSelecting) {
+            final filesToLicense =
+                context.read<FsEntryLicenseBloc>().filesToLicense;
             return ArDriveStandardModal(
               title:
-                  "Add license to ${fileItems.length} file${fileItems.length > 1 ? 's' : ''}",
+                  "Add license to ${filesToLicense!.length} file${filesToLicense.length > 1 ? 's' : ''}",
               width: kMediumDialogWidth,
               // TODO: Localize
               // title: appLocalizationsOf(context).renameFolderEmphasized,
@@ -100,7 +101,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    LicenseFileList(fileList: fileItems),
+                    LicenseFileList(fileList: filesToLicense),
                     const SizedBox(height: 16),
                     const Divider(height: 24),
                     ReactiveForm(
@@ -188,7 +189,9 @@ class FsEntryLicenseForm extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  LicenseFileList(fileList: fileItems),
+                  LicenseFileList(
+                      fileList:
+                          context.read<FsEntryLicenseBloc>().filesToLicense!),
                   const SizedBox(height: 16),
                   const Divider(height: 24),
                   context
@@ -227,7 +230,9 @@ class FsEntryLicenseForm extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  LicenseFileList(fileList: fileItems),
+                  LicenseFileList(
+                      fileList:
+                          context.read<FsEntryLicenseBloc>().filesToLicense!),
                   const SizedBox(height: 16),
                   const Divider(height: 24),
                   const SizedBox(height: 16),
@@ -483,7 +488,7 @@ class FsEntryLicenseForm extends StatelessWidget {
 }
 
 class LicenseFileList extends StatelessWidget {
-  final List<FileDataTableItem> fileList;
+  final List<FileEntry> fileList;
 
   const LicenseFileList({
     super.key,

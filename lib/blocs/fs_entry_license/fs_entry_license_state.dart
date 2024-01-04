@@ -7,6 +7,10 @@ abstract class FsEntryLicenseState extends Equatable {
   List<Object> get props => [];
 }
 
+class FsEntryLicenseLoadInProgress extends FsEntryLicenseState {
+  const FsEntryLicenseLoadInProgress() : super();
+}
+
 class FsEntryLicenseSelecting extends FsEntryLicenseState {
   const FsEntryLicenseSelecting() : super();
 }
@@ -17,10 +21,6 @@ class FsEntryLicenseConfiguring extends FsEntryLicenseState {
 
 class FsEntryLicenseReviewing extends FsEntryLicenseState {
   const FsEntryLicenseReviewing() : super();
-}
-
-class FsEntryLicenseLoadInProgress extends FsEntryLicenseState {
-  const FsEntryLicenseLoadInProgress() : super();
 }
 
 class FsEntryLicenseWalletMismatch extends FsEntryLicenseState {
