@@ -3,7 +3,7 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/plausible_event_tracker.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,12 +21,28 @@ class NoDrivesPage extends StatelessWidget {
     required this.anonymouslyShowDriveDetail,
   }) : super(key: key) {
     if (anonymouslyShowDriveDetail) {
-      PlausibleEventTracker.track(
-        event: PlausibleEvent.fileExplorerNonLoggedInUser,
+      PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.fileExplorerNonLoggedInUser,
+      );
+
+      PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.fileExplorerPage,
+        props: {
+          'loggedIn': false,
+          'noDrives': true,
+        },
       );
     } else {
-      PlausibleEventTracker.track(
-        event: PlausibleEvent.fileExplorerNewUserEmpty,
+      PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.fileExplorerNewUserEmpty,
+      );
+
+      PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.fileExplorerPage,
+        props: {
+          'loggedIn': true,
+          'noDrives': true,
+        },
       );
     }
   }

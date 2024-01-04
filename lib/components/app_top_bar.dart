@@ -5,6 +5,8 @@ import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -49,9 +51,8 @@ class SyncButton extends StatelessWidget {
         items: [
           ArDriveDropdownItem(
             onClick: () {
-              context.read<SyncCubit>().startSync(
-                    syncDeep: false,
-                  );
+              context.read<SyncCubit>().startSync(syncDeep: false);
+              PlausibleEventTracker.trackResync(type: ResyncType.resync);
             },
             content: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).resync,
@@ -62,9 +63,8 @@ class SyncButton extends StatelessWidget {
           ),
           ArDriveDropdownItem(
               onClick: () {
-                context.read<SyncCubit>().startSync(
-                      syncDeep: true,
-                    );
+                context.read<SyncCubit>().startSync(syncDeep: true);
+                PlausibleEventTracker.trackResync(type: ResyncType.deepResync);
               },
               content: ArDriveDropdownItemTile(
                 name: appLocalizationsOf(context).deepResync,

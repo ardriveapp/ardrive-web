@@ -21,7 +21,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/plausible_event_tracker.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
@@ -58,7 +58,11 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.track(event: PlausibleEvent.welcomePage);
+    PlausibleEventTracker.trackPageview(
+      page: PlausiblePageView.welcomePage,
+    ).then(
+      (value) => PlausibleEventTracker.trackAppLoaded(),
+    );
   }
 
   @override
@@ -127,11 +131,12 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
           } else if (loginState is LoginSuccess) {
+            final profileType = loginState.user.profileType;
             logger.d('Login Success, unlocking default profile');
 
             context.read<ProfileCubit>().unlockDefaultProfile(
                   loginState.user.password,
-                  loginState.user.profileType,
+                  profileType,
                 );
           }
         },
@@ -734,7 +739,8 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.track(event: PlausibleEvent.welcomeBackPage);
+    PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.welcomeBackPage);
   }
 
   @override
@@ -862,8 +868,8 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.track(
-      event: PlausibleEvent.createAndConfirmPasswordPage,
+    PlausibleEventTracker.trackPageview(
+      page: PlausiblePageView.createAndConfirmPasswordPage,
     );
   }
 
@@ -1082,8 +1088,8 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
       return;
     }
 
-    PlausibleEventTracker.track(
-      event: PlausibleEvent.createdAndConfirmedPassword,
+    PlausibleEventTracker.trackPageview(
+      page: PlausiblePageView.createdAndConfirmedPassword,
     );
 
     context.read<LoginBloc>().add(
@@ -1113,9 +1119,11 @@ class OnBoardingViewState extends State<OnBoardingView> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.track(event: PlausibleEvent.onboardingPage).then(
+    PlausibleEventTracker.trackPageview(page: PlausiblePageView.onboardingPage)
+        .then(
       (value) {
-        PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage1);
+        PlausibleEventTracker.trackPageview(
+            page: PlausiblePageView.tutorialsPage1);
       },
     );
   }
@@ -1134,7 +1142,8 @@ class OnBoardingViewState extends State<OnBoardingView> {
                     wallet: widget.wallet,
                   ),
                 );
-            PlausibleEventTracker.track(event: PlausibleEvent.tutorialSkipped);
+            PlausibleEventTracker.trackPageview(
+                page: PlausiblePageView.tutorialSkipped);
           },
           title: appLocalizationsOf(context).onboarding1Title,
           description: appLocalizationsOf(context).onboarding1Description,
@@ -1186,11 +1195,14 @@ class OnBoardingViewState extends State<OnBoardingView> {
     });
 
     if (_currentPage == 0) {
-      PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage1);
+      PlausibleEventTracker.trackPageview(
+          page: PlausiblePageView.tutorialsPage1);
     } else if (_currentPage == 1) {
-      PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage2);
+      PlausibleEventTracker.trackPageview(
+          page: PlausiblePageView.tutorialsPage2);
     } else if (_currentPage == 2) {
-      PlausibleEventTracker.track(event: PlausibleEvent.tutorialsPage3);
+      PlausibleEventTracker.trackPageview(
+          page: PlausiblePageView.tutorialsPage3);
     }
   }
 
@@ -1466,7 +1478,8 @@ class _EnterSeedPhraseViewState extends State<EnterSeedPhraseView> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.track(event: PlausibleEvent.enterSeedPhrasePage);
+    PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.enterSeedPhrasePage);
   }
 
   @override
@@ -1628,7 +1641,8 @@ class _GenerateWalletViewState extends State<GenerateWalletView> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.track(event: PlausibleEvent.walletGenerationPage);
+    PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.walletGenerationPage);
 
     // TODO: create/update localization key
     _message = 'Did you know?\n\n${_messages[0]}';
@@ -1742,7 +1756,8 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.track(event: PlausibleEvent.walletDownloadPage);
+    PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.walletDownloadPage);
   }
 
   @override
@@ -1799,8 +1814,8 @@ class _DownloadWalletViewState extends State<DownloadWalletView> {
                 child: GestureDetector(
                     onTap: () {
                       _onDownload();
-                      PlausibleEventTracker.track(
-                        event: PlausibleEvent.walletDownloaded,
+                      PlausibleEventTracker.trackPageview(
+                        page: PlausiblePageView.walletDownloaded,
                       );
                     },
                     child: Container(
@@ -1974,13 +1989,13 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   void _trackPlausible() {
     switch (_currentPage) {
       case 1:
-        PlausibleEventTracker.track(
-          event: PlausibleEvent.writeDownSeedPhrasePage,
+        PlausibleEventTracker.trackPageview(
+          page: PlausiblePageView.writeDownSeedPhrasePage,
         );
         break;
       case 2:
-        PlausibleEventTracker.track(
-          event: PlausibleEvent.verifySeedPhrasePage,
+        PlausibleEventTracker.trackPageview(
+          page: PlausiblePageView.verifySeedPhrasePage,
         );
         break;
     }
@@ -2595,7 +2610,8 @@ class CreateNewWalletViewState extends State<CreateNewWalletView> {
   }
 
   Widget _buildGettingStarted() {
-    PlausibleEventTracker.track(event: PlausibleEvent.gettingStartedPage);
+    PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.gettingStartedPage);
 
     // TODO: create/update localization keys
     var cardInfos = [
