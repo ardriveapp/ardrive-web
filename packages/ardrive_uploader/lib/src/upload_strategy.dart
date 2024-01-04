@@ -46,8 +46,6 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       wallet,
     );
 
-    debugPrint('metadata uploaded for the file: ${task.metadataUploaded}');
-
     /// uploads the metadata item if it hasn't been uploaded yet. It can happen
     /// that the metadata item is uploaded but the data item is not, so we need
     /// to check for that.
@@ -107,6 +105,8 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     required bool Function() verifyCancel,
     required Wallet wallet,
   }) async {
+    debugPrint('uploading data item for the file');
+
     /// sends the data item
     var dataItemTask = task.copyWith(
       uploadItem: DataItemUploadItem(
@@ -163,6 +163,8 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
         error: result.error,
       );
     }
+
+    debugPrint('data item uploaded succesfully. Result: ${result.success}');
 
     final updatedTask = controller.tasks[task.id]!;
 

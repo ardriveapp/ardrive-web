@@ -169,7 +169,7 @@ class _ArDriveUploader implements ArDriveUploader {
         dataBundler: dataBundler,
         streamedUploadFactory: _streamedUploadFactory);
 
-    final uploadSender = UploadDispatcher(
+    final uploadDispatcher = UploadDispatcher(
       dataBundler: dataBundler,
       uploadStrategy: uploadFileStrategy,
       uploadFolderStrategy: uploadFolderStrategy,
@@ -177,7 +177,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
-      uploadSender,
+      uploadDispatcher,
       numOfWorkers: driveKey != null ? 3 : 5,
       maxTasksPerWorker: driveKey != null ? 1 : 3,
     );

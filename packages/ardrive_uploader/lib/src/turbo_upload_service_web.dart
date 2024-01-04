@@ -165,6 +165,8 @@ class TurboUploadServiceImpl implements TurboUploadService {
 
       final response = await client.send(request);
 
+      debugPrint('Response from turbo: ${response.statusCode}');
+
       return response;
     } on http.ClientException catch (e) {
       throw FetchClientException(
