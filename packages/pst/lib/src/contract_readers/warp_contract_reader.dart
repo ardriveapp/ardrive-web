@@ -4,7 +4,7 @@ import 'package:pst/src/implementations/pst_web.dart'
     if (dart.library.io) 'package:pst/src/implementations/pst_stub.dart'
     as implementation;
 
-class SmartweaveContractReader implements ContractReader {
+class WarpContractReader implements ContractReader {
   @override
   Future<dynamic> readContract(TransactionID txId) {
     return implementation.readContract(txId);
