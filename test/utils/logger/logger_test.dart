@@ -1,6 +1,7 @@
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../packages/ardrive_logger/lib/src/logger.dart';
 
 class MockLoggerExporter extends Mock implements LogExporter {}
 
@@ -12,6 +13,7 @@ void main() {
     emailSubject: '',
     shareText: '',
     shareSubject: '',
+    emailSupport: '',
   );
 
   setUp(() {

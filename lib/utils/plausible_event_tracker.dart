@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:http/http.dart' as http;
 
 abstract class PlausibleEventTracker {

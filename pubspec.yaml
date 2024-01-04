@@ -48,6 +48,8 @@ dependencies:
     path: ./packages/arconnect
   ardrive_crypto:
     path: ./packages/ardrive_crypto
+  ardrive_logger:
+    path: ./packages/ardrive_logger
   artemis: ^7.0.0-beta.13
   pst:
     path: ./packages/pst
