@@ -90,6 +90,7 @@ class UploadReady extends UploadState {
   final String turboCredits;
   final UploadMethod uploadMethod;
   final bool isButtonToUploadEnabled;
+  final bool isDragNDrop;
 
   UploadReady({
     required this.costEstimateAr,
@@ -108,6 +109,7 @@ class UploadReady extends UploadState {
     required this.isTurboUploadPossible,
     required this.uploadMethod,
     required this.isButtonToUploadEnabled,
+    this.isDragNDrop = false,
   });
 
 // copyWith
@@ -214,7 +216,6 @@ class UploadInProgressUsingNewUploader extends UploadState {
   final bool isCanceling;
   final Key? equatableBust;
   final UploadMethod uploadMethod;
-  final bool containsLargeTurboUpload;
 
   UploadInProgressUsingNewUploader({
     required this.progress,
@@ -223,7 +224,6 @@ class UploadInProgressUsingNewUploader extends UploadState {
     this.equatableBust,
     this.isCanceling = false,
     required this.uploadMethod,
-    required this.containsLargeTurboUpload,
   });
 
   @override

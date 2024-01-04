@@ -1,11 +1,10 @@
-// unit tests for PaymentService
-
 import 'dart:io';
 
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,22 +18,22 @@ const int byteSize = 1000;
 
 class ArDriveHTTPMock extends Mock implements ArDriveHTTP {}
 
-void main() {
+void main() async {
   late PaymentService paymentService;
   late ArDriveHTTPMock httpClient;
   late Wallet wallet;
   late String walletAddress;
 
+  httpClient = ArDriveHTTPMock();
+  wallet = getTestWallet();
+  walletAddress = await wallet.getAddress();
+
   group('PaymentService class', () {
-    setUp(() async {
-      httpClient = ArDriveHTTPMock();
+    setUp(() {
       paymentService = PaymentService(
         turboPaymentUri: Uri.parse(fakeUrl),
         httpClient: httpClient,
       );
-      wallet = getTestWallet();
-      walletAddress = await wallet.getAddress();
-
       when(() => httpClient.get(url: '$fakeUrl/v1/price/bytes/$byteSize'))
           .thenAnswer(
         (_) async => ArDriveHTTPResponse(
@@ -281,67 +280,151 @@ void main() {
         );
       });
     });
-  });
 
-  group('getPaymentIntent method', () {
-    test('should return a PaymentModel object', () async {
-      final result = await paymentService.getPaymentIntent(
-        wallet: wallet,
-        amount: amount,
-        currency: currency,
-      );
-      expect(result, isA<PaymentModel>());
-    });
+    group('redeemGift method', () {
+      const fakeGiftCode = 'fakeGiftCode';
+      const email = 'test@test.com';
 
-    test('should throw an exception if the request fails', () async {
       when(
         () => httpClient.get(
           url:
-              '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount?promoCode=$fakePromoCode',
-          headers: any(named: 'headers'),
+              '$fakeUrl/v1/redeem?id=$fakeGiftCode&email=$email&destinationAddress=$walletAddress',
+          responseType: ResponseType.json,
         ),
-      ).thenThrow(
-        ArDriveHTTPException(
-          statusCode: 404,
-          retryAttempts: 0,
-          exception: Exception('404'),
-        ),
-      );
-      expect(
-        () async => await paymentService.getPaymentIntent(
+      ).thenAnswer((invocation) => Future.value(
+            ArDriveHTTPResponse(
+              statusCode: HttpStatus.ok,
+              data: {
+                'message': 'Payment receipt redeemed for 1000 winc!',
+                'userBalance': '1000',
+                'userAddress': 'abcdefghijklmnopqrxtuvwxyz123456789ABCDEFGH',
+                'userCreationDate': '2023-05-17T21:46:38.404Z'
+              },
+              retryAttempts: 0,
+            ),
+          ));
+
+      test('should return a new updated balance', () async {
+        final result = await paymentService.redeemGift(
+          email: email,
+          giftCode: fakeGiftCode,
+          destinationAddress: walletAddress,
+        );
+        expect(result, 1000);
+      });
+
+      test('should throw an exception if the request fails', () async {
+        when(
+          () => httpClient.get(
+            url:
+                '$fakeUrl/v1/redeem?id=$fakeGiftCode&email=$email&destinationAddress=$walletAddress',
+            responseType: ResponseType.json,
+          ),
+        ).thenThrow(
+          ArDriveHTTPException(
+            statusCode: 404,
+            retryAttempts: 0,
+            exception: Exception('404'),
+          ),
+        );
+        expect(
+          () async => await paymentService.redeemGift(
+            email: email,
+            giftCode: fakeGiftCode,
+            destinationAddress: walletAddress,
+          ),
+          throwsException,
+        );
+      });
+
+      test(
+          'should throw GiftAlreadyRedeemed if the response contains the already redeemed message',
+          () {
+        when(
+          () => httpClient.get(
+            url:
+                '$fakeUrl/v1/redeem?id=$fakeGiftCode&email=$email&destinationAddress=$walletAddress',
+            responseType: ResponseType.json,
+          ),
+        ).thenThrow(
+          ArDriveHTTPException(
+            statusCode: 400,
+            retryAttempts: 0,
+            exception: Exception('Gift has already been redeemed!'),
+            data: 'Gift has already been redeemed!',
+          ),
+        );
+        expect(
+          () async => await paymentService.redeemGift(
+            email: email,
+            giftCode: fakeGiftCode,
+            destinationAddress: walletAddress,
+          ),
+          throwsA(isA<GiftAlreadyRedeemed>()),
+        );
+      });
+    });
+
+    group('getPaymentIntent method', () {
+      test('should return a PaymentModel object', () async {
+        final result = await paymentService.getPaymentIntent(
           wallet: wallet,
           amount: amount,
           currency: currency,
-          promoCode: fakePromoCode,
-        ),
-        throwsException,
-      );
-    });
-  });
+        );
+        expect(result, isA<PaymentModel>());
+      });
 
-  group('getSupportedCountries method', () {
-    test('should return a list of countries', () async {
-      final result = await paymentService.getSupportedCountries();
-      expect(result, isA<List<String>>());
+      test('should throw an exception if the request fails', () async {
+        when(
+          () => httpClient.get(
+            url:
+                '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount?promoCode=$fakePromoCode',
+            headers: any(named: 'headers'),
+          ),
+        ).thenThrow(
+          ArDriveHTTPException(
+            statusCode: 404,
+            retryAttempts: 0,
+            exception: Exception('404'),
+          ),
+        );
+        expect(
+          () async => await paymentService.getPaymentIntent(
+            wallet: wallet,
+            amount: amount,
+            currency: currency,
+            promoCode: fakePromoCode,
+          ),
+          throwsException,
+        );
+      });
     });
 
-    test('should throw an exception if the request fails', () async {
-      when(
-        () => httpClient.get(
-          url: '$fakeUrl/v1/countries',
-          headers: any(named: 'headers'),
-        ),
-      ).thenThrow(
-        ArDriveHTTPException(
-          statusCode: 404,
-          retryAttempts: 0,
-          exception: Exception('404'),
-        ),
-      );
-      expect(
-        () async => await paymentService.getSupportedCountries(),
-        throwsException,
-      );
+    group('getSupportedCountries method', () {
+      test('should return a list of countries', () async {
+        final result = await paymentService.getSupportedCountries();
+        expect(result, isA<List<String>>());
+      });
+
+      test('should throw an exception if the request fails', () async {
+        when(
+          () => httpClient.get(
+            url: '$fakeUrl/v1/countries',
+            headers: any(named: 'headers'),
+          ),
+        ).thenThrow(
+          ArDriveHTTPException(
+            statusCode: 404,
+            retryAttempts: 0,
+            exception: Exception('404'),
+          ),
+        );
+        expect(
+          () async => await paymentService.getSupportedCountries(),
+          throwsException,
+        );
+      });
     });
   });
 }

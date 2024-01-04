@@ -57,7 +57,7 @@ abstract class ArDriveUploader {
     pstService ??= PstService(
       communityOracle: CommunityOracle(
         ArDriveContractOracle([
-          ContractOracle(SmartweaveContractReader()),
+          ContractOracle(WarpContractReader()),
         ]),
       ),
     );

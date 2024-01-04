@@ -14,7 +14,7 @@ import 'package:ardrive/turbo/topup/views/topup_success_view.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger/logger.dart';
-import 'package:ardrive/utils/plausible_event_tracker.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +62,7 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
 
   activityTracker.setToppingUp(true);
 
-  PlausibleEventTracker.track(event: PlausibleEvent.turboTopUpModal);
+  PlausibleEventTracker.trackPageview(page: PlausiblePageView.turboTopUpModal);
 
   showAnimatedDialogWithBuilder(
     context,
@@ -93,12 +93,14 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
 
     if (turbo.paymentStatus == PaymentStatus.success) {
       logger.d('Turbo payment success');
-      PlausibleEventTracker.track(event: PlausibleEvent.turboTopUpSuccess);
+      PlausibleEventTracker.trackPageview(
+          page: PlausiblePageView.turboTopUpSuccess);
 
       onSuccess?.call();
     } else {
       logger.d('Turbo payment error');
-      PlausibleEventTracker.track(event: PlausibleEvent.turboTopUpCancel);
+      PlausibleEventTracker.trackPageview(
+          page: PlausiblePageView.turboTopUpCancel);
     }
 
     turbo.dispose();
@@ -176,8 +178,8 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         if (state is TurboTopupFlowShowingEstimationView) {
           view = const TopUpEstimationView();
         } else if (state is TurboTopupFlowShowingPaymentFormView) {
-          PlausibleEventTracker.track(
-            event: PlausibleEvent.turboPaymentDetails,
+          PlausibleEventTracker.trackPageview(
+            page: PlausiblePageView.turboPaymentDetails,
           );
           view = Stack(
             children: [
@@ -200,8 +202,8 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             ],
           );
         } else if (state is TurboTopupFlowShowingPaymentReviewView) {
-          PlausibleEventTracker.track(
-            event: PlausibleEvent.turboPurchaseReview,
+          PlausibleEventTracker.trackPageview(
+            page: PlausiblePageView.turboPurchaseReview,
           );
           view = Stack(
             children: [

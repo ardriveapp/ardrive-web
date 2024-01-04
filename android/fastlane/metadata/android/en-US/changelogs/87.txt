@@ -1,0 +1,3 @@
+- Improves existing Plausible event tracking to increase clarity
+- Fix image preview size for long file names.
+- Temporary CLI file download fix: Bypass validation
