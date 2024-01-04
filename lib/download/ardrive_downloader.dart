@@ -2,18 +2,19 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart' as arweave;
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 
 abstract class ArDriveDownloader {
-  Stream<double> downloadFile({
-    required String dataTx,
+  Future<Stream<double>> downloadFile({
+    required TransactionCommonMixin dataTx,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -24,6 +25,8 @@ abstract class ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
   });
+
+  Future<void> abortDownload();
 
   factory ArDriveDownloader({
     required IOFileAdapter ioFileAdapter,
@@ -50,8 +53,8 @@ class _ArDriveDownloader implements ArDriveDownloader {
       downloadProgressController.stream;
 
   @override
-  Stream<double> downloadFile({
-    required String dataTx,
+  Future<Stream<double>> downloadFile({
+    required TransactionCommonMixin dataTx,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -61,67 +64,44 @@ class _ArDriveDownloader implements ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
-  }) async* {
+  }) async {
+    if (AppPlatform.isMobile) {
+      final isPrivateFile =
+          fileKey != null && cipher != null && cipherIvString != null;
+
+      if (isPrivateFile && cipher == Cipher.aes256gcm) {
+        return _getDartVMGCMDecryptStream(
+          cipher,
+          cipherIvString,
+          (await arweave.download(
+            txId: dataTx.id,
+            onProgress: (progress, speed) => logger.d(progress.toString()),
+          ))
+              .$1,
+          fileSize,
+          fileName,
+          lastModifiedDate,
+          contentType,
+          fileKey,
+        );
+      }
+    }
+
     Stream<Uint8List> saveStream;
 
     if (isManifest) {
-      final urlString = isManifest
-          ? '${_arweave.client.api.gatewayUrl.origin}/raw/$dataTx'
-          : '${_arweave.client.api.gatewayUrl.origin}/$dataTx';
-
-      final dataRes = await ArDriveHTTP().getAsBytes(urlString);
-      logger.i('Downloading manifest...');
-      saveStream = Stream.fromIterable([dataRes.data]);
+      saveStream = await _getManifestStream(dataTx.id);
     } else {
-      final streamDownloadResponse = await arweave.download(
-        txId: dataTx,
-        onProgress: (progress, speed) => logger.d(progress.toString()),
+      saveStream = await _getFileStream(
+        dataTx: dataTx,
+        fileSize: fileSize,
+        fileName: fileName,
+        lastModifiedDate: lastModifiedDate,
+        contentType: contentType,
+        fileKey: fileKey,
+        cipher: cipher,
+        cipherIvString: cipherIvString,
       );
-
-      final streamDownload = streamDownloadResponse.$1;
-
-      if (fileKey != null && cipher != null && cipherIvString != null) {
-        final cipherIv = decodeBase64ToBytes(cipherIvString);
-
-        final keyData = Uint8List.fromList(await fileKey.extractBytes());
-
-        if (cipher == Cipher.aes256ctr) {
-          saveStream = await decryptTransactionDataStream(
-            cipher,
-            cipherIv,
-            streamDownload.transform(transformer),
-            keyData,
-            fileSize,
-          );
-        } else if (cipher == Cipher.aes256gcm) {
-          List<int> bytes = [];
-
-          await for (var chunk in streamDownload) {
-            bytes.addAll(chunk);
-            yield bytes.length / fileSize * 100;
-          }
-
-          final encryptedData = await decryptTransactionData(
-            cipher,
-            cipherIvString,
-            Uint8List.fromList(bytes),
-            fileKey,
-          );
-
-          _ardriveIo.saveFile(
-            await IOFile.fromData(encryptedData,
-                name: fileName,
-                lastModifiedDate: lastModifiedDate,
-                contentType: contentType),
-          );
-
-          return;
-        } else {
-          throw Exception('Unknown cipher: $cipher');
-        }
-      } else {
-        saveStream = streamDownload.transform(transformer);
-      }
     }
 
     final file = await _ioFileAdapter.fromReadStreamGenerator(
@@ -141,39 +121,155 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
     logger.i('Saving file...');
 
-    await for (final saveStatus in _ardriveIo.saveFileStream(file, finalize)) {
-      if (saveStatus.saveResult == null) {
-        if (saveStatus.bytesSaved == 0) continue;
+    final progressController = StreamController<double>();
 
+    final subscription =
+        _ardriveIo.saveFileStream(file, finalize).listen((saveStatus) {
+      if (saveStatus.saveResult == null) {
         final progress = saveStatus.bytesSaved / saveStatus.totalBytes;
 
         logger.d('Saving file progress: ${progress * 100}%');
 
-        yield progress * 100;
-
-        // final progressPercentInt = (progress * 100).round();
-        // emit(FileDownloadWithProgress(
-        //   fileName: _file.name,
-        //   progress: progressPercentInt,
-        //   fileSize: saveStatus.totalBytes,
-        // ));
+        progressController.sink.add(progress * 100);
       } else {
         saveResult = saveStatus.saveResult!;
       }
+    });
+
+    subscription.onDone(() async {
+      if (_cancelWithReason.isCompleted) {
+        throw Exception(
+            'Download cancelled: ${await _cancelWithReason.future}');
+      }
+
+      if (saveResult != true) throw Exception('Failed to save file');
+
+      logger.d('File saved with success');
+
+      progressController.close();
+    });
+
+    subscription.onError((e, s) {
+      logger.e(
+        'Failed to download of save the file. Closing progressController...',
+        e,
+        s,
+      );
+      // TODO: we can show a different message for different errors e.g. when `e` is ActionCanceledException
+      progressController.addError(e);
+      progressController.close();
+      return;
+    });
+
+    return progressController.stream;
+  }
+
+  @override
+  Future<void> abortDownload() {
+    _cancelWithReason.complete('Download aborted');
+    logger.d('Download aborted');
+    return Future.value();
+  }
+
+  Future<Stream<Uint8List>> _getManifestStream(String dataTxId) async {
+    final urlString = '${_arweave.client.api.gatewayUrl.origin}/raw/$dataTxId';
+
+    logger.i('The file is a manifest. Downloading it from $urlString');
+
+    final dataRes = await ArDriveHTTP().getAsBytes(urlString);
+
+    return Stream.fromIterable([dataRes.data]);
+  }
+
+  Future<Stream<Uint8List>> _getFileStream({
+    required TransactionCommonMixin dataTx,
+    required int fileSize,
+    required String fileName,
+    required DateTime lastModifiedDate,
+    required String contentType,
+    SecretKey? fileKey,
+    String? cipher,
+    String? cipherIvString,
+  }) async {
+    logger.d('The file is not a manifest. Downloading it from Arweave...');
+
+    /// Disables the verification when the file was uploaded by the CLI
+    final verifyDownload = dataTx.getTag(EntityTag.appName) == 'ArDrive-CLI';
+
+    logger.d('verifying download: $verifyDownload');
+
+    final streamDownloadResponse = await arweave.download(
+      txId: dataTx.id,
+      onProgress: (progress, speed) => logger.d(progress.toString()),
+      verifyDownload: verifyDownload,
+    );
+
+    final streamDownload = streamDownloadResponse.$1;
+
+    final isPrivateFile =
+        fileKey != null && cipher != null && cipherIvString != null;
+
+    if (isPrivateFile) {
+      logger.d('Decrypting file...');
+
+      final cipherIv = decodeBase64ToBytes(cipherIvString);
+
+      final keyData = Uint8List.fromList(await fileKey.extractBytes());
+
+      final isAValidCipher =
+          cipher == Cipher.aes256ctr || cipher == Cipher.aes256gcm;
+
+      if (isAValidCipher) {
+        logger.d('Decrypting file with cipher: $cipher');
+
+        return decryptTransactionDataStream(
+          cipher,
+          cipherIv,
+          streamDownload.transform(listIntToUint8ListTransformer),
+          keyData,
+          fileSize,
+        );
+      } else {
+        logger.e('Unknown cipher: $cipher. Throwing exception.');
+        throw Exception('Unknown cipher: $cipher');
+      }
     }
 
-    logger.i('File saved');
+    logger.d('No cipher found. Saving file as is...');
+    return streamDownload.transform(listIntToUint8ListTransformer);
+  }
 
-    if (_cancelWithReason.isCompleted) {
-      throw Exception('Download cancelled: ${await _cancelWithReason.future}');
+  Stream<double> _getDartVMGCMDecryptStream(
+    String cipher,
+    String cipherIvString,
+    Stream<List<int>> streamDownload,
+    int fileSize,
+    String fileName,
+    DateTime lastModifiedDate,
+    String contentType,
+    SecretKey fileKey,
+  ) async* {
+    List<int> bytes = [];
+
+    await for (var chunk in streamDownload) {
+      bytes.addAll(chunk);
+      yield bytes.length / fileSize * 100;
     }
-    if (saveResult != true) throw Exception('Failed to save file');
+
+    final encryptedData = await decryptTransactionData(
+      cipher,
+      cipherIvString,
+      Uint8List.fromList(bytes),
+      fileKey,
+    );
+
+    _ardriveIo.saveFile(
+      await IOFile.fromData(encryptedData,
+          name: fileName,
+          lastModifiedDate: lastModifiedDate,
+          contentType: contentType),
+    );
+
+    return;
   }
 }
-
-final StreamTransformer<List<int>, Uint8List> transformer =
-    StreamTransformer.fromHandlers(
-  handleData: (List<int> data, EventSink<Uint8List> sink) {
-    sink.add(Uint8List.fromList(data));
-  },
-);

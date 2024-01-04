@@ -111,7 +111,7 @@ class ArDriveCrypto {
           data.length,
         );
 
-        final bytes = await streamToUint8List(stream);
+        final bytes = await concatenateUint8ListStream(stream);
 
         decryptedData = bytes;
       } else if (cipher == Cipher.aes256gcm) {

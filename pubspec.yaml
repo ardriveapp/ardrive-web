@@ -153,6 +153,14 @@ dependency_overrides:
       url: https://github.com/ardriveapp/fetch_api.git
       ref: master
   http: ^1.1.0
+  arweave:
+    git:
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
+  ardrive_io:
+    git:
+      url: https://github.com/ar-io/ardrive_io.git
+      ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
 
 dev_dependencies:
   integration_test:
