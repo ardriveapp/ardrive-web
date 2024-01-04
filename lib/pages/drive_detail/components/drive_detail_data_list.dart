@@ -96,6 +96,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final String fileId;
   final String parentFolderId;
   final String dataTxId;
+  final String? licenseTxId;
   final String? bundledIn;
   final DateTime lastModifiedDate;
   final NetworkTransaction? metadataTx;
@@ -118,6 +119,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
     required String contentType,
     required String path,
     String? fileStatusFromTransactions,
+    this.licenseTxId,
     this.bundledIn,
     required int index,
     required bool isOwner,
@@ -321,6 +323,7 @@ class DriveDataTableItemMapper {
       parentFolderId: file.parentFolderId,
       dataTxId: file.dataTxId,
       bundledIn: file.bundledIn,
+      licenseTxId: file.licenseTxId,
       metadataTx: file.metadataTx,
       dataTx: file.dataTx,
       index: index,
@@ -383,6 +386,7 @@ class DriveDataTableItemMapper {
       parentFolderId: revision.parentFolderId,
       dataTxId: revision.dataTxId,
       bundledIn: revision.bundledIn,
+      licenseTxId: revision.licenseTxId,
       metadataTx: null,
       dataTx: null,
       index: 0,
