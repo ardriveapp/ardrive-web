@@ -275,12 +275,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
           Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
               child: Column(children: [
-                Text(widget.filename,
+                Tooltip(
+                  message: widget.filename,
+                  child: Text(
+                    widget.filename,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                     textAlign: TextAlign.center,
-                    style: ArDriveTypography.body
-                        .smallBold700(color: colors.themeFgDefault)),
+                    style: ArDriveTypography.body.smallBold700(
+                      color: colors.themeFgDefault,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -874,10 +880,13 @@ class _FullScreenVideoPlayerWidgetState
                               color: colors.themeBgCanvas,
                               child: Column(
                                 children: [
-                                  Text(widget.filename,
-                                      style: ArDriveTypography.body
-                                          .smallBold700(
-                                              color: colors.themeFgDefault)),
+                                  Tooltip(
+                                    message: widget.filename,
+                                    child: Text(widget.filename,
+                                        style: ArDriveTypography.body
+                                            .smallBold700(
+                                                color: colors.themeFgDefault)),
+                                  ),
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
@@ -1572,21 +1581,26 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           builder: (context, imagePreview, _) {
             final filename = imagePreview.filename!;
             final contentType = imagePreview.contentType!;
+            final fileNameWithoutExtension =
+                getBasenameWithoutExtension(filePath: filename);
             return Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: isFileExplorer
                   ? CrossAxisAlignment.center
                   : CrossAxisAlignment.start,
               children: [
-                Text(
-                  getBasenameWithoutExtension(filePath: filename),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                  style: ArDriveTypography.body.smallBold700(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
+                Tooltip(
+                  message: fileNameWithoutExtension,
+                  child: Text(
+                    fileNameWithoutExtension,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    style: ArDriveTypography.body.smallBold700(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                    ),
                   ),
                 ),
                 Text(
