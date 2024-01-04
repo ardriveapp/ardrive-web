@@ -188,7 +188,7 @@ latestLicenseByFileIdAndDataTxId:
     LIMIT 1;
 allFileRevisionsWithLicenseReferencedButNotSynced:
     SELECT * FROM file_revisions
-    WHERE licenseTxId NOT NULL AND licenseTxId NOT IN (
+    WHERE licenseTxId IS NOT NULL AND licenseTxId NOT IN (
         SELECT licenseTxId FROM licenses
     );
 
