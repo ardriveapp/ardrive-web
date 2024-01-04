@@ -214,6 +214,10 @@
   "@computingSnapshotData": {
     "description": "Computing Snapshot Data"
   },
+  "concealHiddenItems": "Conceal hidden items",
+  "@concealHiddenItems": {
+    "description": "The action of concealing hidden items."
+  },
   "confirm": "Confirm",
   "@confirm": {},
   "confirmed": "Confirmed",
@@ -1597,6 +1601,10 @@
   "resyncTooltip": "Refresh All Drives",
   "@resyncTooltip": {
     "description": "resync tooltip text"
+  },
+  "revealHiddenItems": "Reveal hidden items",
+  "@revealHiddenItems": {
+    "description": "The action of revealing hidden items."
   },
   "review": "Review",
   "@review": {},
