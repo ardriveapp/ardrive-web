@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive/entities/license_assertion.dart';
@@ -51,9 +52,14 @@ class LicenseService {
     final licenseType = LicenseType.values.firstWhere(
       (element) => element.name == licensesCompanion.licenseType.value,
     );
-    final additionalTags = licensesCompanion.customGQLTags.present
-        ? jsonDecode(licensesCompanion.customGQLTags.value!)
-        : {};
+    final LinkedHashMap<dynamic, dynamic> customTags =
+        licensesCompanion.customGQLTags.present
+            ? jsonDecode(licensesCompanion.customGQLTags.value!)
+            : {};
+
+    final additionalTags = customTags.map(
+      (key, value) => MapEntry(key.toString(), value.toString()),
+    );
 
     return paramsFromAdditionalTags(
       licenseType: licenseType,
