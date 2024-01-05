@@ -7,6 +7,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -57,6 +58,9 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
           } else if (state is DriveCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
+            PlausibleEventTracker.trackDriveCreation(
+              drivePrivacy: state.privacy,
+            );
           } else if (state is DriveCreateWalletMismatch) {
             Navigator.pop(context);
           }

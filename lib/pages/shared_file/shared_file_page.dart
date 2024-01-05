@@ -7,7 +7,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/plausible_event_tracker.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +23,7 @@ class SharedFilePage extends StatelessWidget {
   final _fileKeyController = TextEditingController();
 
   SharedFilePage({Key? key}) : super(key: key) {
-    PlausibleEventTracker.track(event: PlausibleEvent.sharedFilePage);
+    PlausibleEventTracker.trackPageview(page: PlausiblePageView.sharedFilePage);
   }
 
   @override
