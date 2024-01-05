@@ -41,15 +41,29 @@ class HideDialog extends StatelessWidget {
       },
       builder: (context, state) {
         return ArDriveStandardModal(
-          title: _buildTitle(state.hideAction),
-          content: _buildContent(),
+          title: _buildTitle(state),
+          content: _buildContent(state),
           actions: _buildActions(context, state),
         );
       },
     );
   }
 
-  String _buildTitle(HideAction hideAction) {
+  String _buildTitle(HideState state) {
+    final hideAction = state.hideAction;
+    if (state is FailureHideState) {
+      switch (hideAction) {
+        case HideAction.hideFile:
+          return 'Failed to hide file'; // TODO: localize
+        case HideAction.hideFolder:
+          return 'Failed to hide folder'; // TODO: localize
+        case HideAction.unhideFile:
+          return 'Failed to unhide file'; // TODO: localize
+        case HideAction.unhideFolder:
+          return 'Failed to unhide folder'; // TODO: localize
+      }
+    }
+
     switch (hideAction) {
       case HideAction.hideFile:
         return 'Hiding file'; // TODO: localize
@@ -62,7 +76,30 @@ class HideDialog extends StatelessWidget {
     }
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(HideState state) {
+    if (state is FailureHideState) {
+      final hideAction = state.hideAction;
+
+      switch (hideAction) {
+        case HideAction.hideFile:
+          return const Text(
+            'Failed to hide file, please try again', // TODO: localize
+          );
+        case HideAction.hideFolder:
+          return const Text(
+            'Failed to hide folder, please try again', // TODO: localize
+          );
+        case HideAction.unhideFile:
+          return const Text(
+            'Failed to unhide file, please try again', // TODO: localize
+          );
+        case HideAction.unhideFolder:
+          return const Text(
+            'Failed to unhide folder, please try again', // TODO: localize
+          );
+      }
+    }
+
     return const Column(
       children: [
         Center(
@@ -82,7 +119,7 @@ class HideDialog extends StatelessWidget {
           action: () {
             Navigator.of(context).pop();
           },
-          title: appLocalizationsOf(context).cancel,
+          title: appLocalizationsOf(context).close,
         ),
       ];
     } else {

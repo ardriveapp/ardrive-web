@@ -24,7 +24,7 @@ class UploadingHideState extends HideState {
   });
 
   @override
-  List<Object?> get props => [];
+  List<Object> get props => [];
 }
 
 class PreparingAndSigningHideState extends HideState {
@@ -33,7 +33,7 @@ class PreparingAndSigningHideState extends HideState {
   });
 
   @override
-  List<Object?> get props => [];
+  List<Object> get props => [];
 }
 
 class ConfirmingHideState extends HideState {
@@ -127,19 +127,16 @@ class SuccessHideState extends HideState {
   });
 
   @override
-  List<Object?> get props => [];
+  List<Object> get props => [];
 }
 
 class FailureHideState extends HideState {
-  final String message;
-
   const FailureHideState({
-    required this.message,
     required super.hideAction,
   });
 
   @override
-  List<Object?> get props => [message];
+  List<Object> get props => [];
 }
 
 enum HideAction {

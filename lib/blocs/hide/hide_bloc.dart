@@ -72,6 +72,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     on<ConfirmUploadEvent>(_onConfirmUploadEvent);
     on<SelectUploadMethodEvent>(_onSelectUploadMethodEvent);
     on<RefreshTurboBalanceEvent>(_refreshTurboBalance);
+    on<ErrorEvent>(_onErrorEvent);
   }
 
   bool get _useTurboUpload =>
@@ -199,18 +200,10 @@ class HideBloc extends Bloc<HideEvent, HideState> {
       ));
     }
 
-    try {
-      await _computeCostEstimate();
-      await _computeBalanceEstimate();
-      _computeIsFreeThanksToTurbo();
-      _computeIsSufficientBalance();
-    } catch (e) {
-      emit(const FailureHideState(
-        hideAction: HideAction.hideFolder,
-        message: 'Error while computing cost estimate',
-      ));
-      return;
-    }
+    await _computeCostEstimate();
+    await _computeBalanceEstimate();
+    _computeIsFreeThanksToTurbo();
+    _computeIsSufficientBalance();
 
     emit(
       ConfirmingHideState(
@@ -428,6 +421,13 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     );
   }
 
+  void _onErrorEvent(
+    ErrorEvent event,
+    Emitter<HideState> emit,
+  ) {
+    emit(FailureHideState(hideAction: event.hideAction));
+  }
+
   void _computeIsFreeThanksToTurbo() {
     final allowedDataItemSizeForTurbo = _appConfig.allowedDataItemSizeForTurbo;
     final forceNoFreeThanksToTurbo = _appConfig.forceNoFreeThanksToTurbo;
@@ -562,5 +562,15 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     _costEstimateTurbo = await costCalculatorForTurbo.calculateCost(
       totalSize: _totalSize,
     );
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    add(ErrorEvent(
+      error: error,
+      stackTrace: stackTrace,
+      hideAction: state.hideAction,
+    ));
+    super.onError(error, stackTrace);
   }
 }
