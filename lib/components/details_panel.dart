@@ -744,7 +744,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              state.licenseInfo == null
+              state.licenseMeta == null
                   ? ArDriveButton(
                       text: 'Add',
                       // TODO: Localize
@@ -758,7 +758,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       ),
                     )
                   : ArDriveButton(
-                      text: state.licenseInfo!.shortName,
+                      text: state.licenseMeta!.shortName,
                       style: ArDriveButtonStyle.tertiary,
                     )
             ],

@@ -29,7 +29,7 @@ class FsEntryInfoSuccess<T> extends FsEntryInfoState {
 }
 
 class FsEntryFileInfoSuccess extends FsEntryInfoSuccess<FileEntry> {
-  final LicenseMeta? licenseInfo;
+  final LicenseMeta? licenseMeta;
   final LicenseParams? licenseParams;
 
   const FsEntryFileInfoSuccess({
@@ -38,12 +38,12 @@ class FsEntryFileInfoSuccess extends FsEntryInfoSuccess<FileEntry> {
     required super.dateCreated,
     required super.entry,
     required super.metadataTxId,
-    required this.licenseInfo,
+    required this.licenseMeta,
     required this.licenseParams,
   });
 
   @override
-  List<Object?> get props => [name, lastUpdated, dateCreated, licenseInfo];
+  List<Object?> get props => [name, lastUpdated, dateCreated, licenseMeta];
 }
 
 class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {

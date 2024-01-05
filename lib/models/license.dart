@@ -13,10 +13,10 @@ extension LicensesCompanionExtensions on LicensesCompanion {
     final Map<String, String> additionalTags =
         jsonDecode(customGQLTags.value ?? '{}');
 
-    final licenseInfo = licenseService.licenseInfoByType(licenseTypeEnum);
+    final licenseMeta = licenseService.licenseMetaByType(licenseTypeEnum);
     final licenseAssertion = LicenseAssertionEntity(
       dataTxId: dataTxId.value,
-      licenseDefinitionTxId: licenseInfo.licenseDefinitionTxId,
+      licenseDefinitionTxId: licenseMeta.licenseDefinitionTxId,
       additionalTags: additionalTags,
     )
       ..txId = dataTxId.value

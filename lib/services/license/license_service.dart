@@ -15,13 +15,13 @@ enum LicenseTxType {
 
 class LicenseService {
   LicenseType? licenseTypeByTxId(String txId) {
-    return licenseInfoMap.entries
+    return licenseMetaMap.entries
         .firstWhere((element) => element.value.licenseDefinitionTxId == txId)
         .key;
   }
 
-  LicenseMeta licenseInfoByType(LicenseType licenseType) {
-    return licenseInfoMap[licenseType]!;
+  LicenseMeta licenseMetaByType(LicenseType licenseType) {
+    return licenseMetaMap[licenseType]!;
   }
 
   LicenseParams paramsFromAdditionalTags({
@@ -69,24 +69,24 @@ class LicenseService {
 
   LicenseAssertionEntity toEntity({
     required String dataTxId,
-    required LicenseMeta licenseInfo,
+    required LicenseMeta licenseMeta,
     LicenseParams? licenseParams,
   }) {
     return LicenseAssertionEntity(
       dataTxId: dataTxId,
-      licenseDefinitionTxId: licenseInfo.licenseDefinitionTxId,
+      licenseDefinitionTxId: licenseMeta.licenseDefinitionTxId,
       additionalTags: licenseParams?.toAdditionalTags() ?? {},
     );
   }
 
   LicensesCompanion toCompanion({
     required String dataTxId,
-    required LicenseMeta licenseInfo,
+    required LicenseMeta licenseMeta,
     LicenseParams? licenseParams,
   }) {
     return LicensesCompanion(
       dataTxId: Value(dataTxId),
-      licenseType: Value(licenseInfo.licenseType.name),
+      licenseType: Value(licenseMeta.licenseType.name),
       customGQLTags: licenseParams != null
           ? Value(jsonEncode(licenseParams.toAdditionalTags()))
           : const Value.absent(),

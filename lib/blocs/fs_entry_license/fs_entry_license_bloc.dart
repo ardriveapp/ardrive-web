@@ -29,10 +29,10 @@ class FsEntryLicenseBloc
   final selectForm = FormGroup({
     'licenseType': FormControl<LicenseMeta>(
       validators: [Validators.required],
-      value: udlLicenseInfo,
+      value: udlLicenseMeta,
     ),
   });
-  LicenseMeta get selectFormLicenseInfo =>
+  LicenseMeta get selectFormLicenseMeta =>
       selectForm.control('licenseType').value;
 
   final udlForm = FormGroup({
@@ -114,7 +114,7 @@ class FsEntryLicenseBloc
         }
 
         if (event is FsEntryLicenseSelect) {
-          if (selectFormLicenseInfo.hasParams) {
+          if (selectFormLicenseMeta.hasParams) {
             emit(const FsEntryLicenseConfiguring());
           } else {
             licenseParams = null;
@@ -127,17 +127,17 @@ class FsEntryLicenseBloc
         }
 
         if (event is FsEntryLicenseConfigurationSubmit) {
-          if (selectFormLicenseInfo.licenseType == LicenseType.udl) {
+          if (selectFormLicenseMeta.licenseType == LicenseType.udl) {
             licenseParams = await udlFormToLicenseParams(udlForm);
           } else {
             addError(
-                'Unsupported license configuration: ${selectFormLicenseInfo.licenseType}');
+                'Unsupported license configuration: ${selectFormLicenseMeta.licenseType}');
           }
           emit(const FsEntryLicenseReviewing());
         }
 
         if (event is FsEntryLicenseReviewBack) {
-          if (selectFormLicenseInfo.hasParams) {
+          if (selectFormLicenseMeta.hasParams) {
             licenseParams = null;
             emit(const FsEntryLicenseConfiguring());
           } else {
@@ -150,7 +150,7 @@ class FsEntryLicenseBloc
           try {
             await licenseEntities(
               profile: profile,
-              licenseInfo: selectFormLicenseInfo,
+              licenseMeta: selectFormLicenseMeta,
               licenseParams: licenseParams,
             );
             emit(const FsEntryLicenseSuccess());
@@ -235,7 +235,7 @@ class FsEntryLicenseBloc
 
   Future<void> licenseEntities({
     required ProfileLoggedIn profile,
-    required LicenseMeta licenseInfo,
+    required LicenseMeta licenseMeta,
     LicenseParams? licenseParams,
   }) async {
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
@@ -256,7 +256,7 @@ class FsEntryLicenseBloc
         for (final dataTxId in dataTxIdsSet) {
           final licenseAssertionEntity = _licenseService.toEntity(
             dataTxId: dataTxId,
-            licenseInfo: licenseInfo,
+            licenseMeta: licenseMeta,
             licenseParams: licenseParams,
           )..ownerAddress = profile.walletAddress;
 
@@ -271,7 +271,7 @@ class FsEntryLicenseBloc
             licenseAssertionEntity.toCompanion(
               fileId: file.id,
               driveId: driveId,
-              licenseType: licenseInfo.licenseType,
+              licenseType: licenseMeta.licenseType,
             ),
           );
         }

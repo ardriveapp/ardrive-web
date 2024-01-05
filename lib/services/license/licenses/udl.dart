@@ -1,6 +1,6 @@
 import '../license_types.dart';
 
-const udlLicenseInfo = LicenseMeta(
+const udlLicenseMeta = LicenseMeta(
   licenseType: LicenseType.udl,
   licenseDefinitionTxId: 'yRj4a5KMctX_uOmKWCFJIjmY8DeJcusVk6-HzLiM_t8',
   name: 'Universal Data License',

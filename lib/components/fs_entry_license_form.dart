@@ -83,8 +83,8 @@ class FsEntryLicenseForm extends StatelessWidget {
       },
       builder: (context, state) {
         return Builder(builder: (context) {
-          final licenseInfo =
-              context.read<FsEntryLicenseBloc>().selectFormLicenseInfo;
+          final licenseMeta =
+              context.read<FsEntryLicenseBloc>().selectFormLicenseMeta;
           if (state is FsEntryLicenseNoFiles) {
             return ArDriveCard(
               height: 350,
@@ -227,7 +227,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                             control.dirty && control.invalid,
                         validationMessages:
                             kValidationMessages(appLocalizationsOf(context)),
-                        items: licenseInfoMap.values
+                        items: licenseMetaMap.values
                             .map(
                               (value) => DropdownMenuItem(
                                 value: value,
@@ -278,7 +278,7 @@ class FsEntryLicenseForm extends StatelessWidget {
           } else if (state is FsEntryLicenseConfiguring) {
             return ArDriveStandardModal(
               title:
-                  'Configuring ${licenseInfo.name} (${licenseInfo.shortName})',
+                  'Configuring ${licenseMeta.name} (${licenseMeta.shortName})',
               width: kMediumDialogWidth,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -292,7 +292,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                   const Divider(height: 24),
                   context
                               .read<FsEntryLicenseBloc>()
-                              .selectFormLicenseInfo
+                              .selectFormLicenseMeta
                               .licenseType ==
                           LicenseType.udl
                       ? UdlParamsForm(
@@ -333,7 +333,7 @@ class FsEntryLicenseForm extends StatelessWidget {
                   const Divider(height: 24),
                   const SizedBox(height: 16),
                   LicenseSummary(
-                    licenseInfo: licenseInfo,
+                    licenseMeta: licenseMeta,
                     licenseParams:
                         context.read<FsEntryLicenseBloc>().licenseParams,
                   ),
@@ -794,13 +794,13 @@ class UdlParamsForm extends StatelessWidget {
 }
 
 class LicenseSummary extends StatelessWidget {
-  final LicenseMeta licenseInfo;
+  final LicenseMeta licenseMeta;
   final LicenseParams? licenseParams;
   late final Map<String, String> summaryItems;
 
   LicenseSummary({
     super.key,
-    required this.licenseInfo,
+    required this.licenseMeta,
     this.licenseParams,
   }) {
     summaryItems = licenseParams is UdlLicenseParams
@@ -826,7 +826,7 @@ class LicenseSummary extends StatelessWidget {
           TextSpan(
             children: [
               TextSpan(
-                text: '${licenseInfo.name} (${licenseInfo.shortName})',
+                text: '${licenseMeta.name} (${licenseMeta.shortName})',
                 style: ArDriveTypography.body.buttonLargeBold(
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgDefault,
@@ -848,7 +848,7 @@ class LicenseSummary extends StatelessWidget {
                 recognizer: TapGestureRecognizer()
                   ..onTap = () async {
                     final url =
-                        'https://viewblock.io/arweave/tx/${licenseInfo.licenseDefinitionTxId}';
+                        'https://viewblock.io/arweave/tx/${licenseMeta.licenseDefinitionTxId}';
                     await openUrl(url: url);
                   },
               ),

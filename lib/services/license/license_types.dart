@@ -30,7 +30,7 @@ abstract class LicenseParams {
   Map<String, String> toAdditionalTags() => {};
 }
 
-final licenseInfoMap = {
-  LicenseType.udl: udlLicenseInfo,
-  LicenseType.ccBy: ccByLicenseInfo,
+final licenseMetaMap = {
+  LicenseType.udl: udlLicenseMeta,
+  LicenseType.ccBy: ccByLicenseMeta,
 };
