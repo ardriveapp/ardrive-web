@@ -29,7 +29,7 @@ class FsEntryInfoSuccess<T> extends FsEntryInfoState {
 }
 
 class FsEntryFileInfoSuccess extends FsEntryInfoSuccess<FileEntry> {
-  final LicenseInfo? licenseInfo;
+  final LicenseMeta? licenseInfo;
   final LicenseParams? licenseParams;
 
   const FsEntryFileInfoSuccess({

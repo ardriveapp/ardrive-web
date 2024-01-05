@@ -8,7 +8,7 @@ enum LicenseType {
   ccBy,
 }
 
-class LicenseInfo {
+class LicenseMeta {
   final LicenseType licenseType;
   final String licenseDefinitionTxId;
   final String name;
@@ -16,7 +16,7 @@ class LicenseInfo {
   final String version;
   final bool hasParams;
 
-  const LicenseInfo({
+  const LicenseMeta({
     required this.licenseType,
     required this.licenseDefinitionTxId,
     required this.name,

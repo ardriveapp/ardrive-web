@@ -20,7 +20,7 @@ class LicenseService {
         .key;
   }
 
-  LicenseInfo licenseInfoByType(LicenseType licenseType) {
+  LicenseMeta licenseInfoByType(LicenseType licenseType) {
     return licenseInfoMap[licenseType]!;
   }
 
@@ -69,7 +69,7 @@ class LicenseService {
 
   LicenseAssertionEntity toEntity({
     required String dataTxId,
-    required LicenseInfo licenseInfo,
+    required LicenseMeta licenseInfo,
     LicenseParams? licenseParams,
   }) {
     return LicenseAssertionEntity(
@@ -81,7 +81,7 @@ class LicenseService {
 
   LicensesCompanion toCompanion({
     required String dataTxId,
-    required LicenseInfo licenseInfo,
+    required LicenseMeta licenseInfo,
     LicenseParams? licenseParams,
   }) {
     return LicensesCompanion(

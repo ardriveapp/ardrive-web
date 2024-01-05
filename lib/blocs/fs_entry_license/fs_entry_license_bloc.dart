@@ -27,12 +27,12 @@ class FsEntryLicenseBloc
   final List<ArDriveDataTableItem> selectedItems;
 
   final selectForm = FormGroup({
-    'licenseType': FormControl<LicenseInfo>(
+    'licenseType': FormControl<LicenseMeta>(
       validators: [Validators.required],
       value: udlLicenseInfo,
     ),
   });
-  LicenseInfo get selectFormLicenseInfo =>
+  LicenseMeta get selectFormLicenseInfo =>
       selectForm.control('licenseType').value;
 
   final udlForm = FormGroup({
@@ -235,7 +235,7 @@ class FsEntryLicenseBloc
 
   Future<void> licenseEntities({
     required ProfileLoggedIn profile,
-    required LicenseInfo licenseInfo,
+    required LicenseMeta licenseInfo,
     LicenseParams? licenseParams,
   }) async {
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);

@@ -794,7 +794,7 @@ class UdlParamsForm extends StatelessWidget {
 }
 
 class LicenseSummary extends StatelessWidget {
-  final LicenseInfo licenseInfo;
+  final LicenseMeta licenseInfo;
   final LicenseParams? licenseParams;
   late final Map<String, String> summaryItems;
 

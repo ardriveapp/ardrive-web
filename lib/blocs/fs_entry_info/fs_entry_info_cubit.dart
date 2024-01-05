@@ -65,7 +65,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                       driveId: driveId, fileId: selectedItem.id)
                   .getSingle();
 
-              LicenseInfo? licenseInfo;
+              LicenseMeta? licenseInfo;
               LicenseParams? licenseParams;
               if (latestRevision.licenseTxId != null) {
                 final license = await _driveDao
@@ -80,7 +80,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                       _licenseService.paramsFromCompanion(companion);
                 } else {
                   // License not yet synced
-                  licenseInfo = const LicenseInfo(
+                  licenseInfo = const LicenseMeta(
                     licenseType: LicenseType.unknown,
                     licenseDefinitionTxId: '',
                     name: 'Unknown',
