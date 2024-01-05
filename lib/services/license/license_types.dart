@@ -34,3 +34,13 @@ final licenseMetaMap = {
   LicenseType.udl: udlLicenseMeta,
   LicenseType.ccBy: ccByLicenseMeta,
 };
+
+class LicenseState {
+  final LicenseMeta meta;
+  final LicenseParams? params;
+
+  const LicenseState({
+    required this.meta,
+    this.params,
+  });
+}

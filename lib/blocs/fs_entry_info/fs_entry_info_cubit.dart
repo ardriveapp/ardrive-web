@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/license/license_types.dart';
@@ -65,8 +64,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                       driveId: driveId, fileId: selectedItem.id)
                   .getSingle();
 
-              LicenseMeta? licenseMeta;
-              LicenseParams? licenseParams;
+              LicenseState? licenseState;
               if (latestRevision.licenseTxId != null) {
                 final license = await _driveDao
                     .licenseByTxId(tx: latestRevision.licenseTxId!)
@@ -74,18 +72,17 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
 
                 if (license != null) {
                   final companion = license.toCompanion(true);
-                  licenseMeta = _licenseService
-                      .licenseMetaByType(companion.licenseTypeEnum);
-                  licenseParams =
-                      _licenseService.paramsFromCompanion(companion);
+                  licenseState = _licenseService.fromCompanion(companion);
                 } else {
                   // License not yet synced
-                  licenseMeta = const LicenseMeta(
-                    licenseType: LicenseType.unknown,
-                    licenseDefinitionTxId: '',
-                    name: 'Unknown',
-                    shortName: 'Unknown',
-                    version: '0',
+                  licenseState = const LicenseState(
+                    meta: LicenseMeta(
+                      licenseType: LicenseType.unknown,
+                      licenseDefinitionTxId: '',
+                      name: 'Unknown',
+                      shortName: 'Unknown',
+                      version: '0',
+                    ),
                   );
                 }
               }
@@ -96,8 +93,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                 dateCreated: f.dateCreated,
                 entry: f,
                 metadataTxId: latestRevision.metadataTxId,
-                licenseMeta: licenseMeta,
-                licenseParams: licenseParams,
+                licenseState: licenseState,
               ));
             },
           );

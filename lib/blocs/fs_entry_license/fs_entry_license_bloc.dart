@@ -238,6 +238,11 @@ class FsEntryLicenseBloc
     required LicenseMeta licenseMeta,
     LicenseParams? licenseParams,
   }) async {
+    final licenseState = LicenseState(
+      meta: licenseMeta,
+      params: licenseParams,
+    );
+
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
     final licenseAssertionTxDataItems = <DataItem>[];
@@ -255,9 +260,8 @@ class FsEntryLicenseBloc
 
         for (final dataTxId in dataTxIdsSet) {
           final licenseAssertionEntity = _licenseService.toEntity(
+            licenseState: licenseState,
             dataTxId: dataTxId,
-            licenseMeta: licenseMeta,
-            licenseParams: licenseParams,
           )..ownerAddress = profile.walletAddress;
 
           final licenseAssertionDataItem = await licenseAssertionEntity

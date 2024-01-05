@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive/entities/license_assertion.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:drift/drift.dart';
 
 import '../../models/models.dart';
@@ -36,22 +37,22 @@ class LicenseService {
     }
   }
 
-  LicenseParams paramsFromEntity(
-      LicenseAssertionEntity licenseAssertionEntity) {
+  LicenseState fromEntity(LicenseAssertionEntity licenseAssertionEntity) {
     final licenseType =
         licenseTypeByTxId(licenseAssertionEntity.licenseDefinitionTxId)!;
     final additionalTags = licenseAssertionEntity.additionalTags;
 
-    return paramsFromAdditionalTags(
-      licenseType: licenseType,
-      additionalTags: additionalTags,
+    return LicenseState(
+      meta: licenseMetaByType(licenseType),
+      params: paramsFromAdditionalTags(
+        licenseType: licenseType,
+        additionalTags: additionalTags,
+      ),
     );
   }
 
-  LicenseParams paramsFromCompanion(LicensesCompanion licensesCompanion) {
-    final licenseType = LicenseType.values.firstWhere(
-      (element) => element.name == licensesCompanion.licenseType.value,
-    );
+  LicenseState fromCompanion(LicensesCompanion licensesCompanion) {
+    final licenseType = licensesCompanion.licenseTypeEnum;
     final LinkedHashMap<dynamic, dynamic> customTags =
         licensesCompanion.customGQLTags.present
             ? jsonDecode(licensesCompanion.customGQLTags.value!)
@@ -61,34 +62,35 @@ class LicenseService {
       (key, value) => MapEntry(key.toString(), value.toString()),
     );
 
-    return paramsFromAdditionalTags(
-      licenseType: licenseType,
-      additionalTags: additionalTags,
+    return LicenseState(
+      meta: licenseMetaByType(licenseType),
+      params: paramsFromAdditionalTags(
+        licenseType: licenseType,
+        additionalTags: additionalTags,
+      ),
     );
   }
 
   LicenseAssertionEntity toEntity({
+    required LicenseState licenseState,
     required String dataTxId,
-    required LicenseMeta licenseMeta,
-    LicenseParams? licenseParams,
   }) {
     return LicenseAssertionEntity(
       dataTxId: dataTxId,
-      licenseDefinitionTxId: licenseMeta.licenseDefinitionTxId,
-      additionalTags: licenseParams?.toAdditionalTags() ?? {},
+      licenseDefinitionTxId: licenseState.meta.licenseDefinitionTxId,
+      additionalTags: licenseState.params?.toAdditionalTags() ?? {},
     );
   }
 
   LicensesCompanion toCompanion({
+    required LicenseState licenseState,
     required String dataTxId,
-    required LicenseMeta licenseMeta,
-    LicenseParams? licenseParams,
   }) {
     return LicensesCompanion(
       dataTxId: Value(dataTxId),
-      licenseType: Value(licenseMeta.licenseType.name),
-      customGQLTags: licenseParams != null
-          ? Value(jsonEncode(licenseParams.toAdditionalTags()))
+      licenseType: Value(licenseState.meta.licenseType.name),
+      customGQLTags: licenseState.params != null
+          ? Value(jsonEncode(licenseState.params!.toAdditionalTags()))
           : const Value.absent(),
     );
   }
