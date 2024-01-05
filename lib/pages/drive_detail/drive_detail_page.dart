@@ -203,6 +203,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     required bool isDriveOwner,
     required bool canDownloadMultipleFiles,
   }) {
+    final driveDetailCubit = context.read<DriveDetailCubit>();
+
+    final isShowingHiddenFiles = driveDetailState.isShowingHiddenFiles;
+
     return Column(
       children: [
         const AppTopBar(),
@@ -407,6 +411,26 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             ArDriveIcons.info(
                                               size: defaultIconSize,
                                             ),
+                                          ),
+                                        ),
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            driveDetailCubit
+                                                .toggleHiddenFiles();
+                                          },
+                                          content: _buildItem(
+                                            isShowingHiddenFiles
+                                                ? appLocalizationsOf(context)
+                                                    .concealHiddenItems
+                                                : appLocalizationsOf(context)
+                                                    .revealHiddenItems,
+                                            isShowingHiddenFiles
+                                                ? ArDriveIcons.eyeClosed(
+                                                    size: defaultIconSize,
+                                                  )
+                                                : ArDriveIcons.eyeOpen(
+                                                    size: defaultIconSize,
+                                                  ),
                                           ),
                                         ),
                                         if (!driveDetailState
@@ -645,6 +669,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 child: MobileFolderNavigation(
                   driveName: state.currentDrive.name,
                   path: state.folderInView.folder.path,
+                  isShowingHiddenFiles: isShowingHiddenFiles,
                 ),
               ),
             ],
@@ -801,10 +826,13 @@ class ArDriveItemListTile extends StatelessWidget {
 class MobileFolderNavigation extends StatelessWidget {
   final String path;
   final String driveName;
+  final bool isShowingHiddenFiles;
+
   const MobileFolderNavigation({
     super.key,
     required this.path,
     required this.driveName,
+    required this.isShowingHiddenFiles,
   });
 
   @override
@@ -850,6 +878,7 @@ class MobileFolderNavigation extends StatelessWidget {
           ),
           BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {
+              final driveDetailCubit = context.read<DriveDetailCubit>();
               if (state is DriveDetailLoadSuccess) {
                 final isOwner = isDriveOwner(context.read<ArDriveAuth>(),
                     state.currentDrive.ownerAddress);
@@ -937,6 +966,23 @@ class MobileFolderNavigation extends StatelessWidget {
                         ArDriveIcons.info(
                           size: defaultIconSize,
                         ),
+                      ),
+                    ),
+                    ArDriveDropdownItem(
+                      onClick: () {
+                        driveDetailCubit.toggleHiddenFiles();
+                      },
+                      content: _buildItem(
+                        isShowingHiddenFiles
+                            ? appLocalizationsOf(context).concealHiddenItems
+                            : appLocalizationsOf(context).revealHiddenItems,
+                        isShowingHiddenFiles
+                            ? ArDriveIcons.eyeClosed(
+                                size: defaultIconSize,
+                              )
+                            : ArDriveIcons.eyeOpen(
+                                size: defaultIconSize,
+                              ),
                       ),
                     ),
                     if (!state.hasWritePermissions &&

@@ -140,7 +140,7 @@ Widget _buildDataListContent(
     filteredItems = items.where((item) => !item.isHidden).toList();
   }
 
-  final itemsHash = filteredItems.hashCode;
+  final itemsHash = Object.hashAll(filteredItems);
 
   return LayoutBuilder(builder: (context, constraints) {
     return ArDriveDataTable<ArDriveDataTableItem>(

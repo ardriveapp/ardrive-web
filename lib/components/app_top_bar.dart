@@ -14,62 +14,23 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return const SizedBox(
       height: 110,
       width: double.maxFinite,
       child: Padding(
-        padding: const EdgeInsets.only(right: 24.0),
+        padding: EdgeInsets.only(right: 24.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            ShowHiddenFilesButton(
-              driveDetailCubit: context.read<DriveDetailCubit>(),
-            ),
-            const SizedBox(width: 24),
-            const SyncButton(),
-            const SizedBox(width: 24),
-            const RedeemButton(),
-            const SizedBox(width: 24),
-            const ProfileCard(),
+            SizedBox(width: 24),
+            SyncButton(),
+            SizedBox(width: 24),
+            RedeemButton(),
+            SizedBox(width: 24),
+            ProfileCard(),
           ],
         ),
       ),
-    );
-  }
-}
-
-class ShowHiddenFilesButton extends StatelessWidget {
-  final DriveDetailCubit driveDetailCubit;
-
-  const ShowHiddenFilesButton({
-    super.key,
-    required this.driveDetailCubit,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<DriveDetailCubit, DriveDetailState>(
-      bloc: driveDetailCubit,
-      builder: (context, state) {
-        if (state is DriveDetailLoadSuccess) {
-          final isShowingHiddenFiles = state.isShowingHiddenFiles;
-          return HoverWidget(
-            tooltip: isShowingHiddenFiles
-                ? 'Hide hidden files'
-                : 'Show hidden files',
-            child: ArDriveIconButton(
-              icon: isShowingHiddenFiles
-                  ? ArDriveIcons.eyeOpen()
-                  : ArDriveIcons.eyeClosed(),
-              onPressed: () {
-                driveDetailCubit.toggleHiddenFiles();
-              },
-            ),
-          );
-        } else {
-          return const SizedBox();
-        }
-      },
     );
   }
 }

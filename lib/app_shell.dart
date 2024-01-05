@@ -221,12 +221,6 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                       : Container()),
             ),
             const Spacer(),
-            ShowHiddenFilesButton(
-              driveDetailCubit: context.read<DriveDetailCubit>(),
-            ),
-            const SizedBox(
-              width: 24,
-            ),
             const SyncButton(),
             const SizedBox(
               width: 24,

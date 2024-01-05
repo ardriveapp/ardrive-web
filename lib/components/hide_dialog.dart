@@ -44,19 +44,15 @@ class HideDialog extends StatelessWidget {
       },
       builder: (context, state) {
         return ArDriveStandardModal(
-          title: _buildTitle(context, state),
-          content: _buildContent(context, state),
+          title: _buildTitle(state.hideAction),
+          content: _buildContent(),
           actions: _buildActions(context, state),
         );
       },
     );
   }
 
-  String _buildTitle(
-    BuildContext context,
-    HideState state,
-  ) {
-    final hideAction = state.hideAction;
+  String _buildTitle(HideAction hideAction) {
     switch (hideAction) {
       case HideAction.hideFile:
         return 'Hiding file'; // TODO: localize
@@ -69,10 +65,7 @@ class HideDialog extends StatelessWidget {
     }
   }
 
-  Widget _buildContent(
-    BuildContext context,
-    HideState state,
-  ) {
+  Widget _buildContent() {
     return const Column(
       children: [
         Center(
