@@ -34,6 +34,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../blocs/blocs.dart';
+import '../services/license/license_types.dart';
 
 class DetailsPanel extends StatefulWidget {
   const DetailsPanel({
@@ -785,6 +786,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
           return _buildFileActivity(
             file,
+            null,
             revision.action,
             widget.fileKey,
           );
@@ -832,8 +834,16 @@ class _DetailsPanelState extends State<DetailsPanel> {
               final file = ARFSFactory()
                   .getARFSFileFromFileRevisionWithLicenseAndTransactions(
                       revision);
+              final licenseState = context
+                  .read<LicenseService>()
+                  .fromCompanion(revision.license.toCompanion(true));
 
-              return _buildFileActivity(file, revision.action, null);
+              return _buildFileActivity(
+                file,
+                licenseState,
+                revision.action,
+                null,
+              );
             } else if (revision is DriveRevisionWithTransaction) {
               switch (revision.action) {
                 case RevisionAction.create:
@@ -866,6 +876,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
   Widget _buildFileActivity(
     ARFSFileEntity file,
+    LicenseState? licenseState,
     String action,
     SecretKey? key,
   ) {
@@ -903,9 +914,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
         );
         break;
       case RevisionAction.assertLicense:
-        title = 'File had license updated';
-        // TODO: Localize
-        // title = appLocalizationsOf(context).fileHadALicenseAsserted;
+        if (licenseState == null) {
+          title = 'File had license updated';
+          // TODO: Localize
+          // title = appLocalizationsOf(context).fileHadALicenseUpdated;
+        } else {
+          title = 'File had license updated to ${licenseState.meta.shortName}';
+          // TODO: Localize
+          // title = appLocalizationsOf(context).fileHadALicenseUpdated(licenseState.meta.shortName);
+        }
         break;
       default:
         title = appLocalizationsOf(context).fileWasModified;
