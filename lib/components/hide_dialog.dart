@@ -41,62 +41,54 @@ class HideDialog extends StatelessWidget {
       },
       builder: (context, state) {
         return ArDriveStandardModal(
-          title: _buildTitle(state),
-          content: _buildContent(state),
+          title: _buildTitle(context, state),
+          content: _buildContent(context, state),
           actions: _buildActions(context, state),
         );
       },
     );
   }
 
-  String _buildTitle(HideState state) {
+  String _buildTitle(BuildContext context, HideState state) {
     final hideAction = state.hideAction;
     if (state is FailureHideState) {
       switch (hideAction) {
         case HideAction.hideFile:
-          return 'Failed to hide file'; // TODO: localize
+          return appLocalizationsOf(context).failedToHideFile;
         case HideAction.hideFolder:
-          return 'Failed to hide folder'; // TODO: localize
+          return appLocalizationsOf(context).failedToHideFolder;
         case HideAction.unhideFile:
-          return 'Failed to unhide file'; // TODO: localize
+          return appLocalizationsOf(context).failedToUnhideFile;
         case HideAction.unhideFolder:
-          return 'Failed to unhide folder'; // TODO: localize
+          return appLocalizationsOf(context).failedToUnhideFolder;
       }
     }
 
     switch (hideAction) {
       case HideAction.hideFile:
-        return 'Hiding file'; // TODO: localize
+        return appLocalizationsOf(context).hidingFile;
       case HideAction.hideFolder:
-        return 'Hiding folder'; // TODO: localize
+        return appLocalizationsOf(context).hidingFolder;
       case HideAction.unhideFile:
-        return 'Unhiding file'; // TODO: localize
+        return appLocalizationsOf(context).unhidingFile;
       case HideAction.unhideFolder:
-        return 'Unhiding folder'; // TODO: localize
+        return appLocalizationsOf(context).unhidingFolder;
     }
   }
 
-  Widget _buildContent(HideState state) {
+  Widget _buildContent(BuildContext context, HideState state) {
     if (state is FailureHideState) {
       final hideAction = state.hideAction;
 
       switch (hideAction) {
         case HideAction.hideFile:
-          return const Text(
-            'Failed to hide file, please try again', // TODO: localize
-          );
+          return Text(appLocalizationsOf(context).failedToHideFile);
         case HideAction.hideFolder:
-          return const Text(
-            'Failed to hide folder, please try again', // TODO: localize
-          );
+          return Text(appLocalizationsOf(context).failedToHideFolder);
         case HideAction.unhideFile:
-          return const Text(
-            'Failed to unhide file, please try again', // TODO: localize
-          );
+          return Text(appLocalizationsOf(context).failedToUnhideFile);
         case HideAction.unhideFolder:
-          return const Text(
-            'Failed to unhide folder, please try again', // TODO: localize
-          );
+          return Text(appLocalizationsOf(context).failedToUnhideFolder);
       }
     }
 

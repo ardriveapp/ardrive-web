@@ -807,10 +807,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   title = appLocalizationsOf(context).folderWasMoved;
                   break;
                 case RevisionAction.hide:
-                  title = 'This folder was hidden';
+                  title = appLocalizationsOf(context).folderWasHidden;
                   break;
                 case RevisionAction.unhide:
-                  title = 'This folder was unhidden';
+                  title = appLocalizationsOf(context).folderWasUnhidden;
                   break;
                 default:
                   title = appLocalizationsOf(context).folderWasModified;
@@ -837,10 +837,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       .driveWasRenamed(revision.name);
                   break;
                 case RevisionAction.hide:
-                  title = 'This drive was hidden';
+                  title = appLocalizationsOf(context).driveWasHidden;
                   break;
                 case RevisionAction.unhide:
-                  title = 'This drive was unhidden';
+                  title = appLocalizationsOf(context).driveWasUnhidden;
                   break;
                 default:
                   title = appLocalizationsOf(context).driveWasModified;
@@ -901,10 +901,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
         );
         break;
       case RevisionAction.hide:
-        title = 'This file was hidden';
+        title = appLocalizationsOf(context).fileWasHidden;
         break;
       case RevisionAction.unhide:
-        title = 'This file was unhidden';
+        title = appLocalizationsOf(context).fileWasUnhidden;
         break;
       default:
         title = appLocalizationsOf(context).fileWasModified;
@@ -1277,7 +1277,9 @@ class DetailsPanelToolbar extends StatelessWidget {
             ),
           if (item.isOwner)
             _buildActionIcon(
-              tooltip: item.isHidden ? 'Unhide' : 'Hide',
+              tooltip: item.isHidden
+                  ? appLocalizationsOf(context).unhide
+                  : appLocalizationsOf(context).hide,
               icon: item.isHidden
                   ? ArDriveIcons.eyeClosed(size: defaultIconSize)
                   : ArDriveIcons.eyeOpen(size: defaultIconSize),
