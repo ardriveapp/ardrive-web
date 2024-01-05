@@ -68,11 +68,12 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               LicenseInfo? licenseInfo;
               LicenseParams? licenseParams;
               if (latestRevision.licenseTxId != null) {
-                final licenseAssertion = await _driveDao
-                    .licenseByDataTx(tx: latestRevision.dataTxId)
+                final license = await _driveDao
+                    .licenseByTxId(tx: latestRevision.licenseTxId!)
                     .getSingleOrNull();
-                if (licenseAssertion != null) {
-                  final companion = licenseAssertion.toCompanion(true);
+
+                if (license != null) {
+                  final companion = license.toCompanion(true);
                   licenseInfo = _licenseService
                       .licenseInfoByType(companion.licenseTypeEnum);
                   licenseParams =

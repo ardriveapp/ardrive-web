@@ -81,6 +81,9 @@ fileById:
 fileRevisionByDataTx:
     SELECT * FROM file_revisions
     WHERE dataTxId = :tx;
+licenseByTxId:
+    SELECT * FROM licenses
+    WHERE licenseTxId = :tx;
 licenseByDataTx:
     SELECT * FROM licenses
     WHERE dataTxId = :tx;
