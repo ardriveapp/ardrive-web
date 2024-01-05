@@ -193,10 +193,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     listeners: [
                       BlocListener<DriveDetailCubit, DriveDetailState>(
                         listener: (context, driveDetailCubitState) {
-                          logger.d(
-                            'DriveDetailCubit state at app_router: $driveDetailCubitState',
-                          );
-
                           if (driveDetailCubitState is DriveDetailLoadSuccess) {
                             driveId = driveDetailCubitState.currentDrive.id;
                             driveFolderId =

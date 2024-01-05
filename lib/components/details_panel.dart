@@ -41,7 +41,6 @@ class DetailsPanel extends StatefulWidget {
   const DetailsPanel({
     super.key,
     required this.item,
-    // required this.maybeSelectedItem,
     required this.drivePrivacy,
     this.revisions,
     this.fileKey,
@@ -53,7 +52,6 @@ class DetailsPanel extends StatefulWidget {
   });
 
   final ArDriveDataTableItem item;
-  // final SelectedItem? maybeSelectedItem;
   final Privacy drivePrivacy;
   final List<FileRevision>? revisions;
   final SecretKey? fileKey;

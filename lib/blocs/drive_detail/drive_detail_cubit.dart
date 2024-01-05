@@ -152,10 +152,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           final rootFolderNode =
               await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
-          if (_refreshSelectedItem) {
-            logger.d('Refreshing selected item: $_selectedItem');
-          }
-
           if (_selectedItem != null && _refreshSelectedItem) {
             if (_selectedItem is FileDataTableItem) {
               final index = folderContents.files.indexWhere(
@@ -170,8 +166,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                   _selectedItem!.index,
                   _selectedItem!.isOwner,
                 );
-
-                logger.d('Selected file: $_selectedItem');
               }
             } else if (_selectedItem is FolderDataTableItem) {
               final index = folderContents.subfolders.indexWhere(
@@ -185,8 +179,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                   _selectedItem!.index,
                   _selectedItem!.isOwner,
                 );
-
-                logger.d('Selected folder: $_selectedItem');
               }
             } else {
               _selectedItem = DriveDataTableItemMapper.fromDrive(
@@ -196,16 +188,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 _selectedItem!.isOwner,
               );
             }
-
-            // _refreshSelectedItem = false;
           }
 
           final currentFolderContents = parseEntitiesToDatatableItem(
             folder: folderContents,
             isOwner: isDriveOwner(_auth, drive.ownerAddress),
           );
-
-          logger.d('Drive detail state with item: $_selectedItem');
 
           if (state != null) {
             emit(
@@ -423,8 +411,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   void refreshDriveDataTable() {
-    logger.d('Asked to refresh drive data table');
-
     // _refreshSelectedItem = true;
 
     if (state is DriveDetailLoadSuccess) {

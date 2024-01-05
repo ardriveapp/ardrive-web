@@ -4,8 +4,6 @@ Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
 ) {
-  // logger.d('Building data list for state: $state');
-
   return _buildDataListContent(
     context,
     state.currentFolderContents,

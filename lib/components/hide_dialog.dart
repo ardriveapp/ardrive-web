@@ -33,10 +33,7 @@ class HideDialog extends StatelessWidget {
       listener: (context, state) {
         if (state is SuccessHideState) {
           Navigator.of(context).pop();
-
-          // _driveDetailCubit.refreshDriveDataTable();
-
-          logger.d('Successfully hid entity');
+          logger.d('Successfully hid/unhid entity');
         } else if (state is ConfirmingHideState) {
           _driveDetailCubit.refreshDriveDataTable();
           context.read<HideBloc>().add(const ConfirmUploadEvent());

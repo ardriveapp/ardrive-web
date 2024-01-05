@@ -490,7 +490,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Hey, mati
                                   Expanded(
                                     child: _buildDataList(
                                       context,
@@ -533,8 +532,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   isSharePage: false,
                                   drivePrivacy:
                                       driveDetailState.currentDrive.privacy,
-                                  // maybeSelectedItem:
-                                  //     driveDetailState.maybeSelectedItem(),
                                   item: driveDetailState.selectedItem!,
                                   onNextImageNavigation: () {
                                     context
@@ -605,7 +602,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             currentDrive: driveDetailLoadSuccessState.currentDrive,
             isSharePage: false,
             drivePrivacy: driveDetailLoadSuccessState.currentDrive.privacy,
-            // maybeSelectedItem: driveDetailLoadSuccessState.maybeSelectedItem(),
             item: driveDetailLoadSuccessState.selectedItem!,
             onNextImageNavigation: () {
               context.read<DriveDetailCubit>().selectNextImage();
