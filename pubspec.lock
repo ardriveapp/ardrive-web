@@ -94,10 +94,10 @@ packages:
     description:
       path: "."
       ref: license
-      resolved-ref: "3aa28f5c3f4f629a3c44bd37ff0057cc5fdbc06e"
+      resolved-ref: a446736fbf435bd074c9229b4909e16d154ab5da
       url: "https://github.com/elliotsayes/ardrive_ui.git"
     source: git
-    version: "1.17.0"
+    version: "1.17.1"
   ardrive_uploader:
     dependency: "direct main"
     description:
