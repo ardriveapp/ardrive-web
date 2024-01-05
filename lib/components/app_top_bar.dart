@@ -1,5 +1,4 @@
-// implement a widget that has 145 of height and maximum widget, and has a row as child
-import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/sync/sync_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -24,7 +23,6 @@ class AppTopBar extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            SizedBox(width: 24),
             SyncButton(),
             SizedBox(width: 24),
             RedeemButton(),
