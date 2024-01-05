@@ -36,6 +36,24 @@ class AppPlatform {
     }
   }
 
+  static bool get isAndroid => getPlatform() == SystemPlatform.Android;
+
+  static Future<String?> androidVersion({
+    DeviceInfoPlugin? deviceInfo,
+  }) async {
+    final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
+    return info is AndroidDeviceInfo ? info.version.release : null;
+  }
+
+  static bool get isIos => getPlatform() == SystemPlatform.iOS;
+
+  static Future<String?> iosVersion({
+    DeviceInfoPlugin? deviceInfo,
+  }) async {
+    final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
+    return info is IosDeviceInfo ? info.systemVersion : null;
+  }
+
   static bool get isMobile =>
       getPlatform() == SystemPlatform.Android ||
       getPlatform() == SystemPlatform.iOS;
@@ -59,6 +77,27 @@ class AppPlatform {
   static Future<bool> isSafari({DeviceInfoPlugin? deviceInfo}) async {
     final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
     return info is WebBrowserInfo && info.browserName == BrowserName.safari;
+  }
+
+  static Future<String?> browserVersion({DeviceInfoPlugin? deviceInfo}) async {
+    final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
+    if (info is WebBrowserInfo) {
+      final userAgent = info.userAgent;
+
+      if (userAgent == null) return null;
+
+      if (userAgent.contains('Firefox/')) {
+        return 'Firefox ${userAgent.split('Firefox/')[1]}';
+      } else if (userAgent.contains('Chrome/')) {
+        return 'Chrome ${userAgent.split('Chrome/')[1].split(' ')[0]}';
+      } else if (userAgent.contains('Safari/')) {
+        return 'Safari ${userAgent.split('Version/')[1].split(' ')[0]}';
+      } else {
+        return null;
+      }
+    }
+
+    return null;
   }
 }
 

@@ -212,7 +212,7 @@ class AppState extends State<App> {
                   ContractOracle(ARNSContractReader()),
                 ],
                 fallbackContractOracle: ContractOracle(
-                  SmartweaveContractReader(),
+                  WarpContractReader(),
                 ),
               ),
             ),

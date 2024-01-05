@@ -1,9 +1,11 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -102,6 +104,12 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create,
         ));
+
+        PlausibleEventTracker.trackFolderCreation(
+          drivePrivacy: targetDrive.isPrivate
+              ? DrivePrivacy.private
+              : DrivePrivacy.public,
+        );
       });
     } catch (err) {
       addError(err);
