@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_api_data.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_events.dart';
