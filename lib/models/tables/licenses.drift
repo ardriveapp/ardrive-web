@@ -16,6 +16,6 @@ CREATE TABLE licenses (
 
     customGQLTags TEXT,
 
-    PRIMARY KEY (fileId, driveId, dataTxId, dateCreated),
+    PRIMARY KEY (fileId, driveId, dataTxId, licenseTxId),
     FOREIGN KEY (licenseTxId) REFERENCES network_transactions(id)
 );
