@@ -1,22 +1,31 @@
+import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/blocs/hide/hide_state.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> promptToHide(
-  BuildContext context,
-) async {
+  BuildContext context, {
+  required DriveDetailCubit driveDetailCubit,
+}) async {
   return showAnimatedDialog(
     context,
     barrierDismissible: false,
-    content: const HideDialog(),
+    content: HideDialog(driveDetailCubit: driveDetailCubit),
   );
 }
 
 class HideDialog extends StatelessWidget {
-  const HideDialog({super.key});
+  final DriveDetailCubit _driveDetailCubit;
+
+  const HideDialog({
+    super.key,
+    required DriveDetailCubit driveDetailCubit,
+  }) : _driveDetailCubit = driveDetailCubit;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +33,12 @@ class HideDialog extends StatelessWidget {
       listener: (context, state) {
         if (state is SuccessHideState) {
           Navigator.of(context).pop();
+
+          // _driveDetailCubit.refreshDriveDataTable();
+
+          logger.d('Successfully hid entity');
         } else if (state is ConfirmingHideState) {
+          _driveDetailCubit.refreshDriveDataTable();
           context.read<HideBloc>().add(const ConfirmUploadEvent());
         }
       },
@@ -32,6 +46,7 @@ class HideDialog extends StatelessWidget {
         return ArDriveStandardModal(
           title: _buildTitle(context, state),
           content: _buildContent(context, state),
+          actions: _buildActions(context, state),
         );
       },
     );
@@ -65,5 +80,23 @@ class HideDialog extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  List<ModalAction>? _buildActions(
+    BuildContext context,
+    HideState state,
+  ) {
+    if (state is FailureHideState) {
+      return [
+        ModalAction(
+          action: () {
+            Navigator.of(context).pop();
+          },
+          title: appLocalizationsOf(context).cancel,
+        ),
+      ];
+    } else {
+      return null;
+    }
   }
 }

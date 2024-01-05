@@ -448,6 +448,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Hey, mati
                                   Expanded(
                                     child: _buildDataList(
                                       context,
@@ -484,20 +485,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 driveDetailState, context),
                           ),
                           child: driveDetailState.showSelectedItemDetails &&
-                                  context
-                                          .read<DriveDetailCubit>()
-                                          .selectedItem !=
-                                      null
+                                  driveDetailState.selectedItem != null
                               ? DetailsPanel(
                                   currentDrive: driveDetailState.currentDrive,
                                   isSharePage: false,
                                   drivePrivacy:
                                       driveDetailState.currentDrive.privacy,
-                                  maybeSelectedItem:
-                                      driveDetailState.maybeSelectedItem(),
-                                  item: context
-                                      .read<DriveDetailCubit>()
-                                      .selectedItem!,
+                                  // maybeSelectedItem:
+                                  //     driveDetailState.maybeSelectedItem(),
+                                  item: driveDetailState.selectedItem!,
                                   onNextImageNavigation: () {
                                     context
                                         .read<DriveDetailCubit>()
@@ -549,13 +545,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   }
 
   Widget _mobileView(
-    DriveDetailLoadSuccess state,
+    DriveDetailLoadSuccess driveDetailLoadSuccessState,
     bool hasSubfolders,
     bool hasFiles,
   ) {
-    final items = state.currentFolderContents;
+    final items = driveDetailLoadSuccessState.currentFolderContents;
 
-    if (state.showSelectedItemDetails &&
+    if (driveDetailLoadSuccessState.showSelectedItemDetails &&
         context.read<DriveDetailCubit>().selectedItem != null) {
       return Material(
         child: WillPopScope(
@@ -564,11 +560,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             return false;
           },
           child: DetailsPanel(
-            currentDrive: state.currentDrive,
+            currentDrive: driveDetailLoadSuccessState.currentDrive,
             isSharePage: false,
-            drivePrivacy: state.currentDrive.privacy,
-            maybeSelectedItem: state.maybeSelectedItem(),
-            item: context.read<DriveDetailCubit>().selectedItem!,
+            drivePrivacy: driveDetailLoadSuccessState.currentDrive.privacy,
+            // maybeSelectedItem: driveDetailLoadSuccessState.maybeSelectedItem(),
+            item: driveDetailLoadSuccessState.selectedItem!,
             onNextImageNavigation: () {
               context.read<DriveDetailCubit>().selectNextImage();
             },
@@ -590,7 +586,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           .withOpacity(0.5),
       drawer: const AppSideBar(),
       appBar: MobileAppBar(
-        leading: (state.showSelectedItemDetails &&
+        leading: (driveDetailLoadSuccessState.showSelectedItemDetails &&
                 context.read<DriveDetailCubit>().selectedItem != null)
             ? ArDriveIconButton(
                 icon: ArDriveIcons.arrowLeft(),
@@ -616,7 +612,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         },
       ),
       body: _mobileViewContent(
-        state,
+        driveDetailLoadSuccessState,
         hasSubfolders,
         hasFiles,
         items,

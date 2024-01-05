@@ -51,7 +51,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.hasFoldersSelected = false,
     this.selectedFilePreviewUrl,
     required this.driveIsEmpty,
-    this.selectedItem,
+    required this.selectedItem,
     required this.currentFolderContents,
     required this.isShowingHiddenFiles,
   });
@@ -113,6 +113,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         _equatableBust,
         driveIsEmpty,
         multiselect,
+        selectedItem,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;

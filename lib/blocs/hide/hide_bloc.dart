@@ -199,10 +199,18 @@ class HideBloc extends Bloc<HideEvent, HideState> {
       ));
     }
 
-    await _computeCostEstimate();
-    await _computeBalanceEstimate();
-    _computeIsFreeThanksToTurbo();
-    _computeIsSufficientBalance();
+    try {
+      await _computeCostEstimate();
+      await _computeBalanceEstimate();
+      _computeIsFreeThanksToTurbo();
+      _computeIsSufficientBalance();
+    } catch (e) {
+      emit(const FailureHideState(
+        hideAction: HideAction.hideFolder,
+        message: 'Error while computing cost estimate',
+      ));
+      return;
+    }
 
     emit(
       ConfirmingHideState(
@@ -317,6 +325,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
       lastUpdated: DateTime.now(),
     );
     final folderEntity = newFolder.asEntity();
+
+    logger.d('Unhiding folder with JSON: ${folderEntity.toJson()}');
 
     final driveKey = await _driveDao.getDriveKey(
       event.driveId,

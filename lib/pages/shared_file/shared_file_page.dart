@@ -52,7 +52,7 @@ class SharedFilePage extends StatelessWidget {
                 false,
               ),
               isSharePage: true,
-              maybeSelectedItem: null,
+              // maybeSelectedItem: null,
               fileKey: state.fileKey,
               revisions: state.fileRevisions,
               drivePrivacy: state.fileKey != null ? 'private' : 'public',

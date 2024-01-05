@@ -25,6 +25,7 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
           driveId: targetDriveId,
           parentFolderId: folder.parentFolderId,
           name: folder.name,
+          isHidden: false,
         ).toJson(),
       ).codeUnits.length;
 
@@ -58,6 +59,7 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
       driveId: targetDriveId,
       parentFolderId: folder.parentFolderId,
       name: folder.name,
+      isHidden: false,
     );
 
     folderEntityTx = await arweave.prepareEntityDataItem(

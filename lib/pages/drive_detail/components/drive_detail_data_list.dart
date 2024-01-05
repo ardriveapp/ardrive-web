@@ -4,6 +4,8 @@ Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
 ) {
+  // logger.d('Building data list for state: $state');
+
   return _buildDataListContent(
     context,
     state.currentFolderContents,
@@ -11,6 +13,7 @@ Widget _buildDataList(
     state.currentDrive,
     isMultiselecting: state.multiselect,
     isShowingHiddenFiles: state.isShowingHiddenFiles,
+    selectedItem: state.selectedItem,
   );
 }
 
@@ -66,32 +69,20 @@ class FolderDataTableItem extends ArDriveDataTableItem {
   final bool isGhostFolder;
 
   FolderDataTableItem({
-    required String driveId,
+    required super.driveId,
     required String folderId,
-    required String name,
-    required DateTime lastUpdated,
-    required DateTime dateCreated,
-    required String contentType,
-    required String path,
-    String? fileStatusFromTransactions,
+    required super.name,
+    required super.lastUpdated,
+    required super.dateCreated,
+    required super.contentType,
+    required super.path,
+    super.fileStatusFromTransactions,
+    required super.isHidden,
+    required super.index,
+    required super.isOwner,
     this.parentFolderId,
     this.isGhostFolder = false,
-    required super.isHidden,
-    required int index,
-    required bool isOwner,
-  }) : super(
-          driveId: driveId,
-          path: path,
-          id: folderId,
-          name: name,
-          size: null,
-          lastUpdated: lastUpdated,
-          dateCreated: dateCreated,
-          contentType: contentType,
-          fileStatusFromTransactions: fileStatusFromTransactions,
-          index: index,
-          isOwner: isOwner,
-        );
+  }) : super(id: folderId);
 
   @override
   List<Object> get props => [id, name, isHidden];
@@ -108,38 +99,26 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final String? pinnedDataOwnerAddress;
 
   FileDataTableItem({
+    required super.driveId,
+    required super.lastUpdated,
+    required super.name,
+    required super.size,
+    required super.dateCreated,
+    required super.contentType,
+    required super.path,
+    required super.isHidden,
+    super.fileStatusFromTransactions,
+    required super.index,
+    required super.isOwner,
     required this.fileId,
-    required String driveId,
     required this.parentFolderId,
     required this.dataTxId,
-    required DateTime lastUpdated,
     required this.lastModifiedDate,
     required this.metadataTx,
     required this.dataTx,
     required this.pinnedDataOwnerAddress,
-    required String name,
-    required int size,
-    required DateTime dateCreated,
-    required String contentType,
-    required String path,
-    required super.isHidden,
-    String? fileStatusFromTransactions,
     this.bundledIn,
-    required int index,
-    required bool isOwner,
-  }) : super(
-          path: path,
-          driveId: driveId,
-          id: fileId,
-          name: name,
-          size: size,
-          lastUpdated: lastUpdated,
-          dateCreated: dateCreated,
-          contentType: contentType,
-          fileStatusFromTransactions: fileStatusFromTransactions,
-          index: index,
-          isOwner: isOwner,
-        );
+  }) : super(id: fileId);
 
   @override
   List<Object> get props => [fileId, name, isHidden];
@@ -152,6 +131,7 @@ Widget _buildDataListContent(
   Drive drive, {
   required bool isMultiselecting,
   required bool isShowingHiddenFiles,
+  required ArDriveDataTableItem? selectedItem,
 }) {
   final List<ArDriveDataTableItem> filteredItems;
   if (isShowingHiddenFiles) {
@@ -263,15 +243,15 @@ Widget _buildDataListContent(
             } else if (row is FileDataTableItem) {
               if (row.id == cubit.selectedItem?.id) {
                 cubit.toggleSelectedItemDetails();
-                return;
+              } else {
+                cubit.selectDataItem(row);
               }
-              cubit.selectDataItem(row);
             }
           },
         );
       },
       rows: filteredItems,
-      selectedRow: context.watch<DriveDetailCubit>().selectedItem,
+      selectedRow: selectedItem,
     );
   });
 }

@@ -38,7 +38,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   bool _forceDisableMultiselect = false;
 
-  bool _refreshSelectedItem = false;
+  final bool _refreshSelectedItem = true;
 
   bool _showHiddenFiles = false;
 
@@ -152,6 +152,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           final rootFolderNode =
               await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
+          if (_refreshSelectedItem) {
+            logger.d('Refreshing selected item: $_selectedItem');
+          }
+
           if (_selectedItem != null && _refreshSelectedItem) {
             if (_selectedItem is FileDataTableItem) {
               final index = folderContents.files.indexWhere(
@@ -159,22 +163,30 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               );
 
               if (index >= 0) {
+                final item = folderContents.files[index];
+
                 _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
-                  folderContents.files[index],
+                  item,
                   _selectedItem!.index,
                   _selectedItem!.isOwner,
                 );
+
+                logger.d('Selected file: $_selectedItem');
               }
             } else if (_selectedItem is FolderDataTableItem) {
               final index = folderContents.subfolders.indexWhere(
                 (element) => element.id == _selectedItem!.id,
               );
               if (index >= 0) {
+                final item = folderContents.subfolders[index];
+
                 _selectedItem = DriveDataTableItemMapper.fromFolderEntry(
-                  folderContents.subfolders[index],
+                  item,
                   _selectedItem!.index,
                   _selectedItem!.isOwner,
                 );
+
+                logger.d('Selected folder: $_selectedItem');
               }
             } else {
               _selectedItem = DriveDataTableItemMapper.fromDrive(
@@ -185,13 +197,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               );
             }
 
-            _refreshSelectedItem = false;
+            // _refreshSelectedItem = false;
           }
 
           final currentFolderContents = parseEntitiesToDatatableItem(
             folder: folderContents,
             isOwner: isDriveOwner(_auth, drive.ownerAddress),
           );
+
+          logger.d('Drive detail state with item: $_selectedItem');
 
           if (state != null) {
             emit(
@@ -408,22 +422,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
   }
 
-  void refreshDriveDataTable({
-    bool reComputeFolderContents = false,
-  }) {
-    _refreshSelectedItem = true;
+  void refreshDriveDataTable() {
+    logger.d('Asked to refresh drive data table');
+
+    // _refreshSelectedItem = true;
 
     if (state is DriveDetailLoadSuccess) {
       final state = this.state as DriveDetailLoadSuccess;
-      if (reComputeFolderContents) {
-        openFolder(
-          path: state.folderInView.folder.path,
-          contentOrderBy: state.contentOrderBy,
-          contentOrderingMode: state.contentOrderingMode,
-        );
-      } else {
-        emit(state.copyWith());
-      }
+      emit(state.copyWith());
     }
   }
 
