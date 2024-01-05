@@ -232,7 +232,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         .isNotEmpty &&
                                     isDriveOwner) ...[
                                   ArDriveIconButton(
-                                    tooltip: "Add license",
+                                    tooltip: 'Add license',
                                     // TODO: Localize
                                     // tooltip: appLocalizationsOf(context).addLicense,
                                     icon: ArDriveIcons.license(),

@@ -307,7 +307,7 @@ class _DriveExplorerItemTileTrailingState
               );
             },
             content: _buildItem(
-              // TODO: Localization
+              // TODO: Localize
               // appLocalizationsOf(context).license,
               'Add license',
               ArDriveIcons.license(
@@ -416,7 +416,7 @@ class _DriveExplorerItemTileTrailingState
             );
           },
           content: _buildItem(
-            // TODO: Localization
+            // TODO: Localize
             // appLocalizationsOf(context).license,
             'Add license',
             ArDriveIcons.license(

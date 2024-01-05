@@ -318,8 +318,6 @@ class FsEntryLicenseBloc
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    print(error);
-    print(stackTrace);
     errorLog.add(error.toString());
     super.onError(error, stackTrace);
   }

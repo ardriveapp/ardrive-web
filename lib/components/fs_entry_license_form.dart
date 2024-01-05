@@ -377,7 +377,6 @@ class FsEntryLicenseForm extends StatelessWidget {
               ),
             );
           } else if (state is FsEntryLicenseFailure) {
-            // TODO
             return ArDriveCard(
               height: 400,
               width: kMediumDialogWidth,
