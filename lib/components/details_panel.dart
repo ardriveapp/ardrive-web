@@ -748,10 +748,20 @@ class _DetailsPanelState extends State<DetailsPanel> {
               state.licenseState == null
                   ? ArDriveButton(
                       text: 'Add',
-                      // TODO: Localize
-                      // text: appLocalizationsOf(context).add,
-                      icon: ArDriveIcons.license(size: 16),
-                      style: ArDriveButtonStyle.inverted,
+                      icon: ArDriveIcons.license(
+                        size: 16,
+                        color:
+                            ArDriveTheme.of(context).themeData.backgroundColor,
+                      ),
+                      fontStyle: ArDriveTypography.body.buttonNormalBold(
+                        color:
+                            ArDriveTheme.of(context).themeData.backgroundColor,
+                      ),
+                      backgroundColor: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                      maxHeight: 32,
                       onPressed: () => promptToLicense(
                         context,
                         driveId: widget.item.driveId,
