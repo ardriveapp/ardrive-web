@@ -828,9 +828,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 itemSubtitle: subtitle,
                 itemTitle: title,
               );
-            } else if (revision is FileRevisionWithTransactions) {
+            } else if (revision is FileRevisionWithLicenseAndTransactions) {
               final file = ARFSFactory()
-                  .getARFSFileFromFileRevisionWithTransactions(revision);
+                  .getARFSFileFromFileRevisionWithLicenseAndTransactions(
+                      revision);
 
               return _buildFileActivity(file, revision.action, null);
             } else if (revision is DriveRevisionWithTransaction) {
