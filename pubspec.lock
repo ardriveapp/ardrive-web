@@ -84,20 +84,20 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
-      resolved-ref: "1aa43a931ffcf3e55f95abc0800fef89c5291d7b"
+      ref: "v1.4.4"
+      resolved-ref: "6ff48b9cea11774ad3e47664d20e6dd08a55467f"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
-    version: "1.4.3"
+    version: "1.4.4"
   ardrive_ui:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.17.0"
-      resolved-ref: "4c6dcf1c22fb888a41a16ebe5f7f4c39d51b2dd3"
+      ref: "v1.17.1"
+      resolved-ref: "0b9da8860a1652fdb6c686310cf3aa188c4af1b1"
       url: "https://github.com/ardriveapp/ardrive_ui.git"
     source: git
-    version: "1.17.0"
+    version: "1.17.1"
   ardrive_uploader:
     dependency: "direct main"
     description:
@@ -139,11 +139,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
-      resolved-ref: "50d34f9106c824dcff86e4d90bbc7408270a8799"
+      ref: "v3.8.3"
+      resolved-ref: "41d590687cecafc316b3c83da20274a29d3e2833"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "3.8.1"
+    version: "3.8.3"
   async:
     dependency: "direct main"
     description:
