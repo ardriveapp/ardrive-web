@@ -407,23 +407,24 @@ class _DriveExplorerItemTileTrailingState
             ),
           ),
         ),
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToLicense(
-              context,
-              driveId: item.driveId,
-              selectedItems: [item],
-            );
-          },
-          content: _buildItem(
-            // TODO: Localize
-            // appLocalizationsOf(context).license,
-            'Add license',
-            ArDriveIcons.license(
-              size: defaultIconSize,
+        if (item is FileDataTableItem && item.pinnedDataOwnerAddress == null)
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToLicense(
+                context,
+                driveId: item.driveId,
+                selectedItems: [item],
+              );
+            },
+            content: _buildItem(
+              // TODO: Localize
+              // appLocalizationsOf(context).license,
+              'Add license',
+              ArDriveIcons.license(
+                size: defaultIconSize,
+              ),
             ),
           ),
-        ),
       ],
       ArDriveDropdownItem(
         onClick: () {
