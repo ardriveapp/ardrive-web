@@ -11,6 +11,10 @@ class FsEntryLicenseLoadInProgress extends FsEntryLicenseState {
   const FsEntryLicenseLoadInProgress() : super();
 }
 
+class FsEntryLicenseNoFiles extends FsEntryLicenseState {
+  const FsEntryLicenseNoFiles() : super();
+}
+
 class FsEntryLicenseSelecting extends FsEntryLicenseState {
   const FsEntryLicenseSelecting() : super();
 }

@@ -85,7 +85,104 @@ class FsEntryLicenseForm extends StatelessWidget {
         return Builder(builder: (context) {
           final licenseInfo =
               context.read<FsEntryLicenseBloc>().selectFormLicenseInfo;
-          if (state is FsEntryLicenseSelecting) {
+          if (state is FsEntryLicenseNoFiles) {
+            return ArDriveCard(
+              height: 350,
+              width: kMediumDialogWidth,
+              contentPadding: EdgeInsets.zero,
+              content: Column(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.only(left: 16, right: 16),
+                    width: double.infinity,
+                    height: 37,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ArDriveClickArea(
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: const Align(
+                              alignment: Alignment.centerRight,
+                              child: ArDriveIcon(
+                                icon: ArDriveIconsData.x,
+                                size: 32,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 37,
+                      ),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          ArDriveIcon(
+                            icon: ArDriveIconsData.close_circle,
+                            size: 64,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeErrorOnEmphasis,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            // TODO: Localize
+                            'No valid file to license.',
+                            textAlign: TextAlign.center,
+                            style: ArDriveTypography.headline.headline4Bold(),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            // TODO: Localize
+                            'Please try again with another file.',
+                            textAlign: TextAlign.center,
+                            style: ArDriveTypography.body.buttonLargeRegular(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgDefault,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          ArDriveButton(
+                            maxHeight: 36,
+                            backgroundColor: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                            fontStyle: ArDriveTypography.body
+                                .buttonNormalBold(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeAccentSubtle,
+                                )
+                                .copyWith(fontWeight: FontWeight.bold),
+                            text: appLocalizationsOf(context).close,
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else if (state is FsEntryLicenseSelecting) {
             final filesToLicense =
                 context.read<FsEntryLicenseBloc>().filesToLicense;
             return ArDriveStandardModal(

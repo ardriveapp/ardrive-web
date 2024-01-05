@@ -106,7 +106,11 @@ class FsEntryLicenseBloc
         if (event is FsEntryLicenseInitial) {
           filesToLicense =
               await enumerateFiles(items: selectedItems, emit: emit);
-          emit(const FsEntryLicenseSelecting());
+          if (filesToLicense!.isEmpty) {
+            emit(const FsEntryLicenseNoFiles());
+          } else {
+            emit(const FsEntryLicenseSelecting());
+          }
         }
 
         if (event is FsEntryLicenseSelect) {
