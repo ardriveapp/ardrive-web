@@ -229,7 +229,8 @@ class FsEntryLicenseBloc
       }
     }
 
-    return files;
+    // Do not allow pinned files to be licensed
+    return files.where((file) => file.pinnedDataOwnerAddress == null).toList();
   }
 
   Future<void> licenseEntities({
