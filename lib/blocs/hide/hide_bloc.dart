@@ -72,6 +72,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     on<ConfirmUploadEvent>(_onConfirmUploadEvent);
     on<SelectUploadMethodEvent>(_onSelectUploadMethodEvent);
     on<RefreshTurboBalanceEvent>(_refreshTurboBalance);
+    on<ErrorEvent>(_onErrorEvent);
   }
 
   bool get _useTurboUpload =>
@@ -318,6 +319,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     );
     final folderEntity = newFolder.asEntity();
 
+    logger.d('Unhiding folder with JSON: ${folderEntity.toJson()}');
+
     final driveKey = await _driveDao.getDriveKey(
       event.driveId,
       profile.cipherKey,
@@ -416,6 +419,13 @@ class HideBloc extends Bloc<HideEvent, HideState> {
         uploadMethod: event.uploadMethod,
       ),
     );
+  }
+
+  void _onErrorEvent(
+    ErrorEvent event,
+    Emitter<HideState> emit,
+  ) {
+    emit(FailureHideState(hideAction: event.hideAction));
   }
 
   void _computeIsFreeThanksToTurbo() {
@@ -552,5 +562,15 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     _costEstimateTurbo = await costCalculatorForTurbo.calculateCost(
       totalSize: _totalSize,
     );
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    add(ErrorEvent(
+      error: error,
+      stackTrace: stackTrace,
+      hideAction: state.hideAction,
+    ));
+    super.onError(error, stackTrace);
   }
 }

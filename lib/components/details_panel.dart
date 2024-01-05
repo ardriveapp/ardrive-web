@@ -1,9 +1,12 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/blocs/hide/hide_bloc.dart';
+import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
@@ -38,7 +41,6 @@ class DetailsPanel extends StatefulWidget {
   const DetailsPanel({
     super.key,
     required this.item,
-    required this.maybeSelectedItem,
     required this.drivePrivacy,
     this.revisions,
     this.fileKey,
@@ -50,7 +52,6 @@ class DetailsPanel extends StatefulWidget {
   });
 
   final ArDriveDataTableItem item;
-  final SelectedItem? maybeSelectedItem;
   final Privacy drivePrivacy;
   final List<FileRevision>? revisions;
   final SecretKey? fileKey;
@@ -68,7 +69,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      // Specify a key to ensure a new cubit is provided when the folder/file id changes.
+      // Specify a key to ensure a new cubit is provided when the folder/file id
+      // changes.
       key: ValueKey(
         '${widget.item.driveId}${widget.item.id}${widget.item.name}',
       ),
@@ -225,8 +227,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 ScreenTypeLayout.builder(
                   desktop: (context) => Column(
                     children: [
-                      DetailsPanelToolbar(
-                        item: widget.item,
+                      BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                        builder: (context, driveDetailState) {
+                          final driveDetailLoadSuccess =
+                              driveDetailState as DriveDetailLoadSuccess;
+                          return DetailsPanelToolbar(
+                            item: widget.item,
+                            driveDetailLoadSuccess: driveDetailLoadSuccess,
+                          );
+                        },
                       ),
                       const SizedBox(
                         height: 24,
@@ -798,10 +807,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   title = appLocalizationsOf(context).folderWasMoved;
                   break;
                 case RevisionAction.hide:
-                  title = 'This folder was hidden';
+                  title = appLocalizationsOf(context).folderWasHidden;
                   break;
                 case RevisionAction.unhide:
-                  title = 'This folder was unhidden';
+                  title = appLocalizationsOf(context).folderWasUnhidden;
                   break;
                 default:
                   title = appLocalizationsOf(context).folderWasModified;
@@ -828,10 +837,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       .driveWasRenamed(revision.name);
                   break;
                 case RevisionAction.hide:
-                  title = 'This drive was hidden';
+                  title = appLocalizationsOf(context).driveWasHidden;
                   break;
                 case RevisionAction.unhide:
-                  title = 'This drive was unhidden';
+                  title = appLocalizationsOf(context).driveWasUnhidden;
                   break;
                 default:
                   title = appLocalizationsOf(context).driveWasModified;
@@ -892,10 +901,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
         );
         break;
       case RevisionAction.hide:
-        title = 'This file was hidden';
+        title = appLocalizationsOf(context).fileWasHidden;
         break;
       case RevisionAction.unhide:
-        title = 'This file was unhidden';
+        title = appLocalizationsOf(context).fileWasUnhidden;
         break;
       default:
         title = appLocalizationsOf(context).fileWasModified;
@@ -1158,15 +1167,15 @@ class DetailsPanelToolbar extends StatelessWidget {
   const DetailsPanelToolbar({
     super.key,
     required this.item,
+    required this.driveDetailLoadSuccess,
   });
 
   final ArDriveDataTableItem item;
+  final DriveDetailLoadSuccess driveDetailLoadSuccess;
 
   @override
   Widget build(BuildContext context) {
-    final drive =
-        (context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess)
-            .currentDrive;
+    final drive = driveDetailLoadSuccess.currentDrive;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1264,6 +1273,61 @@ class DetailsPanelToolbar extends StatelessWidget {
               icon: ArDriveIcons.move(size: defaultIconSize),
               onTap: () {
                 promptToMove(context, driveId: drive.id, selectedItems: [item]);
+              },
+            ),
+          if (item.isOwner)
+            _buildActionIcon(
+              tooltip: item.isHidden
+                  ? appLocalizationsOf(context).unhide
+                  : appLocalizationsOf(context).hide,
+              icon: item.isHidden
+                  ? ArDriveIcons.eyeClosed(size: defaultIconSize)
+                  : ArDriveIcons.eyeOpen(size: defaultIconSize),
+              onTap: () {
+                final hideBloc = context.read<HideBloc>();
+                final driveDetailCubit = context.read<DriveDetailCubit>();
+
+                if (item is FileDataTableItem) {
+                  if (item.isHidden) {
+                    hideBloc.add(UnhideFileEvent(
+                      driveId: item.driveId,
+                      fileId: item.id,
+                    ));
+                    promptToHide(
+                      context,
+                      driveDetailCubit: driveDetailCubit,
+                    );
+                  } else {
+                    hideBloc.add(HideFileEvent(
+                      driveId: item.driveId,
+                      fileId: item.id,
+                    ));
+                    promptToHide(
+                      context,
+                      driveDetailCubit: driveDetailCubit,
+                    );
+                  }
+                } else if (item is FolderDataTableItem) {
+                  if (item.isHidden) {
+                    hideBloc.add(UnhideFolderEvent(
+                      driveId: item.driveId,
+                      folderId: item.id,
+                    ));
+                    promptToHide(
+                      context,
+                      driveDetailCubit: driveDetailCubit,
+                    );
+                  } else {
+                    hideBloc.add(HideFolderEvent(
+                      driveId: item.driveId,
+                      folderId: item.id,
+                    ));
+                    promptToHide(
+                      context,
+                      driveDetailCubit: driveDetailCubit,
+                    );
+                  }
+                }
               },
             ),
           const Spacer(),

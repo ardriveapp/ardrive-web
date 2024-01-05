@@ -319,19 +319,26 @@ class _DriveExplorerItemTileTrailingState
           ArDriveDropdownItem(
             onClick: () {
               final hideBloc = context.read<HideBloc>();
+              final driveDetailCubit = context.read<DriveDetailCubit>();
 
               if (item.isHidden) {
                 hideBloc.add(UnhideFolderEvent(
                   driveId: widget.drive.id,
                   folderId: item.id,
                 ));
-                promptToHide(context);
+                promptToHide(
+                  context,
+                  driveDetailCubit: driveDetailCubit,
+                );
               } else {
                 hideBloc.add(HideFolderEvent(
                   driveId: widget.drive.id,
                   folderId: item.id,
                 ));
-                promptToHide(context);
+                promptToHide(
+                  context,
+                  driveDetailCubit: driveDetailCubit,
+                );
               }
             },
             content: _buildItem(
@@ -436,19 +443,26 @@ class _DriveExplorerItemTileTrailingState
         ArDriveDropdownItem(
           onClick: () {
             final hideBloc = context.read<HideBloc>();
+            final driveDetailCubit = context.read<DriveDetailCubit>();
 
             if (item.isHidden) {
               hideBloc.add(UnhideFileEvent(
                 driveId: widget.drive.id,
                 fileId: item.id,
               ));
-              promptToHide(context);
+              promptToHide(
+                context,
+                driveDetailCubit: driveDetailCubit,
+              );
             } else {
               hideBloc.add(HideFileEvent(
                 driveId: widget.drive.id,
                 fileId: item.id,
               ));
-              promptToHide(context);
+              promptToHide(
+                context,
+                driveDetailCubit: driveDetailCubit,
+              );
             }
           },
           content: _buildItem(

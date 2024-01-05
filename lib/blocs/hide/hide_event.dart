@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/hide/hide_state.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
@@ -81,4 +82,22 @@ class RefreshTurboBalanceEvent extends HideEvent {
 
   @override
   List<Object> get props => [];
+}
+
+class ErrorEvent extends HideEvent {
+  final Object error;
+  final StackTrace stackTrace;
+  final HideAction hideAction;
+
+  const ErrorEvent({
+    required this.error,
+    required this.stackTrace,
+    required this.hideAction,
+  });
+
+  @override
+  List<Object> get props => [
+        error,
+        stackTrace,
+      ];
 }

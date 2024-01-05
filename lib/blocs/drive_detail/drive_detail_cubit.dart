@@ -38,7 +38,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   bool _forceDisableMultiselect = false;
 
-  bool _refreshSelectedItem = false;
+  final bool _refreshSelectedItem = true;
 
   bool _showHiddenFiles = false;
 
@@ -159,8 +159,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               );
 
               if (index >= 0) {
+                final item = folderContents.files[index];
+
                 _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
-                  folderContents.files[index],
+                  item,
                   _selectedItem!.index,
                   _selectedItem!.isOwner,
                 );
@@ -170,8 +172,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 (element) => element.id == _selectedItem!.id,
               );
               if (index >= 0) {
+                final item = folderContents.subfolders[index];
+
                 _selectedItem = DriveDataTableItemMapper.fromFolderEntry(
-                  folderContents.subfolders[index],
+                  item,
                   _selectedItem!.index,
                   _selectedItem!.isOwner,
                 );
@@ -184,8 +188,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 _selectedItem!.isOwner,
               );
             }
-
-            _refreshSelectedItem = false;
           }
 
           final currentFolderContents = parseEntitiesToDatatableItem(
@@ -408,22 +410,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
   }
 
-  void refreshDriveDataTable({
-    bool reComputeFolderContents = false,
-  }) {
-    _refreshSelectedItem = true;
+  void refreshDriveDataTable() {
+    // _refreshSelectedItem = true;
 
     if (state is DriveDetailLoadSuccess) {
       final state = this.state as DriveDetailLoadSuccess;
-      if (reComputeFolderContents) {
-        openFolder(
-          path: state.folderInView.folder.path,
-          contentOrderBy: state.contentOrderBy,
-          contentOrderingMode: state.contentOrderingMode,
-        );
-      } else {
-        emit(state.copyWith());
-      }
+      emit(state.copyWith());
     }
   }
 
