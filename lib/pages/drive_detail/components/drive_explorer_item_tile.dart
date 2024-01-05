@@ -342,7 +342,9 @@ class _DriveExplorerItemTileTrailingState
               }
             },
             content: _buildItem(
-              item.isHidden ? 'Unhide this folder' : 'Hide this folder',
+              item.isHidden
+                  ? appLocalizationsOf(context).unhide
+                  : appLocalizationsOf(context).hide,
               ArDriveIcons.x(
                 size: defaultIconSize,
               ),
@@ -466,7 +468,9 @@ class _DriveExplorerItemTileTrailingState
             }
           },
           content: _buildItem(
-            item.isHidden ? 'Unhide this file' : 'Hide this file',
+            item.isHidden
+                ? appLocalizationsOf(context).unhide
+                : appLocalizationsOf(context).hide,
             ArDriveIcons.x(
               size: defaultIconSize,
             ),
