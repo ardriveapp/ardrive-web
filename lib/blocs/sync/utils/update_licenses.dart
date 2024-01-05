@@ -15,7 +15,7 @@ Future<void> _updateLicenses({
         .map((tx) => LicenseAssertionEntity.fromTransaction(tx));
     final licenseCompanions = licenseAssertionEntities.map((entity) {
       final revision = revisionsToSyncLicense.firstWhere(
-        (rev) => rev.licenseTxId == entity.licenseDefinitionTxId,
+        (rev) => rev.licenseTxId == entity.txId,
       );
       final licenseType =
           licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
