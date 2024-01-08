@@ -37,7 +37,7 @@ Future<void> _updateLicenses({
   }
 
   final licenseDataBundledTxIds = revisionsToSyncLicense
-      .where((rev) => rev.licenseTxId != rev.dataTxId)
+      .where((rev) => rev.licenseTxId == rev.dataTxId)
       .map((e) => e.licenseTxId!)
       .toList();
 
