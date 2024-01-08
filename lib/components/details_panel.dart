@@ -649,18 +649,18 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }
 
   List<Widget> _fileDetails(FsEntryInfoState state) {
-    String? pinnedDataOwnerAddress =
-        (widget.item as FileDataTableItem).pinnedDataOwnerAddress;
+    final item = widget.item as FileDataTableItem;
+    String? pinnedDataOwnerAddress = item.pinnedDataOwnerAddress;
 
     return [
       DetailsPanelItem(
-        leading: CopyButton(text: widget.item.id),
+        leading: CopyButton(text: item.id),
         itemTitle: appLocalizationsOf(context).fileID,
       ),
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          filesize(widget.item.size),
+          filesize(item.size),
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
         itemTitle: appLocalizationsOf(context).size,
@@ -668,7 +668,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.lastUpdated),
+          yMMdDateFormatter.format(item.lastUpdated),
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -676,7 +676,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.dateCreated),
+          yMMdDateFormatter.format(item.dateCreated),
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -684,7 +684,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          widget.item.contentType,
+          item.contentType,
           textAlign: TextAlign.right,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
@@ -724,14 +724,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
               icon: ArDriveIcons.newWindow(size: 20),
               onPressed: () {
                 openUrl(
-                  url:
-                      'https://viewblock.io/arweave/tx/${(widget.item as FileDataTableItem).dataTxId}',
+                  url: 'https://viewblock.io/arweave/tx/${item.dataTxId}',
                 );
               },
             ),
             const SizedBox(width: 12),
             CopyButton(
-              text: (widget.item as FileDataTableItem).dataTxId,
+              text: item.dataTxId,
             ),
           ],
         ),
@@ -765,12 +764,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       maxHeight: 32,
                       onPressed: () => promptToLicense(
                         context,
-                        driveId: widget.item.driveId,
-                        selectedItems: [widget.item],
+                        driveId: item.driveId,
+                        selectedItems: [item],
                       ),
                     )
                   : LicenseDetailsPopoverButton(
                       licenseState: state.licenseState!,
+                      fileItem: item,
                     )
             ],
           ),

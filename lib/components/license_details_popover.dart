@@ -1,14 +1,18 @@
+import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/license_summary.dart';
+import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/license/license_types.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/widgets.dart';
 
 class LicenseDetailsPopoverButton extends StatefulWidget {
   final LicenseState licenseState;
+  final FileDataTableItem fileItem;
 
   const LicenseDetailsPopoverButton({
     super.key,
     required this.licenseState,
+    required this.fileItem,
   });
 
   @override
@@ -35,7 +39,15 @@ class _LicenseDetailsPopoverButtonState
         follower: Alignment.bottomRight,
         target: Alignment.topRight,
       ),
-      content: LicenseDetailsPopover(licenseState: widget.licenseState),
+      content: LicenseDetailsPopover(
+        licenseState: widget.licenseState,
+        fileItem: widget.fileItem,
+        closePopover: () {
+          setState(() {
+            _showLicenseDetailsCard = false;
+          });
+        },
+      ),
       child: ArDriveButton(
         text: widget.licenseState.meta.shortName,
         style: ArDriveButtonStyle.tertiary,
@@ -51,10 +63,14 @@ class _LicenseDetailsPopoverButtonState
 
 class LicenseDetailsPopover extends StatelessWidget {
   final LicenseState licenseState;
+  final FileDataTableItem fileItem;
+  final VoidCallback closePopover;
 
   const LicenseDetailsPopover({
     super.key,
     required this.licenseState,
+    required this.fileItem,
+    required this.closePopover,
   });
 
   @override
@@ -62,7 +78,35 @@ class LicenseDetailsPopover extends StatelessWidget {
     return ArDriveCard(
       contentPadding: const EdgeInsets.all(16),
       boxShadow: BoxShadowCard.shadow80,
-      content: LicenseSummary(licenseState: licenseState),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LicenseSummary(licenseState: licenseState),
+          ArDriveButton(
+            text: 'Update',
+            icon: ArDriveIcons.license(
+              size: 16,
+              color: ArDriveTheme.of(context).themeData.backgroundColor,
+            ),
+            fontStyle: ArDriveTypography.body.buttonNormalBold(
+              color: ArDriveTheme.of(context).themeData.backgroundColor,
+            ),
+            backgroundColor:
+                ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            maxHeight: 32,
+            onPressed: () {
+              closePopover();
+              promptToLicense(
+                context,
+                driveId: fileItem.driveId,
+                selectedItems: [fileItem],
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }
