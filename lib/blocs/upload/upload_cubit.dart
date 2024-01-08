@@ -541,19 +541,7 @@ class UploadCubit extends Cubit<UploadState> {
       logger.d(
           'Reusing id? ${conflictingFiles.containsKey(file.getIdentifier())}');
 
-      LicenseState? licenseState;
-      if (fileId != null) {
-        final latestRevision = await _driveDao
-            .latestFileRevisionByFileIdWithLicense(
-              driveId: driveId,
-              fileId: fileId,
-            )
-            .getSingleOrNull();
-        if (latestRevision?.license != null) {
-          final licenseCompanion = latestRevision!.license!.toCompanion(true);
-          licenseState = _licenseService.fromCompanion(licenseCompanion);
-        }
-      }
+      final licenseState = await _licenseStateForFileId(fileId);
 
       final fileMetadata = ARFSUploadMetadataArgs(
         isPrivate: _targetDrive.isPrivate,
@@ -648,9 +636,12 @@ class UploadCubit extends Cubit<UploadState> {
     List<(ARFSUploadMetadataArgs, IOFile)> uploadFiles = [];
 
     for (var file in files) {
-      final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
+      final conflictingId = conflictingFiles[file.getIdentifier()];
+      final revisionAction = conflictingId != null
           ? RevisionAction.uploadNewVersion
           : RevisionAction.create;
+
+      final licenseState = await _licenseStateForFileId(conflictingId);
 
       final args = ARFSUploadMetadataArgs(
         isPrivate: _targetDrive.isPrivate,
@@ -663,6 +654,8 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
+        licenseDefinitionTxId: licenseState?.meta.licenseDefinitionTxId,
+        licenseAdditionalTags: licenseState?.params?.toAdditionalTags(),
       );
 
       uploadFiles.add((args, file.ioFile));
@@ -955,6 +948,22 @@ class UploadCubit extends Cubit<UploadState> {
         logger.e('Error canceling upload', e);
       }
     }
+  }
+
+  Future<LicenseState?> _licenseStateForFileId(String? fileId) async {
+    if (fileId != null) {
+      final latestRevision = await _driveDao
+          .latestFileRevisionByFileIdWithLicense(
+            driveId: driveId,
+            fileId: fileId,
+          )
+          .getSingleOrNull();
+      if (latestRevision?.license != null) {
+        final licenseCompanion = latestRevision!.license!.toCompanion(true);
+        return _licenseService.fromCompanion(licenseCompanion);
+      }
+    }
+    return null;
   }
 }
 
