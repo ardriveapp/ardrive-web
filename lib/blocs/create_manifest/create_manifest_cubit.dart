@@ -200,17 +200,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
             ),
           );
 
-      if (!doesFolderHasPendingFiles) {
-        logger.d(
-          'No pending files for folder ${parentFolder.id}.'
-          ' File data txs: ${arweaveManifest.paths.entries.map((e) => (
-                e.key,
-                e.value.id
-              ))}'
-          ' Pending txs: ${(await folderPendingFiles.get()).map((e) => e.id)}',
-        );
-      }
-
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
 

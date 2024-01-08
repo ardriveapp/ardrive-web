@@ -66,10 +66,6 @@ Future<void> promptToUpload(
         )
         .toList();
     selectedFiles.addAll(uploadFiles);
-    logger.d('Selected files: ${selectedFiles.length},'
-        ' with relativeTo: $relativeTo');
-    final fileNames = selectedFiles.map((e) => e.ioFile.name).toList();
-    logger.d('Selected files: $fileNames');
   } else {
     // Display multiple options on Mobile
     // Open file picker on Web

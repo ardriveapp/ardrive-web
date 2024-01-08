@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
@@ -109,8 +108,6 @@ class ManifestData {
           rootFolderPath: rootFolderPath,
         ): ManifestPath(file.dataTxId, fileId: file.id)
     };
-
-    logger.d('Files relative to root folder $rootFolderPath: $paths');
 
     return ManifestData(
       index,
