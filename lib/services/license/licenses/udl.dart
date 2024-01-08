@@ -100,25 +100,23 @@ class UdlLicenseParams extends LicenseParams {
   static UdlLicenseParams fromAdditionalTags(
     Map<String, String> additionalTags,
   ) {
-    print(additionalTags);
-    print(additionalTags);
-    final licenseFeeAmount = additionalTags[UdlTags.licenseFee] != null
+    final licenseFeeAmount = additionalTags.containsKey(UdlTags.licenseFee)
         ? double.tryParse(additionalTags[UdlTags.licenseFee]!
-            .split('${UdlLicenseFeeType.oneTime}-')[1])
+            .split('${udlLicenseFeeTypeValues[UdlLicenseFeeType.oneTime]}-')[1])
         : null;
-    final licenseFeeCurrency = additionalTags[UdlTags.currency] != null
+    final licenseFeeCurrency = additionalTags.containsKey(UdlTags.currency)
         ? udlCurrencyValues.entries
             .firstWhere(
                 (entry) => entry.value == additionalTags[UdlTags.currency])
             .key
         : UdlCurrency.u;
-    final commercialUse = additionalTags[UdlTags.commercialUse] != null
+    final commercialUse = additionalTags.containsKey(UdlTags.commercialUse)
         ? udlCommercialUseValues.entries
             .firstWhere(
                 (entry) => entry.value == additionalTags[UdlTags.commercialUse])
             .key
         : UdlCommercialUse.unspecified;
-    final derivations = additionalTags[UdlTags.derivations] != null
+    final derivations = additionalTags.containsKey(UdlTags.derivations)
         ? udlDerivationValues.entries
             .firstWhere(
                 (entry) => entry.value == additionalTags[UdlTags.derivations])
