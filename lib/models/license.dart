@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/entities/license_assertion.dart';
+import 'package:ardrive/entities/license_data_bundle.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/license/license_types.dart';
 import 'package:ardrive/services/services.dart';
@@ -54,6 +55,24 @@ extension LicenseAssertionEntityExtensions on LicenseAssertionEntity {
         driveId: driveId,
         dataTxId: dataTxId,
         licenseTxType: LicenseTxType.assertion.name,
+        licenseTxId: txId,
+        dateCreated: Value(blockTimestamp),
+        licenseType: licenseType.name,
+      );
+}
+
+extension LicenseDataBundleEntityExtensions on LicenseDataBundleEntity {
+  /// Converts the entity to an instance of [LicenseAssertionsCompanion].
+  LicensesCompanion toCompanion({
+    required String fileId,
+    required String driveId,
+    required LicenseType licenseType,
+  }) =>
+      LicensesCompanion.insert(
+        fileId: fileId,
+        driveId: driveId,
+        dataTxId: txId,
+        licenseTxType: LicenseTxType.bundled.name,
         licenseTxId: txId,
         dateCreated: Value(blockTimestamp),
         licenseType: licenseType.name,

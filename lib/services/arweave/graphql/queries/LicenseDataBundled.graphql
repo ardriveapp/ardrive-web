@@ -1,0 +1,12 @@
+query LicenseDataBundled($transactionIds: [ID!]) {
+  transactions(
+    ids: $transactionIds
+    tags: [{ name: "License", values: [""], op: NEQ }]
+  ) {
+    edges {
+      node {
+        ...TransactionCommon
+      }
+    }
+  }
+}

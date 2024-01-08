@@ -16,6 +16,7 @@ import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
+import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -233,28 +234,36 @@ class ArweaveService {
   }
 
   Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
-      getLicenseAssertions(List<String> licenseAssertionTxIds) async* {
-    var chunks = [];
+      getLicenseAssertions(Iterable<String> licenseAssertionTxIds) async* {
     const chunkSize = 100;
-    for (var i = 0; i < licenseAssertionTxIds.length; i += chunkSize) {
-      chunks.add(
-        licenseAssertionTxIds.sublist(
-          i,
-          i + chunkSize > licenseAssertionTxIds.length
-              ? licenseAssertionTxIds.length
-              : i + chunkSize,
-        ),
-      );
-    }
+    final chunks = licenseAssertionTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
-      final driveEntityHistoryQuery = await _graphQLRetry.execute(
+      final licenseAssertionsQuery = await _graphQLRetry.execute(
         LicenseAssertionsQuery(
           variables: LicenseAssertionsArguments(transactionIds: chunk),
         ),
       );
 
-      yield driveEntityHistoryQuery.data!.transactions.edges
+      yield licenseAssertionsQuery.data!.transactions.edges
+          .map((e) => e.node)
+          .toList();
+    }
+  }
+
+  Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
+      getLicenseDataBundled(Iterable<String> licenseDataBundledTxIds) async* {
+    const chunkSize = 100;
+    final chunks = licenseDataBundledTxIds.slices(chunkSize);
+    for (final chunk in chunks) {
+      // Get a page of 100 transactions
+      final licenseDataBundledQuery = await _graphQLRetry.execute(
+        LicenseAssertionsQuery(
+          variables: LicenseAssertionsArguments(transactionIds: chunk),
+        ),
+      );
+
+      yield licenseDataBundledQuery.data!.transactions.edges
           .map((e) => e.node)
           .toList();
     }
