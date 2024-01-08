@@ -1,6 +1,6 @@
 import 'package:arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:pst/pst.dart';

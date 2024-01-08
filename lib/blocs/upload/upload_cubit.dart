@@ -14,7 +14,7 @@ import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';

@@ -15,7 +15,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_utils.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';

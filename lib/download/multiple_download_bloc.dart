@@ -9,7 +9,7 @@ import 'package:ardrive/entities/constants.dart' as constants;
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';

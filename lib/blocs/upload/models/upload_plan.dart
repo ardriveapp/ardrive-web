@@ -4,7 +4,7 @@ import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_hand
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/bundles/next_fit_bundle_packer.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 
 import '../upload_handles/file_data_item_upload_handle.dart';
 import '../upload_handles/file_v2_upload_handle.dart';

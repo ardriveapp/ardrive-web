@@ -1,5 +1,5 @@
 import 'package:ardrive/models/daos/daos.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:drift/drift.dart';
 
 import 'unsupported.dart'
