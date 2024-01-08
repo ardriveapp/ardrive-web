@@ -5,7 +5,6 @@ import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 const Duration defaultDurationBeforePrompting = Duration(seconds: 20);
@@ -118,7 +117,7 @@ class PromptToSnapshotBloc
         );
       }
     }).catchError((e) {
-      // It was cancelled
+      logger.d('[PROMPT TO SNAPSHOT] Debuncer cancelled for ${event.driveId}');
     });
   }
 
@@ -182,27 +181,19 @@ class PromptToSnapshotBloc
 }
 
 abstract class CountOfTxsSyncedWithGql {
-  static final List<CountOfTxsSyncedWithGqlOfDrive>
-      _countOfTxsSynceWithGqlOfDrive = [];
+  static final Map<String, int> _countOfTxsSynceWithGqlOfDrive = {};
 
   static int _getForDrive(DriveID driveId) {
-    return _countOfTxsSynceWithGqlOfDrive
-            .firstWhereOrNull((e) => e.driveId == driveId)
-            ?.count ??
-        0;
+    return _countOfTxsSynceWithGqlOfDrive[driveId] ?? 0;
   }
 
   static void countForDrive(DriveID driveId, int count) {
     final currentCount = _getForDrive(driveId);
-    _countOfTxsSynceWithGqlOfDrive.removeWhere((e) => e.driveId == driveId);
-    _countOfTxsSynceWithGqlOfDrive.add(CountOfTxsSyncedWithGqlOfDrive(
-      count: currentCount + count,
-      driveId: driveId,
-    ));
+    _countOfTxsSynceWithGqlOfDrive[driveId] = currentCount + count;
   }
 
   static void resetForDrive(DriveID driveId) {
-    _countOfTxsSynceWithGqlOfDrive.removeWhere((e) => e.driveId == driveId);
+    _countOfTxsSynceWithGqlOfDrive.remove(driveId);
   }
 
   static bool wouldDriveBenefitFromSnapshot(
@@ -220,14 +211,4 @@ abstract class CountOfTxsSyncedWithGql {
 
     return wouldBenefit;
   }
-}
-
-class CountOfTxsSyncedWithGqlOfDrive {
-  final int count;
-  final DriveID driveId;
-
-  const CountOfTxsSyncedWithGqlOfDrive({
-    required this.count,
-    required this.driveId,
-  });
 }
