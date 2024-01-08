@@ -63,7 +63,7 @@ Map<UdlLicenseFeeType, String> udlLicenseFeeTypeValues = {
 };
 
 String udlLicenseFeeOneTime(double amount) =>
-    '-${udlLicenseFeeTypeValues[UdlLicenseFeeType.oneTime]}-$amount';
+    '${udlLicenseFeeTypeValues[UdlLicenseFeeType.oneTime]}-$amount';
 
 class UdlLicenseParams extends LicenseParams {
   final double? licenseFeeAmount;
@@ -100,8 +100,11 @@ class UdlLicenseParams extends LicenseParams {
   static UdlLicenseParams fromAdditionalTags(
     Map<String, String> additionalTags,
   ) {
+    print(additionalTags);
+    print(additionalTags);
     final licenseFeeAmount = additionalTags[UdlTags.licenseFee] != null
-        ? double.parse(additionalTags[UdlTags.licenseFee]!.split('-')[2])
+        ? double.tryParse(additionalTags[UdlTags.licenseFee]!
+            .split('${UdlLicenseFeeType.oneTime}-')[1])
         : null;
     final licenseFeeCurrency = additionalTags[UdlTags.currency] != null
         ? udlCurrencyValues.entries
