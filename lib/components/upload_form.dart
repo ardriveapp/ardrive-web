@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -30,6 +29,7 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -52,7 +52,7 @@ Future<void> promptToUpload(
     ioFolder = await io.pickFolder();
     final ioFiles = await ioFolder.listFiles();
 
-    final isMobilePlatform = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    final isMobilePlatform = AppPlatform.isMobile;
     final shouldUseRelativePath = isMobilePlatform && ioFolder.path.isNotEmpty;
     final relativeTo = shouldUseRelativePath ? getDirname(ioFolder.path) : null;
 
