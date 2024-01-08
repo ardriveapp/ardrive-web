@@ -75,6 +75,7 @@ class FsEntryLicenseForm extends StatelessWidget {
           Navigator.pop(context);
         } else if (state is FsEntryLicenseComplete) {
           // close LicenseForm
+          context.read<DriveDetailCubit>().refreshDriveDataTable();
           Navigator.pop(context);
         } else if (state is FsEntryLicenseWalletMismatch) {
           Navigator.pop(context);
