@@ -83,11 +83,7 @@ class Database extends _$Database {
               logger.i('Migrating schema from v18 to v19');
 
               await m.addColumn(fileEntries, fileEntries.licenseTxId);
-
-              await m.addColumn(
-                fileRevisions,
-                fileRevisions.licenseTxId,
-              );
+              await m.addColumn(fileRevisions, fileRevisions.licenseTxId);
 
               await m.createTable(licenses);
             }
