@@ -121,7 +121,7 @@ filesInFolderWithLicenseAndRevisionTransactions ($order = '') AS FileWithLicense
         WHERE driveId = :driveId AND fileId = file_entries.id
         ORDER BY rev.dateCreated DESC
         LIMIT 1)
-    WHERE file_entries.driveId = :driveId AND file_entries.parentFolderId = :parentFolderId
+    WHERE driveId = :driveId AND parentFolderId = :parentFolderId
     ORDER BY $order;
 filesInFolderAtPathWithLicenseAndRevisionTransactions ($order = '') AS FileWithLicenseAndLatestRevisionTransactions:
     SELECT file_entries.*, license.**, metadataTx.**, dataTx.** FROM file_entries
@@ -142,7 +142,7 @@ filesInFolderAtPathWithLicenseAndRevisionTransactions ($order = '') AS FileWithL
         LIMIT 1)
      WHERE parentFolderId IN (
         SELECT id FROM folder_entries
-        WHERE file_entries.driveId = :driveId AND file_entries.path = :path
+        WHERE driveId = :driveId AND path = :path
         LIMIT 1
     )
     ORDER BY $order;
