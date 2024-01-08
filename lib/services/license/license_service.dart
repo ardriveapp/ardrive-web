@@ -32,6 +32,8 @@ class LicenseService {
     switch (licenseType) {
       case LicenseType.udl:
         return UdlLicenseParams.fromAdditionalTags(additionalTags ?? {});
+      case LicenseType.ccBy:
+        return EmptyParams();
       default:
         throw ArgumentError('Unknown license type: $licenseType');
     }

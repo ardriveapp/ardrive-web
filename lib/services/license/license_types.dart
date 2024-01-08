@@ -26,9 +26,11 @@ class LicenseMeta {
   });
 }
 
-abstract class LicenseParams {
+class LicenseParams {
   Map<String, String> toAdditionalTags() => {};
 }
+
+class EmptyParams extends LicenseParams {}
 
 final licenseMetaMap = {
   LicenseType.udl: udlLicenseMeta,
