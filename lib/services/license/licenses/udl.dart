@@ -93,7 +93,7 @@ class UdlLicenseParams extends LicenseParams {
   ) {
     final licenseFeeAmountKey = additionalTags.keys
         .singleWhereOrNull((key) => key.startsWith('${UdlTags.licenseFee}-'));
-    final licenseFeeAmount = licenseFeeAmountKey == null
+    final licenseFeeAmount = licenseFeeAmountKey != null
         ? double.parse(additionalTags[licenseFeeAmountKey]!.split('-')[2])
         : null;
     final licenseFeeCurrency = additionalTags[UdlTags.currency] != null
