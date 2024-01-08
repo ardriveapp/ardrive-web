@@ -18,6 +18,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final int? size;
   final DateTime lastUpdated;
   final DateTime dateCreated;
+  final LicenseType? licenseType;
   final String contentType;
   final String? fileStatusFromTransactions;
   final String id;
@@ -32,6 +33,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     required this.name,
     required this.lastUpdated,
     required this.dateCreated,
+    this.licenseType,
     required this.contentType,
     this.fileStatusFromTransactions,
     required this.path,
@@ -119,6 +121,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
     required String contentType,
     required String path,
     String? fileStatusFromTransactions,
+    LicenseType? licenseType,
     this.licenseTxId,
     this.bundledIn,
     required int index,
@@ -131,6 +134,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
           size: size,
           lastUpdated: lastUpdated,
           dateCreated: dateCreated,
+          licenseType: licenseType,
           contentType: contentType,
           fileStatusFromTransactions: fileStatusFromTransactions,
           index: index,
@@ -177,13 +181,20 @@ Widget _buildDataListContent(
       forceDisableMultiSelect:
           context.read<DriveDetailCubit>().forceDisableMultiselect,
       columns: [
-        TableColumn(appLocalizationsOf(context).name, 3),
+        TableColumn(appLocalizationsOf(context).name, 9),
         if (constraints.maxWidth > 500)
-          TableColumn(appLocalizationsOf(context).size, 1),
+          TableColumn(appLocalizationsOf(context).size, 3),
         if (constraints.maxWidth > 640)
-          TableColumn(appLocalizationsOf(context).lastUpdated, 1),
+          TableColumn(appLocalizationsOf(context).lastUpdated, 3),
         if (constraints.maxWidth > 700)
-          TableColumn(appLocalizationsOf(context).dateCreated, 1),
+          TableColumn(appLocalizationsOf(context).dateCreated, 3),
+        if (constraints.maxWidth > 820)
+          TableColumn(
+            // TODO: Localize
+            // appLocalizationsOf(context).licenseType,
+            'License',
+            2,
+          ),
       ],
       trailing: (file) => isMultiselecting
           ? const SizedBox.shrink()
@@ -237,6 +248,12 @@ Widget _buildDataListContent(
           size: row.size == null ? '-' : filesize(row.size),
           lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
           dateCreated: yMMdDateFormatter.format(row.dateCreated),
+          license: row.licenseType == null
+              ? ''
+              : context
+                  .read<LicenseService>()
+                  .licenseMetaByType(row.licenseType!)
+                  .shortName,
           onPressed: () {
             final cubit = context.read<DriveDetailCubit>();
             if (row is FolderDataTableItem) {
@@ -301,7 +318,7 @@ class ColumnIndexes {
 
 class DriveDataTableItemMapper {
   static FileDataTableItem toFileDataTableItem(
-    FileWithLatestRevisionTransactions file,
+    FileWithLicenseAndLatestRevisionTransactions file,
     int index,
     bool isOwner,
   ) {
@@ -326,6 +343,7 @@ class DriveDataTableItemMapper {
       licenseTxId: file.licenseTxId,
       metadataTx: file.metadataTx,
       dataTx: file.dataTx,
+      licenseType: file.license?.toCompanion(true).licenseTypeEnum,
       index: index,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
     );
