@@ -91,7 +91,10 @@ class LicenseDetailsPopover extends StatelessWidget {
         children: [
           LicenseSummary(licenseState: licenseState),
           ArDriveButton(
-            text: 'Update',
+            text:
+                // TODO: Localize
+                // appLocalizationsOf(context).licenseUpdate
+                'Update',
             icon: ArDriveIcons.license(
               size: 16,
               color: ArDriveTheme.of(context).themeData.backgroundColor,
