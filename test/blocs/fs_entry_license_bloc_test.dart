@@ -282,7 +282,7 @@ void main() {
       errors: () => [isA<Exception>()],
     );
     blocTest(
-      'successfully Licenses files when there are no folders',
+      'successfully detect when no files',
       build: () => FsEntryLicenseBloc(
         arweave: arweave,
         turboUploadService: turboUploadService,
@@ -296,15 +296,12 @@ void main() {
         platform: FakePlatform(operatingSystem: 'android'),
       ),
       act: (FsEntryLicenseBloc bloc) async {
-        bloc.add(const FsEntryLicenseConfigurationSubmit());
-        await Future.delayed(const Duration(seconds: 2));
-        bloc.add(const FsEntryLicenseReviewConfirm());
+        bloc.add(const FsEntryLicenseInitial());
+        await Future.delayed(const Duration(seconds: 1));
       },
-      wait: const Duration(seconds: 4),
+      wait: const Duration(seconds: 2),
       expect: () => [
-        isA<FsEntryLicenseReviewing>(),
-        isA<FsEntryLicenseLoadInProgress>(),
-        isA<FsEntryLicenseSuccess>(),
+        isA<FsEntryLicenseNoFiles>(),
       ],
     );
   });
