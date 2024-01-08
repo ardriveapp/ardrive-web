@@ -5,6 +5,7 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/fs_entry_license_form.dart';
+import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
@@ -768,9 +769,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         selectedItems: [widget.item],
                       ),
                     )
-                  : ArDriveButton(
-                      text: state.licenseState!.meta.shortName,
-                      style: ArDriveButtonStyle.tertiary,
+                  : LicenseDetailsPopoverButton(
+                      licenseState: state.licenseState!,
                     )
             ],
           ),
