@@ -16,7 +16,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -77,6 +77,19 @@ class Database extends _$Database {
             if (from < 18) {
               // Reserved for PE-4727: Adding support for remembering source Ethereum address
               logger.i('RESERVED: Migrating schema from v17 to v18');
+            }
+            if (from < 19) {
+              // Adding licenses
+              logger.i('Migrating schema from v18 to v19');
+
+              await m.addColumn(fileEntries, fileEntries.licenseTxId);
+
+              await m.addColumn(
+                fileRevisions,
+                fileRevisions.licenseTxId,
+              );
+
+              await m.createTable(licenses);
             }
           }
         },
