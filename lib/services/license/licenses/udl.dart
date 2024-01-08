@@ -1,5 +1,3 @@
-import 'package:collection/collection.dart';
-
 import '../license_types.dart';
 
 const udlLicenseMeta = LicenseMeta(
@@ -102,10 +100,8 @@ class UdlLicenseParams extends LicenseParams {
   static UdlLicenseParams fromAdditionalTags(
     Map<String, String> additionalTags,
   ) {
-    final licenseFeeAmountKey = additionalTags.keys
-        .singleWhereOrNull((key) => key.startsWith('${UdlTags.licenseFee}-'));
-    final licenseFeeAmount = licenseFeeAmountKey != null
-        ? double.parse(additionalTags[licenseFeeAmountKey]!.split('-')[2])
+    final licenseFeeAmount = additionalTags[UdlTags.licenseFee] != null
+        ? double.parse(additionalTags[UdlTags.licenseFee]!.split('-')[2])
         : null;
     final licenseFeeCurrency = additionalTags[UdlTags.currency] != null
         ? udlCurrencyValues.entries
