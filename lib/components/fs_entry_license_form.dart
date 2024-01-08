@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
@@ -8,10 +9,8 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -332,9 +331,10 @@ class FsEntryLicenseForm extends StatelessWidget {
                   const Divider(height: 24),
                   const SizedBox(height: 16),
                   LicenseSummary(
-                    licenseMeta: licenseMeta,
-                    licenseParams:
-                        context.read<FsEntryLicenseBloc>().licenseParams,
+                    licenseState: LicenseState(
+                        meta: licenseMeta,
+                        params:
+                            context.read<FsEntryLicenseBloc>().licenseParams),
                   ),
                   const Divider(height: 32),
                   Text(
@@ -790,110 +790,5 @@ class UdlParamsForm extends StatelessWidget {
               )
               .toList(),
         ));
-  }
-}
-
-class LicenseSummary extends StatelessWidget {
-  final LicenseMeta licenseMeta;
-  final LicenseParams? licenseParams;
-  late final Map<String, String> summaryItems;
-
-  LicenseSummary({
-    super.key,
-    required this.licenseMeta,
-    this.licenseParams,
-  }) {
-    summaryItems = licenseParams is UdlLicenseParams
-        ? udlLicenseSummary(licenseParams as UdlLicenseParams)
-        : {};
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          // TODO: Localize
-          'License',
-          style: ArDriveTypography.body.smallRegular(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-          ),
-        ),
-        Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: '${licenseMeta.name} (${licenseMeta.shortName})',
-                style: ArDriveTypography.body.buttonLargeBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                ),
-              ),
-              const TextSpan(text: '   '),
-              TextSpan(
-                text: 'View',
-                style: ArDriveTypography.body
-                    .buttonLargeRegular(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgSubtle,
-                    )
-                    .copyWith(
-                      decoration: TextDecoration.underline,
-                    ),
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () async {
-                    final url =
-                        'https://viewblock.io/arweave/tx/${licenseMeta.licenseDefinitionTxId}';
-                    await openUrl(url: url);
-                  },
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        ...summaryItems.entries.expand(
-          (entry) => [
-            Text(
-              entry.key,
-              style: ArDriveTypography.body.smallRegular(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-              ),
-            ),
-            Text(
-              entry.value,
-              style: ArDriveTypography.body.buttonLargeBold(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        )
-      ],
-    );
-  }
-
-  Map<String, String> udlLicenseSummary(UdlLicenseParams udlLicenseParams) {
-    final summary = <String, String>{};
-
-    if (udlLicenseParams.licenseFeeAmount != null) {
-      summary['License Fee'] = '${udlLicenseParams.licenseFeeAmount}';
-      summary['License Currency'] =
-          udlCurrencyValues[udlLicenseParams.licenseFeeCurrency]!;
-    }
-    if (udlLicenseParams.commercialUse != UdlCommercialUse.unspecified) {
-      summary['Commercial Use'] =
-          udlCommercialUseValues[udlLicenseParams.commercialUse]!;
-    }
-    if (udlLicenseParams.derivations != UdlDerivation.unspecified) {
-      summary['Derivations'] =
-          udlDerivationValues[udlLicenseParams.derivations]!;
-    }
-
-    return summary;
   }
 }
