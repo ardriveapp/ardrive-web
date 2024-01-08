@@ -83,10 +83,10 @@ class Database extends _$Database {
               // Adding licenses
               logger.i('Migrating schema from v18 to v19');
 
+              await m.createTable(licenses);
+
               await m.addColumn(fileEntries, fileEntries.licenseTxId);
               await m.addColumn(fileRevisions, fileRevisions.licenseTxId);
-
-              await m.createTable(licenses);
             }
           }
         },
