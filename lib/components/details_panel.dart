@@ -771,6 +771,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   : LicenseDetailsPopoverButton(
                       licenseState: state.licenseState!,
                       fileItem: item,
+                      anchor: const Aligned(
+                        follower: Alignment.bottomRight,
+                        target: Alignment.topRight,
+                      ),
                     )
             ],
           ),

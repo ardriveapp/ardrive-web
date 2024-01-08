@@ -8,11 +8,13 @@ import 'package:flutter/widgets.dart';
 class LicenseDetailsPopoverButton extends StatefulWidget {
   final LicenseState licenseState;
   final FileDataTableItem fileItem;
+  final Aligned anchor;
 
   const LicenseDetailsPopoverButton({
     super.key,
     required this.licenseState,
     required this.fileItem,
+    required this.anchor,
   });
 
   @override
@@ -35,10 +37,7 @@ class _LicenseDetailsPopoverButtonState
         }
       },
       visible: _showLicenseDetailsCard,
-      anchor: const Aligned(
-        follower: Alignment.bottomRight,
-        target: Alignment.topRight,
-      ),
+      anchor: widget.anchor,
       content: LicenseDetailsPopover(
         licenseState: widget.licenseState,
         fileItem: widget.fileItem,
