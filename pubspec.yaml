@@ -35,7 +35,7 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ardriveapp/ardrive_io.git
-      ref: v1.4.3
+      ref: v1.4.4
   ardrive_ui:
     git:
       url: https://github.com/ardriveapp/ardrive_ui.git
@@ -48,13 +48,15 @@ dependencies:
     path: ./packages/arconnect
   ardrive_crypto:
     path: ./packages/ardrive_crypto
+  ardrive_logger:
+    path: ./packages/ardrive_logger
   artemis: ^7.0.0-beta.13
   pst:
     path: ./packages/pst
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.2
+      ref: v3.8.3
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   intersperse: ^2.0.0
@@ -154,11 +156,11 @@ dependency_overrides:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
+      ref: v3.8.3
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-5029-suspend-data-item-validation-for-cli-uploads-during-download-to-investigate-root-cause
+      ref: v1.4.4
 
 dev_dependencies:
   integration_test:
@@ -171,7 +173,7 @@ dev_dependencies:
   build_runner: ^2.0.4
   test: ^1.21.4
   drift_dev:
-  mocktail: 0.3.0
+  mocktail: ^1.0.2
   json_serializable:
 
 flutter:

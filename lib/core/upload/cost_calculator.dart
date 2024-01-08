@@ -1,6 +1,6 @@
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/turbo/turbo.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:arweave/utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:pst/pst.dart';
