@@ -32,10 +32,8 @@ class _LicenseDetailsPopoverButtonState
       },
       visible: _showLicenseDetailsCard,
       anchor: const Aligned(
-        follower: Alignment.topRight,
-        target: Alignment.bottomRight,
-        offset: Offset(0, 4),
-        portal: Alignment.topCenter,
+        follower: Alignment.bottomRight,
+        target: Alignment.topRight,
       ),
       content: LicenseDetailsPopover(licenseState: widget.licenseState),
       child: ArDriveButton(
