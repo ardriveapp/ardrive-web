@@ -419,9 +419,15 @@ class _DriveExplorerItemTileTrailingState
               );
             },
             content: _buildItem(
-              // TODO: Localize
-              // appLocalizationsOf(context).license,
-              'Add license',
+              item.licenseTxId == null
+                  ?
+                  // TODO: Localize
+                  // appLocalizationsOf(context).addLicense,
+                  'Add license'
+                  :
+                  // TODO: Localize
+                  // appLocalizationsOf(context).updateLicense,
+                  'Update license',
               ArDriveIcons.license(
                 size: defaultIconSize,
               ),
