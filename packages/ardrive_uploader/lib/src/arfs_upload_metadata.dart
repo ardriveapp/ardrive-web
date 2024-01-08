@@ -48,6 +48,8 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
   final String dataContentType;
   final String driveId;
   final String parentFolderId;
+  final String? licenseDefinitionTxId;
+  final Map<String, String>? licenseAdditionalTags;
 
   ARFSFileUploadMetadata({
     required this.size,
@@ -55,6 +57,8 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
     required this.dataContentType,
     required this.driveId,
     required this.parentFolderId,
+    this.licenseDefinitionTxId,
+    this.licenseAdditionalTags,
     required super.entityMetadataTags,
     required super.name,
     required super.id,
@@ -68,6 +72,12 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
   set setDataTxId(String dataTxId) => _dataTxId = dataTxId;
 
   String? get dataTxId => _dataTxId;
+
+  String? _licenseTxId;
+
+  set setLicenseTxId(String licenseTxId) => _licenseTxId = licenseTxId;
+
+  String? get licenseTxId => _licenseTxId;
 
   @override
   Map<String, dynamic> toJson() => {

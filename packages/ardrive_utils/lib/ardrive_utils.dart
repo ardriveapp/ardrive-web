@@ -7,6 +7,7 @@ export 'src/convert_to_usd.dart';
 export 'src/entity_tag.dart';
 export 'src/get_first_future_result.dart';
 export 'src/html/html.dart';
+export 'src/license_tag.dart';
 export 'src/sign_nounce_and_data.dart';
 export 'src/streams.dart';
 export 'src/types/arweave_address.dart';
