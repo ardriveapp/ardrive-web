@@ -376,6 +376,7 @@ class _UploadController implements UploadController {
     _totalProgress = 0;
     _totalUploaded = 0;
     _totalUploadedItems = 0;
+    _totalSize = 0;
     _start = null;
   }
 
