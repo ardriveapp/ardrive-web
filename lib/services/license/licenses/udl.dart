@@ -56,6 +56,17 @@ class UdlTags {
   static const String derivations = 'Derivation';
 }
 
+enum UdlLicenseFeeType {
+  oneTime,
+}
+
+Map<UdlLicenseFeeType, String> udlLicenseFeeTypeValues = {
+  UdlLicenseFeeType.oneTime: 'One-Time',
+};
+
+String udlLicenseFeeOneTime(double amount) =>
+    '-${udlLicenseFeeTypeValues[UdlLicenseFeeType.oneTime]}-$amount';
+
 class UdlLicenseParams extends LicenseParams {
   final double? licenseFeeAmount;
   final UdlCurrency licenseFeeCurrency;
@@ -74,7 +85,7 @@ class UdlLicenseParams extends LicenseParams {
     // Null keys should be filtered
     final tags = <String, String>{};
     if (licenseFeeAmount != null) {
-      tags[UdlTags.derivations] = 'One-Time-${licenseFeeAmount.toString()}';
+      tags[UdlTags.licenseFee] = udlLicenseFeeOneTime(licenseFeeAmount!);
     }
     if (licenseFeeAmount != null && licenseFeeCurrency != UdlCurrency.u) {
       tags[UdlTags.currency] = udlCurrencyValues[licenseFeeCurrency]!;
