@@ -1,7 +1,7 @@
 import 'package:ardrive_io/ardrive_io.dart';
 
 class UploadFile {
-  UploadFile({
+  const UploadFile({
     required this.ioFile,
     required this.parentFolderId,
     this.relativeTo,
