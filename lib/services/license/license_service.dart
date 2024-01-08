@@ -27,11 +27,11 @@ class LicenseService {
 
   LicenseParams paramsFromAdditionalTags({
     required LicenseType licenseType,
-    required Map<String, String> additionalTags,
+    required Map<String, String>? additionalTags,
   }) {
     switch (licenseType) {
       case LicenseType.udl:
-        return UdlLicenseParams.fromAdditionalTags(additionalTags);
+        return UdlLicenseParams.fromAdditionalTags(additionalTags ?? {});
       default:
         throw ArgumentError('Unknown license type: $licenseType');
     }
@@ -85,10 +85,18 @@ class LicenseService {
   LicensesCompanion toCompanion({
     required LicenseState licenseState,
     required String dataTxId,
+    required String fileId,
+    required String driveId,
+    required String licenseTxId,
+    required LicenseTxType licenseTxType,
   }) {
-    return LicensesCompanion(
-      dataTxId: Value(dataTxId),
-      licenseType: Value(licenseState.meta.licenseType.name),
+    return LicensesCompanion.insert(
+      fileId: fileId,
+      driveId: driveId,
+      licenseTxId: licenseTxId,
+      dataTxId: dataTxId,
+      licenseTxType: licenseTxType.name,
+      licenseType: licenseState.meta.licenseType.name,
       customGQLTags: licenseState.params != null
           ? Value(jsonEncode(licenseState.params!.toAdditionalTags()))
           : const Value.absent(),
