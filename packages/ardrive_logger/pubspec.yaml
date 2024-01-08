@@ -17,6 +17,7 @@ dependencies:
       ref: v1.4.3
   share_plus: ^7.2.1
   flutter_email_sender: ^6.0.2
+  mocktail: ^1.0.2
   
 
 dev_dependencies:
