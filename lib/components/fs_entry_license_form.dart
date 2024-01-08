@@ -277,8 +277,7 @@ class FsEntryLicenseForm extends StatelessWidget {
             );
           } else if (state is FsEntryLicenseConfiguring) {
             return ArDriveStandardModal(
-              title:
-                  'Configuring ${licenseMeta.name} (${licenseMeta.shortName})',
+              title: 'Configure ${licenseMeta.name} (${licenseMeta.shortName})',
               width: kMediumDialogWidth,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
