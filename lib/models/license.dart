@@ -56,6 +56,9 @@ extension LicenseAssertionEntityExtensions on LicenseAssertionEntity {
         dataTxId: dataTxId,
         licenseTxType: LicenseTxType.assertion.name,
         licenseTxId: txId,
+        customGQLTags: additionalTags.isNotEmpty
+            ? Value(jsonEncode(additionalTags))
+            : const Value.absent(),
         dateCreated: Value(blockTimestamp),
         licenseType: licenseType.name,
       );
@@ -74,6 +77,9 @@ extension LicenseDataBundleEntityExtensions on LicenseDataBundleEntity {
         dataTxId: txId,
         licenseTxType: LicenseTxType.bundled.name,
         licenseTxId: txId,
+        customGQLTags: additionalTags.isNotEmpty
+            ? Value(jsonEncode(additionalTags))
+            : const Value.absent(),
         dateCreated: Value(blockTimestamp),
         licenseType: licenseType.name,
       );
