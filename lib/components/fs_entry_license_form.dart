@@ -619,6 +619,43 @@ class LicenseFileList extends StatelessWidget {
       ArDriveTheme.of(context).themeData.colors.themeInputPlaceholder;
 }
 
+class LabeledInput extends StatelessWidget {
+  final String labelText;
+  final Widget child;
+
+  const LabeledInput({
+    super.key,
+    required this.labelText,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          labelText,
+          style: ArDriveTheme.of(context)
+              .themeData
+              .textFieldTheme
+              .inputTextStyle
+              .copyWith(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+}
+
 class UdlParamsForm extends StatelessWidget {
   final FormGroup formGroup;
 
@@ -628,7 +665,12 @@ class UdlParamsForm extends StatelessWidget {
   Widget build(BuildContext context) {
     final inputBorder = OutlineInputBorder(
       borderSide: BorderSide(
-        color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+        color: ArDriveTheme.of(context)
+            .themeData
+            .colors
+            .themeFgDisabled
+            .withOpacity(0.3),
+        width: 2,
       ),
       borderRadius: BorderRadius.circular(4),
     );
@@ -646,147 +688,106 @@ class UdlParamsForm extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: ReactiveTextField(
-                    formControlName: 'licenseFeeAmount',
-                    cursorColor: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
-                    keyboardType: TextInputType.number,
-                    showErrors: (control) => control.dirty && control.invalid,
-                    decoration: InputDecoration(
-                      label: Text(
-                        'License Fee',
+                  child: LabeledInput(
+                    labelText:
                         // TODO: Localize
                         // appLocalizationsOf(context).udlLicenseFee,
-                        style: ArDriveTheme.of(context)
-                            .themeData
-                            .textFieldTheme
-                            .inputTextStyle
-                            .copyWith(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDisabled,
-                              fontSize: 16,
-                            ),
+                        'License Fee',
+                    child: ReactiveTextField(
+                      formControlName: 'licenseFeeAmount',
+                      cursorColor: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                      keyboardType: TextInputType.number,
+                      showErrors: (control) => control.dirty && control.invalid,
+                      decoration: InputDecoration(
+                        border: inputBorder,
+                        enabledBorder: inputBorder,
+                        focusedBorder: inputBorder,
                       ),
-                      border: inputBorder,
-                      enabledBorder: inputBorder,
-                      focusedBorder: inputBorder,
+                      style: const TextStyle(height: 1.5),
                     ),
-                    style: const TextStyle(height: 1.5),
                   ),
                 ),
                 Container(
                   width: kMediumDialogWidth * 0.5,
                   padding: const EdgeInsets.only(left: 24),
-                  child: ReactiveDropdownField(
-                    formControlName: 'licenseFeeCurrency',
-                    decoration: InputDecoration(
-                      label: Text(
-                        appLocalizationsOf(context).currency,
-                        style: ArDriveTheme.of(context)
-                            .themeData
-                            .textFieldTheme
-                            .inputTextStyle
-                            .copyWith(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDisabled,
-                              fontSize: 16,
-                            ),
+                  child: LabeledInput(
+                    labelText: appLocalizationsOf(context).currency,
+                    child: ReactiveDropdownField(
+                      formControlName: 'licenseFeeCurrency',
+                      decoration: InputDecoration(
+                        enabledBorder: inputBorder,
+                        focusedBorder: inputBorder,
                       ),
-                      enabledBorder: inputBorder,
-                      focusedBorder: inputBorder,
+                      showErrors: (control) => control.dirty && control.invalid,
+                      validationMessages:
+                          kValidationMessages(appLocalizationsOf(context)),
+                      items: udlCurrencyValues.entries
+                          .map(
+                            (entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            ),
+                          )
+                          .toList(),
                     ),
-                    showErrors: (control) => control.dirty && control.invalid,
-                    validationMessages:
-                        kValidationMessages(appLocalizationsOf(context)),
-                    items: udlCurrencyValues.entries
-                        .map(
-                          (entry) => DropdownMenuItem(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          ),
-                        )
-                        .toList(),
                   ),
                 ),
               ],
             ),
-            ReactiveDropdownField(
-              formControlName: 'commercialUse',
-              decoration: InputDecoration(
-                label: Text(
-                  'Commercial Use',
+            LabeledInput(
+              labelText:
                   // TODO: Localize
                   // appLocalizationsOf(context).udlCommercialUse,
-                  style: ArDriveTheme.of(context)
-                      .themeData
-                      .textFieldTheme
-                      .inputTextStyle
-                      .copyWith(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDisabled,
-                        fontSize: 16,
-                      ),
+                  'Commercial Use',
+              child: ReactiveDropdownField(
+                formControlName: 'commercialUse',
+                decoration: InputDecoration(
+                  enabledBorder: inputBorder,
+                  focusedBorder: inputBorder,
                 ),
-                enabledBorder: inputBorder,
-                focusedBorder: inputBorder,
+                showErrors: (control) => control.dirty && control.invalid,
+                validationMessages:
+                    kValidationMessages(appLocalizationsOf(context)),
+                items: udlCommercialUseValues.entries
+                    .map(
+                      (entry) => DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      ),
+                    )
+                    .toList(),
               ),
-              showErrors: (control) => control.dirty && control.invalid,
-              validationMessages:
-                  kValidationMessages(appLocalizationsOf(context)),
-              items: udlCommercialUseValues.entries
-                  .map(
-                    (entry) => DropdownMenuItem(
-                      value: entry.key,
-                      child: Text(entry.value),
-                    ),
-                  )
-                  .toList(),
             ),
-            ReactiveDropdownField(
-              formControlName: 'derivations',
-              decoration: InputDecoration(
-                label: Text(
-                  'Derivations',
+            LabeledInput(
+              labelText:
                   // TODO: Localize
                   // appLocalizationsOf(context).udlDerivations,
-                  style: ArDriveTheme.of(context)
-                      .themeData
-                      .textFieldTheme
-                      .inputTextStyle
-                      .copyWith(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDisabled,
-                        fontSize: 16,
-                      ),
+                  'Derivations',
+              child: ReactiveDropdownField(
+                formControlName: 'derivations',
+                decoration: InputDecoration(
+                  enabledBorder: inputBorder,
+                  focusedBorder: inputBorder,
                 ),
-                enabledBorder: inputBorder,
-                focusedBorder: inputBorder,
+                showErrors: (control) => control.dirty && control.invalid,
+                validationMessages:
+                    kValidationMessages(appLocalizationsOf(context)),
+                items: udlDerivationValues.entries
+                    .map(
+                      (entry) => DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      ),
+                    )
+                    .toList(),
               ),
-              showErrors: (control) => control.dirty && control.invalid,
-              validationMessages:
-                  kValidationMessages(appLocalizationsOf(context)),
-              items: udlDerivationValues.entries
-                  .map(
-                    (entry) => DropdownMenuItem(
-                      value: entry.key,
-                      child: Text(entry.value),
-                    ),
-                  )
-                  .toList(),
             ),
           ]
               .expand(
-                (element) => [element, const SizedBox(height: 32)],
+                (element) => [element, const SizedBox(height: 16)],
               )
               .toList(),
         ));
