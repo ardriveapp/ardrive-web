@@ -75,7 +75,8 @@ class Database extends _$Database {
               );
             }
             if (from < 18) {
-              // Reserved for PE-4727: Adding support for remembering source Ethereum address
+              // TODO: Merge with PE-4727
+              // Adding support for remembering source Ethereum address
               logger.i('RESERVED: Migrating schema from v17 to v18');
             }
             if (from < 19) {
