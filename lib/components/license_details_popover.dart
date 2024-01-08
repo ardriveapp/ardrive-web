@@ -1,3 +1,4 @@
+import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/services/license/license_types.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -34,6 +35,7 @@ class _LicenseDetailsPopoverButtonState
         follower: Alignment.topRight,
         target: Alignment.bottomRight,
         offset: Offset(0, 4),
+        portal: Alignment.topCenter,
       ),
       content: LicenseDetailsPopover(licenseState: widget.licenseState),
       child: ArDriveButton(
@@ -60,7 +62,9 @@ class LicenseDetailsPopover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveCard(
-      content: Text(licenseState.meta.name),
+      contentPadding: const EdgeInsets.all(16),
+      boxShadow: BoxShadowCard.shadow80,
+      content: LicenseSummary(licenseState: licenseState),
     );
   }
 }
