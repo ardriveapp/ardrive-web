@@ -848,9 +848,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
               final file = ARFSFactory()
                   .getARFSFileFromFileRevisionWithLicenseAndTransactions(
                       revision);
-              final licenseState = context
-                  .read<LicenseService>()
-                  .fromCompanion(revision.license.toCompanion(true));
+              final licenseState = revision.license == null
+                  ? null
+                  : context
+                      .read<LicenseService>()
+                      .fromCompanion(revision.license!.toCompanion(true));
 
               return _buildFileActivity(
                 file,

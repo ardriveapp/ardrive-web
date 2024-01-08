@@ -178,16 +178,16 @@ latestFileRevisionByFileId:
     LIMIT 1;
 latestFileRevisionByFileIdWithLicense AS FileRevisionWithLicense:
     SELECT rev.*, license.** FROM file_revisions AS rev
-    JOIN licenses AS license ON license.licenseTxId = rev.licenseTxId
+    LEFT JOIN licenses AS license ON license.licenseTxId = rev.licenseTxId
     WHERE rev.driveId = :driveId AND rev.fileId = :fileId
     ORDER BY rev.dateCreated DESC
     LIMIT 1;
 latestFileRevisionsByFileIdWithLicenseAndTransactions AS FileRevisionWithLicenseAndTransactions:
     SELECT rev.*, license.**, metadataTx.**, dataTx.**, licenseTx.** FROM file_revisions AS rev
-    JOIN licenses AS license ON license.licenseTxId = rev.licenseTxId
+    LEFT JOIN licenses AS license ON license.licenseTxId = rev.licenseTxId
     JOIN network_transactions AS metadataTx ON metadataTx.id = rev.metadataTxId
     JOIN network_transactions AS dataTx ON dataTx.id = rev.dataTxId
-    JOIN network_transactions AS licenseTx ON licenseTx.id = rev.licenseTxId
+    LEFT JOIN network_transactions AS licenseTx ON licenseTx.id = rev.licenseTxId
     WHERE rev.driveId = :driveId AND rev.fileId = :fileId
     ORDER BY rev.dateCreated DESC;
 
