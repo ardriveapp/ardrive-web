@@ -86,8 +86,11 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
         'lastModifiedDate': lastModifiedDate.millisecondsSinceEpoch,
         'dataContentType': dataContentType,
         'dataTxId': dataTxId,
-        'licenseTxId': licenseTxId,
-      };
+      }..addAll(licenseDefinitionTxId != null
+          ? {
+              'licenseTxId': licenseTxId,
+            }
+          : {});
 }
 
 abstract class ARFSUploadMetadata extends UploadMetadata {
