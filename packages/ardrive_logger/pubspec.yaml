@@ -18,6 +18,7 @@ dependencies:
   share_plus: ^7.2.1
   flutter_email_sender: ^6.0.2
   mocktail: ^1.0.2
+  sentry_flutter: ^7.14.0
   
 
 dev_dependencies:

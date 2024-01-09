@@ -29,8 +29,6 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,9 +40,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:pst/pst.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'blocs/blocs.dart';
-import 'firebase_options.dart';
 import 'models/models.dart';
 import 'pages/pages.dart';
 import 'services/services.dart';
@@ -57,8 +55,6 @@ late ArweaveService _arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   MobileStatusBar.show();
   MobileScreenOrientation.lockInPortraitUp();
 
@@ -129,27 +125,18 @@ Future<void> _initialize() async {
 }
 
 Future<void> _runWithCrashlytics(String flavor) async {
-  runZonedGuarded<Future<void>>(
-    () async {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = 'TODO: REPLACE WITH THE RIGHT DSN';
+      // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
+      // We recommend adjusting this value in production.
+      options.tracesSampleRate = 1.0;
+    },
+    appRunner: () async {
       await _initialize();
-
-      FirebaseCrashlytics.instance
-          .log('Starting application with crashlytics for $flavor');
-
-      // Pass all uncaught errors from the framework to Crashlytics.
-      FlutterError.onError =
-          FirebaseCrashlytics.instance.recordFlutterFatalError;
-
+      WidgetsFlutterBinding.ensureInitialized();
       runApp(const App());
     },
-    (error, stack) => FirebaseCrashlytics.instance.recordError(
-      error,
-      stack,
-      fatal: true,
-    ),
   );
 }
 
