@@ -214,13 +214,14 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
     );
 
     if (bundle is TransactionResult) {
-      controller.updateProgress(
-        task: task.copyWith(
-          uploadItem: TransactionUploadItem(
-            size: bundle.dataSize,
-            data: bundle,
-          ),
+      task = task.copyWith(
+        uploadItem: TransactionUploadItem(
+          size: bundle.dataSize,
+          data: bundle,
         ),
+      );
+      controller.updateProgress(
+        task: task,
       );
     } else if (bundle is DataItemResult) {
       task = task.copyWith(
@@ -244,6 +245,15 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
     }
 
     final streamedUpload = _streamedUploadFactory.fromUploadType(task.type);
+
+    task = task.copyWith(
+      status: UploadStatus.inProgress,
+      cancelToken: UploadTaskCancelToken(
+        cancel: () => streamedUpload.cancel(task.uploadItem!),
+      ),
+    );
+
+    controller.updateProgress(task: task);
 
     final result =
         await streamedUpload.send(task.uploadItem!, wallet, (progress) {

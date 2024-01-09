@@ -914,8 +914,8 @@ class UploadDispatcher {
       }
 
       return UploadResult(success: true);
-    } catch (e) {
-      debugPrint('Error on UploadDispatcher.send: $e');
+    } catch (e, stacktrace) {
+      debugPrint('Error on UploadDispatcher.send: $e $stacktrace');
       return UploadResult(
         success: false,
         error: e,

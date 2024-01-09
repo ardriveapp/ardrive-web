@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 
 class D2NStreamedUpload implements StreamedUpload<UploadItem> {
   UploadAborter? _aborter;
-  StreamedUploadResult? _result;
 
   @override
   Future<StreamedUploadResult> send(
@@ -28,10 +27,10 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
     debugPrint('D2NStreamedUpload.send');
 
     final progressStreamTask = await uploadTransaction((uploadItem).data).run();
-    Completer upload = Completer();
+    Completer<StreamedUploadResult> upload = Completer<StreamedUploadResult>();
 
     progressStreamTask.match((l) {
-      return StreamedUploadResult(success: false);
+      upload.complete(StreamedUploadResult(success: false));
     }, (uploadProgressAndAborter) async {
       final uploadProgress = uploadProgressAndAborter.$1;
       _aborter = uploadProgressAndAborter.$2;
@@ -43,20 +42,21 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
 
           onProgress?.call(progressPercent);
         },
-        onDone: () {
-          _result = StreamedUploadResult(success: true);
-        },
-        onError: (e) {
-          _result = StreamedUploadResult(success: false);
-        },
       );
 
-      await listen.asFuture();
-      upload.complete();
+      try {
+        await listen.asFuture();
+
+        upload.complete(StreamedUploadResult(success: true));
+      } catch (e) {
+        debugPrint('D2NStreamedUpload.send: error while uploading');
+        upload.complete(StreamedUploadResult(success: false));
+      }
     });
 
-    await upload.future;
-    return _result!;
+    final result = await upload.future;
+
+    return result;
   }
 
   /// Cancel D2N uploads are not supported yet.
