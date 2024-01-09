@@ -10,7 +10,7 @@ import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
-import 'package:ardrive/utils/plausible_event_tracker.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -373,7 +373,8 @@ class __LogoutButtonState extends State<_LogoutButton> {
           arDriveAuth.logout().then(
             (value) {
               profileCubit.logoutProfile();
-              PlausibleEventTracker.track(event: PlausibleEvent.logout);
+              PlausibleEventTracker.trackPageview(
+                  page: PlausiblePageView.logout);
             },
           );
         },

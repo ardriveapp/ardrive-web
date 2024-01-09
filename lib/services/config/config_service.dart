@@ -1,6 +1,6 @@
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/utils/app_flavors.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 
 import 'config.dart';
 

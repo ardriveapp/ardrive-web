@@ -3,7 +3,6 @@
 import 'dart:collection';
 import 'dart:convert';
 
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
@@ -22,12 +21,6 @@ Future<IOFile> _convertTextToIOFile({
     lastModifiedDate: DateTime.now(),
   );
 }
-
-final logger = Logger(
-  logLevel: LogLevel.debug,
-  storeLogsInMemory: true,
-  logExporter: LogExporter(),
-);
 
 enum LogLevel {
   debug,
@@ -192,7 +185,7 @@ class _LogExporter implements LogExporter {
     final Email email = Email(
       body: info.emailBody,
       subject: info.emailSubject,
-      recipients: [Resources.emailSupport],
+      recipients: [info.emailSupport],
       attachmentPaths: [await getDefaultAppDir() + file.name],
       isHTML: false,
     );
@@ -202,7 +195,7 @@ class _LogExporter implements LogExporter {
 
       return;
     } catch (error) {
-      logger.e('Failed to send email', error);
+      debugPrint('Failed to send email');
     }
   }
 
@@ -226,11 +219,13 @@ class LogExportInfo {
   final String emailBody;
   final String shareText;
   final String shareSubject;
+  final String emailSupport;
 
   LogExportInfo({
     required this.emailSubject,
     required this.emailBody,
     required this.shareText,
     required this.shareSubject,
+    required this.emailSupport,
   });
 }

@@ -2,8 +2,9 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -192,6 +193,7 @@ class AppShellState extends State<AppShell> {
       setState(() => _showProfileOverlay = !_showProfileOverlay);
 }
 
+// TODO: add the gift icon
 class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MobileAppBar({
     super.key,
@@ -236,6 +238,12 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
             const SizedBox(
               width: 24,
             ),
+            if (AppPlatform.isMobileWeb()) ...[
+              const RedeemButton(),
+              const SizedBox(
+                width: 24,
+              ),
+            ],
             const Padding(
               padding: EdgeInsets.only(right: 12.0),
               child: ProfileCard(),

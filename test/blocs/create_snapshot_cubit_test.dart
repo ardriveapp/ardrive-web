@@ -2,6 +2,8 @@ import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
+import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -59,7 +61,9 @@ void main() {
     () {
       final arweave = MockArweaveService();
       final profileCubit = MockProfileCubit();
-      final driveDao = MockDriveDao();
+      late DriveDao driveDao;
+      late Database db;
+      late DriveID driveId;
       final pst = MockPstService();
       final tabVisibility = MockTabVisibilitySingleton();
       final testWallet = getTestWallet();
@@ -80,10 +84,23 @@ void main() {
           await getTestDataItem('test/fixtures/signed_v2_tx.json'),
         );
         registerFallbackValue(Future.value());
+
+        db = getTestDb();
+        driveDao = db.driveDao;
       });
 
       setUp(() async {
         registerFallbackValue(BigInt.one);
+
+        final drive = await driveDao.createDrive(
+          name: "Mati's drive",
+          ownerAddress: await testWallet.getAddress(),
+          privacy: 'public',
+          wallet: testWallet,
+          password: '123',
+          profileKey: SecretKey([1, 2, 3, 4, 5]),
+        );
+        driveId = drive.driveId;
 
         when(
           () => arweave.getSegmentedTransactionsFromDrive(
@@ -258,12 +275,12 @@ void main() {
           turboService: turboService,
         ),
         act: (cubit) => cubit.confirmDriveAndHeighRange(
-          'driveId',
+          driveId,
           range: Range(start: 0, end: 1),
         ),
         expect: () => [
           ComputingSnapshotData(
-            driveId: 'driveId',
+            driveId: driveId,
             range: Range(start: 0, end: 1),
           ),
           isA<ConfirmingSnapshotCreation>(),

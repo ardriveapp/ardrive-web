@@ -198,6 +198,10 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
+  "codeAlreadyUsed": "Code already used",
+  "@codeAlreadyUsed": {},
+  "codeAlreadyUsedDescription": "The code provided has already been redeemed.",
+  "@codeAlreadyUsedDescription": {},
   "collapse": "Collapse",
   "@collapse": {
     "description": "E.g.: Collapse the image"
@@ -210,6 +214,8 @@
   "@computingSnapshotData": {
     "description": "Computing Snapshot Data"
   },
+  "confirm": "Confirm",
+  "@confirm": {},
   "confirmed": "Confirmed",
   "@confirmed": {
     "description": "Status tooltip for transactions that are confirmed by the network"
@@ -222,6 +228,8 @@
   "@confirmPassword": {
     "description": "Label for repeating the password again"
   },
+  "confirmTheEmailAddressTheGiftWasSentTo": "Please confirm the email address the gift was sent to and enter the gift code to redeem your gift!",
+  "@confirmTheEmailAddressTheGiftWasSentTo": {},
   "conflictingFiles": "Conflicting files:",
   "@conflictingFiles": {
     "description": "Files conflict with already existing items"
@@ -609,6 +617,8 @@
       }
     }
   },
+  "email": "Email",
+  "@email": {},
   "enableBiometricLogin": "Enable Biometric Login",
   "@enableBiometricLogin": {
     "description": "Enable Biometric Login"
@@ -989,6 +999,12 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
+  "giftCode": "Gift Code",
+  "@giftCode": {},
+  "giftCredits": "Gift Credits",
+  "@giftCredits": {},
+  "giftRedeemed": "Gift Redeemed!",
+  "@giftRedeemed": {},
   "gotIt": "Got it!",
   "@gotIt": {
     "description": "Example similar phrases: I've got it, I understood, OK"
@@ -1081,6 +1097,8 @@
   "@insufficientFundsForUploadFolders": {
     "description": "Show that needs funds to upload folders"
   },
+  "invalidCode": "Invalid code",
+  "@invalidCode": {},
   "invalidKeyFile": "Invalid Keyfile",
   "@invalidKeyFile": {
     "description": "Invalid Keyfile"
@@ -1516,6 +1534,16 @@
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
   },
+  "redeemGift": "Redeem gift",
+  "@redeemGift": {},
+  "redeemYourGift": "Redeem Your Gift",
+  "@redeemYourGift": {},
+  "redemptionErrorDescription": "Redemption was unsuccessful",
+  "@redemptionErrorDescription": {},
+  "redemptionErrorTitle": "No soup for you!",
+  "@redemptionErrorTitle": {},
+  "redemptionSuccessDescription": "Your credits will be added to your account soon. You can close this window.",
+  "@redemptionSuccessDescription": {},
   "refresh": "Refresh",
   "@refresh": {},
   "refreshTurboBalanceTooltip": "Refresh balance",
@@ -1592,6 +1620,8 @@
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
+  "sendGift": "Send gift",
+  "@sendGift": {},
   "share": "Share",
   "@share": {},
   "sharedDrives": "Shared Drives",
@@ -1764,6 +1794,8 @@
   "@termsAndConditions": {
     "description": "terms and conditions"
   },
+  "theGiftCodeProvidedIsInvalid": "The gift code provided is invalid.",
+  "@theGiftCodeProvidedIsInvalid": {},
   "theIdProvidedDoesntExist": "The ID provided does not exist",
   "@theIdProvidedDoesntExist": {
     "description": "Indicates that the valid ID you provided doesn't exist"

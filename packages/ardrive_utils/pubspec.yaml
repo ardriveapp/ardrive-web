@@ -18,11 +18,11 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ardriveapp/ardrive_http.git
-      ref: v1.3.1
+      ref: v1.3.2
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.2
+      ref: v3.8.3
   js: ^0.6.7
   equatable: ^2.0.5
 

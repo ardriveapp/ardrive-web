@@ -11,6 +11,7 @@ import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
@@ -23,7 +24,8 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -369,6 +371,13 @@ class _UploadFormState extends State<UploadForm> {
             final bundles = state.uploadPlanForAR.bundleUploadHandles.toList();
 
             final files = [...v2Files, ...bundles];
+
+            PlausibleEventTracker.trackUploadReview(
+              drivePrivacy: state.uploadIsPublic
+                  ? DrivePrivacy.public
+                  : DrivePrivacy.private,
+              dragNDrop: state.isDragNDrop,
+            );
 
             return ArDriveStandardModal(
               width: 408,
