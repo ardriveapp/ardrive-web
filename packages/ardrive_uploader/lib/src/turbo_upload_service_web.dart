@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 
+import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -92,17 +92,26 @@ class TurboUploadServiceImpl implements TurboUploadService {
         cancelToken: _cancelToken,
       );
 
-      print('Response from turbo: ${response.statusCode}');
+      debugPrint('Response from turbo: ${response.statusCode}');
 
       return response;
-    } catch (e) {
-      print('Error on turbo upload: $e');
+    } on DioException catch (e) {
       if (_isCanceled) {
         _cancelToken = CancelToken();
 
         _cancelToken.cancel();
       }
-      rethrow;
+
+      throw DioClientException(
+        message: e.message ?? '',
+        statusCode: e.response?.statusCode,
+        error: e,
+      );
+    } catch (e) {
+      throw UnknownNetworkException(
+        message: e.toString(),
+        error: e,
+      );
     }
   }
 
@@ -115,7 +124,6 @@ class TurboUploadServiceImpl implements TurboUploadService {
   }) async {
     final url = '$turboUploadUri/v1/tx';
 
-    int dataItemSize = 0;
     int bytesUploaded = 0;
 
     final request = ArDriveStreamedRequest(
@@ -138,28 +146,38 @@ class TurboUploadServiceImpl implements TurboUploadService {
     _fetchController
         .addStream(dataItem.streamGenerator().transform(transformer))
         .then((value) {
-      debugPrint('stream added to fetch controller and closed');
       request.sink.close();
     });
 
     _fetchController.onPause = () {
-      debugPrint('fetch stream is paused');
+      debugPrint('Paused');
     };
 
     _fetchController.onResume = () {
-      debugPrint('fetch stream is resumed');
+      debugPrint('Resumed');
     };
 
-    request.contentLength = dataItemSize;
-    request.persistentConnection = false;
+    try {
+      request.persistentConnection = false;
 
-    debugPrint('is persistent connection?${request.persistentConnection}');
+      debugPrint('is persistent connection?${request.persistentConnection}');
 
-    final response = await client.send(request);
+      final response = await client.send(request);
 
-    debugPrint(await utf8.decodeStream(response.stream));
-
-    return response;
+      return response;
+    } on http.ClientException catch (e) {
+      throw FetchClientException(
+        message: e.message,
+        error: e,
+      );
+    } catch (e) {
+      throw FetchClientException(
+        message: e.toString(),
+        error: e,
+      );
+    } finally {
+      _fetchController.close();
+    }
   }
 
   @override
@@ -168,7 +186,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
     client.close();
     _fetchController.close();
     _isCanceled = true;
-    debugPrint('The network request has been canceled.');
+    debugPrint('Stream for Dio or FetchClient is closed');
   }
 
   bool _isCanceled = false;
