@@ -86,6 +86,7 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
         'lastModifiedDate': lastModifiedDate.millisecondsSinceEpoch,
         'dataContentType': dataContentType,
         'dataTxId': dataTxId,
+        'licenseTxId': licenseTxId,
       };
 }
 
