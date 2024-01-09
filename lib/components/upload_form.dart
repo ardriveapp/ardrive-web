@@ -923,7 +923,7 @@ class _UploadFormState extends State<UploadForm> {
                           status = 'Complete';
                           break;
                         case UploadStatus.failed:
-                          status = '';
+                          status = 'Failed';
                           break;
                         case UploadStatus.preparationDone:
                           status = 'Preparation done';
