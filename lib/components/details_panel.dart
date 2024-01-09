@@ -774,6 +774,12 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       anchor: const Aligned(
                         follower: Alignment.bottomRight,
                         target: Alignment.topRight,
+                        // Shift to the edge of the screen on Mobile
+                        backup: Aligned(
+                          follower: Alignment.bottomRight,
+                          target: Alignment.topRight,
+                          offset: Offset(48, 0),
+                        ),
                       ),
                     )
             ],
