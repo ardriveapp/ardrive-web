@@ -1,5 +1,5 @@
 import 'package:ardrive/services/config/config_service.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 

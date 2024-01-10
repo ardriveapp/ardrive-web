@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';

@@ -231,9 +231,11 @@ class UploadInProgressUsingNewUploader extends UploadState {
 }
 
 class UploadFailure extends UploadState {
+  final List<UploadTask>? failedTasks;
   final UploadErrors error;
+  final UploadController? controller;
 
-  UploadFailure({required this.error});
+  UploadFailure({this.failedTasks, required this.error, this.controller});
 }
 
 class UploadComplete extends UploadState {}

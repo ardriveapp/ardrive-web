@@ -1,6 +1,6 @@
 import 'package:ardrive/utils/exceptions.dart';
 import 'package:ardrive/utils/internet_checker.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:artemis/client.dart';
 import 'package:artemis/schema/graphql_query.dart';
 import 'package:artemis/schema/graphql_response.dart';
