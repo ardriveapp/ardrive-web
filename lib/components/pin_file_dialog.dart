@@ -8,7 +8,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -66,8 +65,6 @@ class PinFileDialog extends StatelessWidget {
 
     return BlocConsumer<PinFileBloc, PinFileState>(
       listener: (context, state) {
-        logger.d('PinFileBloc state: $state');
-
         if (state is PinFileAbort || state is PinFileSuccess) {
           Navigator.of(context).pop();
         } else if (state is PinFileError) {

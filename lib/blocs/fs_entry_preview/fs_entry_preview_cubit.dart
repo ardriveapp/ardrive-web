@@ -225,7 +225,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           break;
 
         default:
-          logger.e('Unknown drive privacy tag');
+          logger.e('Unknown drive privacy tag: ${drive.privacy}');
           _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
       }
     } catch (_) {

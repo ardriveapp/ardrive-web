@@ -175,7 +175,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       _range = Range(start: 0, end: maximumHeightToSnapshot);
     }
 
-    logger.i(
+    logger.d(
       'Trusted range to be snapshotted (Current height: $_currentHeight): $_range)',
     );
   }
@@ -431,12 +431,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     if (state is ConfirmingSnapshotCreation) {
       final stateAsConfirming = state as ConfirmingSnapshotCreation;
 
-      logger.d('Refreshing turbo balance');
-      logger.d('Turbo balance: $_turboCredits');
-      logger.d('Has no turbo balance: $_hasNoTurboBalance');
-      logger
-          .d('Sufficient balance to pay with turbo: $_sufficentCreditsBalance');
-      logger.d('Upload method: $_uploadMethod');
+      logger.d(
+        'Refreshing turbo balance\n'
+        'Turbo balance: $_turboCredits\n'
+        'Has no turbo balance: $_hasNoTurboBalance\n'
+        'Sufficient balance to pay with turbo: $_sufficentCreditsBalance\n'
+        'Upload method: $_uploadMethod',
+      );
 
       emit(
         stateAsConfirming.copyWith(
@@ -583,7 +584,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
-      logger.i('Failed to confirm the upload: Wallet mismatch');
+      logger.w('Failed to confirm the upload: Wallet mismatch');
       emit(SnapshotUploadFailure());
       return;
     }
@@ -623,7 +624,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
 
-    logger.d('Posting snapshot transaction for drive $_driveId');
+    logger.d('Posting snapshot transaction to Turbo');
 
     await turboService.postDataItem(
       dataItem: dataItem,

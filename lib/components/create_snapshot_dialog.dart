@@ -436,13 +436,13 @@ Widget _confirmDialog(
         ModalAction(
           title: appLocalizationsOf(context).cancelEmphasized,
           action: () {
-            logger.i('Cancel snapshot creation');
+            logger.i('Canceling snapshot creation');
             Navigator.of(context).pop();
           },
         ),
         ModalAction(
           action: () async => {
-            logger.i('Confirm snapshot creation'),
+            logger.i('Confirming snapshot creation'),
             await createSnapshotCubit.confirmSnapshotCreation(),
           },
           title: appLocalizationsOf(context).uploadEmphasized,
