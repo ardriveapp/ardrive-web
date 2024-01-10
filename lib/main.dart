@@ -256,7 +256,9 @@ class AppState extends State<App> {
             themeDetector: ThemeDetector(),
           ),
         ),
-        BlocProvider(create: (_) => SharingFileBloc()),
+        BlocProvider(
+          create: (context) => SharingFileBloc(context.read<ActivityTracker>()),
+        ),
       ],
       child: ArDriveDevToolsShortcuts(
         child: KeyboardHandler(

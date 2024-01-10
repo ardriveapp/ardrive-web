@@ -57,6 +57,7 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
+  final ActivityTracker _activityTracker;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -67,8 +68,6 @@ class SyncCubit extends Cubit<SyncState> {
   DateTime? _lastSync;
   late DateTime _initSync;
   late SyncProgress _syncProgress;
-
-  bool _blockSync = true;
 
   SyncCubit({
     required ProfileCubit profileCubit,
@@ -81,20 +80,13 @@ class SyncCubit extends Cubit<SyncState> {
     required ActivityTracker activityTracker,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
+        _activityTracker = activityTracker,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
         _configService = configService,
         _tabVisibility = tabVisibility,
         super(SyncIdle()) {
-    // TODO: verify
-    if (_blockSync) {
-      Future.delayed(const Duration(seconds: 1000), () {
-        _blockSync = false;
-        // startSync();
-      });
-      return;
-    }
     // Sync the user's drives on start and periodically.
     createSyncStream();
     restartSyncOnFocus();
@@ -187,6 +179,11 @@ class SyncCubit extends Cubit<SyncState> {
   var ghostFolders = <FolderID, GhostFolder>{};
 
   Future<void> startSync({bool syncDeep = false}) async {
+    if (_activityTracker.isSharingFilesFromExternalApp) {
+      logger.d('An activity is in progress, skipping sync.');
+      return;
+    }
+
     logger.i('Starting Sync');
 
     if (state is SyncInProgress) {

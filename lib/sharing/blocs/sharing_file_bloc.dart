@@ -1,3 +1,5 @@
+import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/utils/logger/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,14 +12,27 @@ part 'sharing_file_state.dart';
 
 class SharingFileBloc extends Bloc<SharingFileEvent, SharingFileState> {
   List<SharedFile>? files;
+  final ActivityTracker activityTracker;
 
-  SharingFileBloc() : super(SharingFileInitial()) {
+  SharingFileBloc(
+    this.activityTracker,
+  ) : super(SharingFileInitial()) {
     // For sharing images coming from outside the app while the app is in the memory
 
     // For sharing images coming from outside the app while the app is closed
     FlutterSharingIntent.instance
         .getInitialSharing()
         .then((List<SharedFile> value) {
+      logger.d('SharingFileReceived');
+
+      if (value.isNotEmpty) {
+        add(SharingFileReceived(value));
+      }
+    });
+
+    FlutterSharingIntent.instance.getMediaStream().listen((value) {
+      logger.d('SharingFileReceived');
+
       if (value.isNotEmpty) {
         add(SharingFileReceived(value));
       }
@@ -25,6 +40,7 @@ class SharingFileBloc extends Bloc<SharingFileEvent, SharingFileState> {
 
     on<SharingFileEvent>((event, emit) async {
       if (event is SharingFileReceived) {
+        activityTracker.setSharingFilesFromExternalApp(true);
         files = event.files;
         final ioFiles = <IOFile>[];
 
@@ -37,9 +53,14 @@ class SharingFileBloc extends Bloc<SharingFileEvent, SharingFileState> {
         emit(SharingFileReceivedState(ioFiles));
       } else if (event is SharingFileCleared) {
         files = null;
-      } else if (event is ShowSharingFile) {
-        // emit(SharingFileReceivedState(files!));
+        activityTracker.setSharingFilesFromExternalApp(false);
       }
     });
+  }
+
+  @override
+  close() async {
+    activityTracker.setSharingFilesFromExternalApp(false);
+    super.close();
   }
 }

@@ -4,6 +4,7 @@ class ActivityTracker extends ChangeNotifier {
   bool _isToppingUp = false;
   bool _isShowingAnyDialog = false;
   bool _isUploading = false;
+  bool _isSharingFilesFromExternalApp = false;
 
   // getters
   bool get isToppingUp => _isToppingUp;
@@ -18,6 +19,8 @@ class ActivityTracker extends ChangeNotifier {
 
   bool get isUploading => _isUploading;
 
+  bool get isSharingFilesFromExternalApp => _isSharingFilesFromExternalApp;
+
   // setters
   void setUploading(bool value) {
     _isUploading = value;
@@ -30,6 +33,11 @@ class ActivityTracker extends ChangeNotifier {
 
   void setShowingAnyDialog(bool value) {
     _isShowingAnyDialog = value;
+    notifyListeners();
+  }
+
+  void setSharingFilesFromExternalApp(bool value) {
+    _isSharingFilesFromExternalApp = value;
     notifyListeners();
   }
 }
