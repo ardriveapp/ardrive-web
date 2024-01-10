@@ -682,7 +682,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     return BlocConsumer<PaymentFormBloc, PaymentFormState>(
       listenWhen: (previous, current) => current is PaymentFormLoaded,
       listener: (context, state) {
-        logger.d('PaymentFormBloc state: $state');
         if (state is PaymentFormLoaded) {
           setState(() {
             _promoCodeInvalid = state.isPromoCodeInvalid;
@@ -1194,7 +1193,6 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           : null,
                       durationInSeconds: state.quoteExpirationTimeInSeconds,
                       onFinished: () {
-                        logger.d('fetching quote');
                         context
                             .read<PaymentFormBloc>()
                             .add(PaymentFormUpdateQuote());
@@ -1317,7 +1315,6 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           : null,
                       durationInSeconds: state.quoteExpirationTimeInSeconds,
                       onFinished: () {
-                        logger.d('fetching quote');
                         context
                             .read<PaymentFormBloc>()
                             .add(PaymentFormUpdateQuote());

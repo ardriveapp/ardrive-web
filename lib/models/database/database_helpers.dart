@@ -8,7 +8,7 @@ class DatabaseHelpers {
 
   Future<void> deleteAllTables() async {
     try {
-      logger.i('Deleting all tables');
+      logger.d('Deleting all tables');
       await _db.transaction(() async {
         for (final table in _db.allTables) {
           await _db.delete(table).go();

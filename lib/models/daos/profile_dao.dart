@@ -137,8 +137,6 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       'profileKdRes': profileKdRes,
     });
 
-    logger.d('Encrypted public key: $encryptedPublicKey');
-
     await into(profiles).insert(
       ProfilesCompanion.insert(
         id: await wallet.getAddress(),

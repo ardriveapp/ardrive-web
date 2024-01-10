@@ -361,8 +361,7 @@ class _UploadFormState extends State<UploadForm> {
                 state.uploadPlanForAR.fileV2UploadHandles.length;
 
             logger.d(
-              ' is button to upload enabled: ${state.isButtonToUploadEnabled}',
-            );
+                'is button to upload enabled: ${state.isButtonToUploadEnabled}');
 
             final v2Files = state.uploadPlanForAR.fileV2UploadHandles.values
                 .map((e) => e)
@@ -731,7 +730,6 @@ class _UploadFormState extends State<UploadForm> {
               ],
             );
           } else if (state is UploadFailure) {
-            logger.e('Upload failed: ${state.error}');
             if (state.error == UploadErrors.turboTimeout) {
               return ArDriveStandardModal(
                 title: appLocalizationsOf(context).uploadFailed,

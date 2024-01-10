@@ -423,7 +423,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
 
 // TODO: FIX
   Future<bool> _doesNameConflicts(String name) async {
-    logger.d('About to check if entity with same name ($name) exists');
+    logger.d('About to check if entity with same name exists');
     final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
       name: name,
       driveId: _driveId,
