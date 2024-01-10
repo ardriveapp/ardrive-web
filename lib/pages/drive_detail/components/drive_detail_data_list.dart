@@ -361,6 +361,7 @@ class DriveDataTableItemMapper {
       dateCreated: drive.dateCreated,
       contentType: 'drive',
       id: drive.id,
+      isHidden: false, // TODO: update me when drives can be hidden
     );
   }
 
