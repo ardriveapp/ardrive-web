@@ -11,7 +11,6 @@ Widget _buildDataList(
     state.currentDrive,
     isMultiselecting: state.multiselect,
     isShowingHiddenFiles: state.isShowingHiddenFiles,
-    selectedItem: state.selectedItem,
   );
 }
 
@@ -129,7 +128,6 @@ Widget _buildDataListContent(
   Drive drive, {
   required bool isMultiselecting,
   required bool isShowingHiddenFiles,
-  required ArDriveDataTableItem? selectedItem,
 }) {
   final List<ArDriveDataTableItem> filteredItems;
   if (isShowingHiddenFiles) {
