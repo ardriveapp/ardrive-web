@@ -32,7 +32,6 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/unpreviewable_content.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -117,8 +116,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         listener: (context, state) {
           if (state is PromptToSnapshotPrompting) {
             final bloc = context.read<PromptToSnapshotBloc>();
-            final UserRepository userRepository =
-                RepositoryProvider.of<UserRepository>(context);
+
             final driveDetailState = context.read<DriveDetailCubit>().state;
             if (driveDetailState is DriveDetailLoadSuccess) {
               final drive = driveDetailState.currentDrive;
