@@ -448,7 +448,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     logger.d('Max files per bundle: ${uploadPlan.maxDataItemCount}');
 
-    logger.d('Starting upload...');
+    logger.i('Starting upload...');
 
     //Check if the same wallet it being used before starting upload.
     if (await _profileCubit.checkIfWalletMismatch()) {
@@ -556,7 +556,7 @@ class UploadCubit extends Cubit<UploadState> {
       final id = conflictingFiles.containsKey(file.getIdentifier())
           ? conflictingFiles[file.getIdentifier()]
           : null;
-      logger.d('File id: $id');
+      // TODO: We are verifying the conflicting files twice, we should do it only once.
       logger.d(
           'Reusing id? ${conflictingFiles.containsKey(file.getIdentifier())}');
       final fileMetadata = ARFSUploadMetadataArgs(
@@ -584,7 +584,7 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     uploadController.onError((tasks) {
-      logger.e('Error uploading', tasks);
+      logger.e('Error uploading folders. Number of tasks: ${tasks.length}');
       addError(Exception('Error uploading'));
       hasEmittedError = true;
     });
@@ -609,10 +609,10 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
-        logger.d('Upload folders and files finished');
+        logger.d('Upload folders and files finished... Verifying results');
 
         if (tasks.any((element) => element.status == UploadStatus.failed)) {
-          logger.e('Error uploading');
+          logger.e('One or more tasks failed. Emitting error');
           // if any of the files failed, we should throw an error
           addError(Exception('Error uploading'));
         }
@@ -628,7 +628,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   void retryUploads() {
     if (state is UploadFailure) {
-      logger.d('Retrying uploads');
+      logger.i('Retrying uploads');
 
       final controller = (state as UploadFailure).controller!;
 
@@ -691,8 +691,7 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     uploadController.onError((tasks) {
-      logger.e('Error uploading', tasks);
-      logger.d('Error uploading emiting error');
+      logger.e('Error uploading files. Number of tasks: ${tasks.length}');
       hasEmittedError = true;
       emit(
         UploadFailure(
@@ -721,12 +720,12 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
-        logger.d('Upload finished');
+        logger.d('Upload files finished... Verifying results');
 
         bool uploadSucced = true;
 
         if (tasks.any((element) => element.status == UploadStatus.failed)) {
-          logger.e('Error uploading');
+          logger.e('One or more tasks failed. Emitting error');
           // if any of the files failed, we should throw an error
           addError(Exception('Error uploading'));
 
@@ -737,6 +736,9 @@ class UploadCubit extends Cubit<UploadState> {
         unawaited(_profileCubit.refreshBalance());
 
         // all files are uploaded
+
+        logger.i('Upload finished with success');
+
         emit(UploadComplete());
 
         if (uploadSucced) {
@@ -791,7 +793,7 @@ class UploadCubit extends Cubit<UploadState> {
           );
 
           if (fileMetadata.metadataTxId == null) {
-            logger.e('Metadata tx id is null');
+            logger.e('Metadata tx id is null!');
             throw Exception('Metadata tx id is null');
           }
 
@@ -799,9 +801,7 @@ class UploadCubit extends Cubit<UploadState> {
 
           _driveDao.transaction(() async {
             // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
-            // TODO: Changed this logic. PLEASE REVIEW IT.
             final filePath = '${_targetFolder.path}/${metadata.name}';
-            logger.d('File path: $filePath');
             await _driveDao.writeFileEntity(entity, filePath);
             await _driveDao.insertFileRevision(
               entity.toRevisionCompanion(
@@ -822,7 +822,7 @@ class UploadCubit extends Cubit<UploadState> {
           );
 
           if (metadata.metadataTxId == null) {
-            logger.e('Metadata tx id is null');
+            logger.e('Metadata tx id is null!');
             throw Exception('Metadata tx id is null');
           }
 

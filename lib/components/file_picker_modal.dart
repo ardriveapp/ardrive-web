@@ -145,7 +145,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
 
                           widget.onClose(content);
 
-                          logger.d('adding file');
+                          logger.d('adding file from gallery');
                         }
                       } catch (e) {
                         logger.e('Error while picking file from gallery', e);
@@ -183,7 +183,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
 
                           widget.onClose(content);
 
-                          logger.d('adding file');
+                          logger.d('adding file from file system');
                         }
                       } catch (e) {
                         logger.e(

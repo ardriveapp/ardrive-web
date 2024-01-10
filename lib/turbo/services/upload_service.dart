@@ -126,8 +126,8 @@ class TurboUploadService {
         logger.e('Error posting bytes', response.data);
         throw _handleException(response);
       }
-    } catch (e) {
-      logger.e('Catching error in postDataItem', e);
+    } catch (e, stacktrace) {
+      logger.e('Catching error in postDataItem', e, stacktrace);
       throw _handleException(e);
     }
   }
