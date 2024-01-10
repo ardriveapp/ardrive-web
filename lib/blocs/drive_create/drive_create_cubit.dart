@@ -98,7 +98,6 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         id: drive.rootFolderId,
         driveId: drive.id,
         name: driveName,
-        isHidden: false,
       );
 
       final rootFolderDataItem = await _arweave.prepareEntityDataItem(

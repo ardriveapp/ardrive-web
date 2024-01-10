@@ -76,7 +76,6 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           driveId: targetFolder.driveId,
           parentFolderId: targetFolder.id,
           name: folderName,
-          isHidden: false,
         );
         if (_turboUploadService.useTurboUpload) {
           final folderDataItem = await _arweave.prepareEntityDataItem(

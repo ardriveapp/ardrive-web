@@ -802,7 +802,6 @@ class UploadCubit extends Cubit<UploadState> {
             id: metadata.id,
             name: metadata.name,
             parentFolderId: metadata.parentFolderId,
-            isHidden: false,
           );
 
           if (metadata.metadataTxId == null) {

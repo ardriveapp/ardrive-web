@@ -164,7 +164,6 @@ void main() {
         driveId: driveId,
         parentFolderId: rootFolderId,
         name: testEntityName,
-        isHidden: false,
       );
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
 

@@ -215,7 +215,6 @@ FileDataTableItem createMockFileDataTableItem(
     index: index,
     pinnedDataOwnerAddress: pinnedDataOwnerAddress,
     isOwner: isOwner,
-    isHidden: false,
   );
 }
 
@@ -248,7 +247,6 @@ FolderDataTableItem createMockFolderDataTableItem(
     isGhostFolder: isGhostFolder,
     index: index,
     isOwner: isOwner,
-    isHidden: false,
   );
 }
 
@@ -268,7 +266,6 @@ DriveDataItem createMockDriveDataItem(
     dateCreated: dateCreated ?? DateTime.now(),
     index: index,
     isOwner: isOwner,
-    isHidden: false,
   );
 }
 

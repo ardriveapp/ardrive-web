@@ -40,7 +40,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     required this.path,
     required int index,
     required this.isOwner,
-    required this.isHidden,
+    this.isHidden = false,
   }) : super(index);
 }
 
@@ -55,7 +55,7 @@ class DriveDataItem extends ArDriveDataTableItem {
     super.path = '',
     required super.index,
     required super.isOwner,
-    required super.isHidden,
+    super.isHidden,
   });
 
   @override
@@ -75,7 +75,7 @@ class FolderDataTableItem extends ArDriveDataTableItem {
     required super.contentType,
     required super.path,
     super.fileStatusFromTransactions,
-    required super.isHidden,
+    super.isHidden,
     required super.index,
     required super.isOwner,
     this.parentFolderId,
@@ -104,7 +104,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
     required super.dateCreated,
     required super.contentType,
     required super.path,
-    required super.isHidden,
+    super.isHidden,
     super.fileStatusFromTransactions,
     required super.index,
     required super.isOwner,
@@ -361,7 +361,6 @@ class DriveDataTableItemMapper {
       dateCreated: drive.dateCreated,
       contentType: 'drive',
       id: drive.id,
-      isHidden: false,
     );
   }
 
