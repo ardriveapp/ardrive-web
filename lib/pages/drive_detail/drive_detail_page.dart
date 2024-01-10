@@ -34,6 +34,7 @@ import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
+import 'package:ardrive/utils/non_hidden_items_filter.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
@@ -160,10 +161,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               hasFiles = driveDetailState.folderInView.files.isNotEmpty;
             } else {
               hasSubfolders = driveDetailState.folderInView.subfolders
-                  .where((e) => !e.isHidden)
+                  .where(folderEntryNotHiddenFilter)
                   .isNotEmpty;
               hasFiles = driveDetailState.folderInView.files
-                  .where((e) => !e.isHidden)
+                  .where(fileEntryNotHiddenFilter)
                   .isNotEmpty;
             }
 
@@ -670,7 +671,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     if (isShowingHiddenFiles) {
       filteredItems = items;
     } else {
-      filteredItems = items.where((e) => !e.isHidden).toList();
+      filteredItems = items.where(dataTableNotHiddenFilter).toList();
     }
 
     return Column(
