@@ -40,12 +40,6 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
   bool _dontAskAgain = false;
 
   @override
-  void initState() {
-    super.initState();
-    // widget.bloc.add(SelectedDrive(driveId: widget.drive.id));
-  }
-
-  @override
   Widget build(BuildContext context) {
     return ArDriveStandardModal(
       hasCloseButton: true,
