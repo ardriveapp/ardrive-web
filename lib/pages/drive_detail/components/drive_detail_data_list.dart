@@ -249,7 +249,7 @@ Widget _buildDataListContent(
         );
       },
       rows: filteredItems,
-      selectedRow: selectedItem,
+      selectedRow: context.watch<DriveDetailCubit>().selectedItem,
     );
   });
 }
