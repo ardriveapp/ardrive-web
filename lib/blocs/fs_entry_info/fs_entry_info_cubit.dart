@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:ardrive/entities/license_assertion.dart';
+import 'package:ardrive/entities/license_data_bundle.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/license/license_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
+import 'package:async/async.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -15,6 +18,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
   final ArDriveDataTableItem? maybeSelectedItem;
 
   final DriveDao _driveDao;
+  final ArweaveService _arweave;
   final LicenseService _licenseService;
 
   StreamSubscription? _entrySubscription;
@@ -23,8 +27,11 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     required this.driveId,
     this.maybeSelectedItem,
     required DriveDao driveDao,
+    required ArweaveService arweave,
     required LicenseService licenseService,
+    bool isSharedFile = false,
   })  : _driveDao = driveDao,
+        _arweave = arweave,
         _licenseService = licenseService,
         super(FsEntryInfoInitial()) {
     final selectedItem = maybeSelectedItem;
@@ -66,25 +73,19 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
 
               LicenseState? licenseState;
               if (latestRevision.licenseTxId != null) {
-                final license = await _driveDao
-                    .licenseByTxId(tx: latestRevision.licenseTxId!)
-                    .getSingleOrNull();
+                if (!isSharedFile) {
+                  // First check if it is already synced to the local db
+                  final license = await _driveDao
+                      .licenseByTxId(tx: latestRevision.licenseTxId!)
+                      .getSingleOrNull();
 
-                if (license != null) {
-                  final companion = license.toCompanion(true);
-                  licenseState = _licenseService.fromCompanion(companion);
-                } else {
-                  // License not yet synced
-                  licenseState = const LicenseState(
-                    meta: LicenseMeta(
-                      licenseType: LicenseType.unknown,
-                      licenseDefinitionTxId: '',
-                      name: 'Unknown',
-                      shortName: 'Unknown',
-                      version: '0',
-                    ),
-                  );
+                  if (license != null) {
+                    final companion = license.toCompanion(true);
+                    licenseState = _licenseService.fromCompanion(companion);
+                  }
                 }
+                // Othewise try to fetch it
+                licenseState ??= await _fetchLicenseForRevision(latestRevision);
               }
 
               emit(FsEntryFileInfoSuccess(
@@ -133,6 +134,29 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
           );
       }
     }
+  }
+
+  Future<LicenseState?> _fetchLicenseForRevision(FileRevision revision) async {
+    final isAssertion = revision.licenseTxId != revision.dataTxId;
+    if (isAssertion) {
+      final licenseTx = (await _arweave
+              .getLicenseAssertions([revision.licenseTxId!]).firstOrNull)
+          ?.firstOrNull;
+      if (licenseTx != null) {
+        final licenseEntity = LicenseAssertionEntity.fromTransaction(licenseTx);
+        return _licenseService.fromAssertionEntity(licenseEntity);
+      }
+    } else {
+      final licenseTx = (await _arweave
+              .getLicenseDataBundled([revision.licenseTxId!]).firstOrNull)
+          ?.firstOrNull;
+      if (licenseTx != null) {
+        final licenseDataBundleEntity =
+            LicenseDataBundleEntity.fromTransaction(licenseTx);
+        return _licenseService.fromBundleEntity(licenseDataBundleEntity);
+      }
+    }
+    return null;
   }
 
   @override

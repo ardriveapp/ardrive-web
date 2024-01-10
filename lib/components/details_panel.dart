@@ -79,8 +79,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
         BlocProvider<FsEntryInfoCubit>(
           create: (context) => FsEntryInfoCubit(
             driveId: widget.item.driveId,
+            isSharedFile: widget.isSharePage,
             maybeSelectedItem: widget.item,
             driveDao: context.read<DriveDao>(),
+            arweave: context.read<ArweaveService>(),
             licenseService: context.read<LicenseService>(),
           ),
         ),
@@ -737,7 +739,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         itemTitle: appLocalizationsOf(context).dataTxID,
       ),
       sizedBoxHeight16px,
-      if (state is FsEntryFileInfoSuccess && pinnedDataOwnerAddress == null)
+      if (state is FsEntryFileInfoSuccess)
         DetailsPanelItem(
           itemTitle: 'License',
           // TODO: Localize
@@ -745,7 +747,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              state.licenseState == null
+              (!widget.isSharePage &&
+                      state.licenseState == null &&
+                      pinnedDataOwnerAddress == null)
                   ? ArDriveButton(
                       text: 'Add',
                       icon: ArDriveIcons.license(
@@ -769,7 +773,16 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       ),
                     )
                   : LicenseDetailsPopoverButton(
-                      licenseState: state.licenseState!,
+                      licenseState: state.licenseState ??
+                          const LicenseState(
+                            meta: LicenseMeta(
+                              licenseType: LicenseType.unknown,
+                              licenseDefinitionTxId: '',
+                              name: 'Unknown',
+                              shortName: 'Unknown',
+                              version: '0',
+                            ),
+                          ),
                       fileItem: item,
                       anchor: const Aligned(
                         follower: Alignment.bottomRight,

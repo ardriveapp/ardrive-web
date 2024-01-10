@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive/entities/license_assertion.dart';
+import 'package:ardrive/entities/license_data_bundle.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:drift/drift.dart';
 
@@ -39,10 +40,26 @@ class LicenseService {
     }
   }
 
-  LicenseState fromEntity(LicenseAssertionEntity licenseAssertionEntity) {
+  LicenseState fromAssertionEntity(
+      LicenseAssertionEntity licenseAssertionEntity) {
     final licenseType =
         licenseTypeByTxId(licenseAssertionEntity.licenseDefinitionTxId)!;
     final additionalTags = licenseAssertionEntity.additionalTags;
+
+    return LicenseState(
+      meta: licenseMetaByType(licenseType),
+      params: paramsFromAdditionalTags(
+        licenseType: licenseType,
+        additionalTags: additionalTags,
+      ),
+    );
+  }
+
+  LicenseState fromBundleEntity(
+      LicenseDataBundleEntity licenseDataBundleEntity) {
+    final licenseType =
+        licenseTypeByTxId(licenseDataBundleEntity.licenseDefinitionTxId)!;
+    final additionalTags = licenseDataBundleEntity.additionalTags;
 
     return LicenseState(
       meta: licenseMetaByType(licenseType),
