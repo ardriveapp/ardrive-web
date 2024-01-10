@@ -345,9 +345,9 @@ class _DriveExplorerItemTileTrailingState
               item.isHidden
                   ? appLocalizationsOf(context).unhide
                   : appLocalizationsOf(context).hide,
-              ArDriveIcons.x(
-                size: defaultIconSize,
-              ),
+              item.isHidden
+                  ? ArDriveIcons.eyeOpen(size: defaultIconSize)
+                  : ArDriveIcons.eyeClosed(size: defaultIconSize),
             ),
           ),
         ],
@@ -471,9 +471,9 @@ class _DriveExplorerItemTileTrailingState
             item.isHidden
                 ? appLocalizationsOf(context).unhide
                 : appLocalizationsOf(context).hide,
-            ArDriveIcons.x(
-              size: defaultIconSize,
-            ),
+            item.isHidden
+                ? ArDriveIcons.eyeOpen(size: defaultIconSize)
+                : ArDriveIcons.eyeClosed(size: defaultIconSize),
           ),
         ),
       ],
