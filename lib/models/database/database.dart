@@ -63,6 +63,9 @@ class Database extends _$Database {
 
             await m.addColumn(folderRevisions, folderRevisions.isHidden);
             await m.addColumn(fileRevisions, fileRevisions.isHidden);
+
+            await m.addColumn(folderEntries, folderEntries.isHidden);
+            await m.addColumn(fileEntries, fileEntries.isHidden);
           } else if (from >= 1 && from < schemaVersion) {
             logger.i(
               'No strategy set for migration v$from to v$to'
