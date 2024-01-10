@@ -1,12 +1,16 @@
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_state.dart';
+import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../test_utils/mocks.dart';
 
 const durationBeforePrompting = Duration(milliseconds: 200);
 const numberOfTxsBeforeSnapshot = 3;
@@ -15,6 +19,7 @@ const driveId = 'test-drive-id';
 void main() {
   late PromptToSnapshotBloc promptToSnapshotBloc;
   late KeyValueStore store;
+  late UserRepository userRepository;
 
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -23,10 +28,16 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final fakePrefs = await SharedPreferences.getInstance();
       store = await LocalKeyValueStore.getInstance(prefs: fakePrefs);
+
+      userRepository = MockUserRepository();
+      when(() => userRepository.getOwnerOfDefaultProfile())
+          .thenAnswer((_) => Future.value('test-owner'));
+
       promptToSnapshotBloc = PromptToSnapshotBloc(
         store: store,
         durationBeforePrompting: durationBeforePrompting,
         numberOfTxsBeforeSnapshot: numberOfTxsBeforeSnapshot,
+        userRepository: userRepository,
       );
     });
 
@@ -122,6 +133,30 @@ void main() {
       expect: () => [
         const PromptToSnapshotIdle(driveId: null),
       ],
+    );
+
+    blocTest(
+      'selecting a drive while not logged in does nothing',
+      build: () => promptToSnapshotBloc,
+      act: (PromptToSnapshotBloc bloc) async {
+        when(() => userRepository.getOwnerOfDefaultProfile())
+            .thenAnswer((_) => Future.value(null));
+        bloc.add(const SelectedDrive(driveId: driveId));
+        const durationAfterPrompting = Duration(milliseconds: 250);
+        await Future<void>.delayed(durationAfterPrompting);
+      },
+      expect: () => [],
+    );
+
+    blocTest(
+      'selecting a drive while sync is running does nothing',
+      build: () => promptToSnapshotBloc,
+      act: (PromptToSnapshotBloc bloc) async {
+        bloc.add(const SelectedDrive(driveId: driveId));
+        const durationAfterPrompting = Duration(milliseconds: 250);
+        await Future<void>.delayed(durationAfterPrompting);
+      },
+      expect: () => [],
     );
   });
 }

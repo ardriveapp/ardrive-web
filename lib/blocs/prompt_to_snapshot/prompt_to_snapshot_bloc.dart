@@ -110,7 +110,6 @@ class PromptToSnapshotBloc
         logger.d(
             '[PROMPT TO SNAPSHOT] The drive id is null and the state is idle');
         emit(const PromptToSnapshotIdle(driveId: null));
-        return;
       }
     }
 
