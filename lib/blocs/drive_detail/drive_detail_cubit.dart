@@ -78,12 +78,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void toggleHiddenFiles() {
     _showHiddenFiles = !_showHiddenFiles;
-    final state = this.state as DriveDetailLoadSuccess;
-    openFolder(
-      path: state.folderInView.folder.path,
-      contentOrderBy: state.contentOrderBy,
-      contentOrderingMode: state.contentOrderingMode,
-    );
+    refreshDriveDataTable();
   }
 
   void openFolder({
@@ -415,7 +410,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     if (state is DriveDetailLoadSuccess) {
       final state = this.state as DriveDetailLoadSuccess;
-      emit(state.copyWith());
+      emit(state.copyWith(
+        isShowingHiddenFiles: _showHiddenFiles,
+      ));
     }
   }
 
