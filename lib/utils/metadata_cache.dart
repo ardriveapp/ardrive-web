@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:stash/stash_api.dart';
 
 const defaultMaxEntries = 550;

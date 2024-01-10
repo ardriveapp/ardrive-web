@@ -24,7 +24,7 @@ dependencies:
     path: ../ardrive_utils
   equatable: ^2.0.5
   retry: ^3.1.2
-  mocktail: ^0.3.0
+  mocktail: ^1.0.2
 
 dev_dependencies:
   flutter_test:

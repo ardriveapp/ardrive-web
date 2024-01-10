@@ -1,5 +1,5 @@
 import 'package:ardrive/models/database/database.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 
 class DatabaseHelpers {
   final Database _db;

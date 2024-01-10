@@ -14,7 +14,7 @@ import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -626,6 +626,16 @@ class UploadCubit extends Cubit<UploadState> {
 
   bool? _containsLargeTurboUpload;
 
+  void retryUploads() {
+    if (state is UploadFailure) {
+      logger.d('Retrying uploads');
+
+      final controller = (state as UploadFailure).controller!;
+
+      controller.retryFailedTasks(_auth.currentUser.wallet);
+    }
+  }
+
   Future<void> _uploadUsingArDriveUploader() async {
     final ardriveUploader = ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
@@ -682,8 +692,15 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onError((tasks) {
       logger.e('Error uploading', tasks);
-      addError(Exception('Error uploading'));
+      logger.d('Error uploading emiting error');
       hasEmittedError = true;
+      emit(
+        UploadFailure(
+          error: UploadErrors.unknown,
+          failedTasks: tasks,
+          controller: uploadController,
+        ),
+      );
     });
 
     uploadController.onProgressChange(

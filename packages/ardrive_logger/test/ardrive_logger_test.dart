@@ -1,4 +1,4 @@
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive_logger/src/logger.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -12,6 +12,7 @@ void main() {
     emailSubject: '',
     shareText: '',
     shareSubject: '',
+    emailSupport: '',
   );
 
   setUp(() {
@@ -21,7 +22,7 @@ void main() {
   });
 
   group('LogExporter integration with Logger', () {
-    test('should call exporter when log is added', () {
+    test('should export the logs when export logs is called', () {
       when(() => exporter.exportLogs(
             logs: any(named: 'logs'),
             info: logExportInfo,
