@@ -99,5 +99,6 @@ class ErrorEvent extends HideEvent {
   List<Object> get props => [
         error,
         stackTrace,
+        hideAction,
       ];
 }
