@@ -42,7 +42,7 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
   @override
   void initState() {
     super.initState();
-    widget.bloc.add(SelectedDrive(driveId: widget.drive.id));
+    // widget.bloc.add(SelectedDrive(driveId: widget.drive.id));
   }
 
   @override

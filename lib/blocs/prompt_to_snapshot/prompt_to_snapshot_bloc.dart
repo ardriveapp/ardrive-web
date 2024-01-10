@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_state.dart';
+import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/debouncer.dart';
 import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
@@ -12,6 +13,7 @@ const int defaultNumberOfTxsBeforeSnapshot = 1000;
 
 class PromptToSnapshotBloc
     extends Bloc<PromptToSnapshotEvent, PromptToSnapshotState> {
+  final UserRepository userRepository;
   late Duration _durationBeforePrompting;
   late Debouncer _debouncer;
   late int _numberOfTxsBeforeSnapshot;
@@ -19,11 +21,26 @@ class PromptToSnapshotBloc
   bool _isSyncRunning = false;
 
   static KeyValueStore? _maybeStore;
-  static const storeKey = 'dont-ask-to-snapshot-again';
+
+  Future<String?> get owner async {
+    final currentOwner = await userRepository.getOwnerOfDefaultProfile();
+    return currentOwner;
+  }
+
+  Future<String> get storeKey async {
+    final owner = await this.owner;
+
+    if (owner == null) {
+      throw Exception('Cannot get store key because owner is null');
+    }
+
+    return 'dont-ask-to-snapshot-again_$owner';
+  }
 
   Duration get durationBeforePrompting => _durationBeforePrompting;
 
   PromptToSnapshotBloc({
+    required this.userRepository,
     KeyValueStore? store,
     Duration durationBeforePrompting = defaultDurationBeforePrompting,
     int numberOfTxsBeforeSnapshot = defaultNumberOfTxsBeforeSnapshot,
@@ -71,6 +88,18 @@ class PromptToSnapshotBloc
     Emitter<PromptToSnapshotState> emit,
   ) async {
     if (_isSyncRunning) {
+      logger.d(
+        '[PROMPT TO SNAPSHOT] The sync is running, so we won\'t prompt to snapshot',
+      );
+      return;
+    }
+
+    final owner = await this.owner;
+
+    if (owner == null) {
+      logger.d(
+        '[PROMPT TO SNAPSHOT] The owner is null, so we won\'t prompt to snapshot',
+      );
       return;
     }
 
@@ -81,6 +110,7 @@ class PromptToSnapshotBloc
         logger.d(
             '[PROMPT TO SNAPSHOT] The drive id is null and the state is idle');
         emit(const PromptToSnapshotIdle(driveId: null));
+        return;
       }
     }
 
@@ -170,13 +200,19 @@ class PromptToSnapshotBloc
   Future<void> _dontAskToSnapshotAgain(
     bool dontAskAgain,
   ) async {
-    await (await _store).putBool(storeKey, dontAskAgain);
+    await (await _store).putBool(await storeKey, dontAskAgain);
   }
 
   Future<bool> _shouldAskToSnapshotAgain() async {
     final store = await _store;
-    final value = await store.getBool(storeKey);
+    final value = await store.getBool(await storeKey);
     return value != true;
+  }
+
+  @override
+  Future<void> close() async {
+    _debouncer.cancel();
+    return super.close();
   }
 }
 

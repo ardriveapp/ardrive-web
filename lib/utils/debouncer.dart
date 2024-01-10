@@ -21,4 +21,10 @@ class Debouncer {
     });
     return _completer!.future;
   }
+
+  void cancel() {
+    _timer?.cancel();
+    _completer?.completeError('Cancelled');
+    _completer = null;
+  }
 }
