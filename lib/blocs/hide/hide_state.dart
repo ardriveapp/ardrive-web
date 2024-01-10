@@ -9,31 +9,21 @@ abstract class HideState extends Equatable {
   const HideState({
     required this.hideAction,
   });
+
+  @override
+  List<Object?> get props => [hideAction];
 }
 
 class InitialHideState extends HideState {
   const InitialHideState() : super(hideAction: HideAction.hideFile);
-
-  @override
-  List<Object?> get props => [];
 }
 
 class UploadingHideState extends HideState {
-  const UploadingHideState({
-    required super.hideAction,
-  });
-
-  @override
-  List<Object> get props => [];
+  const UploadingHideState({required super.hideAction});
 }
 
 class PreparingAndSigningHideState extends HideState {
-  const PreparingAndSigningHideState({
-    required super.hideAction,
-  });
-
-  @override
-  List<Object> get props => [];
+  const PreparingAndSigningHideState({required super.hideAction});
 }
 
 class ConfirmingHideState extends HideState {
@@ -122,21 +112,11 @@ class ConfirmingHideState extends HideState {
 }
 
 class SuccessHideState extends HideState {
-  const SuccessHideState({
-    required super.hideAction,
-  });
-
-  @override
-  List<Object> get props => [];
+  const SuccessHideState({required super.hideAction});
 }
 
 class FailureHideState extends HideState {
-  const FailureHideState({
-    required super.hideAction,
-  });
-
-  @override
-  List<Object> get props => [];
+  const FailureHideState({required super.hideAction});
 }
 
 enum HideAction {
