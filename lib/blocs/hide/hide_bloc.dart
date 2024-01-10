@@ -87,8 +87,6 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     emit(const PreparingAndSigningHideState(hideAction: HideAction.hideFile));
 
     final profile = _profileCubit.state as ProfileLoggedIn;
-    late DataItem fileDataItem;
-
     final FileEntry currentFile = await _driveDao
         .fileById(
           driveId: event.driveId,
@@ -108,7 +106,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     final fileKey = driveKey != null
         ? await _crypto.deriveFileKey(driveKey, currentFile.id)
         : null;
-    fileDataItem = await _arweave.prepareEntityDataItem(
+    final DataItem fileDataItem = await _arweave.prepareEntityDataItem(
       fileEntity,
       profile.wallet,
       key: fileKey,
@@ -164,8 +162,6 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
     logger.d('Hiding folder ${event.folderId} in drive ${event.driveId}');
     final profile = _profileCubit.state as ProfileLoggedIn;
-    late DataItem folderDataItem;
-
     final FolderEntry currentFolder = await _driveDao
         .folderById(
           driveId: event.driveId,
@@ -183,7 +179,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
       profile.cipherKey,
     );
     final folderKey = driveKey;
-    folderDataItem = await _arweave.prepareEntityDataItem(
+    final DataItem folderDataItem = await _arweave.prepareEntityDataItem(
       folderEntity,
       profile.wallet,
       key: folderKey,
@@ -232,8 +228,6 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     emit(const PreparingAndSigningHideState(hideAction: HideAction.unhideFile));
 
     final profile = _profileCubit.state as ProfileLoggedIn;
-    late DataItem fileDataItem;
-
     final FileEntry currentFile = await _driveDao
         .fileById(
           driveId: event.driveId,
@@ -253,7 +247,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     final fileKey = driveKey != null
         ? await _crypto.deriveFileKey(driveKey, currentFile.id)
         : null;
-    fileDataItem = await _arweave.prepareEntityDataItem(
+    final DataItem fileDataItem = await _arweave.prepareEntityDataItem(
       fileEntity,
       profile.wallet,
       key: fileKey,
@@ -305,8 +299,6 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
     logger.d('Unhiding folder ${event.folderId} in drive ${event.driveId}');
     final profile = _profileCubit.state as ProfileLoggedIn;
-    late DataItem folderDataItem;
-
     final FolderEntry currentFolder = await _driveDao
         .folderById(
           driveId: event.driveId,
@@ -326,7 +318,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
       profile.cipherKey,
     );
     final folderKey = driveKey;
-    folderDataItem = await _arweave.prepareEntityDataItem(
+    final DataItem folderDataItem = await _arweave.prepareEntityDataItem(
       folderEntity,
       profile.wallet,
       key: folderKey,
