@@ -5,13 +5,13 @@ import 'package:drift/drift.dart';
 import '../services/services.dart';
 import 'entity.dart';
 
-class LicenseDataBundleTransactionParseException implements Exception {
+class LicenseComposedTransactionParseException implements Exception {
   final String transactionId;
 
-  LicenseDataBundleTransactionParseException({required this.transactionId});
+  LicenseComposedTransactionParseException({required this.transactionId});
 }
 
-const licenseDataBundleTxBaseTagKeys = [
+const licenseComposedTxBaseTagKeys = [
   LicenseTag.licenseDefinitionTxId,
 ];
 
@@ -24,29 +24,29 @@ const arfsDataTxBaseTagKeys = [
 ];
 
 final additionalTagKeysBlacklist =
-    licenseDataBundleTxBaseTagKeys + arfsDataTxBaseTagKeys;
+    licenseComposedTxBaseTagKeys + arfsDataTxBaseTagKeys;
 
-class LicenseDataBundleEntity with TransactionPropertiesMixin {
+class LicenseComposedEntity with TransactionPropertiesMixin {
   final String licenseDefinitionTxId;
   final Map<String, String> additionalTags;
   // final Map<String, String> arfsTags;
 
   DateTime blockTimestamp = DateTime.now();
 
-  LicenseDataBundleEntity({
+  LicenseComposedEntity({
     required this.licenseDefinitionTxId,
     this.additionalTags = const {},
     // this.arfsTags = const {},
   });
 
-  static LicenseDataBundleEntity fromTransaction(
+  static LicenseComposedEntity fromTransaction(
     TransactionCommonMixin transaction,
   ) {
     try {
       final additionalTags = Map.fromEntries(transaction.tags
           .where((tag) => !additionalTagKeysBlacklist.contains(tag.name))
           .map((tag) => MapEntry(tag.name, tag.value)));
-      final licenseDataBundleEntity = LicenseDataBundleEntity(
+      final licenseComposedEntity = LicenseComposedEntity(
         licenseDefinitionTxId:
             transaction.getTag(LicenseTag.licenseDefinitionTxId)!,
         additionalTags: additionalTags,
@@ -56,12 +56,12 @@ class LicenseDataBundleEntity with TransactionPropertiesMixin {
         ..bundledIn = transaction.bundledIn?.id;
 
       if (transaction.block != null) {
-        licenseDataBundleEntity.blockTimestamp =
+        licenseComposedEntity.blockTimestamp =
             DateTime.fromMillisecondsSinceEpoch(transaction.block!.timestamp);
       }
-      return licenseDataBundleEntity;
+      return licenseComposedEntity;
     } catch (_) {
-      throw LicenseDataBundleTransactionParseException(
+      throw LicenseComposedTransactionParseException(
         transactionId: transaction.id,
       );
     }

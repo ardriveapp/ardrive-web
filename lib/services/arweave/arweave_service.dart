@@ -251,19 +251,19 @@ class ArweaveService {
     }
   }
 
-  Stream<List<LicenseDataBundled$Query$TransactionConnection$TransactionEdge$Transaction>>
-      getLicenseDataBundled(Iterable<String> licenseDataBundledTxIds) async* {
+  Stream<List<LicenseComposed$Query$TransactionConnection$TransactionEdge$Transaction>>
+      getLicenseComposed(Iterable<String> licenseComposedTxIds) async* {
     const chunkSize = 100;
-    final chunks = licenseDataBundledTxIds.slices(chunkSize);
+    final chunks = licenseComposedTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
-      final licenseDataBundledQuery = await _graphQLRetry.execute(
-        LicenseDataBundledQuery(
-          variables: LicenseDataBundledArguments(transactionIds: chunk),
+      final licenseComposedQuery = await _graphQLRetry.execute(
+        LicenseComposedQuery(
+          variables: LicenseComposedArguments(transactionIds: chunk),
         ),
       );
 
-      yield licenseDataBundledQuery.data!.transactions.edges
+      yield licenseComposedQuery.data!.transactions.edges
           .map((e) => e.node)
           .toList();
     }

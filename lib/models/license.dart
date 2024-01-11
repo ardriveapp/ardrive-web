@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/entities/license_assertion.dart';
-import 'package:ardrive/entities/license_data_bundle.dart';
+import 'package:ardrive/entities/license_composed.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:drift/drift.dart';
@@ -64,7 +64,7 @@ extension LicenseAssertionEntityExtensions on LicenseAssertionEntity {
       );
 }
 
-extension LicenseDataBundleEntityExtensions on LicenseDataBundleEntity {
+extension LicenseComposedEntityExtensions on LicenseComposedEntity {
   /// Converts the entity to an instance of [LicenseAssertionsCompanion].
   LicensesCompanion toCompanion({
     required String fileId,
@@ -75,7 +75,7 @@ extension LicenseDataBundleEntityExtensions on LicenseDataBundleEntity {
         fileId: fileId,
         driveId: driveId,
         dataTxId: txId,
-        licenseTxType: LicenseTxType.bundled.name,
+        licenseTxType: LicenseTxType.composed.name,
         licenseTxId: txId,
         customGQLTags: additionalTags.isNotEmpty
             ? Value(jsonEncode(additionalTags))

@@ -827,7 +827,7 @@ class UploadCubit extends Cubit<UploadState> {
               driveId: driveId,
               licenseTxId: fileMetadata.licenseTxId!,
               licenseTxType: fileMetadata.licenseTxId == fileMetadata.dataTxId
-                  ? LicenseTxType.bundled
+                  ? LicenseTxType.composed
                   : LicenseTxType.assertion,
             );
           }

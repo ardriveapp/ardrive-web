@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/entities/license_assertion.dart';
-import 'package:ardrive/entities/license_data_bundle.dart';
+import 'package:ardrive/entities/license_composed.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
@@ -147,12 +147,12 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
       }
     } else {
       final licenseTx = (await _arweave
-              .getLicenseDataBundled([revision.licenseTxId!]).firstOrNull)
+              .getLicenseComposed([revision.licenseTxId!]).firstOrNull)
           ?.firstOrNull;
       if (licenseTx != null) {
-        final licenseDataBundleEntity =
-            LicenseDataBundleEntity.fromTransaction(licenseTx);
-        return _licenseService.fromBundleEntity(licenseDataBundleEntity);
+        final licenseComposedEntity =
+            LicenseComposedEntity.fromTransaction(licenseTx);
+        return _licenseService.fromComposedEntity(licenseComposedEntity);
       }
     }
     return null;

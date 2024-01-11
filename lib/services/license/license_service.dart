@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/entities/license_assertion.dart';
-import 'package:ardrive/entities/license_data_bundle.dart';
+import 'package:ardrive/entities/license_composed.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:drift/drift.dart';
 
@@ -10,7 +10,7 @@ import 'license_state.dart';
 import 'licenses/udl.dart';
 
 enum LicenseTxType {
-  bundled,
+  composed,
   assertion,
 }
 
@@ -54,11 +54,10 @@ class LicenseService {
     );
   }
 
-  LicenseState fromBundleEntity(
-      LicenseDataBundleEntity licenseDataBundleEntity) {
+  LicenseState fromComposedEntity(LicenseComposedEntity licenseComposedEntity) {
     final licenseType =
-        licenseTypeByTxId(licenseDataBundleEntity.licenseDefinitionTxId)!;
-    final additionalTags = licenseDataBundleEntity.additionalTags;
+        licenseTypeByTxId(licenseComposedEntity.licenseDefinitionTxId)!;
+    final additionalTags = licenseComposedEntity.additionalTags;
 
     return LicenseState(
       meta: licenseMetaByType(licenseType),

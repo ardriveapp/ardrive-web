@@ -41,18 +41,18 @@ Future<void> _updateLicenses({
     );
   }
 
-  final licenseDataBundledTxIds = revisionsToSyncLicense
+  final licenseComposedTxIds = revisionsToSyncLicense
       .where((rev) => rev.licenseTxId == rev.dataTxId)
       .map((e) => e.licenseTxId!)
       .toList();
 
-  logger.d('Syncing ${licenseAssertionTxIds.length} license-data bundles');
+  logger.d('Syncing ${licenseComposedTxIds.length} composed licenses');
 
-  await for (final licenseDataBundledTxsBatch
-      in arweave.getLicenseDataBundled(licenseDataBundledTxIds)) {
-    final licenseDataBundledEntities = licenseDataBundledTxsBatch
-        .map((tx) => LicenseDataBundleEntity.fromTransaction(tx));
-    final licenseCompanions = licenseDataBundledEntities.map((entity) {
+  await for (final licenseComposedTxsBatch
+      in arweave.getLicenseComposed(licenseComposedTxIds)) {
+    final licenseComposedEntities = licenseComposedTxsBatch
+        .map((tx) => LicenseComposedEntity.fromTransaction(tx));
+    final licenseCompanions = licenseComposedEntities.map((entity) {
       final revision = revisionsToSyncLicense.firstWhere(
         (rev) => rev.licenseTxId == entity.txId,
       );
@@ -65,8 +65,8 @@ Future<void> _updateLicenses({
       );
     });
 
-    logger.d(
-        'Inserting batch of ${licenseCompanions.length} license-data bundles');
+    logger
+        .d('Inserting batch of ${licenseCompanions.length} composed licenses');
 
     await driveDao.transaction(
       () async => {
