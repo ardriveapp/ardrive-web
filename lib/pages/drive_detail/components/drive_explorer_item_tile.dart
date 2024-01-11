@@ -242,7 +242,6 @@ class _DriveExplorerItemTileTrailingState
             target: Alignment.topLeft,
           ),
           items: _getItems(widget.item, context),
-          // ignore: sized_box_for_whitespace
           child: HoverWidget(
             tooltip: appLocalizationsOf(context).showMenu,
             child: ArDriveIcons.kebabMenu(),
@@ -526,7 +525,6 @@ class EntityActionsMenu extends StatelessWidget {
       height: isMobile(context) ? 44 : 60,
       anchor: alignment,
       items: _getItems(item, context, withInfo),
-      // ignore: sized_box_for_whitespace
       child: HoverWidget(
         tooltip: appLocalizationsOf(context).showMenu,
         child: ArDriveIcons.dots(),
@@ -587,6 +585,40 @@ class EntityActionsMenu extends StatelessWidget {
               ArDriveIcons.editFilled(
                 size: defaultIconSize,
               ),
+            ),
+          ),
+          ArDriveDropdownItem(
+            onClick: () {
+              final hideBloc = context.read<HideBloc>();
+              final driveDetailCubit = context.read<DriveDetailCubit>();
+
+              if (item.isHidden) {
+                hideBloc.add(UnhideFolderEvent(
+                  driveId: drive!.id,
+                  folderId: item.id,
+                ));
+                promptToHide(
+                  context,
+                  driveDetailCubit: driveDetailCubit,
+                );
+              } else {
+                hideBloc.add(HideFolderEvent(
+                  driveId: drive!.id,
+                  folderId: item.id,
+                ));
+                promptToHide(
+                  context,
+                  driveDetailCubit: driveDetailCubit,
+                );
+              }
+            },
+            content: _buildItem(
+              item.isHidden
+                  ? appLocalizationsOf(context).unhide
+                  : appLocalizationsOf(context).hide,
+              item.isHidden
+                  ? ArDriveIcons.eyeOpen(size: defaultIconSize)
+                  : ArDriveIcons.eyeClosed(size: defaultIconSize),
             ),
           ),
         ],
