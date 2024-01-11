@@ -1,6 +1,5 @@
-import 'package:ardrive/services/license/licenses/cc_by.dart';
-
-import 'licenses/udl.dart';
+import 'package:ardrive/services/license/licenses/licenses.dart';
+import 'package:equatable/equatable.dart';
 
 enum LicenseType {
   unknown,
@@ -8,7 +7,7 @@ enum LicenseType {
   ccBy,
 }
 
-class LicenseMeta {
+class LicenseMeta extends Equatable {
   final LicenseType licenseType;
   final String licenseDefinitionTxId;
   final String name;
@@ -24,9 +23,19 @@ class LicenseMeta {
     required this.version,
     this.hasParams = false,
   });
+
+  @override
+  List<Object?> get props => [
+        licenseType,
+        licenseDefinitionTxId,
+        name,
+        shortName,
+        version,
+        hasParams,
+      ];
 }
 
-class LicenseParams {
+abstract class LicenseParams {
   Map<String, String> toAdditionalTags() => {};
 }
 
@@ -37,7 +46,7 @@ final licenseMetaMap = {
   LicenseType.ccBy: ccByLicenseMeta,
 };
 
-class LicenseState {
+class LicenseState extends Equatable {
   final LicenseMeta meta;
   final LicenseParams? params;
 
@@ -45,4 +54,7 @@ class LicenseState {
     required this.meta,
     this.params,
   });
+
+  @override
+  List<Object?> get props => [meta, params?.toAdditionalTags()];
 }
