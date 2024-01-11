@@ -332,6 +332,23 @@ class SyncCubit extends Cubit<SyncState> {
 
       logger.i('Ghosts created...');
 
+      logger.i('Syncing licenses...');
+
+      final licenseTxIds = <String>{};
+      final revisionsToSyncLicense = (await _driveDao
+          .allFileRevisionsWithLicenseReferencedButNotSynced()
+          .get())
+        ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
+
+      _updateLicenses(
+        driveDao: _driveDao,
+        arweave: _arweave,
+        licenseService: _licenseService,
+        revisionsToSyncLicense: revisionsToSyncLicense,
+      );
+
+      logger.i('Licenses synced');
+
       logger.i('Updating transaction statuses...');
 
       final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
@@ -343,12 +360,6 @@ class SyncCubit extends Cubit<SyncState> {
           .map((file) => file.dataTxId)
           .toList();
 
-      final licenseTxIds = <String>{};
-      final revisionsToSyncLicense = (await _driveDao
-          .allFileRevisionsWithLicenseReferencedButNotSynced()
-          .get())
-        ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
-
       await Future.wait(
         [
           if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
@@ -356,12 +367,6 @@ class SyncCubit extends Cubit<SyncState> {
             driveDao: _driveDao,
             arweave: _arweave,
             txsIdsToSkip: confirmedFileTxIds,
-          ),
-          _updateLicenses(
-            driveDao: _driveDao,
-            arweave: _arweave,
-            licenseService: _licenseService,
-            revisionsToSyncLicense: revisionsToSyncLicense,
           ),
         ],
       );
