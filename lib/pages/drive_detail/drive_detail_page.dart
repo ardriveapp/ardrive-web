@@ -122,7 +122,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               final drive = driveDetailState.currentDrive;
               promptToSnapshot(
                 context,
-                bloc: bloc,
+                promptToSnapshotBloc: bloc,
                 drive: drive,
               ).then((_) {
                 bloc.add(const SelectedDrive(driveId: null));

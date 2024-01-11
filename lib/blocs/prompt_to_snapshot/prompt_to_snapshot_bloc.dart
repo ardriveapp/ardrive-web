@@ -1,5 +1,7 @@
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_state.dart';
+import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/debouncer.dart';
 import 'package:ardrive/utils/key_value_store.dart';
@@ -14,6 +16,8 @@ const int defaultNumberOfTxsBeforeSnapshot = 1000;
 class PromptToSnapshotBloc
     extends Bloc<PromptToSnapshotEvent, PromptToSnapshotState> {
   final UserRepository userRepository;
+  final ProfileCubit profileCubit;
+  final DriveDao driveDao;
   late Duration _durationBeforePrompting;
   late Debouncer _debouncer;
   late int _numberOfTxsBeforeSnapshot;
@@ -41,6 +45,8 @@ class PromptToSnapshotBloc
 
   PromptToSnapshotBloc({
     required this.userRepository,
+    required this.profileCubit,
+    required this.driveDao,
     KeyValueStore? store,
     Duration durationBeforePrompting = defaultDurationBeforePrompting,
     int numberOfTxsBeforeSnapshot = defaultNumberOfTxsBeforeSnapshot,
@@ -91,6 +97,7 @@ class PromptToSnapshotBloc
       logger.d(
         '[PROMPT TO SNAPSHOT] The sync is running, so we won\'t prompt to snapshot',
       );
+      _debouncer.cancel();
       return;
     }
 
@@ -100,10 +107,9 @@ class PromptToSnapshotBloc
       logger.d(
         '[PROMPT TO SNAPSHOT] The owner is null, so we won\'t prompt to snapshot',
       );
+      _debouncer.cancel();
       return;
     }
-
-    logger.d('[PROMPT TO SNAPSHOT] Selected drive ${event.driveId}');
 
     if (event.driveId == null) {
       if (state is PromptToSnapshotIdle) {
@@ -111,7 +117,21 @@ class PromptToSnapshotBloc
             '[PROMPT TO SNAPSHOT] The drive id is null and the state is idle');
         emit(const PromptToSnapshotIdle(driveId: null));
       }
+      _debouncer.cancel();
+      return;
     }
+
+    final hasWritePermissions = await _hasWritePermission(event.driveId);
+    if (!hasWritePermissions) {
+      logger.d(
+        '[PROMPT TO SNAPSHOT] The user doesn\'t have write permissions,'
+        ' so we won\'t prompt to snapshot',
+      );
+      _debouncer.cancel();
+      return;
+    }
+
+    logger.d('[PROMPT TO SNAPSHOT] Selected drive ${event.driveId}');
 
     final shouldAskAgain = await _shouldAskToSnapshotAgain();
     final stateIsIdle = state is PromptToSnapshotIdle;
@@ -127,9 +147,11 @@ class PromptToSnapshotBloc
             event.driveId!,
             _numberOfTxsBeforeSnapshot,
           );
+
       if (!_isSyncRunning &&
           shouldAskAgain &&
           wouldDriveBenefitFromSnapshot &&
+          hasWritePermissions &&
           !isClosed &&
           stateIsIdle) {
         logger.d(
@@ -141,13 +163,26 @@ class PromptToSnapshotBloc
           ' isSyncRunning: $_isSyncRunning'
           ' shoudAskAgain: $shouldAskAgain'
           ' wouldDriveBenefitFromSnapshot: $wouldDriveBenefitFromSnapshot'
+          ' hasWritePermissions: $hasWritePermissions'
           ' isBlocClosed: $isClosed'
-          ' stateIsIdle: $stateIsIdle',
+          ' stateIsIdle: $stateIsIdle - ${state.runtimeType}',
         );
       }
     }).catchError((e) {
       logger.d('[PROMPT TO SNAPSHOT] Debuncer cancelled for ${event.driveId}');
     });
+  }
+
+  Future<bool> _hasWritePermission(DriveID? driveId) async {
+    final selectedDrive = driveId == null
+        ? null
+        : await driveDao.driveById(driveId: driveId).getSingleOrNull();
+    final profileState = profileCubit.state;
+
+    final hasWritePermissions = profileState is ProfileLoggedIn &&
+        selectedDrive?.ownerAddress == profileState.walletAddress;
+
+    return hasWritePermissions;
   }
 
   void _onDriveSnapshotting(

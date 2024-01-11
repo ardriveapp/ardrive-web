@@ -11,25 +11,26 @@ import 'package:flutter/material.dart';
 Future<void> promptToSnapshot(
   BuildContext context, {
   required Drive drive,
-  required PromptToSnapshotBloc bloc,
+  required PromptToSnapshotBloc promptToSnapshotBloc,
 }) async {
   return showArDriveDialog(
     context,
     content: PromptToSnapshotDialog(
-      bloc: bloc,
+      promptToSnapshotBloc: promptToSnapshotBloc,
       drive: drive,
     ),
   );
 }
 
 class PromptToSnapshotDialog extends StatefulWidget {
-  final PromptToSnapshotBloc bloc;
+  final PromptToSnapshotBloc promptToSnapshotBloc;
+
   final Drive drive;
 
   const PromptToSnapshotDialog({
     super.key,
     required this.drive,
-    required this.bloc,
+    required this.promptToSnapshotBloc,
   });
 
   @override
@@ -63,7 +64,8 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
             } else {
               setState(() {
                 _dontAskAgain = true;
-                widget.bloc.add(const DismissDontAskAgain(dontAskAgain: true));
+                widget.promptToSnapshotBloc
+                    .add(const DismissDontAskAgain(dontAskAgain: true));
               });
             }
           },

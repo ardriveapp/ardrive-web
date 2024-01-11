@@ -8,7 +8,6 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -83,15 +82,7 @@ class DrivesCubit extends Cubit<DrivesState> {
               : false)
           .toList();
 
-      final selectedDrive =
-          drives.firstWhereOrNull((d) => d.id == selectedDriveId);
-
-      final hasWritePermission = profileState is ProfileLoggedIn &&
-          selectedDrive?.ownerAddress == profileState.walletAddress;
-
-      if (hasWritePermission) {
-        _promptToSnapshotBloc.add(SelectedDrive(driveId: selectedDriveId));
-      }
+      _promptToSnapshotBloc.add(SelectedDrive(driveId: selectedDriveId));
 
       emit(
         DrivesLoadSuccess(
@@ -115,21 +106,7 @@ class DrivesCubit extends Cubit<DrivesState> {
         selectedDriveId: driveId,
       );
 
-      if (profileIsLoggedIn) {
-        final profileStateAsLoggedIn = _profileCubit.state as ProfileLoggedIn;
-
-        _driveDao
-            .driveById(driveId: driveId)
-            .getSingleOrNull()
-            .then((maybeDrive) {
-          final hasWritePermission =
-              maybeDrive?.ownerAddress == profileStateAsLoggedIn.walletAddress;
-
-          if (hasWritePermission) {
-            _promptToSnapshotBloc.add(SelectedDrive(driveId: driveId));
-          }
-        });
-      }
+      _promptToSnapshotBloc.add(SelectedDrive(driveId: driveId));
     } else {
       state = DrivesLoadedWithNoDrivesFound(
         canCreateNewDrive: canCreateNewDrive,
@@ -166,27 +143,10 @@ class DrivesCubit extends Cubit<DrivesState> {
           : state.sharedDrives.isNotEmpty
               ? state.sharedDrives.first.id
               : null;
+      _promptToSnapshotBloc.add(SelectedDrive(
+        driveId: firstOrNullDriveId,
+      ));
       if (firstOrNullDriveId != null) {
-        if (profileIsLoggedIn && state.selectedDriveId != null) {
-          final profileStateAsLoggedIn = _profileCubit.state as ProfileLoggedIn;
-
-          _driveDao
-              .driveById(driveId: firstOrNullDriveId)
-              .getSingleOrNull()
-              .then((maybeDrive) {
-            final hasWritePermission = maybeDrive?.ownerAddress ==
-                profileStateAsLoggedIn.walletAddress;
-
-            if (hasWritePermission) {
-              _promptToSnapshotBloc.add(SelectedDrive(
-                driveId: firstOrNullDriveId,
-              ));
-            } else {
-              _promptToSnapshotBloc.add(const SelectedDrive(driveId: null));
-            }
-          });
-        }
-
         emit(state.copyWith(selectedDriveId: firstOrNullDriveId));
         return;
       }

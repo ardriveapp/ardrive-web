@@ -3,7 +3,6 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/gift/reedem_button.dart';
-import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
@@ -69,29 +68,12 @@ class AppShellState extends State<AppShell> {
                   listener: (context, syncState) async {
                     if (drivesState is DrivesLoadSuccess) {
                       if (syncState is! SyncInProgress) {
-                        final profileState = context.read<ProfileCubit>().state;
-
                         final promptToSnapshotBloc =
                             context.read<PromptToSnapshotBloc>();
-                        final driveDao = context.read<DriveDao>();
-                        final selectedDriveId = drivesState.selectedDriveId;
 
-                        final selectedDrive = selectedDriveId == null
-                            ? null
-                            : await driveDao
-                                .driveById(driveId: selectedDriveId)
-                                .getSingleOrNull();
-
-                        final hasWritePermissions =
-                            profileState is ProfileLoggedIn &&
-                                selectedDrive?.ownerAddress ==
-                                    profileState.walletAddress;
-
-                        if (hasWritePermissions) {
-                          promptToSnapshotBloc.add(SelectedDrive(
-                            driveId: drivesState.selectedDriveId,
-                          ));
-                        }
+                        promptToSnapshotBloc.add(SelectedDrive(
+                          driveId: drivesState.selectedDriveId,
+                        ));
                       }
                     }
                   },
