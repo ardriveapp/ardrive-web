@@ -1,7 +1,7 @@
 import 'package:ardrive/entities/license_assertion.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/services/license/license_service.dart';
-import 'package:ardrive/services/license/license_types.dart';
+import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/services/license/licenses/udl.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';

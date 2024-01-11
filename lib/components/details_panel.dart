@@ -35,7 +35,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../blocs/blocs.dart';
-import '../services/license/license_types.dart';
 
 class DetailsPanel extends StatefulWidget {
   const DetailsPanel({

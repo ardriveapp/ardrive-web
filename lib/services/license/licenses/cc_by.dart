@@ -1,4 +1,4 @@
-import '../license_types.dart';
+import '../license_state.dart';
 
 const ccByLicenseMeta = LicenseMeta(
   licenseType: LicenseType.ccBy,

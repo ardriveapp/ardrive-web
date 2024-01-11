@@ -4,7 +4,6 @@ import 'package:ardrive/entities/license_assertion.dart';
 import 'package:ardrive/entities/license_data_bundle.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
-import 'package:ardrive/services/license/license_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger/logger.dart';
 import 'package:async/async.dart';

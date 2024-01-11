@@ -1,4 +1,4 @@
-import 'package:ardrive/services/license/license_types.dart';
+import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/services/license/licenses/udl.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';

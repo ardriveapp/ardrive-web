@@ -5,8 +5,6 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
-import 'package:ardrive/services/license/license_types.dart';
-import 'package:ardrive/services/license/licenses/udl.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:arweave/arweave.dart';

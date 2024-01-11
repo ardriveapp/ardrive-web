@@ -13,7 +13,7 @@ import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/license/license_service.dart';
-import 'package:ardrive/services/license/license_types.dart';
+import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger/logger.dart';

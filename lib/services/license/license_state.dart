@@ -1,4 +1,4 @@
-import 'package:ardrive/services/license/licenses/cc0.dart';
+import 'package:ardrive/services/license/licenses/cc_by.dart';
 
 import 'licenses/udl.dart';
 

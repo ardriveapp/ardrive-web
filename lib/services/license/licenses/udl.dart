@@ -1,4 +1,4 @@
-import '../license_types.dart';
+import '../license_state.dart';
 
 const udlLicenseMeta = LicenseMeta(
   licenseType: LicenseType.udl,

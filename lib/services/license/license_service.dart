@@ -7,7 +7,7 @@ import 'package:ardrive/models/license.dart';
 import 'package:drift/drift.dart';
 
 import '../../models/models.dart';
-import 'license_types.dart';
+import 'license_state.dart';
 import 'licenses/udl.dart';
 
 enum LicenseTxType {

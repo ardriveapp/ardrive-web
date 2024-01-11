@@ -2,7 +2,7 @@ import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
-import 'package:ardrive/services/license/license_types.dart';
+import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/widgets.dart';
 
