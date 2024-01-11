@@ -55,32 +55,34 @@ late ArweaveService _arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
 void main() async {
-  MobileStatusBar.show();
-  MobileScreenOrientation.lockInPortraitUp();
+  await runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    final localStore = await LocalKeyValueStore.getInstance();
 
-  final localStore = await LocalKeyValueStore.getInstance();
+    await AppInfoServices().loadAppInfo();
 
-  await AppInfoServices().loadAppInfo();
+    configService = ConfigService(
+      appFlavors: AppFlavors(EnvFetcher()),
+      configFetcher: ConfigFetcher(localStore: localStore),
+    );
 
-  configService = ConfigService(
-    appFlavors: AppFlavors(EnvFetcher()),
-    configFetcher: ConfigFetcher(localStore: localStore),
-  );
+    await configService.loadConfig();
 
-  await configService.loadConfig();
+    final flavor = await configService.loadAppFlavor();
 
-  final flavor = await configService.loadAppFlavor();
+    await _initialize();
 
-  if (!kIsWeb) {
     if (flavor == Flavor.development) {
-      _runWithCrashlytics(flavor.name);
+      _runWithCrashlytics();
       return;
     }
-  }
 
-  logger.d('Starting without crashlytics');
+    logger.d('Starting without crashlytics');
 
-  _runWithoutCrashlytics();
+    _runWithoutCrashlytics();
+  }, (error, stackTrace) async {
+    _runWithoutCrashlytics();
+  });
 }
 
 Future<void> _runWithoutCrashlytics() async {
@@ -89,6 +91,9 @@ Future<void> _runWithoutCrashlytics() async {
 }
 
 Future<void> _initialize() async {
+  MobileStatusBar.show();
+  MobileScreenOrientation.lockInPortraitUp();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
   );
@@ -124,20 +129,20 @@ Future<void> _initialize() async {
   }
 }
 
-Future<void> _runWithCrashlytics(String flavor) async {
+Future<void> _runWithCrashlytics() async {
+  const sentryDsn = String.fromEnvironment(
+    'SENTRY_DSN',
+    defaultValue: '',
+  );
+
   await SentryFlutter.init(
     (options) {
-      options.dsn = 'TODO: REPLACE WITH THE RIGHT DSN';
-      // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-      // We recommend adjusting this value in production.
+      options.dsn = 'sentryDsn';
       options.tracesSampleRate = 1.0;
     },
-    appRunner: () async {
-      await _initialize();
-      WidgetsFlutterBinding.ensureInitialized();
-      runApp(const App());
-    },
   );
+
+  runApp(const App());
 }
 
 void refreshHTMLPageAtInterval(Duration duration) {

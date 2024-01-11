@@ -12,6 +12,7 @@ env:
   PR_NUMBER: ${{ github.event.pull_request.number }}
   PR_TITLE: ${{ github.event.pull_request.title }}
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
+  SENTRY_DSN: ${{secrets.SENTRY_DSN}}
 
 jobs:
   pre-build:
@@ -42,7 +43,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --dart-define=environment=development --release --pwa-strategy=none --no-web-resources-cdn
+          flutter build web --dart-define=environment=development --dart-define=${SENTRY_DSN} --release --pwa-strategy=none --no-web-resources-cdn
 
       # JS files cache invalidation
       - name: main.dart.js and service worker cache invalidation
