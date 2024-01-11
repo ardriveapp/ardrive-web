@@ -17,9 +17,6 @@ class SharingFileBloc extends Bloc<SharingFileEvent, SharingFileState> {
   SharingFileBloc(
     this.activityTracker,
   ) : super(SharingFileInitial()) {
-    // For sharing images coming from outside the app while the app is in the memory
-
-    // For sharing images coming from outside the app while the app is closed
     FlutterSharingIntent.instance
         .getInitialSharing()
         .then((List<SharedFile> value) {
