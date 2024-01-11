@@ -60,7 +60,7 @@ extension LicenseAssertionEntityExtensions on LicenseAssertionEntity {
             : const Value.absent(),
         dateCreated: Value(blockTimestamp),
         licenseType: licenseType.name,
-        bundledIn: bundledIn == null ? Value(bundledIn) : const Value.absent(),
+        bundledIn: bundledIn != null ? Value(bundledIn) : const Value.absent(),
       );
 }
 

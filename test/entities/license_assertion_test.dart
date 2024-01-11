@@ -8,6 +8,13 @@ import 'package:arweave/utils.dart';
 import 'package:drift/drift.dart';
 import 'package:test/test.dart';
 
+Tag createTag(MapEntry<String, String> entry) {
+  return Tag(
+    encodeStringToBase64(entry.key),
+    encodeStringToBase64(entry.value),
+  );
+}
+
 void main() {
   const stubFileId = '00000000-0000-0000-0000-000000000000';
   const stubDriveId = 'FFFFFFFF-0000-0000-0000-000000000000';
@@ -17,6 +24,7 @@ void main() {
       '0000000000000000000000000000000000000000000';
   const stubDataTxId = '0000000000000000000000000000000000000000001';
   const stubOwner = '8888';
+  const stubBundledInTxId = '0000000000000000000000000000000000000000123';
   // final stubCurrentDate = DateTime.now();
 
   final stubLicenseParams = UdlLicenseParams(
@@ -25,18 +33,15 @@ void main() {
     derivations: UdlDerivation.unspecified,
   );
   final stubAdditionalTags = stubLicenseParams.toAdditionalTags();
-  final stubAdditionalTxTags = stubAdditionalTags.entries.map(
-    (entry) => Tag(
-      encodeStringToBase64(entry.key),
-      encodeStringToBase64(entry.value),
-    ),
-  );
+  final stubAdditionalTxTags = stubAdditionalTags.entries.map(createTag);
 
   final stubLicenseAssertion = LicenseAssertionEntity(
     dataTxId: stubDataTxId,
     licenseDefinitionTxId: stubLicenseDefinitionTxId,
     additionalTags: stubAdditionalTags,
-  )..txId = stubLicenseAssertionTxId;
+  )
+    ..txId = stubLicenseAssertionTxId
+    ..bundledIn = stubBundledInTxId;
 
   group('LicenseAssertion Tests', () {
     group('asPreparedDataItem method', () {
@@ -44,6 +49,14 @@ void main() {
         final dataItem =
             await stubLicenseAssertion.asPreparedDataItem(owner: stubOwner);
 
+        expect(
+          dataItem.tags,
+          containsAll({
+            'App-Name': 'License-Assertion',
+            'Original': stubDataTxId,
+            'License': stubLicenseDefinitionTxId,
+          }.entries.map(createTag)),
+        );
         expect(dataItem.tags, containsAll(stubAdditionalTxTags));
       });
     });
@@ -64,7 +77,7 @@ void main() {
             equals(Value(LicenseTxType.assertion.name)));
         expect(companion.licenseTxId,
             equals(const Value(stubLicenseAssertionTxId)));
-        expect(companion.bundledIn, equals(const Value.absent()));
+        expect(companion.bundledIn, equals(const Value(stubBundledInTxId)));
       });
     });
   });
