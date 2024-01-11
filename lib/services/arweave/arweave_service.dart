@@ -251,15 +251,15 @@ class ArweaveService {
     }
   }
 
-  Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
+  Stream<List<LicenseDataBundled$Query$TransactionConnection$TransactionEdge$Transaction>>
       getLicenseDataBundled(Iterable<String> licenseDataBundledTxIds) async* {
     const chunkSize = 100;
     final chunks = licenseDataBundledTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
       final licenseDataBundledQuery = await _graphQLRetry.execute(
-        LicenseAssertionsQuery(
-          variables: LicenseAssertionsArguments(transactionIds: chunk),
+        LicenseDataBundledQuery(
+          variables: LicenseDataBundledArguments(transactionIds: chunk),
         ),
       );
 
