@@ -22,7 +22,7 @@ jobs:
     uses: ./.github/workflows/test.yml
 
   build-web:
-    needs: pre-build
+    # needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout
