@@ -39,8 +39,8 @@ class TurboTopUpEstimationBloc
         if (event is LoadInitialData) {
           try {
             emit(EstimationLoading());
-            logger.i('initializing the estimation view');
-            logger.i('getting the balance');
+            logger
+                .i('initializing the estimation view and getting the balance');
             await _getBalance();
 
             logger.i('getting the price estimate');

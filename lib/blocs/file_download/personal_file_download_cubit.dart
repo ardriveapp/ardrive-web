@@ -132,8 +132,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
-    logger
-        .d('Downloading file ${_file.name} and dataTxId is ${_file.dataTxId}');
+    logger.d('Downloading file...');
 
     String? cipher;
     String? cipherIvTag;
