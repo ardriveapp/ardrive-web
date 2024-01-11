@@ -43,7 +43,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --dart-define=environment=development --dart-define=${SENTRY_DSN} --release --pwa-strategy=none --no-web-resources-cdn
+          flutter build web --dart-define=environment=development --dart-define=SENTRY_DSN=${SENTRY_DSN} --release --pwa-strategy=none --no-web-resources-cdn
 
       # JS files cache invalidation
       - name: main.dart.js and service worker cache invalidation
