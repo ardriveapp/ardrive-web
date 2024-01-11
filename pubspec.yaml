@@ -196,5 +196,4 @@ sentry:
   upload_sources: true
   wait_for_processing: false
   log_level: error
-  commits: none
   ignore_missing: true
