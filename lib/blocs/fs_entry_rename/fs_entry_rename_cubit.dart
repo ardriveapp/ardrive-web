@@ -49,7 +49,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
   Future<void> submit({required String newName}) async {
     try {
-      late bool hasEntityWithSameName;
+      final bool hasEntityWithSameName;
 
       if (_isRenamingFolder) {
         hasEntityWithSameName = await _folderWithSameNameExists(newName);
