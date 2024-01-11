@@ -20,7 +20,7 @@ import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
@@ -83,7 +83,7 @@ void main() async {
     }
   }
 
-  logger.d('Starting without crashlytics');
+  logger.d('Running without crashlytics for $flavor');
 
   _runWithoutCrashlytics();
 }
@@ -100,7 +100,7 @@ Future<void> _initialize() async {
 
   final config = configService.config;
 
-  logger.i('Initializing with config: $config');
+  logger.d('Initializing app with config: $config');
 
   ArDriveMobileDownloader.initialize();
 
@@ -211,7 +211,7 @@ class AppState extends State<App> {
                   ContractOracle(ARNSContractReader()),
                 ],
                 fallbackContractOracle: ContractOracle(
-                  SmartweaveContractReader(),
+                  WarpContractReader(),
                 ),
               ),
             ),

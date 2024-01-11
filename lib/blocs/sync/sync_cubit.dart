@@ -9,7 +9,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
@@ -118,7 +118,9 @@ class SyncCubit extends Cubit<SyncState> {
 
   void _restartSync() {
     logger.d(
-        'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
+        'Attempting to create a sync subscription when the window regains focus.'
+        ' Is Cubit active? ${!isClosed}');
+
     if (_lastSync != null) {
       final syncInterval = _configService.config.autoSyncIntervalInSeconds;
       final minutesSinceLastSync =
@@ -127,7 +129,8 @@ class SyncCubit extends Cubit<SyncState> {
 
       if (!isTimerDurationReadyToSync) {
         logger.d(
-            "Can't restart sync when window is focused. Is current active? ${!isClosed}. Last sync was $minutesSinceLastSync seconds ago. It should be $syncInterval.");
+            'Cannot restart sync when the window is focused. Is it currently active? ${!isClosed}.'
+            ' Last sync occurred $minutesSinceLastSync seconds ago, but it should be at least $syncInterval seconds.');
 
         return;
       }
@@ -284,7 +287,7 @@ class SyncCubit extends Cubit<SyncState> {
             );
           } catch (error, stackTrace) {
             logger.e(
-              'Error syncing drive with id ${drive.id}. Skipping sync on this drive',
+              'Error syncing drive. Skipping sync on this drive',
               error,
               stackTrace,
             );
@@ -395,19 +398,21 @@ class SyncCubit extends Cubit<SyncState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     logger.e('An error occured on SyncCubit', error, stackTrace);
+
     if (isClosed) {
+      logger.d('SyncCubit is closed, aborting onError...');
       return;
     }
+
     emit(SyncFailure(error: error, stackTrace: stackTrace));
 
-    logger.d('SyncCubit error emitted');
     emit(SyncIdle());
     super.onError(error, stackTrace);
   }
 
   @override
   Future<void> close() async {
-    logger.d('Closing SyncCubit...');
+    logger.d('Closing SyncCubit instance');
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
     await _restartOnFocusStreamSubscription?.cancel();

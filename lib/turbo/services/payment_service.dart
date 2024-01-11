@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';

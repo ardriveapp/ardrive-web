@@ -1,25 +1,29 @@
 import 'package:arconnect/arconnect.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
-class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
-  final TurboUploadService _turbo;
+class TurboStreamedUpload implements StreamedUpload<UploadItem> {
+  @visibleForTesting
+  final TurboUploadService service;
   final TabVisibilitySingleton _tabVisibility;
+  StreamedUploadResult? _result;
 
   TurboStreamedUpload(
-    this._turbo, {
+    this.service, {
     TabVisibilitySingleton? tabVisibilitySingleton,
   }) : _tabVisibility = tabVisibilitySingleton ?? TabVisibilitySingleton();
 
   @override
-  Future<dynamic> send(
-    uploadTask,
+  Future<StreamedUploadResult> send(
+    uploadItem,
     Wallet wallet,
-    UploadController controller,
+    Function(double)? onProgress,
   ) async {
     final nonce = const Uuid().v4();
 
@@ -42,7 +46,7 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
 
     int size = 0;
 
-    final task = uploadTask.uploadItem!.data as DataItemResult;
+    final task = uploadItem.data as DataItemResult;
 
     await for (final data in task.streamGenerator()) {
       size += data.length;
@@ -50,14 +54,12 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
 
     /// It is possible to cancel an upload before starting the network request.
     if (_isCanceled) {
-      print('Upload canceled on StreamedUpload');
-      return;
+      throw UploadCanceledException(
+          'Upload canceled. Cancelling request before sending with TurboStreamedUpload');
     }
 
-    controller.updateProgress(task: uploadTask);
-
     // gets the streamed request
-    final streamedRequest = _turbo
+    final streamedRequest = service
         .postStream(
             wallet: wallet,
             headers: {
@@ -65,50 +67,35 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
               'x-address': publicKey,
               'x-signature': signature,
             },
-            dataItem: uploadTask.uploadItem!.data,
+            dataItem: uploadItem.data,
             size: size,
             onSendProgress: (progress) {
-              uploadTask = uploadTask.copyWith(
-                progress: progress,
-                status: UploadStatus.inProgress,
-              );
-              controller.updateProgress(task: uploadTask);
+              onProgress?.call(progress);
             })
         .then((value) async {
-      if (!uploadTask.isProgressAvailable) {
-        uploadTask = uploadTask.copyWith(
-          progress: 1,
-          status: UploadStatus.complete,
-        );
-      }
-
-      uploadTask = uploadTask.copyWith(
-        status: UploadStatus.complete,
-      );
-
-      controller.updateProgress(task: uploadTask);
+      _result = StreamedUploadResult(success: true);
 
       return value;
     }).onError((e, s) {
-      print('Error on TurboStreamedUpload.send: $e');
-      uploadTask = uploadTask.copyWith(
-        status: UploadStatus.failed,
-      );
-      controller.updateProgress(task: uploadTask);
+      debugPrint('Error on TurboStreamedUpload.send: $e');
+
+      _result = StreamedUploadResult(success: false, error: e);
     });
 
-    return streamedRequest;
+    await streamedRequest;
+
+    debugPrint(
+        'TurboStreamedUpload.send completed with result: ${_result?.success}');
+
+    return _result!;
   }
 
   @override
   Future<void> cancel(
-    UploadTask handle,
-    UploadController controller,
+    UploadItem handle,
   ) async {
     _isCanceled = true;
-    await _turbo.cancel();
-    handle = handle.copyWith(status: UploadStatus.canceled);
-    controller.updateProgress(task: handle);
+    await service.cancel();
   }
 
   bool _isCanceled = false;

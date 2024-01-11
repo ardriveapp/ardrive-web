@@ -10,7 +10,7 @@ import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -682,7 +682,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
     return BlocConsumer<PaymentFormBloc, PaymentFormState>(
       listenWhen: (previous, current) => current is PaymentFormLoaded,
       listener: (context, state) {
-        logger.d('PaymentFormBloc state: $state');
         if (state is PaymentFormLoaded) {
           setState(() {
             _promoCodeInvalid = state.isPromoCodeInvalid;
@@ -1194,7 +1193,6 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           : null,
                       durationInSeconds: state.quoteExpirationTimeInSeconds,
                       onFinished: () {
-                        logger.d('fetching quote');
                         context
                             .read<PaymentFormBloc>()
                             .add(PaymentFormUpdateQuote());
@@ -1317,7 +1315,6 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           : null,
                       durationInSeconds: state.quoteExpirationTimeInSeconds,
                       onFinished: () {
-                        logger.d('fetching quote');
                         context
                             .read<PaymentFormBloc>()
                             .add(PaymentFormUpdateQuote());

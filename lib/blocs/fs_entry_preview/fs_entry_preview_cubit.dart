@@ -7,7 +7,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -114,6 +114,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   Future<void> _preview() async {
     final selectedItem = maybeSelectedItem;
+
+    // initially set to no preview available to help reduce tab flickering
+    emit(FsEntryPreviewUnavailable());
+
     if (selectedItem != null) {
       if (selectedItem.runtimeType == FileDataTableItem) {
         _entrySubscription = _driveDao
@@ -160,6 +164,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
               default:
                 emit(FsEntryPreviewUnavailable());
             }
+          } else {
+            emit(FsEntryPreviewUnavailable());
           }
         });
       } else {
@@ -219,7 +225,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           break;
 
         default:
-          logger.e('Unknown drive privacy tag');
+          logger.e('Unknown drive privacy tag: ${drive.privacy}');
           _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
       }
     } catch (_) {

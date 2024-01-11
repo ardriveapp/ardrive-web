@@ -5,7 +5,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -96,7 +96,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     if (profile.profileType == ProfileType.arConnect.index) {
       try {
         if (!(await arconnect.checkPermissions())) {
-          logger.i('ArConnect permissions changed');
+          logger.w('ArConnect permissions changed');
           throw Exception('ArConnect permissions changed');
         }
 
