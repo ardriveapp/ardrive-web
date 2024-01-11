@@ -105,7 +105,6 @@ class DrivesCubit extends Cubit<DrivesState> {
       state = (this.state as DrivesLoadSuccess).copyWith(
         selectedDriveId: driveId,
       );
-
       _promptToSnapshotBloc.add(SelectedDrive(driveId: driveId));
     } else {
       state = DrivesLoadedWithNoDrivesFound(
