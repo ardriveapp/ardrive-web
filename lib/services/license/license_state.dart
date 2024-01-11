@@ -35,8 +35,11 @@ class LicenseMeta extends Equatable {
       ];
 }
 
-abstract class LicenseParams {
+abstract class LicenseParams extends Equatable {
   Map<String, String> toAdditionalTags() => {};
+
+  @override
+  List<Object?> get props => [toAdditionalTags()];
 }
 
 class EmptyParams extends LicenseParams {}
@@ -56,5 +59,5 @@ class LicenseState extends Equatable {
   });
 
   @override
-  List<Object?> get props => [meta, params?.toAdditionalTags()];
+  List<Object?> get props => [meta, params];
 }
