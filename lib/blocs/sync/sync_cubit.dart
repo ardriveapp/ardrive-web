@@ -340,6 +340,8 @@ class SyncCubit extends Cubit<SyncState> {
           .get())
         ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
 
+      logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
+
       _updateLicenses(
         driveDao: _driveDao,
         arweave: _arweave,

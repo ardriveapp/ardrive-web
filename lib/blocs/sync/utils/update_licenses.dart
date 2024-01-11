@@ -11,6 +11,8 @@ Future<void> _updateLicenses({
       .map((e) => e.licenseTxId!)
       .toList();
 
+  logger.d('Syncing ${licenseAssertionTxIds.length} license assertions');
+
   await for (final licenseAssertionTxsBatch
       in arweave.getLicenseAssertions(licenseAssertionTxIds)) {
     final licenseAssertionEntities = licenseAssertionTxsBatch
@@ -28,6 +30,9 @@ Future<void> _updateLicenses({
       );
     });
 
+    logger
+        .d('Inserting batch of ${licenseCompanions.length} license assertions');
+
     await driveDao.transaction(
       () async => {
         for (final licenseAssertionCompanion in licenseCompanions)
@@ -40,6 +45,8 @@ Future<void> _updateLicenses({
       .where((rev) => rev.licenseTxId == rev.dataTxId)
       .map((e) => e.licenseTxId!)
       .toList();
+
+  logger.d('Syncing ${licenseAssertionTxIds.length} license-data bundles');
 
   await for (final licenseDataBundledTxsBatch
       in arweave.getLicenseDataBundled(licenseDataBundledTxIds)) {
@@ -57,6 +64,9 @@ Future<void> _updateLicenses({
         licenseType: licenseType ?? LicenseType.unknown,
       );
     });
+
+    logger.d(
+        'Inserting batch of ${licenseCompanions.length} license-data bundles');
 
     await driveDao.transaction(
       () async => {
