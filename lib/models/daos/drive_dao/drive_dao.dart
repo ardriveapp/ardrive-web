@@ -368,13 +368,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         }
       }
 
-      final v = FolderWithContents(
+      return FolderWithContents(
         folder: folder,
         subfolders: subfolders,
         files: files,
       );
-
-      return v;
     });
   }
 
