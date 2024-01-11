@@ -12,11 +12,15 @@ class LicenseDataBundleTransactionParseException implements Exception {
 }
 
 const licenseDataBundleTxBaseTagKeys = [
-  'License',
+  LicenseTag.licenseDefinitionTxId,
 ];
 
 const arfsDataTxBaseTagKeys = [
-  'App-Name',
+  EntityTag.appName,
+  EntityTag.appVersion,
+  EntityTag.appPlatform,
+  EntityTag.unixTime,
+  EntityTag.contentType,
 ];
 
 final additionalTagKeysBlacklist =
@@ -43,7 +47,8 @@ class LicenseDataBundleEntity with TransactionPropertiesMixin {
           .where((tag) => !additionalTagKeysBlacklist.contains(tag.name))
           .map((tag) => MapEntry(tag.name, tag.value)));
       final licenseDataBundleEntity = LicenseDataBundleEntity(
-        licenseDefinitionTxId: transaction.getTag('License')!,
+        licenseDefinitionTxId:
+            transaction.getTag(LicenseTag.licenseDefinitionTxId)!,
         additionalTags: additionalTags,
       )
         ..txId = transaction.id
@@ -69,7 +74,7 @@ class LicenseDataBundleEntity with TransactionPropertiesMixin {
       ..setOwner(owner);
 
     final baseTags = {
-      'License': licenseDefinitionTxId,
+      LicenseTag.licenseDefinitionTxId: licenseDefinitionTxId,
     };
 
     baseTags.forEach((key, value) {

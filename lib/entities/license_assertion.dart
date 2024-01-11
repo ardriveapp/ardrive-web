@@ -12,9 +12,9 @@ class LicenseAssertionTransactionParseException implements Exception {
 }
 
 const licenseAssertionTxBaseTagKeys = [
-  'App-Name',
-  'Original',
-  'License',
+  LicenseTag.appName,
+  LicenseTag.originalTxId,
+  LicenseTag.licenseDefinitionTxId,
 ];
 
 class LicenseAssertionEntity with TransactionPropertiesMixin {
@@ -34,13 +34,15 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
     TransactionCommonMixin transaction,
   ) {
     try {
-      assert(transaction.getTag('App-Name') == 'License-Assertion');
+      assert(transaction.getTag(LicenseTag.appName) ==
+          LicenseTag.appNameLicenseAssertion);
       final additionalTags = Map.fromEntries(transaction.tags
           .where((tag) => !licenseAssertionTxBaseTagKeys.contains(tag.name))
           .map((tag) => MapEntry(tag.name, tag.value)));
       final licenseAssertionEntity = LicenseAssertionEntity(
-        dataTxId: transaction.getTag('Original')!,
-        licenseDefinitionTxId: transaction.getTag('License')!,
+        dataTxId: transaction.getTag(LicenseTag.originalTxId)!,
+        licenseDefinitionTxId:
+            transaction.getTag(LicenseTag.licenseDefinitionTxId)!,
         additionalTags: additionalTags,
       )
         ..txId = transaction.id
@@ -65,9 +67,9 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
       ..setOwner(owner);
 
     final baseTags = {
-      EntityTag.appName: 'License-Assertion',
-      'Original': dataTxId,
-      'License': licenseDefinitionTxId,
+      LicenseTag.appName: LicenseTag.appNameLicenseAssertion,
+      LicenseTag.originalTxId: dataTxId,
+      LicenseTag.licenseDefinitionTxId: licenseDefinitionTxId,
     };
 
     baseTags.forEach((key, value) {
