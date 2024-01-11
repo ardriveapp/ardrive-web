@@ -1,36 +1,19 @@
 part of 'drive_dao.dart';
 
 class FolderWithContents extends Equatable {
-  final List<FolderEntry> _subfolders;
-  final List<FileWithLatestRevisionTransactions> _files;
-  final FolderEntry _folder;
+  final List<FolderEntry> subfolders;
+  final List<FileWithLatestRevisionTransactions> files;
+  final FolderEntry folder;
 
-  List<FolderEntry> get subfolders {
-    return _subfolders;
-  }
-
-  List<FileWithLatestRevisionTransactions> get files {
-    return _files;
-  }
-
-  FolderEntry get folder => _folder;
-
-  const FolderWithContents({
-    required List<FolderEntry> subfolders,
-    required List<FileWithLatestRevisionTransactions> files,
-    required FolderEntry folder,
-  })  : _subfolders = subfolders,
-        _files = files,
-        _folder = folder;
+  const FolderWithContents(
+      {required this.folder, required this.subfolders, required this.files});
 
   @override
-  List<Object> get props => [_folder, _subfolders, _files];
+  List<Object?> get props => [folder, subfolders, files];
 }
 
 String fileStatusFromTransactions(
-  NetworkTransaction metadataTx,
-  NetworkTransaction dataTx,
-) {
+    NetworkTransaction metadataTx, NetworkTransaction dataTx) {
   if (metadataTx.status == TransactionStatus.failed ||
       dataTx.status == TransactionStatus.failed) {
     return TransactionStatus.failed;
