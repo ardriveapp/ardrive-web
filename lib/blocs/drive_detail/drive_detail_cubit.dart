@@ -38,7 +38,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   bool _forceDisableMultiselect = false;
 
-  final bool _refreshSelectedItem = true;
+  bool _refreshSelectedItem = false;
 
   bool _showHiddenFiles = false;
 
@@ -406,7 +406,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   void refreshDriveDataTable() {
-    // _refreshSelectedItem = true;
+    _refreshSelectedItem = true;
 
     if (state is DriveDetailLoadSuccess) {
       final state = this.state as DriveDetailLoadSuccess;
