@@ -13,17 +13,7 @@ abstract class PromptToSnapshotState extends Equatable {
 }
 
 class PromptToSnapshotIdle extends PromptToSnapshotState {
-  const PromptToSnapshotIdle({
-    required super.driveId,
-  });
-
-  PromptToSnapshotIdle copyWith({
-    DriveID? driveId,
-  }) {
-    return PromptToSnapshotIdle(
-      driveId: driveId ?? this.driveId,
-    );
-  }
+  const PromptToSnapshotIdle() : super(driveId: null);
 }
 
 class PromptToSnapshotPrompting extends PromptToSnapshotState {
@@ -38,6 +28,23 @@ class PromptToSnapshotPrompting extends PromptToSnapshotState {
     String? driveId,
   }) {
     return PromptToSnapshotPrompting(
+      driveId: driveId ?? this.driveId,
+    );
+  }
+}
+
+class PromptToSnapshotSnapshotting extends PromptToSnapshotState {
+  @override
+  String get driveId => super.driveId!;
+
+  const PromptToSnapshotSnapshotting({
+    required DriveID driveId,
+  }) : super(driveId: driveId);
+
+  PromptToSnapshotSnapshotting copyWith({
+    String? driveId,
+  }) {
+    return PromptToSnapshotSnapshotting(
       driveId: driveId ?? this.driveId,
     );
   }

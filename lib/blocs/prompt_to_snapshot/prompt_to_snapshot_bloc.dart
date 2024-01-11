@@ -50,7 +50,7 @@ class PromptToSnapshotBloc
     KeyValueStore? store,
     Duration durationBeforePrompting = defaultDurationBeforePrompting,
     int numberOfTxsBeforeSnapshot = defaultNumberOfTxsBeforeSnapshot,
-  }) : super(const PromptToSnapshotIdle(driveId: null)) {
+  }) : super(const PromptToSnapshotIdle()) {
     on<CountSyncedTxs>(_onCountSyncedTxs);
     on<SelectedDrive>(_onDriveSelected);
     on<DriveSnapshotting>(_onDriveSnapshotting);
@@ -115,7 +115,7 @@ class PromptToSnapshotBloc
       if (state is PromptToSnapshotIdle) {
         logger.d(
             '[PROMPT TO SNAPSHOT] The drive id is null and the state is idle');
-        emit(const PromptToSnapshotIdle(driveId: null));
+        emit(const PromptToSnapshotIdle());
       }
       _debouncer.cancel();
       return;
@@ -134,7 +134,6 @@ class PromptToSnapshotBloc
     logger.d('[PROMPT TO SNAPSHOT] Selected drive ${event.driveId}');
 
     final shouldAskAgain = await _shouldAskToSnapshotAgain();
-    final stateIsIdle = state is PromptToSnapshotIdle;
 
     logger.d(
       '[PROMPT TO SNAPSHOT] Will attempt to prompt for drive ${event.driveId}'
@@ -142,6 +141,7 @@ class PromptToSnapshotBloc
     );
 
     await _debouncer.run(() async {
+      final stateIsIdle = state is PromptToSnapshotIdle;
       final wouldDriveBenefitFromSnapshot = event.driveId != null &&
           CountOfTxsSyncedWithGql.wouldDriveBenefitFromSnapshot(
             event.driveId!,
@@ -189,9 +189,9 @@ class PromptToSnapshotBloc
     DriveSnapshotting event,
     Emitter<PromptToSnapshotState> emit,
   ) {
-    logger.d('[PROMPT TO SNAPSHOT] Drive ${event.driveId} is snapshotting}');
+    logger.d('[PROMPT TO SNAPSHOT] Drive ${event.driveId} is snapshotting');
 
-    emit(PromptToSnapshotPrompting(driveId: event.driveId));
+    emit(PromptToSnapshotSnapshotting(driveId: event.driveId));
   }
 
   void _onSyncRunning(
@@ -217,7 +217,7 @@ class PromptToSnapshotBloc
       event.driveId,
       event.txsSyncedWithGqlCount,
     );
-    emit(PromptToSnapshotIdle(driveId: event.driveId));
+    emit(const PromptToSnapshotIdle());
   }
 
   Future<void> _onDismissDontAskAgain(
@@ -228,7 +228,7 @@ class PromptToSnapshotBloc
         '[PROMPT TO SNAPSHOT] Asked not to prompt again: ${event.dontAskAgain}');
 
     await _dontAskToSnapshotAgain(event.dontAskAgain);
-    emit(PromptToSnapshotIdle(driveId: event.driveId));
+    emit(const PromptToSnapshotIdle());
   }
 
   Future<void> _dontAskToSnapshotAgain(
