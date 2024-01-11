@@ -1,6 +1,6 @@
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/utils/app_flavors.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 
 import 'config.dart';
 
@@ -56,7 +56,6 @@ class ConfigService {
   }
 
   void updateAppConfig(AppConfig newConfig) {
-    // logger.d('App config updated: ${config.diff(newConfig)}');
     _configFetcher.saveConfigOnDevToolsPrefs(newConfig);
     _config = newConfig;
   }

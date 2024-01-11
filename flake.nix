@@ -14,6 +14,9 @@
             ruby
             cocoapods
             fastlane
+            nodejs
+            yarn-berry
+            nodePackages.typescript-language-server
           ];
           shellHook = ''
             export PATH="$PWD/.fvm/flutter_sdk/bin:$PATH"

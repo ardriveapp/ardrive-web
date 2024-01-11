@@ -6,6 +6,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/models/daos/daos.dart';
@@ -14,8 +15,9 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
@@ -173,7 +175,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       _range = Range(start: 0, end: maximumHeightToSnapshot);
     }
 
-    logger.i(
+    logger.d(
       'Trusted range to be snapshotted (Current height: $_currentHeight): $_range)',
     );
   }
@@ -429,12 +431,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     if (state is ConfirmingSnapshotCreation) {
       final stateAsConfirming = state as ConfirmingSnapshotCreation;
 
-      logger.d('Refreshing turbo balance');
-      logger.d('Turbo balance: $_turboCredits');
-      logger.d('Has no turbo balance: $_hasNoTurboBalance');
-      logger
-          .d('Sufficient balance to pay with turbo: $_sufficentCreditsBalance');
-      logger.d('Upload method: $_uploadMethod');
+      logger.d(
+        'Refreshing turbo balance\n'
+        'Turbo balance: $_turboCredits\n'
+        'Has no turbo balance: $_hasNoTurboBalance\n'
+        'Sufficient balance to pay with turbo: $_sufficentCreditsBalance\n'
+        'Upload method: $_uploadMethod',
+      );
 
       emit(
         stateAsConfirming.copyWith(
@@ -581,7 +584,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
-      logger.i('Failed to confirm the upload: Wallet mismatch');
+      logger.w('Failed to confirm the upload: Wallet mismatch');
       emit(SnapshotUploadFailure());
       return;
     }
@@ -601,6 +604,15 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         await _arweave.postTx(_preparedTx!);
       }
 
+      final drive =
+          await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
+      final drivePrivacy = drive?.privacy == DrivePrivacyTag.public
+          ? DrivePrivacy.public
+          : DrivePrivacy.private;
+      PlausibleEventTracker.trackSnapshotCreation(
+        drivePrivacy: drivePrivacy,
+      );
+
       emit(SnapshotUploadSuccess());
     } catch (err, stacktrace) {
       logger.e('Error while posting the snapshot transaction', err, stacktrace);
@@ -612,7 +624,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
 
-    logger.d('Posting snapshot transaction for drive $_driveId');
+    logger.d('Posting snapshot transaction to Turbo');
 
     await turboService.postDataItem(
       dataItem: dataItem,

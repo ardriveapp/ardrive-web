@@ -1,4 +1,4 @@
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 
 import 'bundle_packer.dart';
 import 'sized_item.dart';

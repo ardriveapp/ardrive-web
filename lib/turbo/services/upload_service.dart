@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:arconnect/arconnect.dart';
 import 'package:ardrive/utils/data_item_utils.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -126,8 +126,8 @@ class TurboUploadService {
         logger.e('Error posting bytes', response.data);
         throw _handleException(response);
       }
-    } catch (e) {
-      logger.e('Catching error in postDataItem', e);
+    } catch (e, stacktrace) {
+      logger.e('Catching error in postDataItem', e, stacktrace);
       throw _handleException(e);
     }
   }

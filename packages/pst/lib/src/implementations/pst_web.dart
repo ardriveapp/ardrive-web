@@ -14,5 +14,6 @@ external Object _readContractAsStringPromise(String contractTxId);
 Future<dynamic> readContract(TransactionID contractTxId) async {
   final promise = _readContractAsStringPromise(contractTxId.toString());
   final stringified = await promiseToFuture(promise);
-  return jsonDecode(stringified);
+
+  return jsonDecode(stringified)['state'];
 }

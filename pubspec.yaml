@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.27.0
+version: 2.30.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -31,11 +31,11 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ardriveapp/ardrive_http.git
-      ref: v1.3.1
+      ref: v1.3.2
   ardrive_io:
     git:
       url: https://github.com/ardriveapp/ardrive_io.git
-      ref: v1.4.3
+      ref: v1.4.4
   ardrive_ui:
     git:
       url: https://github.com/elliotsayes/ardrive_ui.git
@@ -48,13 +48,15 @@ dependencies:
     path: ./packages/arconnect
   ardrive_crypto:
     path: ./packages/ardrive_crypto
+  ardrive_logger:
+    path: ./packages/ardrive_logger
   artemis: ^7.0.0-beta.13
   pst:
     path: ./packages/pst
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.2
+      ref: v3.8.3
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   intersperse: ^2.0.0
@@ -129,6 +131,7 @@ dependencies:
   just_audio: ^0.9.34
   loading_animation_widget: ^1.2.0+4
   synchronized: ^3.1.0
+  confetti: ^0.7.0
 
 dependency_overrides:
   stripe_js:
@@ -150,6 +153,14 @@ dependency_overrides:
       url: https://github.com/ardriveapp/fetch_api.git
       ref: master
   http: ^1.1.0
+  arweave:
+    git:
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: v3.8.3
+  ardrive_io:
+    git:
+      url: https://github.com/ar-io/ardrive_io.git
+      ref: v1.4.4
 
 dev_dependencies:
   integration_test:
@@ -162,7 +173,7 @@ dev_dependencies:
   build_runner: ^2.0.4
   test: ^1.21.4
   drift_dev:
-  mocktail: 0.3.0
+  mocktail: ^1.0.2
   json_serializable:
 
 flutter:

@@ -10,6 +10,7 @@ import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/gestures.dart';
@@ -386,6 +387,31 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         ),
       ),
     );
+    final textStyle = ArDriveTypography.body.buttonNormalRegular(
+      color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+    );
+    final appLimitsWarning = splitTranslationsWithMultipleStyles(
+      originalText: appLocalizationsOf(context).turboModalBrowserLimit,
+      defaultMapper: (text) => TextSpan(
+        text: text,
+        style: ArDriveTypography.body.buttonNormalBold(
+          color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
+        ),
+      ),
+      parts: {
+        appLocalizationsOf(context).turboModalBrowserLimit_link: (text) =>
+            TextSpan(
+              text: text,
+              style: textStyle.copyWith(
+                decoration: TextDecoration.underline,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () => openUrl(
+                      url: Resources.ardriveAppLimits,
+                    ),
+            )
+      },
+    );
 
     return ArDriveForm(
       key: _formKey,
@@ -404,6 +430,10 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
             style: ArDriveTypography.body.buttonNormalBold(
               color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
             ),
+          ),
+          const SizedBox(height: 8),
+          RichText(
+            text: TextSpan(children: appLimitsWarning),
           ),
           const SizedBox(height: 32),
           Text(

@@ -1,5 +1,5 @@
 import 'package:ardrive/models/daos/daos.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:drift/drift.dart';
 
 import 'unsupported.dart'
@@ -21,14 +21,14 @@ class Database extends _$Database {
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
-          logger.i('creating database schema');
+          logger.d('creating database schema');
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          logger.i('schema changed from $from to $to');
+          logger.d('schema changed from $from to $to');
 
           if (from >= 1 && from < 16) {
-            logger.i(
+            logger.w(
               'No strategy set for migration v$from to v$to'
               ' - Resetting database schema',
             );
@@ -42,7 +42,7 @@ class Database extends _$Database {
           } else {
             if (from < 17) {
               // Then we're adding the pin and custom fields columns
-              logger.i('Migrating schema from v16 to v17');
+              logger.d('Migrating schema from v16 to v17');
 
               await m.addColumn(
                 driveRevisions,
@@ -77,11 +77,11 @@ class Database extends _$Database {
             if (from < 18) {
               // TODO: Merge with PE-4727
               // Adding support for remembering source Ethereum address
-              logger.i('RESERVED: Migrating schema from v17 to v18');
+              logger.d('RESERVED: Migrating schema from v17 to v18');
             }
             if (from < 19) {
               // Adding licenses
-              logger.i('Migrating schema from v18 to v19');
+              logger.d('Migrating schema from v18 to v19');
 
               await m.createTable(licenses);
 

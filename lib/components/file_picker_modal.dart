@@ -1,6 +1,6 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -145,7 +145,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
 
                           widget.onClose(content);
 
-                          logger.d('adding file');
+                          logger.d('adding file from gallery');
                         }
                       } catch (e) {
                         logger.e('Error while picking file from gallery', e);
@@ -183,7 +183,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
 
                           widget.onClose(content);
 
-                          logger.d('adding file');
+                          logger.d('adding file from file system');
                         }
                       } catch (e) {
                         logger.e(
