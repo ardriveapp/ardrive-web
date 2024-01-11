@@ -139,7 +139,7 @@ void main() {
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [
-        const PromptToSnapshotIdle(driveId: null),
+        const PromptToSnapshotIdle(),
       ],
     );
 
@@ -153,7 +153,7 @@ void main() {
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [
-        PromptToSnapshotIdle(driveId: driveId),
+        const PromptToSnapshotIdle(),
       ],
     );
 
@@ -167,7 +167,7 @@ void main() {
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [
-        const PromptToSnapshotIdle(driveId: null),
+        const PromptToSnapshotIdle(),
       ],
     );
 
@@ -181,7 +181,7 @@ void main() {
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [
-        const PromptToSnapshotIdle(driveId: null),
+        const PromptToSnapshotIdle(),
       ],
     );
 
@@ -207,6 +207,21 @@ void main() {
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [],
+    );
+
+    blocTest(
+      'won\'t prompt to snapshot if drive is already snapshotting',
+      build: () => promptToSnapshotBloc,
+      act: (PromptToSnapshotBloc bloc) async {
+        bloc.add(SelectedDrive(driveId: driveId));
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+        bloc.add(DriveSnapshotting(driveId: driveId));
+        const durationAfterPrompting = Duration(milliseconds: 250);
+        await Future<void>.delayed(durationAfterPrompting);
+      },
+      expect: () => [
+        PromptToSnapshotSnapshotting(driveId: driveId),
+      ],
     );
 
     blocTest(
