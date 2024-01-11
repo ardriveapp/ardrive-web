@@ -84,9 +84,6 @@ fileRevisionByDataTx:
 licenseByTxId:
     SELECT * FROM licenses
     WHERE licenseTxId = :tx;
-licenseByDataTx:
-    SELECT * FROM licenses
-    WHERE dataTxId = :tx;
 
 filesInFolder ($order = ''):
     SELECT * FROM file_entries
@@ -191,16 +188,6 @@ latestFileRevisionsByFileIdWithLicenseAndTransactions AS FileRevisionWithLicense
     WHERE rev.driveId = :driveId AND rev.fileId = :fileId
     ORDER BY rev.dateCreated DESC;
 
-oldestLicenseByFileIdAndDataTxId:
-    SELECT * FROM licenses
-    WHERE driveId = :driveId AND fileId = :fileId AND dataTxId = :dataTxId
-    ORDER BY dateCreated ASC
-    LIMIT 1;
-latestLicenseByFileIdAndDataTxId:
-    SELECT * FROM licenses
-    WHERE driveId = :driveId AND fileId = :fileId AND dataTxId = :dataTxId
-    ORDER BY dateCreated DESC
-    LIMIT 1;
 allFileRevisionsWithLicenseReferencedButNotSynced:
     SELECT * FROM file_revisions
     WHERE licenseTxId IS NOT NULL AND licenseTxId NOT IN (
