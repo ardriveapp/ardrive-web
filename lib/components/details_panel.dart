@@ -1,7 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
-import 'package:ardrive/blocs/hide/hide_bloc.dart';
-import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
@@ -1284,50 +1282,10 @@ class DetailsPanelToolbar extends StatelessWidget {
                   ? ArDriveIcons.eyeClosed(size: defaultIconSize)
                   : ArDriveIcons.eyeOpen(size: defaultIconSize),
               onTap: () {
-                final hideBloc = context.read<HideBloc>();
-                final driveDetailCubit = context.read<DriveDetailCubit>();
-
-                if (item is FileDataTableItem) {
-                  if (item.isHidden) {
-                    hideBloc.add(UnhideFileEvent(
-                      driveId: item.driveId,
-                      fileId: item.id,
-                    ));
-                    promptToHide(
-                      context,
-                      driveDetailCubit: driveDetailCubit,
-                    );
-                  } else {
-                    hideBloc.add(HideFileEvent(
-                      driveId: item.driveId,
-                      fileId: item.id,
-                    ));
-                    promptToHide(
-                      context,
-                      driveDetailCubit: driveDetailCubit,
-                    );
-                  }
-                } else if (item is FolderDataTableItem) {
-                  if (item.isHidden) {
-                    hideBloc.add(UnhideFolderEvent(
-                      driveId: item.driveId,
-                      folderId: item.id,
-                    ));
-                    promptToHide(
-                      context,
-                      driveDetailCubit: driveDetailCubit,
-                    );
-                  } else {
-                    hideBloc.add(HideFolderEvent(
-                      driveId: item.driveId,
-                      folderId: item.id,
-                    ));
-                    promptToHide(
-                      context,
-                      driveDetailCubit: driveDetailCubit,
-                    );
-                  }
-                }
+                promptToToggleHideState(
+                  context,
+                  item: item,
+                );
               },
             ),
           const Spacer(),

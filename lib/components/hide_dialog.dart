@@ -2,16 +2,50 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/blocs/hide/hide_state.dart';
+import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-Future<void> promptToHide(
+Future<void> promptToToggleHideState(
   BuildContext context, {
-  required DriveDetailCubit driveDetailCubit,
+  required ArDriveDataTableItem item,
 }) async {
+  final hideBloc = context.read<HideBloc>();
+  final driveDetailCubit = context.read<DriveDetailCubit>();
+
+  final isHidden = item.isHidden;
+
+  if (item is FileDataTableItem) {
+    if (isHidden) {
+      hideBloc.add(UnhideFileEvent(
+        driveId: item.driveId,
+        fileId: item.id,
+      ));
+    } else {
+      hideBloc.add(HideFileEvent(
+        driveId: item.driveId,
+        fileId: item.id,
+      ));
+    }
+  } else if (item is FolderDataTableItem) {
+    if (isHidden) {
+      hideBloc.add(UnhideFolderEvent(
+        driveId: item.driveId,
+        folderId: item.id,
+      ));
+    } else {
+      hideBloc.add(HideFolderEvent(
+        driveId: item.driveId,
+        folderId: item.id,
+      ));
+    }
+  } else {
+    throw UnimplementedError('Unknown item type: ${item.runtimeType}');
+  }
+
   return showAnimatedDialog(
     context,
     barrierDismissible: false,

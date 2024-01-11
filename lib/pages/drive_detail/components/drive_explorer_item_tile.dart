@@ -1,6 +1,4 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
-import 'package:ardrive/blocs/hide/hide_bloc.dart';
-import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -317,28 +315,10 @@ class _DriveExplorerItemTileTrailingState
           ),
           ArDriveDropdownItem(
             onClick: () {
-              final hideBloc = context.read<HideBloc>();
-              final driveDetailCubit = context.read<DriveDetailCubit>();
-
-              if (item.isHidden) {
-                hideBloc.add(UnhideFolderEvent(
-                  driveId: widget.drive.id,
-                  folderId: item.id,
-                ));
-                promptToHide(
-                  context,
-                  driveDetailCubit: driveDetailCubit,
-                );
-              } else {
-                hideBloc.add(HideFolderEvent(
-                  driveId: widget.drive.id,
-                  folderId: item.id,
-                ));
-                promptToHide(
-                  context,
-                  driveDetailCubit: driveDetailCubit,
-                );
-              }
+              promptToToggleHideState(
+                context,
+                item: item,
+              );
             },
             content: _buildItem(
               item.isHidden
@@ -443,28 +423,10 @@ class _DriveExplorerItemTileTrailingState
         ),
         ArDriveDropdownItem(
           onClick: () {
-            final hideBloc = context.read<HideBloc>();
-            final driveDetailCubit = context.read<DriveDetailCubit>();
-
-            if (item.isHidden) {
-              hideBloc.add(UnhideFileEvent(
-                driveId: widget.drive.id,
-                fileId: item.id,
-              ));
-              promptToHide(
-                context,
-                driveDetailCubit: driveDetailCubit,
-              );
-            } else {
-              hideBloc.add(HideFileEvent(
-                driveId: widget.drive.id,
-                fileId: item.id,
-              ));
-              promptToHide(
-                context,
-                driveDetailCubit: driveDetailCubit,
-              );
-            }
+            promptToToggleHideState(
+              context,
+              item: item,
+            );
           },
           content: _buildItem(
             item.isHidden
@@ -589,28 +551,10 @@ class EntityActionsMenu extends StatelessWidget {
           ),
           ArDriveDropdownItem(
             onClick: () {
-              final hideBloc = context.read<HideBloc>();
-              final driveDetailCubit = context.read<DriveDetailCubit>();
-
-              if (item.isHidden) {
-                hideBloc.add(UnhideFolderEvent(
-                  driveId: drive!.id,
-                  folderId: item.id,
-                ));
-                promptToHide(
-                  context,
-                  driveDetailCubit: driveDetailCubit,
-                );
-              } else {
-                hideBloc.add(HideFolderEvent(
-                  driveId: drive!.id,
-                  folderId: item.id,
-                ));
-                promptToHide(
-                  context,
-                  driveDetailCubit: driveDetailCubit,
-                );
-              }
+              promptToToggleHideState(
+                context,
+                item: item,
+              );
             },
             content: _buildItem(
               item.isHidden
@@ -775,6 +719,22 @@ class EntityActionsMenu extends StatelessWidget {
             ArDriveIcons.move(
               size: defaultIconSize,
             ),
+          ),
+        ),
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToToggleHideState(
+              context,
+              item: item,
+            );
+          },
+          content: _buildItem(
+            item.isHidden
+                ? appLocalizationsOf(context).unhide
+                : appLocalizationsOf(context).hide,
+            item.isHidden
+                ? ArDriveIcons.eyeOpen(size: defaultIconSize)
+                : ArDriveIcons.eyeClosed(size: defaultIconSize),
           ),
         ),
       ],
