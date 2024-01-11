@@ -66,6 +66,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       await deleteFolderRevisionsByDriveId(driveId: driveId);
       await deleteFilesForDriveId(driveId: driveId);
       await deleteFileRevisionsByDriveId(driveId: driveId);
+      await deleteLicensesByDriveId(driveId: driveId);
     });
   }
 
