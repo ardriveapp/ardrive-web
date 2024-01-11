@@ -228,6 +228,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     );
 
     final dataItems = [dataItem];
+    _dataItems = dataItems;
 
     Future<void> saveEntitiesToDb() async {
       await _driveDao.transaction(() async {
