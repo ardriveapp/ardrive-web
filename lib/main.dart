@@ -137,7 +137,7 @@ Future<void> _runWithCrashlytics() async {
 
   await SentryFlutter.init(
     (options) {
-      options.dsn = 'sentryDsn';
+      options.dsn = sentryDsn;
       options.tracesSampleRate = 1.0;
     },
   );
