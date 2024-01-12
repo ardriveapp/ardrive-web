@@ -117,7 +117,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       final licenseAssertionEntity =
           LicenseAssertionEntity.fromTransaction(licenseTxs.single);
       return _licenseService.fromAssertionEntity(licenseAssertionEntity);
-      }
+    }
   }
 
   Future<void> loadFileDetails(SecretKey? fileKey) async {
@@ -133,8 +133,9 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     );
     if (allEntities != null) {
       final revisions = await computeRevisionsFromEntities(allEntities);
-      final latestLicense = revisions.last.licenseTxId != null
-          ? await fetchLicenseForRevision(revisions.last)
+      // revisions are in reverse chronological order, so first is most recent
+      final latestLicense = revisions.first.licenseTxId != null
+          ? await fetchLicenseForRevision(revisions.first)
           : null;
 
       emit(SharedFileLoadSuccess(
