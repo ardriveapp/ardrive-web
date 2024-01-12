@@ -57,37 +57,69 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
           );
           break;
         case FileDataTableItem:
-          fileHandler(FileDataTableItem f) async {
-            final latestRevision = maybeRevisions?.last ??
+          fileHandler(
+            String id, {
+            required String name,
+            required DateTime lastUpdated,
+            required DateTime dateCreated,
+          }) async {
+            final latestRevision = maybeRevisions?.first ??
                 await _driveDao
-                    .latestFileRevisionByFileId(
-                        driveId: driveId, fileId: selectedItem.id)
+                    .latestFileRevisionByFileId(driveId: driveId, fileId: id)
                     .getSingle();
 
-            var licenseState = maybeLicenseState;
-            if (licenseState == null && latestRevision.licenseTxId != null) {
-              if (!isSharedFile) {
-                // First check if it is already synced to the local db
-                final license = await _driveDao
-                    .licenseByTxId(tx: latestRevision.licenseTxId!)
-                    .getSingleOrNull();
+            emit(FsEntryFileInfoSuccess(
+              name: name,
+              lastUpdated: lastUpdated,
+              dateCreated: dateCreated,
+              metadataTxId: latestRevision.metadataTxId,
+              licenseState: LicenseState(meta: udlLicenseMeta),
+            ));
 
-                if (license != null) {
-                  final companion = license.toCompanion(true);
-                  licenseState = _licenseService.fromCompanion(companion);
-                }
+            var licenseState = maybeLicenseState;
+            if (!isSharedFile &&
+                licenseState == null &&
+                latestRevision.licenseTxId != null) {
+              final license = await _driveDao
+                  .licenseByTxId(tx: latestRevision.licenseTxId!)
+                  .getSingleOrNull();
+
+              if (license != null) {
+                final companion = license.toCompanion(true);
+                licenseState = _licenseService.fromCompanion(companion);
               }
             }
 
             emit(FsEntryFileInfoSuccess(
-              name: f.name,
-              lastUpdated: f.lastUpdated,
-              dateCreated: f.dateCreated,
+              name: name,
+              lastUpdated: lastUpdated,
+              dateCreated: dateCreated,
               metadataTxId: latestRevision.metadataTxId,
               licenseState: licenseState,
             ));
           }
-          fileHandler(selectedItem as FileDataTableItem);
+          if (isSharedFile) {
+            selectedItem is FileDataTableItem;
+            fileHandler(
+              selectedItem.id,
+              name: selectedItem.name,
+              lastUpdated: selectedItem.lastUpdated,
+              dateCreated: selectedItem.dateCreated,
+            );
+          } else {
+            print('watching file');
+            _entrySubscription = _driveDao
+                .fileById(driveId: driveId, fileId: selectedItem.id)
+                .watchSingle()
+                .listen(
+                  (fileEntry) async => await fileHandler(
+                    fileEntry.id,
+                    name: fileEntry.name,
+                    lastUpdated: fileEntry.lastUpdated,
+                    dateCreated: fileEntry.dateCreated,
+                  ),
+                );
+          }
           break;
         default:
           _entrySubscription = _driveDao
