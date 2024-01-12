@@ -78,8 +78,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
         BlocProvider<FsEntryInfoCubit>(
           create: (context) => FsEntryInfoCubit(
             driveId: widget.item.driveId,
-            isSharedFile: widget.isSharePage,
             maybeSelectedItem: widget.item,
+            isSharedFile: widget.isSharePage,
+            maybeRevisions: widget.revisions,
             driveDao: context.read<DriveDao>(),
             arweave: context.read<ArweaveService>(),
             licenseService: context.read<LicenseService>(),
