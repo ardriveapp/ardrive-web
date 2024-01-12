@@ -103,7 +103,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                 .fileById(driveId: driveId, fileId: selectedItem.id)
                 .watchSingle()
                 .listen(
-                  (fileEntry) async => await fileHandler(
+                  (fileEntry) => fileHandler(
                     fileEntry.id,
                     name: fileEntry.name,
                     lastUpdated: fileEntry.lastUpdated,
