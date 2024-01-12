@@ -92,6 +92,8 @@ class MockTransactionCommonMixin extends Mock
 
 class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
 
+class MockLicenseService extends Mock implements LicenseService {}
+
 class MockARFSFile extends ARFSFileEntity {
   MockARFSFile({
     required super.appName,

@@ -32,6 +32,8 @@ class FileEntity extends EntityWithCustomMetadata {
   DateTime? lastModifiedDate;
 
   String? dataTxId;
+  @JsonKey(includeIfNull: false)
+  String? licenseTxId;
   String? dataContentType;
 
   @JsonKey(name: 'pinnedDataOwner')
@@ -52,6 +54,7 @@ class FileEntity extends EntityWithCustomMetadata {
     'size',
     'lastModifiedDate',
     'dataTxId',
+    'licenseTxId',
     'dataContentType',
   ];
 
@@ -63,6 +66,7 @@ class FileEntity extends EntityWithCustomMetadata {
     this.size,
     this.lastModifiedDate,
     this.dataTxId,
+    this.licenseTxId,
     this.dataContentType,
     this.pinnedDataOwnerAddress,
   }) : super(ArDriveCrypto());

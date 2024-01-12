@@ -7,6 +7,9 @@ import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/license_assertion.dart';
+import 'package:ardrive/entities/license_composed.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -34,6 +37,7 @@ part 'utils/generate_paths.dart';
 part 'utils/get_all_file_entities.dart';
 part 'utils/parse_drive_transactions.dart';
 part 'utils/sync_drive.dart';
+part 'utils/update_licenses.dart';
 part 'utils/update_transaction_statuses.dart';
 
 // TODO: PE-2782: Abstract auto-generated GQL types
@@ -57,6 +61,7 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
+  final LicenseService _licenseService;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -76,6 +81,7 @@ class SyncCubit extends Cubit<SyncState> {
     required Database db,
     required TabVisibilitySingleton tabVisibility,
     required ConfigService configService,
+    required LicenseService licenseService,
     required ActivityTracker activityTracker,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
@@ -83,6 +89,7 @@ class SyncCubit extends Cubit<SyncState> {
         _driveDao = driveDao,
         _db = db,
         _configService = configService,
+        _licenseService = licenseService,
         _tabVisibility = tabVisibility,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
@@ -326,6 +333,25 @@ class SyncCubit extends Cubit<SyncState> {
       ghostFolders.clear();
 
       logger.i('Ghosts created...');
+
+      logger.i('Syncing licenses...');
+
+      final licenseTxIds = <String>{};
+      final revisionsToSyncLicense = (await _driveDao
+          .allFileRevisionsWithLicenseReferencedButNotSynced()
+          .get())
+        ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
+
+      logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
+
+      _updateLicenses(
+        driveDao: _driveDao,
+        arweave: _arweave,
+        licenseService: _licenseService,
+        revisionsToSyncLicense: revisionsToSyncLicense,
+      );
+
+      logger.i('Licenses synced');
 
       logger.i('Updating transaction statuses...');
 

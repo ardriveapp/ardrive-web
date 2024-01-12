@@ -2,7 +2,7 @@ part of 'drive_dao.dart';
 
 class FolderWithContents extends Equatable {
   final List<FolderEntry> subfolders;
-  final List<FileWithLatestRevisionTransactions> files;
+  final List<FileWithLicenseAndLatestRevisionTransactions> files;
   final FolderEntry folder;
   // This is nullable as it can be a while between the drive being not found, then added,
   // and then the folders being loaded.

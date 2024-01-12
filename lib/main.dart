@@ -255,6 +255,9 @@ class AppState extends State<App> {
             themeDetector: ThemeDetector(),
           ),
         ),
+        RepositoryProvider(
+          create: (_) => LicenseService(),
+        ),
       ],
       child: ArDriveDevToolsShortcuts(
         child: KeyboardHandler(

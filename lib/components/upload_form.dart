@@ -130,6 +130,7 @@ Future<void> promptToUpload(
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
           auth: context.read<ArDriveAuth>(),
+          licenseService: context.read<LicenseService>(),
         )..startUploadPreparation(),
         child: const UploadForm(),
       ),

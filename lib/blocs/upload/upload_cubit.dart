@@ -12,6 +12,8 @@ import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/license/license_service.dart';
+import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -47,6 +49,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ArDriveAuth _auth;
   final ArDriveUploadPreparationManager _arDriveUploadManager;
   final ActivityTracker _activityTracker;
+  final LicenseService _licenseService;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -105,6 +108,7 @@ class UploadCubit extends Cubit<UploadState> {
     required ArDriveAuth auth,
     required ArDriveUploadPreparationManager arDriveUploadManager,
     required ActivityTracker activityTracker,
+    required LicenseService licenseService,
     this.folder,
     this.uploadFolders = false,
     this.isDragNDrop = false,
@@ -115,6 +119,7 @@ class UploadCubit extends Cubit<UploadState> {
         _auth = auth,
         _arDriveUploadManager = arDriveUploadManager,
         _activityTracker = activityTracker,
+        _licenseService = licenseService,
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation({
@@ -553,21 +558,26 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     for (var file in files) {
-      final id = conflictingFiles.containsKey(file.getIdentifier())
+      final fileId = conflictingFiles.containsKey(file.getIdentifier())
           ? conflictingFiles[file.getIdentifier()]
           : null;
       // TODO: We are verifying the conflicting files twice, we should do it only once.
       logger.d(
           'Reusing id? ${conflictingFiles.containsKey(file.getIdentifier())}');
+
+      final licenseState = await _licenseStateForFileId(fileId);
+
       final fileMetadata = ARFSUploadMetadataArgs(
         isPrivate: _targetDrive.isPrivate,
         driveId: _targetDrive.id,
         parentFolderId: file.parentFolderId,
         privacy: _targetDrive.isPrivate ? 'private' : 'public',
-        entityId: id,
+        entityId: fileId,
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
+        licenseDefinitionTxId: licenseState?.meta.licenseDefinitionTxId,
+        licenseAdditionalTags: licenseState?.params?.toAdditionalTags(),
       );
 
       entities.add((fileMetadata, file.ioFile));
@@ -659,9 +669,12 @@ class UploadCubit extends Cubit<UploadState> {
     List<(ARFSUploadMetadataArgs, IOFile)> uploadFiles = [];
 
     for (var file in files) {
-      final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
+      final conflictingId = conflictingFiles[file.getIdentifier()];
+      final revisionAction = conflictingId != null
           ? RevisionAction.uploadNewVersion
           : RevisionAction.create;
+
+      final licenseState = await _licenseStateForFileId(conflictingId);
 
       final args = ARFSUploadMetadataArgs(
         isPrivate: _targetDrive.isPrivate,
@@ -674,6 +687,8 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
+        licenseDefinitionTxId: licenseState?.meta.licenseDefinitionTxId,
+        licenseAdditionalTags: licenseState?.params?.toAdditionalTags(),
       );
 
       uploadFiles.add((args, file.ioFile));
@@ -783,6 +798,7 @@ class UploadCubit extends Cubit<UploadState> {
           final entity = FileEntity(
             dataContentType: fileMetadata.dataContentType,
             dataTxId: fileMetadata.dataTxId,
+            licenseTxId: fileMetadata.licenseTxId,
             driveId: fileMetadata.driveId,
             id: fileMetadata.id,
             lastModifiedDate: fileMetadata.lastModifiedDate,
@@ -791,6 +807,30 @@ class UploadCubit extends Cubit<UploadState> {
             size: fileMetadata.size,
             // TODO: pinnedDataOwnerAddress
           );
+
+          LicensesCompanion? licensesCompanion;
+          if (fileMetadata.licenseTxId != null) {
+            final licenseType = _licenseService
+                .licenseTypeByTxId(fileMetadata.licenseDefinitionTxId!)!;
+
+            final licenseState = LicenseState(
+              meta: _licenseService.licenseMetaByType(licenseType),
+              params: _licenseService.paramsFromAdditionalTags(
+                licenseType: licenseType,
+                additionalTags: fileMetadata.licenseAdditionalTags,
+              ),
+            );
+            licensesCompanion = _licenseService.toCompanion(
+              licenseState: licenseState,
+              dataTxId: fileMetadata.dataTxId!,
+              fileId: fileMetadata.id,
+              driveId: driveId,
+              licenseTxId: fileMetadata.licenseTxId!,
+              licenseTxType: fileMetadata.licenseTxId == fileMetadata.dataTxId
+                  ? LicenseTxType.composed
+                  : LicenseTxType.assertion,
+            );
+          }
 
           if (fileMetadata.metadataTxId == null) {
             logger.e('Metadata tx id is null!');
@@ -808,6 +848,9 @@ class UploadCubit extends Cubit<UploadState> {
                 performedAction: revisionAction,
               ),
             );
+            if (licensesCompanion != null) {
+              await _driveDao.insertLicense(licensesCompanion);
+            }
           });
         } else if (metadata is ARFSFolderUploadMetatadata) {
           final revisionAction = conflictingFolders.contains(metadata.name)
@@ -951,6 +994,22 @@ class UploadCubit extends Cubit<UploadState> {
         logger.e('Error canceling upload', e);
       }
     }
+  }
+
+  Future<LicenseState?> _licenseStateForFileId(String? fileId) async {
+    if (fileId != null) {
+      final latestRevision = await _driveDao
+          .latestFileRevisionByFileIdWithLicense(
+            driveId: driveId,
+            fileId: fileId,
+          )
+          .getSingleOrNull();
+      if (latestRevision?.license != null) {
+        final licenseCompanion = latestRevision!.license!.toCompanion(true);
+        return _licenseService.fromCompanion(licenseCompanion);
+      }
+    }
+    return null;
   }
 }
 

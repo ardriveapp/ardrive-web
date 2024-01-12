@@ -70,6 +70,7 @@ void main() {
   late MockTurboBalanceRetriever mockTurboBalanceRetriever;
   late MockTurboUploadCostCalculator mockTurboUploadCostCalculator;
   late MockArDriveUploadPreparationManager mockArDriveUploadPreparationManager;
+  late MockLicenseService mockLicense;
 
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
@@ -174,6 +175,7 @@ void main() {
     mockTurboBalanceRetriever = MockTurboBalanceRetriever();
     mockTurboUploadCostCalculator = MockTurboUploadCostCalculator();
     mockArDriveUploadPreparationManager = MockArDriveUploadPreparationManager();
+    mockLicense = MockLicenseService();
     late MockUploadPlan uploadPlan;
 
     // Setup mock drive.
@@ -244,16 +246,18 @@ void main() {
 
   UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
     return UploadCubit(
-        activityTracker: MockActivityTracker(),
-        arDriveUploadManager: mockArDriveUploadPreparationManager,
-        uploadFileChecker: mockUploadFileChecker,
-        driveId: tDriveId,
-        parentFolderId: tRootFolderId,
-        files: files,
-        profileCubit: mockProfileCubit!,
-        driveDao: mockDriveDao,
-        auth: mockArDriveAuth,
-        pst: mockPst);
+      activityTracker: MockActivityTracker(),
+      arDriveUploadManager: mockArDriveUploadPreparationManager,
+      uploadFileChecker: mockUploadFileChecker,
+      driveId: tDriveId,
+      parentFolderId: tRootFolderId,
+      files: files,
+      profileCubit: mockProfileCubit!,
+      driveDao: mockDriveDao,
+      auth: mockArDriveAuth,
+      pst: mockPst,
+      licenseService: mockLicense,
+    );
   }
 
   void setDumbUploadPlan() => when(() => mockUploadPlanUtils.filesToUploadPlan(
