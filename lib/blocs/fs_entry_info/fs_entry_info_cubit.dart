@@ -68,14 +68,6 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                     .latestFileRevisionByFileId(driveId: driveId, fileId: id)
                     .getSingle();
 
-            emit(FsEntryFileInfoSuccess(
-              name: name,
-              lastUpdated: lastUpdated,
-              dateCreated: dateCreated,
-              metadataTxId: latestRevision.metadataTxId,
-              licenseState: LicenseState(meta: udlLicenseMeta),
-            ));
-
             var licenseState = maybeLicenseState;
             if (!isSharedFile &&
                 licenseState == null &&
