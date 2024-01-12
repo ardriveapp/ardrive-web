@@ -502,8 +502,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     late List<Widget> children;
     if (state is FsEntryInfoSuccess<FolderNode>) {
       children = _folderDetails(state);
-    } else if (state is FsEntryInfoSuccess<FileEntry> ||
-        widget.revisions != null) {
+    } else if (state is FsEntryFileInfoSuccess || widget.revisions != null) {
       children = _fileDetails(state);
     } else if (state is FsEntryInfoSuccess<Drive>) {
       children = _driveDetails(state);
