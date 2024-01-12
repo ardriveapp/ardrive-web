@@ -57,6 +57,7 @@ late PaymentService _turboPayment;
 void main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+
     final localStore = await LocalKeyValueStore.getInstance();
 
     await AppInfoServices().loadAppInfo();

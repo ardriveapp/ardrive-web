@@ -76,7 +76,7 @@ class Logger {
     }
 
     log(LogLevel.error, errorMessage);
-    Sentry.captureException(message, stackTrace: stackTrace);
+    Sentry.captureException(error ?? message, stackTrace: stackTrace);
   }
 
   void log(LogLevel level, String message) {
