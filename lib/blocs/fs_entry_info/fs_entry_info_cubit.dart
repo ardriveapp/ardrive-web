@@ -107,7 +107,6 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               dateCreated: selectedItem.dateCreated,
             );
           } else {
-            print('watching file');
             _entrySubscription = _driveDao
                 .fileById(driveId: driveId, fileId: selectedItem.id)
                 .watchSingle()
