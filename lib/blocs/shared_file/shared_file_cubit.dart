@@ -7,7 +7,6 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
-import 'package:async/async.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -89,26 +88,36 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   }
 
   Future<LicenseState?> fetchLicenseForRevision(FileRevision revision) async {
-    final isAssertion = revision.licenseTxId != revision.dataTxId;
-    if (isAssertion) {
-      final licenseTx = (await _arweave
-              .getLicenseAssertions([revision.licenseTxId!]).firstOrNull)
-          ?.firstOrNull;
-      if (licenseTx != null) {
-        final licenseEntity = LicenseAssertionEntity.fromTransaction(licenseTx);
-        return _licenseService.fromAssertionEntity(licenseEntity);
+    final isComposed = revision.licenseTxId == revision.dataTxId;
+    if (isComposed) {
+      // License Composed
+      final licenseTxs = await _arweave
+          .getLicenseComposed([revision.licenseTxId!])
+          .expand((e) => e)
+          .toList();
+      if (licenseTxs.isEmpty) {
+        logger.e(
+            'Could not find any license composed with txId: ${revision.licenseTxId}');
+        return null;
       }
+      final licenseComposedEntity =
+          LicenseComposedEntity.fromTransaction(licenseTxs.single);
+      return _licenseService.fromComposedEntity(licenseComposedEntity);
     } else {
-      final licenseTx = (await _arweave
-              .getLicenseComposed([revision.licenseTxId!]).firstOrNull)
-          ?.firstOrNull;
-      if (licenseTx != null) {
-        final licenseComposedEntity =
-            LicenseComposedEntity.fromTransaction(licenseTx);
-        return _licenseService.fromComposedEntity(licenseComposedEntity);
+      // License Assertion
+      final licenseTxs = await _arweave
+          .getLicenseAssertions([revision.licenseTxId!])
+          .expand((e) => e)
+          .toList();
+      if (licenseTxs.isEmpty) {
+        logger.e(
+            'Could not find any license assertions with txId: ${revision.licenseTxId}');
+        return null;
       }
-    }
-    return null;
+      final licenseAssertionEntity =
+          LicenseAssertionEntity.fromTransaction(licenseTxs.single);
+      return _licenseService.fromAssertionEntity(licenseAssertionEntity);
+      }
   }
 
   Future<void> loadFileDetails(SecretKey? fileKey) async {
