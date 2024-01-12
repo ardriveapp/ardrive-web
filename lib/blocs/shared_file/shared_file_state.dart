@@ -17,8 +17,13 @@ class SharedFileIsPrivate extends SharedFileState {}
 class SharedFileLoadSuccess extends SharedFileState {
   final List<FileRevision> fileRevisions;
   final SecretKey? fileKey;
+  final LicenseState? latestLicense;
 
-  const SharedFileLoadSuccess({required this.fileRevisions, this.fileKey});
+  const SharedFileLoadSuccess({
+    required this.fileRevisions,
+    this.fileKey,
+    this.latestLicense,
+  });
 
   @override
   List<Object?> get props => [fileRevisions, fileKey];

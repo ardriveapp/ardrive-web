@@ -43,6 +43,7 @@ class DetailsPanel extends StatefulWidget {
     required this.maybeSelectedItem,
     required this.drivePrivacy,
     this.revisions,
+    this.licenseState,
     this.fileKey,
     required this.isSharePage,
     this.currentDrive,
@@ -55,6 +56,7 @@ class DetailsPanel extends StatefulWidget {
   final SelectedItem? maybeSelectedItem;
   final Privacy drivePrivacy;
   final List<FileRevision>? revisions;
+  final LicenseState? licenseState;
   final SecretKey? fileKey;
   final bool isSharePage;
   final Drive? currentDrive;
@@ -78,10 +80,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
         BlocProvider<FsEntryInfoCubit>(
           create: (context) => FsEntryInfoCubit(
             driveId: widget.item.driveId,
-            isSharedFile: widget.isSharePage,
             maybeSelectedItem: widget.item,
+            isSharedFile: widget.isSharePage,
+            maybeRevisions: widget.revisions,
+            maybeLicenseState: widget.licenseState,
             driveDao: context.read<DriveDao>(),
-            arweave: context.read<ArweaveService>(),
             licenseService: context.read<LicenseService>(),
           ),
         ),
@@ -499,8 +502,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     late List<Widget> children;
     if (state is FsEntryInfoSuccess<FolderNode>) {
       children = _folderDetails(state);
-    } else if (state is FsEntryInfoSuccess<FileEntry> ||
-        widget.revisions != null) {
+    } else if (state is FsEntryFileInfoSuccess || widget.revisions != null) {
       children = _fileDetails(state);
     } else if (state is FsEntryInfoSuccess<Drive>) {
       children = _driveDetails(state);
