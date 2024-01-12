@@ -43,6 +43,7 @@ class DetailsPanel extends StatefulWidget {
     required this.maybeSelectedItem,
     required this.drivePrivacy,
     this.revisions,
+    this.licenseState,
     this.fileKey,
     required this.isSharePage,
     this.currentDrive,
@@ -55,6 +56,7 @@ class DetailsPanel extends StatefulWidget {
   final SelectedItem? maybeSelectedItem;
   final Privacy drivePrivacy;
   final List<FileRevision>? revisions;
+  final LicenseState? licenseState;
   final SecretKey? fileKey;
   final bool isSharePage;
   final Drive? currentDrive;
@@ -81,8 +83,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
             maybeSelectedItem: widget.item,
             isSharedFile: widget.isSharePage,
             maybeRevisions: widget.revisions,
+            maybeLicenseState: widget.licenseState,
             driveDao: context.read<DriveDao>(),
-            arweave: context.read<ArweaveService>(),
             licenseService: context.read<LicenseService>(),
           ),
         ),

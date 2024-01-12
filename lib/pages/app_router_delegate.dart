@@ -139,6 +139,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 fileId: sharedFileId!,
                 fileKey: sharedFileKey,
                 arweave: context.read<ArweaveService>(),
+                licenseService: context.read<LicenseService>(),
               ),
               child: SharedFilePage(),
             );
