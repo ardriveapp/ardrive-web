@@ -39,6 +39,7 @@ import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 import 'package:pst/pst.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -54,56 +55,64 @@ late ConfigService configService;
 late ArweaveService _arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
+
 void main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    final localStore = await LocalKeyValueStore.getInstance();
+    await _initializeServices();
 
-    await AppInfoServices().loadAppInfo();
-
-    configService = ConfigService(
-      appFlavors: AppFlavors(EnvFetcher()),
-      configFetcher: ConfigFetcher(localStore: localStore),
-    );
-
-    await configService.loadConfig();
-
-    final flavor = await configService.loadAppFlavor();
-
-    await _initialize();
-
-    if (flavor == Flavor.development) {
-      _runWithCrashlytics();
-      return;
-    }
-
-    logger.d('Starting without crashlytics');
-
-    _runWithoutCrashlytics();
-  }, (error, stackTrace) async {
-    _runWithoutCrashlytics();
+    await _startApp();
+  }, (error, stackTrace) {
+    logger.e('Error caught.', error, stackTrace);
   });
 }
 
-Future<void> _runWithoutCrashlytics() async {
-  await _initialize();
+Future<void> _startApp() async {
+  final flavor = await configService.loadAppFlavor();
+
+  flavor == Flavor.staging || flavor == Flavor.production
+      ? _runWithSentryLogging()
+      : _runWithoutLogging();
+}
+
+Future<void> _runWithoutLogging() async {
   runApp(const App());
 }
 
-Future<void> _initialize() async {
+Future<void> _runWithSentryLogging() async {
+  await SentryFlutter.init(
+    (options) {
+      options.tracesSampleRate = 1.0;
+    },
+  );
+
+  runApp(const App());
+}
+
+Future<void> _initializeServices() async {
+  final localStore = await LocalKeyValueStore.getInstance();
+
+  await AppInfoServices().loadAppInfo();
+
+  configService = ConfigService(
+    appFlavors: AppFlavors(EnvFetcher()),
+    configFetcher: ConfigFetcher(localStore: localStore),
+  );
+
   MobileStatusBar.show();
   MobileScreenOrientation.lockInPortraitUp();
+  ArDriveMobileDownloader.initialize();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
   );
 
+  await configService.loadConfig();
+
   final config = configService.config;
 
   logger.d('Initializing app with config: $config');
-
-  ArDriveMobileDownloader.initialize();
 
   _arweave = ArweaveService(
     Arweave(
@@ -126,22 +135,8 @@ Future<void> _initialize() async {
   );
 
   if (kIsWeb) {
-    refreshHTMLPageAtInterval(const Duration(hours: 12));
+    _refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
-}
-
-Future<void> _runWithCrashlytics() async {
-  await SentryFlutter.init(
-    (options) {
-      options.tracesSampleRate = 1.0;
-    },
-  );
-
-  runApp(const App());
-}
-
-void refreshHTMLPageAtInterval(Duration duration) {
-  Timer.periodic(duration, (timer) => triggerHTMLPageReload());
 }
 
 class App extends StatefulWidget {
@@ -167,9 +162,108 @@ class AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
-      providers: [
+      providers: repositoryProviders,
+      child: ArDriveDevToolsShortcuts(
+        child: KeyboardHandler(
+          child: MultiBlocProvider(
+            providers: blocProviders,
+            child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
+              listener: (context, state) {
+                if (state is ThemeSwitcherDarkTheme) {
+                  ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
+                } else if (state is ThemeSwitcherLightTheme) {
+                  ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
+                }
+              },
+              builder: (context, state) {
+                return ArDriveApp(
+                  onThemeChanged: (theme) {
+                    context.read<ThemeSwitcherBloc>().add(ChangeTheme());
+                  },
+                  key: arDriveAppKey,
+                  builder: (context) => app,
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  MaterialApp get app => MaterialApp.router(
+        title: _appName,
+        theme: _ardriveTheme,
+        debugShowCheckedModeBanner: false,
+        routeInformationParser: _routeInformationParser,
+        routerDelegate: _routerDelegate,
+        localizationsDelegates: _localizationsDelegates,
+        supportedLocales: _locales,
+
+        // TODO: Remove this once we have a proper solution for
+        builder: (context, child) => ListTileTheme(
+          textColor: kOnSurfaceBodyTextColor,
+          iconColor: kOnSurfaceBodyTextColor,
+          child: Portal(
+            child: child!,
+          ),
+        ),
+      );
+
+  static const String _appName = 'ArDrive';
+
+  ThemeData get _ardriveTheme =>
+      ArDriveTheme.of(context).themeData.materialThemeData.copyWith(
+            scaffoldBackgroundColor:
+                ArDriveTheme.of(context).themeData.backgroundColor,
+          );
+
+  Iterable<Locale> get _locales => const [
+        Locale('en', ''), // English, no country code
+        Locale('es', ''), // Spanish, no country code
+        Locale.fromSubtags(languageCode: 'zh'), // generic Chinese 'zh'
+        Locale.fromSubtags(
+          languageCode: 'zh',
+          countryCode: 'HK',
+        ), // Traditional Chinese, Cantonese
+        Locale('ja', ''), // Japanese, no country code
+        Locale('hi', ''), // Hindi, no country code
+      ];
+
+  Iterable<LocalizationsDelegate> get _localizationsDelegates => const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  List<SingleChildWidget> get blocProviders => [
         ChangeNotifierProvider<ActivityTracker>(
             create: (_) => ActivityTracker()),
+        BlocProvider(
+          create: (context) => ThemeSwitcherBloc(
+            userPreferencesRepository:
+                context.read<UserPreferencesRepository>(),
+          )..add(LoadTheme()),
+        ),
+        BlocProvider(
+          create: (context) => ProfileCubit(
+            arweave: context.read<ArweaveService>(),
+            turboUploadService: context.read<TurboUploadService>(),
+            profileDao: context.read<ProfileDao>(),
+            db: context.read<Database>(),
+            tabVisibilitySingleton: TabVisibilitySingleton(),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => ActivityCubit(),
+        ),
+        BlocProvider(
+          create: (context) =>
+              FeedbackSurveyCubit(FeedbackSurveyInitialState()),
+        ),
+      ];
+
+  List<SingleChildWidget> get repositoryProviders => [
         RepositoryProvider<ArweaveService>(create: (_) => _arweave),
         // repository provider for UploadFileChecker
         RepositoryProvider<UploadFileChecker>(
@@ -242,92 +336,9 @@ class AppState extends State<App> {
             themeDetector: ThemeDetector(),
           ),
         ),
-      ],
-      child: ArDriveDevToolsShortcuts(
-        child: KeyboardHandler(
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (context) => ThemeSwitcherBloc(
-                  userPreferencesRepository:
-                      context.read<UserPreferencesRepository>(),
-                )..add(LoadTheme()),
-              ),
-              BlocProvider(
-                create: (context) => ProfileCubit(
-                  arweave: context.read<ArweaveService>(),
-                  turboUploadService: context.read<TurboUploadService>(),
-                  profileDao: context.read<ProfileDao>(),
-                  db: context.read<Database>(),
-                  tabVisibilitySingleton: TabVisibilitySingleton(),
-                ),
-              ),
-              BlocProvider(
-                create: (context) => ActivityCubit(),
-              ),
-              BlocProvider(
-                create: (context) =>
-                    FeedbackSurveyCubit(FeedbackSurveyInitialState()),
-              ),
-            ],
-            child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
-              listener: (context, state) {
-                if (state is ThemeSwitcherDarkTheme) {
-                  ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
-                } else if (state is ThemeSwitcherLightTheme) {
-                  ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
-                }
-              },
-              builder: (context, state) {
-                return ArDriveApp(
-                  onThemeChanged: (theme) {
-                    context.read<ThemeSwitcherBloc>().add(ChangeTheme());
-                  },
-                  key: arDriveAppKey,
-                  builder: (context) => MaterialApp.router(
-                    title: 'ArDrive',
-                    theme: ArDriveTheme.of(context)
-                        .themeData
-                        .materialThemeData
-                        .copyWith(
-                          scaffoldBackgroundColor: ArDriveTheme.of(context)
-                              .themeData
-                              .backgroundColor,
-                        ),
-                    debugShowCheckedModeBanner: false,
-                    routeInformationParser: _routeInformationParser,
-                    routerDelegate: _routerDelegate,
-                    localizationsDelegates: const [
-                      AppLocalizations.delegate,
-                      GlobalMaterialLocalizations.delegate,
-                      GlobalWidgetsLocalizations.delegate,
-                    ],
-                    supportedLocales: const [
-                      Locale('en', ''), // English, no country code
-                      Locale('es', ''), // Spanish, no country code
-                      Locale.fromSubtags(
-                          languageCode: 'zh'), // generic Chinese 'zh'
-                      Locale.fromSubtags(
-                        languageCode: 'zh',
-                        countryCode: 'HK',
-                      ), // Traditional Chinese, Cantonese
-                      Locale('ja', ''), // Japanese, no country code
-                      Locale('hi', ''), // Hindi, no country code
-                    ],
-                    builder: (context, child) => ListTileTheme(
-                      textColor: kOnSurfaceBodyTextColor,
-                      iconColor: kOnSurfaceBodyTextColor,
-                      child: Portal(
-                        child: child!,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+      ];
+}
+
+void _refreshHTMLPageAtInterval(Duration duration) {
+  Timer.periodic(duration, (timer) => triggerHTMLPageReload());
 }
