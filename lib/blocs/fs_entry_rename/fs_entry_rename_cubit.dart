@@ -4,6 +4,8 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_io/ardrive_io.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -26,6 +28,9 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
   bool get _isRenamingFolder => folderId != null;
 
+  bool _dontVerifyExtension = false;
+  String? _newFileExtension;
+
   FsEntryRenameCubit({
     required this.driveId,
     this.folderId,
@@ -47,7 +52,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
   }
 
-  Future<void> submit({required String newName}) async {
+  Future<void> submit({
+    required String newName,
+    bool updateExtension = false,
+  }) async {
     try {
       late bool hasEntityWithSameName;
 
@@ -114,13 +122,31 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
         emit(const FolderEntryRenameSuccess());
       } else {
+        var file = await _driveDao
+            .fileById(driveId: driveId, fileId: fileId!)
+            .getSingle();
+        final hasExtensionChanged =
+            verifyExtensionAndReturnIfExtensionWasUpdated(
+          newName,
+          file,
+        );
+
+        if (!updateExtension && !_dontVerifyExtension && hasExtensionChanged) {
+          return;
+        }
+
         emit(const FileEntryRenameInProgress());
 
         await _driveDao.transaction(() async {
-          var file = await _driveDao
-              .fileById(driveId: driveId, fileId: fileId!)
-              .getSingle();
-          file = file.copyWith(name: newName, lastUpdated: DateTime.now());
+          file = file.copyWith(
+            name: newName,
+            lastUpdated: DateTime.now(),
+          );
+
+          if (updateExtension) {
+            file =
+                file.copyWith(dataContentType: Value(lookupMimeType(newName)));
+          }
 
           final fileKey = driveKey != null
               ? await _crypto.deriveFileKey(driveKey, file.id)
@@ -148,6 +174,9 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
             fileEntity.txId = fileTx.id;
           }
 
+          logger.i(
+              'Updating file ${file.id} with txId ${fileEntity.txId}. Data content type: ${fileEntity.dataContentType}');
+
           await _driveDao.writeToFile(file);
 
           await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
@@ -159,6 +188,29 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     } catch (err) {
       addError(err);
     }
+  }
+
+  bool verifyExtensionAndReturnIfExtensionWasUpdated(
+      String newName, FileEntry file) {
+    _newFileExtension =
+        getFileExtension(name: newName, contentType: file.dataContentType!);
+
+    final currentExtension =
+        getFileExtension(name: file.name, contentType: file.dataContentType!);
+
+    if (currentExtension == _newFileExtension) {
+      return false;
+    }
+
+    emit(
+      UpdatingEntityExtension(
+        previousExtension: currentExtension,
+        entityName: newName,
+        newExtension: _newFileExtension!,
+      ),
+    );
+
+    return true;
   }
 
   Future<bool> _folderWithSameNameExists(String newFolderName) async {
@@ -186,6 +238,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     );
 
     return entityWithSameNameExists;
+  }
+
+  void dontVerifyExtension() {
+    _dontVerifyExtension = true;
   }
 
   @override
