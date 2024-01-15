@@ -1,1 +1,1 @@
-- Recognize file extension written in capital letters
+- Fixes file extension recognition issues due to case sensitivity
