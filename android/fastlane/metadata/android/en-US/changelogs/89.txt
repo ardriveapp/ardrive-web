@@ -1,0 +1,1 @@
+- Recognize file extension written in capital letters

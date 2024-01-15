@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.30.0
+version: 2.30.1
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -35,7 +35,7 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ardriveapp/ardrive_io.git
-      ref: v1.4.4
+      ref: v1.4.5
   ardrive_ui:
     git:
       url: https://github.com/ardriveapp/ardrive_ui.git
@@ -160,7 +160,7 @@ dependency_overrides:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-5431-show-appropriate-icon-on-upload-page-for-file-with-extensions-written-in-uppercase
+      ref: v1.4.5
 
 dev_dependencies:
   integration_test:
