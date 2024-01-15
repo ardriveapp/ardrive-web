@@ -132,12 +132,11 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                     title: 'Don\'t change',
                   ),
                   ModalAction(
-                    action: () => context
-                        .read<FsEntryRenameCubit>()
-                        .submit(
-                            newName: _nameController.text,
-                            updateExtension: true)
-                        .then((value) => Navigator.of(context).pop()),
+                    action: () {
+                      context.read<FsEntryRenameCubit>().submit(
+                          newName: _nameController.text, updateExtension: true);
+                      Navigator.of(context).pop();
+                    },
                     title: 'Submit',
                     isEnable: _validForm,
                   ),
