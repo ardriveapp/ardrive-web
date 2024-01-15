@@ -166,17 +166,21 @@ class ArDriveAuthImpl implements ArDriveAuth {
   @override
   Future<User> unlockUser({required String password}) async {
     try {
-      logger.i('Unlocking user with password');
+      logger.d('Unlocking user with password');
 
       currentUser = await _userRepository.getUser(password);
 
-      logger.i('User unlocked');
+      logger.d('User unlocked with password');
 
       _userStreamController.add(_currentUser);
 
       return currentUser;
     } catch (e) {
-      logger.e('Failed to unlock user with password', e);
+      logger.e(
+        'Failed to unlock user with password. The password is wrong or a network error occurred',
+        e,
+      );
+      // TODO: Improve error handling. There's a PR: https://github.com/ardriveapp/ardrive-web/pull/1243
       throw AuthenticationFailedException('Incorrect password.');
     }
   }
@@ -185,7 +189,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
   Future<User> unlockWithBiometrics({
     required String localizedReason,
   }) async {
-    logger.i('Unlocking with biometrics');
+    logger.d('Unlocking with biometrics');
 
     if (await isUserLoggedIn()) {
       final isAuthenticated = await _biometricAuthentication.authenticate(
@@ -196,7 +200,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       logger.d('Biometric authentication result: $isAuthenticated');
 
       if (isAuthenticated) {
-        logger.i('User is logged in, unlocking with password');
+        logger.i('User is logged in. Unlocking with password');
         // load from local storage
         final storedPassword = await _secureKeyValueStore.getString('password');
 
@@ -215,7 +219,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   @override
   Future<void> logout() async {
-    logger.i('Logging out user');
+    logger.d('Logging out user');
 
     try {
       if (_currentUser != null) {
@@ -230,8 +234,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
       await _userRepository.deleteUser();
       await _databaseHelpers.deleteAllTables();
       await (await _metadataCache).clear();
-    } catch (e) {
-      logger.e('Failed to logout user', e);
+    } catch (e, stacktrace) {
+      logger.e('Failed to logout user', e, stacktrace);
       throw AuthenticationFailedException('Failed to logout user');
     }
   }
@@ -244,8 +248,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
       if (hasArConnectPermissions) {
         try {
           await _arConnectService.disconnect();
-        } catch (e) {
-          logger.e('Failed to disconnect from ArConnect', e);
+        } catch (e, stacktrace) {
+          logger.e('Failed to disconnect from ArConnect', e, stacktrace);
         }
       }
     }
@@ -273,7 +277,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
           password,
         );
       } catch (e) {
-        throw AuthenticationFailedException('Wrong password');
+        throw AuthenticationFailedException('Password is incorrect');
       }
 
       final privateDrive = await _arweave.getLatestDriveEntityWithId(

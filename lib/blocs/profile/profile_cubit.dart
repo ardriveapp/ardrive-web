@@ -96,7 +96,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     if (profile.profileType == ProfileType.arConnect.index) {
       try {
         if (!(await arconnect.checkPermissions())) {
-          logger.i('ArConnect permissions changed');
+          logger.w('ArConnect permissions changed');
           throw Exception('ArConnect permissions changed');
         }
 

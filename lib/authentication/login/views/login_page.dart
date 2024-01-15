@@ -92,9 +92,6 @@ class _LoginPageState extends State<LoginPage> {
           } else if (loginState is LoginFailure) {
             // TODO: Verify if the error is `NoConnectionException` and show an
             /// appropriate message after validating with UI/UX
-
-            logger.e('Login Failure', loginState.error);
-
             if (loginState.error is WalletMismatchException) {
               showArDriveDialog(
                 context,
