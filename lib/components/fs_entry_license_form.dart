@@ -274,104 +274,116 @@ class FsEntryLicenseForm extends StatelessWidget {
               ],
             );
           } else if (state is FsEntryLicenseConfiguring) {
-            return ArDriveStandardModal(
-              title: 'Configure ${licenseMeta.name} (${licenseMeta.shortName})',
-              width: kMediumDialogWidth,
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  LicenseFileList(
-                      fileList:
-                          context.read<FsEntryLicenseBloc>().filesToLicense!),
-                  const SizedBox(height: 16),
-                  const Divider(height: 24),
-                  context
+            return ArDriveScrollBar(
+              child: SingleChildScrollView(
+                child: ArDriveStandardModal(
+                  title:
+                      'Configure ${licenseMeta.name} (${licenseMeta.shortName})',
+                  width: kMediumDialogWidth,
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      LicenseFileList(
+                          fileList: context
                               .read<FsEntryLicenseBloc>()
-                              .selectFormLicenseMeta
-                              .licenseType ==
-                          LicenseType.udl
-                      ? UdlParamsForm(
-                          formGroup:
-                              context.watch<FsEntryLicenseBloc>().udlForm,
-                        )
-                      : const Text('Unsupported license type'),
-                ],
+                              .filesToLicense!),
+                      const SizedBox(height: 16),
+                      const Divider(height: 24),
+                      context
+                                  .read<FsEntryLicenseBloc>()
+                                  .selectFormLicenseMeta
+                                  .licenseType ==
+                              LicenseType.udl
+                          ? UdlParamsForm(
+                              formGroup:
+                                  context.watch<FsEntryLicenseBloc>().udlForm,
+                            )
+                          : const Text('Unsupported license type'),
+                    ],
+                  ),
+                  actions: [
+                    ModalAction(
+                      action: () => context
+                          .read<FsEntryLicenseBloc>()
+                          .add(const FsEntryLicenseConfigurationBack()),
+                      title: appLocalizationsOf(context).backEmphasized,
+                    ),
+                    ModalAction(
+                      action: () => context
+                          .read<FsEntryLicenseBloc>()
+                          .add(const FsEntryLicenseConfigurationSubmit()),
+                      title: appLocalizationsOf(context).nextEmphasized,
+                    ),
+                  ],
+                ),
               ),
-              actions: [
-                ModalAction(
-                  action: () => context
-                      .read<FsEntryLicenseBloc>()
-                      .add(const FsEntryLicenseConfigurationBack()),
-                  title: appLocalizationsOf(context).backEmphasized,
-                ),
-                ModalAction(
-                  action: () => context
-                      .read<FsEntryLicenseBloc>()
-                      .add(const FsEntryLicenseConfigurationSubmit()),
-                  title: appLocalizationsOf(context).nextEmphasized,
-                ),
-              ],
             );
           } else if (state is FsEntryLicenseReviewing) {
-            return ArDriveStandardModal(
-              title: 'Review',
-              width: kMediumDialogWidth,
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  LicenseFileList(
-                      fileList:
-                          context.read<FsEntryLicenseBloc>().filesToLicense!),
-                  const SizedBox(height: 16),
-                  const Divider(height: 24),
-                  const SizedBox(height: 16),
-                  LicenseSummary(
-                    licenseState: LicenseState(
-                        meta: licenseMeta,
-                        params:
-                            context.read<FsEntryLicenseBloc>().licenseParams),
+            return ArDriveScrollBar(
+              child: SingleChildScrollView(
+                child: ArDriveStandardModal(
+                  title: 'Review',
+                  width: kMediumDialogWidth,
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      LicenseFileList(
+                          fileList: context
+                              .read<FsEntryLicenseBloc>()
+                              .filesToLicense!),
+                      const SizedBox(height: 16),
+                      const Divider(height: 24),
+                      const SizedBox(height: 16),
+                      LicenseSummary(
+                        licenseState: LicenseState(
+                            meta: licenseMeta,
+                            params: context
+                                .read<FsEntryLicenseBloc>()
+                                .licenseParams),
+                      ),
+                      const Divider(height: 32),
+                      Text(
+                        // TODO: Localize
+                        'Cost: 0 AR',
+                        style: ArDriveTypography.body.buttonLargeRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault,
+                        ),
+                      ),
+                      Text(
+                        // TODO: Localize
+                        'Free for now, maybe paid later.',
+                        style: ArDriveTypography.body.captionRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgSubtle,
+                        ),
+                      ),
+                    ],
                   ),
-                  const Divider(height: 32),
-                  Text(
-                    // TODO: Localize
-                    'Cost: 0 AR',
-                    style: ArDriveTypography.body.buttonLargeRegular(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
+                  actions: [
+                    ModalAction(
+                      action: () => context
+                          .read<FsEntryLicenseBloc>()
+                          .add(const FsEntryLicenseReviewBack()),
+                      title: appLocalizationsOf(context).backEmphasized,
                     ),
-                  ),
-                  Text(
-                    // TODO: Localize
-                    'Free for now, maybe paid later.',
-                    style: ArDriveTypography.body.captionRegular(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgSubtle,
+                    ModalAction(
+                      action: () => context
+                          .read<FsEntryLicenseBloc>()
+                          .add(const FsEntryLicenseReviewConfirm()),
+                      title: appLocalizationsOf(context).confirmEmphasized,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              actions: [
-                ModalAction(
-                  action: () => context
-                      .read<FsEntryLicenseBloc>()
-                      .add(const FsEntryLicenseReviewBack()),
-                  title: appLocalizationsOf(context).backEmphasized,
-                ),
-                ModalAction(
-                  action: () => context
-                      .read<FsEntryLicenseBloc>()
-                      .add(const FsEntryLicenseReviewConfirm()),
-                  title: appLocalizationsOf(context).confirmEmphasized,
-                ),
-              ],
             );
           } else if (state is FsEntryLicenseSuccess) {
             return ArDriveCard(
