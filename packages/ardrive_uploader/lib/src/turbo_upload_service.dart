@@ -22,7 +22,6 @@ class TurboUploadService<Response> {
     required Map<String, dynamic> headers,
   }) async {
     final dio = Dio();
-    final retryMaxAttempts = 8;
 
     final uploadInfo = await dio.get('$turboUploadUri/chunks/arweave/-1/-1');
     final uploadId = uploadInfo.data['id'];
@@ -45,24 +44,20 @@ class TurboUploadService<Response> {
         dataItemStream, uploadChunkSizeMin, maxUploadsInParallel,
         (chunk, offset) async {
       try {
-        return retry(
-          dio.post(
-            '$turboUploadUri/chunks/arweave/$uploadId/$offset',
-            data: chunk,
-            onSendProgress: (sent, total) {
-              if (onSendProgress != null) {
-                progressCounter[offset] = sent;
-              }
-            },
-            options: Options(
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'Content-Length': chunk.length.toString(),
-              }..addAll(headers),
-            ),
-            cancelToken: _cancelToken,
+        return dio.post(
+          '$turboUploadUri/chunks/arweave/$uploadId/$offset',
+          data: chunk,
+          onSendProgress: (sent, total) {
+            if (onSendProgress != null) {
+              progressCounter[offset] = sent;
+            }
+          },
+          options: Options(
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'Content-Length': chunk.length.toString(),
+            }..addAll(headers),
           ),
-          maxAttempts: retryMaxAttempts,
         );
       } catch (e) {
         if (_isCanceled) {
@@ -73,14 +68,11 @@ class TurboUploadService<Response> {
     });
 
     try {
-      final finaliseInfo = await retry(
-        dio.post(
-          '$turboUploadUri/chunks/arweave/$uploadId/-1',
-          data: null,
-        ),
-        maxAttempts: retryMaxAttempts,
+      final finaliseInfo = await dio.post(
+        '$turboUploadUri/chunks/arweave/$uploadId/-1',
+        data: null,
       );
-      return finaliseInfo;
+      return finaliseInfo as Response;
     } catch (e) {
       if (_isCanceled) {
         _cancelToken.cancel();
@@ -102,7 +94,7 @@ class TurboUploadService<Response> {
     Stream<Uint8List> stream,
     int chunkSize,
     int maxConcurrent,
-    Future<Response> Function(Uint8List, int) processChunk,
+    Future<dynamic> Function(Uint8List, int) processChunk,
   ) async {
     Uint8List buffer = Uint8List(0);
     int offset = 0;

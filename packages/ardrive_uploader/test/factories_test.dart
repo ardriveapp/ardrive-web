@@ -2,7 +2,6 @@ import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/d2n_streamed_upload.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
-import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:arweave/arweave.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';
@@ -103,10 +102,9 @@ void main() {
       var streamedUpload = uploadFactory.fromUploadType(UploadType.turbo);
       expect(streamedUpload, isA<TurboStreamedUpload>());
 
-      // Additional check to verify TurboUploadServiceImpl initialization
-      var turboUploadUri = ((streamedUpload as TurboStreamedUpload).service
-              as TurboUploadServiceImpl)
-          .turboUploadUri;
+      // Additional check to verify TurboUploadService initialization
+      var turboUploadUri =
+          (streamedUpload as TurboStreamedUpload).service.turboUploadUri;
       expect(turboUploadUri, equals(mockUri));
     });
   });
