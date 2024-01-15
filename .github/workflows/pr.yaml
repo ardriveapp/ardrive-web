@@ -12,17 +12,13 @@ env:
   PR_NUMBER: ${{ github.event.pull_request.number }}
   PR_TITLE: ${{ github.event.pull_request.title }}
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
-  SENTRY_DSN: ${{secrets.SENTRY_DSN}}
-  SENTRY_ORG: ${{secrets.SENTRY_ORG}}
-  SENTRY_AUTH_TOKEN: ${{secrets.SENTRY_AUTH_TOKEN}}
-  SENTRY_PROJECT: ${{secrets.SENTRY_PROJECT}}
   
 jobs:
   pre-build:
     uses: ./.github/workflows/test.yml
 
   build-web:
-    # needs: pre-build
+    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -46,7 +42,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --dart-define=environment=development --dart-define=SENTRY_DSN=${SENTRY_DSN} --dart-define=SENTRY_PROJECT=${SENTRY_PROJECT} --dart-define=SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} --dart-define=SENTRY_ORG=${SENTRY_ORG} --release --pwa-strategy=none --no-web-resources-cdn --source-maps
+          flutter build web --dart-define=environment=development --release --pwa-strategy=none --no-web-resources-cdn --source-maps
           flutter packages pub run sentry_dart_plugin
 
       # JS files cache invalidation
