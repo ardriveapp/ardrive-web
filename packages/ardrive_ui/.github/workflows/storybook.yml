@@ -1,0 +1,41 @@
+on:
+  workflow_call:
+    inputs:
+      FIREBASE_TARGET:
+        required: true
+        type: string
+      FIREBASE_EXPIRES:
+        type: string
+      FIREBASE_CHANNEL:
+        type: string
+
+jobs:
+  storybook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Get Flutter version
+        id: get-flutter-version
+        uses: zgosalvez/github-actions-get-flutter-version-env@v2
+
+      - name: Install flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.get-flutter-version.outputs.version }}
+
+      - name: Build storybook
+        working-directory: ./storybook
+        run: |
+          flutter clean && flutter pub get
+          flutter build web --release
+
+      # Disribute to Firebase
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}
+          target: ${{ inputs.FIREBASE_TARGET }}
+          expires: ${{ inputs.FIREBASE_EXPIRES }}
+          channelId: ${{ inputs.FIREBASE_CHANNEL }}

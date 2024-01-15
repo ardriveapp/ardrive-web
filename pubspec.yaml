@@ -37,9 +37,7 @@ dependencies:
       url: https://github.com/ardriveapp/ardrive_io.git
       ref: v1.4.5
   ardrive_ui:
-    git:
-      url: https://github.com/ardriveapp/ardrive_ui.git
-      ref: v1.17.1
+    path: ./packages/ardrive_ui
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:
