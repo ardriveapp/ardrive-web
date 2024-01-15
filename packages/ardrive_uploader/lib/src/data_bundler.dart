@@ -5,6 +5,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_uploader/src/cost_calculator.dart';
+import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -14,33 +15,18 @@ import 'package:fpdart/fpdart.dart';
 import 'package:pst/pst.dart';
 import 'package:uuid/uuid.dart';
 
-class DataBundlerFactory {
-  DataBundler createDataBundler({
-    required ARFSUploadMetadataGenerator metadataGenerator,
-    required UploadType type,
-    required PstService pstService,
-    required Arweave arweaveService,
-  }) {
-    switch (type) {
-      case UploadType.turbo:
-        return BDIDataBundler(metadataGenerator);
-      case UploadType.d2n:
-        return DataTransactionBundler(
-          metadataGenerator,
-          UploadCostEstimateCalculatorForAR(
-            arCostToUsd: ConvertArToUSD(),
-            arweaveService: arweaveService,
-            pstService: pstService,
-          ),
-          pstService,
-        );
-      default:
-        throw Exception('Invalid upload type');
-    }
-  }
-}
-
 abstract class DataBundler<T> {
+  Future<List<DataItemFile>> createDataItemsForFile({
+    required IOFile file,
+    required ARFSUploadMetadata metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    Function? onStartMetadataCreation,
+    Function? onFinishMetadataCreation,
+    Function? onStartBundleCreation,
+    Function? onFinishBundleCreation,
+  });
+
   Future<T> createDataBundle({
     required IOFile file,
     required ARFSUploadMetadata metadata,
@@ -91,52 +77,21 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
   }) async {
-    SecretKey? key;
-
-    if (driveKey != null) {
-      key = await deriveFileKey(
-        driveKey,
-        metadata.id,
-        keyByteLength,
-      );
-      onStartEncryption?.call();
-    } else {
-      onStartBundling?.call();
-    }
-
-    // returns the encrypted or not file read stream and the cipherIv if it was encrypted
-    final dataGenerator = await _dataGenerator(
-      dataStream: file.openReadStream,
-      fileLength: await file.length,
+    final dataItemFiles = await createDataItemsForFile(
+      file: file,
       metadata: metadata,
-      wallet: wallet,
-      encryptionKey: key,
-    );
-
-    onStartMetadataCreation?.call();
-
-    final metadataDataItem = await _generateMetadataDataItemForFile(
-      metadata: metadata,
-      dataStream: dataGenerator,
       wallet: wallet,
       driveKey: driveKey,
-    );
-
-    onFinishMetadataCreation?.call();
-
-    final fileDataItem = _generateFileDataItem(
-      metadata: metadata,
-      dataStream: dataGenerator.$1,
-      fileLength: dataGenerator.$4,
+      onStartMetadataCreation: onStartMetadataCreation,
+      onFinishMetadataCreation: onFinishMetadataCreation,
+      onStartBundleCreation: onStartBundleCreation,
+      onFinishBundleCreation: onFinishBundleCreation,
     );
 
     onStartBundleCreation?.call();
 
     final transactionResult = await createDataBundleTransaction(
-      dataItemFiles: [
-        metadataDataItem,
-        fileDataItem,
-      ],
+      dataItemFiles: dataItemFiles,
       wallet: wallet,
       tags: metadata.bundleTags.map((e) => createTag(e.name, e.value)).toList(),
     );
@@ -261,19 +216,10 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     required final List<DataItemFile> dataItemFiles,
     required final List<Tag> tags,
   }) async {
-    final List<DataItemResult> dataItemList = [];
-    final dataItemCount = dataItemFiles.length;
-    for (var i = 0; i < dataItemCount; i++) {
-      final dataItem = dataItemFiles[i];
-      await createDataItemTaskEither(
-        wallet: wallet,
-        dataStream: dataItem.streamGenerator,
-        dataStreamSize: dataItem.dataSize,
-        target: dataItem.target,
-        anchor: dataItem.anchor,
-        tags: dataItem.tags,
-      ).map((dataItem) => dataItemList.add(dataItem)).run();
-    }
+    final dataItemList = await createDataItemResultFromDataItemFiles(
+      dataItemFiles,
+      wallet,
+    );
 
     final dataBundleTaskEither =
         createDataBundleTaskEither(TaskEither.of(dataItemList));
@@ -322,6 +268,59 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       (r) => r,
     ).run();
   }
+
+  @override
+  Future<List<DataItemFile>> createDataItemsForFile({
+    required IOFile file,
+    required ARFSUploadMetadata metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    Function? onStartMetadataCreation,
+    Function? onFinishMetadataCreation,
+    Function? onStartBundleCreation,
+    Function? onFinishBundleCreation,
+  }) async {
+    SecretKey? key;
+
+    if (driveKey != null) {
+      key = await deriveFileKey(
+        driveKey,
+        metadata.id,
+        keyByteLength,
+      );
+      // onStartEncryption?.call();
+    } else {
+      // onStartBundling?.call();
+    }
+
+    // returns the encrypted or not file read stream and the cipherIv if it was encrypted
+    final dataGenerator = await _dataGenerator(
+      dataStream: file.openReadStream,
+      fileLength: await file.length,
+      metadata: metadata,
+      wallet: wallet,
+      encryptionKey: key,
+    );
+
+    onStartMetadataCreation?.call();
+
+    final metadataDataItem = await _generateMetadataDataItemForFile(
+      metadata: metadata,
+      dataStream: dataGenerator,
+      wallet: wallet,
+      driveKey: driveKey,
+    );
+
+    final fileDataItem = _generateFileDataItem(
+      metadata: metadata,
+      dataStream: dataGenerator.$1,
+      fileLength: dataGenerator.$4,
+    );
+
+    onFinishMetadataCreation?.call();
+
+    return [metadataDataItem, fileDataItem];
+  }
 }
 
 class BDIDataBundler implements DataBundler<DataItemResult> {
@@ -365,49 +364,21 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
   }) async {
-    onStartMetadataCreation?.call();
-
-    SecretKeyData? key;
-
-    if (driveKey != null) {
-      key = await deriveFileKey(
-        driveKey,
-        metadata.id,
-        keyByteLength,
-      );
-    }
-
-    // returns the encrypted or not file read stream and the cipherIv if it was encrypted
-    final dataGenerator = await _dataGenerator(
-      dataStream: file.openReadStream,
-      fileLength: await file.length,
+    final dataItemsFiles = await createDataItemsForFile(
+      file: file,
       metadata: metadata,
-      wallet: wallet,
-      encryptionKey: key,
-    );
-
-    final metadataDataItem = await _generateMetadataDataItemForFile(
-      metadata: metadata,
-      dataStream: dataGenerator,
       wallet: wallet,
       driveKey: driveKey,
-    );
-
-    onFinishMetadataCreation?.call();
-
-    final fileDataItem = _generateFileDataItem(
-      metadata: metadata,
-      dataStream: dataGenerator.$1,
-      fileLength: dataGenerator.$4,
+      onStartMetadataCreation: onStartMetadataCreation,
+      onFinishMetadataCreation: onFinishMetadataCreation,
+      onStartBundleCreation: onStartBundleCreation,
+      onFinishBundleCreation: onFinishBundleCreation,
     );
 
     onStartBundleCreation?.call();
 
     final createBundledDataItem = createBundledDataItemTaskEither(
-      dataItemFiles: [
-        metadataDataItem,
-        fileDataItem,
-      ],
+      dataItemFiles: dataItemsFiles,
       wallet: wallet,
       tags: metadata.bundleTags.map((e) => createTag(e.name, e.value)).toList(),
     );
@@ -540,6 +511,56 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       ),
       ...dataItemsResult
     ];
+  }
+
+  @override
+  Future<List<DataItemFile>> createDataItemsForFile({
+    required IOFile file,
+    required ARFSUploadMetadata metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+    Function? onStartMetadataCreation,
+    Function? onFinishMetadataCreation,
+    Function? onStartBundleCreation,
+    Function? onFinishBundleCreation,
+  }) async {
+    onStartMetadataCreation?.call();
+
+    SecretKeyData? key;
+
+    if (driveKey != null) {
+      key = await deriveFileKey(
+        driveKey,
+        metadata.id,
+        keyByteLength,
+      );
+    }
+
+    // returns the encrypted or not file read stream and the cipherIv if it was encrypted
+    final dataGenerator = await _dataGenerator(
+      dataStream: file.openReadStream,
+      fileLength: await file.length,
+      metadata: metadata,
+      wallet: wallet,
+      encryptionKey: key,
+    );
+
+    final metadataDataItem = await _generateMetadataDataItemForFile(
+      metadata: metadata,
+      dataStream: dataGenerator,
+      wallet: wallet,
+      driveKey: driveKey,
+    );
+
+    onFinishMetadataCreation?.call();
+
+    final fileDataItem = _generateFileDataItem(
+      metadata: metadata,
+      dataStream: dataGenerator.$1,
+      fileLength: dataGenerator.$4,
+    );
+
+    return [metadataDataItem, fileDataItem];
   }
 }
 
@@ -776,7 +797,7 @@ Future<
     // uses GCM
     final impl = cipherBufferImpl(AES256GCM);
     cipher = AES256GCM;
-    final data = await streamToUint8List(dataStream());
+    final data = await concatenateUint8ListStream(dataStream());
     final encryptStreamResult =
         await impl.encrypt(data.toList(), secretKey: encryptionKey);
     final encryptedData = encryptStreamResult.concatenation(nonce: false);

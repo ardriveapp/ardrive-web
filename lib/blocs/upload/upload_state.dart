@@ -90,6 +90,7 @@ class UploadReady extends UploadState {
   final String turboCredits;
   final UploadMethod uploadMethod;
   final bool isButtonToUploadEnabled;
+  final bool isDragNDrop;
 
   UploadReady({
     required this.costEstimateAr,
@@ -108,6 +109,7 @@ class UploadReady extends UploadState {
     required this.isTurboUploadPossible,
     required this.uploadMethod,
     required this.isButtonToUploadEnabled,
+    this.isDragNDrop = false,
   });
 
 // copyWith
@@ -229,9 +231,11 @@ class UploadInProgressUsingNewUploader extends UploadState {
 }
 
 class UploadFailure extends UploadState {
+  final List<UploadTask>? failedTasks;
   final UploadErrors error;
+  final UploadController? controller;
 
-  UploadFailure({required this.error});
+  UploadFailure({this.failedTasks, required this.error, this.controller});
 }
 
 class UploadComplete extends UploadState {}

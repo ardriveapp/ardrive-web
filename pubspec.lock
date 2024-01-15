@@ -84,20 +84,27 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.3"
-      resolved-ref: a317308432f0fdf5f7ca3612def5cbf5760813fc
-      url: "https://github.com/ardriveapp/ardrive_io.git"
+      ref: "v1.4.5"
+      resolved-ref: "286d6366ceffe44e21d1257507090f8b6ec8beaa"
+      url: "https://github.com/ar-io/ardrive_io.git"
     source: git
-    version: "1.4.3"
+    version: "1.4.5"
+  ardrive_logger:
+    dependency: "direct main"
+    description:
+      path: "packages/ardrive_logger"
+      relative: true
+    source: path
+    version: "0.0.1"
   ardrive_ui:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.17.0"
-      resolved-ref: "4c6dcf1c22fb888a41a16ebe5f7f4c39d51b2dd3"
+      ref: "v1.17.1"
+      resolved-ref: "0b9da8860a1652fdb6c686310cf3aa188c4af1b1"
       url: "https://github.com/ardriveapp/ardrive_ui.git"
     source: git
-    version: "1.17.0"
+    version: "1.17.1"
   ardrive_uploader:
     dependency: "direct main"
     description:
@@ -139,11 +146,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.8.2"
-      resolved-ref: "363d4b69be03d2e67390e7c70eb7c3a230377001"
+      ref: "v3.8.3"
+      resolved-ref: "41d590687cecafc316b3c83da20274a29d3e2833"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "3.8.2"
+    version: "3.8.3"
   async:
     dependency: "direct main"
     description:
@@ -624,26 +631,26 @@ packages:
     dependency: transitive
     description:
       name: file_selector
-      sha256: "84eaf3e034d647859167d1f01cfe7b6352488f34c1b4932635012b202014c25b"
+      sha256: "070062b9fca7482baf60af671219086e188e50dd80497393e7d58532b56215d3"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.2"
   file_selector_android:
     dependency: transitive
     description:
       name: file_selector_android
-      sha256: d41e165d6f798ca941d536e5dc93494d50e78c571c28ad60cfe0b0fefeb9f1e7
+      sha256: a2d50f9de59861605b866467a55d681a0ca7bc108129c0bd33e74fa602dd0249
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.0+3"
+    version: "0.5.0+5"
   file_selector_ios:
     dependency: transitive
     description:
       name: file_selector_ios
-      sha256: b3fbdda64aa2e335df6e111f6b0f1bb968402ed81d2dd1fa4274267999aa32c2
+      sha256: b015154e6d9fddbc4d08916794df170b44531798c8dd709a026df162d07ad81d
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.1+6"
+    version: "0.5.1+8"
   file_selector_linux:
     dependency: transitive
     description:
@@ -765,10 +772,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_downloader
-      sha256: bc13eb52ce81822a94f107b2ea0541b0e28be350f0c064dfbb5c66e95d7791f4
+      sha256: e130001cf85d8d7450b8318a4670c19e495dd8c102ad4b15a512e9405e7c451d
       url: "https://pub.dev"
     source: hosted
-    version: "1.11.3"
+    version: "1.11.6"
   flutter_driver:
     dependency: "direct dev"
     description: flutter
@@ -1115,34 +1122,34 @@ packages:
     dependency: transitive
     description:
       name: image_picker
-      sha256: "7d7f2768df2a8b0a3cefa5ef4f84636121987d403130e70b17ef7e2cf650ba84"
+      sha256: "26222b01a0c9a2c8fe02fc90b8208bd3325da5ed1f4a2acabf75939031ac0bdd"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.4"
+    version: "1.0.7"
   image_picker_android:
     dependency: transitive
     description:
       name: image_picker_android
-      sha256: "0c7b83bbe2980c8a8e36e974f055e11e51675784e13a4762889feed0f3937ff2"
+      sha256: "39f2bfe497e495450c81abcd44b62f56c2a36a37a175da7d137b4454977b51b1"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.8+1"
+    version: "0.8.9+3"
   image_picker_for_web:
     dependency: transitive
     description:
       name: image_picker_for_web
-      sha256: "50bc9ae6a77eea3a8b11af5eb6c661eeb858fdd2f734c2a4fd17086922347ef7"
+      sha256: e2423c53a68b579a7c37a1eda967b8ae536c3d98518e5db95ca1fe5719a730a3
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.2"
   image_picker_ios:
     dependency: transitive
     description:
       name: image_picker_ios
-      sha256: c5538cacefacac733c724be7484377923b476216ad1ead35a0d2eadcdc0fc497
+      sha256: fadafce49e8569257a0cad56d24438a6fa1f0cbd7ee0af9b631f7492818a4ca3
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.8+2"
+    version: "0.8.9+1"
   image_picker_linux:
     dependency: transitive
     description:
@@ -1163,10 +1170,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_platform_interface
-      sha256: ed9b00e63977c93b0d2d2b343685bed9c324534ba5abafbb3dfbd6a780b1b514
+      sha256: "0e827c156e3a90edd3bbe7f6de048b39247b16e58173b08a835b7eb00aba239e"
       url: "https://pub.dev"
     source: hosted
-    version: "2.9.1"
+    version: "2.9.2"
   image_picker_windows:
     dependency: transitive
     description:
@@ -1224,10 +1231,10 @@ packages:
     dependency: transitive
     description:
       name: jovial_svg
-      sha256: "5fd52a96fe3d2b69082c53374364649f51cb1b3e06ca6be3601ed8cae537bc7b"
+      sha256: "7162d9fce53e284782f6178e175c9e07dde695779392eaa2542c1f795658eb3d"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.17"
+    version: "1.1.20"
   js:
     dependency: "direct main"
     description:
@@ -1392,10 +1399,10 @@ packages:
     dependency: "direct dev"
     description:
       name: mocktail
-      sha256: "80a996cd9a69284b3dc521ce185ffe9150cde69767c2d3a0720147d93c0cef53"
+      sha256: f603ebd85a576e5914870b02e5839fc5d0243b867bf710651cf239a28ebb365e
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "1.0.2"
   mutex:
     dependency: transitive
     description:
@@ -1544,10 +1551,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_android
-      sha256: ace7d15a3d1a4a0b91c041d01e5405df221edb9de9116525efc773c74e6fc790
+      sha256: f9fddd3b46109bd69ff3f9efa5006d2d309b7aec0f3c1c5637a60a2d5659e76e
       url: "https://pub.dev"
     source: hosted
-    version: "11.0.5"
+    version: "11.1.0"
   permission_handler_apple:
     dependency: transitive
     description:
@@ -1560,10 +1567,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_platform_interface
-      sha256: f2343e9fa9c22ae4fd92d4732755bfe452214e7189afcc097380950cf567b4b2
+      sha256: "6760eb5ef34589224771010805bea6054ad28453906936f843a8cc4d3a55c4a4"
       url: "https://pub.dev"
     source: hosted
-    version: "3.11.5"
+    version: "3.12.0"
   permission_handler_windows:
     dependency: transitive
     description:
@@ -1703,18 +1710,18 @@ packages:
     dependency: "direct main"
     description:
       name: share_plus
-      sha256: "6cec740fa0943a826951223e76218df002804adb588235a8910dc3d6b0654e11"
+      sha256: f74fc3f1cbd99f39760182e176802f693fa0ec9625c045561cfad54681ea93dd
       url: "https://pub.dev"
     source: hosted
-    version: "7.1.0"
+    version: "7.2.1"
   share_plus_platform_interface:
     dependency: transitive
     description:
       name: share_plus_platform_interface
-      sha256: "357412af4178d8e11d14f41723f80f12caea54cf0d5cd29af9dcdab85d58aea7"
+      sha256: df08bc3a07d01f5ea47b45d03ffcba1fa9cd5370fb44b3f38c70e42cced0f956
       url: "https://pub.dev"
     source: hosted
-    version: "3.3.0"
+    version: "3.3.1"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -1743,10 +1750,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_linux
-      sha256: c2eb5bf57a2fe9ad6988121609e47d3e07bb3bdca5b6f8444e4cf302428a128a
+      sha256: "9f2cbcf46d4270ea8be39fa156d86379077c8a5228d9dfdb1164ae0bb93f1faa"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   shared_preferences_platform_interface:
     dependency: transitive
     description:
@@ -1767,10 +1774,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_windows
-      sha256: f763a101313bd3be87edffe0560037500967de9c394a714cd598d945517f694f
+      sha256: "841ad54f3c8381c480d0c9b508b89a34036f512482c407e6df7a9c4aa2ef8f59"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   shelf:
     dependency: transitive
     description:
@@ -1868,10 +1875,10 @@ packages:
     dependency: transitive
     description:
       name: sqflite_common
-      sha256: "1b92f368f44b0dee2425bb861cfa17b6f6cf3961f762ff6f941d20b33355660a"
+      sha256: bb4738f15b23352822f4c42a531677e5c6f522e079461fd240ead29d8d8a54a6
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0"
+    version: "2.5.0+2"
   sqlite3:
     dependency: transitive
     description:

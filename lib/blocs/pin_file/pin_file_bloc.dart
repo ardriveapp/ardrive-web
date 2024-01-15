@@ -8,7 +8,8 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
@@ -373,6 +374,10 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         // FIXME: this is gonna change when we allow to ovewrite an existing file
         performedAction: RevisionAction.create,
       ));
+
+      final drivePrivacy =
+          driveKey != null ? DrivePrivacy.private : DrivePrivacy.public;
+      PlausibleEventTracker.trackPinCreation(drivePrivacy: drivePrivacy);
     }).then((value) {
       emit(PinFileSuccess(
         id: state.id,
@@ -418,7 +423,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
 
 // TODO: FIX
   Future<bool> _doesNameConflicts(String name) async {
-    logger.d('About to check if entity with same name ($name) exists');
+    logger.d('About to check if entity with same name exists');
     final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
       name: name,
       driveId: _driveId,

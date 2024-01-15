@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/error_codes.dart' as error_codes;
