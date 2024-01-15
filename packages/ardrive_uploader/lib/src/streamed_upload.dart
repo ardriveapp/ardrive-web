@@ -1,7 +1,7 @@
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/d2n_streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
-import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
+import 'package:ardrive_uploader/src/turbo_upload_service.dart';
 import 'package:arweave/arweave.dart';
 
 abstract class StreamedUpload<T, R> {
@@ -23,7 +23,7 @@ class StreamedUploadFactory {
       return D2NStreamedUpload();
     } else if (type == UploadType.turbo) {
       return TurboStreamedUpload(
-        TurboUploadServiceImpl(
+        TurboUploadService(
           turboUploadUri: turboUploadUri,
         ),
       );

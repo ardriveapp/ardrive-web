@@ -1,7 +1,7 @@
 import 'package:arconnect/arconnect.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
-import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
+import 'package:ardrive_uploader/src/turbo_upload_service.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:uuid/uuid.dart';
@@ -58,13 +58,9 @@ class TurboStreamedUpload implements StreamedUpload<UploadTask, dynamic> {
 
     // gets the streamed request
     final streamedRequest = _turbo
-        .postStream(
+        .post(
             wallet: wallet,
-            headers: {
-              'x-nonce': nonce,
-              'x-address': publicKey,
-              'x-signature': signature,
-            },
+            headers: {},
             dataItem: uploadTask.uploadItem!.data,
             size: size,
             onSendProgress: (progress) {
