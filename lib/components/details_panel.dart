@@ -761,6 +761,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   ? LicenseDetailsPopoverButton(
                       licenseState: state.licenseState!,
                       fileItem: item,
+                      updateButton:
+                          !widget.isSharePage && pinnedDataOwnerAddress == null,
                       anchor: const Aligned(
                         follower: Alignment.bottomRight,
                         target: Alignment.topRight,
