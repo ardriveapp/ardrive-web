@@ -147,8 +147,12 @@ Widget _buildDataListContent(
   bool isMultiselecting,
 ) {
   return LayoutBuilder(builder: (context, constraints) {
+    final driveDetailCubitState = context.read<DriveDetailCubit>().state;
+    final equtableBust = driveDetailCubitState is DriveDetailLoadSuccess
+        ? driveDetailCubitState.equatableBust
+        : null;
     return ArDriveDataTable<ArDriveDataTableItem>(
-      key: ValueKey(folder.id),
+      key: ValueKey(folder.id + equtableBust.toString()),
       lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
           !context.watch<ActivityTracker>().isMultiSelectEnabled,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,

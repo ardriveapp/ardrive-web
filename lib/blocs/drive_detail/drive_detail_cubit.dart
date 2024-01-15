@@ -398,7 +398,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _refreshSelectedItem = true;
 
     if (state is DriveDetailLoadSuccess) {
-      emit((state as DriveDetailLoadSuccess).copyWith());
+      logger.i('refreshing drive data table');
+      emit((state as DriveDetailLoadSuccess)
+          .copyWith(equatableBust: UniqueKey()));
     }
   }
 
