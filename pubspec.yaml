@@ -160,7 +160,7 @@ dependency_overrides:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.4
+      ref: PE-5431-show-appropriate-icon-on-upload-page-for-file-with-extensions-written-in-uppercase
 
 dev_dependencies:
   integration_test:

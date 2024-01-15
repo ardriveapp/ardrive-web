@@ -84,11 +84,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.4"
-      resolved-ref: "6ff48b9cea11774ad3e47664d20e6dd08a55467f"
+      ref: PE-5431-show-appropriate-icon-on-upload-page-for-file-with-extensions-written-in-uppercase
+      resolved-ref: "606f87c904a7a4b47b67570210af958f72b1037a"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
-    version: "1.4.4"
+    version: "1.4.5"
   ardrive_logger:
     dependency: "direct main"
     description:
