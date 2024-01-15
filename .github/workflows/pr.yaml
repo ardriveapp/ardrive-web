@@ -43,7 +43,6 @@ jobs:
           scr setup
           flutter config --enable-web
           flutter build web --dart-define=environment=development --release --pwa-strategy=none --no-web-resources-cdn --source-maps
-          flutter packages pub run sentry_dart_plugin
 
       # JS files cache invalidation
       - name: main.dart.js and service worker cache invalidation
