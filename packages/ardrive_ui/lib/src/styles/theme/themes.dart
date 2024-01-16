@@ -52,15 +52,11 @@ class _ArDriveAppState extends State<ArDriveApp> {
       // This callback is called every time the brightness changes.
       var brightness = window.platformBrightness;
 
-      if (brightness == Brightness.dark) {
-        setState(() {
-          _theme = ArDriveThemes.dark;
-        });
-      } else {
-        setState(() {
-          _theme = ArDriveThemes.light;
-        });
-      }
+      setState(() {
+        _theme = brightness == Brightness.dark
+            ? ArDriveThemes.dark
+            : ArDriveThemes.light;
+      });
 
       widget.onThemeChanged?.call(_theme);
     };
