@@ -37,7 +37,7 @@ class MockPstService extends Mock implements PstService {}
 
 class MockUploadPlanUtils extends Mock implements UploadPlanUtils {}
 
-class MockUploadFileChecker extends Mock implements UploadFileChecker {}
+class MockUploadFileSizeChecker extends Mock implements UploadFileSizeChecker {}
 
 class MockTurboUploadService extends Mock implements TurboUploadService {}
 
@@ -63,7 +63,7 @@ void main() {
   late MockPstService mockPst;
   late MockUploadPlanUtils mockUploadPlanUtils;
   MockProfileCubit? mockProfileCubit;
-  late MockUploadFileChecker mockUploadFileChecker;
+  late MockUploadFileSizeChecker mockUploadFileChecker;
   late MockArDriveAuth mockArDriveAuth;
   late MockUploadCostEstimateCalculatorForAR
       mockUploadCostEstimateCalculatorForAR;
@@ -167,7 +167,7 @@ void main() {
     mockDriveDao = db.driveDao;
     mockProfileCubit = MockProfileCubit();
     mockUploadPlanUtils = MockUploadPlanUtils();
-    mockUploadFileChecker = MockUploadFileChecker();
+    mockUploadFileChecker = MockUploadFileSizeChecker();
     mockArDriveAuth = MockArDriveAuth();
     mockUploadCostEstimateCalculatorForAR =
         MockUploadCostEstimateCalculatorForAR();
@@ -204,7 +204,7 @@ void main() {
     );
 
     // mock limit for UploadFileChecker
-    when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+    when(() => mockUploadFileChecker.hasFileAboveSizeLimit(
         files: any(named: 'files'))).thenAnswer((invocation) async => false);
     const double stubArToUsdFactor = 10;
     when(() => mockArweave.getArUsdConversionRateOrNull()).thenAnswer(
@@ -415,7 +415,7 @@ void main() {
       blocTest<UploadCubit, UploadState>(
           'should show the warning when file checker found files above safe limit',
           setUp: () {
-            when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+            when(() => mockUploadFileChecker.hasFileAboveWarningSizeLimit(
                     files: any(named: 'files')))
                 .thenAnswer((invocation) async => true);
           },
@@ -433,7 +433,7 @@ void main() {
       blocTest<UploadCubit, UploadState>(
           'should show the warning when file checker found files above safe limit and emit UploadReady when user confirm the upload',
           setUp: () {
-            when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+            when(() => mockUploadFileChecker.hasFileAboveSizeLimit(
                     files: any(named: 'files')))
                 .thenAnswer((invocation) async => true);
           },
@@ -455,7 +455,7 @@ void main() {
       blocTest<UploadCubit, UploadState>(
           'should not show the warning when file checker not found files above safe limit and emit UploadReady without user confirmation',
           setUp: () {
-            when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+            when(() => mockUploadFileChecker.hasFileAboveSizeLimit(
                     files: any(named: 'files')))
                 .thenAnswer((invocation) async => false);
           },
@@ -573,9 +573,8 @@ void main() {
                 parentFolderId: tRootFolderId);
 
             tTooLargeFiles = [tTooLargeFile];
-            when(() =>
-                    mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
-                        files: any(named: 'files')))
+            when(() => mockUploadFileChecker.getFilesAboveSizeLimit(
+                    files: any(named: 'files')))
                 .thenAnswer((invocation) async => ['some_file.txt']);
           },
           build: () {
@@ -611,9 +610,8 @@ void main() {
                     lastModifiedDate: tDefaultDate,
                     name: 'some_file.txt'),
                 parentFolderId: tRootFolderId);
-            when(() =>
-                    mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
-                        files: any(named: 'files')))
+            when(() => mockUploadFileChecker.getFilesAboveSizeLimit(
+                    files: any(named: 'files')))
                 .thenAnswer((invocation) async => ['some_file.txt']);
           },
           build: () {
@@ -692,9 +690,8 @@ void main() {
                 parentFolderId: tRootFolderId);
             when(() => mockProfileCubit!.isCurrentProfileArConnect())
                 .thenAnswer((i) => Future.value(false));
-            when(() =>
-                    mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
-                        files: any(named: 'files')))
+            when(() => mockUploadFileChecker.getFilesAboveSizeLimit(
+                    files: any(named: 'files')))
                 .thenAnswer((invocation) async => ['some_file.txt']);
           },
           build: () {

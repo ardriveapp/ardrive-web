@@ -43,7 +43,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final PstService _pst;
-  final UploadFileChecker _uploadFileChecker;
+  final UploadFileSizeChecker _uploadFileSizeChecker;
   final ArDriveAuth _auth;
   final ArDriveUploadPreparationManager _arDriveUploadManager;
   final ActivityTracker _activityTracker;
@@ -101,7 +101,7 @@ class UploadCubit extends Cubit<UploadState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required PstService pst,
-    required UploadFileChecker uploadFileChecker,
+    required UploadFileSizeChecker uploadFileChecker,
     required ArDriveAuth auth,
     required ArDriveUploadPreparationManager arDriveUploadManager,
     required ActivityTracker activityTracker,
@@ -109,7 +109,7 @@ class UploadCubit extends Cubit<UploadState> {
     this.uploadFolders = false,
     this.isDragNDrop = false,
   })  : _profileCubit = profileCubit,
-        _uploadFileChecker = uploadFileChecker,
+        _uploadFileSizeChecker = uploadFileChecker,
         _driveDao = driveDao,
         _pst = pst,
         _auth = auth,
@@ -188,14 +188,14 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> checkFilesAboveLimit() async {
     if (_isAPrivateUpload()) {
-      final tooLargeFiles = await _uploadFileChecker
-          .checkAndReturnFilesAbovePrivateLimit(files: files);
+      final largeFiles =
+          await _uploadFileSizeChecker.getFilesAboveSizeLimit(files: files);
 
-      if (tooLargeFiles.isNotEmpty) {
+      if (largeFiles.isNotEmpty) {
         emit(
           UploadFileTooLarge(
-            hasFilesToUpload: files.length > tooLargeFiles.length,
-            tooLargeFileNames: tooLargeFiles,
+            hasFilesToUpload: files.length > largeFiles.length,
+            tooLargeFileNames: largeFiles,
             isPrivate: _isAPrivateUpload(),
           ),
         );
@@ -480,13 +480,9 @@ class UploadCubit extends Cubit<UploadState> {
 
     if (_uploadMethod == UploadMethod.turbo) {
       await _verifyIfUploadContainsLargeFilesUsingTurbo();
-      if ((_containsLargeTurboUpload ?? false) &&
-          !hasEmittedWarning &&
-          kIsWeb &&
-          !await AppPlatform.isChrome()) {
+      if ((_containsLargeTurboUpload ?? false) && !hasEmittedWarning) {
         emit(
           UploadShowingWarning(
-            reason: UploadWarningReason.fileTooLargeOnNonChromeBrowser,
             uploadPlanForAR: uploadPlanForAr,
             uploadPlanForTurbo: uploadPlanForTurbo,
           ),
@@ -756,11 +752,9 @@ class UploadCubit extends Cubit<UploadState> {
     if (_containsLargeTurboUpload == null) {
       _containsLargeTurboUpload = false;
 
-      for (var file in files) {
-        if (await file.ioFile.length >= largeFileUploadSizeThreshold) {
-          _containsLargeTurboUpload = true;
-          break;
-        }
+      if (await _uploadFileSizeChecker.hasFileAboveSizeLimit(files: files)) {
+        _containsLargeTurboUpload = true;
+        return;
       }
     }
   }
@@ -855,8 +849,8 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> skipLargeFilesAndCheckForConflicts() async {
     emit(UploadPreparationInProgress());
-    final List<String> filesToSkip = await _uploadFileChecker
-        .checkAndReturnFilesAbovePrivateLimit(files: files);
+    final List<String> filesToSkip =
+        await _uploadFileSizeChecker.getFilesAboveSizeLimit(files: files);
 
     files.removeWhere(
       (file) => filesToSkip.contains(file.getIdentifier()),
@@ -877,20 +871,16 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> verifyFilesAboveWarningLimit() async {
     if (!_targetDrive.isPrivate) {
-      bool fileAboveWarningLimit =
-          await _uploadFileChecker.hasFileAboveSafePublicSizeLimit(
-        files: files,
-      );
-
-      if (fileAboveWarningLimit) {
+      if (await _uploadFileSizeChecker.hasFileAboveWarningSizeLimit(
+          files: files)) {
         emit(UploadShowingWarning(
-          reason: UploadWarningReason.fileTooLarge,
           uploadPlanForAR: null,
           uploadPlanForTurbo: null,
         ));
 
         return;
       }
+
       await prepareUploadPlanAndCostEstimates();
     }
 

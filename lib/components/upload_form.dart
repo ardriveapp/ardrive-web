@@ -121,7 +121,7 @@ Future<void> promptToUpload(
               ),
             ),
           ),
-          uploadFileChecker: context.read<UploadFileChecker>(),
+          uploadFileChecker: context.read<UploadFileSizeChecker>(),
           driveId: driveId,
           parentFolderId: parentFolderId,
           files: selectedFiles,
@@ -778,11 +778,7 @@ class _UploadFormState extends State<UploadForm> {
                     Text(
                       appLocalizationsOf(context)
                           .weDontRecommendUploadsAboveASafeLimit(
-                        filesize(
-                          state.reason == UploadWarningReason.fileTooLarge
-                              ? publicFileSafeSizeLimit
-                              : nonChromeBrowserUploadSafeLimitUsingTurbo,
-                        ),
+                        filesize(fileSizeWarning),
                       ),
                       style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
@@ -796,10 +792,7 @@ class _UploadFormState extends State<UploadForm> {
                 ),
                 ModalAction(
                   action: () {
-                    if (state.uploadPlanForAR != null &&
-                        state.reason ==
-                            UploadWarningReason
-                                .fileTooLargeOnNonChromeBrowser) {
+                    if (state.uploadPlanForAR != null) {
                       return context.read<UploadCubit>().startUpload(
                             uploadPlanForAr: state.uploadPlanForAR!,
                             uploadPlanForTurbo: state.uploadPlanForTurbo,

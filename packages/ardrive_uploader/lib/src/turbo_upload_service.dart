@@ -4,14 +4,15 @@ import 'dart:typed_data';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
+import 'package:retry/retry.dart';
 
 class TurboUploadService<Response> {
-  final Uri turboUploadUri;
-
   TurboUploadService({
     required this.turboUploadUri,
   });
 
+  final Uri turboUploadUri;
+  final retry = RetryOptions(maxAttempts: 8);
   final CancelToken _cancelToken = CancelToken();
 
   Future<Response> post({
@@ -23,7 +24,9 @@ class TurboUploadService<Response> {
   }) async {
     final dio = Dio();
 
-    final uploadInfo = await dio.get('$turboUploadUri/chunks/arweave/-1/-1');
+    final uploadInfo = await retry.retry(
+      () => dio.get('$turboUploadUri/chunks/arweave/-1/-1'),
+    );
     final uploadId = uploadInfo.data['id'];
     final uploadChunkSizeMin = uploadInfo.data['min'];
 
@@ -44,19 +47,21 @@ class TurboUploadService<Response> {
         dataItemStream, uploadChunkSizeMin, maxUploadsInParallel,
         (chunk, offset) async {
       try {
-        return dio.post(
-          '$turboUploadUri/chunks/arweave/$uploadId/$offset',
-          data: chunk,
-          onSendProgress: (sent, total) {
-            if (onSendProgress != null) {
-              progressCounter[offset] = sent;
-            }
-          },
-          options: Options(
-            headers: {
-              'Content-Type': 'application/octet-stream',
-              'Content-Length': chunk.length.toString(),
-            }..addAll(headers),
+        return retry.retry(
+          () => dio.post(
+            '$turboUploadUri/chunks/arweave/$uploadId/$offset',
+            data: chunk,
+            onSendProgress: (sent, total) {
+              if (onSendProgress != null) {
+                progressCounter[offset] = sent;
+              }
+            },
+            options: Options(
+              headers: {
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': chunk.length.toString(),
+              }..addAll(headers),
+            ),
           ),
         );
       } catch (e) {
@@ -68,9 +73,11 @@ class TurboUploadService<Response> {
     });
 
     try {
-      final finaliseInfo = await dio.post(
-        '$turboUploadUri/chunks/arweave/$uploadId/-1',
-        data: null,
+      final finaliseInfo = await retry.retry(
+        () => dio.post(
+          '$turboUploadUri/chunks/arweave/$uploadId/-1',
+          data: null,
+        ),
       );
       return finaliseInfo as Response;
     } catch (e) {
@@ -151,7 +158,7 @@ class TurboUploadService<Response> {
     return done.future;
   }
 
-  retry(getCommunityContract, {required maxAttempts}) {}
+  // retry(getCommunityContract, {required maxAttempts}) {}
 }
 
 class TurboUploadExceptions implements Exception {}

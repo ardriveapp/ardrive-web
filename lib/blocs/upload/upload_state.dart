@@ -243,29 +243,18 @@ class UploadComplete extends UploadState {}
 class UploadWalletMismatch extends UploadState {}
 
 class UploadShowingWarning extends UploadState {
-  final UploadWarningReason reason;
   final UploadPlan? uploadPlanForAR;
   final UploadPlan? uploadPlanForTurbo;
 
   UploadShowingWarning({
-    required this.reason,
     this.uploadPlanForAR,
     this.uploadPlanForTurbo,
   });
-
-  @override
-  List<Object> get props => [reason];
 }
 
 class UploadCanceled extends UploadState {}
 
 class CancelD2NUploadWarning extends UploadState {}
-
-enum UploadWarningReason {
-  /// The user is attempting to upload a file that is too large.
-  fileTooLarge,
-  fileTooLargeOnNonChromeBrowser,
-}
 
 enum UploadErrors {
   turboTimeout,

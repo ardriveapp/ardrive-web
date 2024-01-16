@@ -75,7 +75,7 @@ class MockArConnectService extends Mock implements ArConnectService {}
 class MockTabVisibilitySingleton extends Mock
     implements TabVisibilitySingleton {}
 
-class MockUploadFileChecker extends Mock implements UploadFileChecker {}
+class MockUploadFileSizeChecker extends Mock implements UploadFileSizeChecker {}
 
 class MockSecureKeyValueStore extends Mock implements SecureKeyValueStore {}
 

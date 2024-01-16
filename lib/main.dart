@@ -185,11 +185,10 @@ class AppState extends State<App> {
             create: (_) => ActivityTracker()),
         RepositoryProvider<ArweaveService>(create: (_) => _arweave),
         // repository provider for UploadFileChecker
-        RepositoryProvider<UploadFileChecker>(
-          create: (_) => UploadFileChecker(
-            privateFileSafeSizeLimit:
-                kIsWeb ? privateFileSizeLimit : mobilePrivateFileSizeLimit,
-            publicFileSafeSizeLimit: publicFileSafeSizeLimit,
+        RepositoryProvider<UploadFileSizeChecker>(
+          create: (_) => UploadFileSizeChecker(
+            fileSizeWarning: fileSizeWarning,
+            fileSizeLimit: fileSizeLimit,
           ),
         ),
         RepositoryProvider<ArweaveService>(create: (_) => _arweave),
