@@ -397,6 +397,14 @@ class UploadCubit extends Cubit<UploadState> {
 
       emit(
         UploadReady(
+          params: UploadParams(
+            user: _auth.currentUser,
+            files: files,
+            targetFolder: _targetFolder,
+            targetDrive: _targetDrive,
+            conflictingFiles: conflictingFiles,
+            foldersByPath: foldersByPath,
+          ),
           isTurboUploadPossible: paymentInfo.isUploadEligibleToTurbo &&
               paymentInfo.isTurboAvailable,
           isZeroBalance: isTurboZeroBalance,

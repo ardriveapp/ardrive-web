@@ -92,6 +92,8 @@ class UploadReady extends UploadState {
   final bool isButtonToUploadEnabled;
   final bool isDragNDrop;
 
+  final UploadParams params;
+
   UploadReady({
     required this.costEstimateAr,
     required this.sufficientArBalance,
@@ -110,6 +112,7 @@ class UploadReady extends UploadState {
     required this.uploadMethod,
     required this.isButtonToUploadEnabled,
     this.isDragNDrop = false,
+    required this.params,
   });
 
 // copyWith
@@ -132,6 +135,7 @@ class UploadReady extends UploadState {
     bool? isButtonToUploadEnabled,
   }) {
     return UploadReady(
+      params: params,
       costEstimateAr: costEstimateAr ?? this.costEstimateAr,
       costEstimateTurbo: costEstimateTurbo ?? this.costEstimateTurbo,
       sufficientArBalance: sufficientArBalance ?? this.sufficientArBalance,

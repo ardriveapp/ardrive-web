@@ -6,10 +6,10 @@ import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_view.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
-import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -80,58 +80,62 @@ Future<void> promptToUpload(
     context,
     () => showArDriveDialog(
       context,
-      content: BlocProvider<UploadCubit>(
-        create: (context) => UploadCubit(
-          activityTracker: context.read<ActivityTracker>(),
-          folder: ioFolder,
-          arDriveUploadManager: ArDriveUploadPreparationManager(
-            uploadPreparePaymentOptions: UploadPaymentEvaluator(
-              appConfig: context.read<ConfigService>().config,
-              auth: context.read<ArDriveAuth>(),
-              turboBalanceRetriever: TurboBalanceRetriever(
+      content: RepositoryProvider(
+        create: (context) => ArDriveUploadPreparationManager(
+          uploadPreparePaymentOptions: UploadPaymentEvaluator(
+            appConfig: context.read<ConfigService>().config,
+            auth: context.read<ArDriveAuth>(),
+            turboBalanceRetriever: TurboBalanceRetriever(
+              paymentService: context.read<PaymentService>(),
+            ),
+            turboUploadCostCalculator: TurboUploadCostCalculator(
+              priceEstimator: TurboPriceEstimator(
+                wallet: context.read<ArDriveAuth>().currentUser.wallet,
+                costCalculator: TurboCostCalculator(
+                  paymentService: context.read<PaymentService>(),
+                ),
                 paymentService: context.read<PaymentService>(),
               ),
-              turboUploadCostCalculator: TurboUploadCostCalculator(
-                priceEstimator: TurboPriceEstimator(
-                  wallet: context.read<ArDriveAuth>().currentUser.wallet,
-                  costCalculator: TurboCostCalculator(
-                    paymentService: context.read<PaymentService>(),
-                  ),
-                  paymentService: context.read<PaymentService>(),
-                ),
-                turboCostCalculator: TurboCostCalculator(
-                  paymentService: context.read<PaymentService>(),
-                ),
-              ),
-              uploadCostEstimateCalculatorForAR:
-                  UploadCostEstimateCalculatorForAR(
-                arweaveService: context.read<ArweaveService>(),
-                pstService: context.read<PstService>(),
-                arCostToUsd: ConvertArToUSD(
-                  arweave: context.read<ArweaveService>(),
-                ),
+              turboCostCalculator: TurboCostCalculator(
+                paymentService: context.read<PaymentService>(),
               ),
             ),
-            uploadPreparer: UploadPreparer(
-              uploadPlanUtils: UploadPlanUtils(
-                crypto: ArDriveCrypto(),
+            uploadCostEstimateCalculatorForAR:
+                UploadCostEstimateCalculatorForAR(
+              arweaveService: context.read<ArweaveService>(),
+              pstService: context.read<PstService>(),
+              arCostToUsd: ConvertArToUSD(
                 arweave: context.read<ArweaveService>(),
-                turboUploadService: context.read<TurboUploadService>(),
-                driveDao: context.read<DriveDao>(),
               ),
             ),
           ),
-          uploadFileChecker: context.read<UploadFileChecker>(),
-          driveId: driveId,
-          parentFolderId: parentFolderId,
-          files: selectedFiles,
-          profileCubit: context.read<ProfileCubit>(),
-          pst: context.read<PstService>(),
-          driveDao: context.read<DriveDao>(),
-          uploadFolders: isFolderUpload,
-          auth: context.read<ArDriveAuth>(),
-        )..startUploadPreparation(),
-        child: const UploadForm(),
+          uploadPreparer: UploadPreparer(
+            uploadPlanUtils: UploadPlanUtils(
+              crypto: ArDriveCrypto(),
+              arweave: context.read<ArweaveService>(),
+              turboUploadService: context.read<TurboUploadService>(),
+              driveDao: context.read<DriveDao>(),
+            ),
+          ),
+        ),
+        child: BlocProvider<UploadCubit>(
+          create: (context) => UploadCubit(
+            activityTracker: context.read<ActivityTracker>(),
+            folder: ioFolder,
+            arDriveUploadManager:
+                context.read<ArDriveUploadPreparationManager>(),
+            uploadFileChecker: context.read<UploadFileChecker>(),
+            driveId: driveId,
+            parentFolderId: parentFolderId,
+            files: selectedFiles,
+            profileCubit: context.read<ProfileCubit>(),
+            pst: context.read<PstService>(),
+            driveDao: context.read<DriveDao>(),
+            uploadFolders: isFolderUpload,
+            auth: context.read<ArDriveAuth>(),
+          )..startUploadPreparation(),
+          child: const UploadForm(),
+        ),
       ),
       barrierDismissible: false,
     ),
@@ -522,32 +526,19 @@ class _UploadFormState extends State<UploadForm> {
                       height: 8,
                     ),
                   },
-                  PaymentMethodSelector(
-                    uploadMethod: state.uploadMethod,
-                    costEstimateTurbo: state.costEstimateTurbo,
-                    costEstimateAr: state.costEstimateAr,
-                    hasNoTurboBalance: state.isZeroBalance,
-                    isTurboUploadPossible: state.isTurboUploadPossible,
-                    arBalance: state.arBalance,
-                    sufficientArBalance: state.sufficientArBalance,
-                    turboCredits: state.turboCredits,
-                    sufficentCreditsBalance: state.sufficentCreditsBalance,
-                    isFreeThanksToTurbo: state.isFreeThanksToTurbo,
-                    onArSelect: () {
-                      context
-                          .read<UploadCubit>()
-                          .setUploadMethod(UploadMethod.ar);
-                    },
-                    onTurboSelect: () {
-                      context
-                          .read<UploadCubit>()
-                          .setUploadMethod(UploadMethod.turbo);
-                    },
-                    onTurboTopupSucess: () {
-                      context.read<UploadCubit>().startUploadPreparation(
-                            isRetryingToPayWithTurbo: true,
-                          );
-                    },
+                  RepositoryProvider.value(
+                    value: context.read<ArDriveUploadPreparationManager>(),
+                    child: UploadPaymentMethodView(
+                      onTurboTopupSucess: () {
+                        context.read<UploadCubit>().startUploadPreparation(
+                              isRetryingToPayWithTurbo: true,
+                            );
+                      },
+                      onUploadMethodChanged: (method) {
+                        context.read<UploadCubit>().setUploadMethod(method);
+                      },
+                      params: state.params,
+                    ),
                   ),
                 ],
               ),
