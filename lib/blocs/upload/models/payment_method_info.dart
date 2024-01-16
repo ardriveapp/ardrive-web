@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:equatable/equatable.dart';
@@ -13,6 +14,9 @@ class UploadPaymentMethodInfo extends Equatable {
   final String turboCredits;
   final bool sufficentCreditsBalance;
   final bool isFreeThanksToTurbo;
+  final UploadPlan? uploadPlanForAR;
+  final UploadPlan? uploadPlanForTurbo;
+  final int totalSize;
 
   const UploadPaymentMethodInfo({
     required this.uploadMethod,
@@ -25,6 +29,9 @@ class UploadPaymentMethodInfo extends Equatable {
     required this.turboCredits,
     required this.sufficentCreditsBalance,
     required this.isFreeThanksToTurbo,
+    this.uploadPlanForAR,
+    this.uploadPlanForTurbo,
+    required this.totalSize,
   });
 
   // copy with
@@ -39,8 +46,14 @@ class UploadPaymentMethodInfo extends Equatable {
     String? turboCredits,
     bool? sufficentCreditsBalance,
     bool? isFreeThanksToTurbo,
+    UploadPlan? uploadPlanForAR,
+    UploadPlan? uploadPlanForTurbo,
+    int? totalSize,
   }) {
     return UploadPaymentMethodInfo(
+      totalSize: totalSize ?? this.totalSize,
+      uploadPlanForAR: uploadPlanForAR ?? this.uploadPlanForAR,
+      uploadPlanForTurbo: uploadPlanForTurbo ?? this.uploadPlanForTurbo,
       uploadMethod: uploadMethod ?? this.uploadMethod,
       costEstimateTurbo: costEstimateTurbo ?? this.costEstimateTurbo,
       costEstimateAr: costEstimateAr ?? this.costEstimateAr,

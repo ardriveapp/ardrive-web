@@ -403,6 +403,7 @@ Widget _confirmDialog(
                       PaymentMethodSelector(
                         uploadMethodInfo: UploadPaymentMethodInfo(
                           uploadMethod: state.uploadMethod,
+                          totalSize: state.snapshotSize,
                           costEstimateTurbo: state.costEstimateTurbo,
                           costEstimateAr: state.costEstimateAr,
                           hasNoTurboBalance: state.hasNoTurboBalance,

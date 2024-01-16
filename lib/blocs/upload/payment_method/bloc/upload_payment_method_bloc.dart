@@ -78,6 +78,11 @@ class UploadPaymentMethodBloc
             UploadPaymentMethodLoaded(
               params: event.params,
               paymentMethodInfo: UploadPaymentMethodInfo(
+                totalSize: uploadPreparation.uploadPaymentInfo.totalSize,
+                uploadPlanForAR:
+                    uploadPreparation.uploadPlansPreparation.uploadPlanForAr,
+                uploadPlanForTurbo:
+                    uploadPreparation.uploadPlansPreparation.uploadPlanForTurbo,
                 arBalance: literalARBalance,
                 costEstimateAr:
                     uploadPreparation.uploadPaymentInfo.arCostEstimate,

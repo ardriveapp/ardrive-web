@@ -9,6 +9,7 @@ import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_view.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -355,26 +356,37 @@ class _UploadFormState extends State<UploadForm> {
               ),
             );
           } else if (state is UploadReady) {
-            final numberOfFilesInBundles =
-                state.uploadPlanForAR.bundleUploadHandles.isNotEmpty
-                    ? state.uploadPlanForAR.bundleUploadHandles
-                        .map((e) => e.numberOfFiles)
-                        .reduce((value, element) => value += element)
-                    : 0;
-            final numberOfV2Files =
-                state.uploadPlanForAR.fileV2UploadHandles.length;
+            final uploadPlanAR = state.paymentInfo?.uploadPlanForAR;
+            final uploadPlanTurbo = state.paymentInfo?.uploadPlanForTurbo;
+
+            int numberOfFilesInBundles = state.numberOfFiles;
 
             logger.d(
               ' is button to upload enabled: ${state.isButtonToUploadEnabled}',
             );
 
-            final v2Files = state.uploadPlanForAR.fileV2UploadHandles.values
+            final v2Files = state
+                .paymentInfo?.uploadPlanForAR?.fileV2UploadHandles.values
                 .map((e) => e)
                 .toList();
 
-            final bundles = state.uploadPlanForAR.bundleUploadHandles.toList();
+            final bundles = state
+                .paymentInfo?.uploadPlanForAR?.bundleUploadHandles
+                .toList();
 
-            final files = [...v2Files, ...bundles];
+            List<UploadHandle>? files;
+
+            if (v2Files != null) {
+              files = [];
+
+              files.addAll(v2Files);
+            }
+
+            if (bundles != null) {
+              files ??= [];
+
+              files.addAll(bundles);
+            }
 
             PlausibleEventTracker.trackUploadReview(
               drivePrivacy: state.uploadIsPublic
@@ -386,63 +398,34 @@ class _UploadFormState extends State<UploadForm> {
             return ArDriveStandardModal(
               width: 408,
               title: appLocalizationsOf(context)
-                  .uploadNFiles(numberOfFilesInBundles + numberOfV2Files),
+                  .uploadNFiles(numberOfFilesInBundles),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 256),
-                      child: ArDriveScrollBar(
-                          controller: _scrollController,
-                          alwaysVisible: true,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.only(top: 0),
-                            controller: _scrollController,
-                            shrinkWrap: true,
-                            itemCount: files.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              final file = files[index];
-                              if (file is FileV2UploadHandle) {
-                                return Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        '${file.entity.name!} ',
-                                        style: ArDriveTypography.body.smallBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgSubtle,
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      filesize(file.size),
-                                      style:
-                                          ArDriveTypography.body.smallRegular(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeFgMuted,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              } else {
-                                final bundle = file as BundleUploadHandle;
-
-                                return ListView(
-                                    padding: EdgeInsets.zero,
-                                    shrinkWrap: true,
-                                    children: bundle.fileEntities.map((e) {
+                  files == null
+                      ? Center(child: CircularProgressIndicator())
+                      : Align(
+                          alignment: Alignment.topCenter,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 256),
+                            child: ArDriveScrollBar(
+                                controller: _scrollController,
+                                alwaysVisible: true,
+                                child: ListView.builder(
+                                  padding: const EdgeInsets.only(top: 0),
+                                  controller: _scrollController,
+                                  shrinkWrap: true,
+                                  itemCount: files.length,
+                                  itemBuilder:
+                                      (BuildContext context, int index) {
+                                    final file = files![index];
+                                    if (file is FileV2UploadHandle) {
                                       return Row(
                                         children: [
                                           Flexible(
                                             child: Text(
-                                              '${e.name!} ',
+                                              '${file.entity.name!} ',
                                               style: ArDriveTypography.body
                                                   .smallBold(
                                                 color: ArDriveTheme.of(context)
@@ -453,7 +436,7 @@ class _UploadFormState extends State<UploadForm> {
                                             ),
                                           ),
                                           Text(
-                                            filesize(e.size),
+                                            filesize(file.size),
                                             style: ArDriveTypography.body
                                                 .smallRegular(
                                               color: ArDriveTheme.of(context)
@@ -464,12 +447,49 @@ class _UploadFormState extends State<UploadForm> {
                                           ),
                                         ],
                                       );
-                                    }).toList());
-                              }
-                            },
-                          )),
-                    ),
-                  ),
+                                    } else {
+                                      final bundle = file as BundleUploadHandle;
+
+                                      return ListView(
+                                          padding: EdgeInsets.zero,
+                                          shrinkWrap: true,
+                                          children:
+                                              bundle.fileEntities.map((e) {
+                                            return Row(
+                                              children: [
+                                                Flexible(
+                                                  child: Text(
+                                                    '${e.name!} ',
+                                                    style: ArDriveTypography
+                                                        .body
+                                                        .smallBold(
+                                                      color: ArDriveTheme.of(
+                                                              context)
+                                                          .themeData
+                                                          .colors
+                                                          .themeFgSubtle,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  filesize(e.size),
+                                                  style: ArDriveTypography.body
+                                                      .smallRegular(
+                                                    color:
+                                                        ArDriveTheme.of(context)
+                                                            .themeData
+                                                            .colors
+                                                            .themeFgMuted,
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          }).toList());
+                                    }
+                                  },
+                                )),
+                          ),
+                        ),
                   const SizedBox(height: 8),
                   RichText(
                     text: TextSpan(
@@ -483,42 +503,45 @@ class _UploadFormState extends State<UploadForm> {
                                 .themeFgOnDisabled,
                           ),
                         ),
-                        TextSpan(
-                          text: filesize(
-                            state.uploadSize,
-                          ),
-                          style: ArDriveTypography.body
-                              .buttonNormalBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgDefault)
-                              .copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        if (state.isFreeThanksToTurbo) ...[
+                        if (state.paymentInfo != null)
                           TextSpan(
-                            text: appLocalizationsOf(context)
-                                .freeTurboTransaction,
-                            style: ArDriveTypography.body.buttonNormalRegular(),
+                            text: filesize(
+                              state.paymentInfo!.totalSize,
+                            ),
+                            style: ArDriveTypography.body
+                                .buttonNormalBold(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgDefault)
+                                .copyWith(fontWeight: FontWeight.bold),
                           ),
-                        ]
                       ],
-                      style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
                   ),
+                  if (state.paymentInfo != null)
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          if (state.paymentInfo!.isFreeThanksToTurbo) ...[
+                            TextSpan(
+                              text: appLocalizationsOf(context)
+                                  .freeTurboTransaction,
+                              style:
+                                  ArDriveTypography.body.buttonNormalRegular(),
+                            ),
+                          ]
+                        ],
+                        style: ArDriveTypography.body.buttonNormalRegular(),
+                      ),
+                    ),
                   const Divider(
                     height: 20,
                   ),
                   if (state.uploadIsPublic) ...{
                     Text(
                       appLocalizationsOf(context).filesWillBeUploadedPublicly(
-                        numberOfFilesInBundles + numberOfV2Files,
+                        state.numberOfFiles,
                       ),
                       style: ArDriveTypography.body.buttonNormalRegular(),
                     ),
@@ -534,8 +557,10 @@ class _UploadFormState extends State<UploadForm> {
                               isRetryingToPayWithTurbo: true,
                             );
                       },
-                      onUploadMethodChanged: (method) {
-                        context.read<UploadCubit>().setUploadMethod(method);
+                      onUploadMethodChanged: (method, info) {
+                        context
+                            .read<UploadCubit>()
+                            .setUploadMethod(method, info);
                       },
                       params: state.params,
                     ),
@@ -551,8 +576,9 @@ class _UploadFormState extends State<UploadForm> {
                   isEnable: state.isButtonToUploadEnabled,
                   action: () {
                     context.read<UploadCubit>().startUpload(
-                          uploadPlanForAr: state.uploadPlanForAR,
-                          uploadPlanForTurbo: state.uploadPlanForTurbo,
+                          uploadPlanForAr: state.paymentInfo!.uploadPlanForAR!,
+                          uploadPlanForTurbo:
+                              state.paymentInfo!.uploadPlanForTurbo,
                         );
                   },
                   title: appLocalizationsOf(context).uploadEmphasized,

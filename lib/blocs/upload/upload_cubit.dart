@@ -4,16 +4,15 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
+import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/activity_tracker.dart';
-import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -45,7 +44,6 @@ class UploadCubit extends Cubit<UploadState> {
   final PstService _pst;
   final UploadFileChecker _uploadFileChecker;
   final ArDriveAuth _auth;
-  final ArDriveUploadPreparationManager _arDriveUploadManager;
   final ActivityTracker _activityTracker;
 
   late bool uploadFolders;
@@ -53,7 +51,8 @@ class UploadCubit extends Cubit<UploadState> {
   late FolderEntry _targetFolder;
   UploadMethod? _uploadMethod;
 
-  void setUploadMethod(UploadMethod? method) {
+  void setUploadMethod(
+      UploadMethod? method, UploadPaymentMethodInfo paymentInfo) {
     logger.d('Upload method set to $method');
     _uploadMethod = method;
 
@@ -61,18 +60,17 @@ class UploadCubit extends Cubit<UploadState> {
 
     if (state is UploadReady) {
       final uploadReady = state as UploadReady;
-      logger.d(
-          'Sufficient Balance To Pay With AR: ${uploadReady.sufficientArBalance}');
+      logger.d('Sufficient Balance To Pay With AR: ${uploadReady.paymentInfo}');
 
-      if (_uploadMethod == UploadMethod.ar && uploadReady.sufficientArBalance) {
+      if (_uploadMethod == UploadMethod.ar && paymentInfo.sufficientArBalance) {
         logger.d('Enabling button for AR payment method');
         isButtonEnabled = true;
       } else if (_uploadMethod == UploadMethod.turbo &&
-          uploadReady.isTurboUploadPossible &&
-          uploadReady.sufficentCreditsBalance) {
+          paymentInfo.isTurboUploadPossible &&
+          paymentInfo.sufficentCreditsBalance) {
         logger.d('Enabling button for Turbo payment method');
         isButtonEnabled = true;
-      } else if (uploadReady.isFreeThanksToTurbo) {
+      } else if (paymentInfo.isFreeThanksToTurbo) {
         logger.d('Enabling button for free upload using Turbo');
         isButtonEnabled = true;
       } else {
@@ -80,6 +78,7 @@ class UploadCubit extends Cubit<UploadState> {
       }
 
       emit(uploadReady.copyWith(
+        paymentInfo: paymentInfo,
         uploadMethod: method,
         isButtonToUploadEnabled: isButtonEnabled,
       ));
@@ -113,7 +112,6 @@ class UploadCubit extends Cubit<UploadState> {
         _driveDao = driveDao,
         _pst = pst,
         _auth = auth,
-        _arDriveUploadManager = arDriveUploadManager,
         _activityTracker = activityTracker,
         super(UploadPreparationInProgress());
 
@@ -328,75 +326,17 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     try {
-      final uploadPreparation = await _arDriveUploadManager.prepareUpload(
-        params: UploadParams(
-          user: _auth.currentUser,
-          files: files,
-          targetFolder: _targetFolder,
-          targetDrive: _targetDrive,
-          conflictingFiles: conflictingFiles,
-          foldersByPath: foldersByPath,
-        ),
-      );
-
-      final paymentInfo = uploadPreparation.uploadPaymentInfo;
-      final uploadPlansPreparation = uploadPreparation.uploadPlansPreparation;
-
-      _uploadMethod = paymentInfo.defaultPaymentMethod;
-      logger.d('Upload method: $_uploadMethod');
-
       if (await _profileCubit.checkIfWalletMismatch()) {
         emit(UploadWalletMismatch());
         return;
       }
 
-      bool isTurboZeroBalance =
-          uploadPreparation.uploadPaymentInfo.turboBalance == BigInt.zero;
-
-      logger.d(
-        'Upload preparation finished\n'
-        'UploadMethod: $_uploadMethod\n'
-        'UploadPlan For AR: ${uploadPreparation.uploadPaymentInfo.arCostEstimate.toString()}\n'
-        'UploadPlan For Turbo: ${uploadPreparation.uploadPlansPreparation.uploadPlanForTurbo.toString()}\n'
-        'Turbo Balance: ${uploadPreparation.uploadPaymentInfo.turboBalance}\n'
-        'AR Balance: ${_auth.currentUser.walletBalance}\n'
-        'Is Turbo Upload Possible: ${paymentInfo.isUploadEligibleToTurbo}\n'
-        'Is Zero Balance: $isTurboZeroBalance\n',
-      );
-
-      final literalBalance = convertWinstonToLiteralString(
-          uploadPreparation.uploadPaymentInfo.turboBalance);
-      final literalARBalance =
-          convertWinstonToLiteralString(_auth.currentUser.walletBalance);
-
       bool isButtonEnabled = false;
-      bool sufficientBalanceToPayWithAR =
-          profile.walletBalance >= paymentInfo.arCostEstimate.totalCost;
-      bool sufficientBalanceToPayWithTurbo =
-          paymentInfo.turboCostEstimate.totalCost <=
-              uploadPreparation.uploadPaymentInfo.turboBalance;
-
-      logger.d(
-          'Sufficient Balance To Pay With AR: $sufficientBalanceToPayWithAR');
-
-      if (_uploadMethod == UploadMethod.ar && sufficientBalanceToPayWithAR) {
-        logger.d('Enabling button for AR payment method');
-        isButtonEnabled = true;
-      } else if (_uploadMethod == UploadMethod.turbo &&
-          paymentInfo.isUploadEligibleToTurbo &&
-          paymentInfo.isTurboAvailable &&
-          sufficientBalanceToPayWithTurbo) {
-        logger.d('Enabling button for Turbo payment method');
-        isButtonEnabled = true;
-      } else if (paymentInfo.isFreeUploadPossibleUsingTurbo) {
-        logger.d('Enabling button for free upload using Turbo');
-        isButtonEnabled = true;
-      } else {
-        logger.d('Disabling button');
-      }
 
       emit(
         UploadReady(
+          uploadIsPublic: !_targetDrive.isPrivate,
+          numberOfFiles: files.length,
           params: UploadParams(
             user: _auth.currentUser,
             files: files,
@@ -405,23 +345,6 @@ class UploadCubit extends Cubit<UploadState> {
             conflictingFiles: conflictingFiles,
             foldersByPath: foldersByPath,
           ),
-          isTurboUploadPossible: paymentInfo.isUploadEligibleToTurbo &&
-              paymentInfo.isTurboAvailable,
-          isZeroBalance: isTurboZeroBalance,
-          turboCredits: literalBalance,
-          uploadSize: paymentInfo.totalSize,
-          costEstimateAr: paymentInfo.arCostEstimate,
-          costEstimateTurbo: paymentInfo.turboCostEstimate,
-          credits: literalBalance,
-          arBalance: literalARBalance,
-          uploadIsPublic: _targetDrive.isPublic,
-          sufficientArBalance:
-              profile.walletBalance >= paymentInfo.arCostEstimate.totalCost,
-          uploadPlanForAR: uploadPlansPreparation.uploadPlanForAr,
-          uploadPlanForTurbo: uploadPlansPreparation.uploadPlanForTurbo,
-          isFreeThanksToTurbo: (paymentInfo.isFreeUploadPossibleUsingTurbo),
-          sufficentCreditsBalance: sufficientBalanceToPayWithTurbo,
-          uploadMethod: _uploadMethod!,
           isButtonToUploadEnabled: isButtonEnabled,
           isDragNDrop: isDragNDrop,
         ),
