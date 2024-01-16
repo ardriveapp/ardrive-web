@@ -59,7 +59,7 @@ class LicenseSummary extends StatelessWidget {
                 recognizer: TapGestureRecognizer()
                   ..onTap = () async {
                     final url =
-                        'https://viewblock.io/arweave/tx/${licenseState.meta.licenseDefinitionTxId}';
+                        'https://arweave.net/${licenseState.meta.licenseDefinitionTxId}';
                     await openUrl(url: url);
                   },
               ),

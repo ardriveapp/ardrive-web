@@ -751,49 +751,18 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       if (state is FsEntryFileInfoSuccess)
         DetailsPanelItem(
-          itemTitle: 'License',
           // TODO: Localize
           // itemTitle: appLocalizationsOf(context).license,
+          itemTitle: 'License',
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              (!widget.isSharePage &&
-                      state.licenseState == null &&
-                      pinnedDataOwnerAddress == null)
-                  ? ArDriveButton(
-                      text: 'Add',
-                      icon: ArDriveIcons.license(
-                        size: 16,
-                        color:
-                            ArDriveTheme.of(context).themeData.backgroundColor,
-                      ),
-                      fontStyle: ArDriveTypography.body.buttonNormalBold(
-                        color:
-                            ArDriveTheme.of(context).themeData.backgroundColor,
-                      ),
-                      backgroundColor: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
-                      maxHeight: 32,
-                      onPressed: () => promptToLicense(
-                        context,
-                        driveId: item.driveId,
-                        selectedItems: [item],
-                      ),
-                    )
-                  : LicenseDetailsPopoverButton(
-                      licenseState: state.licenseState ??
-                          const LicenseState(
-                            meta: LicenseMeta(
-                              licenseType: LicenseType.unknown,
-                              licenseDefinitionTxId: '',
-                              name: 'Unknown',
-                              shortName: 'Unknown',
-                              version: '0',
-                            ),
-                          ),
+              state.licenseState != null
+                  ? LicenseDetailsPopoverButton(
+                      licenseState: state.licenseState!,
                       fileItem: item,
+                      updateButton:
+                          !widget.isSharePage && pinnedDataOwnerAddress == null,
                       anchor: const Aligned(
                         follower: Alignment.bottomRight,
                         target: Alignment.topRight,
@@ -805,6 +774,38 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         ),
                       ),
                     )
+                  : (!widget.isSharePage && pinnedDataOwnerAddress == null)
+                      ? ArDriveButton(
+                          text: 'Add',
+                          icon: ArDriveIcons.license(
+                            size: 16,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .backgroundColor,
+                          ),
+                          fontStyle: ArDriveTypography.body.buttonNormalBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .backgroundColor,
+                          ),
+                          backgroundColor: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault,
+                          maxHeight: 32,
+                          onPressed: () => promptToLicense(
+                            context,
+                            driveId: item.driveId,
+                            selectedItems: [item],
+                          ),
+                        )
+                      : Text(
+                          // TODO: Localize
+                          // appLocalizationsOf(context).noLicense,
+                          'None',
+                          textAlign: TextAlign.right,
+                          style: ArDriveTypography.body.buttonNormalRegular(),
+                        ),
             ],
           ),
         ),

@@ -9,12 +9,14 @@ import 'package:flutter/widgets.dart';
 class LicenseDetailsPopoverButton extends StatefulWidget {
   final LicenseState licenseState;
   final FileDataTableItem fileItem;
+  final bool updateButton;
   final Aligned anchor;
 
   const LicenseDetailsPopoverButton({
     super.key,
     required this.licenseState,
     required this.fileItem,
+    required this.updateButton,
     required this.anchor,
   });
 
@@ -42,6 +44,7 @@ class _LicenseDetailsPopoverButtonState
       content: LicenseDetailsPopover(
         licenseState: widget.licenseState,
         fileItem: widget.fileItem,
+        updateButton: widget.updateButton,
         closePopover: () {
           setState(() {
             _showLicenseDetailsCard = false;
@@ -71,12 +74,14 @@ class _LicenseDetailsPopoverButtonState
 class LicenseDetailsPopover extends StatelessWidget {
   final LicenseState licenseState;
   final FileDataTableItem fileItem;
+  final bool updateButton;
   final VoidCallback closePopover;
 
   const LicenseDetailsPopover({
     super.key,
     required this.licenseState,
     required this.fileItem,
+    required this.updateButton,
     required this.closePopover,
   });
 
@@ -90,30 +95,31 @@ class LicenseDetailsPopover extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           LicenseSummary(licenseState: licenseState),
-          ArDriveButton(
-            text:
-                // TODO: Localize
-                // appLocalizationsOf(context).licenseUpdate
-                'Update',
-            icon: ArDriveIcons.license(
-              size: 16,
-              color: ArDriveTheme.of(context).themeData.backgroundColor,
+          if (updateButton)
+            ArDriveButton(
+              text:
+                  // TODO: Localize
+                  // appLocalizationsOf(context).licenseUpdate
+                  'Update',
+              icon: ArDriveIcons.license(
+                size: 16,
+                color: ArDriveTheme.of(context).themeData.backgroundColor,
+              ),
+              fontStyle: ArDriveTypography.body.buttonNormalBold(
+                color: ArDriveTheme.of(context).themeData.backgroundColor,
+              ),
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              maxHeight: 32,
+              onPressed: () {
+                closePopover();
+                promptToLicense(
+                  context,
+                  driveId: fileItem.driveId,
+                  selectedItems: [fileItem],
+                );
+              },
             ),
-            fontStyle: ArDriveTypography.body.buttonNormalBold(
-              color: ArDriveTheme.of(context).themeData.backgroundColor,
-            ),
-            backgroundColor:
-                ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            maxHeight: 32,
-            onPressed: () {
-              closePopover();
-              promptToLicense(
-                context,
-                driveId: fileItem.driveId,
-                selectedItems: [fileItem],
-              );
-            },
-          ),
           const SizedBox(height: 8),
         ],
       ),
