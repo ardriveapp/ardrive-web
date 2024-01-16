@@ -63,15 +63,15 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
             required DateTime lastUpdated,
             required DateTime dateCreated,
           }) async {
-            final latestRevision = maybeRevisions?.first ??
-                await _driveDao
+            // Revision must either come from DB (preferred) or [SharedFileCubit]
+            final latestRevision = await _driveDao
                     .latestFileRevisionByFileId(driveId: driveId, fileId: id)
-                    .getSingle();
+                    .getSingleOrNull() ??
+                maybeRevisions!.first;
 
-            var licenseState = maybeLicenseState;
-            if (!isSharedFile &&
-                licenseState == null &&
-                latestRevision.licenseTxId != null) {
+            LicenseState? licenseState;
+            // Prefer unconfirmed LicenseState from the DB...
+            if (latestRevision.licenseTxId != null) {
               final license = await _driveDao
                   .licenseByTxId(tx: latestRevision.licenseTxId!)
                   .getSingleOrNull();
@@ -79,6 +79,19 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               if (license != null) {
                 final companion = license.toCompanion(true);
                 licenseState = _licenseService.fromCompanion(companion);
+              } else {
+                // ...fall back to license fetched from [SharedFileCubit] if available
+                licenseState ??= maybeLicenseState;
+                // License not yet mined?
+                licenseState ??= const LicenseState(
+                  meta: LicenseMeta(
+                    licenseType: LicenseType.unknown,
+                    licenseDefinitionTxId: '',
+                    name: 'Pending',
+                    shortName: 'Pending',
+                    version: '',
+                  ),
+                );
               }
             }
 
