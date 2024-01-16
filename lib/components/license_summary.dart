@@ -43,26 +43,28 @@ class LicenseSummary extends StatelessWidget {
                       ArDriveTheme.of(context).themeData.colors.themeFgDefault,
                 ),
               ),
-              const TextSpan(text: '   '),
-              TextSpan(
-                text: 'View',
-                style: ArDriveTypography.body
-                    .buttonLargeRegular(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgSubtle,
-                    )
-                    .copyWith(
-                      decoration: TextDecoration.underline,
-                    ),
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () async {
-                    final url =
-                        'https://arweave.net/${licenseState.meta.licenseDefinitionTxId}';
-                    await openUrl(url: url);
-                  },
-              ),
+              if (licenseState.meta.licenseType != LicenseType.unknown) ...[
+                const TextSpan(text: '   '),
+                TextSpan(
+                  text: 'View',
+                  style: ArDriveTypography.body
+                      .buttonLargeRegular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgSubtle,
+                      )
+                      .copyWith(
+                        decoration: TextDecoration.underline,
+                      ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () async {
+                      final url =
+                          'https://arweave.net/${licenseState.meta.licenseDefinitionTxId}';
+                      await openUrl(url: url);
+                    },
+                ),
+              ]
             ],
           ),
         ),
