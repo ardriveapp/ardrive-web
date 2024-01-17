@@ -75,7 +75,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     Key? forceRebuildKey,
   }) =>
       DriveDetailLoadSuccess(
-        forceRebuildKey: forceRebuildKey ?? forceRebuildKey,
+        forceRebuildKey: forceRebuildKey ?? this.forceRebuildKey,
         selectedItem: selectedItem ?? this.selectedItem,
         hasFoldersSelected: hasFoldersSelected ?? this.hasFoldersSelected,
         currentDrive: currentDrive ?? this.currentDrive,
