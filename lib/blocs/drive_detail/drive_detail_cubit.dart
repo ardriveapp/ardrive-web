@@ -455,14 +455,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
 
     final state = this.state as DriveDetailLoadSuccess;
-    final allImagesForFolder = state.currentFolderContents
-        .whereType<FileDataTableItem>()
-        .where(
-          (element) => supportedImageTypesInFilePreview.contains(
-            element.contentType,
-          ),
-        )
-        .toList();
+
+    final isShowingHiddenFiles = state.isShowingHiddenFiles;
+
+    final List<FileDataTableItem> allImagesForFolder =
+        state.currentFolderContents.whereType<FileDataTableItem>().where(
+      (element) {
+        final supportedImageType = supportedImageTypesInFilePreview.contains(
+          element.contentType,
+        );
+
+        return supportedImageType &&
+            (isShowingHiddenFiles ? true : !element.isHidden);
+      },
+    ).toList();
 
     _allImagesOfCurrentFolder = allImagesForFolder;
 
