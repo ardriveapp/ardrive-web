@@ -67,9 +67,9 @@ class UploadPaymentMethodBloc
           paymentMethodInfo: UploadPaymentMethodInfo(
             totalSize: uploadPreparation.uploadPaymentInfo.totalSize,
             uploadPlanForAR:
-                uploadPreparation.uploadPlansPreparation!.uploadPlanForAr,
+                uploadPreparation.uploadPlansPreparation.uploadPlanForAr,
             uploadPlanForTurbo:
-                uploadPreparation.uploadPlansPreparation!.uploadPlanForTurbo,
+                uploadPreparation.uploadPlansPreparation.uploadPlanForTurbo,
             arBalance: literalARBalance,
             costEstimateAr: uploadPreparation.uploadPaymentInfo.arCostEstimate,
             costEstimateTurbo:
