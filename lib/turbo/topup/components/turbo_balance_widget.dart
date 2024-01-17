@@ -6,7 +6,7 @@ import 'package:ardrive/turbo/topup/blocs/turbo_balance/turbo_balance_cubit.dart
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';

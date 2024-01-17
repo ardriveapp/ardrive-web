@@ -1,4 +1,4 @@
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'app_config.g.dart';

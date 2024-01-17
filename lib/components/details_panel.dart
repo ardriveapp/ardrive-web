@@ -270,9 +270,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         width: 8,
                       ),
                       Expanded(
-                        child: Text(
-                          widget.item.name,
-                          style: ArDriveTypography.body.buttonLargeBold(),
+                        child: Tooltip(
+                          message: widget.item.name,
+                          child: Text(
+                            widget.item.name,
+                            style: ArDriveTypography.body.buttonLargeBold(),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                       if (widget.item is FileDataTableItem &&
@@ -414,13 +418,18 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: DriveExplorerItemTileLeading(item: widget.item),
-                  title: Text(
-                    widget.item.name,
-                    style: ArDriveTypography.body.buttonLargeBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
+                  title: Tooltip(
+                    message: widget.item.name,
+                    child: Text(
+                      widget.item.name,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: ArDriveTypography.body.buttonLargeBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
                     ),
                   ),
                   subtitle: Text(

@@ -1,7 +1,7 @@
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/file_size_units.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -39,8 +39,8 @@ class TurboTopUpEstimationBloc
         if (event is LoadInitialData) {
           try {
             emit(EstimationLoading());
-            logger.i('initializing the estimation view');
-            logger.i('getting the balance');
+            logger
+                .i('initializing the estimation view and getting the balance');
             await _getBalance();
 
             logger.i('getting the price estimate');

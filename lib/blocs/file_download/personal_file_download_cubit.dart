@@ -132,14 +132,19 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
-    logger
-        .d('Downloading file ${_file.name} and dataTxId is ${_file.dataTxId}');
+    logger.d('Downloading file...');
 
     String? cipher;
     String? cipherIvTag;
     SecretKey? fileKey;
 
     final isPinFile = _file.pinnedDataOwnerAddress != null;
+
+    final dataTx = await (_arweave.getTransactionDetails(_file.txId));
+
+    if (dataTx == null) {
+      throw StateError('Data transaction not found');
+    }
 
     if (drive.drivePrivacy == DrivePrivacy.private && !isPinFile) {
       SecretKey? driveKey;
@@ -159,18 +164,15 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
       fileKey = await _driveDao.getFileKey(_file.id, driveKey);
 
-      final dataTx = await (_arweave.getTransactionDetails(_file.txId));
-
-      if (dataTx == null) {
-        throw StateError('Data transaction not found');
-      }
-
       cipher = dataTx.getTag(EntityTag.cipher);
       cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
     }
 
-    final downloadStream = _arDriveDownloader.downloadFile(
-      dataTx: _file.txId,
+    // log file size
+    logger.d('File size: ${_file.size}');
+
+    final downloadStream = await _arDriveDownloader.downloadFile(
+      dataTx: dataTx,
       fileName: _file.name,
       fileSize: _file.size,
       lastModifiedDate: _file.lastModifiedDate,
@@ -182,32 +184,35 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       fileKey: fileKey,
     );
 
-    final isChrome = await AppPlatform.isChrome();
+    downloadStream.listen(
+      (progress) {
+        logger.d('Download progress: $progress');
 
-    await for (var progress in downloadStream) {
-      if (state is FileDownloadAborted) {
-        return;
-      }
+        if (state is FileDownloadAborted) {
+          return;
+        }
 
-      emit(
-        FileDownloadWithProgress(
-          fileName: _file.name,
-          progress: progress.toInt(),
-          fileSize: _file.size,
-          contentType:
-              _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
-        ),
-      );
+        emit(
+          FileDownloadWithProgress(
+            fileName: _file.name,
+            progress: progress.toInt(),
+            fileSize: _file.size,
+            contentType:
+                _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
+          ),
+        );
 
-      _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
-
-      if (progress == 100 && isChrome) {
+        _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
+      },
+      onError: (e) {
+        logger.e('Failed to download personal file', e);
+        addError(e);
+      },
+      onDone: () {
         emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
-        return;
-      }
-    }
-
-    emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
+      },
+      cancelOnError: true,
+    );
   }
 
   @visibleForTesting

@@ -6,7 +6,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:drift/drift.dart';
@@ -80,8 +80,9 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
                 profile: profile,
                 parentFolder: folderInView,
               );
-            } catch (err) {
-              logger.e('Error moving items', err);
+            } catch (err, stacktrace) {
+              // TODO: we must handle this error better. Currently, if an error occurs, it will emit the success state anyway.
+              logger.e('Error moving items', err, stacktrace);
             }
             emit(const FsEntryMoveSuccess());
           } else {
