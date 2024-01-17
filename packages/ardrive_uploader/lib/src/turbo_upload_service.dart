@@ -5,6 +5,13 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:retry/retry.dart';
+import 'package:ardrive_logger/ardrive_logger.dart';
+
+final logger = Logger(
+  logLevel: LogLevel.debug,
+  storeLogsInMemory: true,
+  logExporter: LogExporter(),
+);
 
 class TurboUploadService<Response> {
   TurboUploadService({
@@ -22,19 +29,25 @@ class TurboUploadService<Response> {
     required int size,
     required Map<String, dynamic> headers,
   }) async {
+    logger.d('Uploading dataItem to Turbo');
+
     final dio = Dio();
 
     final uploadInfo = await retry.retry(
       () => dio.get('$turboUploadUri/chunks/arweave/-1/-1'),
     );
     final uploadId = uploadInfo.data['id'];
-    final uploadChunkSizeMin = uploadInfo.data['min'];
+    final uploadChunkSizeMinInBytes = uploadInfo.data['min'];
+    logger.d('Got upload info from Turbo');
+    logger.d('Upload ID: $uploadId');
+    logger.d('Upload chunk size: $uploadChunkSizeMinInBytes');
 
     final dataItemStream = dataItem.streamGenerator();
 
     Map<int, int> progressCounter = {};
 
-    final maxUploadsInParallel = MiB(50).size ~/ uploadChunkSizeMin;
+    final maxUploadsInParallel = MiB(50).size ~/ uploadChunkSizeMinInBytes;
+    logger.d('Max uploads in parallel: $maxUploadsInParallel');
 
     if (onSendProgress != null) {
       Timer.periodic(Duration(milliseconds: 500), (timer) {
@@ -44,14 +57,15 @@ class TurboUploadService<Response> {
     }
 
     await _processStream(
-        dataItemStream, uploadChunkSizeMin, maxUploadsInParallel,
+        dataItemStream, uploadChunkSizeMinInBytes, maxUploadsInParallel,
         (chunk, offset) async {
       try {
+        logger.d('Uploading chunk. Offset: $offset');
         return retry.retry(
           () => dio.post(
             '$turboUploadUri/chunks/arweave/$uploadId/$offset',
             data: chunk,
-            onSendProgress: (sent, total) {
+            onSendProgress: (sent, _) {
               if (onSendProgress != null) {
                 progressCounter[offset] = sent;
               }
@@ -66,6 +80,7 @@ class TurboUploadService<Response> {
         );
       } catch (e) {
         if (_isCanceled) {
+          logger.d('Upload canceled');
           _cancelToken.cancel();
         }
         rethrow;
@@ -73,15 +88,19 @@ class TurboUploadService<Response> {
     });
 
     try {
+      logger.d('Finalising upload');
       final finaliseInfo = await retry.retry(
         () => dio.post(
           '$turboUploadUri/chunks/arweave/$uploadId/-1',
           data: null,
         ),
       );
+      logger.d('Upload finalised');
+
       return finaliseInfo as Response;
     } catch (e) {
       if (_isCanceled) {
+        logger.d('Upload canceled');
         _cancelToken.cancel();
       }
       rethrow;
@@ -103,64 +122,53 @@ class TurboUploadService<Response> {
     int maxConcurrent,
     Future<dynamic> Function(Uint8List, int) processChunk,
   ) async {
-    Uint8List buffer = Uint8List(0);
+    final chunkedStream = streamToChunks(stream, chunkSize);
+    final runningTasks = <Future>[];
     int offset = 0;
-    List<Future> activeTasks = [];
 
-    late StreamSubscription<Uint8List> subscription;
-    Completer<void> done = Completer();
+    await for (final chunk in chunkedStream) {
+      if (runningTasks.length >= maxConcurrent) {
+        logger.d('Waiting for a task to finish');
+        await Future.any(runningTasks);
+      }
 
-    subscription = stream.listen(
-      (Uint8List data) {
-        buffer = Uint8List.fromList(buffer + data);
+      logger.d('Starting new task. Offset: $offset');
+      final task = processChunk(chunk, offset);
+      task.whenComplete(() {
+        logger.d('Task completed. Offset: $offset');
+        runningTasks.remove(task);
+      });
 
-        while (buffer.length >= chunkSize) {
-          Uint8List chunk = Uint8List.sublistView(buffer, 0, chunkSize);
-          final task = processChunk(chunk, offset);
+      runningTasks.add(task);
 
-          activeTasks.add(task);
+      offset += chunk.length;
+    }
 
-          task.whenComplete(() {
-            activeTasks.remove(task);
-            if (activeTasks.length < maxConcurrent) {
-              subscription.resume();
-            }
-          });
-
-          offset += chunkSize;
-
-          buffer = Uint8List.sublistView(buffer, chunkSize);
-
-          if (activeTasks.length >= maxConcurrent) {
-            subscription.pause();
-          }
-        }
-      },
-      onDone: () async {
-        if (buffer.isNotEmpty) {
-          activeTasks.add(processChunk(buffer, offset));
-        }
-
-        if (activeTasks.isNotEmpty) {
-          await Future.wait(activeTasks);
-        }
-
-        done.complete();
-      },
-      onError: (e) {
-        if (!done.isCompleted) {
-          done.completeError(e);
-        }
-      },
-      cancelOnError: true,
-    );
-
-    return done.future;
+    logger.d('Waiting for all tasks to finish');
+    await Future.wait(runningTasks);
   }
-
-  // retry(getCommunityContract, {required maxAttempts}) {}
 }
 
 class TurboUploadExceptions implements Exception {}
 
 class TurboUploadTimeoutException implements TurboUploadExceptions {}
+
+Stream<Uint8List> streamToChunks(
+    Stream<Uint8List> stream, int chunkSize) async* {
+  var buffer = BytesBuilder();
+
+  await for (var uint8list in stream) {
+    buffer.add(uint8list);
+
+    while (buffer.length >= chunkSize) {
+      final currentBytes = buffer.takeBytes();
+      yield Uint8List.fromList(currentBytes.sublist(0, chunkSize));
+
+      buffer.add(currentBytes.sublist(chunkSize));
+    }
+  }
+
+  if (buffer.length > 0) {
+    yield buffer.toBytes();
+  }
+}
