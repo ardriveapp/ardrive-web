@@ -800,7 +800,6 @@ class UploadCubit extends Cubit<UploadState> {
           _driveDao.transaction(() async {
             final filePath = '${_targetFolder.path}/${metadata.name}';
             await _driveDao.writeFileEntity(entity, filePath);
-            await _driveDao.writeFileEntity(entity, filePath);
             await _driveDao.insertFileRevision(
               entity.toRevisionCompanion(
                 performedAction: revisionAction,
