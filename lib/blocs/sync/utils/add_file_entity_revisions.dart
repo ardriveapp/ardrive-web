@@ -40,8 +40,8 @@ Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions({
 
       newRevisions.add(revision);
       latestRevisions[entity.id!] = revision;
-    } catch (e) {
-      logger.e('Error adding revision for entity: ${entity.id}', e);
+    } catch (e, stacktrace) {
+      logger.e('Error adding revision for entity', e, stacktrace);
     }
   }
 

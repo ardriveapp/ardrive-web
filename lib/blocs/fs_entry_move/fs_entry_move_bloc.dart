@@ -80,8 +80,9 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
                 profile: profile,
                 parentFolder: folderInView,
               );
-            } catch (err) {
-              logger.e('Error moving items', err);
+            } catch (err, stacktrace) {
+              // TODO: we must handle this error better. Currently, if an error occurs, it will emit the success state anyway.
+              logger.e('Error moving items', err, stacktrace);
             }
             emit(const FsEntryMoveSuccess());
           } else {

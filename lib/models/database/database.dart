@@ -21,15 +21,15 @@ class Database extends _$Database {
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
-          logger.i('creating database schema');
+          logger.d('creating database schema');
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          logger.i('schema changed from $from to $to');
+          logger.d('schema changed from $from to $to');
 
           if (from == 16 && to == 17) {
             // Then we're adding the pin and custom fields columns
-            logger.i('Migrating schema from v16 to v17');
+            logger.d('Migrating schema from v16 to v17');
 
             await m.addColumn(
               driveRevisions,
@@ -67,7 +67,7 @@ class Database extends _$Database {
             await m.addColumn(folderEntries, folderEntries.isHidden);
             await m.addColumn(fileEntries, fileEntries.isHidden);
           } else if (from >= 1 && from < schemaVersion) {
-            logger.i(
+            logger.w(
               'No strategy set for migration v$from to v$to'
               ' - Resetting database schema',
             );

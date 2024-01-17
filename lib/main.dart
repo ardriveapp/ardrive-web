@@ -87,7 +87,7 @@ void main() async {
     }
   }
 
-  logger.d('Starting without crashlytics');
+  logger.d('Running without crashlytics for $flavor');
 
   _runWithoutCrashlytics();
 }
@@ -104,7 +104,7 @@ Future<void> _initialize() async {
 
   final config = configService.config;
 
-  logger.i('Initializing with config: $config');
+  logger.d('Initializing app with config: $config');
 
   ArDriveMobileDownloader.initialize();
 
