@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -66,9 +67,9 @@ class UploadPaymentMethodBloc
           paymentMethodInfo: UploadPaymentMethodInfo(
             totalSize: uploadPreparation.uploadPaymentInfo.totalSize,
             uploadPlanForAR:
-                uploadPreparation.uploadPlansPreparation.uploadPlanForAr,
+                uploadPreparation.uploadPlansPreparation!.uploadPlanForAr,
             uploadPlanForTurbo:
-                uploadPreparation.uploadPlansPreparation.uploadPlanForTurbo,
+                uploadPreparation.uploadPlansPreparation!.uploadPlanForTurbo,
             arBalance: literalARBalance,
             costEstimateAr: uploadPreparation.uploadPaymentInfo.arCostEstimate,
             costEstimateTurbo:

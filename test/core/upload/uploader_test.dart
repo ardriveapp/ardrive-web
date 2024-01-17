@@ -313,7 +313,8 @@ void main() {
 
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -333,7 +334,8 @@ void main() {
 
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -354,7 +356,8 @@ void main() {
 
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -383,7 +386,8 @@ void main() {
           });
           when(() => mockV2Upload.size).thenReturn(501);
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -410,7 +414,8 @@ void main() {
 
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -429,7 +434,8 @@ void main() {
 
           when(() => uploadPlan.bundleUploadHandles).thenReturn([]);
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -462,7 +468,8 @@ void main() {
             'fileId': mockV2Upload,
           });
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -498,7 +505,8 @@ void main() {
             'fileId': mockV2Upload,
           });
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -529,8 +537,8 @@ void main() {
 
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
 
-          final result =
-              await paymentEvaluatorWithFeatureFlagFalse.getUploadPaymentInfo(
+          final result = await paymentEvaluatorWithFeatureFlagFalse
+              .getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -550,7 +558,8 @@ void main() {
           when(() => turboBalanceRetriever.getBalance(any()))
               .thenThrow(Exception('error'));
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -576,7 +585,8 @@ void main() {
           when(() => turboUploadCostCalculator.calculateCost(
               totalSize: any(named: 'totalSize'))).thenThrow(Exception());
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -632,7 +642,8 @@ void main() {
           when(() => turboBalanceRetriever.getBalance(any()))
               .thenAnswer((_) async => BigInt.from(500));
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -671,7 +682,13 @@ void main() {
           when(() => mockFile.computeBundleSize())
               .thenAnswer((invocation) => Future.value(501));
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
+
+          when(() => mockBundle.computeBundleSize())
+              .thenAnswer((invocation) => Future.value(501));
+
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -692,7 +709,8 @@ void main() {
           when(() => turboBalanceRetriever.getBalance(any()))
               .thenAnswer((_) async => BigInt.from(500));
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -728,8 +746,14 @@ void main() {
           when(() => turboUploadCostCalculator.calculateCost(
                   totalSize: any(named: 'totalSize')))
               .thenAnswer((_) async => mockUploadCostEstimateTurbo);
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
+          when(() => mockBundle.computeBundleSize())
+              .thenAnswer((invocation) => Future.value(501));
+          when(() => mockFile.size).thenReturn(501);
 
-          final result = await uploadPaymentEvaluator.getUploadPaymentInfo(
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: uploadPlan,
             uploadPlanForTurbo: uploadPlan,
           );
@@ -793,7 +817,7 @@ void main() {
           )).thenAnswer((_) async => uploadPlan);
 
       // Act
-      final result = await uploadPreparer.prepareUpload(uploadParams);
+      final result = await uploadPreparer.prepareFileUpload(uploadParams);
 
       // Assert
       expect(result.uploadPlanForAr, uploadPlan);
@@ -825,7 +849,7 @@ void main() {
           )).thenThrow(Exception());
 
       // Assert
-      expectLater(() => uploadPreparer.prepareUpload(uploadParams),
+      expectLater(() => uploadPreparer.prepareFileUpload(uploadParams),
           throwsA(isA<Exception>()));
     });
 
@@ -896,9 +920,9 @@ void main() {
           turboBalance: BigInt.from(100),
         );
 
-        when(() => uploadPreparer.prepareUpload(uploadParams))
+        when(() => uploadPreparer.prepareFileUpload(uploadParams))
             .thenAnswer((_) async => uploadPlansPreparation);
-        when(() => uploadPaymentEvaluator.getUploadPaymentInfo(
+        when(() => uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
                 uploadPlanForAR: uploadPlan, uploadPlanForTurbo: uploadPlan))
             .thenAnswer((_) async => uploadPaymentInfo);
 
@@ -909,15 +933,15 @@ void main() {
         // Assert
         expect(result.uploadPlansPreparation, uploadPlansPreparation);
         expect(result.uploadPaymentInfo, uploadPaymentInfo);
-        verify(() => uploadPreparer.prepareUpload(any())).called(1);
-        verify(() => uploadPaymentEvaluator.getUploadPaymentInfo(
+        verify(() => uploadPreparer.prepareFileUpload(any())).called(1);
+        verify(() => uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
             uploadPlanForAR: any(named: 'uploadPlanForAR'),
             uploadPlanForTurbo: any(named: 'uploadPlanForTurbo'))).called(1);
       });
 
       test('Should throw if preparing upload plans fails', () async {
         // Arrange
-        when(() => uploadPreparer.prepareUpload(any()))
+        when(() => uploadPreparer.prepareFileUpload(any()))
             .thenThrow(Exception('Failed to prepare upload plans'));
 
         // Act
@@ -929,7 +953,7 @@ void main() {
       });
 
       test('Should throw if upload prepartion fails', () async {
-        when(() => uploadPreparer.prepareUpload(uploadParams))
+        when(() => uploadPreparer.prepareFileUpload(uploadParams))
             .thenThrow(Exception('Failed to prepare upload plans'));
 
         final call =
@@ -946,9 +970,9 @@ void main() {
           uploadPlanForTurbo: uploadPlan,
         );
 
-        when(() => uploadPreparer.prepareUpload(uploadParams))
+        when(() => uploadPreparer.prepareFileUpload(uploadParams))
             .thenAnswer((_) async => uploadPlansPreparation);
-        when(() => uploadPaymentEvaluator.getUploadPaymentInfo(
+        when(() => uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
                 uploadPlanForAR: uploadPlan, uploadPlanForTurbo: uploadPlan))
             .thenThrow(Exception('Failed to get upload payment info'));
 

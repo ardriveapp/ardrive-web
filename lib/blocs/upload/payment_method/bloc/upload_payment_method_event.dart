@@ -18,6 +18,18 @@ final class PrepareUploadPaymentMethod extends UploadPaymentMethodEvent {
   List<Object> get props => [];
 }
 
+final class PrepareUploadPaymentMethodWithDataItem
+    extends UploadPaymentMethodEvent {
+  final DataItem dataItem;
+
+  const PrepareUploadPaymentMethodWithDataItem({
+    required this.dataItem,
+  });
+
+  @override
+  List<Object> get props => [];
+}
+
 final class ChangeUploadPaymentMethod extends UploadPaymentMethodEvent {
   final UploadMethod paymentMethod;
 

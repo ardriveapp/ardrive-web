@@ -394,12 +394,12 @@ class _UploadFormState extends State<UploadForm> {
               );
 
               final v2Files = state
-                  .paymentInfo?.uploadPlanForAR?.fileV2UploadHandles.values
+                  .paymentInfo.uploadPlanForAR?.fileV2UploadHandles.values
                   .map((e) => e)
                   .toList();
 
               final bundles = state
-                  .paymentInfo?.uploadPlanForAR?.bundleUploadHandles
+                  .paymentInfo.uploadPlanForAR?.bundleUploadHandles
                   .toList();
 
               List<UploadHandle>? files;
