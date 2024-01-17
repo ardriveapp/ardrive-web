@@ -49,14 +49,6 @@ class ConfirmingHideState extends HideState {
     UploadMethod? uploadMethod,
     UploadCostEstimate? costEstimateTurbo,
     UploadCostEstimate? costEstimateAr,
-    bool? hasNoTurboBalance,
-    bool? isTurboUploadPossible,
-    String? arBalance,
-    bool? sufficientArBalance,
-    String? turboCredits,
-    bool? sufficentCreditsBalance,
-    bool? isFreeThanksToTurbo,
-    bool? isButtonToUploadEnabled,
     HideAction? hideAction,
   }) {
     return ConfirmingHideState(
