@@ -538,7 +538,6 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
-        path: folder.path,
       );
 
       entities.add((
@@ -567,7 +566,6 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
-        path: file.getIdentifier(),
       );
 
       entities.add((fileMetadata, file.ioFile));
@@ -674,7 +672,6 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
-        path: file.getIdentifier(),
       );
 
       uploadFiles.add((args, file.ioFile));
