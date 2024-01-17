@@ -72,10 +72,10 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     bool? hasFoldersSelected,
     ArDriveDataTableItem? selectedItem,
     List<ArDriveDataTableItem>? currentFolderContents,
-    Key? equatableBust,
+    Key? forceRebuildKey,
   }) =>
       DriveDetailLoadSuccess(
-        forceRebuildKey: equatableBust ?? forceRebuildKey,
+        forceRebuildKey: forceRebuildKey ?? forceRebuildKey,
         selectedItem: selectedItem ?? this.selectedItem,
         hasFoldersSelected: hasFoldersSelected ?? this.hasFoldersSelected,
         currentDrive: currentDrive ?? this.currentDrive,
