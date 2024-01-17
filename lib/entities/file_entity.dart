@@ -99,9 +99,7 @@ class FileEntity extends EntityWithCustomMetadata {
 
       final commitTime = transaction.getCommitTime();
 
-      final file = FileEntity.fromJson(entityJson!);
-
-      file
+      final file = FileEntity.fromJson(entityJson!)
         ..id = transaction.getTag(EntityTag.fileId)
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
