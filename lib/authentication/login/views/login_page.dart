@@ -22,10 +22,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
+import '../../components/fadethrough_transition_switcher.dart';
+import '../../components/login_card.dart';
+import '../../components/max_device_sizes_constrained_box.dart';
+import 'create_password_view.dart';
 import 'download_wallet_view.dart';
-import 'fadethrough_transition_switcher.dart';
-import 'login_card.dart';
-import 'max_device_sizes_constrained_box.dart';
 import 'onboarding_view.dart';
 import 'prompt_wallet_view.dart';
 

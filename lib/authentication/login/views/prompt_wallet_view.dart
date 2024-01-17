@@ -11,8 +11,8 @@ import '../../../pages/drive_detail/components/hover_widget.dart';
 import '../../../services/config/config_service.dart';
 import '../../../utils/app_localizations_wrapper.dart';
 import '../../../utils/open_url.dart';
-import 'login_card.dart';
-import 'max_device_sizes_constrained_box.dart';
+import '../../components/login_card.dart';
+import '../../components/max_device_sizes_constrained_box.dart';
 
 class PromptWalletView extends StatefulWidget {
   final bool isArConnectAvailable;

@@ -14,8 +14,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import 'accent_painter.dart';
-import 'login_copy_button.dart';
+import '../../components/accent_painter.dart';
+import '../../components/login_copy_button.dart';
 
 class CreateNewWalletView extends StatefulWidget {
   const CreateNewWalletView({super.key, required this.mnemonic});

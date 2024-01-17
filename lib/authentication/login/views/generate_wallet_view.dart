@@ -4,9 +4,9 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-import 'accent_painter.dart';
-import 'login_card.dart';
-import 'max_device_sizes_constrained_box.dart';
+import '../../components/accent_painter.dart';
+import '../../components/login_card.dart';
+import '../../components/max_device_sizes_constrained_box.dart';
 
 class GenerateWalletView extends StatefulWidget {
   const GenerateWalletView({super.key});

@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-import 'login_card.dart';
-import 'max_device_sizes_constrained_box.dart';
+import '../../components/login_card.dart';
+import '../../components/max_device_sizes_constrained_box.dart';
 
 class EnterSeedPhraseView extends StatefulWidget {
   const EnterSeedPhraseView({super.key});

@@ -8,8 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../../misc/misc.dart';
-import 'login_card.dart';
-import 'max_device_sizes_constrained_box.dart';
+import '../../components/login_card.dart';
+import '../../components/max_device_sizes_constrained_box.dart';
 
 class DownloadWalletView extends StatefulWidget {
   const DownloadWalletView(

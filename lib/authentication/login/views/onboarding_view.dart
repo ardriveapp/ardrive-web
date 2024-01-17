@@ -7,9 +7,9 @@ import 'package:responsive_builder/responsive_builder.dart';
 import '../../../misc/misc.dart';
 import '../../../utils/app_localizations_wrapper.dart';
 import '../../../utils/plausible_event_tracker/plausible_event_tracker.dart';
+import '../../components/fadethrough_transition_switcher.dart';
+import '../../components/max_device_sizes_constrained_box.dart';
 import '../blocs/login_bloc.dart';
-import 'fadethrough_transition_switcher.dart';
-import 'max_device_sizes_constrained_box.dart';
 
 class OnBoardingView extends StatefulWidget {
   const OnBoardingView({
