@@ -35,7 +35,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final List<ArDriveDataTableItem> currentFolderContents;
 
-  final Key? equatableBust;
+  final Key? forceRebuildKey;
 
   DriveDetailLoadSuccess({
     required this.currentDrive,
@@ -53,7 +53,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.driveIsEmpty,
     this.selectedItem,
     required this.currentFolderContents,
-    this.equatableBust,
+    this.forceRebuildKey,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -75,7 +75,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     Key? equatableBust,
   }) =>
       DriveDetailLoadSuccess(
-        equatableBust: equatableBust ?? this.equatableBust,
+        forceRebuildKey: equatableBust ?? this.forceRebuildKey,
         selectedItem: selectedItem ?? this.selectedItem,
         hasFoldersSelected: hasFoldersSelected ?? this.hasFoldersSelected,
         currentDrive: currentDrive ?? this.currentDrive,
@@ -110,7 +110,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         _equatableBust,
         driveIsEmpty,
         multiselect,
-        equatableBust,
+        forceRebuildKey,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;

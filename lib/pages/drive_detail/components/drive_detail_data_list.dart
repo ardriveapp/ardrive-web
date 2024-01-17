@@ -148,11 +148,11 @@ Widget _buildDataListContent(
 ) {
   return LayoutBuilder(builder: (context, constraints) {
     final driveDetailCubitState = context.read<DriveDetailCubit>().state;
-    final equtableBust = driveDetailCubitState is DriveDetailLoadSuccess
-        ? driveDetailCubitState.equatableBust
+    final forceRebuildKey = driveDetailCubitState is DriveDetailLoadSuccess
+        ? driveDetailCubitState.forceRebuildKey
         : null;
     return ArDriveDataTable<ArDriveDataTableItem>(
-      key: ValueKey(folder.id + equtableBust.toString()),
+      key: ValueKey(folder.id + forceRebuildKey.toString()),
       lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
           !context.watch<ActivityTracker>().isMultiSelectEnabled,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
