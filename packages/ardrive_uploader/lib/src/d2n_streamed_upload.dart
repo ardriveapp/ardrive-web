@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:arweave/arweave.dart';
-import 'package:flutter/foundation.dart';
 
 class D2NStreamedUpload implements StreamedUpload<UploadItem> {
   UploadAborter? _aborter;
@@ -20,11 +20,11 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
 
     /// It is possible to cancel an upload before starting the network request.
     if (_isCanceled) {
-      debugPrint('Upload canceled on D2NStreamedUpload');
+      logger.d('Upload canceled on D2NStreamedUpload');
       throw Exception('Upload canceled');
     }
 
-    debugPrint('D2NStreamedUpload.send');
+    logger.d('D2NStreamedUpload.send');
 
     final progressStreamTask = await uploadTransaction((uploadItem).data).run();
     Completer<StreamedUploadResult> upload = Completer<StreamedUploadResult>();
@@ -49,7 +49,7 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
 
         upload.complete(StreamedUploadResult(success: true));
       } catch (e) {
-        debugPrint('D2NStreamedUpload.send: error while uploading');
+        logger.d('D2NStreamedUpload.send: error while uploading');
         upload.complete(StreamedUploadResult(success: false));
       }
     });

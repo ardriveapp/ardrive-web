@@ -4,9 +4,9 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 
 import '../ardrive_uploader.dart';
 
@@ -110,7 +110,7 @@ class _UploadController implements UploadController {
         subscription.cancel();
       },
       onError: (err) {
-        debugPrint('Error on UploadController: $err');
+        logger.d('Error on UploadController: $err');
         subscription.cancel();
       },
     );
@@ -162,7 +162,7 @@ class _UploadController implements UploadController {
           .where((element) => element.status == UploadStatus.notStarted)
           .toList(),
       onWorkerError: (e) {
-        debugPrint('Error on UploadWorker. Task: ${e.toString()}');
+        logger.d('Error on UploadWorker. Task: ${e.toString()}');
         final updatedTask = tasks[e.id]!;
 
         updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
@@ -209,7 +209,7 @@ class _UploadController implements UploadController {
   }) {
     final worker = UploadWorker(
       onError: (task, e) {
-        debugPrint('Error on UploadWorker. Task: ${e.toString()}');
+        logger.d('Error on UploadWorker. Task: ${e.toString()}');
         final updatedTask = tasks[task.id]!;
         updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
       },
@@ -297,7 +297,7 @@ class _UploadController implements UploadController {
 
         updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
 
-        debugPrint('Unknown error on UploadWorker. Task: ${e.toString()}');
+        logger.d('Unknown error on UploadWorker. Task: ${e.toString()}');
       },
       upload: (task) async {
         final uploadResult = await _uploadDispatcher.send(
@@ -581,7 +581,7 @@ class UploadWorker {
 
       return;
     } catch (e) {
-      debugPrint('catched error on upload worker: $e');
+      logger.d('catched error on upload worker: $e');
       onError(task, e);
     }
   }
@@ -626,10 +626,10 @@ class WorkerPool {
 
   void _initializeWorkers() {
     for (var i = 0; i < numWorkers; i++) {
-      debugPrint('Initializing worker with index $i');
+      logger.d('Initializing worker with index $i');
 
       for (var j = 0; j < maxTasksPerWorker; j++) {
-        debugPrint('Assigning task $j to worker with index $i');
+        logger.d('Assigning task $j to worker with index $i');
 
         _assignNextTask(i);
       }
@@ -892,7 +892,7 @@ class UploadDispatcher {
           },
         );
 
-        debugPrint(
+        logger.d(
             'Uploading task ${task.id} with strategy: ${_uploadFileStrategy.runtimeType}');
 
         await _uploadFileStrategy.upload(
@@ -915,7 +915,7 @@ class UploadDispatcher {
 
       return UploadResult(success: true);
     } catch (e, stacktrace) {
-      debugPrint('Error on UploadDispatcher.send: $e $stacktrace');
+      logger.d('Error on UploadDispatcher.send: $e $stacktrace');
       return UploadResult(
         success: false,
         error: e,
