@@ -28,32 +28,12 @@ class PreparingAndSigningHideState extends HideState {
 
 class ConfirmingHideState extends HideState {
   final UploadMethod uploadMethod;
-  final UploadCostEstimate? costEstimateTurbo;
-  final UploadCostEstimate costEstimateAr;
-  final bool hasNoTurboBalance;
-  final bool isTurboUploadPossible;
-  final String arBalance;
-  final bool sufficientArBalance;
-  final String turboCredits;
-  final bool sufficentCreditsBalance;
-  final bool isFreeThanksToTurbo;
-  final bool isButtonToUploadEnabled;
 
   final List<DataItem> dataItems;
   final Future<void> Function() saveEntitiesToDb;
 
   const ConfirmingHideState({
     required this.uploadMethod,
-    required this.costEstimateTurbo,
-    required this.costEstimateAr,
-    required this.hasNoTurboBalance,
-    required this.isTurboUploadPossible,
-    required this.arBalance,
-    required this.sufficientArBalance,
-    required this.turboCredits,
-    required this.sufficentCreditsBalance,
-    required this.isFreeThanksToTurbo,
-    required this.isButtonToUploadEnabled,
     required super.hideAction,
     required this.dataItems,
     required this.saveEntitiesToDb,
@@ -62,16 +42,6 @@ class ConfirmingHideState extends HideState {
   @override
   List<Object> get props => [
         uploadMethod,
-        costEstimateTurbo ?? '',
-        costEstimateAr,
-        hasNoTurboBalance,
-        isTurboUploadPossible,
-        arBalance,
-        sufficientArBalance,
-        turboCredits,
-        sufficentCreditsBalance,
-        isFreeThanksToTurbo,
-        isButtonToUploadEnabled,
         hideAction,
       ];
 
@@ -91,19 +61,6 @@ class ConfirmingHideState extends HideState {
   }) {
     return ConfirmingHideState(
       uploadMethod: uploadMethod ?? this.uploadMethod,
-      costEstimateTurbo: costEstimateTurbo ?? this.costEstimateTurbo,
-      costEstimateAr: costEstimateAr ?? this.costEstimateAr,
-      hasNoTurboBalance: hasNoTurboBalance ?? this.hasNoTurboBalance,
-      isTurboUploadPossible:
-          isTurboUploadPossible ?? this.isTurboUploadPossible,
-      arBalance: arBalance ?? this.arBalance,
-      sufficientArBalance: sufficientArBalance ?? this.sufficientArBalance,
-      turboCredits: turboCredits ?? this.turboCredits,
-      sufficentCreditsBalance:
-          sufficentCreditsBalance ?? this.sufficentCreditsBalance,
-      isFreeThanksToTurbo: isFreeThanksToTurbo ?? this.isFreeThanksToTurbo,
-      isButtonToUploadEnabled:
-          isButtonToUploadEnabled ?? this.isButtonToUploadEnabled,
       hideAction: hideAction ?? this.hideAction,
       dataItems: dataItems,
       saveEntitiesToDb: saveEntitiesToDb,

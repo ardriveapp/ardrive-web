@@ -9,6 +9,8 @@ import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
@@ -26,6 +28,7 @@ import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -286,18 +289,50 @@ class AppState extends State<App> {
               ),
               BlocProvider(
                 create: (context) => HideBloc(
+                  auth: context.read<ArDriveAuth>(),
+                  uploadPreparationManager: ArDriveUploadPreparationManager(
+                    uploadPreparePaymentOptions: UploadPaymentEvaluator(
+                      appConfig: context.read<ConfigService>().config,
+                      auth: context.read<ArDriveAuth>(),
+                      turboBalanceRetriever: TurboBalanceRetriever(
+                        paymentService: context.read<PaymentService>(),
+                      ),
+                      turboUploadCostCalculator: TurboUploadCostCalculator(
+                        priceEstimator: TurboPriceEstimator(
+                          wallet:
+                              context.read<ArDriveAuth>().currentUser.wallet,
+                          costCalculator: TurboCostCalculator(
+                            paymentService: context.read<PaymentService>(),
+                          ),
+                          paymentService: context.read<PaymentService>(),
+                        ),
+                        turboCostCalculator: TurboCostCalculator(
+                          paymentService: context.read<PaymentService>(),
+                        ),
+                      ),
+                      uploadCostEstimateCalculatorForAR:
+                          UploadCostEstimateCalculatorForAR(
+                        arweaveService: context.read<ArweaveService>(),
+                        pstService: context.read<PstService>(),
+                        arCostToUsd: ConvertArToUSD(
+                          arweave: context.read<ArweaveService>(),
+                        ),
+                      ),
+                    ),
+                    uploadPreparer: UploadPreparer(
+                      uploadPlanUtils: UploadPlanUtils(
+                        crypto: ArDriveCrypto(),
+                        arweave: context.read<ArweaveService>(),
+                        turboUploadService: context.read<TurboUploadService>(),
+                        driveDao: context.read<DriveDao>(),
+                      ),
+                    ),
+                  ),
                   arweaveService: context.read<ArweaveService>(),
                   crypto: ArDriveCrypto(),
                   turboUploadService: context.read<TurboUploadService>(),
                   driveDao: context.read<DriveDao>(),
                   profileCubit: context.read<ProfileCubit>(),
-                  turboBalanceRetriever: TurboBalanceRetriever(
-                    paymentService: context.read<PaymentService>(),
-                  ),
-                  paymentService: context.read<PaymentService>(),
-                  pst: context.read<PstService>(),
-                  auth: context.read<ArDriveAuth>(),
-                  configService: context.read<ConfigService>(),
                 ),
               ),
             ],
