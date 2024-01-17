@@ -63,9 +63,22 @@ class UploadFileTooLarge extends UploadState {
   List<Object> get props => [tooLargeFileNames];
 }
 
+class UploadReadyToPrepare extends UploadState {
+  final UploadParams params;
+  final bool isArConnect;
+
+  UploadReadyToPrepare({
+    required this.params,
+    this.isArConnect = false,
+  });
+
+  @override
+  List<Object> get props => [params];
+}
+
 /// [UploadReady] means that the upload is ready to be performed and is awaiting confirmation from the user.
 class UploadReady extends UploadState {
-  final UploadPaymentMethodInfo? paymentInfo;
+  final UploadPaymentMethodInfo paymentInfo;
   final bool isButtonToUploadEnabled;
   final bool isDragNDrop;
   final bool uploadIsPublic;
@@ -73,13 +86,16 @@ class UploadReady extends UploadState {
 
   final UploadParams params;
 
+  final bool isArConnect;
+
   UploadReady({
-    this.paymentInfo,
+    required this.paymentInfo,
     required this.uploadIsPublic,
     required this.isButtonToUploadEnabled,
     this.isDragNDrop = false,
     required this.params,
     required this.numberOfFiles,
+    required this.isArConnect,
   });
 
 // copyWith
@@ -90,12 +106,15 @@ class UploadReady extends UploadState {
     bool? isDragNDrop,
     bool? uploadIsPublic,
     int? numberOfFiles,
+    UploadParams? params,
+    bool? isArConnect,
   }) {
     return UploadReady(
+      isArConnect: isArConnect ?? this.isArConnect,
       uploadIsPublic: uploadIsPublic ?? this.uploadIsPublic,
       isDragNDrop: isDragNDrop ?? this.isDragNDrop,
       paymentInfo: paymentInfo ?? this.paymentInfo,
-      params: params,
+      params: params ?? this.params,
       isButtonToUploadEnabled:
           isButtonToUploadEnabled ?? this.isButtonToUploadEnabled,
       numberOfFiles: numberOfFiles ?? this.numberOfFiles,

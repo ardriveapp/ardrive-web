@@ -52,35 +52,30 @@ class UploadCubit extends Cubit<UploadState> {
   UploadMethod? _uploadMethod;
 
   void setUploadMethod(
-      UploadMethod? method, UploadPaymentMethodInfo paymentInfo) {
+    UploadMethod? method,
+    UploadPaymentMethodInfo paymentInfo,
+    bool canUpload,
+  ) {
     logger.d('Upload method set to $method');
     _uploadMethod = method;
 
-    bool isButtonEnabled = false;
-
     if (state is UploadReady) {
       final uploadReady = state as UploadReady;
-      logger.d('Sufficient Balance To Pay With AR: ${uploadReady.paymentInfo}');
-
-      if (_uploadMethod == UploadMethod.ar && paymentInfo.sufficientArBalance) {
-        logger.d('Enabling button for AR payment method');
-        isButtonEnabled = true;
-      } else if (_uploadMethod == UploadMethod.turbo &&
-          paymentInfo.isTurboUploadPossible &&
-          paymentInfo.sufficentCreditsBalance) {
-        logger.d('Enabling button for Turbo payment method');
-        isButtonEnabled = true;
-      } else if (paymentInfo.isFreeThanksToTurbo) {
-        logger.d('Enabling button for free upload using Turbo');
-        isButtonEnabled = true;
-      } else {
-        logger.d('Disabling button');
-      }
 
       emit(uploadReady.copyWith(
         paymentInfo: paymentInfo,
         uploadMethod: method,
-        isButtonToUploadEnabled: isButtonEnabled,
+        isButtonToUploadEnabled: canUpload,
+      ));
+    } else if (state is UploadReadyToPrepare) {
+      emit(UploadReady(
+        params: (state as UploadReadyToPrepare).params,
+        paymentInfo: paymentInfo,
+        numberOfFiles: files.length,
+        uploadIsPublic: !_targetDrive.isPrivate,
+        isDragNDrop: isDragNDrop,
+        isButtonToUploadEnabled: canUpload,
+        isArConnect: (state as UploadReadyToPrepare).isArConnect,
       ));
     }
   }
@@ -304,8 +299,6 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> prepareUploadPlanAndCostEstimates({
     UploadActions? uploadAction,
   }) async {
-    final profile = _profileCubit.state as ProfileLoggedIn;
-
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;
@@ -331,12 +324,8 @@ class UploadCubit extends Cubit<UploadState> {
         return;
       }
 
-      bool isButtonEnabled = false;
-
       emit(
-        UploadReady(
-          uploadIsPublic: !_targetDrive.isPrivate,
-          numberOfFiles: files.length,
+        UploadReadyToPrepare(
           params: UploadParams(
             user: _auth.currentUser,
             files: files,
@@ -345,8 +334,7 @@ class UploadCubit extends Cubit<UploadState> {
             conflictingFiles: conflictingFiles,
             foldersByPath: foldersByPath,
           ),
-          isButtonToUploadEnabled: isButtonEnabled,
-          isDragNDrop: isDragNDrop,
+          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
         ),
       );
     } catch (error, stacktrace) {
@@ -833,6 +821,10 @@ class UploadCubit extends Cubit<UploadState> {
 
   bool _isAPrivateUpload() {
     return isPrivateForTesting || _targetDrive.isPrivate;
+  }
+
+  void emitErrorFromPreparation() {
+    emit(UploadFailure(error: UploadErrors.unknown));
   }
 
   @override

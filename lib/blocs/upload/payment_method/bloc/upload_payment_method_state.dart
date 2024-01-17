@@ -20,10 +20,12 @@ final class UploadPaymentMethodLoading extends UploadPaymentMethodState {
 final class UploadPaymentMethodLoaded extends UploadPaymentMethodState {
   final UploadParams params;
   final UploadPaymentMethodInfo paymentMethodInfo;
+  final bool canUpload;
 
   const UploadPaymentMethodLoaded({
     required this.params,
     required this.paymentMethodInfo,
+    required this.canUpload,
   });
 
   @override
@@ -32,12 +34,22 @@ final class UploadPaymentMethodLoaded extends UploadPaymentMethodState {
   UploadPaymentMethodLoaded copyWith({
     UploadParams? params,
     UploadPaymentMethodInfo? paymentMethodInfo,
+    bool? canUpload,
   }) {
     return UploadPaymentMethodLoaded(
       params: params ?? this.params,
       paymentMethodInfo: paymentMethodInfo ?? this.paymentMethodInfo,
+      canUpload: canUpload ?? this.canUpload,
     );
   }
 }
 
-final class UploadWalletMismatch extends UploadPaymentMethodState {}
+final class UploadPaymentMethodError extends UploadPaymentMethodState {
+  @override
+  List<Object> get props => [];
+}
+
+final class UploadPaymentMethodWalletMismatch extends UploadPaymentMethodState {
+  @override
+  List<Object> get props => [];
+}
