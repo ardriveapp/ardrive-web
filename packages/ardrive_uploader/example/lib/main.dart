@@ -127,7 +127,6 @@ class _UploadFormState extends State<UploadForm> {
         parentFolderId: parentFolderIdController.text,
         isPrivate: false,
         type: UploadType.turbo,
-        path: null,
       ),
       wallet: wallet,
     );

@@ -60,7 +60,6 @@ void main() {
                   isPrivate: false,
                   type: UploadType.d2n,
                   entityId: null,
-                  path: null,
                 )),
             throwsA(isA<ArgumentError>()));
       });
@@ -73,7 +72,6 @@ void main() {
                   type: UploadType.d2n,
                   entityId: 'entity123',
                   driveId: null,
-                  path: null,
                 )),
             throwsA(isA<ArgumentError>()));
       });
@@ -87,7 +85,6 @@ void main() {
                   entityId: 'entity123',
                   driveId: 'driveId',
                   parentFolderId: null,
-                  path: null,
                 )),
             throwsA(isA<ArgumentError>()));
       });
@@ -130,7 +127,6 @@ void main() {
             entityId: 'entity123',
             driveId: 'driveId',
             parentFolderId: 'parentFolderId',
-            path: null,
           ),
         );
 
@@ -198,7 +194,6 @@ void main() {
             entityId: 'entity123',
             driveId: 'driveId',
             parentFolderId: 'parentFolderId',
-            path: null,
           ),
         );
 
@@ -260,7 +255,6 @@ void main() {
             entityId: 'entity123',
             driveId: 'driveId',
             parentFolderId: 'parentFolderId',
-            path: null,
           ),
         );
 
@@ -318,7 +312,6 @@ void main() {
             entityId: 'entity123',
             driveId: 'driveId',
             parentFolderId: 'parentFolderId',
-            path: null,
           ),
         );
 

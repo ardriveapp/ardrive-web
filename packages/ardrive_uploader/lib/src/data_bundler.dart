@@ -174,7 +174,6 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
         driveId: driveId,
         parentFolderId: metadata.id,
         type: this is BDIDataBundler ? UploadType.turbo : UploadType.d2n,
-        path: null,
       );
       final fileMetadata = await metadataGenerator.generateMetadata(
         entity,

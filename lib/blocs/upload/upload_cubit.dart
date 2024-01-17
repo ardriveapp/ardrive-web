@@ -801,10 +801,9 @@ class UploadCubit extends Cubit<UploadState> {
           entity.txId = fileMetadata.metadataTxId!;
 
           _driveDao.transaction(() async {
-            final fileRelativePath = fileMetadata.path ?? fileMetadata.name;
-            final fileAbsolutePath = '${_targetFolder.path}/$fileRelativePath';
-            logger.d('File path: $fileAbsolutePath');
-            await _driveDao.writeFileEntity(entity, fileAbsolutePath);
+            final filePath = '${_targetFolder.path}/${metadata.name}';
+            await _driveDao.writeFileEntity(entity, filePath);
+            await _driveDao.writeFileEntity(entity, filePath);
             await _driveDao.insertFileRevision(
               entity.toRevisionCompanion(
                 performedAction: revisionAction,

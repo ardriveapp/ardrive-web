@@ -104,7 +104,6 @@ class ARFSUploadMetadataGenerator
         entityMetadataTags: tags['entity']!,
         dataItemTags: tags['data-item']!,
         bundleTags: tags['bundle-data-item']!,
-        path: arguments.path,
       );
     } else if (entity is IOFolder) {
       ARFSUploadMetadataArgsValidator.validate(arguments, EntityType.folder);
@@ -182,14 +181,12 @@ class ARFSUploadMetadataArgs {
   final bool isPrivate;
   final String? entityId;
   final UploadType type;
-  final String? path;
 
   factory ARFSUploadMetadataArgs.file({
     required String driveId,
     required String parentFolderId,
     required bool isPrivate,
     required UploadType type,
-    required String path,
     String? entityId,
     Map<String, String>? customBundleTags,
   }) {
@@ -199,7 +196,6 @@ class ARFSUploadMetadataArgs {
       isPrivate: isPrivate,
       entityId: entityId,
       type: type,
-      path: path,
     );
   }
 
@@ -217,7 +213,6 @@ class ARFSUploadMetadataArgs {
       entityId: entityId,
       parentFolderId: parentFolderId,
       type: type,
-      path: path,
     );
   }
 
@@ -228,14 +223,12 @@ class ARFSUploadMetadataArgs {
     return ARFSUploadMetadataArgs(
       isPrivate: isPrivate,
       type: type,
-      path: null,
     );
   }
 
   ARFSUploadMetadataArgs({
     required this.isPrivate,
     required this.type,
-    required this.path,
     this.driveId,
     this.parentFolderId,
     this.privacy,
