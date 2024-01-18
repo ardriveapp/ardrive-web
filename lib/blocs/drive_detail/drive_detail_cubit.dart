@@ -398,7 +398,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _refreshSelectedItem = true;
 
     if (state is DriveDetailLoadSuccess) {
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future.delayed(const Duration(milliseconds: 100));
       emit((state as DriveDetailLoadSuccess)
           .copyWith(forceRebuildKey: UniqueKey()));
     }
