@@ -427,6 +427,7 @@ class _DriveExplorerItemTileTrailingState
   }
 }
 
+// TODO: @thiagocarvalhodev remove this and use the AppPlatform class or change the name of the method
 bool isMobile(BuildContext context) {
   final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
   return isPortrait;
