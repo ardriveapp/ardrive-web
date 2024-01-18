@@ -40,21 +40,17 @@ class DriveExplorerItemTile extends TableRowWidget {
                 softWrap: false,
               ),
             ),
-            Text(size,
-                style: ArDriveTypography.body.captionRegular().copyWith(
-                      color: isHidden ? Colors.grey : null,
-                    )),
-            Text(lastUpdated,
-                style: ArDriveTypography.body.captionRegular().copyWith(
-                      color: isHidden ? Colors.grey : null,
-                    )),
-            Text(dateCreated,
-                style: ArDriveTypography.body.captionRegular().copyWith(
-                      color: isHidden ? Colors.grey : null,
-                    )),
+            Text(size, style: _driveExplorerItemTileTextStyle(isHidden)),
+            Text(lastUpdated, style: _driveExplorerItemTileTextStyle(isHidden)),
+            Text(dateCreated, style: _driveExplorerItemTileTextStyle(isHidden)),
           ],
         );
 }
+
+TextStyle _driveExplorerItemTileTextStyle(bool isHidden) =>
+    ArDriveTypography.body
+        .captionRegular()
+        .copyWith(color: isHidden ? Colors.grey : null);
 
 class DriveExplorerItemTileLeading extends StatelessWidget {
   const DriveExplorerItemTileLeading({
@@ -315,22 +311,7 @@ class _DriveExplorerItemTileTrailingState
               ),
             ),
           ),
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToToggleHideState(
-                context,
-                item: item,
-              );
-            },
-            content: _buildItem(
-              item.isHidden
-                  ? appLocalizationsOf(context).unhide
-                  : appLocalizationsOf(context).hide,
-              item.isHidden
-                  ? ArDriveIcons.eyeOpen(size: defaultIconSize)
-                  : ArDriveIcons.eyeClosed(size: defaultIconSize),
-            ),
-          ),
+          hideFileDropdownItem(context, item),
         ],
         ArDriveDropdownItem(
           onClick: () {
@@ -423,22 +404,7 @@ class _DriveExplorerItemTileTrailingState
             ),
           ),
         ),
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToToggleHideState(
-              context,
-              item: item,
-            );
-          },
-          content: _buildItem(
-            item.isHidden
-                ? appLocalizationsOf(context).unhide
-                : appLocalizationsOf(context).hide,
-            item.isHidden
-                ? ArDriveIcons.eyeOpen(size: defaultIconSize)
-                : ArDriveIcons.eyeClosed(size: defaultIconSize),
-          ),
-        ),
+        hideFileDropdownItem(context, item),
       ],
       ArDriveDropdownItem(
         onClick: () {
@@ -551,22 +517,7 @@ class EntityActionsMenu extends StatelessWidget {
               ),
             ),
           ),
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToToggleHideState(
-                context,
-                item: item,
-              );
-            },
-            content: _buildItem(
-              item.isHidden
-                  ? appLocalizationsOf(context).unhide
-                  : appLocalizationsOf(context).hide,
-              item.isHidden
-                  ? ArDriveIcons.eyeOpen(size: defaultIconSize)
-                  : ArDriveIcons.eyeClosed(size: defaultIconSize),
-            ),
-          ),
+          hideFileDropdownItem(context, item),
         ],
         if (withInfo) _buildInfoOption(context),
       ];
@@ -723,22 +674,7 @@ class EntityActionsMenu extends StatelessWidget {
             ),
           ),
         ),
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToToggleHideState(
-              context,
-              item: item,
-            );
-          },
-          content: _buildItem(
-            item.isHidden
-                ? appLocalizationsOf(context).unhide
-                : appLocalizationsOf(context).hide,
-            item.isHidden
-                ? ArDriveIcons.eyeOpen(size: defaultIconSize)
-                : ArDriveIcons.eyeClosed(size: defaultIconSize),
-          ),
-        ),
+        hideFileDropdownItem(context, item),
       ],
       if (withInfo) _buildInfoOption(context)
     ];
@@ -763,4 +699,26 @@ class EntityActionsMenu extends StatelessWidget {
   ArDriveDropdownItemTile _buildItem(String name, ArDriveIcon icon) {
     return ArDriveDropdownItemTile(name: name, icon: icon);
   }
+}
+
+ArDriveDropdownItem hideFileDropdownItem(
+  BuildContext context,
+  ArDriveDataTableItem item,
+) {
+  return ArDriveDropdownItem(
+    onClick: () {
+      promptToToggleHideState(
+        context,
+        item: item,
+      );
+    },
+    content: ArDriveDropdownItemTile(
+      name: item.isHidden
+          ? appLocalizationsOf(context).unhide
+          : appLocalizationsOf(context).hide,
+      icon: item.isHidden
+          ? ArDriveIcons.eyeOpen(size: defaultIconSize)
+          : ArDriveIcons.eyeClosed(size: defaultIconSize),
+    ),
+  );
 }
