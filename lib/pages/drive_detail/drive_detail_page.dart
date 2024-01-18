@@ -34,7 +34,6 @@ import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
-import 'package:ardrive/utils/non_hidden_items_filter.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
@@ -161,10 +160,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               hasFiles = driveDetailState.folderInView.files.isNotEmpty;
             } else {
               hasSubfolders = driveDetailState.folderInView.subfolders
-                  .where(folderEntryNotHiddenFilter)
+                  .where((e) => e.isHidden)
                   .isNotEmpty;
               hasFiles = driveDetailState.folderInView.files
-                  .where(fileEntryNotHiddenFilter)
+                  .where((e) => e.isHidden)
                   .isNotEmpty;
             }
 
@@ -671,7 +670,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     if (isShowingHiddenFiles) {
       filteredItems = items;
     } else {
-      filteredItems = items.where(dataTableNotHiddenFilter).toList();
+      filteredItems = items.where((e) => e.isHidden).toList();
     }
 
     return Column(
@@ -737,8 +736,6 @@ class ArDriveItemListTile extends StatelessWidget {
   final ArDriveDataTableItem item;
   final Drive drive;
 
-  bool get isHidden => item.isHidden;
-
   @override
   Widget build(BuildContext context) {
     return ArDriveCard(
@@ -774,7 +771,7 @@ class ArDriveItemListTile extends StatelessWidget {
                     item.name,
                     style: ArDriveTypography.body.captionRegular().copyWith(
                           fontWeight: FontWeight.w700,
-                          color: isHidden ? Colors.grey : null,
+                          color: item.isHidden ? Colors.grey : null,
                         ),
                   ),
                   Row(
