@@ -29,13 +29,11 @@ class TurboUploadService {
     final uploadInfo = await r.retry(
       () => dio.get('$turboUploadUri/chunks/arweave/-1/-1'),
     );
-    final uploadId = uploadInfo.data['id'];
-    final uploadChunkSizeMinInBytes = uploadInfo.data['min'];
+    final uploadId = uploadInfo.data['id'] as String;
+    final uploadChunkSizeMinInBytes = uploadInfo.data['min'] as int;
     logger.d('Got upload info from Turbo');
     logger.d('Upload ID: $uploadId');
     logger.d('Upload chunk size: $uploadChunkSizeMinInBytes');
-
-    final dataItemStream = dataItem.streamGenerator();
 
     // (offset: sent bytes) map for in flight requests progress
     Map<int, int> inFlightRequestsBytesSent = {};
@@ -46,8 +44,9 @@ class TurboUploadService {
 
     if (onSendProgress != null) {
       Timer.periodic(Duration(milliseconds: 500), (timer) {
-        final inFlightBytesSent =
-            inFlightRequestsBytesSent.values.reduce((a, b) => a + b);
+        final inFlightBytesSent = inFlightRequestsBytesSent.isEmpty
+            ? 0
+            : inFlightRequestsBytesSent.values.reduce((a, b) => a + b);
         final totalBytesSent = completedRequestsBytesSent + inFlightBytesSent;
 
         onSendProgress(totalBytesSent / dataItem.dataItemSize);
@@ -55,7 +54,7 @@ class TurboUploadService {
     }
 
     await _processStream(
-        stream: dataItemStream,
+        stream: dataItem.streamGenerator(),
         chunkSize: uploadChunkSizeMinInBytes,
         maxConcurrent: maxUploadsInParallel, (chunk, offset) async {
       try {
@@ -115,7 +114,7 @@ class TurboUploadService {
 
   Future<void> cancel() {
     _cancelToken.cancel();
-    print('Stream closed');
+    logger.d('Stream closed');
     _isCanceled = true;
     return Future.value();
   }
@@ -128,7 +127,9 @@ class TurboUploadService {
     required int chunkSize,
     required int maxConcurrent,
   }) async {
+    logger.d('Processing DataItem stream');
     final chunkedStream = streamToChunks(stream, chunkSize);
+    logger.d('Stream chunked');
     final runningTasks = <Future>[];
     int offset = 0;
 
