@@ -920,6 +920,9 @@ class _UploadFormState extends State<UploadForm> {
                         case UploadStatus.encryting:
                           status = 'Encrypting';
                           break;
+                        case UploadStatus.finalizing:
+                          status = 'Finalizing upload';
+                          break;
                         case UploadStatus.complete:
                           status = 'Complete';
                           break;
@@ -939,6 +942,7 @@ class _UploadFormState extends State<UploadForm> {
 
                       if (task.isProgressAvailable) {
                         if (task.status == UploadStatus.inProgress ||
+                            task.status == UploadStatus.finalizing ||
                             task.status == UploadStatus.complete ||
                             task.status == UploadStatus.failed) {
                           if (task.uploadItem != null) {

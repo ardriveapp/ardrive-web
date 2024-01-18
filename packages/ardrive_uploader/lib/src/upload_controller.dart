@@ -423,6 +423,10 @@ class _UploadController implements UploadController {
         _totalUploaded += (diff * uploadItem.size).toInt();
         _totalProgress += diff;
       }
+
+      if (task.progress == 1) {
+        tasks[task.id] = task.copyWith(status: UploadStatus.finalizing);
+      }
     }
   }
 
@@ -471,6 +475,9 @@ enum UploadStatus {
 
   /// The upload is prepartion is done: the bundle is ready to be uploaded
   preparationDone,
+
+  // The upload is being finalized
+  finalizing,
 
   /// The upload is complete
   complete,
