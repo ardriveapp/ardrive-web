@@ -161,7 +161,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
                   ),
                 ),
               ),
-              uploadFileChecker: context.read<UploadFileSizeChecker>(),
+              uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
               driveId: driveId,
               parentFolderId: parentFolderId,
               files: selectedFiles,
