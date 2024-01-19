@@ -48,6 +48,11 @@ class TurboUploadService {
             ? 0
             : inFlightRequestsBytesSent.values.reduce((a, b) => a + b);
         final totalBytesSent = completedRequestsBytesSent + inFlightBytesSent;
+        final progress = totalBytesSent / dataItem.dataItemSize;
+
+        if (progress == 1) {
+          timer.cancel();
+        }
 
         onSendProgress(totalBytesSent / dataItem.dataItemSize);
       });

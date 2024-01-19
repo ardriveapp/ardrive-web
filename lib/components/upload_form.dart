@@ -920,6 +920,9 @@ class _UploadFormState extends State<UploadForm> {
                         case UploadStatus.encryting:
                           status = 'Encrypting';
                           break;
+                        case UploadStatus.finalizing:
+                          status = 'Finalizing upload';
+                          break;
                         case UploadStatus.complete:
                           status = 'Complete';
                           break;
@@ -937,10 +940,16 @@ class _UploadFormState extends State<UploadForm> {
                               'We are preparing your upload. Preparation step 2/2';
                       }
 
+                      final statusAvailableForShowingProgress =
+                          task.status == UploadStatus.failed ||
+                              task.status == UploadStatus.inProgress ||
+                              task.status == UploadStatus.complete ||
+                              task.status == UploadStatus.finalizing;
+
                       if (task.isProgressAvailable) {
-                        if (task.status == UploadStatus.inProgress ||
-                            task.status == UploadStatus.complete ||
-                            task.status == UploadStatus.failed) {
+                        if (statusAvailableForShowingProgress) {
+                          logger.d(
+                              'task.progress: ${task.progress}, task.uploadItem is null?  ${task.uploadItem == null}');
                           if (task.uploadItem != null) {
                             progressText =
                                 '${filesize(((task.uploadItem!.size) * task.progress).ceil())}/${filesize(task.uploadItem!.size)}';
@@ -1003,16 +1012,23 @@ class _UploadFormState extends State<UploadForm> {
                                                 const Duration(seconds: 1),
                                             child: Column(
                                               children: [
-                                                Text(
-                                                  status,
-                                                  style: ArDriveTypography.body
-                                                      .buttonNormalBold(
-                                                    color:
-                                                        ArDriveTheme.of(context)
-                                                            .themeData
-                                                            .colors
-                                                            .themeFgOnDisabled,
-                                                  ),
+                                                Row(
+                                                  children: [
+                                                    Flexible(
+                                                      child: Text(
+                                                        status,
+                                                        style: ArDriveTypography
+                                                            .body
+                                                            .buttonNormalBold(
+                                                          color: ArDriveTheme
+                                                                  .of(context)
+                                                              .themeData
+                                                              .colors
+                                                              .themeFgOnDisabled,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
@@ -1021,7 +1037,7 @@ class _UploadFormState extends State<UploadForm> {
                                             Text(
                                               progressText,
                                               style: ArDriveTypography.body
-                                                  .buttonNormalRegular(
+                                                  .buttonNormalBold(
                                                 color: ArDriveTheme.of(context)
                                                     .themeData
                                                     .colors
@@ -1041,13 +1057,7 @@ class _UploadFormState extends State<UploadForm> {
                                             MainAxisAlignment.end,
                                         children: [
                                           if (task.isProgressAvailable &&
-                                              (task.status ==
-                                                      UploadStatus.failed ||
-                                                  task.status ==
-                                                      UploadStatus.inProgress ||
-                                                  task.status ==
-                                                      UploadStatus
-                                                          .complete)) ...[
+                                              statusAvailableForShowingProgress) ...[
                                             Flexible(
                                               flex: 2,
                                               child: ArDriveProgressBar(
