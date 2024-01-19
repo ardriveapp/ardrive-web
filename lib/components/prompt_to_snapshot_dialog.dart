@@ -19,7 +19,7 @@ Future<void> promptToSnapshot(
       promptToSnapshotBloc: promptToSnapshotBloc,
       drive: drive,
     ),
-  );
+  ).then((value) => promptToSnapshotBloc.add(const ClosePromptToSnapshot()));
 }
 
 class PromptToSnapshotDialog extends StatefulWidget {
