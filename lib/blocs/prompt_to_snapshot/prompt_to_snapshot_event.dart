@@ -70,3 +70,7 @@ class DismissDontAskAgain extends PromptToSnapshotEvent {
     required this.dontAskAgain,
   }) : super(driveId: null);
 }
+
+class ClosePromptToSnapshot extends PromptToSnapshotEvent {
+  const ClosePromptToSnapshot() : super(driveId: null);
+}

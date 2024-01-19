@@ -57,6 +57,8 @@ class PromptToSnapshotBloc
     on<SyncRunning>(_onSyncRunning);
     on<DriveSnapshotted>(_onDriveSnapshotted);
     on<DismissDontAskAgain>(_onDismissDontAskAgain);
+    on<ClosePromptToSnapshot>(
+        (event, emit) => emit(const PromptToSnapshotIdle()));
 
     _maybeStore ??= store;
     _durationBeforePrompting = durationBeforePrompting;
