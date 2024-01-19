@@ -25,6 +25,7 @@ import 'components.dart';
 Future<void> promptToCreateManifest(
   BuildContext context, {
   required Drive drive,
+  required bool hasPendingFiles,
 }) {
   return showArDriveDialog(
     context,
@@ -32,6 +33,7 @@ Future<void> promptToCreateManifest(
       create: (context) => CreateManifestCubit(
         drive: drive,
         profileCubit: context.read<ProfileCubit>(),
+        hasPendingFiles: hasPendingFiles,
         arweave: context.read<ArweaveService>(),
         turboUploadService: context.read<TurboUploadService>(),
         driveDao: context.read<DriveDao>(),

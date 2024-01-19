@@ -31,6 +31,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final PstService _pst;
+  final bool _hasPendingFiles;
 
   StreamSubscription? _selectedFolderSubscription;
 
@@ -41,11 +42,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required PstService pst,
+    required bool hasPendingFiles,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _pst = pst,
+        _hasPendingFiles = hasPendingFiles,
         super(CreateManifestInitial()) {
     if (drive.isPrivate) {
       // Extra guardrail to prevent private drives from creating manifests
@@ -174,31 +177,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           (state as CreateManifestPreparingManifest).parentFolder;
       final folderNode = rootFolderNode.searchForFolder(parentFolder.id) ??
           await _driveDao.getFolderTree(drive.id, parentFolder.id);
-
-      final folderPendingFiles = _driveDao.pendingTransactionsForDrive(
-        driveId: drive.id,
-      );
-
       final arweaveManifest = ManifestData.fromFolderNode(
         folderNode: folderNode,
       );
-
-      final fileMetadataTxIds =
-          await Future.wait(arweaveManifest.paths.values.map((m) async {
-        final latestRevision = await _driveDao
-            .latestFileRevisionByFileId(
-              driveId: drive.id,
-              fileId: m.fileId!,
-            )
-            .getSingle();
-        return latestRevision.metadataTxId;
-      }));
-
-      final doesFolderHasPendingFiles = await folderPendingFiles.get().then(
-            (txs) => txs.any(
-              (tx) => fileMetadataTxIds.contains(tx.id),
-            ),
-          );
 
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
@@ -245,7 +226,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
             },
           );
 
-      logger.d('Manifest has pending files: $doesFolderHasPendingFiles');
+      logger.d('Manifest has pending files: $_hasPendingFiles');
 
       final canUseTurbo = _turboUploadService.useTurboUpload &&
           arweaveManifest.size < _turboUploadService.allowedDataItemSize;
@@ -254,7 +235,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           CreateManifestTurboUploadConfirmation(
             manifestSize: arweaveManifest.size,
             manifestName: manifestName,
-            folderHasPendingFiles: doesFolderHasPendingFiles,
+            folderHasPendingFiles: _hasPendingFiles,
             manifestDataItems: [manifestDataItem, manifestMetaDataItem],
             addManifestToDatabase: addManifestToDatabase,
           ),
@@ -302,7 +283,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         CreateManifestUploadConfirmation(
           manifestSize: arweaveManifest.size,
           manifestName: manifestName,
-          folderHasPendingFiles: doesFolderHasPendingFiles,
+          folderHasPendingFiles: _hasPendingFiles,
           arUploadCost: arUploadCost,
           usdUploadCost: usdUploadCost,
           uploadManifestParams: uploadManifestParams,
