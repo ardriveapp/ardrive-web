@@ -1028,19 +1028,6 @@ class _UploadFormState extends State<UploadForm> {
                                                         ),
                                                       ),
                                                     ),
-                                                    const SizedBox(
-                                                      width: 8,
-                                                    ),
-                                                    if (task.status ==
-                                                        UploadStatus.finalizing)
-                                                      const SizedBox(
-                                                        height: 15,
-                                                        width: 15,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                        ),
-                                                      )
                                                   ],
                                                 ),
                                               ],
