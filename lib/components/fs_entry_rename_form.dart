@@ -117,7 +117,6 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                   ModalAction(
                     action: () {
                       Navigator.of(context).pop();
-                      Navigator.of(context).pop();
                     },
                     title: appLocalizationsOf(context).cancelEmphasized,
                   ),

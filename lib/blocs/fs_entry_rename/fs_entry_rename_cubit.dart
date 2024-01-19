@@ -125,13 +125,23 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         var file = await _driveDao
             .fileById(driveId: driveId, fileId: fileId!)
             .getSingle();
-        final hasExtensionChanged =
-            verifyExtensionAndReturnIfExtensionWasUpdated(
-          newName,
-          file,
-        );
+        _newFileExtension =
+            getFileExtension(name: newName, contentType: file.dataContentType!);
+
+        final currentExtension = getFileExtension(
+            name: file.name, contentType: file.dataContentType!);
+
+        final hasExtensionChanged = currentExtension != _newFileExtension;
 
         if (!updateExtension && !_dontVerifyExtension && hasExtensionChanged) {
+          emit(
+            UpdatingEntityExtension(
+              previousExtension: currentExtension,
+              entityName: newName,
+              newExtension: _newFileExtension!,
+            ),
+          );
+
           return;
         }
 
@@ -188,29 +198,6 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     } catch (err) {
       addError(err);
     }
-  }
-
-  bool verifyExtensionAndReturnIfExtensionWasUpdated(
-      String newName, FileEntry file) {
-    _newFileExtension =
-        getFileExtension(name: newName, contentType: file.dataContentType!);
-
-    final currentExtension =
-        getFileExtension(name: file.name, contentType: file.dataContentType!);
-
-    if (currentExtension == _newFileExtension) {
-      return false;
-    }
-
-    emit(
-      UpdatingEntityExtension(
-        previousExtension: currentExtension,
-        entityName: newName,
-        newExtension: _newFileExtension!,
-      ),
-    );
-
-    return true;
   }
 
   Future<bool> _folderWithSameNameExists(String newFolderName) async {
