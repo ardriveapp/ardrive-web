@@ -4,8 +4,8 @@ import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
-import 'package:arweave/arweave.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
+import 'package:arweave/arweave.dart';
 
 abstract class UploadFileStrategy {
   Future<void> upload({

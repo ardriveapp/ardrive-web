@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
-import 'package:ardrive_uploader/src/utils/logger.dart';
 
 import '../ardrive_uploader.dart';
 
@@ -132,7 +132,12 @@ class _UploadController implements UploadController {
     _updateTotalSize(task, uploadItem, existingTask);
     _updateProgress(task, uploadItem, existingTask);
 
+    if (task.progress == 1 && task.status == UploadStatus.inProgress) {
+      task = task.copyWith(status: UploadStatus.finalizing);
+    }
+
     tasks[taskId] = task;
+
     _progressStream.add(_generateUploadProgress());
   }
 
@@ -422,10 +427,6 @@ class _UploadController implements UploadController {
       if (diff > 0) {
         _totalUploaded += (diff * uploadItem.size).toInt();
         _totalProgress += diff;
-      }
-
-      if (task.progress == 1) {
-        tasks[task.id] = task.copyWith(status: UploadStatus.finalizing);
       }
     }
   }
