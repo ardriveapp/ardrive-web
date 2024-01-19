@@ -26,6 +26,7 @@ import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -41,7 +42,6 @@ import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:pst/pst.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'blocs/blocs.dart';
 import 'models/models.dart';
@@ -81,11 +81,7 @@ Future<void> _runWithoutLogging() async {
 }
 
 Future<void> _runWithSentryLogging() async {
-  await SentryFlutter.init(
-    (options) {
-      options.tracesSampleRate = 1.0;
-    },
-  );
+  awaitinitSentry();
 
   runApp(const App());
 }
