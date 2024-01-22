@@ -116,6 +116,8 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
 }
 
 ArDriveIcon getIconForContentType(String contentType, {double size = 18}) {
+  contentType = contentType.toLowerCase();
+
   if (contentType == 'folder') {
     return ArDriveIcons.folderOutline(
       size: size,

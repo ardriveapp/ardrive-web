@@ -1,0 +1,1 @@
+- Fixes file extension recognition issues due to case sensitivity
