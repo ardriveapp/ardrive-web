@@ -31,7 +31,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final PstService _pst;
-  final bool _hasPendingFiles;
+  bool _hasPendingFiles = false;
 
   StreamSubscription? _selectedFolderSubscription;
 
@@ -42,13 +42,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required PstService pst,
-    required bool hasPendingFiles,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _pst = pst,
-        _hasPendingFiles = hasPendingFiles,
         super(CreateManifestInitial()) {
     if (drive.isPrivate) {
       // Extra guardrail to prevent private drives from creating manifests
@@ -61,6 +59,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   Future<void> chooseTargetFolder() async {
     rootFolderNode =
         await _driveDao.getFolderTree(drive.id, drive.rootFolderId);
+
+    _hasPendingFiles = await _hasPendingFilesInFolder(rootFolderNode);
 
     await loadFolder(drive.rootFolderId);
   }
@@ -84,6 +84,40 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     if (state.viewingFolder.folder.parentFolderId != null) {
       return loadFolder(state.viewingFolder.folder.parentFolderId!);
     }
+  }
+
+  /// recursively check if any files in the folder have pending uploads
+  Future<bool> _hasPendingFilesInFolder(FolderNode folder) async {
+    final files = folder.getRecursiveFiles();
+    final folders = folder.subfolders;
+
+    if (files.isEmpty && folders.isEmpty) {
+      return false;
+    }
+
+    final filesWithTx = await _driveDao
+        .filesInFolderWithRevisionTransactions(
+            driveId: drive.id, parentFolderId: folder.folder.id)
+        .get();
+
+    final hasPendingFiles = filesWithTx.any((e) =>
+        'pending' ==
+        fileStatusFromTransactions(
+          e.metadataTx,
+          e.dataTx,
+        ).toString());
+
+    if (hasPendingFiles) {
+      return true;
+    }
+
+    for (var folder in folders) {
+      if (await _hasPendingFilesInFolder(folder)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   Future<void> loadFolder(String folderId) async {
