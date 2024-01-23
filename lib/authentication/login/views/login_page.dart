@@ -4,9 +4,9 @@ import 'package:ardrive/authentication/login/views/create_new_wallet_view.dart';
 import 'package:ardrive/authentication/login/views/enter_seed_phrase_view.dart';
 import 'package:ardrive/authentication/login/views/generate_wallet_view.dart';
 import 'package:ardrive/authentication/login/views/prompt_password_view.dart';
+import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
@@ -27,6 +27,7 @@ import '../../components/login_card.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
 import 'create_password_view.dart';
 import 'download_wallet_view.dart';
+import 'landing_page.dart';
 import 'onboarding_view.dart';
 import 'prompt_wallet_view.dart';
 
@@ -189,11 +190,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             Expanded(
               child: Stack(
                 children: [
-                  _buildIllustration(
-                    context,
-                    // verify theme light
-                    Resources.images.login.gridImage,
-                  ),
+                  const TilesView(),
                   Positioned(
                     bottom: 16,
                     left: 16,
@@ -261,71 +258,71 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
     );
   }
 
-  Widget _buildIllustration(BuildContext context, String image) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Opacity(
-          opacity: 1,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ArDriveImage(
-                key: const Key('loginPageIllustration'),
-                image: AssetImage(
-                  image,
-                ),
-                height: 600,
-                width: 600,
-                fit: BoxFit.cover,
-              ),
-              Container(
-                color: ArDriveTheme.of(context)
-                    .themeData
-                    .colors
-                    .themeBgCanvas
-                    .withOpacity(0.8),
-              ),
-            ],
-          ),
-        ),
-        Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ArDriveImage(
-                image: AssetImage(
-                  ArDriveTheme.of(context).themeData.name == 'light'
-                      ? Resources.images.brand.blackLogo2
-                      : Resources.images.brand.whiteLogo2,
-                ),
-                height: 65,
-                fit: BoxFit.contain,
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 42),
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.32,
-                  child: Text(
-                    appLocalizationsOf(context)
-                        .yourPrivateSecureAndPermanentDrive,
-                    textAlign: TextAlign.start,
-                    style: ArDriveTypography.headline.headline3Regular(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        )
-      ],
-    );
-  }
+  // Widget _buildIllustration(BuildContext context, String image) {
+  //   return Stack(
+  //     fit: StackFit.expand,
+  //     children: [
+  //       Opacity(
+  //         opacity: 1,
+  //         child: Stack(
+  //           fit: StackFit.expand,
+  //           children: [
+  //             ArDriveImage(
+  //               key: const Key('loginPageIllustration'),
+  //               image: AssetImage(
+  //                 image,
+  //               ),
+  //               height: 600,
+  //               width: 600,
+  //               fit: BoxFit.cover,
+  //             ),
+  //             Container(
+  //               color: ArDriveTheme.of(context)
+  //                   .themeData
+  //                   .colors
+  //                   .themeBgCanvas
+  //                   .withOpacity(0.8),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //       Center(
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             ArDriveImage(
+  //               image: AssetImage(
+  //                 ArDriveTheme.of(context).themeData.name == 'light'
+  //                     ? Resources.images.brand.blackLogo2
+  //                     : Resources.images.brand.whiteLogo2,
+  //               ),
+  //               height: 65,
+  //               fit: BoxFit.contain,
+  //             ),
+  //             Padding(
+  //               padding: const EdgeInsets.only(top: 42),
+  //               child: SizedBox(
+  //                 width: MediaQuery.of(context).size.width * 0.32,
+  //                 child: Text(
+  //                   appLocalizationsOf(context)
+  //                       .yourPrivateSecureAndPermanentDrive,
+  //                   textAlign: TextAlign.start,
+  //                   style: ArDriveTypography.headline.headline3Regular(
+  //                     color: ArDriveTheme.of(context)
+  //                         .themeData
+  //                         .colors
+  //                         .themeFgDefault,
+  //                   ),
+  //                 ),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       )
+  //     ],
+  //   );
+  // }
 
   Widget _buildContent(BuildContext context, {required LoginState loginState}) {
     final enableSeedPhraseLogin =
@@ -369,6 +366,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           content = DownloadWalletView(
             mnemonic: loginState.mnemonic,
             wallet: loginState.walletFile,
+          );
+        } else if (loginState is LoginLanding) {
+          content = const LandingPageView(
+            key: Key('landingPageView'),
           );
         } else {
           content = PromptWalletView(

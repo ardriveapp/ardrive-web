@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-import '../../../misc/resources.dart';
+import '../../misc/resources.dart';
 
 class LoginCard extends StatelessWidget {
   const LoginCard({required this.content, this.showLattice = false});
@@ -40,38 +40,31 @@ class LoginCard extends StatelessWidget {
           horizontalPadding = 72;
       }
 
-      return ArDriveCard(
-          backgroundColor:
-              ArDriveTheme.of(context).themeData.colors.themeBgSurface,
-          borderRadius: 24,
-          boxShadow: BoxShadowCard.shadow80,
-          contentPadding: EdgeInsets.zero,
-          content: Stack(
-            children: [
-              if (showLattice)
-                Positioned(
-                  bottom: 30,
-                  right: 0,
-                  child: SvgPicture.asset(
-                    isDarkMode
-                        ? Resources.images.login.lattice
-                        : Resources.images.login.latticeLight,
-                    // fit: BoxFit.fitHeight,
-                  ),
-                ),
-              Container(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  _topPadding(context),
-                  horizontalPadding,
-                  _bottomPadding(context),
-                ),
-                child: content,
-              )
-            ],
+      return Stack(
+        children: [
+          if (showLattice)
+            Positioned(
+              bottom: 30,
+              right: 0,
+              child: SvgPicture.asset(
+                isDarkMode
+                    ? Resources.images.login.lattice
+                    : Resources.images.login.latticeLight,
+                // fit: BoxFit.fitHeight,
+              ),
+            ),
+          Container(
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              _topPadding(context),
+              horizontalPadding,
+              _bottomPadding(context),
+            ),
+            child: content,
           )
-          // content,
-          );
+        ],
+      );
+      // content,
     });
   }
 

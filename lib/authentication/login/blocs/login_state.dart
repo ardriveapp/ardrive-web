@@ -7,10 +7,16 @@ abstract class LoginState extends Equatable {
   List<Object> get props => [];
 }
 
+class LoginLanding extends LoginState {
+  const LoginLanding();
+}
+
 class LoginInitial extends LoginState {
   final bool isArConnectAvailable;
+  final bool existingUserFlow;
 
-  const LoginInitial({required this.isArConnectAvailable});
+  const LoginInitial(
+      {required this.isArConnectAvailable, required this.existingUserFlow});
 }
 
 class LoginLoading extends LoginState {}

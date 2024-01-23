@@ -16,7 +16,7 @@ class ArDriveStorybookAppBase extends StatelessWidget {
       labelBuilder: (t) => t.name,
       label: 'Themes',
       options: [
-        ArDriveThemeData(),
+        ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode()),
         lightTheme(),
       ],
     );

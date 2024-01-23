@@ -1,4 +1,5 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_ui/src/styles/colors/colors_new.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 
@@ -88,11 +89,12 @@ class _ArDriveAppState extends State<ArDriveApp> {
   ArDriveThemeData _getTheme() {
     switch (_theme) {
       case ArDriveThemes.dark:
-        return widget.themeData ?? ArDriveThemeData();
+        return widget.themeData ??
+            ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode());
       case ArDriveThemes.light:
         return lightTheme();
       default:
-        return ArDriveThemeData();
+        return ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode());
     }
   }
 }
@@ -109,6 +111,9 @@ class ArDriveThemeData {
     ArDriveShadows? shadows,
     ArDriveDropdownTheme? dropdownTheme,
     ArDriveTextFieldTheme? textFieldTheme,
+
+    // NEW THEME DATA
+    required this.colorTokens,
   }) {
     this.colors = colors ?? ArDriveColors();
     this.shadows = shadows ?? ArDriveShadows(this.colors);
@@ -169,6 +174,8 @@ class ArDriveThemeData {
   late ArDriveColors colors;
   late ArDriveShadows shadows;
 
+  ArDriveColorTokens colorTokens;
+
   // copy with
   ArDriveThemeData copyWith({
     Color? backgroundColor,
@@ -181,6 +188,7 @@ class ArDriveThemeData {
     ArDriveShadows? shadows,
     ArDriveDropdownTheme? dropdownTheme,
     ArDriveTextFieldTheme? textFieldTheme,
+    ArDriveColorTokens? colorTokens,
   }) {
     return ArDriveThemeData(
       backgroundColor: backgroundColor ?? this.backgroundColor,
@@ -193,6 +201,7 @@ class ArDriveThemeData {
       shadows: shadows ?? this.shadows,
       dropdownTheme: dropdownTheme ?? this.dropdownTheme,
       textFieldTheme: textFieldTheme ?? this.textFieldTheme,
+      colorTokens: colorTokens ?? this.colorTokens,
     );
   }
 }
@@ -223,20 +232,20 @@ ArDriveThemeData lightTheme() {
   ArDriveColors colors = ArDriveColors.light();
 
   return ArDriveThemeData(
-    backgroundColor: colors.themeBgSurface,
-    colors: colors,
-    tableTheme: ArDriveTableTheme(
-      backgroundColor: const Color(0xffFAFAFA),
-      cellColor: const Color(0xffF1EFF0),
-      selectedItemColor: const Color(0xffF1EFF0),
-    ),
-    dropdownTheme: ArDriveDropdownTheme(
-      backgroundColor: const Color(0xffFAFAFA),
-      hoverColor: const Color(0xffF1EFF0),
-    ),
-    materialThemeData: lightMaterialTheme(),
-    name: 'light',
-  );
+      backgroundColor: colors.themeBgSurface,
+      colors: colors,
+      tableTheme: ArDriveTableTheme(
+        backgroundColor: const Color(0xffFAFAFA),
+        cellColor: const Color(0xffF1EFF0),
+        selectedItemColor: const Color(0xffF1EFF0),
+      ),
+      dropdownTheme: ArDriveDropdownTheme(
+        backgroundColor: const Color(0xffFAFAFA),
+        hoverColor: const Color(0xffF1EFF0),
+      ),
+      materialThemeData: lightMaterialTheme(),
+      name: 'light',
+      colorTokens: ArDriveColorTokens.lightMode());
 }
 
 // ignore: must_be_immutable
@@ -246,7 +255,8 @@ class ArDriveTheme extends InheritedWidget {
     required super.child,
     super.key,
   }) {
-    this.themeData = themeData ?? ArDriveThemeData();
+    this.themeData = themeData ??
+        ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode());
   }
 
   late ArDriveThemeData themeData;

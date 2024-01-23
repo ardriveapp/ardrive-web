@@ -1,10 +1,11 @@
+import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../../misc/resources.dart';
 import '../../../pages/drive_detail/components/hover_widget.dart';
@@ -53,6 +54,9 @@ class _PromptWalletViewState extends State<PromptWalletView> {
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
+    // FIXME: add switching of typography based on screen size
+    final typography = ArDriveTypographyNew.desktop;
+
     return MaxDeviceSizesConstrainedBox(
       defaultMaxWidth: 512,
       defaultMaxHeight: 798,
@@ -63,22 +67,42 @@ class _PromptWalletViewState extends State<PromptWalletView> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ScreenTypeLayout.builder(
-                desktop: (context) => const SizedBox.shrink(),
-                mobile: (context) => ArDriveImage(
-                  image: AssetImage(Resources.images.brand.logo1),
-                  height: 50,
-                ),
+              ArDriveImage(
+                image: AssetImage(Resources.images.brand.logo1),
+                height: 50,
               ),
               heightSpacing(),
               Align(
                 alignment: Alignment.topCenter,
                 child: Text(
-                  appLocalizationsOf(context).login,
-                  style: ArDriveTypography.headline.headline4Regular(),
+                  // FIXME: Add localization key
+                  'Welcome to ArDrive',
+                  style: typography.heading1(fontWeight: ArFontWeight.bold),
                 ),
               ),
               heightSpacing(),
+              //FIXME: Add localization key
+              Text('Sign in using one of the options below.',
+                  style: typography.paragraphLarge(
+                      color: colors.themeFgSubtle,
+                      fontWeight: ArFontWeight.semiBold)),
+              const SizedBox(height: 72),
+              ArDriveButtonNew(
+                  text: 'Continue with ArConnect',
+                  typography: typography,
+                  maxWidth: double.maxFinite,
+                  onPressed: () {
+                    print("Implement me!");
+                  }),
+              const SizedBox(height: 16),
+              ArDriveButtonNew(
+                  text: 'Continue with MetaMask',
+                  typography: typography,
+                  maxWidth: double.maxFinite,
+                  onPressed: () {
+                    print("Implement me!");
+                  }),
+              const SizedBox(height: 16),
               Column(
                 children: [
                   if (context
@@ -241,6 +265,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
 
   SizedBox heightSpacing() {
     return SizedBox(
-        height: MediaQuery.of(context).size.height < 700 ? 8.0 : 24.0);
+        height: MediaQuery.of(context).size.height < 700 ? 12.0 : 16.0);
   }
 }

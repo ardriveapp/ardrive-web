@@ -19,7 +19,9 @@ WidgetbookCategory getColors() {
           builder: (context) {
             return ArDriveStorybookAppBase(builder: (context) {
               final lightColors = lightTheme().colors;
-              final darkTheme = ArDriveThemeData().colors;
+              final darkTheme =
+                  ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())
+                      .colors;
 
               List<ColorOption> foregroundLight = [
                 ColorOption(
@@ -87,7 +89,9 @@ WidgetbookCategory getColors() {
         builder: (context) {
           return ArDriveStorybookAppBase(builder: (context) {
             final lightColors = lightTheme().colors;
-            final darkTheme = ArDriveThemeData().colors;
+            final darkTheme =
+                ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())
+                    .colors;
 
             List<ColorOption> backgroundLight = [
               ColorOption(
@@ -141,7 +145,9 @@ WidgetbookCategory getColors() {
           return ArDriveStorybookAppBase(builder: (context) {
             // light
             final lightColors = lightTheme().colors;
-            final darkTheme = ArDriveThemeData().colors;
+            final darkTheme =
+                ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())
+                    .colors;
 
             List<ColorOption> accentLight = [
               ColorOption(
@@ -199,7 +205,9 @@ WidgetbookCategory getColors() {
         builder: (context) {
           return ArDriveStorybookAppBase(builder: (context) {
             final lightColors = lightTheme().colors;
-            final darkTheme = ArDriveThemeData().colors;
+            final darkTheme =
+                ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())
+                    .colors;
 
             List<ColorOption> warningLight = [
               ColorOption(
@@ -257,7 +265,9 @@ WidgetbookCategory getColors() {
         builder: (context) {
           return ArDriveStorybookAppBase(builder: (context) {
             final lightColors = lightTheme().colors;
-            final darkTheme = ArDriveThemeData().colors;
+            final darkTheme =
+                ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())
+                    .colors;
 
             List<ColorOption> errorLight = [
               ColorOption(
@@ -307,7 +317,9 @@ WidgetbookCategory getColors() {
         builder: (context) {
           return ArDriveStorybookAppBase(builder: (context) {
             final lightColors = lightTheme().colors;
-            final darkTheme = ArDriveThemeData().colors;
+            final darkTheme =
+                ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())
+                    .colors;
 
             List<ColorOption> infoLight = [
               ColorOption(
@@ -365,7 +377,9 @@ WidgetbookCategory getColors() {
         builder: (context) {
           return ArDriveStorybookAppBase(builder: (context) {
             final lightColors = lightTheme().colors;
-            final darkTheme = ArDriveThemeData().colors;
+            final darkTheme =
+                ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())
+                    .colors;
 
             List<ColorOption> successLight = [
               ColorOption(

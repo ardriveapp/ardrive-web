@@ -38,6 +38,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ProfileType? profileType;
 
   bool usingSeedphrase = false;
+  bool existingUserFlow = false;
 
   LoginBloc({
     required ArDriveAuth arDriveAuth,
@@ -51,7 +52,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _onLoginEvent(LoginEvent event, Emitter<LoginState> emit) async {
-    if (event is AddWalletFile) {
+    if (event is SelectLoginFlow) {
+      await _handleSelectLoginFlowEvent(event, emit);
+    } else if (event is AddWalletFile) {
       await _handleAddWalletFileEvent(event, emit);
     } else if (event is LoginWithPassword) {
       await _handleLoginWithPasswordEvent(event, emit);
@@ -80,6 +83,17 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     } else if (event is CompleteWalletGeneration) {
       await _handleCompleteWalletGenerationEvent(event, emit);
     }
+  }
+
+  Future<void> _handleSelectLoginFlowEvent(
+    SelectLoginFlow event,
+    Emitter<LoginState> emit,
+  ) async {
+    existingUserFlow = event.existingUser;
+    emit(LoginInitial(
+      isArConnectAvailable: _arConnectService.isExtensionPresent(),
+      existingUserFlow: event.existingUser,
+    ));
   }
 
   Future<void> _handleUnlockUserWithBiometricsEvent(
@@ -191,9 +205,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (event.gettingStarted) {
       _handleCreateNewWalletEvent(const CreateNewWallet(), emit);
     } else {
-      emit(LoginInitial(
-        isArConnectAvailable: _arConnectService.isExtensionPresent(),
-      ));
+      emit(const LoginLanding());
+      // emit(LoginInitial(
+      //   isArConnectAvailable: _arConnectService.isExtensionPresent(),
+      // ));
     }
   }
 
@@ -300,9 +315,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     usingSeedphrase = false;
 
-    emit(LoginInitial(
-      isArConnectAvailable: _arConnectService.isExtensionPresent(),
-    ));
+    emit(const LoginLanding());
+
+    // emit(LoginInitial(
+    //   isArConnectAvailable: _arConnectService.isExtensionPresent(),
+    // ));
   }
 
   Future<void> _handleFinishOnboardingEvent(

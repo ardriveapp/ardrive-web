@@ -7,6 +7,15 @@ abstract class LoginEvent extends Equatable {
   List<Object> get props => [];
 }
 
+class SelectLoginFlow extends LoginEvent {
+  const SelectLoginFlow({required this.existingUser});
+
+  final bool existingUser;
+
+  @override
+  List<Object> get props => [existingUser];
+}
+
 class AddWalletFile extends LoginEvent {
   const AddWalletFile(this.walletFile);
 
