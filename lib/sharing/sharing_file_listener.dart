@@ -71,19 +71,21 @@ class _SharingFileListenerState extends State<SharingFileListener> {
               ],
               content: SizedBox(
                 height: 400,
-                width: 200,
                 child: ListView.builder(
                   itemCount: state.files.length,
                   shrinkWrap: true,
                   itemBuilder: (context, index) {
-                    return ListTile(
-                      leading: getIconForContentType(
-                        state.files[index].contentType,
-                        size: 24,
-                      ),
-                      title: Text(
-                        state.files[index].name,
-                        style: ArDriveTypography.body.buttonLargeBold(),
+                    return SizedBox(
+                      width: 200,
+                      child: ListTile(
+                        leading: getIconForContentType(
+                          state.files[index].contentType,
+                          size: 24,
+                        ),
+                        title: Text(
+                          state.files[index].name,
+                          style: ArDriveTypography.body.buttonLargeBold(),
+                        ),
                       ),
                     );
                   },
