@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
@@ -177,7 +178,7 @@ class AppState extends State<App> {
                     context.read<ThemeSwitcherBloc>().add(ChangeTheme());
                   },
                   key: arDriveAppKey,
-                  builder: (context) => app,
+                  builder: _appBuilder,
                 );
               },
             ),
@@ -187,32 +188,34 @@ class AppState extends State<App> {
     );
   }
 
-  MaterialApp get app => MaterialApp.router(
-        title: _appName,
-        theme: _ardriveTheme,
-        debugShowCheckedModeBanner: false,
-        routeInformationParser: _routeInformationParser,
-        routerDelegate: _routerDelegate,
-        localizationsDelegates: _localizationsDelegates,
-        supportedLocales: _locales,
+  MaterialApp _appBuilder(BuildContext context) {
+    final ardriveTheme =
+        ArDriveTheme.of(context).themeData.materialThemeData.copyWith(
+              scaffoldBackgroundColor:
+                  ArDriveTheme.of(context).themeData.backgroundColor,
+            );
 
-        // TODO: Remove this once we have a proper solution for
-        builder: (context, child) => ListTileTheme(
-          textColor: kOnSurfaceBodyTextColor,
-          iconColor: kOnSurfaceBodyTextColor,
-          child: Portal(
-            child: child!,
-          ),
+    return MaterialApp.router(
+      title: _appName,
+      theme: ardriveTheme,
+      debugShowCheckedModeBanner: false,
+      routeInformationParser: _routeInformationParser,
+      routerDelegate: _routerDelegate,
+      localizationsDelegates: _localizationsDelegates,
+      supportedLocales: _locales,
+
+      // TODO: Remove this once we have a proper solution for
+      builder: (context, child) => ListTileTheme(
+        textColor: kOnSurfaceBodyTextColor,
+        iconColor: kOnSurfaceBodyTextColor,
+        child: Portal(
+          child: child!,
         ),
-      );
+      ),
+    );
+  }
 
   static const String _appName = 'ArDrive';
-
-  ThemeData get _ardriveTheme =>
-      ArDriveTheme.of(context).themeData.materialThemeData.copyWith(
-            scaffoldBackgroundColor:
-                ArDriveTheme.of(context).themeData.backgroundColor,
-          );
 
   Iterable<Locale> get _locales => const [
         Locale('en', ''), // English, no country code
@@ -256,6 +259,13 @@ class AppState extends State<App> {
         BlocProvider(
           create: (context) =>
               FeedbackSurveyCubit(FeedbackSurveyInitialState()),
+        ),
+        BlocProvider(
+          create: (context) => PromptToSnapshotBloc(
+            userRepository: context.read<UserRepository>(),
+            profileCubit: context.read<ProfileCubit>(),
+            driveDao: context.read<DriveDao>(),
+          ),
         ),
       ];
 
