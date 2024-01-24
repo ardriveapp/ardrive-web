@@ -42,11 +42,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required PstService pst,
+    required bool hasPendingFiles,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _pst = pst,
+        _hasPendingFiles = hasPendingFiles,
         super(CreateManifestInitial()) {
     if (drive.isPrivate) {
       // Extra guardrail to prevent private drives from creating manifests
