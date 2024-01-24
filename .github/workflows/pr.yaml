@@ -12,7 +12,7 @@ env:
   PR_NUMBER: ${{ github.event.pull_request.number }}
   PR_TITLE: ${{ github.event.pull_request.title }}
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
-
+  
 jobs:
   pre-build:
     uses: ./.github/workflows/test.yml
@@ -42,7 +42,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --dart-define=environment=development --release --pwa-strategy=none --no-web-resources-cdn
+          flutter build web --dart-define=environment=development --release --pwa-strategy=none --no-web-resources-cdn --source-maps
 
       # JS files cache invalidation
       - name: main.dart.js and service worker cache invalidation
