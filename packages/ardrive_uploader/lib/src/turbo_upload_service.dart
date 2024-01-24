@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:retry/retry.dart';
-import 'package:ardrive_uploader/src/utils/logger.dart';
 
 class TurboUploadService {
   TurboUploadService({
@@ -98,10 +98,12 @@ class TurboUploadService {
 
     try {
       logger.d('Finalising upload');
+      final keepAliveStream =
+          Stream.periodic(Duration(seconds: 15), (count) => "stayin' alive");
       final finaliseInfo = await r.retry(
         () => dio.post(
           '$turboUploadUri/chunks/arweave/$uploadId/-1',
-          data: null,
+          data: keepAliveStream,
           cancelToken: _cancelToken,
         ),
       );
