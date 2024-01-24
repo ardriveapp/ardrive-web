@@ -18,6 +18,7 @@ Stream<double> _syncDrive(
   required Map<FolderID, GhostFolder> ghostFolders,
   required String ownerAddress,
   required ConfigService configService,
+  required PromptToSnapshotBloc promptToSnapshotBloc,
 }) async* {
   /// Variables to count the current drive's progress information
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
@@ -162,7 +163,16 @@ Stream<double> _syncDrive(
       yield percentage;
     }
   }
+
   logger.d('Done fetching data - ${gqlDriveHistory.driveId}');
+
+  promptToSnapshotBloc.add(
+    CountSyncedTxs(
+      driveId: driveId,
+      txsSyncedWithGqlCount: gqlDriveHistory.txCount,
+      wasDeepSync: lastBlockHeight == 0,
+    ),
+  );
 
   final fetchPhaseTotalTime =
       DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
