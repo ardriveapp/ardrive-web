@@ -75,17 +75,14 @@ class _SharingFileListenerState extends State<SharingFileListener> {
                   itemCount: state.files.length,
                   shrinkWrap: true,
                   itemBuilder: (context, index) {
-                    return SizedBox(
-                      width: 200,
-                      child: ListTile(
-                        leading: getIconForContentType(
-                          state.files[index].contentType,
-                          size: 24,
-                        ),
-                        title: Text(
-                          state.files[index].name,
-                          style: ArDriveTypography.body.buttonLargeBold(),
-                        ),
+                    return ListTile(
+                      leading: getIconForContentType(
+                        state.files[index].contentType,
+                        size: 24,
+                      ),
+                      title: Text(
+                        state.files[index].name,
+                        style: ArDriveTypography.body.buttonLargeBold(),
                       ),
                     );
                   },
