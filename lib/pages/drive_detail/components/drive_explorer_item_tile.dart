@@ -117,6 +117,8 @@ ArDriveIcon getIconForContentType(
   double size = 18,
   Color? color,
 }) {
+  contentType = contentType.toLowerCase();
+
   if (contentType == 'folder') {
     return ArDriveIcons.folderOutline(
       size: size,

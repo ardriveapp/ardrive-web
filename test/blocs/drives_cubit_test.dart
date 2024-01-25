@@ -1,6 +1,7 @@
 @Tags(['broken'])
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -19,6 +20,7 @@ void main() {
 
     late ProfileCubit profileCubit;
     late DrivesCubit drivesCubit;
+    late PromptToSnapshotBloc promptToSnapshotBloc;
 
     setUp(() {
       registerFallbackValue(SyncStateFake());
@@ -27,12 +29,14 @@ void main() {
       driveDao = db.driveDao;
 
       profileCubit = MockProfileCubit();
+      promptToSnapshotBloc = MockPromptToSnapshotBloc();
 
       drivesCubit = DrivesCubit(
         activityTracker: MockActivityTracker(),
         auth: MockArDriveAuth(),
         profileCubit: profileCubit,
         driveDao: driveDao,
+        promptToSnapshotBloc: promptToSnapshotBloc,
       );
     });
 
