@@ -62,6 +62,10 @@ class _SharingFileListenerState extends State<SharingFileListener> {
                               files: state.files,
                             );
                           },
+                          dispose: () {
+                            BlocProvider.of<SharingFileBloc>(context)
+                                .add(SharingFileCleared());
+                          },
                         ),
                       ),
                     );

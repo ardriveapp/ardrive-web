@@ -1,12 +1,15 @@
 import 'package:ardrive/models/drive.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/sharing/folder_selector/folder_selector_bloc.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FolderSelector extends StatefulWidget {
-  const FolderSelector({super.key, required this.onSelect});
+  const FolderSelector({super.key, required this.onSelect, this.dispose});
+
+  final Function? dispose;
 
   final Function(String driveId, String folderId) onSelect;
 
@@ -19,6 +22,12 @@ class _FolderSelectorState extends State<FolderSelector> {
   void initState() {
     super.initState();
     context.read<FolderSelectorBloc>().add(LoadDrivesEvent());
+  }
+
+  @override
+  dispose() {
+    widget.dispose?.call();
+    super.dispose();
   }
 
   @override
@@ -60,11 +69,11 @@ class _FolderSelectorState extends State<FolderSelector> {
                       itemCount: publicDrives.length,
                       shrinkWrap: true,
                       itemBuilder: (context, index) {
+                        final publicDrive = publicDrives[index];
                         final color = state.selectedDrive == null
                             ? null
                             : state.selectedDrive != null
-                                ? publicDrives[index].id ==
-                                        state.selectedDrive!.id
+                                ? publicDrive.id == state.selectedDrive!.id
                                     ? null
                                     : colors.themeAccentDisabled
                                 : null;
@@ -73,22 +82,22 @@ class _FolderSelectorState extends State<FolderSelector> {
                             color: color,
                           ),
                           title: Text(
-                            state.drives[index].name,
+                            publicDrive.name,
                             style: ArDriveTypography.body
                                 .buttonLargeBold(
                                   color: color,
                                 )
                                 .copyWith(
-                                  fontWeight: state.selectedDrive?.id ==
-                                          state.drives[index].id
-                                      ? FontWeight.w700
-                                      : null,
+                                  fontWeight:
+                                      state.selectedDrive?.id == publicDrive.id
+                                          ? FontWeight.w700
+                                          : null,
                                 ),
                           ),
                           onTap: () {
                             context
                                 .read<FolderSelectorBloc>()
-                                .add(SelectDriveEvent(state.drives[index]));
+                                .add(SelectDriveEvent(publicDrive));
                           },
                         );
                       },
@@ -107,11 +116,11 @@ class _FolderSelectorState extends State<FolderSelector> {
                       itemCount: privateDrives.length,
                       shrinkWrap: true,
                       itemBuilder: (context, index) {
+                        final privateDrive = privateDrives[index];
                         final color = state.selectedDrive == null
                             ? null
                             : state.selectedDrive != null
-                                ? privateDrives[index].id ==
-                                        state.selectedDrive!.id
+                                ? privateDrive.id == state.selectedDrive!.id
                                     ? null
                                     : colors.themeAccentDisabled
                                 : null;
@@ -120,22 +129,22 @@ class _FolderSelectorState extends State<FolderSelector> {
                             color: color,
                           ),
                           title: Text(
-                            state.drives[index].name,
+                            privateDrive.name,
                             style: ArDriveTypography.body
                                 .buttonLargeBold(
                                   color: color,
                                 )
                                 .copyWith(
-                                  fontWeight: state.selectedDrive?.id ==
-                                          state.drives[index].id
-                                      ? FontWeight.w700
-                                      : null,
+                                  fontWeight:
+                                      state.selectedDrive?.id == privateDrive.id
+                                          ? FontWeight.w700
+                                          : null,
                                 ),
                           ),
                           onTap: () {
                             context
                                 .read<FolderSelectorBloc>()
-                                .add(SelectDriveEvent(state.drives[index]));
+                                .add(SelectDriveEvent(privateDrive));
                           },
                         );
                       },
@@ -168,42 +177,107 @@ class _FolderSelectorState extends State<FolderSelector> {
         } else if (state is SelectingFolderState) {
           title = 'Select Folder';
           description = 'Select the folder you want to upload to';
-          content = ListView.builder(
-            itemCount: state.folders.length,
-            shrinkWrap: true,
-            itemBuilder: (context, index) {
-              final color = state.selectedFolder == null
-                  ? null
-                  : state.selectedFolder != null
-                      ? state.folders[index].id == state.selectedFolder!.id
-                          ? null
-                          : colors.themeAccentDisabled
-                      : null;
-              return SizedBox(
-                width: 200,
-                child: ListTile(
-                  leading:
-                      getIconForContentType('folder', color: color, size: 24),
-                  title: Text(
-                    state.folders[index].name,
-                    style: ArDriveTypography.body
-                        .buttonLargeBold(
-                          color: color,
-                        )
-                        .copyWith(
-                            fontWeight: state.selectedFolder?.id ==
-                                    state.folders[index].id
-                                ? FontWeight.w700
-                                : null),
+          content = SizedBox(
+            height: 400,
+            child: Column(
+              children: [
+                if (state.selectedFolder != null) ...[
+                  SizedBox(
+                    width: 200,
+                    height: 48,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (state.isRootFolder)
+                          Flexible(
+                            child: ListTile(
+                              leading:
+                                  getIconForContentType('folder', size: 24),
+                              title: Text(
+                                'Root folder',
+                                style: ArDriveTypography.body
+                                    .buttonLargeBold()
+                                    .copyWith(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ),
+                        if (state.parentFolder != null && !state.isRootFolder)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0, right: 4),
+                            child: SizedBox(
+                              width: 24,
+                              child: ArDriveIconButton(
+                                icon: ArDriveIcons.arrowLeft(),
+                                onPressed: () {
+                                  context.read<FolderSelectorBloc>().add(
+                                      SelectFolderEvent(
+                                          folder: state.parentFolder!));
+                                },
+                              ),
+                            ),
+                          ),
+                        if (!state.isRootFolder)
+                          Flexible(
+                            child: ListTile(
+                              leading:
+                                  getIconForContentType('folder', size: 24),
+                              title: Text(
+                                state.selectedFolder!.name,
+                                style: ArDriveTypography.body
+                                    .buttonLargeBold()
+                                    .copyWith(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                  onTap: () {
-                    context
-                        .read<FolderSelectorBloc>()
-                        .add(SelectFolderEvent(state.folders[index]));
+                ],
+                ListView.builder(
+                  padding: EdgeInsets.only(
+                      left: state.selectedFolder == null
+                          ? 0
+                          : state.parentFolder != null
+                              ? 48
+                              : 20),
+                  itemCount: state.folders.length,
+                  shrinkWrap: true,
+                  itemBuilder: (context, index) {
+                    final color = state.selectedFolder == null
+                        ? null
+                        : state.selectedFolder != null
+                            ? state.folders[index].id ==
+                                    state.selectedFolder!.id
+                                ? null
+                                : colors.themeAccentDisabled
+                            : null;
+                    return SizedBox(
+                      width: 200,
+                      child: ListTile(
+                        leading: getIconForContentType('folder',
+                            color: color, size: 24),
+                        title: Text(
+                          state.folders[index].name,
+                          style: ArDriveTypography.body
+                              .buttonLargeBold(
+                                color: color,
+                              )
+                              .copyWith(
+                                  fontWeight: state.selectedFolder?.id ==
+                                          state.folders[index].id
+                                      ? FontWeight.w700
+                                      : null),
+                        ),
+                        onTap: () {
+                          context.read<FolderSelectorBloc>().add(
+                              SelectFolderEvent(folder: state.folders[index]));
+                        },
+                      ),
+                    );
                   },
                 ),
-              );
-            },
+              ],
+            ),
           );
 
           actions.addAll([
