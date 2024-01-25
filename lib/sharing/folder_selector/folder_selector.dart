@@ -43,7 +43,6 @@ class _FolderSelectorState extends State<FolderSelector> {
           title = 'Select Drive';
           description = 'Select the drive you want to upload to';
           content = SizedBox(
-            width: 200,
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,7 +235,6 @@ class _FolderSelectorState extends State<FolderSelector> {
           actions: actions,
           content: SizedBox(
             height: 400,
-            width: 200,
             child: content,
           ),
         );
