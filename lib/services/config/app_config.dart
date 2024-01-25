@@ -1,4 +1,5 @@
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'app_config.g.dart';
@@ -22,6 +23,10 @@ class AppConfig {
   final bool forceNoFreeThanksToTurbo;
   final BigInt? fakeTurboCredits;
   final bool topUpDryRun;
+  final int maxConcurrentChunksUploadingForTurbo;
+  final int maxNumberOfConcurrentUploadsForTurbo;
+  final int turboChunkedUploadThreshold;
+  final int maxTurboUploadChunkSize;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -41,6 +46,10 @@ class AppConfig {
     this.forceNoFreeThanksToTurbo = false,
     this.fakeTurboCredits,
     this.topUpDryRun = false,
+    this.maxConcurrentChunksUploadingForTurbo = 8,
+    this.maxNumberOfConcurrentUploadsForTurbo = 5,
+    this.turboChunkedUploadThreshold = FIVE_GIBIBYTES,
+    this.maxTurboUploadChunkSize = TWENTY_MEGABITES,
   });
 
   AppConfig copyWith({
@@ -63,6 +72,10 @@ class AppConfig {
     BigInt? fakeTurboCredits,
     bool? topUpDryRun,
     bool? unsetFakeTurboCredits,
+    int? maxConcurrentChunksUploadingForTurbo,
+    int? maxNumberOfConcurrentUploadsForTurbo,
+    int? turboChunkedUploadThreshold,
+    int? maxTurboUploadChunkSize,
   }) {
     final theFakeTurboCredits = unsetFakeTurboCredits == true
         ? null
@@ -96,6 +109,16 @@ class AppConfig {
           forceNoFreeThanksToTurbo ?? this.forceNoFreeThanksToTurbo,
       fakeTurboCredits: theFakeTurboCredits,
       topUpDryRun: topUpDryRun ?? this.topUpDryRun,
+      maxConcurrentChunksUploadingForTurbo:
+          maxConcurrentChunksUploadingForTurbo ??
+              this.maxConcurrentChunksUploadingForTurbo,
+      maxNumberOfConcurrentUploadsForTurbo:
+          maxNumberOfConcurrentUploadsForTurbo ??
+              this.maxNumberOfConcurrentUploadsForTurbo,
+      turboChunkedUploadThreshold:
+          turboChunkedUploadThreshold ?? this.turboChunkedUploadThreshold,
+      maxTurboUploadChunkSize:
+          maxTurboUploadChunkSize ?? this.maxTurboUploadChunkSize,
     );
   }
 

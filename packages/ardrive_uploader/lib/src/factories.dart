@@ -3,8 +3,10 @@ import 'package:ardrive_uploader/src/cost_calculator.dart';
 import 'package:ardrive_uploader/src/d2n_streamed_upload.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
+import 'package:ardrive_uploader/src/turbo_chunked_upload_service.dart';
 import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
-import 'package:ardrive_uploader/src/turbo_upload_service.dart';
+import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:pst/pst.dart';
 
@@ -96,22 +98,33 @@ class _UploadFileStrategyFactory implements UploadFileStrategyFactory {
 
 class StreamedUploadFactory {
   final Uri turboUploadUri;
+  final UploadSettings settings;
 
   StreamedUploadFactory({
     required this.turboUploadUri,
+    required this.settings,
   });
 
-  StreamedUpload fromUploadType(
-    UploadType type,
-  ) {
+  StreamedUpload fromUploadType(UploadType type, {int? size}) {
     if (type == UploadType.d2n) {
       return D2NStreamedUpload();
     } else if (type == UploadType.turbo) {
-      return TurboStreamedUpload(
-        TurboUploadService(
+      TurboUploadService turboUploadService;
+
+      if ((size ?? 0) <= settings.turboChunkedUploadThreshold) {
+        turboUploadService = TurboChunkedUploadService(
           turboUploadUri: turboUploadUri,
-        ),
-      );
+          settings: settings,
+        );
+      } else {
+        turboUploadService = TurboStreamedServiceImpl(
+          turboUploadUri: turboUploadUri,
+        );
+      }
+
+      logger.d('Using TurboStreamedUpload: ${turboUploadService.runtimeType}');
+
+      return TurboStreamedUpload(turboUploadService);
     } else {
       throw Exception('Invalid upload type');
     }

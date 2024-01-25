@@ -376,6 +376,60 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    final ArDriveDevToolOption maxConcurrentChunksUploadingForTurbo =
+        ArDriveDevToolOption(
+      name: 'maxConcurrentChunksUploadingForTurbo',
+      value: config.maxConcurrentChunksUploadingForTurbo,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            config.copyWith(maxConcurrentChunksUploadingForTurbo: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.number,
+    );
+
+    final ArDriveDevToolOption maxNumberOfConcurrentUploadsForTurbo =
+        ArDriveDevToolOption(
+      name: 'maxNumberOfConcurrentUploadsForTurbo',
+      value: config.maxNumberOfConcurrentUploadsForTurbo,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            config.copyWith(maxNumberOfConcurrentUploadsForTurbo: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.number,
+    );
+    final ArDriveDevToolOption turboChunkedUploadThreshold =
+        ArDriveDevToolOption(
+      name: 'turboChunkedUploadThreshold',
+      value: config.turboChunkedUploadThreshold,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            config.copyWith(turboChunkedUploadThreshold: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.number,
+    );
+
+    final ArDriveDevToolOption maxTurboUploadChunkSize = ArDriveDevToolOption(
+      name: 'maxTurboUploadChunkSize',
+      value: config.maxTurboUploadChunkSize,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            config.copyWith(maxTurboUploadChunkSize: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.number,
+    );
+
     final List<ArDriveDevToolOption> options = [
       useTurboOption,
       useTurboPaymentOption,
@@ -397,6 +451,10 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       topUpDryRun,
       reloadOption,
       resetOptions,
+      maxConcurrentChunksUploadingForTurbo,
+      maxNumberOfConcurrentUploadsForTurbo,
+      turboChunkedUploadThreshold,
+      maxTurboUploadChunkSize,
     ];
 
     return DraggableWindow(

@@ -2,15 +2,41 @@ import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:pst/pst.dart';
-import 'package:ardrive_uploader/src/utils/logger.dart';
 
 enum UploadType { turbo, d2n }
 
+class UploadSettings {
+  final int maxConcurrentChunksUploadingForTurbo;
+  final int maxNumberOfConcurrentUploadsForTurbo;
+  final int turboChunkedUploadThreshold;
+  final int maxTurboUploadChunkSize;
+
+  const UploadSettings({
+    this.maxConcurrentChunksUploadingForTurbo = 8,
+    this.maxNumberOfConcurrentUploadsForTurbo = 5,
+    this.turboChunkedUploadThreshold = FIVE_GIBIBYTES,
+    this.maxTurboUploadChunkSize = TWENTY_MEGABITES,
+});
+
+  @override
+  toString() {
+    return '''
+    maxConcurrentChunksUploadingForTurbo: $maxConcurrentChunksUploadingForTurbo
+    maxNumberOfConcurrentUploadsForTurbo: $maxNumberOfConcurrentUploadsForTurbo
+    turboChunkedUploadThreshold: $turboChunkedUploadThreshold
+    maxTurboUploadChunkSize: $maxTurboUploadChunkSize
+    ''';
+  }
+}
+
 abstract class ArDriveUploader {
+  abstract final UploadSettings settings;
+
   Future<UploadController> upload({
     required IOFile file,
     required ARFSUploadMetadataArgs args,
@@ -46,6 +72,7 @@ abstract class ArDriveUploader {
     required Uri turboUploadUri,
     Arweave? arweave,
     PstService? pstService,
+    UploadSettings? settings,
   }) {
     metadataGenerator ??= ARFSUploadMetadataGenerator(
       tagsGenerator: ARFSTagsGenetator(
@@ -68,8 +95,11 @@ abstract class ArDriveUploader {
       metadataGenerator: metadataGenerator,
     );
 
+    logger.d('UploadSettings: $settings');
+
     final streamedUploadFactory = StreamedUploadFactory(
       turboUploadUri: turboUploadUri,
+      settings: settings ?? UploadSettings(),
     );
 
     return _ArDriveUploader(
@@ -78,6 +108,7 @@ abstract class ArDriveUploader {
           UploadFileStrategyFactory(dataBundlerFactory, streamedUploadFactory),
       metadataGenerator: metadataGenerator,
       streamedUploadFactory: streamedUploadFactory,
+      settings: settings,
     );
   }
 }
@@ -88,7 +119,9 @@ class _ArDriveUploader implements ArDriveUploader {
     required ARFSUploadMetadataGenerator metadataGenerator,
     required UploadFileStrategyFactory uploadFileStrategyFactory,
     required StreamedUploadFactory streamedUploadFactory,
-  })  : _dataBundlerFactory = dataBundlerFactory,
+    UploadSettings? settings,
+  })  : settings = settings ?? UploadSettings(),
+        _dataBundlerFactory = dataBundlerFactory,
         _streamedUploadFactory = streamedUploadFactory,
         _metadataGenerator = metadataGenerator,
         _uploadFileStrategyFactory = uploadFileStrategyFactory;
@@ -97,6 +130,9 @@ class _ArDriveUploader implements ArDriveUploader {
   final UploadFileStrategyFactory _uploadFileStrategyFactory;
   final ARFSUploadMetadataGenerator _metadataGenerator;
   final StreamedUploadFactory _streamedUploadFactory;
+
+  @override
+  final UploadSettings settings;
 
   @override
   Future<UploadController> upload({

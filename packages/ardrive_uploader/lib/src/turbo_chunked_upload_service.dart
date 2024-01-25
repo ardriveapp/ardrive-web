@@ -1,21 +1,28 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:retry/retry.dart';
-import 'package:ardrive_uploader/src/utils/logger.dart';
 
-class TurboUploadService {
-  TurboUploadService({
+class TurboChunkedUploadService implements TurboUploadService {
+  TurboChunkedUploadService({
     required this.turboUploadUri,
+    required this.settings,
   });
 
+  @override
   final Uri turboUploadUri;
+
+  final UploadSettings settings;
+
   final r = RetryOptions(maxAttempts: 8);
   final CancelToken _cancelToken = CancelToken();
 
+  @override
   Future<Response> post({
     required DataItemResult dataItem,
     required Wallet wallet,
@@ -39,7 +46,7 @@ class TurboUploadService {
     Map<int, int> inFlightRequestsBytesSent = {};
     int completedRequestsBytesSent = 0;
 
-    final maxUploadsInParallel = MiB(50).size ~/ uploadChunkSizeMinInBytes;
+    final maxUploadsInParallel = settings.maxConcurrentChunksUploadingForTurbo;
     logger.d('Max uploads in parallel: $maxUploadsInParallel');
 
     if (onSendProgress != null) {
@@ -60,7 +67,7 @@ class TurboUploadService {
 
     await _processStream(
         stream: dataItem.streamGenerator(),
-        chunkSize: uploadChunkSizeMinInBytes,
+        chunkSize: settings.maxTurboUploadChunkSize,
         maxConcurrent: maxUploadsInParallel, (chunk, offset) async {
       try {
         logger.d('Uploading chunk. Offset: $offset');
@@ -117,6 +124,7 @@ class TurboUploadService {
     }
   }
 
+  @override
   Future<void> cancel() {
     _cancelToken.cancel();
     logger.d('Stream closed');

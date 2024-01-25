@@ -82,6 +82,7 @@ Future<void> promptToUpload(
       context,
       content: BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
+          configService: context.read<ConfigService>(),
           activityTracker: context.read<ActivityTracker>(),
           folder: ioFolder,
           arDriveUploadManager: ArDriveUploadPreparationManager(

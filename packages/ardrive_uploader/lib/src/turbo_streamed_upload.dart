@@ -1,9 +1,9 @@
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
-import 'package:ardrive_uploader/src/turbo_upload_service.dart';
-import 'package:arweave/arweave.dart';
+import 'package:ardrive_uploader/src/turbo_upload_service_base.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
+import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 
 class TurboStreamedUpload implements StreamedUpload<UploadItem> {

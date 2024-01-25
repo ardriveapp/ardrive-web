@@ -11,6 +11,7 @@ import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -46,6 +47,8 @@ class UploadCubit extends Cubit<UploadState> {
   final ArDriveAuth _auth;
   final ArDriveUploadPreparationManager _arDriveUploadManager;
   final ActivityTracker _activityTracker;
+
+  final ConfigService _configService;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -104,10 +107,12 @@ class UploadCubit extends Cubit<UploadState> {
     required ArDriveAuth auth,
     required ArDriveUploadPreparationManager arDriveUploadManager,
     required ActivityTracker activityTracker,
+    required ConfigService configService,
     this.folder,
     this.uploadFolders = false,
     this.isDragNDrop = false,
-  })  : _profileCubit = profileCubit,
+  })  : _configService = configService,
+        _profileCubit = profileCubit,
         _uploadFileSizeChecker = uploadFileChecker,
         _driveDao = driveDao,
         _pst = pst,
@@ -504,7 +509,18 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> _uploadFolderUsingArDriveUploader() async {
+    final config = _configService.config;
+    final uploadSettings = UploadSettings(
+      maxConcurrentChunksUploadingForTurbo:
+          config.maxConcurrentChunksUploadingForTurbo,
+      maxNumberOfConcurrentUploadsForTurbo:
+          config.maxNumberOfConcurrentUploadsForTurbo,
+      turboChunkedUploadThreshold: config.turboChunkedUploadThreshold,
+      maxTurboUploadChunkSize: config.maxTurboUploadChunkSize,
+    );
+
     final ardriveUploader = ArDriveUploader(
+      settings: uploadSettings,
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
       metadataGenerator: ARFSUploadMetadataGenerator(
         tagsGenerator: ARFSTagsGenetator(
@@ -632,7 +648,20 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> _uploadUsingArDriveUploader() async {
+    // TODO: remove duplicated code
+
+    final config = _configService.config;
+    final uploadSettings = UploadSettings(
+      maxConcurrentChunksUploadingForTurbo:
+          config.maxConcurrentChunksUploadingForTurbo,
+      maxNumberOfConcurrentUploadsForTurbo:
+          config.maxNumberOfConcurrentUploadsForTurbo,
+      turboChunkedUploadThreshold: config.turboChunkedUploadThreshold,
+      maxTurboUploadChunkSize: config.maxTurboUploadChunkSize,
+    );
+
     final ardriveUploader = ArDriveUploader(
+      settings: uploadSettings,
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
       metadataGenerator: ARFSUploadMetadataGenerator(
         tagsGenerator: ARFSTagsGenetator(

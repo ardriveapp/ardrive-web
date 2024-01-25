@@ -64,8 +64,10 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
         );
       }
 
-      final metadataStreamedUpload =
-          _streamedUploadFactory.fromUploadType(task.type);
+      final metadataStreamedUpload = _streamedUploadFactory.fromUploadType(
+        task.type,
+        size: metadataItem.dataItemSize,
+      );
 
       final uploadResult = await metadataStreamedUpload.send(
           DataItemUploadItem(
@@ -132,7 +134,8 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       );
     }
 
-    final streamedUpload = _streamedUploadFactory.fromUploadType(task.type);
+    final streamedUpload = _streamedUploadFactory.fromUploadType(task.type,
+        size: dataItem.dataItemSize);
 
     dataItemTask = dataItemTask.copyWith(
       status: UploadStatus.inProgress,

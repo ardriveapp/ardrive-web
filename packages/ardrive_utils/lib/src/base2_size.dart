@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 const int _aKibInBytes = 1024;
 const int _aMibInBytes = _aKibInBytes * 1024;
 const int _aGibInBytes = _aMibInBytes * 1024;
@@ -32,3 +34,7 @@ class GiB implements Base2DataSize {
   @override
   int get size => _size * _aGibInBytes;
 }
+
+const int FIVE_GIBIBYTES = 5 * 1024 * 1024 * 1024;
+
+const int TWENTY_MEGABITES = 20 * 1024 * 1024;

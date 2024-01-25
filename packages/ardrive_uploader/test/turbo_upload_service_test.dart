@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:ardrive_uploader/src/turbo_upload_service.dart';
+import 'package:ardrive_uploader/src/turbo_chunked_upload_service.dart';
 import 'package:test/test.dart';
 
 void main() {
