@@ -884,6 +884,7 @@ class UploadDispatcher {
           file: task.file,
           metadata: task.metadata,
           wallet: wallet,
+          driveKey: task.encryptionKey,
           onStartBundleCreation: () {
             controller.updateProgress(
               task: task.copyWith(

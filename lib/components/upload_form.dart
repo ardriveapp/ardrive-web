@@ -122,7 +122,7 @@ Future<void> promptToUpload(
               ),
             ),
           ),
-          uploadFileChecker: context.read<UploadFileSizeChecker>(),
+          uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
           driveId: driveId,
           parentFolderId: parentFolderId,
           files: selectedFiles,

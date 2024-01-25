@@ -246,7 +246,7 @@ void main() {
     return UploadCubit(
         activityTracker: MockActivityTracker(),
         arDriveUploadManager: mockArDriveUploadPreparationManager,
-        uploadFileChecker: mockUploadFileChecker,
+        uploadFileSizeChecker: mockUploadFileChecker,
         driveId: tDriveId,
         parentFolderId: tRootFolderId,
         files: files,
