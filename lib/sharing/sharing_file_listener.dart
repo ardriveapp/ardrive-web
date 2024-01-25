@@ -71,7 +71,6 @@ class _SharingFileListenerState extends State<SharingFileListener> {
               ],
               content: SizedBox(
                 height: 400,
-                width: 200,
                 child: ListView.builder(
                   itemCount: state.files.length,
                   shrinkWrap: true,
