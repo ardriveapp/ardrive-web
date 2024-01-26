@@ -1,5 +1,7 @@
 import 'package:ardrive/authentication/components/button.dart';
+import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/authentication/login/views/login_modals.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -108,39 +110,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     print("Implement me!");
                   }),
               const SizedBox(height: 40),
-              Row(children: [
-                Expanded(
-                    child: Container(
-                  decoration: ShapeDecoration(
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                        width: 0.50,
-                        strokeAlign: BorderSide.strokeAlignCenter,
-                        color: colorTokens.strokeLow,
-                      ),
-                    ),
-                  ),
-                )),
-                Padding(
-                    padding: const EdgeInsets.only(left: 44, right: 44),
-                    child: Text('or',
-                        textAlign: TextAlign.center,
-                        style: typography.paragraphLarge(
-                            color: colorTokens.textLow,
-                            fontWeight: ArFontWeight.semiBold))),
-                Expanded(
-                    child: Container(
-                  decoration: ShapeDecoration(
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                        width: 0.50,
-                        strokeAlign: BorderSide.strokeAlignCenter,
-                        color: colorTokens.strokeLow,
-                      ),
-                    ),
-                  ),
-                )),
-              ]),
+              const LinedTextDivider(text: 'or'),
               const SizedBox(height: 40),
               existingUserFlow
                   ? ArDriveButtonNew(
@@ -148,7 +118,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       typography: typography,
                       maxWidth: double.maxFinite,
                       onPressed: () {
-                        print("Implement me!");
+                        showImportWalletDialog(context);
                       })
                   : ArDriveButtonNew(
                       text: 'Create a Wallet',
