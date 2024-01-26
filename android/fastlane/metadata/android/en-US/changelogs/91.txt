@@ -1,0 +1,3 @@
+- Enhanced user interface with new options to create manifests for folders with pending files.
+- Introduced a reminder pop-up for users with large drives to encourage snapshot usage, enhancing sync efficiency.
+- Immediate update visibility when renaming a file or folder
