@@ -116,9 +116,7 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                 actions: [
                   ModalAction(
                     action: () {
-                      context.read<FsEntryRenameCubit>().emit(
-                          FsEntryRenameInitialized(
-                              isRenamingFolder: state.isRenamingFolder));
+                      context.read<FsEntryRenameCubit>().reset();
                       Navigator.of(context).pop(context);
                     },
                     title: appLocalizationsOf(context).cancelEmphasized,

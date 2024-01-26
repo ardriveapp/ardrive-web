@@ -52,6 +52,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
   }
 
+  Future<void> reset() async {
+    emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
+  }
+
   Future<void> submit({
     required String newName,
     bool updateExtension = false,
@@ -134,9 +138,6 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         final hasExtensionChanged = currentExtension != _newFileExtension;
 
         if (!updateExtension && !_dontVerifyExtension && hasExtensionChanged) {
-          // if (state is UpdatingEntityExtension) {
-          //   emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
-          // }
           emit(UpdatingEntityExtension(
             previousExtension: currentExtension,
             entityName: newName,
