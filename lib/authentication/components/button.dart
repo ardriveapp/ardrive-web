@@ -88,6 +88,17 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
         }
         return hoverColor;
       }),
+      side: widget.variant != ButtonVariant.outline
+          ? null
+          : MaterialStateProperty.resolveWith<BorderSide>(
+              (Set<MaterialState> states) {
+              return BorderSide(
+                  color: states.contains(MaterialState.hovered) ||
+                          states.contains(MaterialState.pressed)
+                      ? colorTokens.strokeHigh
+                      : colorTokens.strokeMid,
+                  width: 1);
+            }),
       foregroundColor: MaterialStateProperty.all<Color>(foregroundColor),
     );
 
