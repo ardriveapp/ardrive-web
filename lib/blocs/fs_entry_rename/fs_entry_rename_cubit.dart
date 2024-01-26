@@ -134,13 +134,14 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         final hasExtensionChanged = currentExtension != _newFileExtension;
 
         if (!updateExtension && !_dontVerifyExtension && hasExtensionChanged) {
-          emit(
-            UpdatingEntityExtension(
-              previousExtension: currentExtension,
-              entityName: newName,
-              newExtension: _newFileExtension!,
-            ),
-          );
+          // if (state is UpdatingEntityExtension) {
+          //   emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
+          // }
+          emit(UpdatingEntityExtension(
+            previousExtension: currentExtension,
+            entityName: newName,
+            newExtension: _newFileExtension!,
+          ));
 
           return;
         }
