@@ -40,7 +40,7 @@ class CheckIfUserIsLoggedIn extends LoginEvent {
   });
 
   @override
-  List<Object> get props => [];
+  List<Object> get props => [gettingStarted];
 }
 
 class LoginWithPassword extends LoginEvent {
@@ -53,7 +53,7 @@ class LoginWithPassword extends LoginEvent {
   });
 
   @override
-  List<Object> get props => [password];
+  List<Object> get props => [password, wallet];
 }
 
 class UnlockUserWithPassword extends LoginEvent {
@@ -74,7 +74,7 @@ class CreatePassword extends LoginEvent {
   const CreatePassword({required this.password, required this.wallet});
 
   @override
-  List<Object> get props => [password];
+  List<Object> get props => [password, wallet];
 }
 
 class ForgetWallet extends LoginEvent {
@@ -85,6 +85,9 @@ class FinishOnboarding extends LoginEvent {
   const FinishOnboarding({required this.wallet});
 
   final Wallet wallet;
+
+  @override
+  List<Object> get props => [wallet];
 }
 
 class UnLockWithBiometrics extends LoginEvent {

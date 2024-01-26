@@ -17,6 +17,9 @@ class LoginInitial extends LoginState {
 
   const LoginInitial(
       {required this.isArConnectAvailable, required this.existingUserFlow});
+
+  @override
+  List<Object> get props => [isArConnectAvailable, existingUserFlow];
 }
 
 class LoginLoading extends LoginState {}

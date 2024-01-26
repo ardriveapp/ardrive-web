@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
 
 class Primitives {
   Primitives({
@@ -182,6 +182,9 @@ class ArDriveColorTokens {
     required this.buttonSecondaryDefault,
     required this.buttonSecondaryHover,
     required this.buttonSecondaryPress,
+    required this.buttonOutlineDefault,
+    required this.buttonOutlineHover,
+    required this.buttonOutlinePress,
     required this.inputDefault,
     required this.iconLow,
     required this.iconMid,
@@ -215,6 +218,9 @@ class ArDriveColorTokens {
         buttonSecondaryDefault: primitives.solidGrey700,
         buttonSecondaryHover: primitives.solidGrey600,
         buttonSecondaryPress: primitives.solidGrey500,
+        buttonOutlineDefault: Colors.transparent,
+        buttonOutlineHover: primitives.solidGrey600,
+        buttonOutlinePress: primitives.solidGrey500,
         inputDefault: primitives.solidGrey900,
         iconLow: primitives.solidGrey400,
         iconMid: primitives.solidGrey200,
@@ -248,6 +254,9 @@ class ArDriveColorTokens {
         buttonSecondaryDefault: primitives.solidGrey100,
         buttonSecondaryHover: primitives.transparent900_12,
         buttonSecondaryPress: primitives.transparent900_16,
+        buttonOutlineDefault: Colors.transparent,
+        buttonOutlineHover: primitives.transparent900_12,
+        buttonOutlinePress: primitives.transparent900_16,
         inputDefault: primitives.solidGrey900,
         iconLow: primitives.solidGrey400,
         iconMid: primitives.solidGrey200,
@@ -277,6 +286,9 @@ class ArDriveColorTokens {
   final Color buttonSecondaryDefault;
   final Color buttonSecondaryHover;
   final Color buttonSecondaryPress;
+  final Color buttonOutlineDefault;
+  final Color buttonOutlineHover;
+  final Color buttonOutlinePress;
   final Color inputDefault;
   final Color iconLow;
   final Color iconMid;

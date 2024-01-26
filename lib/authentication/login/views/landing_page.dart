@@ -2,7 +2,6 @@ import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../misc/resources.dart';
@@ -21,7 +20,7 @@ class LandingPageView extends StatefulWidget {
 class _LandingPageViewState extends State<LandingPageView> {
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     // FIXME: add switching of typography based on screen size
     final typography = ArDriveTypographyNew.desktop;
@@ -33,50 +32,50 @@ class _LandingPageViewState extends State<LandingPageView> {
       child: SingleChildScrollView(
         child: LoginCard(
           content: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ArDriveImage(
-                image: AssetImage(Resources.images.brand.logo1),
-                height: 50,
-              ),
-              heightSpacing(),
-              Align(
-                alignment: Alignment.topCenter,
-                child: Text(
-                  // FIXME: Add localization key
-                  'Welcome to ArDrive',
-                  style: typography.heading1(fontWeight: ArFontWeight.bold),
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ArDriveImage(
+                  image: AssetImage(Resources.images.brand.logo1),
+                  height: 50,
                 ),
-              ),
-              heightSpacing(),
-              //FIXME: Add localization key
-              Text('Are you an existing user or a new user?',
-                  style: typography.paragraphLarge(
-                      color: colors.themeFgSubtle,
-                      fontWeight: ArFontWeight.semiBold)),
-              const SizedBox(height: 72),
-              ArDriveButtonNew(
-                  text: 'Existing user',
-                  typography: typography,
-                  maxWidth: double.maxFinite,
-                  onPressed: () {
-                    context
-                        .read<LoginBloc>()
-                        .add(const SelectLoginFlow(existingUser: true));
-                  }),
-              const SizedBox(height: 16),
-              ArDriveButtonNew(
-                  text: 'New User',
-                  typography: typography,
-                  maxWidth: double.maxFinite,
-                  onPressed: () {
-                    context
-                        .read<LoginBloc>()
-                        .add(const SelectLoginFlow(existingUser: false));
-                  }),
-            ],
-          ),
+                heightSpacing(),
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: Text(
+                    // FIXME: Add localization key
+                    'Welcome to ArDrive',
+                    style: typography.heading1(
+                        color: colors.textHigh, fontWeight: ArFontWeight.bold),
+                  ),
+                ),
+                heightSpacing(),
+                //FIXME: Add localization key
+                Text('Are you an existing user or a new user?',
+                    style: typography.paragraphLarge(
+                        color: colors.textLow,
+                        fontWeight: ArFontWeight.semiBold)),
+                const SizedBox(height: 72),
+                ArDriveButtonNew(
+                    text: 'Existing user',
+                    typography: typography,
+                    maxWidth: double.maxFinite,
+                    onPressed: () {
+                      context
+                          .read<LoginBloc>()
+                          .add(const SelectLoginFlow(existingUser: true));
+                    }),
+                const SizedBox(height: 16),
+                ArDriveButtonNew(
+                    text: 'New User',
+                    typography: typography,
+                    maxWidth: double.maxFinite,
+                    onPressed: () {
+                      context
+                          .read<LoginBloc>()
+                          .add(const SelectLoginFlow(existingUser: false));
+                    }),
+              ]),
         ),
       ),
     );

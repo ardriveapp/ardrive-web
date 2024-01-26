@@ -372,10 +372,11 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             key: Key('landingPageView'),
           );
         } else {
+          var existingUserFlow = (loginState as LoginInitial).existingUserFlow;
           content = PromptWalletView(
             key: const Key('promptWalletView'),
-            isArConnectAvailable:
-                (loginState as LoginInitial).isArConnectAvailable,
+            isArConnectAvailable: loginState.isArConnectAvailable,
+            existingUserFlow: existingUserFlow,
           );
         }
 

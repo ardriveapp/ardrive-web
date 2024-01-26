@@ -2,13 +2,15 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_ui/src/constants/size_constants.dart';
 import 'package:flutter/material.dart';
 
+enum ButtonVariant { primary, secondary, outline }
+
 class ArDriveButtonNew extends StatefulWidget {
   const ArDriveButtonNew({
     super.key,
     required this.text,
     required this.typography,
     this.onPressed,
-    // this.style = SECONDARY,
+    this.variant = ButtonVariant.secondary,
     this.backgroundColor,
     this.fontStyle,
     this.maxHeight,
@@ -22,7 +24,7 @@ class ArDriveButtonNew extends StatefulWidget {
   final String text;
   final ArdriveTypographyNew typography;
   final Function()? onPressed;
-  // final ButtonStyle style;
+  final ButtonVariant variant;
   final Color? backgroundColor;
   final TextStyle? fontStyle;
   final double? maxHeight;
@@ -48,10 +50,24 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
     var typography = widget.typography;
     var colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    var defaultColor = colorTokens.buttonSecondaryDefault;
-    var hoverColor = colorTokens.buttonSecondaryHover;
-    var pressedColor = colorTokens.buttonSecondaryPress;
-    var foregroundColor = colorTokens.textLink;
+    Color defaultColor, hoverColor, pressedColor, foregroundColor;
+
+    if (widget.variant == ButtonVariant.primary) {
+      defaultColor = colorTokens.buttonPrimaryDefault;
+      hoverColor = colorTokens.buttonPrimaryHover;
+      pressedColor = colorTokens.buttonPrimaryPress;
+      foregroundColor = colorTokens.textOnPrimary;
+    } else if (widget.variant == ButtonVariant.secondary) {
+      defaultColor = colorTokens.buttonSecondaryDefault;
+      hoverColor = colorTokens.buttonSecondaryHover;
+      pressedColor = colorTokens.buttonSecondaryPress;
+      foregroundColor = colorTokens.textLink;
+    } else {
+      defaultColor = colorTokens.buttonOutlineDefault;
+      hoverColor = colorTokens.buttonOutlineHover;
+      pressedColor = colorTokens.buttonOutlinePress;
+      foregroundColor = colorTokens.textLink;
+    }
 
     var style = ButtonStyle(
       shape: const MaterialStatePropertyAll<RoundedRectangleBorder>(
