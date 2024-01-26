@@ -32,13 +32,33 @@ class FolderSelectorBloc
 
         selectedDrive = event.drive;
 
-        emit(SelectingFolderState(folders: folderTree.getRecursiveFolders()));
+        emit(
+          SelectingFolderState(
+            selectedFolder: folderTree.folder,
+            isRootFolder: true,
+            folders: folderTree.subfolders.map((e) => e.folder).toList(),
+          ),
+        );
       } else if (event is SelectFolderEvent) {
-        final folders = (state as SelectingFolderState).folders;
-        emit(SelectingFolderState(
-          folders: folders,
-          selectedFolder: event.folder,
-        ));
+        final folderTree =
+            await driveDao.getFolderTree(event.folder.driveId, event.folder.id);
+        FolderEntry? parentFolder;
+        if (event.folder.parentFolderId != null) {
+          parentFolder = await driveDao
+              .folderById(
+                  driveId: event.folder.driveId,
+                  folderId: event.folder.parentFolderId!)
+              .getSingle();
+        }
+
+        emit(
+          SelectingFolderState(
+            isRootFolder: event.folder.id == selectedDrive!.rootFolderId,
+            parentFolder: parentFolder,
+            selectedFolder: event.folder,
+            folders: folderTree.subfolders.map((e) => e.folder).toList(),
+          ),
+        );
       } else if (event is ConfirmFolderEvent) {
         emit(FolderSelectedState(event.folder.id, event.folder.driveId));
       }

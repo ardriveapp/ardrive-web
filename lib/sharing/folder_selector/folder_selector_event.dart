@@ -39,7 +39,9 @@ final class ConfirmFolderEvent extends FolderSelectorEvent {
 final class SelectFolderEvent extends FolderSelectorEvent {
   final FolderEntry folder;
 
-  const SelectFolderEvent(this.folder);
+  const SelectFolderEvent({
+    required this.folder,
+  });
 
   @override
   List<Object> get props => [folder];
