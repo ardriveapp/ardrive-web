@@ -1231,10 +1231,10 @@ packages:
     dependency: transitive
     description:
       name: jovial_svg
-      sha256: "5fd52a96fe3d2b69082c53374364649f51cb1b3e06ca6be3601ed8cae537bc7b"
+      sha256: "7162d9fce53e284782f6178e175c9e07dde695779392eaa2542c1f795658eb3d"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.17"
+    version: "1.1.20"
   js:
     dependency: "direct main"
     description:
@@ -1407,10 +1407,10 @@ packages:
     dependency: transitive
     description:
       name: mutex
-      sha256: "03116a4e46282a671b46c12de649d72c0ed18188ffe12a8d0fc63e83f4ad88f4"
+      sha256: "8827da25de792088eb33e572115a5eb0d61d61a3c01acbc8bcbe76ed78f1a1f2"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "3.1.0"
   nested:
     dependency: transitive
     description:
@@ -1867,18 +1867,18 @@ packages:
     dependency: transitive
     description:
       name: sqflite
-      sha256: "591f1602816e9c31377d5f008c2d9ef7b8aca8941c3f89cc5fd9d84da0c38a9a"
+      sha256: c2c32eb0c74021d987336522acc3b6bf0082fbd0c540c36a9cf4ddb8ba891ddc
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.0"
+    version: "2.3.1"
   sqflite_common:
     dependency: transitive
     description:
       name: sqflite_common
-      sha256: "1b92f368f44b0dee2425bb861cfa17b6f6cf3961f762ff6f941d20b33355660a"
+      sha256: "28d8c66baee4968519fb8bd6cdbedad982d6e53359091f0b74544a9f32ec72d5"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0"
+    version: "2.5.3"
   sqlite3:
     dependency: transitive
     description:

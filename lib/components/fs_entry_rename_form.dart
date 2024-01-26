@@ -116,19 +116,10 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                 actions: [
                   ModalAction(
                     action: () {
-                      Navigator.of(context).pop();
+                      context.read<FsEntryRenameCubit>().reset();
+                      Navigator.of(context).pop(context);
                     },
                     title: appLocalizationsOf(context).cancelEmphasized,
-                  ),
-                  ModalAction(
-                    action: () {
-                      context.read<FsEntryRenameCubit>().dontVerifyExtension();
-                      context
-                          .read<FsEntryRenameCubit>()
-                          .submit(newName: _nameController.text);
-                      Navigator.of(context).pop();
-                    },
-                    title: 'Don\'t change',
                   ),
                   ModalAction(
                     action: () {
@@ -182,9 +173,11 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                 title: appLocalizationsOf(context).cancelEmphasized,
               ),
               ModalAction(
-                action: () => context
-                    .read<FsEntryRenameCubit>()
-                    .submit(newName: _nameController.text),
+                action: () {
+                  context
+                      .read<FsEntryRenameCubit>()
+                      .submit(newName: _nameController.text);
+                },
                 title: appLocalizationsOf(context).renameEmphasized,
                 isEnable: _validForm,
               ),
