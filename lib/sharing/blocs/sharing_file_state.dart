@@ -18,4 +18,7 @@ final class SharingFileReceivedState extends SharingFileState {
   List<Object> get props => [files];
 }
 
-final class SharingFileClearedState extends SharingFileState {}
+final class SharingFileClearedState extends SharingFileState {
+  @override
+  List<Object> get props => [];
+}
