@@ -4,6 +4,7 @@ import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/feedback_survey.dart';
 import 'package:ardrive/core/activity_tracker.dart';
@@ -282,6 +283,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     licenseService: context.read<LicenseService>(),
                     profileCubit: context.read<ProfileCubit>(),
                     activityCubit: context.read<ActivityCubit>(),
+                    promptToSnapshotBloc: context.read<PromptToSnapshotBloc>(),
                     arweave: context.read<ArweaveService>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),
@@ -295,6 +297,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     initialSelectedDriveId: driveId,
                     profileCubit: context.read<ProfileCubit>(),
                     driveDao: context.read<DriveDao>(),
+                    promptToSnapshotBloc: context.read<PromptToSnapshotBloc>(),
                   ),
                 ),
               ],

@@ -155,8 +155,12 @@ Widget _buildDataListContent(
   Map<int, bool> columnVisibility,
 ) {
   return LayoutBuilder(builder: (context, constraints) {
+    final driveDetailCubitState = context.read<DriveDetailCubit>().state;
+    final forceRebuildKey = driveDetailCubitState is DriveDetailLoadSuccess
+        ? driveDetailCubitState.forceRebuildKey
+        : null;
     return ArDriveDataTable<ArDriveDataTableItem>(
-      key: ValueKey(folder.id),
+      key: ValueKey(folder.id + forceRebuildKey.toString()),
       lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
           !context.watch<ActivityTracker>().isMultiSelectEnabled,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,

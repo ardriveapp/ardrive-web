@@ -169,14 +169,15 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     required String driveId,
   }) async {
     if (entity is IOFile) {
+      final args = ARFSUploadMetadataArgs(
+        isPrivate: driveKey != null,
+        driveId: driveId,
+        parentFolderId: metadata.id,
+        type: this is BDIDataBundler ? UploadType.turbo : UploadType.d2n,
+      );
       final fileMetadata = await metadataGenerator.generateMetadata(
         entity,
-        ARFSUploadMetadataArgs(
-          isPrivate: driveKey != null,
-          driveId: driveId,
-          parentFolderId: metadata.id,
-          type: this is BDIDataBundler ? UploadType.turbo : UploadType.d2n,
-        ),
+        arguments: args,
       );
 
       return DataResultWithContents<TransactionResult>(

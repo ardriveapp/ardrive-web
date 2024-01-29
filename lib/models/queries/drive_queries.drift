@@ -198,6 +198,13 @@ pendingTransactions:
     SELECT * FROM network_transactions
     WHERE status = 'pending';
 
+pendingTransactionsForDrive:
+    SELECT * FROM network_transactions
+    WHERE status = 'pending' AND id IN (
+        SELECT metadataTxId FROM file_revisions
+        WHERE driveId = :driveId
+    );
+
 deleteDriveById: DELETE FROM drives WHERE id = :driveId;
 deleteAllDriveRevisionsByDriveId:
     DELETE FROM drive_revisions

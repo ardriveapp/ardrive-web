@@ -8,6 +8,7 @@ import 'package:ardrive/components/pin_file_dialog.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -331,6 +332,12 @@ class NewButton extends StatelessWidget {
                 promptToCreateManifest(
                   context,
                   drive: drive!,
+                  // TODO: for big drives, this might will be slow
+                  hasPendingFiles: driveDetailState.currentFolderContents.any(
+                    (element) =>
+                        element.fileStatusFromTransactions ==
+                        TransactionStatus.pending,
+                  ),
                 );
               },
               isDisabled: !driveDetailState.hasWritePermissions ||
@@ -349,7 +356,7 @@ class NewButton extends StatelessWidget {
               },
               isDisabled: !driveDetailState.hasWritePermissions ||
                   driveDetailState.driveIsEmpty,
-              name: appLocalizations.createSnapshot,
+              name: appLocalizations.newSnapshot,
               icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
             ),
         ]
