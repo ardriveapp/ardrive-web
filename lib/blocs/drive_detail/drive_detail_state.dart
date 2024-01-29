@@ -35,6 +35,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final List<ArDriveDataTableItem> currentFolderContents;
 
+  final Key? forceRebuildKey;
+
   final bool isShowingHiddenFiles;
 
   DriveDetailLoadSuccess({
@@ -53,6 +55,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.driveIsEmpty,
     required this.selectedItem,
     required this.currentFolderContents,
+    this.forceRebuildKey,
     required this.isShowingHiddenFiles,
   });
 
@@ -72,9 +75,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     bool? hasFoldersSelected,
     ArDriveDataTableItem? selectedItem,
     List<ArDriveDataTableItem>? currentFolderContents,
+    Key? forceRebuildKey,
     bool? isShowingHiddenFiles,
   }) =>
       DriveDetailLoadSuccess(
+        forceRebuildKey: forceRebuildKey ?? this.forceRebuildKey,
         selectedItem: selectedItem ?? this.selectedItem,
         hasFoldersSelected: hasFoldersSelected ?? this.hasFoldersSelected,
         currentDrive: currentDrive ?? this.currentDrive,
@@ -113,6 +118,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         _equatableBust,
         driveIsEmpty,
         multiselect,
+        forceRebuildKey,
         selectedItem,
       ];
   SelectedItem? maybeSelectedItem() =>

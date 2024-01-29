@@ -139,6 +139,10 @@ Widget _buildDataListContent(
   final itemsHash = Object.hashAll(filteredItems);
 
   return LayoutBuilder(builder: (context, constraints) {
+    final driveDetailCubitState = context.read<DriveDetailCubit>().state;
+    final forceRebuildKey = driveDetailCubitState is DriveDetailLoadSuccess
+        ? driveDetailCubitState.forceRebuildKey
+        : null;
     return ArDriveDataTable<ArDriveDataTableItem>(
       key: ValueKey('${folder.id}-$itemsHash'),
       lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
