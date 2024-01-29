@@ -405,12 +405,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
   }
 
-  void refreshDriveDataTable() {
+  void refreshDriveDataTable() async {
     _refreshSelectedItem = true;
 
     if (state is DriveDetailLoadSuccess) {
+      await Future.delayed(const Duration(milliseconds: 100));
       final state = this.state as DriveDetailLoadSuccess;
       emit(state.copyWith(
+        forceRebuildKey: UniqueKey(),
         isShowingHiddenFiles: _showHiddenFiles,
       ));
     }

@@ -33,6 +33,7 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -50,17 +51,24 @@ Future<void> promptToUpload(
 }) async {
   final selectedFiles = <UploadFile>[];
   final io = ArDriveIO();
-  IOFolder? ioFolder;
+  final IOFolder? ioFolder;
   if (isFolderUpload) {
     ioFolder = await io.pickFolder();
     final ioFiles = await ioFolder.listFiles();
-    final uploadFiles = ioFiles.map((file) {
-      return UploadFile(
-        ioFile: file,
-        parentFolderId: parentFolderId,
-        relativeTo: ioFolder!.path.isEmpty ? null : getDirname(ioFolder.path),
-      );
-    }).toList();
+
+    final isMobilePlatform = AppPlatform.isMobile;
+    final shouldUseRelativePath = isMobilePlatform && ioFolder.path.isNotEmpty;
+    final relativeTo = shouldUseRelativePath ? getDirname(ioFolder.path) : null;
+
+    final uploadFiles = ioFiles
+        .map(
+          (file) => UploadFile(
+            ioFile: file,
+            parentFolderId: parentFolderId,
+            relativeTo: relativeTo,
+          ),
+        )
+        .toList();
     selectedFiles.addAll(uploadFiles);
   } else {
     // Display multiple options on Mobile
@@ -69,12 +77,11 @@ Future<void> promptToUpload(
         ? await io.pickFiles(fileSource: FileSource.fileSystem)
         // ignore: use_build_context_synchronously
         : await showMultipleFilesFilePickerModal(context);
-
     final uploadFiles = ioFiles
         .map((file) => UploadFile(ioFile: file, parentFolderId: parentFolderId))
         .toList();
-
     selectedFiles.addAll(uploadFiles);
+    ioFolder = null;
   }
 
   // ignore: use_build_context_synchronously

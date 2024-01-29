@@ -1,12 +1,13 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
-import 'package:json_annotation/json_annotation.dart';
+import 'package:drift/drift.dart' show Uint8List;
+import 'package:json_annotation/json_annotation.dart'
+    show JsonKey, JsonSerializable;
 import 'package:package_info_plus/package_info_plus.dart';
 
 part 'manifest_data.g.dart';
@@ -27,8 +28,13 @@ class ManifestIndex {
 class ManifestPath {
   @JsonKey()
   final String id;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final String? fileId;
 
-  ManifestPath(this.id);
+  ManifestPath(
+    this.id, {
+    this.fileId,
+  });
 
   factory ManifestPath.fromJson(Map<String, dynamic> json) =>
       _$ManifestPathFromJson(json);
@@ -46,7 +52,10 @@ class ManifestData {
   @JsonKey()
   final Map<String, ManifestPath> paths;
 
-  ManifestData(this.index, this.paths);
+  ManifestData(
+    this.index,
+    this.paths,
+  );
 
   int get size => jsonData.lengthInBytes;
   Uint8List get jsonData => utf8.encode(json.encode(this)) as Uint8List;
@@ -64,7 +73,9 @@ class ManifestData {
     return manifestDataItem;
   }
 
-  static ManifestData fromFolderNode({required FolderNode folderNode}) {
+  static ManifestData fromFolderNode({
+    required FolderNode folderNode,
+  }) {
     final fileList = folderNode
         .getRecursiveFiles()
         // We will not include any existing manifests in the new manifest
@@ -94,11 +105,15 @@ class ManifestData {
     final paths = {
       for (final file in fileList)
         prepareManifestPath(
-            filePath: file.path,
-            rootFolderPath: rootFolderPath): ManifestPath(file.dataTxId)
+          filePath: file.path,
+          rootFolderPath: rootFolderPath,
+        ): ManifestPath(file.dataTxId, fileId: file.id)
     };
 
-    return ManifestData(index, paths);
+    return ManifestData(
+      index,
+      paths,
+    );
   }
 
   factory ManifestData.fromJson(Map<String, dynamic> json) =>
@@ -108,7 +123,9 @@ class ManifestData {
 
 /// Utility function to remove base path of the target folder and
 /// replace spaces with underscores for arweave.net URL compatibility
-String prepareManifestPath(
-    {required String filePath, required String rootFolderPath}) {
+String prepareManifestPath({
+  required String filePath,
+  required String rootFolderPath,
+}) {
   return filePath.substring(rootFolderPath.length + 1).replaceAll(' ', '_');
 }
