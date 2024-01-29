@@ -1,6 +1,8 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/payment_method_selector_widget.dart';
@@ -25,6 +27,9 @@ Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
 ) async {
+  final PromptToSnapshotBloc promptToSnapshotBloc =
+      context.read<PromptToSnapshotBloc>();
+  promptToSnapshotBloc.add(DriveSnapshotting(driveId: drive.id));
   return showAnimatedDialog(
     context,
     barrierDismissible: false,
@@ -45,21 +50,40 @@ Future<void> promptToCreateSnapshot(
       ),
       child: CreateSnapshotDialog(
         drive: drive,
+        promptToSnapshotBloc: promptToSnapshotBloc,
       ),
     ),
-  );
+  ).then((_) {
+    promptToSnapshotBloc.add(const SelectedDrive(driveId: null));
+  });
 }
 
 class CreateSnapshotDialog extends StatelessWidget {
   final Drive drive;
+  final PromptToSnapshotBloc promptToSnapshotBloc;
 
-  const CreateSnapshotDialog({super.key, required this.drive});
+  const CreateSnapshotDialog({
+    super.key,
+    required this.drive,
+    required this.promptToSnapshotBloc,
+  });
 
   @override
   Widget build(BuildContext context) {
     final createSnapshotCubit = context.read<CreateSnapshotCubit>();
 
-    return BlocBuilder<CreateSnapshotCubit, CreateSnapshotState>(
+    return BlocConsumer<CreateSnapshotCubit, CreateSnapshotState>(
+      listener: (context, state) {
+        if (state is SnapshotUploadSuccess) {
+          promptToSnapshotBloc.add(
+            DriveSnapshotted(
+              driveId: drive.id,
+              // TODO
+              /// txsSyncedWithGqlCount: state.notSnapshottedTxsCount,
+            ),
+          );
+        }
+      },
       builder: (context, state) {
         if (state is CreateSnapshotInitial) {
           return _explanationDialog(context, drive);
@@ -91,7 +115,7 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
 
   return ArDriveStandardModal(
-    title: appLocalizationsOf(context).createSnapshot,
+    title: appLocalizationsOf(context).newSnapshot,
     content: SizedBox(
       width: kMediumDialogWidth,
       child: Row(
@@ -341,7 +365,7 @@ Widget _confirmDialog(
   CreateSnapshotState state,
 ) {
   return ArDriveStandardModal(
-    title: appLocalizationsOf(context).createSnapshot,
+    title: appLocalizationsOf(context).newSnapshot,
     content: SizedBox(
         width: kMediumDialogWidth,
         child: Row(

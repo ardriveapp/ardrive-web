@@ -130,7 +130,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
     final metadata = await _metadataGenerator.generateMetadata(
       file,
-      args,
+      arguments: args,
     );
 
     final uploadTask = FileUploadTask(
@@ -188,7 +188,7 @@ class _ArDriveUploader implements ArDriveUploader {
 
       final metadata = await _metadataGenerator.generateMetadata(
         ioFile,
-        metadataArgs,
+        arguments: metadataArgs,
       );
 
       final fileTask = FileUploadTask(
@@ -245,7 +245,7 @@ class _ArDriveUploader implements ArDriveUploader {
     for (var e in entities) {
       final metadata = await _metadataGenerator.generateMetadata(
         e.$2,
-        e.$1,
+        arguments: e.$1,
       );
 
       if (metadata is ARFSFolderUploadMetatadata) {

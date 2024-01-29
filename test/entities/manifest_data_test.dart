@@ -177,8 +177,9 @@ void main() {
     group('fromFolderNode static method', () {
       test('returns a ManifestEntity with a valid expected manifest shape',
           () async {
-        final manifest =
-            ManifestData.fromFolderNode(folderNode: stubRootFolderNode);
+        final manifest = ManifestData.fromFolderNode(
+          folderNode: stubRootFolderNode,
+        );
 
         expect(
             manifest.toJson(),
@@ -212,8 +213,9 @@ void main() {
       test(
           'returns a ManifestEntity with a valid expected manifest shape with a nested child folder',
           () async {
-        final manifest =
-            ManifestData.fromFolderNode(folderNode: stubChildFolderNode);
+        final manifest = ManifestData.fromFolderNode(
+          folderNode: stubChildFolderNode,
+        );
 
         expect(
             manifest.toJson(),
@@ -244,8 +246,9 @@ void main() {
 
       test('returns a DataItem with the expected tags, owner, and data',
           () async {
-        final manifest =
-            ManifestData.fromFolderNode(folderNode: stubRootFolderNode);
+        final manifest = ManifestData.fromFolderNode(
+          folderNode: stubRootFolderNode,
+        );
         final wallet = getTestWallet();
 
         AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
