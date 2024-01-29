@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
-import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
@@ -136,6 +136,10 @@ Future<void> _initializeServices() async {
     httpClient: ArDriveHTTP(),
   );
 
+  void _refreshHTMLPageAtInterval(Duration duration) {
+    Timer.periodic(duration, (timer) => triggerHTMLPageReload());
+  }
+
   if (kIsWeb) {
     _refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
@@ -168,7 +172,78 @@ class AppState extends State<App> {
       child: ArDriveDevToolsShortcuts(
         child: KeyboardHandler(
           child: MultiBlocProvider(
-            providers: blocProviders,
+            providers: [
+              BlocProvider(
+                create: (context) => ThemeSwitcherBloc(
+                  userPreferencesRepository:
+                      context.read<UserPreferencesRepository>(),
+                )..add(LoadTheme()),
+              ),
+              BlocProvider(
+                create: (context) => ProfileCubit(
+                  arweave: context.read<ArweaveService>(),
+                  turboUploadService: context.read<TurboUploadService>(),
+                  profileDao: context.read<ProfileDao>(),
+                  db: context.read<Database>(),
+                  tabVisibilitySingleton: TabVisibilitySingleton(),
+                ),
+              ),
+              BlocProvider(
+                create: (context) => ActivityCubit(),
+              ),
+              BlocProvider(
+                create: (context) =>
+                    FeedbackSurveyCubit(FeedbackSurveyInitialState()),
+              ),
+              BlocProvider(
+                create: (context) => HideBloc(
+                  auth: context.read<ArDriveAuth>(),
+                  uploadPreparationManager: ArDriveUploadPreparationManager(
+                    uploadPreparePaymentOptions: UploadPaymentEvaluator(
+                      appConfig: context.read<ConfigService>().config,
+                      auth: context.read<ArDriveAuth>(),
+                      turboBalanceRetriever: TurboBalanceRetriever(
+                        paymentService: context.read<PaymentService>(),
+                      ),
+                      turboUploadCostCalculator: TurboUploadCostCalculator(
+                        priceEstimator: TurboPriceEstimator(
+                          wallet:
+                              context.read<ArDriveAuth>().currentUser.wallet,
+                          costCalculator: TurboCostCalculator(
+                            paymentService: context.read<PaymentService>(),
+                          ),
+                          paymentService: context.read<PaymentService>(),
+                        ),
+                        turboCostCalculator: TurboCostCalculator(
+                          paymentService: context.read<PaymentService>(),
+                        ),
+                      ),
+                      uploadCostEstimateCalculatorForAR:
+                          UploadCostEstimateCalculatorForAR(
+                        arweaveService: context.read<ArweaveService>(),
+                        pstService: context.read<PstService>(),
+                        arCostToUsd: ConvertArToUSD(
+                          arweave: context.read<ArweaveService>(),
+                        ),
+                      ),
+                    ),
+                    uploadPreparer: UploadPreparer(
+                      uploadPlanUtils: UploadPlanUtils(
+                        crypto: ArDriveCrypto(),
+                        arweave: context.read<ArweaveService>(),
+                        turboUploadService: context.read<TurboUploadService>(),
+                        driveDao: context.read<DriveDao>(),
+                      ),
+                    ),
+                  ),
+                  arweaveService: context.read<ArweaveService>(),
+                  crypto: ArDriveCrypto(),
+                  turboUploadService: context.read<TurboUploadService>(),
+                  driveDao: context.read<DriveDao>(),
+                  profileCubit: context.read<ProfileCubit>(),
+                ),
+              ),
+            ],
             child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
               listener: (context, state) {
                 if (state is ThemeSwitcherDarkTheme) {
@@ -347,140 +422,5 @@ class AppState extends State<App> {
             themeDetector: ThemeDetector(),
           ),
         ),
-      ],
-      child: ArDriveDevToolsShortcuts(
-        child: KeyboardHandler(
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (context) => ThemeSwitcherBloc(
-                  userPreferencesRepository:
-                      context.read<UserPreferencesRepository>(),
-                )..add(LoadTheme()),
-              ),
-              BlocProvider(
-                create: (context) => ProfileCubit(
-                  arweave: context.read<ArweaveService>(),
-                  turboUploadService: context.read<TurboUploadService>(),
-                  profileDao: context.read<ProfileDao>(),
-                  db: context.read<Database>(),
-                  tabVisibilitySingleton: TabVisibilitySingleton(),
-                ),
-              ),
-              BlocProvider(
-                create: (context) => ActivityCubit(),
-              ),
-              BlocProvider(
-                create: (context) =>
-                    FeedbackSurveyCubit(FeedbackSurveyInitialState()),
-              ),
-              BlocProvider(
-                create: (context) => HideBloc(
-                  auth: context.read<ArDriveAuth>(),
-                  uploadPreparationManager: ArDriveUploadPreparationManager(
-                    uploadPreparePaymentOptions: UploadPaymentEvaluator(
-                      appConfig: context.read<ConfigService>().config,
-                      auth: context.read<ArDriveAuth>(),
-                      turboBalanceRetriever: TurboBalanceRetriever(
-                        paymentService: context.read<PaymentService>(),
-                      ),
-                      turboUploadCostCalculator: TurboUploadCostCalculator(
-                        priceEstimator: TurboPriceEstimator(
-                          wallet:
-                              context.read<ArDriveAuth>().currentUser.wallet,
-                          costCalculator: TurboCostCalculator(
-                            paymentService: context.read<PaymentService>(),
-                          ),
-                          paymentService: context.read<PaymentService>(),
-                        ),
-                        turboCostCalculator: TurboCostCalculator(
-                          paymentService: context.read<PaymentService>(),
-                        ),
-                      ),
-                      uploadCostEstimateCalculatorForAR:
-                          UploadCostEstimateCalculatorForAR(
-                        arweaveService: context.read<ArweaveService>(),
-                        pstService: context.read<PstService>(),
-                        arCostToUsd: ConvertArToUSD(
-                          arweave: context.read<ArweaveService>(),
-                        ),
-                      ),
-                    ),
-                    uploadPreparer: UploadPreparer(
-                      uploadPlanUtils: UploadPlanUtils(
-                        crypto: ArDriveCrypto(),
-                        arweave: context.read<ArweaveService>(),
-                        turboUploadService: context.read<TurboUploadService>(),
-                        driveDao: context.read<DriveDao>(),
-                      ),
-                    ),
-                  ),
-                  arweaveService: context.read<ArweaveService>(),
-                  crypto: ArDriveCrypto(),
-                  turboUploadService: context.read<TurboUploadService>(),
-                  driveDao: context.read<DriveDao>(),
-                  profileCubit: context.read<ProfileCubit>(),
-                ),
-              ),
-            ],
-            child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
-              listener: (context, state) {
-                if (state is ThemeSwitcherDarkTheme) {
-                  ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
-                } else if (state is ThemeSwitcherLightTheme) {
-                  ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.light);
-                }
-              },
-              builder: (context, state) {
-                return ArDriveApp(
-                  onThemeChanged: (theme) {
-                    context.read<ThemeSwitcherBloc>().add(ChangeTheme());
-                  },
-                  key: arDriveAppKey,
-                  builder: (context) => MaterialApp.router(
-                    title: 'ArDrive',
-                    theme: ArDriveTheme.of(context)
-                        .themeData
-                        .materialThemeData
-                        .copyWith(
-                          scaffoldBackgroundColor: ArDriveTheme.of(context)
-                              .themeData
-                              .backgroundColor,
-                        ),
-                    debugShowCheckedModeBanner: false,
-                    routeInformationParser: _routeInformationParser,
-                    routerDelegate: _routerDelegate,
-                    localizationsDelegates: const [
-                      AppLocalizations.delegate,
-                      GlobalMaterialLocalizations.delegate,
-                      GlobalWidgetsLocalizations.delegate,
-                    ],
-                    supportedLocales: const [
-                      Locale('en', ''), // English, no country code
-                      Locale('es', ''), // Spanish, no country code
-                      Locale.fromSubtags(
-                          languageCode: 'zh'), // generic Chinese 'zh'
-                      Locale.fromSubtags(
-                        languageCode: 'zh',
-                        countryCode: 'HK',
-                      ), // Traditional Chinese, Cantonese
-                      Locale('ja', ''), // Japanese, no country code
-                      Locale('hi', ''), // Hindi, no country code
-                    ],
-                    builder: (context, child) => ListTileTheme(
-                      textColor: kOnSurfaceBodyTextColor,
-                      iconColor: kOnSurfaceBodyTextColor,
-                      child: Portal(
-                        child: child!,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+      ];
 }

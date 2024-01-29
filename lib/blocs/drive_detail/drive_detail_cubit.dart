@@ -411,8 +411,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     if (state is DriveDetailLoadSuccess) {
       await Future.delayed(const Duration(milliseconds: 100));
       final state = this.state as DriveDetailLoadSuccess;
-      emit(state
-          .copyWith(forceRebuildKey: UniqueKey()
+      emit(state.copyWith(
+        forceRebuildKey: UniqueKey(),
         isShowingHiddenFiles: _showHiddenFiles,
       ));
     }
