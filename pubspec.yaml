@@ -161,6 +161,11 @@ dependency_overrides:
     git:
       url: https://github.com/ar-io/ardrive_io.git
       ref: v1.4.5
+  ardrive_ui:
+    git:
+      url: https://github.com/ardriveapp/ardrive_ui
+      ref: PE-5412
+    
 
 dev_dependencies:
   integration_test:

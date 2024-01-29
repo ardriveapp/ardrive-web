@@ -2,9 +2,9 @@ import 'package:ardrive/services/license/licenses/licenses.dart';
 import 'package:equatable/equatable.dart';
 
 enum LicenseType {
-  unknown,
   udl,
   ccBy,
+  unknown,
 }
 
 class LicenseMeta extends Equatable {

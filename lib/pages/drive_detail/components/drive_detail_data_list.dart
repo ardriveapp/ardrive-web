@@ -10,6 +10,7 @@ Widget _buildDataList(
     state.folderInView.folder,
     state.currentDrive,
     state.multiselect,
+    state.columnVisibility,
   );
 }
 
@@ -151,6 +152,7 @@ Widget _buildDataListContent(
   FolderEntry folder,
   Drive drive,
   bool isMultiselecting,
+  Map<int, bool> columnVisibility,
 ) {
   return LayoutBuilder(builder: (context, constraints) {
     return ArDriveDataTable<ArDriveDataTableItem>(
@@ -178,22 +180,47 @@ Widget _buildDataListContent(
       onChangeMultiSelecting: (isMultiselecting) {
         context.read<DriveDetailCubit>().setMultiSelect(isMultiselecting);
       },
+      onChangeColumnVisibility: (column) {
+        context.read<DriveDetailCubit>().updateTableColumnVisibility(column);
+      },
       forceDisableMultiSelect:
           context.read<DriveDetailCubit>().forceDisableMultiselect,
       columns: [
-        TableColumn(appLocalizationsOf(context).name, 9),
+        TableColumn(
+          appLocalizationsOf(context).name,
+          9,
+          index: 0,
+          canHide: false,
+        ),
         if (constraints.maxWidth > 500)
-          TableColumn(appLocalizationsOf(context).size, 3),
+          TableColumn(
+            appLocalizationsOf(context).size,
+            3,
+            index: 1,
+            canHide: false,
+          ),
         if (constraints.maxWidth > 640)
-          TableColumn(appLocalizationsOf(context).lastUpdated, 3),
+          TableColumn(
+            appLocalizationsOf(context).lastUpdated,
+            3,
+            index: 2,
+            isVisible: columnVisibility[2] ?? true,
+          ),
         if (constraints.maxWidth > 700)
-          TableColumn(appLocalizationsOf(context).dateCreated, 3),
+          TableColumn(
+            appLocalizationsOf(context).dateCreated,
+            3,
+            index: 3,
+            isVisible: columnVisibility[3] ?? true,
+          ),
         if (constraints.maxWidth > 820)
           TableColumn(
             // TODO: Localize
             // appLocalizationsOf(context).licenseType,
             'License',
             2,
+            index: 4,
+            isVisible: columnVisibility[4] ?? true,
           ),
       ],
       trailing: (file) => isMultiselecting
@@ -294,6 +321,29 @@ int _getResult(int result, TableSort ascDescSort) {
 
 void _sortItems(
     List<ArDriveDataTableItem> items, int columnIndex, TableSort ascDescSort) {
+  if (columnIndex == ColumnIndexes.licenseType) {
+    final licenseFiles = items.where((e) => e.licenseType != null).toList();
+
+    licenseFiles.sort((a, b) {
+      int result = 0;
+      result = (a.licenseType ?? LicenseType.unknown)
+          .index
+          .compareTo((b.licenseType ?? LicenseType.unknown).index);
+      return _getResult(result, ascDescSort);
+    });
+
+    final noLicenseFiles = items.where((e) => e.licenseType == null).toList();
+
+    noLicenseFiles.sort((a, b) {
+      int result = 0;
+      result = compareAlphabeticallyAndNatural(a.name, b.name);
+      return _getResult(result, ascDescSort);
+    });
+    items.clear();
+    items.addAll(licenseFiles + noLicenseFiles);
+    return;
+  }
+
   items.sort((a, b) {
     int result = 0;
     if (columnIndex == ColumnIndexes.name) {
@@ -302,6 +352,10 @@ void _sortItems(
       result = (a.size ?? 0).compareTo(b.size ?? 0);
     } else if (columnIndex == ColumnIndexes.lastUpdated) {
       result = a.lastUpdated.compareTo(b.lastUpdated);
+    } else if (columnIndex == ColumnIndexes.licenseType) {
+      result = (a.licenseType ?? LicenseType.unknown)
+          .index
+          .compareTo((b.licenseType ?? LicenseType.unknown).index);
     } else {
       result = a.dateCreated.compareTo(b.dateCreated);
     }
@@ -314,6 +368,7 @@ class ColumnIndexes {
   static const int size = 1;
   static const int lastUpdated = 2;
   static const int dateCreated = 3;
+  static const int licenseType = 4;
 }
 
 class DriveDataTableItemMapper {

@@ -35,6 +35,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final List<ArDriveDataTableItem> currentFolderContents;
 
+  final Map<int, bool> columnVisibility;
+
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
@@ -51,6 +53,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.driveIsEmpty,
     this.selectedItem,
     required this.currentFolderContents,
+    required this.columnVisibility,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -69,8 +72,10 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     bool? hasFoldersSelected,
     ArDriveDataTableItem? selectedItem,
     List<ArDriveDataTableItem>? currentFolderContents,
+    Map<int, bool>? columnVisibility,
   }) =>
       DriveDetailLoadSuccess(
+        columnVisibility: columnVisibility ?? this.columnVisibility,
         selectedItem: selectedItem ?? this.selectedItem,
         hasFoldersSelected: hasFoldersSelected ?? this.hasFoldersSelected,
         currentDrive: currentDrive ?? this.currentDrive,

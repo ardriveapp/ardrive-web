@@ -8,9 +8,11 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/user_utils.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
@@ -194,9 +196,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
                 currentFolderContents: currentFolderContents,
+                columnVisibility: state.columnVisibility,
               ),
             );
           } else {
+            final columnsVisibility = await getTableColumnVisibility();
             emit(
               DriveDetailLoadSuccess(
                 selectedItem: _selectedItem,
@@ -211,6 +215,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 driveIsEmpty: rootFolderNode.isEmpty(),
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
+                columnVisibility: columnsVisibility,
               ),
             );
           }
@@ -453,6 +458,31 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _allImagesOfCurrentFolder = allImagesForFolder;
 
     return allImagesForFolder;
+  }
+
+  Future<void> updateTableColumnVisibility(TableColumn column) async {
+    (await _store()).putBool(
+      'drive_detail_column_${column.index}',
+      column.isVisible,
+    );
+  }
+
+  Future<Map<int, bool>> getTableColumnVisibility() async {
+    final columnVisibility = <int, bool>{};
+
+    for (int i = 0; i < 5; i++) {
+      final isVisible = (await _store()).getBool(
+        'drive_detail_column_$i',
+      );
+
+      columnVisibility[i] = isVisible ?? true;
+    }
+
+    return columnVisibility;
+  }
+
+  Future<LocalKeyValueStore> _store() async {
+    return LocalKeyValueStore.getInstance();
   }
 
   @override
