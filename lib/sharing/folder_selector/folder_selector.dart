@@ -63,7 +63,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
-                              .themeFgSubtle),
+                              .themeFgDefault),
                     ),
                     const Divider(),
                     ListView.builder(
@@ -74,10 +74,10 @@ class _FolderSelectorState extends State<FolderSelector> {
                       itemBuilder: (context, index) {
                         final publicDrive = publicDrives[index];
                         final color = state.selectedDrive == null
-                            ? colors.themeFgSubtle
+                            ? colors.themeFgDefault
                             : state.selectedDrive != null
                                 ? publicDrive.id == state.selectedDrive!.id
-                                    ? colors.themeFgOnAccent
+                                    ? colors.themeFgDefault
                                     : colors.themeAccentDisabled
                                 : null;
                         return ListTile(
@@ -117,10 +117,10 @@ class _FolderSelectorState extends State<FolderSelector> {
                       itemBuilder: (context, index) {
                         final privateDrive = privateDrives[index];
                         final color = state.selectedDrive == null
-                            ? colors.themeFgSubtle
+                            ? colors.themeFgDefault
                             : state.selectedDrive != null
                                 ? privateDrive.id == state.selectedDrive!.id
-                                    ? null
+                                    ? colors.themeFgDefault
                                     : colors.themeAccentDisabled
                                 : null;
                         return ListTile(
@@ -199,7 +199,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                                         color: ArDriveTheme.of(context)
                                             .themeData
                                             .colors
-                                            .themeFgOnAccent)
+                                            .themeFgDefault)
                                     .copyWith(fontWeight: FontWeight.w700),
                               ),
                             ),
@@ -231,7 +231,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                                         color: ArDriveTheme.of(context)
                                             .themeData
                                             .colors
-                                            .themeFgSubtle)
+                                            .themeFgDefault)
                                     .copyWith(fontWeight: FontWeight.w700),
                               ),
                             ),
