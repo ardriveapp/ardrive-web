@@ -68,7 +68,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                     const Divider(),
                     ListView.builder(
                       padding: EdgeInsets.zero,
-                      physics: const NeverScrollableScrollPhysics(),
+                      physics: const ScrollPhysics(),
                       itemCount: publicDrives.length,
                       shrinkWrap: true,
                       itemBuilder: (context, index) {
@@ -111,7 +111,6 @@ class _FolderSelectorState extends State<FolderSelector> {
                     const Divider(),
                     ListView.builder(
                       padding: EdgeInsets.zero,
-                      physics: const NeverScrollableScrollPhysics(),
                       itemCount: privateDrives.length,
                       shrinkWrap: true,
                       itemBuilder: (context, index) {
@@ -120,7 +119,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                             ? colors.themeFgSubtle
                             : state.selectedDrive != null
                                 ? privateDrive.id == state.selectedDrive!.id
-                                    ? null
+                                    ? colors.themeFgSubtle
                                     : colors.themeAccentDisabled
                                 : null;
                         return ListTile(
@@ -249,6 +248,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                               : 20),
                   itemCount: state.folders.length,
                   shrinkWrap: true,
+                  physics: const ScrollPhysics(),
                   itemBuilder: (context, index) {
                     final color = state.selectedFolder == null
                         ? colors.themeFgSubtle
