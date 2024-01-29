@@ -29,7 +29,6 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   bool get _isRenamingFolder => folderId != null;
 
   bool _dontVerifyExtension = false;
-  String? _newFileExtension;
 
   FsEntryRenameCubit({
     required this.driveId,
@@ -129,22 +128,31 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         var file = await _driveDao
             .fileById(driveId: driveId, fileId: fileId!)
             .getSingle();
-        _newFileExtension =
-            getFileExtension(name: newName, contentType: file.dataContentType!);
 
-        final currentExtension = getFileExtension(
-            name: file.name, contentType: file.dataContentType!);
+        if (!updateExtension && !_dontVerifyExtension) {
+          final newFileExtension =
+              getFileExtensionFromFileName(fileName: newName);
 
-        final hasExtensionChanged = currentExtension != _newFileExtension;
+          if (newFileExtension.isNotEmpty) {
+            bool hasExtensionChanged;
 
-        if (!updateExtension && !_dontVerifyExtension && hasExtensionChanged) {
-          emit(UpdatingEntityExtension(
-            previousExtension: currentExtension,
-            entityName: newName,
-            newExtension: _newFileExtension!,
-          ));
+            final currentExtension = getFileExtension(
+                name: file.name, contentType: file.dataContentType!);
 
-          return;
+            hasExtensionChanged = currentExtension != newFileExtension;
+
+            if (hasExtensionChanged) {
+              emit(
+                UpdatingEntityExtension(
+                  previousExtension: currentExtension,
+                  entityName: newName,
+                  newExtension: newFileExtension,
+                ),
+              );
+
+              return;
+            }
+          }
         }
 
         emit(const FileEntryRenameInProgress());

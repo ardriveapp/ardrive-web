@@ -84,8 +84,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.5"
-      resolved-ref: "286d6366ceffe44e21d1257507090f8b6ec8beaa"
+      ref: PE-5529-txt-file-extension-changes-incorrectly-in-edit-modal
+      resolved-ref: "9e43c831ed30c0a2985bc6288c8ae3a4ef4f290d"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.5"
