@@ -268,7 +268,9 @@ class AppState extends State<App> {
             driveDao: context.read<DriveDao>(),
           ),
         ),
-        BlocProvider(create: (context) => SharingFileBloc(ActivityTracker())),
+        BlocProvider(
+          create: (context) => SharingFileBloc(context.read<ActivityTracker>()),
+        ),
       ];
 
   List<SingleChildWidget> get repositoryProviders => [

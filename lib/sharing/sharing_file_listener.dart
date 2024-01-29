@@ -70,7 +70,7 @@ class _SharingFileListenerState extends State<SharingFileListener> {
                       ),
                     );
                   },
-                  // TODOL Localize
+                  // TODO: Localize
                   title: 'Select Drive',
                 ),
               ],
@@ -91,7 +91,7 @@ class _SharingFileListenerState extends State<SharingFileListener> {
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
-                              .themeFgOnAccent,
+                              .themeFgDefault,
                         ),
                       ),
                     );
