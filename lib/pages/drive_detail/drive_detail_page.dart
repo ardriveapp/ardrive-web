@@ -183,10 +183,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 hasFiles = driveDetailState.folderInView.files.isNotEmpty;
               } else {
                 hasSubfolders = driveDetailState.folderInView.subfolders
-                    .where((e) => e.isHidden)
+                    .where((e) => !e.isHidden)
                     .isNotEmpty;
                 hasFiles = driveDetailState.folderInView.files
-                    .where((e) => e.isHidden)
+                    .where((e) => !e.isHidden)
                     .isNotEmpty;
               }
 
