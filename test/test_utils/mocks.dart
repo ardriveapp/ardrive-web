@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
@@ -91,6 +92,8 @@ class MockTransactionCommonMixin extends Mock
     implements TransactionCommonMixin {}
 
 class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
+
+class MockPromptToSnapshotBloc extends Mock implements PromptToSnapshotBloc {}
 
 class MockARFSFile extends ARFSFileEntity {
   MockARFSFile({
