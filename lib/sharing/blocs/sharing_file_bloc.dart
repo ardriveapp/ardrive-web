@@ -56,6 +56,8 @@ class SharingFileBloc extends Bloc<SharingFileEvent, SharingFileState> {
       } else if (event is SharingFileCleared) {
         files = null;
         activityTracker.setSharingFilesFromExternalApp(false);
+        emit(
+            SharingFileClearedState()); // Emit a new state indicating that files are cleared
       }
     });
   }

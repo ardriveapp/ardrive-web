@@ -12,6 +12,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
+import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -267,6 +268,7 @@ class AppState extends State<App> {
             driveDao: context.read<DriveDao>(),
           ),
         ),
+        BlocProvider(create: (context) => SharingFileBloc(ActivityTracker())),
       ];
 
   List<SingleChildWidget> get repositoryProviders => [

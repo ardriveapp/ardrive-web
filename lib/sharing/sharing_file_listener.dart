@@ -4,6 +4,7 @@ import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.d
 import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
 import 'package:ardrive/sharing/folder_selector/folder_selector.dart';
 import 'package:ardrive/sharing/folder_selector/folder_selector_bloc.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,6 @@ class SharingFileListener extends StatefulWidget {
 class _SharingFileListenerState extends State<SharingFileListener> {
   @override
   void dispose() {
-    BlocProvider.of<SharingFileBloc>(context).add(SharingFileCleared());
     super.dispose();
   }
 
@@ -29,19 +29,19 @@ class _SharingFileListenerState extends State<SharingFileListener> {
   Widget build(BuildContext context) {
     return BlocListener<SharingFileBloc, SharingFileState>(
       listener: (context, state) {
+        final sharingFileBloc = context.read<SharingFileBloc>();
         if (state is SharingFileReceivedState) {
           showArDriveDialog(
             context,
             content: ArDriveStandardModal(
-              title: 'Shared Files',
+              title: appLocalizationsOf(context).shareFile,
               actions: [
                 ModalAction(
                   action: () {
                     Navigator.of(context).pop();
-                    BlocProvider.of<SharingFileBloc>(context)
-                        .add(SharingFileCleared());
+                    sharingFileBloc.add(SharingFileCleared());
                   },
-                  title: 'Cancel',
+                  title: appLocalizationsOf(context).cancel,
                 ),
                 ModalAction(
                   action: () {
@@ -63,13 +63,14 @@ class _SharingFileListenerState extends State<SharingFileListener> {
                             );
                           },
                           dispose: () {
-                            BlocProvider.of<SharingFileBloc>(context)
-                                .add(SharingFileCleared());
+                            Navigator.of(context).pop();
+                            sharingFileBloc.add(SharingFileCleared());
                           },
                         ),
                       ),
                     );
                   },
+                  // TODOL Localize
                   title: 'Select Drive',
                 ),
               ],
@@ -86,7 +87,12 @@ class _SharingFileListenerState extends State<SharingFileListener> {
                       ),
                       title: Text(
                         state.files[index].name,
-                        style: ArDriveTypography.body.buttonLargeBold(),
+                        style: ArDriveTypography.body.buttonLargeBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgOnAccent,
+                        ),
                       ),
                     );
                   },
