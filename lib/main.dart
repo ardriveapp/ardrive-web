@@ -136,12 +136,12 @@ Future<void> _initializeServices() async {
     httpClient: ArDriveHTTP(),
   );
 
-  void _refreshHTMLPageAtInterval(Duration duration) {
+  void refreshHTMLPageAtInterval(Duration duration) {
     Timer.periodic(duration, (timer) => triggerHTMLPageReload());
   }
 
   if (kIsWeb) {
-    _refreshHTMLPageAtInterval(const Duration(hours: 12));
+    refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
 }
 
