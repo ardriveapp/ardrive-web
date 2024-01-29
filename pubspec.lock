@@ -928,10 +928,11 @@ packages:
   flutter_sharing_intent:
     dependency: "direct main"
     description:
-      name: flutter_sharing_intent
-      sha256: "6eb896e6523b735e8230eeb206fd3b9f220f11ce879c2400a90b443147036ff9"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: "5f4f2e66c02580105ba89b3fec5a7be907d5466f"
+      resolved-ref: "5f4f2e66c02580105ba89b3fec5a7be907d5466f"
+      url: "https://github.com/bhagat-techind/flutter_sharing_intent"
+    source: git
     version: "1.1.0"
   flutter_stripe:
     dependency: "direct main"
