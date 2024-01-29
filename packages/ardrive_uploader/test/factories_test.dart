@@ -90,7 +90,8 @@ void main() {
 
     setUp(() {
       mockUri = Uri.parse('https://example.com');
-      uploadFactory = StreamedUploadFactory(turboUploadUri: mockUri);
+      uploadFactory = StreamedUploadFactory(
+          turboUploadUri: mockUri, settings: UploadSettings());
     });
 
     test('should return D2NStreamedUpload for UploadType.d2n', () {

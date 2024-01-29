@@ -31,6 +31,8 @@ import '../core/upload/uploader_test.dart';
 import '../test_utils/utils.dart';
 import 'drives_cubit_test.dart';
 
+import '../test_utils/mocks.dart' as mocks;
+
 class MockArweaveService extends Mock implements ArweaveService {}
 
 class MockPstService extends Mock implements PstService {}
@@ -253,7 +255,8 @@ void main() {
         profileCubit: mockProfileCubit!,
         driveDao: mockDriveDao,
         auth: mockArDriveAuth,
-        pst: mockPst);
+        pst: mockPst,
+        configService: mocks.MockConfigService());
   }
 
   void setDumbUploadPlan() => when(() => mockUploadPlanUtils.filesToUploadPlan(
