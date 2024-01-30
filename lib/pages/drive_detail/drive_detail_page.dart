@@ -177,7 +177,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               final bool hasSubfolders;
               final bool hasFiles;
 
-              if (!isShowingHiddenFiles) {
+              if (isShowingHiddenFiles) {
                 hasSubfolders =
                     driveDetailState.folderInView.subfolders.isNotEmpty;
                 hasFiles = driveDetailState.folderInView.files.isNotEmpty;
