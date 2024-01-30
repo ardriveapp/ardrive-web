@@ -66,6 +66,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRouterDelegate() : navigatorKey = GlobalKey<NavigatorState>();
 
   @override
+  // ignore: avoid_renaming_method_parameters
   Widget build(BuildContext navigatorContext) {
     if (navigatorContext.read<ConfigService>().flavor != Flavor.production) {
       return ArDriveAppWithDevTools(widget: _app());

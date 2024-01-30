@@ -60,7 +60,6 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
-  final ActivityTracker _activityTracker;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -84,7 +83,6 @@ class SyncCubit extends Cubit<SyncState> {
     required ActivityTracker activityTracker,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
-        _activityTracker = activityTracker,
         _promptToSnapshotBloc = promptToSnapshotBloc,
         _arweave = arweave,
         _driveDao = driveDao,
