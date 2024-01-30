@@ -161,7 +161,7 @@ dependency_overrides:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.5
+      ref: PE-5529-txt-file-extension-changes-incorrectly-in-edit-modal
 
 dev_dependencies:
   integration_test:
