@@ -177,114 +177,118 @@ class _FolderSelectorState extends State<FolderSelector> {
           description = 'Select the folder you want to upload to';
           content = SizedBox(
             height: 400,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (state.selectedFolder != null) ...[
-                  SizedBox(
-                    width: 200,
-                    height: 48,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        if (state.isRootFolder)
-                          Flexible(
-                            child: ListTile(
-                              leading:
-                                  getIconForContentType('folder', size: 24),
-                              title: Text(
-                                'Root folder',
-                                style: ArDriveTypography.body
-                                    .buttonLargeBold(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeFgDefault)
-                                    .copyWith(fontWeight: FontWeight.w700),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (state.selectedFolder != null) ...[
+                    SizedBox(
+                      width: 200,
+                      height: 48,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (state.isRootFolder)
+                            Flexible(
+                              child: ListTile(
+                                leading:
+                                    getIconForContentType('folder', size: 24),
+                                title: Text(
+                                  'Root folder',
+                                  style: ArDriveTypography.body
+                                      .buttonLargeBold(
+                                          color: ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeFgDefault)
+                                      .copyWith(fontWeight: FontWeight.w700),
+                                ),
                               ),
                             ),
-                          ),
-                        if (state.parentFolder != null && !state.isRootFolder)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4.0, right: 4),
-                            child: SizedBox(
-                              width: 24,
-                              child: ArDriveIconButton(
-                                icon: ArDriveIcons.arrowLeft(),
-                                onPressed: () {
-                                  context.read<FolderSelectorBloc>().add(
-                                      SelectFolderEvent(
-                                          folder: state.parentFolder!));
-                                },
+                          if (state.parentFolder != null && !state.isRootFolder)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 4.0, right: 4),
+                              child: SizedBox(
+                                width: 24,
+                                child: ArDriveIconButton(
+                                  icon: ArDriveIcons.arrowLeft(),
+                                  onPressed: () {
+                                    context.read<FolderSelectorBloc>().add(
+                                        SelectFolderEvent(
+                                            folder: state.parentFolder!));
+                                  },
+                                ),
                               ),
                             ),
-                          ),
-                        if (!state.isRootFolder)
-                          Flexible(
-                            child: ListTile(
-                              leading:
-                                  getIconForContentType('folder', size: 24),
-                              title: Text(
-                                state.selectedFolder!.name,
-                                style: ArDriveTypography.body
-                                    .buttonLargeBold(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeFgDefault)
-                                    .copyWith(fontWeight: FontWeight.w700),
+                          if (!state.isRootFolder)
+                            Flexible(
+                              child: ListTile(
+                                leading:
+                                    getIconForContentType('folder', size: 24),
+                                title: Text(
+                                  state.selectedFolder!.name,
+                                  style: ArDriveTypography.body
+                                      .buttonLargeBold(
+                                          color: ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeFgDefault)
+                                      .copyWith(fontWeight: FontWeight.w700),
+                                ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
+                  ],
+                  ListView.builder(
+                    padding: EdgeInsets.only(
+                        left: state.selectedFolder == null
+                            ? 0
+                            : state.parentFolder != null
+                                ? 48
+                                : 20),
+                    itemCount: state.folders.length,
+                    shrinkWrap: true,
+                    physics: const ScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      final color = state.selectedFolder == null
+                          ? colors.themeFgSubtle
+                          : state.selectedFolder != null
+                              ? state.folders[index].id ==
+                                      state.selectedFolder!.id
+                                  ? null
+                                  : colors.themeAccentDisabled
+                              : null;
+                      return SizedBox(
+                        width: 200,
+                        child: ListTile(
+                          leading: getIconForContentType('folder',
+                              color: color, size: 24),
+                          title: Text(
+                            state.folders[index].name,
+                            style: ArDriveTypography.body
+                                .buttonLargeBold(
+                                  color: color,
+                                )
+                                .copyWith(
+                                    fontWeight: state.selectedFolder?.id ==
+                                            state.folders[index].id
+                                        ? FontWeight.w700
+                                        : null),
+                          ),
+                          onTap: () {
+                            context.read<FolderSelectorBloc>().add(
+                                SelectFolderEvent(
+                                    folder: state.folders[index]));
+                          },
+                        ),
+                      );
+                    },
                   ),
                 ],
-                ListView.builder(
-                  padding: EdgeInsets.only(
-                      left: state.selectedFolder == null
-                          ? 0
-                          : state.parentFolder != null
-                              ? 48
-                              : 20),
-                  itemCount: state.folders.length,
-                  shrinkWrap: true,
-                  physics: const ScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    final color = state.selectedFolder == null
-                        ? colors.themeFgSubtle
-                        : state.selectedFolder != null
-                            ? state.folders[index].id ==
-                                    state.selectedFolder!.id
-                                ? null
-                                : colors.themeAccentDisabled
-                            : null;
-                    return SizedBox(
-                      width: 200,
-                      child: ListTile(
-                        leading: getIconForContentType('folder',
-                            color: color, size: 24),
-                        title: Text(
-                          state.folders[index].name,
-                          style: ArDriveTypography.body
-                              .buttonLargeBold(
-                                color: color,
-                              )
-                              .copyWith(
-                                  fontWeight: state.selectedFolder?.id ==
-                                          state.folders[index].id
-                                      ? FontWeight.w700
-                                      : null),
-                        ),
-                        onTap: () {
-                          context.read<FolderSelectorBloc>().add(
-                              SelectFolderEvent(folder: state.folders[index]));
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ],
+              ),
             ),
           );
 
