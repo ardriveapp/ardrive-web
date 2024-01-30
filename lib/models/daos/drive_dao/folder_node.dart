@@ -54,6 +54,15 @@ class FolderNode {
     return totalSize;
   }
 
+  // recursive FolderEntries
+  List<FolderEntry> getRecursiveFolders() {
+    final totalFolders = [folder];
+    for (final subfolder in subfolders) {
+      totalFolders.addAll(subfolder.getRecursiveFolders());
+    }
+    return totalFolders;
+  }
+
   // TODO: maxDepth slider in story ticket PE-1069
   List<FileEntry> getRecursiveFiles(/*{maxDepth = 2000000}*/) {
     // if (maxDepth == -1) {
