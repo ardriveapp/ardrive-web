@@ -113,6 +113,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   @override
   Widget build(BuildContext context) {
     return SharingFileListener(
+      context: context,
       child: SizedBox.expand(
         child: BlocListener<PromptToSnapshotBloc, PromptToSnapshotState>(
           listener: (context, state) {

@@ -191,17 +191,6 @@ class SyncCubit extends Cubit<SyncState> {
   var ghostFolders = <FolderID, GhostFolder>{};
 
   Future<void> startSync({bool syncDeep = false}) async {
-    if (AppPlatform.isMobile) {
-      if (_activityTracker.isSharingFilesFromExternalApp) {
-        logger.d('An activity is in progress, skipping sync.');
-
-        return;
-      } else if (_activityTracker.isVerifyingSharingFilesFromExternalApp) {
-        Future.delayed(const Duration(seconds: 2)).then((value) => startSync());
-        return;
-      }
-    }
-
     logger.i('Starting Sync');
 
     if (state is SyncInProgress) {

@@ -16,6 +16,8 @@ class SharingFileReceived extends SharingFileEvent {
   List<Object> get props => [files];
 }
 
+class ResubmitSharingFile extends SharingFileEvent {}
+
 class ShowSharingFile extends SharingFileEvent {}
 
 class SharingFileCleared extends SharingFileEvent {}

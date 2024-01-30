@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/sync/sync_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -11,9 +12,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SharingFileListener extends StatefulWidget {
-  const SharingFileListener({super.key, required this.child});
+  const SharingFileListener(
+      {super.key, required this.child, required this.context});
 
   final Widget child;
+  final BuildContext context;
 
   @override
   State<SharingFileListener> createState() => _SharingFileListenerState();
@@ -29,11 +32,21 @@ class _SharingFileListenerState extends State<SharingFileListener> {
   Widget build(BuildContext context) {
     return BlocListener<SharingFileBloc, SharingFileState>(
       listener: (context, state) {
+        final syncCubit = context.read<SyncCubit>();
         final sharingFileBloc = context.read<SharingFileBloc>();
         if (state is SharingFileReceivedState) {
-          showArDriveDialog(
-            context,
-            content: ArDriveStandardModal(
+          if (syncCubit.state is SyncInProgress) {
+            syncCubit.stream.listen((syncState) {
+              if (syncState is SyncIdle) {
+                context.read<SharingFileBloc>().add(ResubmitSharingFile());
+              }
+            });
+            return;
+          }
+
+          showAnimatedDialogWithBuilder(
+            widget.context,
+            builder: (context) => ArDriveStandardModal(
               title: appLocalizationsOf(context).shareFile,
               actions: [
                 ModalAction(
@@ -55,7 +68,7 @@ class _SharingFileListenerState extends State<SharingFileListener> {
                         child: FolderSelector(
                           onSelect: (folderId, driveId) {
                             promptToUpload(
-                              context,
+                              widget.context,
                               driveId: driveId,
                               parentFolderId: folderId,
                               isFolderUpload: false,

@@ -25,8 +25,6 @@ class SharingFileBloc extends Bloc<SharingFileEvent, SharingFileState> {
       if (value.isNotEmpty) {
         add(SharingFileReceived(value));
       }
-
-      activityTracker.setVerifyingSharingFilesFromExternalApp(false);
     });
 
     FlutterSharingIntent.instance.getMediaStream().listen((value) {
@@ -50,6 +48,8 @@ class SharingFileBloc extends Bloc<SharingFileEvent, SharingFileState> {
         }
 
         emit(SharingFileReceivedState(ioFiles));
+      } else if (event is ResubmitSharingFile) {
+        add(SharingFileReceived(files!));
       } else if (event is SharingFileCleared) {
         files = null;
         activityTracker.setSharingFilesFromExternalApp(false);

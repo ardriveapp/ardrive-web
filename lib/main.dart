@@ -269,7 +269,9 @@ class AppState extends State<App> {
           ),
         ),
         BlocProvider(
-          create: (context) => SharingFileBloc(context.read<ActivityTracker>()),
+          create: (context) => SharingFileBloc(
+            context.read<ActivityTracker>(),
+          ),
         ),
       ];
 
