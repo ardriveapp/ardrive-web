@@ -710,6 +710,20 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     if (filteredItems.isEmpty) {
       return Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                Flexible(
+                  child: MobileFolderNavigation(
+                    driveName: state.currentDrive.name,
+                    path: state.folderInView.folder.path,
+                    isShowingHiddenFiles: isShowingHiddenFiles,
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: DriveDetailFolderEmptyCard(
               driveId: state.currentDrive.id,
