@@ -52,7 +52,12 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
 
     Color defaultColor, hoverColor, pressedColor, foregroundColor;
 
-    if (widget.variant == ButtonVariant.primary) {
+    if (widget.isDisabled) {
+      defaultColor = colorTokens.buttonDisabled;
+      hoverColor = colorTokens.buttonDisabled;
+      pressedColor = colorTokens.buttonDisabled;
+      foregroundColor = colorTokens.textLow;
+    } else if (widget.variant == ButtonVariant.primary) {
       defaultColor = colorTokens.buttonPrimaryDefault;
       hoverColor = colorTokens.buttonPrimaryHover;
       pressedColor = colorTokens.buttonPrimaryPress;
@@ -106,7 +111,7 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
         height: widget.maxHeight ?? buttonDefaultHeight,
         width: widget.maxWidth,
         child: TextButton(
-            onPressed: widget.onPressed,
+            onPressed: widget.isDisabled ? null : widget.onPressed,
             style: style,
             child: Text(widget.text,
                 style: typography.paragraphLarge(
