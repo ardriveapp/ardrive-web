@@ -66,8 +66,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRouterDelegate() : navigatorKey = GlobalKey<NavigatorState>();
 
   @override
-  Widget build(BuildContext context) {
-    if (context.read<ConfigService>().flavor != Flavor.production) {
+  Widget build(BuildContext navigatorContext) {
+    if (navigatorContext.read<ConfigService>().flavor != Flavor.production) {
       return ArDriveAppWithDevTools(widget: _app());
     }
 
@@ -165,6 +165,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 if (state is DrivesLoadSuccess) {
                   shellPage = !state.hasNoDrives
                       ? DriveDetailPage(
+                          context: navigatorKey.currentContext!,
                           anonymouslyShowDriveDetail:
                               anonymouslyShowDriveDetail,
                         )

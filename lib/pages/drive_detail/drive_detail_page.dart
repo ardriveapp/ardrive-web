@@ -65,8 +65,10 @@ part 'components/fs_entry_preview_widget.dart';
 
 class DriveDetailPage extends StatefulWidget {
   final bool anonymouslyShowDriveDetail;
+  final BuildContext context;
 
   const DriveDetailPage({
+    required this.context,
     Key? key,
     required this.anonymouslyShowDriveDetail,
   }) : super(key: key);
@@ -113,7 +115,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   @override
   Widget build(BuildContext context) {
     return SharingFileListener(
-      context: context,
+      context: widget.context,
       child: SizedBox.expand(
         child: BlocListener<PromptToSnapshotBloc, PromptToSnapshotState>(
           listener: (context, state) {
