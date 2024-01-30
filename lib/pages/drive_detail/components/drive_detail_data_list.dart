@@ -133,10 +133,11 @@ Widget _buildDataListContent(
   required Widget emptyState,
 }) {
   final List<ArDriveDataTableItem> filteredItems;
+
   if (isShowingHiddenFiles) {
-    filteredItems = items;
+    filteredItems = items.toList();
   } else {
-    filteredItems = items.where((item) => !item.isHidden).toList();
+    filteredItems = items.where((item) => item.isHidden == false).toList();
   }
 
   if (filteredItems.isEmpty) {

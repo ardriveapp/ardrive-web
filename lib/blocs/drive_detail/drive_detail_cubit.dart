@@ -78,6 +78,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void toggleHiddenFiles() {
     _showHiddenFiles = !_showHiddenFiles;
+
     refreshDriveDataTable();
   }
 

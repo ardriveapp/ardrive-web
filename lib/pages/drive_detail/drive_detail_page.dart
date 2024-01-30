@@ -701,38 +701,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     final isShowingHiddenFiles = state.isShowingHiddenFiles;
 
     final List<ArDriveDataTableItem> filteredItems;
-    if (isShowingHiddenFiles) {
-      filteredItems = items;
-    } else {
-      filteredItems = items.where((e) => !e.isHidden).toList();
-    }
 
-    if (filteredItems.isEmpty) {
-      return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              children: [
-                Flexible(
-                  child: MobileFolderNavigation(
-                    driveName: state.currentDrive.name,
-                    path: state.folderInView.folder.path,
-                    isShowingHiddenFiles: isShowingHiddenFiles,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: DriveDetailFolderEmptyCard(
-              driveId: state.currentDrive.id,
-              parentFolderId: state.folderInView.folder.id,
-              promptToAddFiles: state.hasWritePermissions,
-            ),
-          ),
-        ],
-      );
+    if (isShowingHiddenFiles) {
+      filteredItems = items.toList();
+    } else {
+      filteredItems = items.where((item) => item.isHidden == false).toList();
     }
 
     return Column(
