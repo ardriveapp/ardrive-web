@@ -459,7 +459,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _textField(textTheme),
+                    _customAmountTextField(textTheme),
                     if (_customAmountValidationMessage != null &&
                         _customAmountValidationMessage!.isNotEmpty) ...[
                       const SizedBox(width: 8),
@@ -491,7 +491,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _textField(textTheme),
+                    _customAmountTextField(textTheme),
                   ],
                 ),
                 if (_customAmountValidationMessage != null &&
@@ -516,7 +516,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
     );
   }
 
-  Widget _textField(textTheme) {
+  Widget _customAmountTextField(textTheme) {
     return SizedBox(
       key: const ValueKey('custom_amount_text_field'),
       width: 114,
