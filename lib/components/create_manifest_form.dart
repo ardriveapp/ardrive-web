@@ -211,51 +211,53 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
 
         if (state is CreateManifestInitial) {
           return ArDriveStandardModal(
-              width: kLargeDialogWidth,
-              title: appLocalizationsOf(context).addnewManifestEmphasized,
-              actions: [
-                ModalAction(
-                  action: () => Navigator.pop(context),
-                  title: appLocalizationsOf(context).cancelEmphasized,
-                ),
-                ModalAction(
-                  action: () => readCubitContext.chooseTargetFolder(),
-                  title: appLocalizationsOf(context).nextEmphasized,
-                ),
-              ],
-              content: SizedBox(
-                height: 250,
-                child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        RichText(
-                          text: TextSpan(children: [
-                            TextSpan(
-                              text: appLocalizationsOf(context)
-                                  .aManifestIsASpecialKindOfFile, // trimmed spaces
-                              style: textStyle,
-                            ),
-                            const TextSpan(text: ' '),
-                            TextSpan(
-                              text: appLocalizationsOf(context).learnMore,
-                              style: textStyle.copyWith(
-                                decoration: TextDecoration.underline,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => openUrl(
-                                      url: Resources.manifestLearnMoreLink,
-                                    ),
-                            ),
-                          ]),
+            width: kLargeDialogWidth,
+            title: appLocalizationsOf(context).addnewManifestEmphasized,
+            actions: [
+              ModalAction(
+                action: () => Navigator.pop(context),
+                title: appLocalizationsOf(context).cancelEmphasized,
+              ),
+              ModalAction(
+                action: () => readCubitContext.chooseTargetFolder(),
+                title: appLocalizationsOf(context).nextEmphasized,
+              ),
+            ],
+            content: SizedBox(
+              height: 250,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    RichText(
+                      text: TextSpan(children: [
+                        TextSpan(
+                          text: appLocalizationsOf(context)
+                              .aManifestIsASpecialKindOfFile, // trimmed spaces
+                          style: textStyle,
                         ),
-                        manifestNameForm()
-                      ],
-                    )),
-              ));
+                        const TextSpan(text: ' '),
+                        TextSpan(
+                          text: appLocalizationsOf(context).learnMore,
+                          style: textStyle.copyWith(
+                            decoration: TextDecoration.underline,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () => openUrl(
+                                  url: Resources.manifestLearnMoreLink,
+                                ),
+                        ),
+                      ]),
+                    ),
+                    manifestNameForm()
+                  ],
+                ),
+              ),
+            ),
+          );
         }
         if (state is CreateManifestTurboUploadConfirmation) {
           final hasPendingFiles = state.folderHasPendingFiles;
@@ -518,7 +520,8 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               width: double.infinity,
               height: 77,
               alignment: Alignment.centerLeft,
-              color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+              color:
+                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
               child: Row(
                 children: [
                   ArDriveClickArea(
@@ -571,6 +574,37 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ),
             ),
             const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: ArDriveCard(
+                  backgroundColor: ArDriveTheme.of(context)
+                      .themeData
+                      .tableTheme
+                      .backgroundColor,
+                  content: Row(
+                    children: [
+                      ArDriveIcons.info(
+                        size: 16,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Hidden files are not added into the manifest.',
+                          style: ArDriveTypography.body.buttonNormalBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )),
+            ),
             Container(
               decoration: BoxDecoration(
                 color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
@@ -588,7 +622,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                         .themeData
                         .colors
                         .themeFgDefault,
-                    fontStyle: ArDriveTypography.body.buttonNormalRegular(
+                    fontStyle: ArDriveTypography.body.buttonNormalBold(
                       color: ArDriveTheme.of(context)
                           .themeData
                           .colors
