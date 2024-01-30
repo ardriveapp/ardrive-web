@@ -432,7 +432,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     final cubit = context.read<CreateManifestCubit>();
 
     final items = <Widget>[
-      ...state.viewingFolder.subfolders.map(
+      ...state.viewingFolder.subfolders
+          .where((element) => !element.isHidden)
+          .map(
         (f) {
           final enabled = !_isFolderEmpty(
             f.id,
@@ -476,6 +478,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         },
       ),
       ...state.viewingFolder.files
+          .where((element) => !element.isHidden)
           .map(
             (f) => Padding(
               padding: const EdgeInsets.symmetric(
