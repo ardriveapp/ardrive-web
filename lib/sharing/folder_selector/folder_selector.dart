@@ -178,6 +178,7 @@ class _FolderSelectorState extends State<FolderSelector> {
           content = SizedBox(
             height: 400,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (state.selectedFolder != null) ...[
                   SizedBox(

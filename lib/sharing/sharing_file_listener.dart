@@ -63,7 +63,6 @@ class _SharingFileListenerState extends State<SharingFileListener> {
                             );
                           },
                           dispose: () {
-                            Navigator.of(context).pop();
                             sharingFileBloc.add(SharingFileCleared());
                           },
                         ),

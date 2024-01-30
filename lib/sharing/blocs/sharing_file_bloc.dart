@@ -25,6 +25,8 @@ class SharingFileBloc extends Bloc<SharingFileEvent, SharingFileState> {
       if (value.isNotEmpty) {
         add(SharingFileReceived(value));
       }
+
+      activityTracker.setVerifyingSharingFilesFromExternalApp(false);
     });
 
     FlutterSharingIntent.instance.getMediaStream().listen((value) {
@@ -33,11 +35,6 @@ class SharingFileBloc extends Bloc<SharingFileEvent, SharingFileState> {
       if (value.isNotEmpty) {
         add(SharingFileReceived(value));
       }
-    });
-
-    // For sharing images coming from outside the app while the app is in the memory
-    FlutterSharingIntent.instance.getMediaStream().listen((event) {
-      add(SharingFileReceived(event));
     });
 
     on<SharingFileEvent>((event, emit) async {
