@@ -798,6 +798,14 @@
   "@fileSize": {
     "description": "The size of a file"
   },
+  "filesPending": "Files Pending",
+  "@filesPending": {
+    "description": "E.g. \"there are some files pending\""
+  },
+  "filesPendingManifestExplanation": "Some of the files in this folder are still pending. We do not recommend creating a manifest with pending files. Would you like to proceed?",
+  "@filesPendingManifestExplanation": {
+    "description": "Warns the user about creating manifests with pending files"
+  },
   "filesTooLarge": "{numberOfFiles, plural, zero{} one{1 file too large} other{{numberOfFiles} files too large}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",

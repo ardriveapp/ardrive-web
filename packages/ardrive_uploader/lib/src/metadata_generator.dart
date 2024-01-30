@@ -1,11 +1,11 @@
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arfs/arfs.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
-import 'package:ardrive_uploader/src/constants.dart';
 
 /// this class will get an `IOFile` and generate the metadata for it
 ///
@@ -13,7 +13,7 @@ import 'package:ardrive_uploader/src/constants.dart';
 ///
 /// `T` is the type of the metadata that will be generated
 abstract class UploadMetadataGenerator<T extends UploadMetadata, A> {
-  Future<T> generateMetadata(IOEntity entity, [A arguments]);
+  Future<T> generateMetadata(IOEntity entity, {required A arguments});
 }
 
 abstract class TagsGenerator<T> {
@@ -40,13 +40,11 @@ class ARFSUploadMetadataGenerator
   final ARFSTagsGenetator _tagsGenerator;
 
   @override
-  Future<ARFSUploadMetadata> generateMetadata(IOEntity entity,
-      [ARFSUploadMetadataArgs? arguments]) async {
-    if (arguments == null) {
-      throw ArgumentError('arguments must not be null');
-    }
-
-    String id;
+  Future<ARFSUploadMetadata> generateMetadata(
+    IOEntity entity, {
+    required ARFSUploadMetadataArgs arguments,
+  }) async {
+    final String id;
 
     if (arguments.entityId != null) {
       id = arguments.entityId!;
@@ -54,7 +52,7 @@ class ARFSUploadMetadataGenerator
       id = const Uuid().v4();
     }
 
-    String contentType;
+    final String contentType;
 
     if (arguments.isPrivate) {
       contentType = 'application/octet-stream';
@@ -72,12 +70,14 @@ class ARFSUploadMetadataGenerator
 
       final file = entity;
 
-      List<Tag>? customBundleTags;
+      final List<Tag>? customBundleTags;
 
       /// If the file is a D2N file, we need to add the $U tags to the
       /// bundle tags
       if (arguments.type == UploadType.d2n) {
         customBundleTags = _uTags;
+      } else {
+        customBundleTags = null;
       }
 
       final tags = _tagsGenerator.generateTags(
@@ -146,7 +146,7 @@ class ARFSUploadMetadataGenerator
   }) async {
     final id = const Uuid().v4();
 
-    String contentType;
+    final String contentType;
 
     if (isPrivate) {
       contentType = 'application/octet-stream';
@@ -203,6 +203,7 @@ class ARFSUploadMetadataArgs {
     required String driveId,
     required bool isPrivate,
     required UploadType type,
+    required String path,
     String? parentFolderId,
     String? entityId,
   }) {
@@ -273,7 +274,7 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
   ) {
     ARFSTagsValidator.validate(arguments);
 
-    List<Tag> tags = [];
+    final List<Tag> tags = [];
 
     final driveId = Tag(EntityTag.driveId, arguments.driveId!);
 
@@ -281,7 +282,7 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
 
     final appInfo = _appInfoServices.appInfo;
 
-    String contentType;
+    final String contentType;
 
     if (arguments.isPrivate!) {
       contentType = 'application/octet-stream';

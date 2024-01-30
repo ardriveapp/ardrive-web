@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 Future<IOFile> _convertTextToIOFile({
@@ -75,6 +76,7 @@ class Logger {
     }
 
     log(LogLevel.error, errorMessage);
+    Sentry.captureException(error ?? message, stackTrace: stackTrace);
   }
 
   void log(LogLevel level, String message) {
