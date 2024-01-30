@@ -98,7 +98,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
 
     final filesWithTx = await _driveDao
-        .filesInFolderWithRevisionTransactions(
+        .filesInFolderWithLicenseAndRevisionTransactions(
             driveId: drive.id, parentFolderId: folder.folder.id)
         .get();
 

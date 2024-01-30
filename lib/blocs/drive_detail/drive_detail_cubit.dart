@@ -196,7 +196,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
                 currentFolderContents: currentFolderContents,
-                columnVisibility: state.columnVisibility,
               ),
             );
           } else {
