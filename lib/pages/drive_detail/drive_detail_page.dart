@@ -687,10 +687,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     final isShowingHiddenFiles = state.isShowingHiddenFiles;
 
     final List<ArDriveDataTableItem> filteredItems;
+
     if (isShowingHiddenFiles) {
-      filteredItems = items;
+      filteredItems = items.toList();
     } else {
-      filteredItems = items.where((e) => e.isHidden).toList();
+      filteredItems = items.where((item) => item.isHidden == false).toList();
     }
 
     return Column(
