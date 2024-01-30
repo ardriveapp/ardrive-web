@@ -50,7 +50,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --dart-define=environment=staging --dart-define=SENTRY_DSN=${SENTRY_DSN} --dart-define=SENTRY_PROJECT=${SENTRY_PROJECT} --dart-define=SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} --dart-define=SENTRY_ORG=${SENTRY_ORG} --release --pwa-strategy=none --no-web-resources-cdn 45,120:           flutter build web --dart-define=environment=development --release --pwa-strategy=none --no-web-resources-cdn --source-maps
+          flutter build web --dart-define=environment=staging --dart-define=SENTRY_DSN=${SENTRY_DSN} --dart-define=SENTRY_PROJECT=${SENTRY_PROJECT} --dart-define=SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} --dart-define=SENTRY_ORG=${SENTRY_ORG} --release --pwa-strategy=none --no-web-resources-cdn --source-maps
           flutter packages pub run sentry_dart_plugin
 
       # Deploy to github pages
