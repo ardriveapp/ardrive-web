@@ -281,6 +281,7 @@ void main() {
     blocTest(
       'throws when selectedItems is empty',
       build: () => FsEntryMoveBloc(
+        driveDetailCubit: MockDriveDetailCubit(),
         arweave: arweave,
         turboUploadService: turboUploadService,
         syncCubit: syncBloc,
@@ -297,6 +298,7 @@ void main() {
       build: () => FsEntryMoveBloc(
         crypto: ArDriveCrypto(),
         arweave: arweave,
+        driveDetailCubit: MockDriveDetailCubit(),
         turboUploadService: turboUploadService,
         syncCubit: syncBloc,
         driveId: driveId,
