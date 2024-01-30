@@ -512,9 +512,23 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 children: [
                                   Expanded(
                                     child: _buildDataList(
-                                      context,
-                                      driveDetailState,
-                                    ),
+                                        context,
+                                        driveDetailState,
+                                        Column(
+                                          children: [
+                                            Expanded(
+                                              child: DriveDetailFolderEmptyCard(
+                                                driveId: driveDetailState
+                                                    .currentDrive.id,
+                                                parentFolderId: driveDetailState
+                                                    .folderInView.folder.id,
+                                                promptToAddFiles:
+                                                    driveDetailState
+                                                        .hasWritePermissions,
+                                              ),
+                                            ),
+                                          ],
+                                        )),
                                   ),
                                 ],
                               ),

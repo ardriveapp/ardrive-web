@@ -3,6 +3,7 @@ part of '../drive_detail_page.dart';
 Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
+  Widget emptyState,
 ) {
   return _buildDataListContent(
     context,
@@ -11,6 +12,7 @@ Widget _buildDataList(
     state.currentDrive,
     isMultiselecting: state.multiselect,
     isShowingHiddenFiles: state.isShowingHiddenFiles,
+    emptyState: emptyState,
   );
 }
 
@@ -128,12 +130,17 @@ Widget _buildDataListContent(
   Drive drive, {
   required bool isMultiselecting,
   required bool isShowingHiddenFiles,
+  required Widget emptyState,
 }) {
   final List<ArDriveDataTableItem> filteredItems;
   if (isShowingHiddenFiles) {
     filteredItems = items;
   } else {
     filteredItems = items.where((item) => !item.isHidden).toList();
+  }
+
+  if (filteredItems.isEmpty) {
+    return emptyState;
   }
 
   return LayoutBuilder(builder: (context, constraints) {

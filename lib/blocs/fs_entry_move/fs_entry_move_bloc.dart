@@ -28,6 +28,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
   final ArDriveCrypto _crypto;
+  final DriveDetailCubit _driveDetailCubit;
 
   FsEntryMoveBloc({
     required this.driveId,
@@ -38,11 +39,13 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
     required ArDriveCrypto crypto,
+    required DriveDetailCubit driveDetailCubit,
     Platform platform = const LocalPlatform(),
   })  : _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
+        _driveDetailCubit = driveDetailCubit,
         _syncCubit = syncCubit,
         _crypto = crypto,
         super(const FsEntryMoveLoadInProgress()) {
@@ -178,22 +181,39 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   }) async {
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
     final moveTxDataItems = <DataItem>[];
+    final isShowingHiddenItems =
+        (_driveDetailCubit.state as DriveDetailLoadSuccess)
+            .isShowingHiddenFiles;
+    final files = selectedItems.whereType<FileDataTableItem>().toList();
 
-    final filesToMove = selectedItems
-        .whereType<FileDataTableItem>()
+    if (!isShowingHiddenItems) {
+      files.removeWhere((element) => element.isHidden);
+    }
+
+    final filesToMove = files
         .where((element) => !element.isHidden)
         .where((file) => conflictingItems
             .where((conflictingFile) => conflictingFile.id == file.id)
             .isEmpty)
         .toList();
 
-    final foldersToMove = selectedItems
+    files.clear();
+
+    final folders = selectedItems.whereType<FolderDataTableItem>().toList();
+
+    if (!isShowingHiddenItems) {
+      folders.removeWhere((element) => element.isHidden);
+    }
+
+    final foldersToMove = folders
         .whereType<FolderDataTableItem>()
         .where((element) => !element.isHidden)
         .where((folder) => conflictingItems
             .where((conflictingFolder) => conflictingFolder.id == folder.id)
             .isEmpty)
         .toList();
+
+    folders.clear();
 
     final folderMap = <String, FolderEntriesCompanion>{};
 
