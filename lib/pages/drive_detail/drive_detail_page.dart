@@ -31,6 +31,7 @@ import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/unpreviewable_content.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sharing/sharing_file_listener.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
@@ -64,8 +65,10 @@ part 'components/fs_entry_preview_widget.dart';
 
 class DriveDetailPage extends StatefulWidget {
   final bool anonymouslyShowDriveDetail;
+  final BuildContext context;
 
   const DriveDetailPage({
+    required this.context,
     Key? key,
     required this.anonymouslyShowDriveDetail,
   }) : super(key: key);
@@ -111,54 +114,40 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: BlocListener<PromptToSnapshotBloc, PromptToSnapshotState>(
-        listener: (context, state) {
-          if (state is PromptToSnapshotPrompting) {
-            final bloc = context.read<PromptToSnapshotBloc>();
+    return SharingFileListener(
+      context: widget.context,
+      child: SizedBox.expand(
+        child: BlocListener<PromptToSnapshotBloc, PromptToSnapshotState>(
+          listener: (context, state) {
+            if (state is PromptToSnapshotPrompting) {
+              final bloc = context.read<PromptToSnapshotBloc>();
 
-            final driveDetailState = context.read<DriveDetailCubit>().state;
-            if (driveDetailState is DriveDetailLoadSuccess) {
-              final drive = driveDetailState.currentDrive;
-              promptToSnapshot(
-                context,
-                promptToSnapshotBloc: bloc,
-                drive: drive,
-              ).then((_) {
-                bloc.add(const SelectedDrive(driveId: null));
-              });
+              final driveDetailState = context.read<DriveDetailCubit>().state;
+              if (driveDetailState is DriveDetailLoadSuccess) {
+                final drive = driveDetailState.currentDrive;
+                promptToSnapshot(
+                  context,
+                  promptToSnapshotBloc: bloc,
+                  drive: drive,
+                ).then((_) {
+                  bloc.add(const SelectedDrive(driveId: null));
+                });
+              }
             }
-          }
-        },
-        child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
-          builder: (context, driveDetailState) {
-            if (driveDetailState is DriveDetailLoadInProgress) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (driveDetailState is DriveInitialLoading) {
-              return ScreenTypeLayout.builder(
-                mobile: (context) {
-                  return Scaffold(
-                    drawerScrimColor: Colors.transparent,
-                    drawer: const AppSideBar(),
-                    appBar: const MobileAppBar(),
-                    body: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Center(
-                        child: Text(
-                          appLocalizationsOf(context)
-                              .driveDoingInitialSetupMessage,
-                          style: ArDriveTypography.body.buttonLargeBold(),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                desktop: (context) => Scaffold(
-                  drawerScrimColor: Colors.transparent,
-                  body: Column(
-                    children: [
-                      const AppTopBar(),
-                      Expanded(
+          },
+          child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+            builder: (context, driveDetailState) {
+              if (driveDetailState is DriveDetailLoadInProgress) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (driveDetailState is DriveInitialLoading) {
+                return ScreenTypeLayout.builder(
+                  mobile: (context) {
+                    return Scaffold(
+                      drawerScrimColor: Colors.transparent,
+                      drawer: const AppSideBar(),
+                      appBar: const MobileAppBar(),
+                      body: Padding(
+                        padding: const EdgeInsets.all(8.0),
                         child: Center(
                           child: Text(
                             appLocalizationsOf(context)
@@ -167,60 +156,78 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              );
-            } else if (driveDetailState is DriveDetailLoadSuccess) {
-              final hasSubfolders =
-                  driveDetailState.folderInView.subfolders.isNotEmpty;
-
-              final isOwner = isDriveOwner(
-                context.read<ArDriveAuth>(),
-                driveDetailState.currentDrive.ownerAddress,
-              );
-
-              final hasFiles = driveDetailState.folderInView.files.isNotEmpty;
-
-              final canDownloadMultipleFiles = driveDetailState.multiselect &&
-                  context.read<DriveDetailCubit>().selectedItems.isNotEmpty;
-
-              return ScreenTypeLayout.builder(
-                desktop: (context) => _desktopView(
-                  isDriveOwner: isOwner,
-                  driveDetailState: driveDetailState,
-                  hasSubfolders: hasSubfolders,
-                  hasFiles: hasFiles,
-                  canDownloadMultipleFiles: canDownloadMultipleFiles,
-                ),
-                mobile: (context) => Scaffold(
-                  drawerScrimColor: Colors.transparent,
-                  drawer: const AppSideBar(),
-                  appBar: (driveDetailState.showSelectedItemDetails &&
-                          context.read<DriveDetailCubit>().selectedItem != null)
-                      ? MobileAppBar(
-                          leading: ArDriveIconButton(
-                            icon: ArDriveIcons.arrowLeft(),
-                            onPressed: () {
-                              context
-                                  .read<DriveDetailCubit>()
-                                  .toggleSelectedItemDetails();
-                            },
+                    );
+                  },
+                  desktop: (context) => Scaffold(
+                    drawerScrimColor: Colors.transparent,
+                    body: Column(
+                      children: [
+                        const AppTopBar(),
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              appLocalizationsOf(context)
+                                  .driveDoingInitialSetupMessage,
+                              style: ArDriveTypography.body.buttonLargeBold(),
+                            ),
                           ),
-                        )
-                      : null,
-                  body: _mobileView(
-                    driveDetailState,
-                    hasSubfolders,
-                    hasFiles,
-                    driveDetailState.currentFolderContents,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            } else {
-              return const SizedBox();
-            }
-          },
+                );
+              } else if (driveDetailState is DriveDetailLoadSuccess) {
+                final hasSubfolders =
+                    driveDetailState.folderInView.subfolders.isNotEmpty;
+
+                final isOwner = isDriveOwner(
+                  context.read<ArDriveAuth>(),
+                  driveDetailState.currentDrive.ownerAddress,
+                );
+
+                final hasFiles = driveDetailState.folderInView.files.isNotEmpty;
+
+                final canDownloadMultipleFiles = driveDetailState.multiselect &&
+                    context.read<DriveDetailCubit>().selectedItems.isNotEmpty;
+
+                return ScreenTypeLayout.builder(
+                  desktop: (context) => _desktopView(
+                    isDriveOwner: isOwner,
+                    driveDetailState: driveDetailState,
+                    hasSubfolders: hasSubfolders,
+                    hasFiles: hasFiles,
+                    canDownloadMultipleFiles: canDownloadMultipleFiles,
+                  ),
+                  mobile: (context) => Scaffold(
+                    drawerScrimColor: Colors.transparent,
+                    drawer: const AppSideBar(),
+                    appBar: (driveDetailState.showSelectedItemDetails &&
+                            context.read<DriveDetailCubit>().selectedItem !=
+                                null)
+                        ? MobileAppBar(
+                            leading: ArDriveIconButton(
+                              icon: ArDriveIcons.arrowLeft(),
+                              onPressed: () {
+                                context
+                                    .read<DriveDetailCubit>()
+                                    .toggleSelectedItemDetails();
+                              },
+                            ),
+                          )
+                        : null,
+                    body: _mobileView(
+                      driveDetailState,
+                      hasSubfolders,
+                      hasFiles,
+                      driveDetailState.currentFolderContents,
+                    ),
+                  ),
+                );
+              } else {
+                return const SizedBox();
+              }
+            },
+          ),
         ),
       ),
     );

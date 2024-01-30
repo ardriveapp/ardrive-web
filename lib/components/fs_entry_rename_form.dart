@@ -8,6 +8,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -105,6 +106,33 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                 ),
               ),
             );
+          } else if (state is UpdatingEntityExtension) {
+            showArDriveDialog(
+              context,
+              content: ArDriveStandardModal(
+                title: 'Do you want to change the file extension?',
+                description: 'The file extension will be changed from '
+                    '${state.previousExtension} to ${getFileExtension(name: state.entityName, contentType: state.newExtension)}',
+                actions: [
+                  ModalAction(
+                    action: () {
+                      context.read<FsEntryRenameCubit>().reset();
+                      Navigator.of(context).pop(context);
+                    },
+                    title: appLocalizationsOf(context).cancelEmphasized,
+                  ),
+                  ModalAction(
+                    action: () {
+                      context.read<FsEntryRenameCubit>().submit(
+                          newName: _nameController.text, updateExtension: true);
+                      Navigator.of(context).pop();
+                    },
+                    title: 'Submit',
+                    isEnable: _validForm,
+                  ),
+                ],
+              ),
+            );
           }
         },
         builder: (context, state) {
@@ -145,9 +173,11 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                 title: appLocalizationsOf(context).cancelEmphasized,
               ),
               ModalAction(
-                action: () => context
-                    .read<FsEntryRenameCubit>()
-                    .submit(newName: _nameController.text),
+                action: () {
+                  context
+                      .read<FsEntryRenameCubit>()
+                      .submit(newName: _nameController.text);
+                },
                 title: appLocalizationsOf(context).renameEmphasized,
                 isEnable: _validForm,
               ),
