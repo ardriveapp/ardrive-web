@@ -181,6 +181,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     final filesToMove = selectedItems
         .whereType<FileDataTableItem>()
+        .where((element) => !element.isHidden)
         .where((file) => conflictingItems
             .where((conflictingFile) => conflictingFile.id == file.id)
             .isEmpty)
@@ -188,6 +189,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     final foldersToMove = selectedItems
         .whereType<FolderDataTableItem>()
+        .where((element) => !element.isHidden)
         .where((folder) => conflictingItems
             .where((conflictingFolder) => conflictingFolder.id == folder.id)
             .isEmpty)
