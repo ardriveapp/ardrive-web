@@ -164,6 +164,7 @@ class ArDriveColorTokens {
     required this.containerL1,
     required this.containerL2,
     required this.containerL3,
+    required this.containerRed,
     required this.textHigh,
     required this.textMid,
     required this.textLow,
@@ -200,6 +201,7 @@ class ArDriveColorTokens {
         containerL1: primitives.solidGrey900,
         containerL2: primitives.solidGrey800,
         containerL3: primitives.solidGrey700,
+        containerRed: primitives.solidRed700,
         textHigh: primitives.solidGrey100,
         textMid: primitives.solidGrey200,
         textLow: primitives.solidGrey300,
@@ -236,6 +238,7 @@ class ArDriveColorTokens {
         containerL1: primitives.solidGrey50,
         containerL2: primitives.solidGrey200,
         containerL3: primitives.solidGrey300,
+        containerRed: primitives.solidRed700,
         textHigh: primitives.solidGrey800,
         textMid: primitives.solidGrey700,
         textLow: primitives.solidGrey500,
@@ -268,6 +271,7 @@ class ArDriveColorTokens {
   final Color containerL1;
   final Color containerL2;
   final Color containerL3;
+  final Color containerRed;
   final Color textHigh;
   final Color textMid;
   final Color textLow;

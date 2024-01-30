@@ -1,7 +1,7 @@
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
-import 'package:ardrive/authentication/login/views/login_modals.dart';
+import 'package:ardrive/authentication/login/views/modals/import_wallet_modal.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -83,7 +83,10 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               ),
               heightSpacing(),
               //FIXME: Add localization key
-              Text('Sign in using one of the options below.',
+              Text(
+                  widget.existingUserFlow
+                      ? 'Sign in using one of the options below.'
+                      : 'To use ArDrive you need a wallet. A wallet is a new way to log in. Instead of creating usernames and passwords, just connect your wallet.',
                   style: typography.paragraphLarge(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
@@ -107,7 +110,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   typography: typography,
                   maxWidth: double.maxFinite,
                   onPressed: () {
-                    print("Implement me!");
+                    print('Implement me!');
                   }),
               const SizedBox(height: 40),
               const LinedTextDivider(text: 'or'),
@@ -118,7 +121,9 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       typography: typography,
                       maxWidth: double.maxFinite,
                       onPressed: () {
-                        showImportWalletDialog(context);
+                        showImportWalletDialog(
+                            context: context,
+                            loginBloc: context.read<LoginBloc>());
                       })
                   : ArDriveButtonNew(
                       text: 'Create a Wallet',
@@ -126,7 +131,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       variant: ButtonVariant.primary,
                       maxWidth: double.maxFinite,
                       onPressed: () {
-                        print("Implement me!");
+                        print('Implement me!');
                       }),
               const SizedBox(height: 72),
               // TODO:  make this into a reusable component

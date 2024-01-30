@@ -6,7 +6,7 @@ import 'package:responsive_builder/responsive_builder.dart';
 import '../../misc/resources.dart';
 
 class LoginCard extends StatelessWidget {
-  const LoginCard({required this.content, this.showLattice = false});
+  const LoginCard({super.key, required this.content, this.showLattice = false});
 
   final Widget content;
   final bool showLattice;

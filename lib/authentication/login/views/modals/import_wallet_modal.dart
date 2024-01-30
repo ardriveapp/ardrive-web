@@ -1,19 +1,26 @@
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
+import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-void showImportWalletDialog(BuildContext context) {
+void showImportWalletDialog(
+    {required BuildContext context, required LoginBloc loginBloc}) {
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
   // FIXME: add switching of typography based on screen size
   final typography = ArDriveTypographyNew.desktop;
 
+  final navigator = Navigator.of(context);
+
   showArDriveDialog(context,
+      barrierDismissible: false,
+      useRootNavigator: false,
       content: ArDriveLoginModal(
-          width: 495,
+          width: 450,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,10 +53,21 @@ void showImportWalletDialog(BuildContext context) {
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
               const SizedBox(height: 8),
-              const TextField(
+              TextField(
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: colorTokens.strokeMid,
+                    ),
+                  ),
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: colorTokens.strokeMid,
+                    ),
+                  ),
                   hintText: 'Enter your seed phrase',
+                  filled: true,
+                  fillColor: colorTokens.inputDefault,
                 ),
               ),
               const SizedBox(height: 20),
@@ -65,7 +83,18 @@ void showImportWalletDialog(BuildContext context) {
                   text: 'Upload Keyfile',
                   typography: typography,
                   variant: ButtonVariant.outline,
-                  onPressed: () {}),
+                  onPressed: () async {
+                    final selectedFile = await ArDriveIO()
+                        .pickFile(fileSource: FileSource.fileSystem);
+                    final wallet = await loginBloc
+                        .validateAndReturnWalletFile(selectedFile);
+                    if (wallet != null) {
+                      navigator.pop();
+                      loginBloc.add(AddWalletFile(selectedFile));
+                    } else {
+                      // TODO: Add error message
+                    }
+                  }),
             ],
           )));
 }

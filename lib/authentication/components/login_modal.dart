@@ -46,7 +46,7 @@ class ArDriveLoginModal extends StatelessWidget {
               SizedBox(
                   height: 6,
                   child: Container(
-                    color: colorTokens.buttonPrimaryDefault,
+                    color: colorTokens.containerRed,
                   )),
               Row(children: [
                 const Spacer(),

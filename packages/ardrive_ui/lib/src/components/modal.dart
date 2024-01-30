@@ -488,6 +488,7 @@ class ModalAction {
 Future<void> showAnimatedDialog(
   BuildContext context, {
   bool barrierDismissible = true,
+  bool useRootNavigator = true,
   required Widget content,
   Color? barrierColor,
 }) {
@@ -508,6 +509,7 @@ Future<void> showAnimatedDialog(
     },
     barrierDismissible: barrierDismissible,
     barrierLabel: '',
+    useRootNavigator: useRootNavigator,
     pageBuilder: (context, a1, a2) {
       return Dialog(
         insetPadding: lowScreenWarning

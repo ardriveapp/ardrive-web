@@ -1,5 +1,4 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_ui/src/styles/colors/colors_new.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 

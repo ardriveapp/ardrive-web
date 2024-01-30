@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 Future<void> showArDriveDialog(
   BuildContext context, {
   bool barrierDismissible = true,
+  bool useRootNavigator = true,
   required Widget content,
   Color? barrierColor,
 }) async {
@@ -16,5 +17,6 @@ Future<void> showArDriveDialog(
     content: content,
     barrierColor: barrierColor,
     barrierDismissible: barrierDismissible,
+    useRootNavigator: useRootNavigator,
   ).then((value) => activityTracker.setShowingAnyDialog(false));
 }

@@ -27,7 +27,7 @@ class LinedTextDivider extends StatelessWidget {
       )),
       Padding(
           padding: const EdgeInsets.only(left: 44, right: 44),
-          child: Text(this.text,
+          child: Text(text,
               textAlign: TextAlign.center,
               style: typography.paragraphLarge(
                   color: colorTokens.textLow,

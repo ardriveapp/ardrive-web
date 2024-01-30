@@ -3,7 +3,6 @@ import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/create_new_wallet_view.dart';
 import 'package:ardrive/authentication/login/views/enter_seed_phrase_view.dart';
 import 'package:ardrive/authentication/login/views/generate_wallet_view.dart';
-import 'package:ardrive/authentication/login/views/prompt_password_view.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
@@ -28,6 +27,7 @@ import '../../components/max_device_sizes_constrained_box.dart';
 import 'create_password_view.dart';
 import 'download_wallet_view.dart';
 import 'landing_page.dart';
+import 'modals/enter_your_password_modal.dart';
 import 'onboarding_view.dart';
 import 'prompt_wallet_view.dart';
 
@@ -81,7 +81,13 @@ class _LoginPageState extends State<LoginPage> {
             });
           }
 
-          if (loginState is LoginOnBoarding) {
+          if (loginState is PromptPassword) {
+            showEnterYourPasswordDialog(
+                context: context,
+                loginBloc: context.read<LoginBloc>(),
+                wallet: loginState.walletFile);
+            return;
+          } else if (loginState is LoginOnBoarding) {
             preCacheOnBoardingAssets(context);
           } else if (loginState is LoginFailure) {
             // TODO: Verify if the error is `NoConnectionException` and show an
@@ -341,8 +347,11 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         late Widget content;
 
         if (loginState is PromptPassword) {
-          content = PromptPasswordView(
-            wallet: loginState.walletFile,
+          final loginBloc = context.read<LoginBloc>();
+          content = PromptWalletView(
+            key: const Key('promptWalletView'),
+            isArConnectAvailable: loginBloc.isArConnectAvailable,
+            existingUserFlow: loginBloc.existingUserFlow,
           );
         } else if (loginState is CreatingNewPassword) {
           content = CreatePasswordView(
