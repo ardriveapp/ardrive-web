@@ -512,23 +512,23 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 children: [
                                   Expanded(
                                     child: _buildDataList(
-                                        context,
-                                        driveDetailState,
-                                        Column(
-                                          children: [
-                                            Expanded(
-                                              child: DriveDetailFolderEmptyCard(
-                                                driveId: driveDetailState
-                                                    .currentDrive.id,
-                                                parentFolderId: driveDetailState
-                                                    .folderInView.folder.id,
-                                                promptToAddFiles:
-                                                    driveDetailState
-                                                        .hasWritePermissions,
-                                              ),
+                                      context,
+                                      driveDetailState,
+                                      Column(
+                                        children: [
+                                          Expanded(
+                                            child: DriveDetailFolderEmptyCard(
+                                              driveId: driveDetailState
+                                                  .currentDrive.id,
+                                              parentFolderId: driveDetailState
+                                                  .folderInView.folder.id,
+                                              promptToAddFiles: driveDetailState
+                                                  .hasWritePermissions,
                                             ),
-                                          ],
-                                        )),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -704,7 +704,21 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     if (isShowingHiddenFiles) {
       filteredItems = items;
     } else {
-      filteredItems = items.where((e) => e.isHidden).toList();
+      filteredItems = items.where((e) => !e.isHidden).toList();
+    }
+
+    if (filteredItems.isEmpty) {
+      return Column(
+        children: [
+          Expanded(
+            child: DriveDetailFolderEmptyCard(
+              driveId: state.currentDrive.id,
+              parentFolderId: state.folderInView.folder.id,
+              promptToAddFiles: state.hasWritePermissions,
+            ),
+          ),
+        ],
+      );
     }
 
     return Column(
