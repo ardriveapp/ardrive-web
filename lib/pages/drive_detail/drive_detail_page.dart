@@ -514,6 +514,20 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     child: _buildDataList(
                                       context,
                                       driveDetailState,
+                                      Column(
+                                        children: [
+                                          Expanded(
+                                            child: DriveDetailFolderEmptyCard(
+                                              driveId: driveDetailState
+                                                  .currentDrive.id,
+                                              parentFolderId: driveDetailState
+                                                  .folderInView.folder.id,
+                                              promptToAddFiles: driveDetailState
+                                                  .hasWritePermissions,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -690,7 +704,35 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     if (isShowingHiddenFiles) {
       filteredItems = items;
     } else {
-      filteredItems = items.where((e) => e.isHidden).toList();
+      filteredItems = items.where((e) => !e.isHidden).toList();
+    }
+
+    if (filteredItems.isEmpty) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                Flexible(
+                  child: MobileFolderNavigation(
+                    driveName: state.currentDrive.name,
+                    path: state.folderInView.folder.path,
+                    isShowingHiddenFiles: isShowingHiddenFiles,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: DriveDetailFolderEmptyCard(
+              driveId: state.currentDrive.id,
+              parentFolderId: state.folderInView.folder.id,
+              promptToAddFiles: state.hasWritePermissions,
+            ),
+          ),
+        ],
+      );
     }
 
     return Column(
