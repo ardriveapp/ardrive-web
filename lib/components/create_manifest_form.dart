@@ -584,6 +584,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                       .themeData
                       .tableTheme
                       .backgroundColor,
+                  borderRadius: 5,
                   content: Row(
                     children: [
                       ArDriveIcons.info(
