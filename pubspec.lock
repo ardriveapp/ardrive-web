@@ -41,6 +41,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.8"
+  ansicolor:
+    dependency: transitive
+    description:
+      name: ansicolor
+      sha256: "8bf17a8ff6ea17499e40a2d2542c2f481cd7615760c6d34065cb22bfd22e6880"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
   app_settings:
     dependency: "direct main"
     description:
@@ -84,8 +92,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.5"
-      resolved-ref: "286d6366ceffe44e21d1257507090f8b6ec8beaa"
+      ref: PE-5529-txt-file-extension-changes-incorrectly-in-edit-modal
+      resolved-ref: "9e43c831ed30c0a2985bc6288c8ae3a4ef4f290d"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.5"
@@ -917,6 +925,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  flutter_sharing_intent:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "5f4f2e66c02580105ba89b3fec5a7be907d5466f"
+      resolved-ref: "5f4f2e66c02580105ba89b3fec5a7be907d5466f"
+      url: "https://github.com/bhagat-techind/flutter_sharing_intent"
+    source: git
+    version: "1.1.0"
   flutter_stripe:
     dependency: "direct main"
     description:
@@ -998,6 +1015,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  globbing:
+    dependency: transitive
+    description:
+      name: globbing
+      sha256: "4f89cfaf6fa74c9c1740a96259da06bd45411ede56744e28017cc534a12b6e2d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   gql:
     dependency: transitive
     description:
@@ -1182,6 +1207,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.1+1"
+  injector:
+    dependency: transitive
+    description:
+      name: injector
+      sha256: ed389bed5b48a699d5b9561c985023d0d5cc88dd5ff2237aadcce5a5ab433e4e
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   integration_test:
     dependency: "direct dev"
     description: flutter
@@ -1407,10 +1440,10 @@ packages:
     dependency: transitive
     description:
       name: mutex
-      sha256: "03116a4e46282a671b46c12de649d72c0ed18188ffe12a8d0fc63e83f4ad88f4"
+      sha256: "8827da25de792088eb33e572115a5eb0d61d61a3c01acbc8bcbe76ed78f1a1f2"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "3.1.0"
   nested:
     dependency: transitive
     description:
@@ -1706,6 +1739,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.0.1"
+  sentry:
+    dependency: transitive
+    description:
+      name: sentry
+      sha256: "89e426587b0879e53c46a0aae0eb312696d9d2d803ba14b252a65cc24b1416a2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.14.0"
+  sentry_dart_plugin:
+    dependency: "direct dev"
+    description:
+      name: sentry_dart_plugin
+      sha256: fb46695c054b23ba631b16227c3e602ce31d1d5ccade9583d5184a7a74f7a2be
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.6.3"
+  sentry_flutter:
+    dependency: "direct main"
+    description:
+      name: sentry_flutter
+      sha256: fd089ee4e75a927be037c56815a0a54af5a519f52b803a5ffecb589bb36e2401
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.14.0"
   share_plus:
     dependency: "direct main"
     description:
@@ -1867,18 +1924,18 @@ packages:
     dependency: transitive
     description:
       name: sqflite
-      sha256: "591f1602816e9c31377d5f008c2d9ef7b8aca8941c3f89cc5fd9d84da0c38a9a"
+      sha256: c2c32eb0c74021d987336522acc3b6bf0082fbd0c540c36a9cf4ddb8ba891ddc
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.0"
+    version: "2.3.1"
   sqflite_common:
     dependency: transitive
     description:
       name: sqflite_common
-      sha256: bb4738f15b23352822f4c42a531677e5c6f522e079461fd240ead29d8d8a54a6
+      sha256: "28d8c66baee4968519fb8bd6cdbedad982d6e53359091f0b74544a9f32ec72d5"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0+2"
+    version: "2.5.3"
   sqlite3:
     dependency: transitive
     description:
@@ -2009,6 +2066,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
+  system_info2:
+    dependency: transitive
+    description:
+      name: system_info2
+      sha256: "65206bbef475217008b5827374767550a5420ce70a04d2d7e94d1d2253f3efc9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.0"
   system_info_plus:
     dependency: transitive
     description:

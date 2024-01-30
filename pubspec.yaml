@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.30.2
+version: 2.31.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -132,6 +132,11 @@ dependencies:
   loading_animation_widget: ^1.2.0+4
   synchronized: ^3.1.0
   confetti: ^0.7.0
+  flutter_sharing_intent: 
+    git:
+      url: https://github.com/bhagat-techind/flutter_sharing_intent
+      ref: 5f4f2e66c02580105ba89b3fec5a7be907d5466f
+  sentry_flutter: ^7.14.0
 
 dependency_overrides:
   stripe_js:
@@ -160,7 +165,7 @@ dependency_overrides:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.5
+      ref: PE-5529-txt-file-extension-changes-incorrectly-in-edit-modal
 
 dev_dependencies:
   integration_test:
@@ -175,6 +180,7 @@ dev_dependencies:
   drift_dev:
   mocktail: ^1.0.2
   json_serializable:
+  sentry_dart_plugin: ^1.0.0
 
 flutter:
   uses-material-design: true
@@ -187,3 +193,11 @@ flutter:
     - assets/images/profile/
     - assets/images/login/
     - assets/animations/
+
+sentry:
+  upload_debug_symbols: true
+  upload_source_maps: true
+  upload_sources: true
+  wait_for_processing: false
+  log_level: error
+  ignore_missing: true

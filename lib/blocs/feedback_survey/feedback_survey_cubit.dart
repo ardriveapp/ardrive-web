@@ -12,7 +12,6 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
 
   FeedbackSurveyCubit(
     FeedbackSurveyState initialState, {
-
     /// takes a KeyValueStore for testing purposes
     KeyValueStore? store,
   }) : super(initialState) {

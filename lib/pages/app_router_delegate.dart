@@ -4,6 +4,7 @@ import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/feedback_survey.dart';
 import 'package:ardrive/core/activity_tracker.dart';
@@ -65,8 +66,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRouterDelegate() : navigatorKey = GlobalKey<NavigatorState>();
 
   @override
-  Widget build(BuildContext context) {
-    if (context.read<ConfigService>().flavor != Flavor.production) {
+  // ignore: avoid_renaming_method_parameters
+  Widget build(BuildContext navigatorContext) {
+    if (navigatorContext.read<ConfigService>().flavor != Flavor.production) {
       return ArDriveAppWithDevTools(widget: _app());
     }
 
@@ -164,6 +166,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 if (state is DrivesLoadSuccess) {
                   shellPage = !state.hasNoDrives
                       ? DriveDetailPage(
+                          context: navigatorKey.currentContext!,
                           anonymouslyShowDriveDetail:
                               anonymouslyShowDriveDetail,
                         )
@@ -280,6 +283,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     configService: context.read<ConfigService>(),
                     profileCubit: context.read<ProfileCubit>(),
                     activityCubit: context.read<ActivityCubit>(),
+                    promptToSnapshotBloc: context.read<PromptToSnapshotBloc>(),
                     arweave: context.read<ArweaveService>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),
@@ -293,6 +297,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     initialSelectedDriveId: driveId,
                     profileCubit: context.read<ProfileCubit>(),
                     driveDao: context.read<DriveDao>(),
+                    promptToSnapshotBloc: context.read<PromptToSnapshotBloc>(),
                   ),
                 ),
               ],
