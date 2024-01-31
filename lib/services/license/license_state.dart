@@ -1,5 +1,7 @@
 import 'package:ardrive/services/license/licenses/licenses.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 
 enum LicenseType {
   unknown,
@@ -13,6 +15,7 @@ class LicenseMeta extends Equatable {
   final String name;
   final String shortName;
   final String version;
+  final ArDriveIcon Function({double? size, Color? color})? icon;
   final bool hasParams;
 
   const LicenseMeta({
@@ -21,6 +24,7 @@ class LicenseMeta extends Equatable {
     required this.name,
     required this.shortName,
     required this.version,
+    this.icon,
     this.hasParams = false,
   });
 

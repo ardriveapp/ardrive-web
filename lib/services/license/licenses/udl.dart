@@ -1,3 +1,5 @@
+import 'package:ardrive_ui/ardrive_ui.dart';
+
 import '../license_state.dart';
 
 const udlLicenseMeta = LicenseMeta(
@@ -6,6 +8,7 @@ const udlLicenseMeta = LicenseMeta(
   name: 'Universal Data License',
   shortName: 'UDL',
   version: '1.0',
+  icon: ArDriveIcons.udl,
   hasParams: true,
 );
 

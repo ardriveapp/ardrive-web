@@ -1,3 +1,5 @@
+import 'package:ardrive_ui/ardrive_ui.dart';
+
 import '../license_state.dart';
 
 const ccByLicenseMeta = LicenseMeta(
@@ -6,4 +8,5 @@ const ccByLicenseMeta = LicenseMeta(
   name: 'Creative Commons Attribution',
   shortName: 'CC-BY',
   version: '4.0',
+  icon: ArDriveIcons.cc,
 );
