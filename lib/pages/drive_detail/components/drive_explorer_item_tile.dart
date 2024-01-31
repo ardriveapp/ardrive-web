@@ -293,7 +293,7 @@ class _DriveExplorerItemTileTrailingState
                   content: ArDriveStandardModal(
                     width: kMediumDialogWidth,
                     title: appLocalizationsOf(context).move,
-                    content: SizedBox(
+                    content: const SizedBox(
                       height: 50,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -301,7 +301,7 @@ class _DriveExplorerItemTileTrailingState
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                              "Hidden folders must be revealed before they can be moved.")
+                              'Hidden folders must be revealed before they can be moved.')
                         ],
                       ),
                     ),
@@ -432,7 +432,7 @@ class _DriveExplorerItemTileTrailingState
                 content: ArDriveStandardModal(
                   width: kMediumDialogWidth,
                   title: appLocalizationsOf(context).move,
-                  content: SizedBox(
+                  content: const SizedBox(
                     height: 50,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -440,7 +440,7 @@ class _DriveExplorerItemTileTrailingState
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                            "Hidden files must be revealed before they can be moved.")
+                            'Hidden files must be revealed before they can be moved.')
                       ],
                     ),
                   ),
