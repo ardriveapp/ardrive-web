@@ -1,4 +1,4 @@
-require "Base64"
+fastlane_require "base64"
 import "../../Fastfile"
 
 # Update fastlane
