@@ -18,6 +18,8 @@ CREATE TABLE file_entries (
     customJsonMetadata TEXT,
     customGQLTags TEXT,
 
+    isHidden BOOLEAN NOT NULL,
+
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
 

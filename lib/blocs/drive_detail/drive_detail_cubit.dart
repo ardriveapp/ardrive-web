@@ -40,6 +40,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   bool _refreshSelectedItem = false;
 
+  bool _showHiddenFiles = false;
+
   DriveDetailCubit({
     required this.driveId,
     String? initialFolderId,
@@ -72,6 +74,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     } else {
       openFolder(path: rootPath);
     }
+  }
+
+  void toggleHiddenFiles() {
+    _showHiddenFiles = !_showHiddenFiles;
+
+    refreshDriveDataTable();
   }
 
   void openFolder({
@@ -148,8 +156,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               );
 
               if (index >= 0) {
+                final item = folderContents.files[index];
+
                 _selectedItem = DriveDataTableItemMapper.toFileDataTableItem(
-                  folderContents.files[index],
+                  item,
                   _selectedItem!.index,
                   _selectedItem!.isOwner,
                 );
@@ -159,8 +169,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 (element) => element.id == _selectedItem!.id,
               );
               if (index >= 0) {
+                final item = folderContents.subfolders[index];
+
                 _selectedItem = DriveDataTableItemMapper.fromFolderEntry(
-                  folderContents.subfolders[index],
+                  item,
                   _selectedItem!.index,
                   _selectedItem!.isOwner,
                 );
@@ -173,8 +185,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 _selectedItem!.isOwner,
               );
             }
-
-            _refreshSelectedItem = false;
           }
 
           final currentFolderContents = parseEntitiesToDatatableItem(
@@ -195,6 +205,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
                 currentFolderContents: currentFolderContents,
+                isShowingHiddenFiles: _showHiddenFiles,
               ),
             );
           } else {
@@ -212,6 +223,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 driveIsEmpty: rootFolderNode.isEmpty(),
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
+                isShowingHiddenFiles: _showHiddenFiles,
               ),
             );
           }
@@ -400,8 +412,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     if (state is DriveDetailLoadSuccess) {
       await Future.delayed(const Duration(milliseconds: 100));
-      emit((state as DriveDetailLoadSuccess)
-          .copyWith(forceRebuildKey: UniqueKey()));
+      final state = this.state as DriveDetailLoadSuccess;
+      emit(state.copyWith(
+        forceRebuildKey: UniqueKey(),
+        isShowingHiddenFiles: _showHiddenFiles,
+      ));
     }
   }
 
@@ -444,14 +459,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
 
     final state = this.state as DriveDetailLoadSuccess;
-    final allImagesForFolder = state.currentFolderContents
-        .whereType<FileDataTableItem>()
-        .where(
-          (element) => supportedImageTypesInFilePreview.contains(
-            element.contentType,
-          ),
-        )
-        .toList();
+
+    final isShowingHiddenFiles = state.isShowingHiddenFiles;
+
+    final List<FileDataTableItem> allImagesForFolder =
+        state.currentFolderContents.whereType<FileDataTableItem>().where(
+      (element) {
+        final supportedImageType = supportedImageTypesInFilePreview.contains(
+          element.contentType,
+        );
+
+        return supportedImageType &&
+            (isShowingHiddenFiles ? true : !element.isHidden);
+      },
+    ).toList();
 
     _allImagesOfCurrentFolder = allImagesForFolder;
 

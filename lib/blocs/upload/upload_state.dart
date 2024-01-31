@@ -63,136 +63,72 @@ class UploadFileTooLarge extends UploadState {
   List<Object> get props => [tooLargeFileNames];
 }
 
+class UploadReadyToPrepare extends UploadState {
+  final UploadParams params;
+  final bool isArConnect;
+
+  UploadReadyToPrepare({
+    required this.params,
+    this.isArConnect = false,
+  });
+
+  @override
+  List<Object> get props => [params];
+}
+
 /// [UploadReady] means that the upload is ready to be performed and is awaiting confirmation from the user.
 class UploadReady extends UploadState {
-  /// The cost to upload the data, in AR.
-  final UploadCostEstimate costEstimateAr;
-  final UploadCostEstimate? costEstimateTurbo;
-
-  /// Whether or not the user has sufficient AR to cover the `totalCost`.
-  final bool sufficientArBalance;
-  final bool isZeroBalance;
-
-  final bool sufficentCreditsBalance;
-
-  /// Whether or not the upload will be made public ie. without encryption.
-  final bool uploadIsPublic;
-
-  final UploadPlan uploadPlanForAR;
-  final UploadPlan? uploadPlanForTurbo;
-  final bool isTurboUploadPossible;
-  final bool isFreeThanksToTurbo;
-
-  final int uploadSize;
-
-  final String credits;
-  final String arBalance;
-  final String turboCredits;
-  final UploadMethod uploadMethod;
+  final UploadPaymentMethodInfo paymentInfo;
   final bool isButtonToUploadEnabled;
   final bool isDragNDrop;
+  final bool uploadIsPublic;
+  final int numberOfFiles;
+
+  final UploadParams params;
+
+  final bool isArConnect;
 
   UploadReady({
-    required this.costEstimateAr,
-    required this.sufficientArBalance,
+    required this.paymentInfo,
     required this.uploadIsPublic,
-    required this.uploadPlanForAR,
-    required this.isFreeThanksToTurbo,
-    required this.uploadSize,
-    required this.credits,
-    required this.arBalance,
-    required this.sufficentCreditsBalance,
-    required this.turboCredits,
-    this.costEstimateTurbo,
-    required this.isZeroBalance,
-    this.uploadPlanForTurbo,
-    required this.isTurboUploadPossible,
-    required this.uploadMethod,
     required this.isButtonToUploadEnabled,
     this.isDragNDrop = false,
+    required this.params,
+    required this.numberOfFiles,
+    required this.isArConnect,
   });
 
 // copyWith
   UploadReady copyWith({
-    UploadCostEstimate? costEstimateAr,
-    UploadCostEstimate? costEstimateTurbo,
-    bool? sufficientArBalance,
-    bool? isZeroBalance,
-    bool? sufficentCreditsBalance,
-    bool? uploadIsPublic,
-    UploadPlan? uploadPlanForAR,
-    UploadPlan? uploadPlanForTurbo,
-    bool? isTurboUploadPossible,
-    bool? isFreeThanksToTurbo,
-    int? uploadSize,
-    String? credits,
-    String? arBalance,
-    String? turboCredits,
+    UploadPaymentMethodInfo? paymentInfo,
     UploadMethod? uploadMethod,
     bool? isButtonToUploadEnabled,
+    bool? isDragNDrop,
+    bool? uploadIsPublic,
+    int? numberOfFiles,
+    UploadParams? params,
+    bool? isArConnect,
   }) {
     return UploadReady(
-      costEstimateAr: costEstimateAr ?? this.costEstimateAr,
-      costEstimateTurbo: costEstimateTurbo ?? this.costEstimateTurbo,
-      sufficientArBalance: sufficientArBalance ?? this.sufficientArBalance,
-      isZeroBalance: isZeroBalance ?? this.isZeroBalance,
-      sufficentCreditsBalance:
-          sufficentCreditsBalance ?? this.sufficentCreditsBalance,
+      isArConnect: isArConnect ?? this.isArConnect,
       uploadIsPublic: uploadIsPublic ?? this.uploadIsPublic,
-      uploadPlanForAR: uploadPlanForAR ?? this.uploadPlanForAR,
-      uploadPlanForTurbo: uploadPlanForTurbo ?? this.uploadPlanForTurbo,
-      isTurboUploadPossible:
-          isTurboUploadPossible ?? this.isTurboUploadPossible,
-      isFreeThanksToTurbo: isFreeThanksToTurbo ?? this.isFreeThanksToTurbo,
-      uploadSize: uploadSize ?? this.uploadSize,
-      credits: credits ?? this.credits,
-      arBalance: arBalance ?? this.arBalance,
-      turboCredits: turboCredits ?? this.turboCredits,
-      uploadMethod: uploadMethod ?? this.uploadMethod,
+      isDragNDrop: isDragNDrop ?? this.isDragNDrop,
+      paymentInfo: paymentInfo ?? this.paymentInfo,
+      params: params ?? this.params,
       isButtonToUploadEnabled:
           isButtonToUploadEnabled ?? this.isButtonToUploadEnabled,
+      numberOfFiles: numberOfFiles ?? this.numberOfFiles,
     );
   }
 
   @override
   List<Object?> get props => [
-        costEstimateAr,
-        costEstimateTurbo,
-        sufficientArBalance,
-        isZeroBalance,
-        sufficentCreditsBalance,
-        uploadIsPublic,
-        uploadPlanForAR,
-        uploadPlanForTurbo,
-        isTurboUploadPossible,
-        isFreeThanksToTurbo,
-        uploadSize,
-        credits,
-        arBalance,
-        turboCredits,
-        uploadMethod,
+        paymentInfo,
         isButtonToUploadEnabled,
       ];
 
   @override
-  toString() => 'UploadReady { '
-      'costEstimateAr: $costEstimateAr, '
-      'costEstimateTurbo: $costEstimateTurbo, '
-      'sufficientArBalance: $sufficientArBalance, '
-      'isZeroBalance: $isZeroBalance, '
-      'sufficentCreditsBalance: $sufficentCreditsBalance, '
-      'uploadIsPublic: $uploadIsPublic, '
-      'uploadPlanForAR: $uploadPlanForAR, '
-      'uploadPlanForTurbo: $uploadPlanForTurbo, '
-      'isTurboUploadPossible: $isTurboUploadPossible, '
-      'isFreeThanksToTurbo: $isFreeThanksToTurbo, '
-      'uploadSize: $uploadSize, '
-      'credits: $credits, '
-      'arBalance: $arBalance, '
-      'turboCredits: $turboCredits, '
-      'uploadMethod: $uploadMethod, '
-      'isButtonToUploadEnabled: $isButtonToUploadEnabled, '
-      '}';
+  toString() => 'UploadReady { paymentInfo: $paymentInfo }';
 }
 
 class UploadInProgress extends UploadState {

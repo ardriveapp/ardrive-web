@@ -22,6 +22,8 @@ class FolderEntity extends EntityWithCustomMetadata {
   String? parentFolderId;
 
   String? name;
+  @JsonKey(includeIfNull: false)
+  bool? isHidden;
 
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -35,6 +37,7 @@ class FolderEntity extends EntityWithCustomMetadata {
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedJsonMetadataKeys = [
     ...EntityWithCustomMetadata.sharedReservedJsonMetadataKeys,
+    'isHidden',
   ];
 
   FolderEntity({
@@ -42,6 +45,7 @@ class FolderEntity extends EntityWithCustomMetadata {
     this.driveId,
     this.parentFolderId,
     this.name,
+    this.isHidden,
   }) : super(ArDriveCrypto());
 
   static Future<FolderEntity> fromTransaction(

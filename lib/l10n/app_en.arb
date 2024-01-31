@@ -214,6 +214,10 @@
   "@computingSnapshotData": {
     "description": "Computing Snapshot Data"
   },
+  "concealHiddenItems": "Conceal hidden items",
+  "@concealHiddenItems": {
+    "description": "The action of concealing hidden items."
+  },
   "confirm": "Confirm",
   "@confirm": {},
   "confirmed": "Confirmed",
@@ -581,6 +585,10 @@
       }
     }
   },
+  "driveWasHidden": "This drive was hidden",
+  "@driveWasHidden": {
+    "description": "This drive was hidden."
+  },
   "driveWasModified": "This drive was modified.",
   "@driveWasModified": {
     "description": "Drive activity (journal) entry: modified"
@@ -594,6 +602,10 @@
         "example": "drive name"
       }
     }
+  },
+  "driveWasUnhidden": "This drive was unhidden",
+  "@driveWasUnhidden": {
+    "description": "This drive was unhidden."
   },
   "duplicateFiles": "{numberOfDuplicateFiles, plural, zero{} one{A duplicate file found} other{Duplicate files found}}",
   "@duplicateFiles": {
@@ -729,6 +741,22 @@
   "@failedToCreatePin": {
     "description": "The pin could not be created"
   },
+  "failedToHideFile": "Failed to hide file",
+  "@failedToHideFile": {
+    "description": "Failed to hide file"
+  },
+  "failedToHideFileTryAgain": "Failed to hide file, please try again",
+  "@failedToHideFileTryAgain": {
+    "description": "Failed to hide file, try again."
+  },
+  "failedToHideFolder": "Failed to hide folder",
+  "@failedToHideFolder": {
+    "description": "Failed to hide folder"
+  },
+  "failedToHideFolderTryAgain": "Failed to hide folder, please try again",
+  "@failedToHideFolderTryAgain": {
+    "description": "Failed to hide folder, try again."
+  },
   "failedToRetrieveFileInfromation": "Failed to retrieve file information",
   "@failedToRetrieveFileInfromation": {
     "description": "Explains that there was an error while retrieving the file infromation"
@@ -736,6 +764,22 @@
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
+  },
+  "failedToUnhideFile": "Failed to unhide file",
+  "@failedToUnhideFile": {
+    "description": "Failed to unhide file"
+  },
+  "failedToUnhideFileTryAgain": "Failed to unhide file, please try again",
+  "@failedToUnhideFileTryAgain": {
+    "description": "Failed to unhide file, try again."
+  },
+  "failedToUnhideFolder": "Failed to unhide folder",
+  "@failedToUnhideFolder": {
+    "description": "Failed to unhide folder"
+  },
+  "failedToUnhideFolderTryAgain": "Failed to unhide folder, please try again",
+  "@failedToUnhideFolderTryAgain": {
+    "description": "Failed to unhide folder, try again."
   },
   "feedbackContent": "Would you be willing to leave feedback on your experience using the app?",
   "@feedbackContent": {
@@ -877,6 +921,10 @@
       }
     }
   },
+  "fileWasHidden": "This file was hidden",
+  "@fileWasHidden": {
+    "description": "This file was hidden."
+  },
   "fileWasModified": "This file was modified.",
   "@fileWasModified": {
     "description": "File activity (journal): modified"
@@ -898,6 +946,10 @@
         "example": "file name"
       }
     }
+  },
+  "fileWasUnhidden": "This file was unhidden",
+  "@fileWasUnhidden": {
+    "description": "This file was unhidden."
   },
   "finishingThingsUp": "Finishing things up!",
   "@finishingThingsUp": {
@@ -965,6 +1017,10 @@
       }
     }
   },
+  "folderWasHidden": "This folder was hidden",
+  "@folderWasHidden": {
+    "description": "This folder was hidden."
+  },
   "folderWasModified": "This folder was modified.",
   "@folderWasModified": {
     "description": "Folder activity (journal): modified"
@@ -982,6 +1038,10 @@
         "example": "folder name"
       }
     }
+  },
+  "folderWasUnhidden": "This folder was unhidden",
+  "@folderWasUnhidden": {
+    "description": "This folder was unhidden."
   },
   "forgetWallet": "Forget wallet and change profile",
   "@forgetWallet": {
@@ -1039,6 +1099,18 @@
   },
   "helpCenter": "Help Center",
   "@helpCenter": {},
+  "hide": "Hide",
+  "@hide": {
+    "description": "Hide"
+  },
+  "hidingFile": "Hiding file",
+  "@hidingFile": {
+    "description": "Hiding file"
+  },
+  "hidingFolder": "Hiding folder",
+  "@hidingFolder": {
+    "description": "Hiding folder"
+  },
   "howAreConversionsDetermined": "How are conversions determined?",
   "@howAreConversionsDetermined": {},
   "howDoesKeyfileLoginWork": "How do keyfile and seed phrase login work?",
@@ -1606,6 +1678,10 @@
   "@resyncTooltip": {
     "description": "resync tooltip text"
   },
+  "revealHiddenItems": "Reveal hidden items",
+  "@revealHiddenItems": {
+    "description": "The action of revealing hidden items."
+  },
   "review": "Review",
   "@review": {},
   "rootFolderTxID": "Root Folder Tx ID",
@@ -1926,6 +2002,18 @@
   "@unableToFetchEstimateAtThisTime": {},
   "unableToUpdateQuote": "Unable to update quote. Please try again.",
   "@unableToUpdateQuote": {},
+  "unhide": "Unhide",
+  "@unhide": {
+    "description": "Unhide"
+  },
+  "unhidingFile": "Unhiding file",
+  "@unhidingFile": {
+    "description": "Unhiding file"
+  },
+  "unhidingFolder": "Unhiding folder",
+  "@unhidingFolder": {
+    "description": "Unhiding folder"
+  },
   "unit": "Unit",
   "@unit": {},
   "units": "Units",

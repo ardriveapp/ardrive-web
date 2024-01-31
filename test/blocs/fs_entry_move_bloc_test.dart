@@ -65,22 +65,28 @@ void main() {
         // Create fake root folder for drive and sub folders
         batch.insertAll(db.folderEntries, [
           FolderEntriesCompanion.insert(
-              id: rootFolderId,
-              driveId: driveId,
-              name: 'fake-drive-name',
-              path: ''),
+            id: rootFolderId,
+            driveId: driveId,
+            name: 'fake-drive-name',
+            path: '',
+            isHidden: false,
+          ),
           FolderEntriesCompanion.insert(
-              id: nestedFolderId,
-              driveId: driveId,
-              parentFolderId: Value(rootFolderId),
-              name: nestedFolderId,
-              path: '/$nestedFolderId'),
+            id: nestedFolderId,
+            driveId: driveId,
+            parentFolderId: Value(rootFolderId),
+            name: nestedFolderId,
+            path: '/$nestedFolderId',
+            isHidden: false,
+          ),
           FolderEntriesCompanion.insert(
-              id: conflictTestFolderId,
-              driveId: driveId,
-              parentFolderId: Value(rootFolderId),
-              name: conflictTestFolderId,
-              path: '/$conflictTestFolderId'),
+            id: conflictTestFolderId,
+            driveId: driveId,
+            parentFolderId: Value(rootFolderId),
+            name: conflictTestFolderId,
+            path: '/$conflictTestFolderId',
+            isHidden: false,
+          ),
         ]);
         // Insert fake files
         batch.insertAll(
@@ -101,6 +107,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
+                  isHidden: false,
                 );
               },
             ),
@@ -119,6 +126,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
+                  isHidden: false,
                 );
               },
             ),
@@ -144,6 +152,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
+                  isHidden: false,
                 );
               },
             ),
@@ -163,6 +172,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
+                  isHidden: false,
                 );
               },
             ),
@@ -271,6 +281,7 @@ void main() {
     blocTest(
       'throws when selectedItems is empty',
       build: () => FsEntryMoveBloc(
+        driveDetailCubit: MockDriveDetailCubit(),
         arweave: arweave,
         turboUploadService: turboUploadService,
         syncCubit: syncBloc,
@@ -287,6 +298,7 @@ void main() {
       build: () => FsEntryMoveBloc(
         crypto: ArDriveCrypto(),
         arweave: arweave,
+        driveDetailCubit: MockDriveDetailCubit(),
         turboUploadService: turboUploadService,
         syncCubit: syncBloc,
         driveId: driveId,
