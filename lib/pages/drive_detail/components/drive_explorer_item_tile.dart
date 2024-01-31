@@ -11,8 +11,10 @@ import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_helper.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -280,13 +282,41 @@ class _DriveExplorerItemTileTrailingState
         if (isOwner) ...[
           ArDriveDropdownItem(
             onClick: () {
-              promptToMove(
-                context,
-                driveId: item.driveId,
-                selectedItems: [
-                  item,
-                ],
-              );
+              if (item.isHidden) {
+                showArDriveDialog(
+                  context,
+                  content: ArDriveStandardModal(
+                    width: kMediumDialogWidth,
+                    title: appLocalizationsOf(context).move,
+                    content: SizedBox(
+                      height: 50,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                              "Hidden folders must be revealed before they can be moved.")
+                        ],
+                      ),
+                    ),
+                    actions: [
+                      ModalAction(
+                        action: () => Navigator.of(context).pop(),
+                        title: appLocalizationsOf(context).cancelEmphasized,
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                promptToMove(
+                  context,
+                  driveId: item.driveId,
+                  selectedItems: [
+                    item,
+                  ],
+                );
+              }
             },
             content: _buildItem(
               appLocalizationsOf(context).move,
@@ -391,11 +421,39 @@ class _DriveExplorerItemTileTrailingState
         ),
         ArDriveDropdownItem(
           onClick: () {
-            promptToMove(
-              context,
-              driveId: item.driveId,
-              selectedItems: [item],
-            );
+            if (item.isHidden) {
+              showArDriveDialog(
+                context,
+                content: ArDriveStandardModal(
+                  width: kMediumDialogWidth,
+                  title: appLocalizationsOf(context).move,
+                  content: SizedBox(
+                    height: 50,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                            "Hidden files must be revealed before they can be moved.")
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    ModalAction(
+                      action: () => Navigator.of(context).pop(),
+                      title: appLocalizationsOf(context).cancelEmphasized,
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              promptToMove(
+                context,
+                driveId: item.driveId,
+                selectedItems: [item],
+              );
+            }
           },
           content: _buildItem(
             appLocalizationsOf(context).move,
