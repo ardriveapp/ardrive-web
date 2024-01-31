@@ -29,14 +29,12 @@ final additionalTagKeysBlacklist =
 class LicenseComposedEntity with TransactionPropertiesMixin {
   final String licenseDefinitionTxId;
   final Map<String, String> additionalTags;
-  // final Map<String, String> arfsTags;
 
   DateTime blockTimestamp = DateTime.now();
 
   LicenseComposedEntity({
     required this.licenseDefinitionTxId,
     this.additionalTags = const {},
-    // this.arfsTags = const {},
   });
 
   static LicenseComposedEntity fromTransaction(
