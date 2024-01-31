@@ -55,6 +55,7 @@ class UdlTags {
   static const String currency = 'Currency';
   static const String commercialUse = 'Commercial-Use';
   static const String derivations = 'Derivation';
+  static const String paymentAddress = 'Payment-Address';
 }
 
 enum UdlLicenseFeeType {
@@ -73,12 +74,14 @@ class UdlLicenseParams extends LicenseParams {
   final UdlCurrency licenseFeeCurrency;
   final UdlDerivation derivations;
   final UdlCommercialUse commercialUse;
+  final String? paymentAddress;
 
   UdlLicenseParams({
     this.licenseFeeAmount,
     required this.licenseFeeCurrency,
     required this.derivations,
     required this.commercialUse,
+    this.paymentAddress,
   });
 
   @override
@@ -96,6 +99,9 @@ class UdlLicenseParams extends LicenseParams {
     }
     if (derivations != UdlDerivation.unspecified) {
       tags[UdlTags.derivations] = udlDerivationValues[derivations]!;
+    }
+    if (paymentAddress != null) {
+      tags[UdlTags.paymentAddress] = paymentAddress!;
     }
     return tags;
   }
@@ -125,12 +131,16 @@ class UdlLicenseParams extends LicenseParams {
                 (entry) => entry.value == additionalTags[UdlTags.derivations])
             .key
         : UdlDerivation.unspecified;
+    final paymentAddress = additionalTags.containsKey(UdlTags.paymentAddress)
+        ? additionalTags[UdlTags.paymentAddress]
+        : null;
 
     return UdlLicenseParams(
       licenseFeeAmount: licenseFeeAmount,
       licenseFeeCurrency: licenseFeeCurrency,
       commercialUse: commercialUse,
       derivations: derivations,
+      paymentAddress: paymentAddress,
     );
   }
 }
