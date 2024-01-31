@@ -183,11 +183,15 @@ class FsEntryLicenseBloc
         udlForm.control('commercialUse').value;
     final UdlDerivation derivations = udlForm.control('derivations').value;
 
+    final profile = _profileCubit.state as ProfileLoggedIn;
+    final String paymentAddress = profile.walletAddress;
+
     return UdlLicenseParams(
       licenseFeeAmount: licenseFeeAmount,
       licenseFeeCurrency: licenseFeeCurrency,
       commercialUse: commercialUse,
       derivations: derivations,
+      paymentAddress: paymentAddress,
     );
   }
 
