@@ -278,11 +278,6 @@ class AppState extends State<App> {
           ),
         ),
         BlocProvider(
-          create: (context) => SharingFileBloc(
-            context.read<ActivityTracker>(),
-          ),
-        ),
-        BlocProvider(
           create: (context) => HideBloc(
             auth: context.read<ArDriveAuth>(),
             uploadPreparationManager: ArDriveUploadPreparationManager(
@@ -327,6 +322,11 @@ class AppState extends State<App> {
             turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => SharingFileBloc(
+            context.read<ActivityTracker>(),
           ),
         ),
       ];

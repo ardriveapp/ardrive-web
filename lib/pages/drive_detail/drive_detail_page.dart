@@ -228,8 +228,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             ),
                           )
                         : null,
-                    body:
-                        _mobileView(driveDetailState, hasSubfolders, hasFiles),
+                    body: _mobileView(
+                      driveDetailState,
+                      hasSubfolders,
+                      hasFiles,
+                    ),
                   ),
                 );
               } else {
