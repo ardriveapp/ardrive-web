@@ -15,6 +15,7 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
+import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -321,6 +322,11 @@ class AppState extends State<App> {
             turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => SharingFileBloc(
+            context.read<ActivityTracker>(),
           ),
         ),
       ];

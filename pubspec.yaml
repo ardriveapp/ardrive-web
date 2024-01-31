@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.30.2
+version: 2.32.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -132,6 +132,10 @@ dependencies:
   loading_animation_widget: ^1.2.0+4
   synchronized: ^3.1.0
   confetti: ^0.7.0
+  flutter_sharing_intent: 
+    git:
+      url: https://github.com/bhagat-techind/flutter_sharing_intent
+      ref: 5f4f2e66c02580105ba89b3fec5a7be907d5466f
   sentry_flutter: ^7.14.0
 
 dependency_overrides:
@@ -161,7 +165,7 @@ dependency_overrides:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.5
+      ref: v1.4.6
 
 dev_dependencies:
   integration_test:

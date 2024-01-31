@@ -14,12 +14,12 @@ import '../pages/drive_detail/drive_detail_page.dart';
 import 'components.dart';
 
 Future<void> promptToMove(
-  BuildContext context, {
+  BuildContext parentContext, {
   required String driveId,
   required List<ArDriveDataTableItem> selectedItems,
 }) {
   return showArDriveDialog(
-    context,
+    parentContext,
     content: MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -32,10 +32,11 @@ Future<void> promptToMove(
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),
+            driveDetailCubit: parentContext.read<DriveDetailCubit>(),
           )..add(const FsEntryMoveInitial()),
         ),
         BlocProvider.value(
-          value: context.read<DriveDetailCubit>(),
+          value: parentContext.read<DriveDetailCubit>(),
         )
       ],
       child: const FsEntryMoveForm(),

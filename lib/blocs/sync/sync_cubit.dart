@@ -189,7 +189,7 @@ class SyncCubit extends Cubit<SyncState> {
   var ghostFolders = <FolderID, GhostFolder>{};
 
   Future<void> startSync({bool syncDeep = false}) async {
-    logger.i('Starting Sync. Deep sync: $syncDeep');
+    logger.i('Starting Sync');
 
     if (state is SyncInProgress) {
       logger.d('Sync state is SyncInProgress, aborting sync...');
