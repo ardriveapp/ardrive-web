@@ -75,13 +75,9 @@ class LicenseComposedEntity with TransactionPropertiesMixin {
       LicenseTag.licenseDefinitionTxId: licenseDefinitionTxId,
     };
 
-    baseTags.forEach((key, value) {
-      licenseAssertionDataItem.addTag(key, value);
-    });
-
-    additionalTags.forEach((key, value) {
-      licenseAssertionDataItem.addTag(key, value);
-    });
+    for (final tag in [...baseTags.entries, ...additionalTags.entries]) {
+      licenseAssertionDataItem.addTag(tag.key, tag.value);
+    }
 
     return licenseAssertionDataItem;
   }
