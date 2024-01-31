@@ -10,6 +10,11 @@ import 'package:pst/pst.dart';
 
 enum UploadType { turbo, d2n }
 
+enum TurboUploadType {
+  chunked,
+  streamed,
+}
+
 abstract class ArDriveUploader {
   Future<UploadController> upload({
     required IOFile file,
@@ -17,6 +22,7 @@ abstract class ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadType type,
+    required TurboUploadType turboUploadType,
   }) {
     throw UnimplementedError();
   }
@@ -26,6 +32,7 @@ abstract class ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadType type,
+    required TurboUploadType turboUploadType,
   }) {
     throw UnimplementedError();
   }
@@ -37,6 +44,7 @@ abstract class ArDriveUploader {
     Function(ARFSUploadMetadata)? skipMetadataUpload,
     Function(ARFSUploadMetadata)? onCreateMetadata,
     required UploadType type,
+    TurboUploadType turboUploadType = TurboUploadType.chunked,
   }) {
     throw UnimplementedError();
   }
@@ -105,6 +113,7 @@ class _ArDriveUploader implements ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadType type,
+    required TurboUploadType turboUploadType,
   }) async {
     final dataBundler = _dataBundlerFactory.createDataBundler(
       type,
@@ -139,6 +148,7 @@ class _ArDriveUploader implements ArDriveUploader {
       content: [metadata],
       encryptionKey: driveKey,
       type: type,
+      turboUploadType: turboUploadType,
     );
 
     uploadController.addTask(uploadTask);
@@ -154,6 +164,7 @@ class _ArDriveUploader implements ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadType type,
+    TurboUploadType turboUploadType = TurboUploadType.chunked,
   }) async {
     debugPrint('Creating a new upload controller using the upload type $type');
 
@@ -197,6 +208,7 @@ class _ArDriveUploader implements ArDriveUploader {
         content: [metadata],
         encryptionKey: driveKey,
         type: type,
+        turboUploadType: turboUploadType,
       );
 
       uploadController.addTask(fileTask);
@@ -218,6 +230,7 @@ class _ArDriveUploader implements ArDriveUploader {
     Function(ARFSUploadMetadata p1)? skipMetadataUpload,
     Function(ARFSUploadMetadata p1)? onCreateMetadata,
     UploadType type = UploadType.turbo,
+    TurboUploadType turboUploadType = TurboUploadType.chunked,
   }) async {
     final dataBundler = _dataBundlerFactory.createDataBundler(
       type,
@@ -269,6 +282,7 @@ class _ArDriveUploader implements ArDriveUploader {
         content: folderMetadatas.map((e) => e.$1).toList(),
         encryptionKey: driveKey,
         type: type,
+        turboUploadType: TurboUploadType.chunked,
       );
 
       uploadController.addTask(folderUploadTask);
@@ -281,6 +295,7 @@ class _ArDriveUploader implements ArDriveUploader {
         encryptionKey: driveKey,
         content: [f.$1],
         type: type,
+        turboUploadType: turboUploadType,
       );
 
       uploadController.addTask(fileTask);

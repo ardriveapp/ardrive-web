@@ -693,6 +693,12 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
   @override
   final UploadType type;
 
+  @override
+  final TurboUploadType turboUploadType;
+
+  @override
+  final SecretKey? encryptionKey;
+
   FolderUploadTask({
     required this.folders,
     this.uploadItem,
@@ -704,6 +710,7 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
     this.cancelToken,
     String? id,
     required this.type,
+    required this.turboUploadType,
   }) : id = id ?? const Uuid().v4();
 
   @override
@@ -721,6 +728,7 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
     List<(ARFSFolderUploadMetatadata, IOEntity)>? folders,
     UploadTaskCancelToken? cancelToken,
     UploadType? type,
+    TurboUploadType? turboUploadType,
   }) {
     return FolderUploadTask(
       cancelToken: cancelToken ?? this.cancelToken,
@@ -732,11 +740,9 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
       isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
       status: status ?? this.status,
       type: type ?? this.type,
+      turboUploadType: turboUploadType ?? this.turboUploadType,
     );
   }
-
-  @override
-  final SecretKey? encryptionKey;
 }
 
 class FileUploadTask extends UploadTask {
@@ -764,6 +770,18 @@ class FileUploadTask extends UploadTask {
   @override
   UploadTaskCancelToken? cancelToken;
 
+  @override
+  final SecretKey? encryptionKey;
+
+  @override
+  final UploadType type;
+
+  @override
+  final TurboUploadType turboUploadType;
+
+  @override
+  UploadStatus status;
+
   FileUploadTask({
     this.uploadItem,
     this.isProgressAvailable = true,
@@ -776,11 +794,9 @@ class FileUploadTask extends UploadTask {
     this.cancelToken,
     this.progress = 0,
     required this.type,
+    required this.turboUploadType,
     this.metadataUploaded = false,
   }) : id = id ?? const Uuid().v4();
-
-  @override
-  UploadStatus status;
 
   @override
   FileUploadTask copyWith({
@@ -794,6 +810,7 @@ class FileUploadTask extends UploadTask {
     SecretKey? encryptionKey,
     UploadTaskCancelToken? cancelToken,
     UploadType? type,
+    TurboUploadType? turboUploadType,
     bool? metadataUploaded,
   }) {
     return FileUploadTask(
@@ -808,15 +825,10 @@ class FileUploadTask extends UploadTask {
       file: file,
       progress: progress ?? this.progress,
       type: type ?? this.type,
+      turboUploadType: turboUploadType ?? this.turboUploadType,
       metadataUploaded: metadataUploaded ?? this.metadataUploaded,
     );
   }
-
-  @override
-  final SecretKey? encryptionKey;
-
-  @override
-  UploadType type;
 }
 
 abstract class UploadTask<T> {
@@ -829,6 +841,7 @@ abstract class UploadTask<T> {
   abstract final SecretKey? encryptionKey;
   abstract final UploadTaskCancelToken? cancelToken;
   abstract final UploadType type;
+  abstract final TurboUploadType turboUploadType;
 
   UploadTask copyWith({
     UploadItem? uploadItem,
@@ -840,6 +853,7 @@ abstract class UploadTask<T> {
     SecretKey? encryptionKey,
     UploadTaskCancelToken? cancelToken,
     UploadType? type,
+    TurboUploadType? turboUploadType,
   });
 }
 

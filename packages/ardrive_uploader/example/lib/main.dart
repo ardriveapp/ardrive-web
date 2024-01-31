@@ -122,6 +122,7 @@ class _UploadFormState extends State<UploadForm> {
       file: file!,
       driveKey: driveKey,
       type: UploadType.turbo,
+      turboUploadType: TurboUploadType.chunked,
       args: ARFSUploadMetadataArgs(
         driveId: driveIdController.text,
         parentFolderId: parentFolderIdController.text,

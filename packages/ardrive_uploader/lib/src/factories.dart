@@ -102,16 +102,22 @@ class StreamedUploadFactory {
   });
 
   StreamedUpload fromUploadType(
-    UploadType type,
-  ) {
+    UploadType type, {
+    TurboUploadType turboUploadType = TurboUploadType.chunked,
+  }) {
     if (type == UploadType.d2n) {
       return D2NStreamedUpload();
     } else if (type == UploadType.turbo) {
-      return TurboStreamedUpload(
-        TurboUploadServiceImpl(
-          turboUploadUri: turboUploadUri,
-        ),
-      );
+      switch (turboUploadType) {
+        case TurboUploadType.chunked:
+          return TurboStreamedUpload(TurboUploadServiceChunkImpl(
+            turboUploadUri: turboUploadUri,
+          ));
+        case TurboUploadType.streamed:
+          return TurboStreamedUpload(TurboUploadServiceStreamImpl(
+            turboUploadUri: turboUploadUri,
+          ));
+      }
     } else {
       throw Exception('Invalid upload type');
     }

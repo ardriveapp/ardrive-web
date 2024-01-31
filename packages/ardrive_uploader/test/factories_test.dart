@@ -99,13 +99,24 @@ void main() {
       expect(streamedUpload, isA<D2NStreamedUpload>());
     });
 
-    test('should return TurboStreamedUpload for UploadType.turbo', () {
+    test('should return TurboUploadServiceChunkImpl for UploadType.turbo', () {
       var streamedUpload = uploadFactory.fromUploadType(UploadType.turbo);
-      expect(streamedUpload, isA<TurboStreamedUpload>());
+      expect(streamedUpload, isA<TurboUploadServiceChunkImpl>());
 
       // Additional check to verify TurboUploadServiceImpl initialization
       var turboUploadUri = ((streamedUpload as TurboStreamedUpload).service
-              as TurboUploadServiceImpl)
+              as TurboUploadServiceStreamImpl)
+          .turboUploadUri;
+      expect(turboUploadUri, equals(mockUri));
+    });
+
+    test('should return TurboUploadServiceStreamImpl for UploadType.turbo', () {
+      var streamedUpload = uploadFactory.fromUploadType(UploadType.turbo);
+      expect(streamedUpload, isA<TurboUploadServiceStreamImpl>());
+
+      // Additional check to verify TurboUploadServiceImpl initialization
+      var turboUploadUri = ((streamedUpload as TurboStreamedUpload).service
+              as TurboUploadServiceStreamImpl)
           .turboUploadUri;
       expect(turboUploadUri, equals(mockUri));
     });

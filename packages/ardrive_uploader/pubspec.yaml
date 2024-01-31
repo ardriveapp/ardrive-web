@@ -44,6 +44,9 @@ dependencies:
       ref: PE-4754-address-code-review-comments-on-uploader-downloader-implementations
   http: ^1.1.0
   equatable: ^2.0.5
+  retry: ^3.1.2
+  ardrive_logger:
+    path: ../ardrive_logger
 
 dev_dependencies:
   lints: ^2.0.0

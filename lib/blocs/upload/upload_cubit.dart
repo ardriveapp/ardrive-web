@@ -490,6 +490,7 @@ class UploadCubit extends Cubit<UploadState> {
           ),
         );
         hasEmittedWarning = true;
+        uploadIsInProgress = false;
         return;
       }
     } else {
@@ -679,13 +680,27 @@ class UploadCubit extends Cubit<UploadState> {
 
     _activityTracker.setUploading(true);
 
+    final uploadType =
+        _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo;
+
+    late TurboUploadType turboUploadType;
+    if (_containsLargeTurboUpload ?? false) {
+      if (kIsWeb && await AppPlatform.isChrome()) {
+        turboUploadType = TurboUploadType.streamed;
+      } else {
+        turboUploadType = TurboUploadType.chunked;
+      }
+    } else {
+      turboUploadType = TurboUploadType.chunked;
+    }
+
     /// Creates the uploader and starts the upload.
     final uploadController = await ardriveUploader.uploadFiles(
       files: uploadFiles,
       wallet: _auth.currentUser.wallet,
       driveKey: driveKey,
-      type:
-          _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
+      type: uploadType,
+      turboUploadType: turboUploadType,
     );
 
     uploadController.onError((tasks) {
@@ -755,7 +770,7 @@ class UploadCubit extends Cubit<UploadState> {
       _containsLargeTurboUpload = false;
 
       for (var file in files) {
-        if (await file.ioFile.length >= largeFileUploadSizeThreshold) {
+        if (await file.ioFile.length > largeFileUploadSizeThreshold) {
           _containsLargeTurboUpload = true;
           break;
         }

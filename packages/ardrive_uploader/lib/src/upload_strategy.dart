@@ -64,8 +64,10 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
         );
       }
 
-      final metadataStreamedUpload =
-          _streamedUploadFactory.fromUploadType(task.type);
+      final metadataStreamedUpload = _streamedUploadFactory.fromUploadType(
+        task.type,
+        turboUploadType: task.turboUploadType,
+      );
 
       final uploadResult = await metadataStreamedUpload.send(
           DataItemUploadItem(
@@ -132,7 +134,10 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       );
     }
 
-    final streamedUpload = _streamedUploadFactory.fromUploadType(task.type);
+    final streamedUpload = _streamedUploadFactory.fromUploadType(
+      dataItemTask.type,
+      turboUploadType: dataItemTask.turboUploadType,
+    );
 
     dataItemTask = dataItemTask.copyWith(
       status: UploadStatus.inProgress,
@@ -244,7 +249,10 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
       throw UploadCanceledException('Upload canceled');
     }
 
-    final streamedUpload = _streamedUploadFactory.fromUploadType(task.type);
+    final streamedUpload = _streamedUploadFactory.fromUploadType(
+      task.type,
+      turboUploadType: task.turboUploadType,
+    );
 
     task = task.copyWith(
       status: UploadStatus.inProgress,

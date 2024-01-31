@@ -8,15 +8,16 @@ import 'package:dio/dio.dart';
 import 'package:fetch_client/fetch_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:ardrive_uploader/src/utils/logger.dart';
 
-class TurboUploadServiceImpl implements TurboUploadService {
+class TurboUploadServiceStreamImpl implements TurboUploadService {
   final Uri turboUploadUri;
 
   /// We are using Dio directly here. In the future we must adapt our ArDriveHTTP to support
   /// streaming uploads.
   // ArDriveHTTP httpClient;
 
-  TurboUploadServiceImpl({
+  TurboUploadServiceStreamImpl({
     required this.turboUploadUri,
   });
 
@@ -39,6 +40,7 @@ class TurboUploadServiceImpl implements TurboUploadService {
     required int size,
     required Map<String, dynamic> headers,
   }) {
+    logger.i('Uploading ${dataItem.id} using Turbo stream web upload');
     // max of 500mib
     if (dataItem.dataItemSize <= MiB(500).size) {
       return _uploadWithDio(
