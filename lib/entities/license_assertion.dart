@@ -17,6 +17,15 @@ const licenseAssertionTxBaseTagKeys = [
   LicenseTag.licenseDefinitionTxId,
 ];
 
+final appInfo = AppInfoServices().appInfo;
+final ardriveTags = {
+  EntityTag.appVersion: appInfo.version,
+  EntityTag.appPlatform: appInfo.platform,
+  EntityTag.appName: appInfo.appName,
+  EntityTag.unixTime:
+      (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
+};
+
 class LicenseAssertionEntity with TransactionPropertiesMixin {
   final String dataTxId;
   final String licenseDefinitionTxId;
@@ -72,13 +81,13 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
       LicenseTag.licenseDefinitionTxId: licenseDefinitionTxId,
     };
 
-    baseTags.forEach((key, value) {
-      licenseAssertionDataItem.addTag(key, value);
-    });
+    final tags = [
+      ...ardriveTags.entries,
+      ...baseTags.entries,
+      ...additionalTags.entries
+    ];
 
-    additionalTags.forEach((key, value) {
-      licenseAssertionDataItem.addTag(key, value);
-    });
+    tags.forEach((tag) => licenseAssertionDataItem.addTag(tag.key, tag.value));
 
     return licenseAssertionDataItem;
   }
