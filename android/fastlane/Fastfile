@@ -1,3 +1,4 @@
+require "Base64"
 import "../../Fastfile"
 
 # Update fastlane
@@ -34,6 +35,14 @@ platform :android do
     end
 
     if isProd then
+
+      flags = ['SENTRY_DSN=' + ENV["SENTRY_DSN"],
+      'SENTRY_PROJECT=' + ENV["SENTRY_PROJECT"],
+      'SENTRY_AUTH_TOKEN=' + ENV["SENTRY_AUTH_TOKEN"],
+      'SENTRY_ORG=' + ENV["SENTRY_ORG"]]
+
+      b64flags = flags.map { |s| Base64.encode64(s) }.join(',')
+
       # Build App bundle
       gradle(
         task: "bundle",
@@ -46,7 +55,8 @@ platform :android do
           "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"],
           "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"],
           "android.injected.version.code" => build_number,
-        }
+        },
+        flags: "-Pdart-defines=#{b64flags}"
       )
     end
   end
@@ -66,28 +76,40 @@ platform :android do
     build(type: options[:type]);
 
     # Distribute to Firebase
-    firebase_app_distribution(
-      app: android_firebase_app_id,
-      release_notes: ENV['RELEASE_NOTES'],
-      service_credentials_file: ENV['FIREBASE_JSON'],
-      groups: "Testers",
-      android_artifact_type: "APK",
-      android_artifact_path: "#{root_path}/build/app/outputs/flutter-apk/app-#{flavor}-release.apk"
-    )
-
     if isProd then
-      upload_to_play_store(
-        track: type,
-        json_key:ENV['FIREBASE_JSON'],
-        version_code: build_number,
-        aab: "#{root_path}/build/app/outputs/bundle/#{flavor}Release/app-#{flavor}-release.aab",
-        skip_upload_apk: true,
-        skip_upload_metadata: true,
-        skip_upload_images: true,
-        skip_upload_screenshots: true,
-        timeout: 600
+      firebase_app_distribution(
+        app: android_firebase_app_id,
+        release_notes: ENV['RELEASE_NOTES'],
+        service_credentials_file: ENV['FIREBASE_JSON'],
+        groups: "Testers",
+        android_artifact_type: "AAB",
+        android_artifact_path: "#{root_path}/build/app/outputs/bundle/#{flavor}Release/app-#{flavor}-release.aab"
+      )
+    else
+      firebase_app_distribution(
+        app: android_firebase_app_id,
+        release_notes: ENV['RELEASE_NOTES'],
+        service_credentials_file: ENV['FIREBASE_JSON'],
+        groups: "Testers",
+        android_artifact_type: "APK",
+        android_artifact_path: "#{root_path}/build/app/outputs/flutter-apk/app-#{flavor}-release.apk"
       )
     end
+
+    # FIXME: Re-enable for production release
+    # if isProd then
+    #   upload_to_play_store(
+    #     track: type,
+    #     json_key:ENV['FIREBASE_JSON'],
+    #     version_code: build_number,
+    #     aab: "#{root_path}/build/app/outputs/bundle/#{flavor}Release/app-#{flavor}-release.aab",
+    #     skip_upload_apk: true,
+    #     skip_upload_metadata: true,
+    #     skip_upload_images: true,
+    #     skip_upload_screenshots: true,
+    #     timeout: 600
+    #   )
+    # end
   end
 
   lane :update_release_url do
