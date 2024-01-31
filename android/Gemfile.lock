@@ -240,6 +240,7 @@ GEM
 PLATFORMS
   arm64-darwin-21
   universal-darwin-22
+  x64-mingw-ucrt
 
 DEPENDENCIES
   fastlane
