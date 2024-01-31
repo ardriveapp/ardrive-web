@@ -92,8 +92,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-5529-txt-file-extension-changes-incorrectly-in-edit-modal
-      resolved-ref: "05c6411ea17abebb357a0d91db20da577b4ffcf9"
+      ref: "v1.4.6"
+      resolved-ref: "93bc5bb82e5070fbffd22544d3057e3ccbe5889a"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.6"
@@ -925,6 +925,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  flutter_sharing_intent:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "5f4f2e66c02580105ba89b3fec5a7be907d5466f"
+      resolved-ref: "5f4f2e66c02580105ba89b3fec5a7be907d5466f"
+      url: "https://github.com/bhagat-techind/flutter_sharing_intent"
+    source: git
+    version: "1.1.0"
   flutter_stripe:
     dependency: "direct main"
     description:

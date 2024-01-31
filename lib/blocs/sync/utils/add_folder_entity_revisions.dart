@@ -74,9 +74,12 @@ Future<Map<String, FolderEntriesCompanion>>
         .oldestFolderRevisionByFolderId(driveId: driveId, folderId: folderId)
         .getSingleOrNull();
 
+    final dateCreated = oldestRevision?.dateCreated ??
+        updatedFoldersById[folderId]!.dateCreated.value;
+
     updatedFoldersById[folderId] = updatedFoldersById[folderId]!.copyWith(
-        dateCreated: Value(oldestRevision?.dateCreated ??
-            updatedFoldersById[folderId]!.dateCreated as DateTime));
+      dateCreated: Value<DateTime>(dateCreated),
+    );
   }
 
   return updatedFoldersById;
