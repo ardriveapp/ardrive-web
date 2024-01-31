@@ -70,9 +70,11 @@ class FsEntryLicenseForm extends StatelessWidget {
         } else if (state is FsEntryLicenseSuccess ||
             state is FsEntryLicenseFailure) {
           // close progressDialog
+          context.read<DriveDetailCubit>().refreshDriveDataTable();
           Navigator.pop(context);
         } else if (state is FsEntryLicenseComplete) {
           // close LicenseForm
+
           context.read<DriveDetailCubit>().refreshDriveDataTable();
           Navigator.pop(context);
         } else if (state is FsEntryLicenseWalletMismatch) {
