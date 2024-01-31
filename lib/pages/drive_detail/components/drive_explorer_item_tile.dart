@@ -130,12 +130,17 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
   }
 }
 
-ArDriveIcon getIconForContentType(String contentType, {double size = 18}) {
+ArDriveIcon getIconForContentType(
+  String contentType, {
+  double size = 18,
+  Color? color,
+}) {
   contentType = contentType.toLowerCase();
 
   if (contentType == 'folder') {
     return ArDriveIcons.folderOutline(
       size: size,
+      color: color,
     );
   } else if (FileTypeHelper.isZip(contentType)) {
     return ArDriveIcons.zip(

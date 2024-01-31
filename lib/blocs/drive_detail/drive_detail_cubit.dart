@@ -128,7 +128,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           orderingMode: contentOrderingMode,
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
-        (drive, folderContents, _) async {
+        (drive, 
+        folderContents, _) async {
           if (_activityTracker.isUploading) {
             return;
           }
