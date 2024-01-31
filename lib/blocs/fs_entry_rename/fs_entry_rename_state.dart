@@ -40,6 +40,18 @@ class EntityAlreadyExists extends FsEntryRenameState {
   final String entityName;
 }
 
+class UpdatingEntityExtension extends FsEntryRenameState {
+  const UpdatingEntityExtension({
+    required this.entityName,
+    required this.newExtension,
+    required this.previousExtension,
+  }) : super(isRenamingFolder: false);
+
+  final String entityName;
+  final String newExtension;
+  final String previousExtension;
+}
+
 class FolderEntryRenameWalletMismatch extends FsEntryRenameState {
   const FolderEntryRenameWalletMismatch() : super(isRenamingFolder: true);
 }

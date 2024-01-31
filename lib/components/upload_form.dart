@@ -48,40 +48,53 @@ Future<void> promptToUpload(
   required String driveId,
   required String parentFolderId,
   required bool isFolderUpload,
+  List<IOFile>? files,
 }) async {
   final selectedFiles = <UploadFile>[];
   final io = ArDriveIO();
-  final IOFolder? ioFolder;
-  if (isFolderUpload) {
-    ioFolder = await io.pickFolder();
-    final ioFiles = await ioFolder.listFiles();
+  IOFolder? ioFolder;
+  if (files == null) {
+    if (isFolderUpload) {
+      ioFolder = await io.pickFolder();
+      final ioFiles = await ioFolder.listFiles();
 
-    final isMobilePlatform = AppPlatform.isMobile;
-    final shouldUseRelativePath = isMobilePlatform && ioFolder.path.isNotEmpty;
-    final relativeTo = shouldUseRelativePath ? getDirname(ioFolder.path) : null;
+      final isMobilePlatform = AppPlatform.isMobile;
+      final shouldUseRelativePath =
+          isMobilePlatform && ioFolder.path.isNotEmpty;
+      final relativeTo =
+          shouldUseRelativePath ? getDirname(ioFolder.path) : null;
 
-    final uploadFiles = ioFiles
-        .map(
-          (file) => UploadFile(
-            ioFile: file,
-            parentFolderId: parentFolderId,
-            relativeTo: relativeTo,
-          ),
-        )
-        .toList();
-    selectedFiles.addAll(uploadFiles);
+      final uploadFiles = ioFiles
+          .map(
+            (file) => UploadFile(
+              ioFile: file,
+              parentFolderId: parentFolderId,
+              relativeTo: relativeTo,
+            ),
+          )
+          .toList();
+      selectedFiles.addAll(uploadFiles);
+    } else {
+      // Display multiple options on Mobile
+      // Open file picker on Web
+      final ioFiles = kIsWeb
+          ? await io.pickFiles(fileSource: FileSource.fileSystem)
+          // ignore: use_build_context_synchronously
+          : await showMultipleFilesFilePickerModal(context);
+      final uploadFiles = ioFiles
+          .map((file) =>
+              UploadFile(ioFile: file, parentFolderId: parentFolderId))
+          .toList();
+      selectedFiles.addAll(uploadFiles);
+      ioFolder = null;
+    }
   } else {
-    // Display multiple options on Mobile
-    // Open file picker on Web
-    final ioFiles = kIsWeb
-        ? await io.pickFiles(fileSource: FileSource.fileSystem)
-        // ignore: use_build_context_synchronously
-        : await showMultipleFilesFilePickerModal(context);
-    final uploadFiles = ioFiles
-        .map((file) => UploadFile(ioFile: file, parentFolderId: parentFolderId))
-        .toList();
-    selectedFiles.addAll(uploadFiles);
-    ioFolder = null;
+    selectedFiles.addAll(files.map((file) {
+      return UploadFile(
+        ioFile: file,
+        parentFolderId: parentFolderId,
+      );
+    }));
   }
 
   // ignore: use_build_context_synchronously
