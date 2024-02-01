@@ -11,7 +11,7 @@ Widget _buildDataList(
     state.folderInView.folder,
     state.currentDrive,
     isMultiselecting: state.multiselect,
-    state.columnVisibility,
+    columnVisibility: state.columnVisibility,
     isShowingHiddenFiles: state.isShowingHiddenFiles,
     emptyState: emptyState,
   );
@@ -101,44 +101,29 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final NetworkTransaction? dataTx;
   final String? pinnedDataOwnerAddress;
 
-  FileDataTableItem({
-    required super.driveId,
-    required super.lastUpdated,
-    required super.name,
-    required super.size,
-    required super.dateCreated,
-    required super.contentType,
-    required super.path,
-    super.isHidden,
-    super.fileStatusFromTransactions,
-    required super.index,
-    required super.isOwner,
-    required this.fileId,
-    required this.parentFolderId,
-    required this.dataTxId,
-    required this.lastModifiedDate,
-    required this.metadataTx,
-    required this.dataTx,
-    required this.pinnedDataOwnerAddress,
-    LicenseType? licenseType,
-    this.licenseTxId,
-    this.bundledIn,
-    required int index,
-    required bool isOwner,
-  }) : super(
-          path: path,
-          driveId: driveId,
-          id: fileId,
-          name: name,
-          size: size,
-          lastUpdated: lastUpdated,
-          dateCreated: dateCreated,
-          licenseType: licenseType,
-          contentType: contentType,
-          fileStatusFromTransactions: fileStatusFromTransactions,
-          index: index,
-          isOwner: isOwner,
-        );
+  FileDataTableItem(
+      {required super.driveId,
+      required super.lastUpdated,
+      required super.name,
+      required super.size,
+      required super.dateCreated,
+      required super.contentType,
+      required super.path,
+      super.isHidden,
+      super.fileStatusFromTransactions,
+      required super.index,
+      required super.isOwner,
+      required this.fileId,
+      required this.parentFolderId,
+      required this.dataTxId,
+      required this.lastModifiedDate,
+      required this.metadataTx,
+      required this.dataTx,
+      required this.pinnedDataOwnerAddress,
+      LicenseType? licenseType,
+      this.licenseTxId,
+      this.bundledIn})
+      : super(id: fileId);
 
   @override
   List<Object> get props => [fileId, name, isHidden];
@@ -150,7 +135,7 @@ Widget _buildDataListContent(
   FolderEntry folder,
   Drive drive, {
   required bool isMultiselecting,
-  Map<int, bool> columnVisibility,
+  required Map<int, bool> columnVisibility,
   required bool isShowingHiddenFiles,
   required Widget emptyState,
 }) {

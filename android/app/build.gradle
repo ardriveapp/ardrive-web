@@ -66,6 +66,16 @@ android {
             dimension "app"
         }
     }
+    splits {
+         abi {
+            enable false
+            reset()
+        }
+        density {
+            enable false
+            reset()
+        }
+    }
 }
 
 flutter {
