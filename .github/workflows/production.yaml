@@ -42,79 +42,79 @@ jobs:
       - name: Test app
         run: scr test
 
-  web:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
+  # web:
+  #   needs: test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     # Checkout
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         persist-credentials: false
 
-      # Set Flutter version from fvm
-      - uses: kuhnroyal/flutter-fvm-config-action@v1
+  #     # Set Flutter version from fvm
+  #     - uses: kuhnroyal/flutter-fvm-config-action@v1
 
-      # Install Flutter
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: ${{ env.FLUTTER_CHANNEL }}
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+  #     # Install Flutter
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         channel: ${{ env.FLUTTER_CHANNEL }}
+  #         flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Install script_runner
-        run: flutter pub global activate script_runner
+  #     - name: Install script_runner
+  #       run: flutter pub global activate script_runner
 
-      - name: Build app
-        run: |
-          scr setup
-          flutter config --enable-web
-          flutter build web --release --dart-define=environment=production
-          
-      # Disribute to Firebase
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
-          channelId: live
+  #     - name: Build app
+  #       run: |
+  #         scr setup
+  #         flutter config --enable-web
+  #         flutter build web --release --dart-define=environment=production
 
-  ios:
-    needs: test
-    runs-on: macos-latest
-    steps:
-      # Checkout
-      - uses: actions/checkout@v3
+  #     # Disribute to Firebase
+  #     - uses: FirebaseExtended/action-hosting-deploy@v0
+  #       with:
+  #         repoToken: '${{ secrets.GITHUB_TOKEN }}'
+  #         firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
+  #         channelId: live
 
-      # Install Ruby
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.1'
+  # ios:
+  #   needs: test
+  #   runs-on: macos-latest
+  #   steps:
+  #     # Checkout
+  #     - uses: actions/checkout@v3
 
-      # Set Flutter version from fvm
-      - uses: kuhnroyal/flutter-fvm-config-action@v1
+  #     # Install Ruby
+  #     - uses: ruby/setup-ruby@v1
+  #       with:
+  #         ruby-version: '3.1'
 
-      # Install Flutter
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: ${{ env.FLUTTER_CHANNEL }}
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+  #     # Set Flutter version from fvm
+  #     - uses: kuhnroyal/flutter-fvm-config-action@v1
 
-      - name: Set FIREBASE_JSON env var
-        run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
+  #     # Install Flutter
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         channel: ${{ env.FLUTTER_CHANNEL }}
+  #         flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Save Firebase Service Account json
-        env:
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-        run: echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
+  #     - name: Set FIREBASE_JSON env var
+  #       run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
 
-      - name: Install fastlane and Cocoapods
-        working-directory: ./ios
-        run: bundle install
+  #     - name: Save Firebase Service Account json
+  #       env:
+  #         FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+  #       run: echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
 
-      - name: Build iOS with fastlane
-        env:
-          MATCH_GIT_PRIVATE_KEY: ${{ secrets.FASTLANE_SSH_KEY }}
-          MATCH_PASSWORD: ${{ secrets.FASTLANE_MATCH_PASSWORD }}
-        working-directory: ./ios
-        run: bundle exec fastlane deploy type:staging
+  #     - name: Install fastlane and Cocoapods
+  #       working-directory: ./ios
+  #       run: bundle install
+
+  #     - name: Build iOS with fastlane
+  #       env:
+  #         MATCH_GIT_PRIVATE_KEY: ${{ secrets.FASTLANE_SSH_KEY }}
+  #         MATCH_PASSWORD: ${{ secrets.FASTLANE_MATCH_PASSWORD }}
+  #       working-directory: ./ios
+  #       run: bundle exec fastlane deploy type:staging
 
   android:
     needs: test
