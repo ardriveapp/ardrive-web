@@ -87,9 +87,9 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
       ...additionalTags.entries
     ];
 
-    tags.forEach((tag) {
+    for (var tag in tags) {
       licenseAssertionDataItem.addTag(tag.key, tag.value);
-    });
+    }
 
     return licenseAssertionDataItem;
   }
