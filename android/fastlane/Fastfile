@@ -56,7 +56,7 @@ platform :android do
           "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"],
           "android.injected.version.code" => build_number,
         },
-        flags: "-Pdart-defines=\"#{b64flags}\""
+        flags: "-Pdart-defines=\"#{b64flags}\"",
       )
     end
   end
@@ -96,20 +96,20 @@ platform :android do
       )
     end
 
-    # FIXME: Re-enable for production release
-    # if isProd then
-    #   upload_to_play_store(
-    #     track: type,
-    #     json_key:ENV['FIREBASE_JSON'],
-    #     version_code: build_number,
-    #     aab: "#{root_path}/build/app/outputs/bundle/#{flavor}Release/app-#{flavor}-release.aab",
-    #     skip_upload_apk: true,
-    #     skip_upload_metadata: true,
-    #     skip_upload_images: true,
-    #     skip_upload_screenshots: true,
-    #     timeout: 600
-    #   )
-    # end
+
+    if isProd then
+      upload_to_play_store(
+        track: type,
+        json_key:ENV['FIREBASE_JSON'],
+        version_code: build_number,
+        aab: "#{root_path}/build/app/outputs/bundle/#{flavor}Release/app-#{flavor}-release.aab",
+        skip_upload_apk: true,
+        skip_upload_metadata: true,
+        skip_upload_images: true,
+        skip_upload_screenshots: true,
+        timeout: 600
+      )
+    end
   end
 
   lane :update_release_url do
