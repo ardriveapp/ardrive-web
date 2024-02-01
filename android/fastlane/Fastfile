@@ -29,13 +29,6 @@ platform :android do
     # Build APK
 
     if isProd || isStaging then
-      sh_on_root(command: "flutter build apk --release --flavor #{flavor} --build-number #{build_number} --dart-define=environment=production --dart-define=SENTRY_DSN=#{ENV["SENTRY_DSN"]} --dart-define=SENTRY_PROJECT=#{ENV["SENTRY_PROJECT"]} --dart-define=SENTRY_AUTH_TOKEN=#{ENV["SENTRY_AUTH_TOKEN"]} --dart-define=SENTRY_ORG=#{ENV["SENTRY_ORG"]}")
-    else
-      sh_on_root(command: "flutter build apk --release --flavor #{flavor} --build-number #{build_number}")
-    end
-
-    if isProd then
-
       flags = ["SENTRY_DSN=#{ENV["SENTRY_DSN"]}",
       "SENTRY_PROJECT=#{ENV["SENTRY_PROJECT"]}" ,
       "SENTRY_AUTH_TOKEN=#{ENV["SENTRY_AUTH_TOKEN"]}" ,
@@ -58,6 +51,8 @@ platform :android do
         },
         flags: "-Pdart-defines=\"#{b64flags}\"",
       )
+    else
+      sh_on_root(command: "flutter build apk --release --flavor #{flavor} --build-number #{build_number}")
     end
   end
 
@@ -77,7 +72,7 @@ platform :android do
     build(type: options[:type]);
 
     # Distribute to Firebase
-    if isStaging then
+    if isStaging || isProd then
       firebase_app_distribution(
         app: android_firebase_app_id,
         release_notes: ENV['RELEASE_NOTES'],
