@@ -281,7 +281,7 @@ class UploadPreparer {
     required UploadPlanUtils uploadPlanUtils,
   }) : _uploadPlanUtils = uploadPlanUtils;
 
-  Future<UploadPlansPreparation> prepareUpload(UploadParams params) async {
+  Future<UploadPlansPreparation> prepareFileUpload(UploadParams params) async {
     final uploadPlanForAR = await _mountUploadPlan(
       params: params,
       method: UploadMethod.ar,
@@ -338,7 +338,59 @@ class UploadPaymentEvaluator {
         _auth = auth,
         _turboUploadCostCalculator = turboUploadCostCalculator;
 
-  Future<UploadPaymentInfo> getUploadPaymentInfo({
+  /// Even if this feature flag is off, it will be possible to upload using turbo
+  /// for free files
+  bool get _canUseTurbo => _appConfig.useTurboUpload;
+  bool _isTurboAvailableToUploadAllFiles = true;
+
+  Future<UploadPaymentInfo> getUploadPaymentInfoForEntities({
+    required DataItem dataItem,
+  }) async {
+    final dataItemSize = dataItem.getSize();
+
+    UploadMethod uploadMethod;
+
+    int totalSize = 0;
+
+    BigInt turboBalance;
+
+    turboBalance = await _getTurboBalance(canUseTurbo: _canUseTurbo);
+
+    final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
+      totalSize: dataItemSize,
+    );
+
+    /// Calculate the upload with AR is not optional
+    final arCostEstimate =
+        await _uploadCostEstimateCalculatorForAR.calculateCost(
+      totalSize: dataItemSize,
+    );
+
+    final allowedDataItemSizeForTurbo = _appConfig.allowedDataItemSizeForTurbo;
+
+    bool isFreeUploadPossibleUsingTurbo =
+        dataItem.getSize() <= allowedDataItemSizeForTurbo;
+
+    uploadMethod = await _determineUploadMethod(
+      turboBalance,
+      dataItemSize,
+      dataItemSize,
+      _isTurboAvailableToUploadAllFiles,
+    );
+
+    return UploadPaymentInfo(
+      isTurboAvailable: _isTurboAvailableToUploadAllFiles,
+      defaultPaymentMethod: uploadMethod,
+      isUploadEligibleToTurbo: true,
+      arCostEstimate: arCostEstimate,
+      turboCostEstimate: turboCostEstimate,
+      isFreeUploadPossibleUsingTurbo: isFreeUploadPossibleUsingTurbo,
+      totalSize: totalSize,
+      turboBalance: turboBalance,
+    );
+  }
+
+  Future<UploadPaymentInfo> getUploadPaymentInfoForUploadPlans({
     required UploadPlan uploadPlanForAR,
     required UploadPlan uploadPlanForTurbo,
   }) async {
@@ -348,30 +400,9 @@ class UploadPaymentEvaluator {
 
     BigInt turboBalance;
 
-    /// Even if this feature flag is off, it will be possible to upload using turbo
-    /// for free files
-    bool isTurboAvailableToUploadAllFiles = _appConfig.useTurboUpload;
-
-    if (isTurboAvailableToUploadAllFiles) {
-      /// Check the balance of the user
-      /// If we can't get the balance, turbo won't be available
-      try {
-        turboBalance =
-            await _turboBalanceRetriever.getBalance(_auth.currentUser.wallet);
-
-        logger.i('Turbo balance: $turboBalance');
-      } catch (e, stacktrace) {
-        logger.e(
-          'An error occured while getting the turbo balance',
-          e,
-          stacktrace,
-        );
-        isTurboAvailableToUploadAllFiles = false;
-        turboBalance = BigInt.zero;
-      }
-    } else {
-      turboBalance = BigInt.zero;
-    }
+    /// Check the balance of the user
+    /// If we can't get the balance, turbo won't be available
+    turboBalance = await _getTurboBalance(canUseTurbo: _canUseTurbo);
 
     final arBundleSizes = await sizeUtils
         .getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles);
@@ -396,7 +427,7 @@ class UploadPaymentEvaluator {
           totalSize: turboBundleSizes,
         );
       } catch (e) {
-        isTurboAvailableToUploadAllFiles = false;
+        _isTurboAvailableToUploadAllFiles = false;
       }
     }
 
@@ -420,19 +451,15 @@ class UploadPaymentEvaluator {
       );
     }
 
-    if ((isTurboAvailableToUploadAllFiles &&
-            isUploadEligibleToTurbo &&
-            turboBalance >= turboCostEstimate.totalCost) ||
-        isFreeUploadPossibleUsingTurbo) {
-      totalSize = turboBundleSizes;
-      uploadMethod = UploadMethod.turbo;
-    } else {
-      totalSize = arBundleSizes + arFileSizes;
-      uploadMethod = UploadMethod.ar;
-    }
+    uploadMethod = await _determineUploadMethod(
+      turboBalance,
+      turboBundleSizes,
+      _appConfig.allowedDataItemSizeForTurbo,
+      _isTurboAvailableToUploadAllFiles,
+    );
 
     return UploadPaymentInfo(
-      isTurboAvailable: isTurboAvailableToUploadAllFiles,
+      isTurboAvailable: _isTurboAvailableToUploadAllFiles,
       defaultPaymentMethod: uploadMethod,
       isUploadEligibleToTurbo: isUploadEligibleToTurbo,
       arCostEstimate: arCostEstimate,
@@ -441,6 +468,53 @@ class UploadPaymentEvaluator {
       totalSize: totalSize,
       turboBalance: turboBalance,
     );
+  }
+
+  Future<BigInt> _getTurboBalance({
+    required bool canUseTurbo,
+  }) async {
+    if (!canUseTurbo) {
+      _isTurboAvailableToUploadAllFiles = false;
+      return BigInt.zero;
+    }
+
+    try {
+      return await _turboBalanceRetriever.getBalance(_auth.currentUser.wallet);
+    } catch (e, stacktrace) {
+      logger.e(
+        'An error occurred while getting the turbo balance',
+        e,
+        stacktrace,
+      );
+      _isTurboAvailableToUploadAllFiles = false;
+      return BigInt.zero;
+    }
+  }
+
+  Future<UploadMethod> _determineUploadMethod(
+      BigInt turboBalance,
+      int turboBundleSizes,
+      int allowedSizeForTurbo,
+      bool isTurboAvailableToUploadAllFiles) async {
+    try {
+      final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
+        totalSize: turboBundleSizes,
+      );
+
+      bool isFreeUploadPossibleUsingTurbo =
+          turboBundleSizes <= allowedSizeForTurbo;
+
+      if ((isTurboAvailableToUploadAllFiles &&
+              turboBalance >= turboCostEstimate.totalCost) ||
+          isFreeUploadPossibleUsingTurbo) {
+        return UploadMethod.turbo;
+      } else {
+        return UploadMethod.ar;
+      }
+    } catch (e) {
+      _isTurboAvailableToUploadAllFiles = false;
+      return UploadMethod.ar;
+    }
   }
 }
 
@@ -499,10 +573,10 @@ class ArDriveUploadPreparationManager {
   Future<UploadPreparation> prepareUpload({
     required UploadParams params,
   }) async {
-    final uploadPreparation = await _uploadPreparer.prepareUpload(params);
+    final uploadPreparation = await _uploadPreparer.prepareFileUpload(params);
 
     final uploadPaymentInfo =
-        await _uploadPaymentEvaluator.getUploadPaymentInfo(
+        await _uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
       uploadPlanForAR: uploadPreparation.uploadPlanForAr,
       uploadPlanForTurbo: uploadPreparation.uploadPlanForTurbo,
     );
@@ -511,6 +585,17 @@ class ArDriveUploadPreparationManager {
       uploadPlansPreparation: uploadPreparation,
       uploadPaymentInfo: uploadPaymentInfo,
     );
+  }
+
+  Future<UploadPaymentInfo> getUploadPaymentInfoForEntityUpload({
+    required DataItem dataItem,
+  }) async {
+    final uploadPaymentInfo =
+        await _uploadPaymentEvaluator.getUploadPaymentInfoForEntities(
+      dataItem: dataItem,
+    );
+
+    return uploadPaymentInfo;
   }
 }
 

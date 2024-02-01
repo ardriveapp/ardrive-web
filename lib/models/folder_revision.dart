@@ -21,6 +21,7 @@ extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
         lastUpdated: dateCreated,
         customGQLTags: customGQLTags,
         customJsonMetadata: customJsonMetadata,
+        isHidden: isHidden.value,
       );
 
   /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
@@ -46,6 +47,7 @@ extension FolderEntityExtensions on FolderEntity {
         action: performedAction,
         customGQLTags: Value(customGqlTagsAsString),
         customJsonMetadata: Value(customJsonMetadataAsString),
+        isHidden: isHidden ?? false,
       );
 
   /// Returns the action performed on the folder that lead to the new revision.
@@ -57,6 +59,10 @@ extension FolderEntityExtensions on FolderEntity {
       return RevisionAction.rename;
     } else if (parentFolderId != previousRevision.parentFolderId.value) {
       return RevisionAction.move;
+    } else if (isHidden == true && previousRevision.isHidden.value == false) {
+      return RevisionAction.hide;
+    } else if (isHidden == false && previousRevision.isHidden.value == true) {
+      return RevisionAction.unhide;
     }
 
     return null;

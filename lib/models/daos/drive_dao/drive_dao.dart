@@ -134,6 +134,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           driveId: driveId,
           name: name,
           path: rootPath,
+          isHidden: false,
         ),
       );
     });
@@ -368,6 +369,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           files = files.reversed.toList();
         }
       }
+
       return FolderWithContents(
         folder: folder,
         subfolders: subfolders,
@@ -392,6 +394,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       parentFolderId: Value(parentFolderId),
       name: folderName,
       path: path,
+      isHidden: false,
     );
     await into(folderEntries).insert(folderEntriesCompanion);
 
@@ -458,6 +461,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
       dataContentType: Value(entity.dataContentType),
       pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
+      isHidden: entity.isHidden ?? false,
     );
 
     return into(fileEntries).insert(

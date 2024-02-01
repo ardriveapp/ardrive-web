@@ -38,6 +38,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final Map<int, bool> columnVisibility;
   final Key? forceRebuildKey;
 
+  final bool isShowingHiddenFiles;
+
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
@@ -52,10 +54,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.hasFoldersSelected = false,
     this.selectedFilePreviewUrl,
     required this.driveIsEmpty,
-    this.selectedItem,
+    required this.selectedItem,
     required this.currentFolderContents,
     required this.columnVisibility,
     this.forceRebuildKey,
+    required this.isShowingHiddenFiles,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -75,6 +78,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     ArDriveDataTableItem? selectedItem,
     List<ArDriveDataTableItem>? currentFolderContents,
     Key? forceRebuildKey,
+    bool? isShowingHiddenFiles,
   }) =>
       DriveDetailLoadSuccess(
         columnVisibility: columnVisibility,
@@ -97,12 +101,16 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         driveIsEmpty: driveIsEmpty ?? this.driveIsEmpty,
         currentFolderContents:
             currentFolderContents ?? this.currentFolderContents,
+        isShowingHiddenFiles: isShowingHiddenFiles ?? this.isShowingHiddenFiles,
       );
 
   @override
   List<Object?> get props => [
         currentDrive,
         hasWritePermissions,
+        folderInView,
+        currentFolderContents,
+        isShowingHiddenFiles,
         contentOrderBy,
         contentOrderingMode,
         showSelectedItemDetails,
@@ -114,6 +122,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         driveIsEmpty,
         multiselect,
         forceRebuildKey,
+        selectedItem,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;

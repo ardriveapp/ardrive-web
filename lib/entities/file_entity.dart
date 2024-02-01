@@ -30,14 +30,14 @@ class FileEntity extends EntityWithCustomMetadata {
   int? size;
   @JsonKey(fromJson: _msToDateTime, toJson: _dateTimeToMs)
   DateTime? lastModifiedDate;
-
   String? dataTxId;
   @JsonKey(includeIfNull: false)
   String? licenseTxId;
   String? dataContentType;
-
-  @JsonKey(name: 'pinnedDataOwner')
+  @JsonKey(name: 'pinnedDataOwner', includeIfNull: false)
   String? pinnedDataOwnerAddress;
+  @JsonKey(includeIfNull: false)
+  bool? isHidden;
 
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -56,6 +56,7 @@ class FileEntity extends EntityWithCustomMetadata {
     'dataTxId',
     'licenseTxId',
     'dataContentType',
+    'isHidden',
   ];
 
   FileEntity({
@@ -69,6 +70,7 @@ class FileEntity extends EntityWithCustomMetadata {
     this.licenseTxId,
     this.dataContentType,
     this.pinnedDataOwnerAddress,
+    this.isHidden,
   }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({
@@ -152,6 +154,7 @@ class FileEntity extends EntityWithCustomMetadata {
     );
     return entity;
   }
+
   Map<String, dynamic> toJson() {
     final thisJson = _$FileEntityToJson(this);
     final custom = customJsonMetadata ?? {};
