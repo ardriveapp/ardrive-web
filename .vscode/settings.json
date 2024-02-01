@@ -1,16 +1,9 @@
 {
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true
+    "source.organizeImports": "explicit"
   },
   "bloc.newBlocTemplate": "equatable",
   "bloc.newCubitTemplate": "equatable",
-  "dart.additionalAnalyzerFileExtensions": [
-    "drift"
-  ],
-  "cSpell.words": [
-    "Hkdf",
-    "hmac",
-    "sublist",
-    "Widgetbook"
-  ]
+  "dart.additionalAnalyzerFileExtensions": ["drift"],
+  "cSpell.words": ["Hkdf", "hmac", "sublist", "Widgetbook"]
 }

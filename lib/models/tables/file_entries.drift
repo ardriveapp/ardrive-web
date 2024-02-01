@@ -13,6 +13,13 @@ CREATE TABLE file_entries (
     dataTxId TEXT NOT NULL,
     bundledIn TEXT,
 
+    pinnedDataOwnerAddress TEXT,
+
+    customJsonMetadata TEXT,
+    customGQLTags TEXT,
+
+    isHidden BOOLEAN NOT NULL DEFAULT FALSE,
+
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
 

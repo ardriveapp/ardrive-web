@@ -1,20 +1,30 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
+import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/entities/file_entity.dart';
+import 'package:ardrive/entities/folder_entity.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/extensions.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:pst/pst.dart';
 
 import 'enums/conflicting_files_actions.dart';
 
@@ -22,30 +32,61 @@ part 'upload_state.dart';
 
 final filesNamesToExclude = ['.DS_Store'];
 
+enum UploadMethod { ar, turbo }
+
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String parentFolderId;
+  final bool isDragNDrop;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
-  final ArweaveService _arweave;
-  final UploadService _turbo;
   final PstService _pst;
-  final UploadPlanUtils _uploadPlanUtils;
   final UploadFileChecker _uploadFileChecker;
+  final ArDriveAuth _auth;
+  final ActivityTracker _activityTracker;
 
   late bool uploadFolders;
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
+  UploadMethod? _uploadMethod;
+
+  void setUploadMethod(
+    UploadMethod? method,
+    UploadPaymentMethodInfo paymentInfo,
+    bool canUpload,
+  ) {
+    logger.d('Upload method set to $method');
+    _uploadMethod = method;
+
+    if (state is UploadReady) {
+      final uploadReady = state as UploadReady;
+
+      emit(uploadReady.copyWith(
+        paymentInfo: paymentInfo,
+        uploadMethod: method,
+        isButtonToUploadEnabled: canUpload,
+      ));
+    } else if (state is UploadReadyToPrepare) {
+      emit(UploadReady(
+        params: (state as UploadReadyToPrepare).params,
+        paymentInfo: paymentInfo,
+        numberOfFiles: files.length,
+        uploadIsPublic: !_targetDrive.isPrivate,
+        isDragNDrop: isDragNDrop,
+        isButtonToUploadEnabled: canUpload,
+        isArConnect: (state as UploadReadyToPrepare).isArConnect,
+      ));
+    }
+  }
 
   List<UploadFile> files = [];
+  IOFolder? folder;
   Map<String, WebFolder> foldersByPath = {};
 
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
   final List<String> conflictingFolders = [];
-
-  bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
   UploadCubit({
     required this.driveId,
@@ -53,27 +94,39 @@ class UploadCubit extends Cubit<UploadState> {
     required this.files,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
-    required ArweaveService arweave,
-    required UploadService turbo,
     required PstService pst,
-    required UploadPlanUtils uploadPlanUtils,
     required UploadFileChecker uploadFileChecker,
+    required ArDriveAuth auth,
+    required ArDriveUploadPreparationManager arDriveUploadManager,
+    required ActivityTracker activityTracker,
+    this.folder,
     this.uploadFolders = false,
+    this.isDragNDrop = false,
   })  : _profileCubit = profileCubit,
         _uploadFileChecker = uploadFileChecker,
         _driveDao = driveDao,
-        _arweave = arweave,
-        _turbo = turbo,
         _pst = pst,
-        _uploadPlanUtils = uploadPlanUtils,
+        _auth = auth,
+        _activityTracker = activityTracker,
         super(UploadPreparationInProgress());
 
-  Future<void> startUploadPreparation() async {
+  Future<void> startUploadPreparation({
+    bool isRetryingToPayWithTurbo = false,
+  }) async {
     files.removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
     _targetFolder = await _driveDao
         .folderById(driveId: driveId, folderId: parentFolderId)
         .getSingle();
+
+    // TODO: check if the backend refreshed the balance instead of a timer
+    if (isRetryingToPayWithTurbo) {
+      emit(UploadPreparationInProgress());
+
+      /// necessary to wait for backend update the balance
+      await Future.delayed(const Duration(seconds: 2));
+    }
+
     emit(UploadPreparationInitialized());
   }
 
@@ -164,9 +217,7 @@ class UploadCubit extends Cubit<UploadState> {
           .getSingleOrNull();
 
       if (existingFileId != null) {
-        logger.d(
-            'Found conflicting file: $fileName with identifier: ${file.getIdentifier()}');
-        logger.d('Existing file id: $existingFileId');
+        logger.d('Found conflicting file. Existing file id: $existingFileId');
         conflictingFiles[file.getIdentifier()] = existingFileId;
       }
     }
@@ -210,9 +261,7 @@ class UploadCubit extends Cubit<UploadState> {
           .filesInFolderWithName(
             driveId: driveId,
             name: folder.name,
-            parentFolderId: folders[folder.parentFolderPath] != null
-                ? folders[folder.parentFolderPath]!.id
-                : _targetFolder.id,
+            parentFolderId: folder.parentFolderId,
           )
           .map((f) => f.id)
           .getSingleOrNull();
@@ -248,8 +297,6 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> prepareUploadPlanAndCostEstimates({
     UploadActions? uploadAction,
   }) async {
-    final profile = _profileCubit.state as ProfileLoggedIn;
-
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;
@@ -265,61 +312,67 @@ class UploadCubit extends Cubit<UploadState> {
       _removeFilesWithFileNameConflicts();
     }
 
-    final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
-      targetFolder: _targetFolder,
-      targetDrive: _targetDrive,
-      files: files,
-      cipherKey: profile.cipherKey,
-      wallet: profile.wallet,
-      conflictingFiles: conflictingFiles,
-      foldersByPath: foldersByPath,
+    logger.d(
+      'Upload preparation started. UploadMethod: $_uploadMethod',
     );
 
     try {
-      final costEstimate = await CostEstimate.create(
-        uploadPlan: uploadPlan,
-        arweaveService: _arweave,
-        pstService: _pst,
-        wallet: profile.wallet,
-      );
-
       if (await _profileCubit.checkIfWalletMismatch()) {
         emit(UploadWalletMismatch());
         return;
       }
 
       emit(
-        UploadReady(
-          uploadSize: uploadPlan.bundleUploadHandles
-                  .fold(0, (a, item) => item.size + a) +
-              uploadPlan.fileV2UploadHandles.values
-                  .fold(0, (a, item) => item.size + a),
-          costEstimate: costEstimate,
-          uploadIsPublic: _targetDrive.isPublic,
-          sufficientArBalance: profile.walletBalance >= costEstimate.totalCost,
-          uploadPlan: uploadPlan,
-          isFreeThanksToTurbo: uploadPlan.useTurbo,
+        UploadReadyToPrepare(
+          params: UploadParams(
+            user: _auth.currentUser,
+            files: files,
+            targetFolder: _targetFolder,
+            targetDrive: _targetDrive,
+            conflictingFiles: conflictingFiles,
+            foldersByPath: foldersByPath,
+          ),
+          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
         ),
       );
-    } catch (error) {
+    } catch (error, stacktrace) {
+      logger.e('error mounting the upload', error, stacktrace);
       addError(error);
     }
   }
 
+  bool hasEmittedError = false;
+  bool hasEmittedWarning = false;
+  bool uploadIsInProgress = false;
+
   Future<void> startUpload({
-    required UploadPlan uploadPlan,
+    required UploadPlan uploadPlanForAr,
+    UploadPlan? uploadPlanForTurbo,
   }) async {
-    bool hasEmittedError = false;
+    if (uploadIsInProgress) {
+      return;
+    }
 
-    debugPrint('Starting upload...');
+    uploadIsInProgress = true;
 
-    final profile = _profileCubit.state as ProfileLoggedIn;
+    UploadPlan uploadPlan;
+
+    if (_uploadMethod == UploadMethod.ar || uploadPlanForTurbo == null) {
+      uploadPlan = uploadPlanForAr;
+    } else {
+      uploadPlan = uploadPlanForTurbo;
+    }
+
+    logger.d('Max files per bundle: ${uploadPlan.maxDataItemCount}');
+
+    logger.i('Starting upload...');
 
     //Check if the same wallet it being used before starting upload.
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;
     }
+
     emit(
       UploadSigningInProgress(
         uploadPlan: uploadPlan,
@@ -327,84 +380,393 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    debugPrint('Wallet verified');
+    final type =
+        _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo;
+    final UploadContains contains = uploadFolders
+        ? UploadContains.folder
+        : files.length == 1
+            ? UploadContains.singleFile
+            : UploadContains.multipleFiles;
+    PlausibleEventTracker.trackUploadConfirm(
+      uploadType: type,
+      uploadContains: contains,
+    );
 
-    debugPrint('Starting bundle preparation....');
-    debugPrint('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
+    logger.d(
+        'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
-    // Upload Bundles
-    for (var bundleHandle in uploadPlan.bundleUploadHandles) {
-      try {
-        debugPrint('Starting bundle with ${bundleHandle.size}');
-
-        await bundleHandle.prepareAndSignBundleTransaction(
-          arweaveService: _arweave,
-          turboUploadService: _turbo,
-          pstService: _pst,
-          wallet: profile.wallet,
-          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+    if (_uploadMethod == UploadMethod.turbo) {
+      await _verifyIfUploadContainsLargeFilesUsingTurbo();
+      if ((_containsLargeTurboUpload ?? false) &&
+          !hasEmittedWarning &&
+          kIsWeb &&
+          !await AppPlatform.isChrome()) {
+        emit(
+          UploadShowingWarning(
+            reason: UploadWarningReason.fileTooLargeOnNonChromeBrowser,
+            uploadPlanForAR: uploadPlanForAr,
+            uploadPlanForTurbo: uploadPlanForTurbo,
+          ),
         );
-
-        debugPrint('Bundle preparation finished');
-      } catch (error) {
-        debugPrint(error.toString());
-        addError(error);
+        hasEmittedWarning = true;
+        return;
       }
-
-      debugPrint('Starting bundle uploads');
-
-      await for (final _ in bundleHandle
-          .upload(_arweave, _turbo)
-          .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) {
-        bundleHandle.hasError = true;
-        if (!hasEmittedError) {
-          addError(_);
-          hasEmittedError = true;
-        }
-      })) {
-        emit(UploadInProgress(uploadPlan: uploadPlan));
-      }
-      await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
-
-      debugPrint('Disposing bundle');
-
-      bundleHandle.dispose();
+    } else {
+      _containsLargeTurboUpload = false;
     }
 
-    // Upload V2 Files
-    for (final uploadHandle in uploadPlan.fileV2UploadHandles.values) {
-      try {
-        await uploadHandle.prepareAndSignTransactions(
-          arweaveService: _arweave,
-          wallet: profile.wallet,
-          pstService: _pst,
-        );
-      } catch (error) {
-        addError(error);
-      }
-
-      await for (final _ in uploadHandle
-          .upload(_arweave)
-          .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) {
-        uploadHandle.hasError = true;
-        if (!hasEmittedError) {
-          addError(_);
-          hasEmittedError = true;
-        }
-      })) {
-        emit(UploadInProgress(uploadPlan: uploadPlan));
-      }
-
-      await uploadHandle.writeFileEntityToDatabase(driveDao: _driveDao);
-
-      uploadHandle.dispose();
+    if (uploadFolders) {
+      await _uploadFolderUsingArDriveUploader();
+      return;
     }
 
-    unawaited(_profileCubit.refreshBalance());
+    await _uploadUsingArDriveUploader();
 
-    emit(UploadComplete());
+    return;
+  }
+
+  Future<void> _uploadFolderUsingArDriveUploader() async {
+    final ardriveUploader = ArDriveUploader(
+      turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
+      metadataGenerator: ARFSUploadMetadataGenerator(
+        tagsGenerator: ARFSTagsGenetator(
+          appInfoServices: AppInfoServices(),
+        ),
+      ),
+      arweave: Arweave(
+        gatewayUrl: Uri.parse(configService.config.defaultArweaveGatewayUrl!),
+      ),
+      pstService: _pst,
+    );
+
+    final private = _targetDrive.isPrivate;
+    final driveKey = private
+        ? await _driveDao.getDriveKey(
+            _targetDrive.id, _auth.currentUser.cipherKey)
+        : null;
+
+    List<(ARFSUploadMetadataArgs, IOEntity)> entities = [];
+
+    for (var folder in foldersByPath.values) {
+      final folderMetadata = ARFSUploadMetadataArgs(
+        isPrivate: _targetDrive.isPrivate,
+        driveId: _targetDrive.id,
+        parentFolderId: folder.parentFolderId,
+        privacy: _targetDrive.isPrivate ? 'private' : 'public',
+        entityId: folder.id,
+        type: _uploadMethod == UploadMethod.ar
+            ? UploadType.d2n
+            : UploadType.turbo,
+      );
+
+      entities.add((
+        folderMetadata,
+        UploadFolder(
+          lastModifiedDate: DateTime.now(),
+          name: folder.name,
+          path: folder.path,
+        ),
+      ));
+    }
+
+    for (var file in files) {
+      final id = conflictingFiles.containsKey(file.getIdentifier())
+          ? conflictingFiles[file.getIdentifier()]
+          : null;
+      // TODO: We are verifying the conflicting files twice, we should do it only once.
+      logger.d(
+          'Reusing id? ${conflictingFiles.containsKey(file.getIdentifier())}');
+      final fileMetadata = ARFSUploadMetadataArgs(
+        isPrivate: _targetDrive.isPrivate,
+        driveId: _targetDrive.id,
+        parentFolderId: file.parentFolderId,
+        privacy: _targetDrive.isPrivate ? 'private' : 'public',
+        entityId: id,
+        type: _uploadMethod == UploadMethod.ar
+            ? UploadType.d2n
+            : UploadType.turbo,
+      );
+
+      entities.add((fileMetadata, file.ioFile));
+    }
+
+    _activityTracker.setUploading(true);
+
+    final uploadController = await ardriveUploader.uploadEntities(
+      entities: entities,
+      wallet: _auth.currentUser.wallet,
+      type:
+          _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
+      driveKey: driveKey,
+    );
+
+    uploadController.onError((tasks) {
+      logger.e('Error uploading folders. Number of tasks: ${tasks.length}');
+      addError(Exception('Error uploading'));
+      hasEmittedError = true;
+    });
+
+    uploadController.onProgressChange(
+      (progress) {
+        emit(
+          UploadInProgressUsingNewUploader(
+            totalProgress: progress.progressInPercentage,
+            equatableBust: UniqueKey(),
+            progress: progress,
+            controller: uploadController,
+            uploadMethod: _uploadMethod!,
+          ),
+        );
+      },
+    );
+
+    uploadController.onCompleteTask((task) {
+      _saveEntityOnDB(task);
+    });
+
+    uploadController.onDone(
+      (tasks) async {
+        logger.d('Upload folders and files finished... Verifying results');
+
+        if (tasks.any((element) => element.status == UploadStatus.failed)) {
+          logger.e('One or more tasks failed. Emitting error');
+          // if any of the files failed, we should throw an error
+          addError(Exception('Error uploading'));
+        }
+
+        emit(UploadComplete());
+
+        unawaited(_profileCubit.refreshBalance());
+      },
+    );
+  }
+
+  bool? _containsLargeTurboUpload;
+
+  void retryUploads() {
+    if (state is UploadFailure) {
+      logger.i('Retrying uploads');
+
+      final controller = (state as UploadFailure).controller!;
+
+      controller.retryFailedTasks(_auth.currentUser.wallet);
+    }
+  }
+
+  Future<void> _uploadUsingArDriveUploader() async {
+    final ardriveUploader = ArDriveUploader(
+      turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
+      metadataGenerator: ARFSUploadMetadataGenerator(
+        tagsGenerator: ARFSTagsGenetator(
+          appInfoServices: AppInfoServices(),
+        ),
+      ),
+      arweave: Arweave(
+        gatewayUrl: Uri.parse(configService.config.defaultArweaveGatewayUrl!),
+      ),
+      pstService: _pst,
+    );
+
+    final private = _targetDrive.isPrivate;
+    final driveKey = private
+        ? await _driveDao.getDriveKey(
+            _targetDrive.id, _auth.currentUser.cipherKey)
+        : null;
+
+    List<(ARFSUploadMetadataArgs, IOFile)> uploadFiles = [];
+
+    for (var file in files) {
+      final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
+          ? RevisionAction.uploadNewVersion
+          : RevisionAction.create;
+
+      final args = ARFSUploadMetadataArgs(
+        isPrivate: _targetDrive.isPrivate,
+        driveId: _targetDrive.id,
+        parentFolderId: _targetFolder.id,
+        privacy: _targetDrive.isPrivate ? 'private' : 'public',
+        entityId: revisionAction == RevisionAction.uploadNewVersion
+            ? conflictingFiles[file.getIdentifier()]
+            : null,
+        type: _uploadMethod == UploadMethod.ar
+            ? UploadType.d2n
+            : UploadType.turbo,
+      );
+
+      uploadFiles.add((args, file.ioFile));
+    }
+
+    _activityTracker.setUploading(true);
+
+    /// Creates the uploader and starts the upload.
+    final uploadController = await ardriveUploader.uploadFiles(
+      files: uploadFiles,
+      wallet: _auth.currentUser.wallet,
+      driveKey: driveKey,
+      type:
+          _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
+    );
+
+    uploadController.onError((tasks) {
+      logger.e('Error uploading files. Number of tasks: ${tasks.length}');
+      hasEmittedError = true;
+      emit(
+        UploadFailure(
+          error: UploadErrors.unknown,
+          failedTasks: tasks,
+          controller: uploadController,
+        ),
+      );
+    });
+
+    uploadController.onProgressChange(
+      (progress) async {
+        // TODO: Save as the file is finished the upload
+
+        emit(
+          UploadInProgressUsingNewUploader(
+            progress: progress,
+            totalProgress: progress.progressInPercentage,
+            controller: uploadController,
+            equatableBust: UniqueKey(),
+            uploadMethod: _uploadMethod!,
+          ),
+        );
+      },
+    );
+
+    uploadController.onDone(
+      (tasks) async {
+        logger.d('Upload files finished... Verifying results');
+
+        bool uploadSucced = true;
+
+        if (tasks.any((element) => element.status == UploadStatus.failed)) {
+          logger.e('One or more tasks failed. Emitting error');
+          // if any of the files failed, we should throw an error
+          addError(Exception('Error uploading'));
+
+          PlausibleEventTracker.trackUploadFailure();
+          uploadSucced = false;
+        }
+
+        unawaited(_profileCubit.refreshBalance());
+
+        // all files are uploaded
+
+        logger.i('Upload finished with success');
+
+        emit(UploadComplete());
+
+        if (uploadSucced) {
+          PlausibleEventTracker.trackUploadSuccess();
+        }
+      },
+    );
+
+    uploadController.onCompleteTask((task) {
+      unawaited(_saveEntityOnDB(task));
+    });
+  }
+
+  Future<void> _verifyIfUploadContainsLargeFilesUsingTurbo() async {
+    if (_containsLargeTurboUpload == null) {
+      _containsLargeTurboUpload = false;
+
+      for (var file in files) {
+        if (await file.ioFile.length >= largeFileUploadSizeThreshold) {
+          _containsLargeTurboUpload = true;
+          break;
+        }
+      }
+    }
+  }
+
+  Future _saveEntityOnDB(UploadTask task) async {
+    // Single file only
+    // TODO: abstract to the database interface.
+    // TODO: improve API for finishing a file upload.
+    final metadatas = task.content;
+
+    if (metadatas != null) {
+      for (var metadata in metadatas) {
+        if (metadata is ARFSFileUploadMetadata) {
+          final fileMetadata = metadata;
+
+          final revisionAction = conflictingFiles.values.contains(metadata.id)
+              ? RevisionAction.uploadNewVersion
+              : RevisionAction.create;
+
+          final entity = FileEntity(
+            dataContentType: fileMetadata.dataContentType,
+            dataTxId: fileMetadata.dataTxId,
+            driveId: fileMetadata.driveId,
+            id: fileMetadata.id,
+            lastModifiedDate: fileMetadata.lastModifiedDate,
+            name: fileMetadata.name,
+            parentFolderId: fileMetadata.parentFolderId,
+            size: fileMetadata.size,
+            // TODO: pinnedDataOwnerAddress
+          );
+
+          if (fileMetadata.metadataTxId == null) {
+            logger.e('Metadata tx id is null!');
+            throw Exception('Metadata tx id is null');
+          }
+
+          entity.txId = fileMetadata.metadataTxId!;
+
+          _driveDao.transaction(() async {
+            final filePath = '${_targetFolder.path}/${metadata.name}';
+            await _driveDao.writeFileEntity(entity, filePath);
+            await _driveDao.insertFileRevision(
+              entity.toRevisionCompanion(
+                performedAction: revisionAction,
+              ),
+            );
+          });
+        } else if (metadata is ARFSFolderUploadMetatadata) {
+          final revisionAction = conflictingFolders.contains(metadata.name)
+              ? RevisionAction.uploadNewVersion
+              : RevisionAction.create;
+
+          final entity = FolderEntity(
+            driveId: metadata.driveId,
+            id: metadata.id,
+            name: metadata.name,
+            parentFolderId: metadata.parentFolderId,
+          );
+
+          if (metadata.metadataTxId == null) {
+            logger.e('Metadata tx id is null!');
+            throw Exception('Metadata tx id is null');
+          }
+
+          entity.txId = metadata.metadataTxId!;
+
+          final folderPath = foldersByPath.values
+              .firstWhere((element) =>
+                  element.name == metadata.name &&
+                  element.parentFolderId == metadata.parentFolderId)
+              .path;
+
+          await _driveDao.transaction(() async {
+            await _driveDao.createFolder(
+              driveId: _targetDrive.id,
+              parentFolderId: metadata.parentFolderId,
+              folderName: metadata.name,
+              path: folderPath,
+              folderId: metadata.id,
+            );
+            await _driveDao.insertFolderRevision(
+              entity.toRevisionCompanion(
+                performedAction: revisionAction,
+              ),
+            );
+          });
+        }
+      }
+    }
   }
 
   Future<void> skipLargeFilesAndCheckForConflicts() async {
@@ -437,7 +799,11 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       if (fileAboveWarningLimit) {
-        emit(UploadShowingWarning(reason: UploadWarningReason.fileTooLarge));
+        emit(UploadShowingWarning(
+          reason: UploadWarningReason.fileTooLarge,
+          uploadPlanForAR: null,
+          uploadPlanForTurbo: null,
+        ));
 
         return;
       }
@@ -454,10 +820,92 @@ class UploadCubit extends Cubit<UploadState> {
     return isPrivateForTesting || _targetDrive.isPrivate;
   }
 
+  void emitErrorFromPreparation() {
+    emit(UploadFailure(error: UploadErrors.unknown));
+  }
+
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(UploadFailure());
-    'Failed to upload file: $error $stackTrace'.logError();
+    if (error is TurboUploadTimeoutException) {
+      emit(UploadFailure(error: UploadErrors.turboTimeout));
+
+      return;
+    }
+
+    emit(UploadFailure(error: UploadErrors.unknown));
+    logger.e('Failed to upload file', error, stackTrace);
     super.onError(error, stackTrace);
   }
+
+  Future<void> cancelUpload() async {
+    if (state is UploadInProgressUsingNewUploader) {
+      try {
+        final state = this.state as UploadInProgressUsingNewUploader;
+
+        emit(
+          UploadInProgressUsingNewUploader(
+            controller: state.controller,
+            equatableBust: state.equatableBust,
+            progress: state.progress,
+            totalProgress: state.totalProgress,
+            isCanceling: true,
+            uploadMethod: _uploadMethod!,
+          ),
+        );
+
+        await state.controller.cancel();
+
+        emit(
+          UploadInProgressUsingNewUploader(
+            controller: state.controller,
+            equatableBust: state.equatableBust,
+            progress: state.progress,
+            totalProgress: state.totalProgress,
+            isCanceling: false,
+            uploadMethod: _uploadMethod!,
+          ),
+        );
+
+        emit(UploadCanceled());
+      } catch (e) {
+        logger.e('Error canceling upload', e);
+      }
+    }
+  }
+}
+
+class UploadFolder extends IOFolder {
+  UploadFolder({
+    required this.name,
+    required this.path,
+    required this.lastModifiedDate,
+  });
+
+  @override
+  final DateTime lastModifiedDate;
+
+  @override
+  Future<List<IOEntity>> listContent() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<IOFile>> listFiles() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<IOFolder>> listSubfolders() {
+    throw UnimplementedError();
+  }
+
+  @override
+  final String name;
+
+  @override
+  // TODO: implement path
+  final String path;
+
+  @override
+  List<Object?> get props => [name, path, lastModifiedDate];
 }

@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -15,6 +16,7 @@ import '../../../test_utils/utils.dart';
 void main() {
   late ArDriveAuth mockArDriveAuth;
   late ArConnectService mockArConnectService;
+  late UserRepository mockUserRepository;
 
   final wallet = getTestWallet();
 
@@ -24,6 +26,7 @@ void main() {
   setUp(() {
     mockArDriveAuth = MockArDriveAuth();
     mockArConnectService = MockArConnectService();
+    mockUserRepository = MockUserRepository();
   });
 
   group('AddWalletFile', () {
@@ -38,10 +41,11 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
-        when(() => mockArDriveAuth.isExistingUser(any()))
+        when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((_) async => true);
       },
       act: (bloc) async {
@@ -62,11 +66,12 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
         // user doesn't exist
-        when(() => mockArDriveAuth.isExistingUser(any()))
+        when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((_) async => false);
       },
       act: (bloc) async {
@@ -103,6 +108,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -130,6 +136,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -160,6 +167,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -197,6 +205,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -236,6 +245,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -257,6 +267,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -290,6 +301,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -315,6 +327,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -328,7 +341,10 @@ void main() {
       act: (bloc) async {
         bloc.add(const CheckIfUserIsLoggedIn());
       },
-      expect: () => [LoginLoading(), const LoginInitial(false)],
+      expect: () => [
+        LoginLoading(),
+        const LoginInitial(isArConnectAvailable: false),
+      ],
     );
   });
 
@@ -353,6 +369,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -376,6 +393,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -423,6 +441,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -449,6 +468,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -483,6 +503,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -512,6 +533,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -557,6 +579,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -566,7 +589,7 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('walletAddress'));
-        when(() => mockArDriveAuth.isExistingUser(any()))
+        when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((invocation) => Future.value(true));
       },
       act: (bloc) async {
@@ -581,6 +604,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -591,7 +615,7 @@ void main() {
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('walletAddress'));
         // new user
-        when(() => mockArDriveAuth.isExistingUser(any()))
+        when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((invocation) => Future.value(false));
       },
       act: (bloc) async {
@@ -606,6 +630,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -642,6 +667,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -657,7 +683,7 @@ void main() {
       act: (bloc) async {
         bloc.add(const ForgetWallet());
       },
-      expect: () => [const LoginInitial(false)],
+      expect: () => [const LoginInitial(isArConnectAvailable: false)],
     );
     blocTest(
       'should emit the initial login state and not call logout when user is not logged in',
@@ -665,6 +691,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -682,7 +709,7 @@ void main() {
         bloc.add(const ForgetWallet());
       },
       verify: (bloc) => verifyNever(() => mockArDriveAuth.logout()),
-      expect: () => [const LoginInitial(false)],
+      expect: () => [const LoginInitial(isArConnectAvailable: false)],
     );
   });
 
@@ -698,6 +725,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       act: (bloc) async {
@@ -729,6 +757,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {
@@ -754,6 +783,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
         );
       },
       setUp: () {

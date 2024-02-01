@@ -10,8 +10,13 @@ CREATE TABLE folder_revisions (
     metadataTxId TEXT NOT NULL,
 
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
-    
+
     [action] TEXT NOT NULL,
+
+    customJsonMetadata TEXT,
+    customGQLTags TEXT,
+
+    isHidden BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (folderId, driveId, dateCreated),
     FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id)

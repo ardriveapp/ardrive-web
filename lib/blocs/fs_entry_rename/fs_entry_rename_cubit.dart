@@ -2,6 +2,10 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_io/ardrive_io.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -16,7 +20,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final String? fileId;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
@@ -24,12 +28,14 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
   bool get _isRenamingFolder => folderId != null;
 
+  bool _dontVerifyExtension = false;
+
   FsEntryRenameCubit({
     required this.driveId,
     this.folderId,
     this.fileId,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
@@ -45,9 +51,16 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
   }
 
-  Future<void> submit({required String newName}) async {
+  Future<void> reset() async {
+    emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
+  }
+
+  Future<void> submit({
+    required String newName,
+    bool updateExtension = false,
+  }) async {
     try {
-      late bool hasEntityWithSameName;
+      final bool hasEntityWithSameName;
 
       if (_isRenamingFolder) {
         hasEntityWithSameName = await _folderWithSameNameExists(newName);
@@ -88,7 +101,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               key: driveKey,
             );
 
-            await _turboUploadService.postDataItem(dataItem: folderDataItem);
+            await _turboUploadService.postDataItem(
+              dataItem: folderDataItem,
+              wallet: profile.wallet,
+            );
             folderEntity.txId = folderDataItem.id;
           } else {
             final folderTx = await _arweave.prepareEntityTx(
@@ -109,13 +125,48 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
         emit(const FolderEntryRenameSuccess());
       } else {
+        var file = await _driveDao
+            .fileById(driveId: driveId, fileId: fileId!)
+            .getSingle();
+
+        if (!updateExtension && !_dontVerifyExtension) {
+          final newFileExtension =
+              getFileExtensionFromFileName(fileName: newName);
+
+          if (newFileExtension.isNotEmpty) {
+            bool hasExtensionChanged;
+
+            final currentExtension = getFileExtension(
+                name: file.name, contentType: file.dataContentType!);
+
+            hasExtensionChanged = currentExtension != newFileExtension;
+
+            if (hasExtensionChanged) {
+              emit(
+                UpdatingEntityExtension(
+                  previousExtension: currentExtension,
+                  entityName: newName,
+                  newExtension: newFileExtension,
+                ),
+              );
+
+              return;
+            }
+          }
+        }
+
         emit(const FileEntryRenameInProgress());
 
         await _driveDao.transaction(() async {
-          var file = await _driveDao
-              .fileById(driveId: driveId, fileId: fileId!)
-              .getSingle();
-          file = file.copyWith(name: newName, lastUpdated: DateTime.now());
+          file = file.copyWith(
+            name: newName,
+            lastUpdated: DateTime.now(),
+          );
+
+          if (updateExtension) {
+            file =
+                file.copyWith(dataContentType: Value(lookupMimeType(newName)));
+          }
 
           final fileKey = driveKey != null
               ? await _crypto.deriveFileKey(driveKey, file.id)
@@ -130,7 +181,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               key: fileKey,
             );
 
-            await _turboUploadService.postDataItem(dataItem: fileDataItem);
+            await _turboUploadService.postDataItem(
+              dataItem: fileDataItem,
+              wallet: profile.wallet,
+            );
             fileEntity.txId = fileDataItem.id;
           } else {
             final fileTx = await _arweave.prepareEntityTx(
@@ -139,6 +193,9 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
             await _arweave.postTx(fileTx);
             fileEntity.txId = fileTx.id;
           }
+
+          logger.i(
+              'Updating file ${file.id} with txId ${fileEntity.txId}. Data content type: ${fileEntity.dataContentType}');
 
           await _driveDao.writeToFile(file);
 
@@ -180,14 +237,18 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     return entityWithSameNameExists;
   }
 
+  void dontVerifyExtension() {
+    _dontVerifyExtension = true;
+  }
+
   @override
   void onError(Object error, StackTrace stackTrace) {
     if (_isRenamingFolder) {
       emit(const FolderEntryRenameFailure());
-      print('Failed to rename folder: $error $stackTrace');
+      logger.e('Failed to rename folder', error, stackTrace);
     } else {
       emit(const FileEntryRenameFailure());
-      print('Failed to rename file: $error $stackTrace');
+      logger.e('Failed to rename file', error, stackTrace);
     }
 
     super.onError(error, stackTrace);

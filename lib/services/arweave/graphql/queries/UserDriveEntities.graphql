@@ -1,17 +1,19 @@
-query UserDriveEntities($owner: String!) {
+query UserDriveEntities($owner: String!, $after: String) {
   transactions(
     first: 100
+    after: $after
     sort: HEIGHT_DESC
-    tags: [
-      { name: "ArFS", values: ["0.10", "0.11", "0.12"] }
-      { name: "Entity-Type", values: ["drive"] }
-    ]
+    tags: [{ name: "Entity-Type", values: ["drive"] }]
     owners: [$owner]
   ) {
     edges {
       node {
         ...TransactionCommon
       }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
     }
   }
 }

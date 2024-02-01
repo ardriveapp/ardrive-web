@@ -1,17 +1,17 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:ardrive/utils/add_debounce.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../utils/show_general_dialog.dart';
 import 'components.dart';
 
 Future<void> attachDrive({
@@ -25,7 +25,7 @@ Future<void> attachDrive({
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   return showModalDialog(
     context,
-    () => showAnimatedDialog(
+    () => showArDriveDialog(
       context,
       content: BlocProvider<DriveAttachCubit>(
         create: (context) => DriveAttachCubit(
@@ -87,7 +87,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
     return BlocConsumer<DriveAttachCubit, DriveAttachState>(
       listener: (context, state) {
         if (state is DriveAttachInvalidDriveKey) {
-          showAnimatedDialog(
+          showArDriveDialog(
             context,
             content: ArDriveStandardModal(
               title: appLocalizationsOf(context).error,
@@ -95,7 +95,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
             ),
           );
         } else if (state is DriveAttachDriveNotFound) {
-          showAnimatedDialog(
+          showArDriveDialog(
             context,
             content: ArDriveStandardModal(
               title: appLocalizationsOf(context).error,
@@ -145,7 +145,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                     autofocus: true,
                     obscureText: true,
                     onChanged: (s) async {},
-                    validator: (s) async {
+                    asyncValidator: (s) async {
                       final cubit = context.read<DriveAttachCubit>();
 
                       final validation = await cubit.driveKeyValidator();
@@ -160,7 +160,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                       context.read<DriveAttachCubit>().driveNameController,
                   hintText: appLocalizationsOf(context).driveName,
                   onChanged: (s) async {},
-                  validator: (s) async {
+                  asyncValidator: (s) async {
                     final nameValidation = validateEntityName(s, context);
 
                     setState(() {

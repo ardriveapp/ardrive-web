@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:stash/stash_api.dart';
 
 const defaultMaxEntries = 550;
@@ -86,8 +86,6 @@ class MetadataCache {
     CacheStore store, {
     required int maxEntries,
   }) async {
-    logger.d('Creating metadata cache with max entries: $maxEntries');
-
     return store.cache<Uint8List>(
       name: defaultCacheName,
       maxEntries: maxEntries,

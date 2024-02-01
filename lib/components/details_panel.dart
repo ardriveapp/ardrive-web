@@ -1,26 +1,32 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/hide_dialog.dart';
+import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/components/sizes.dart';
+import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/entities/string_types.dart';
+import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/l11n/l11n.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,21 +39,25 @@ class DetailsPanel extends StatefulWidget {
   const DetailsPanel({
     super.key,
     required this.item,
-    required this.maybeSelectedItem,
     required this.drivePrivacy,
     this.revisions,
     this.fileKey,
     required this.isSharePage,
     this.currentDrive,
+    this.onPreviousImageNavigation,
+    this.onNextImageNavigation,
+    required this.canNavigateThroughImages,
   });
 
   final ArDriveDataTableItem item;
-  final SelectedItem? maybeSelectedItem;
   final Privacy drivePrivacy;
   final List<FileRevision>? revisions;
   final SecretKey? fileKey;
   final bool isSharePage;
   final Drive? currentDrive;
+  final Function()? onPreviousImageNavigation;
+  final Function()? onNextImageNavigation;
+  final bool canNavigateThroughImages;
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
@@ -57,7 +67,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      // Specify a key to ensure a new cubit is provided when the folder/file id changes.
+      // Specify a key to ensure a new cubit is provided when the folder/file id
+      // changes.
       key: ValueKey(
         '${widget.item.driveId}${widget.item.id}${widget.item.name}',
       ),
@@ -86,120 +97,22 @@ class _DetailsPanelState extends State<DetailsPanel> {
       child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
           builder: (context, previewState) {
         return BlocBuilder<FsEntryInfoCubit, FsEntryInfoState>(
-          builder: (context, state) {
-            final tabs = [
-              if (previewState is FsEntryPreviewSuccess)
-                ArDriveTab(
-                    Tab(
-                      child: Text(
-                        appLocalizationsOf(context).itemPreviewEmphasized,
-                      ),
-                    ),
-                    _buildPreview(previewState)),
-              ArDriveTab(
-                Tab(
-                  child: Text(
-                    appLocalizationsOf(context).itemDetailsEmphasized,
-                  ),
+          builder: (context, infoState) {
+            return ScreenTypeLayout.builder(
+              desktop: (context) => Row(
+                children: _buildContent(
+                  mobileView: false,
+                  previewState: previewState,
+                  infoState: infoState,
+                  context: context,
                 ),
-                _buildDetails(state),
               ),
-              ArDriveTab(
-                Tab(
-                  child: Text(
-                    appLocalizationsOf(context).itemActivityEmphasized,
-                  ),
-                ),
-                BlocProvider(
-                  create: (context) => FsEntryActivityCubit(
-                    driveId: widget.item.driveId,
-                    maybeSelectedItem: widget.item,
-                    driveDao: context.read<DriveDao>(),
-                  ),
-                  child:
-                      BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
-                    builder: (context, state) {
-                      return _buildActivity(state);
-                    },
-                  ),
-                ),
-              )
-            ];
-            return SizedBox(
-              child: ArDriveCard(
-                borderRadius: AppPlatform.isMobile || AppPlatform.isMobileWeb()
-                    ? 0
-                    : null,
-                backgroundColor: ArDriveTheme.of(context)
-                    .themeData
-                    .tableTheme
-                    .backgroundColor,
-                contentPadding: const EdgeInsets.all(24),
-                content: Column(
-                  children: [
-                    if (!widget.isSharePage)
-                      ScreenTypeLayout(
-                        desktop: Column(
-                          children: [
-                            DetailsPanelToolbar(
-                              item: widget.item,
-                            ),
-                            const SizedBox(
-                              height: 24,
-                            ),
-                          ],
-                        ),
-                        mobile: const SizedBox.shrink(),
-                      ),
-                    ArDriveCard(
-                      contentPadding: const EdgeInsets.all(24),
-                      backgroundColor: ArDriveTheme.of(context)
-                          .themeData
-                          .tableTheme
-                          .selectedItemColor,
-                      content: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          DriveExplorerItemTileLeading(
-                            item: widget.item,
-                          ),
-                          const SizedBox(
-                            width: 8,
-                          ),
-                          Expanded(
-                            child: Text(
-                              widget.item.name,
-                              style: ArDriveTypography.body.buttonLargeBold(),
-                            ),
-                          ),
-                          if (widget.currentDrive != null &&
-                              !widget.isSharePage)
-                            ScreenTypeLayout(
-                              desktop: const SizedBox.shrink(),
-                              mobile: EntityActionsMenu(
-                                drive: widget.currentDrive,
-                                withInfo: false,
-                                item: widget.item,
-                                alignment: const Aligned(
-                                  follower: Alignment.topRight,
-                                  target: Alignment.bottomRight,
-                                  offset: Offset(24, 32),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 24,
-                    ),
-                    Expanded(
-                      child: ArDriveTabView(
-                        key: Key(widget.item.id + tabs.length.toString()),
-                        tabs: tabs,
-                      ),
-                    ),
-                  ],
+              mobile: (context) => Column(
+                children: _buildContent(
+                  mobileView: true,
+                  previewState: previewState,
+                  infoState: infoState,
+                  context: context,
                 ),
               ),
             );
@@ -209,12 +122,377 @@ class _DetailsPanelState extends State<DetailsPanel> {
     );
   }
 
-  Widget _buildPreview(previewState) {
+  List<Widget> _buildContent({
+    required bool mobileView,
+    required FsEntryPreviewState previewState,
+    required FsEntryInfoState infoState,
+    required BuildContext context,
+  }) {
+    final isNotSharePageInMobileView = !(widget.isSharePage && !mobileView);
+    final isPreviewUnavailable = previewState is FsEntryPreviewUnavailable;
+    final isSharePage = widget.isSharePage;
+
+    final tabs = [
+      if (isNotSharePageInMobileView && !isPreviewUnavailable)
+        ArDriveTab(
+          Tab(
+            child: Text(
+              appLocalizationsOf(context).itemPreviewEmphasized,
+            ),
+          ),
+          Column(
+            children: [
+              Expanded(child: _buildPreview(previewState, context: context)),
+            ],
+          ),
+        ),
+      ArDriveTab(
+        Tab(
+          child: Text(
+            appLocalizationsOf(context).itemDetailsEmphasized,
+          ),
+        ),
+        _buildDetails(infoState),
+      ),
+      ArDriveTab(
+        Tab(
+          child: Text(
+            appLocalizationsOf(context).itemActivityEmphasized,
+          ),
+        ),
+        BlocProvider(
+          create: (context) => FsEntryActivityCubit(
+            driveId: widget.item.driveId,
+            maybeSelectedItem: widget.item,
+            driveDao: context.read<DriveDao>(),
+          ),
+          child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
+            builder: (context, state) {
+              return _buildActivity(state);
+            },
+          ),
+        ),
+      )
+    ];
+
+    return [
+      if (isSharePage && !mobileView) ...[
+        Flexible(
+          flex: 2,
+          child: Column(
+            children: [
+              Expanded(
+                child: ArDriveCard(
+                  borderRadius:
+                      AppPlatform.isMobile || AppPlatform.isMobileWeb()
+                          ? 0
+                          : null,
+                  backgroundColor: mobileView
+                      ? ArDriveTheme.of(context)
+                          .themeData
+                          .tableTheme
+                          .backgroundColor
+                      : ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeBgSurface,
+                  contentPadding: isSharePage
+                      ? const EdgeInsets.only()
+                      : const EdgeInsets.all(24),
+                  content: _buildPreview(previewState, context: context),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(
+          height: 16,
+          width: 16,
+        ),
+      ],
+      Flexible(
+        flex: 1,
+        child: ArDriveCard(
+          borderRadius:
+              AppPlatform.isMobile || AppPlatform.isMobileWeb() ? 0 : null,
+          backgroundColor: isSharePage
+              ? ArDriveTheme.of(context).themeData.tableTheme.cellColor
+              : ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            children: [
+              if (!isSharePage)
+                ScreenTypeLayout.builder(
+                  desktop: (context) => Column(
+                    children: [
+                      BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                        builder: (context, driveDetailState) {
+                          final driveDetailLoadSuccess =
+                              driveDetailState as DriveDetailLoadSuccess;
+                          return DetailsPanelToolbar(
+                            item: widget.item,
+                            driveDetailLoadSuccess: driveDetailLoadSuccess,
+                          );
+                        },
+                      ),
+                      const SizedBox(
+                        height: 24,
+                      ),
+                    ],
+                  ),
+                  mobile: (context) => const SizedBox.shrink(),
+                ),
+              if (isSharePage && (!isPreviewUnavailable || mobileView))
+                SizedBox(
+                  height: 64,
+                  child: Column(
+                    children: [
+                      ArDriveImage(
+                        image: AssetImage(
+                          ArDriveTheme.of(context).themeData.name == 'light'
+                              ? Resources.images.brand.blackLogo2
+                              : Resources.images.brand.whiteLogo2,
+                        ),
+                        height: 48,
+                        fit: BoxFit.contain,
+                      ),
+                    ],
+                  ),
+                ),
+              if (!isSharePage ||
+                  (isSharePage && isPreviewUnavailable && !mobileView))
+                ArDriveCard(
+                  contentPadding: const EdgeInsets.all(24),
+                  backgroundColor: ArDriveTheme.of(context)
+                      .themeData
+                      .tableTheme
+                      .selectedItemColor,
+                  content: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      DriveExplorerItemTileLeading(
+                        item: widget.item,
+                      ),
+                      const SizedBox(
+                        width: 8,
+                      ),
+                      Expanded(
+                        child: Tooltip(
+                          message: widget.item.name,
+                          child: Text(
+                            widget.item.name,
+                            style: ArDriveTypography.body.buttonLargeBold(),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      if (widget.item is FileDataTableItem &&
+                          (widget.item as FileDataTableItem)
+                                  .pinnedDataOwnerAddress !=
+                              null) ...{
+                        const PinIndicator(
+                          size: 32,
+                        ),
+                      },
+                      if (widget.currentDrive != null)
+                        ScreenTypeLayout.builder(
+                          desktop: (context) => const SizedBox.shrink(),
+                          mobile: (context) => EntityActionsMenu(
+                            drive: widget.currentDrive,
+                            withInfo: false,
+                            item: widget.item,
+                            alignment: const Aligned(
+                              follower: Alignment.topRight,
+                              target: Alignment.bottomRight,
+                              offset: Offset(24, 32),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              const SizedBox(
+                height: 24,
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ArDriveTabView(
+                        key: Key(widget.item.id + tabs.length.toString()),
+                        tabs: tabs,
+                        backgroundColor: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeBgSurface,
+                        unselectedTabColor: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeBgSurface,
+                        unselectedLabelColor: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
+                    ),
+                    if (isSharePage && (!isPreviewUnavailable || mobileView))
+                      SizedBox(
+                        height: 138,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            SizedBox(
+                              height: 40,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: ArDriveButton(
+                                      icon: ArDriveIcons.download2(
+                                          color: Colors.white),
+                                      onPressed: () {
+                                        final file = ARFSFactory()
+                                            .getARFSFileFromFileRevision(
+                                          widget.revisions!.last,
+                                        );
+                                        return promptToDownloadSharedFile(
+                                          revision: file,
+                                          context: context,
+                                          fileKey: widget.fileKey,
+                                        );
+                                      },
+                                      text:
+                                          appLocalizationsOf(context).download,
+                                    ),
+                                  )
+                                ],
+                              ),
+                            ),
+                            ArDriveButton(
+                              style: ArDriveButtonStyle.tertiary,
+                              onPressed: () =>
+                                  openUrl(url: Resources.ardrivePublicSiteLink),
+                              text: appLocalizationsOf(context).whatIsArDrive,
+                            ),
+                            if (widget.isSharePage) ...[
+                              AppVersionWidget(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
+                              ),
+                            ]
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildPreview(
+    FsEntryPreviewState previewState, {
+    required BuildContext context,
+  }) {
+    if (previewState is FsEntryPreviewUnavailable && widget.isSharePage) {
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 400,
+            minWidth: kMediumDialogWidth,
+            minHeight: 256,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ArDriveImage(
+                image: AssetImage(
+                  ArDriveTheme.of(context).themeData.name == 'light'
+                      ? Resources.images.brand.blackLogo2
+                      : Resources.images.brand.whiteLogo2,
+                ),
+                height: 80,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 32),
+              IntrinsicWidth(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: DriveExplorerItemTileLeading(item: widget.item),
+                  title: Tooltip(
+                    message: widget.item.name,
+                    child: Text(
+                      widget.item.name,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: ArDriveTypography.body.buttonLargeBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
+                    ),
+                  ),
+                  subtitle: Text(
+                    filesize(widget.item.size),
+                    style: ArDriveTypography.body.buttonNormalRegular(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeAccentDisabled,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ArDriveButton(
+                icon: ArDriveIcons.download2(color: Colors.white),
+                onPressed: () {
+                  final file = ARFSFactory().getARFSFileFromFileRevision(
+                    widget.revisions!.last,
+                  );
+                  return promptToDownloadSharedFile(
+                    revision: file,
+                    context: context,
+                    fileKey: widget.fileKey,
+                  );
+                },
+                text: appLocalizationsOf(context).download,
+              ),
+              const SizedBox(height: 16),
+              ArDriveButton(
+                style: ArDriveButtonStyle.tertiary,
+                onPressed: () => openUrl(url: Resources.ardrivePublicSiteLink),
+                text: appLocalizationsOf(context).whatIsArDrive,
+              ),
+              if (widget.isSharePage) ...[
+                AppVersionWidget(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                ),
+              ]
+            ],
+          ),
+        ),
+      );
+    }
+
     return Align(
       alignment: Alignment.center,
       child: FsEntryPreviewWidget(
         key: ValueKey(widget.item.id),
         state: previewState,
+        isSharePage: widget.isSharePage,
+        onNextImageNavigation: widget.onNextImageNavigation,
+        onPreviousImageNavigation: widget.onPreviousImageNavigation,
+        canNavigateThroughImages: widget.canNavigateThroughImages,
+        previewCubit: context.read<FsEntryPreviewCubit>(),
       ),
     );
   }
@@ -225,7 +503,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       children = _folderDetails(state);
     } else if (state is FsEntryInfoSuccess<FileEntry> ||
         widget.revisions != null) {
-      children = _fileDetails();
+      children = _fileDetails(state);
     } else if (state is FsEntryInfoSuccess<Drive>) {
       children = _driveDetails(state);
     } else {
@@ -237,7 +515,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
     }
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 28,
+        vertical: 16,
+      ),
       children: children,
     );
   }
@@ -245,7 +526,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
   List<Widget> _folderDetails(
     FsEntryInfoSuccess<FolderNode> folder,
   ) {
-    // itemContains
     return [
       DetailsPanelItem(
         leading: CopyButton(text: folder.entry.folder.id),
@@ -286,6 +566,28 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).driveID,
       ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArDriveIconButton(
+              tooltip: appLocalizationsOf(context).viewOnViewBlock,
+              icon: ArDriveIcons.newWindow(size: 20),
+              onPressed: () {
+                openUrl(
+                  url: 'https://viewblock.io/arweave/tx/${folder.metadataTxId}',
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            CopyButton(
+              text: folder.metadataTxId,
+            ),
+          ],
+        ),
+        itemTitle: appLocalizationsOf(context).metadataTxID,
+      ),
     ];
   }
 
@@ -296,7 +598,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
         itemTitle: appLocalizationsOf(context).driveID,
       ),
       sizedBoxHeight16px,
-      // size
       DetailsPanelItem(
         leading: Text(
           filesize((state as FsEntryDriveInfoSuccess)
@@ -334,10 +635,35 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArDriveIconButton(
+              tooltip: appLocalizationsOf(context).viewOnViewBlock,
+              icon: ArDriveIcons.newWindow(size: 20),
+              onPressed: () {
+                openUrl(
+                  url: 'https://viewblock.io/arweave/tx/${state.metadataTxId}',
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            CopyButton(
+              text: state.metadataTxId,
+            ),
+          ],
+        ),
+        itemTitle: appLocalizationsOf(context).metadataTxID,
+      ),
     ];
   }
 
-  List<Widget> _fileDetails() {
+  List<Widget> _fileDetails(FsEntryInfoState state) {
+    String? pinnedDataOwnerAddress =
+        (widget.item as FileDataTableItem).pinnedDataOwnerAddress;
+
     return [
       DetailsPanelItem(
         leading: CopyButton(text: widget.item.id),
@@ -371,17 +697,35 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           widget.item.contentType,
+          textAlign: TextAlign.right,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
-        itemTitle: 'File type',
+        itemTitle: appLocalizationsOf(context).fileType,
       ),
       sizedBoxHeight16px,
-      DetailsPanelItem(
-        leading: CopyButton(
-          text: widget.item.driveId,
+      if (state is FsEntryInfoSuccess)
+        DetailsPanelItem(
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ArDriveIconButton(
+                tooltip: appLocalizationsOf(context).viewOnViewBlock,
+                icon: ArDriveIcons.newWindow(size: 20),
+                onPressed: () {
+                  openUrl(
+                    url:
+                        'https://viewblock.io/arweave/tx/${state.metadataTxId}',
+                  );
+                },
+              ),
+              const SizedBox(width: 12),
+              CopyButton(
+                text: state.metadataTxId,
+              ),
+            ],
+          ),
+          itemTitle: appLocalizationsOf(context).metadataTxID,
         ),
-        itemTitle: appLocalizationsOf(context).metadataTxID,
-      ),
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Row(
@@ -405,6 +749,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).dataTxID,
       ),
+      if (pinnedDataOwnerAddress != null) ...[
+        sizedBoxHeight16px,
+        DetailsPanelItem(
+          leading: TruncatedAddress(walletAddress: pinnedDataOwnerAddress),
+          itemTitle: appLocalizationsOf(context).uploadedBy,
+        ),
+      ]
     ];
   }
 
@@ -443,16 +794,24 @@ class _DetailsPanelState extends State<DetailsPanel> {
             if (revision is FolderRevisionWithTransaction) {
               switch (revision.action) {
                 case RevisionAction.create:
-                  title = 'Folder added to the drive';
+                  title = appLocalizationsOf(context)
+                      .folderWasCreatedWithName(revision.name);
                   break;
                 case RevisionAction.rename:
-                  title = 'Folder renamed to ${revision.name}';
+                  title = appLocalizationsOf(context)
+                      .folderWasRenamed(revision.name);
                   break;
                 case RevisionAction.move:
-                  title = 'Folder moved';
+                  title = appLocalizationsOf(context).folderWasMoved;
+                  break;
+                case RevisionAction.hide:
+                  title = appLocalizationsOf(context).folderWasHidden;
+                  break;
+                case RevisionAction.unhide:
+                  title = appLocalizationsOf(context).folderWasUnhidden;
                   break;
                 default:
-                  title = 'Folder was modified';
+                  title = appLocalizationsOf(context).folderWasModified;
               }
               subtitle = yMMdDateFormatter.format(revision.dateCreated);
 
@@ -468,16 +827,21 @@ class _DetailsPanelState extends State<DetailsPanel> {
             } else if (revision is DriveRevisionWithTransaction) {
               switch (revision.action) {
                 case RevisionAction.create:
-                  title = 'Drive created';
+                  title = appLocalizationsOf(context)
+                      .driveWasCreatedWithName(revision.name);
                   break;
                 case RevisionAction.rename:
-                  title = 'Drive renamed to ${revision.name}';
+                  title = appLocalizationsOf(context)
+                      .driveWasRenamed(revision.name);
                   break;
-                case RevisionAction.move:
-                  title = 'Drive moved';
+                case RevisionAction.hide:
+                  title = appLocalizationsOf(context).driveWasHidden;
+                  break;
+                case RevisionAction.unhide:
+                  title = appLocalizationsOf(context).driveWasUnhidden;
                   break;
                 default:
-                  title = 'Drive was modified';
+                  title = appLocalizationsOf(context).driveWasModified;
               }
 
               subtitle = yMMdDateFormatter.format(revision.dateCreated);
@@ -507,7 +871,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
     switch (action) {
       case RevisionAction.create:
-        title = 'File added to the drive';
+        if (file.pinnedDataOwnerAddress != null) {
+          title = appLocalizationsOf(context).fileWasPinnedToTheDrive;
+        } else {
+          title = appLocalizationsOf(context).fileWasCreatedWithName(file.name);
+        }
         leading = _DownloadOrPreview(
           isSharedFile: widget.isSharePage,
           privacy: widget.drivePrivacy,
@@ -516,19 +884,25 @@ class _DetailsPanelState extends State<DetailsPanel> {
         );
         break;
       case RevisionAction.rename:
-        title = 'File renamed to ${file.name}';
+        title = appLocalizationsOf(context).fileWasRenamed(file.name);
         break;
       case RevisionAction.move:
-        title = 'File was moved';
+        title = appLocalizationsOf(context).fileWasMoved;
         break;
       case RevisionAction.uploadNewVersion:
-        title = 'File was updated';
+        title = appLocalizationsOf(context).fileHadANewRevision;
         leading = leading = _DownloadOrPreview(
           isSharedFile: widget.isSharePage,
           privacy: widget.drivePrivacy,
           fileRevision: file,
           fileKey: key,
         );
+        break;
+      case RevisionAction.hide:
+        title = appLocalizationsOf(context).fileWasHidden;
+        break;
+      case RevisionAction.unhide:
+        title = appLocalizationsOf(context).fileWasUnhidden;
         break;
       default:
         title = appLocalizationsOf(context).fileWasModified;
@@ -597,7 +971,7 @@ class DetailsPanelItem extends StatelessWidget {
                   ],
                 ),
               ),
-              if (leading != null) leading!,
+              if (leading != null) Flexible(child: leading!),
             ],
           ),
         ),
@@ -762,7 +1136,7 @@ class _DownloadOrPreview extends StatelessWidget {
         );
       },
       tooltip: appLocalizationsOf(context).download,
-      icon: ArDriveIcons.download(size: 20),
+      icon: ArDriveIcons.download2(size: 20),
     );
   }
 }
@@ -791,15 +1165,15 @@ class DetailsPanelToolbar extends StatelessWidget {
   const DetailsPanelToolbar({
     super.key,
     required this.item,
+    required this.driveDetailLoadSuccess,
   });
 
   final ArDriveDataTableItem item;
+  final DriveDetailLoadSuccess driveDetailLoadSuccess;
 
   @override
   Widget build(BuildContext context) {
-    final drive =
-        (context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess)
-            .currentDrive;
+    final drive = driveDetailLoadSuccess.currentDrive;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -839,27 +1213,34 @@ class DetailsPanelToolbar extends StatelessWidget {
                 }
               },
             ),
-          if (item is FileDataTableItem) ...[
-            _buildActionIcon(
+          _buildActionIcon(
               tooltip: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download(size: defaultIconSize),
+              icon: ArDriveIcons.download2(size: defaultIconSize),
               onTap: () {
-                promptToDownloadProfileFile(
-                  context: context,
-                  file: item as FileDataTableItem,
-                );
+                if (item is FileDataTableItem) {
+                  promptToDownloadProfileFile(
+                    context: context,
+                    file: item as FileDataTableItem,
+                  );
+                } else if (item is FolderDataTableItem) {
+                  promptToDownloadMultipleFiles(context,
+                      selectedItems: [item as FolderDataTableItem],
+                      zipName: item.name);
+                } else if (item is DriveDataItem) {
+                  promptToDownloadMultipleFiles(context,
+                      selectedItems: [item as DriveDataItem],
+                      zipName: item.name);
+                }
+              }),
+          if (item is FileDataTableItem && drive.isPublic)
+            _buildActionIcon(
+              tooltip: appLocalizationsOf(context).preview,
+              icon: ArDriveIcons.newWindow(size: defaultIconSize),
+              onTap: () {
+                final bloc = context.read<DriveDetailCubit>();
+                bloc.launchPreview((item as FileDataTableItem).dataTxId);
               },
             ),
-            if (drive.isPublic)
-              _buildActionIcon(
-                tooltip: appLocalizationsOf(context).preview,
-                icon: ArDriveIcons.newWindow(size: defaultIconSize),
-                onTap: () {
-                  final bloc = context.read<DriveDetailCubit>();
-                  bloc.launchPreview((item as FileDataTableItem).dataTxId);
-                },
-              ),
-          ],
           if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).rename,
@@ -890,6 +1271,21 @@ class DetailsPanelToolbar extends StatelessWidget {
               icon: ArDriveIcons.move(size: defaultIconSize),
               onTap: () {
                 promptToMove(context, driveId: drive.id, selectedItems: [item]);
+              },
+            ),
+          if (item.isOwner)
+            _buildActionIcon(
+              tooltip: item.isHidden
+                  ? appLocalizationsOf(context).unhide
+                  : appLocalizationsOf(context).hide,
+              icon: item.isHidden
+                  ? ArDriveIcons.eyeClosed(size: defaultIconSize)
+                  : ArDriveIcons.eyeOpen(size: defaultIconSize),
+              onTap: () {
+                promptToToggleHideState(
+                  context,
+                  item: item,
+                );
               },
             ),
           const Spacer(),

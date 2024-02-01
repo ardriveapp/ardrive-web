@@ -1,0 +1,3 @@
+- Allows preview of audio files on the share page.
+- Created a direct link to new user onboarding.
+- Increases the file size limit for downloads via the share page.

@@ -1,6 +1,7 @@
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,7 +24,7 @@ void main() {
           },
           'tags': [
             {'name': EntityTag.snapshotId, 'value': 'FAKE SNAPSHOT ID'},
-            {'name': EntityTag.entityType, 'value': EntityType.snapshot},
+            {'name': EntityTag.entityType, 'value': EntityTypeTag.snapshot},
             {'name': EntityTag.driveId, 'value': 'FAKE DRIVE ID'},
             {'name': EntityTag.blockStart, 'value': '0'},
             {'name': EntityTag.blockEnd, 'value': '100'},
@@ -88,7 +89,7 @@ void main() {
 
         expect(transaction.tags.length, 8);
         expect(decodeBase64ToString(transaction.tags[0].name), equals('ArFS'));
-        expect(decodeBase64ToString(transaction.tags[0].value), equals('0.12'));
+        expect(decodeBase64ToString(transaction.tags[0].value), equals('0.14'));
         expect(decodeBase64ToString(transaction.tags[1].name),
             equals('Entity-Type'));
         expect(decodeBase64ToString(transaction.tags[1].value),

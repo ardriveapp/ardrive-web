@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -12,21 +13,39 @@ import 'entities.dart';
 part 'folder_entity.g.dart';
 
 @JsonSerializable()
-class FolderEntity extends Entity {
-  @JsonKey(ignore: true)
+class FolderEntity extends EntityWithCustomMetadata {
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? id;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? driveId;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? parentFolderId;
 
   String? name;
+  @JsonKey(includeIfNull: false)
+  bool? isHidden;
+
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String> reservedGqlTags = [
+    ...EntityWithCustomMetadata.sharedReservedGqlTags,
+    EntityTag.folderId,
+    EntityTag.parentFolderId,
+  ];
+
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<String> reservedJsonMetadataKeys = [
+    ...EntityWithCustomMetadata.sharedReservedJsonMetadataKeys,
+    'isHidden',
+  ];
 
   FolderEntity({
     this.id,
     this.driveId,
     this.parentFolderId,
     this.name,
+    this.isHidden,
   }) : super(ArDriveCrypto());
 
   static Future<FolderEntity> fromTransaction(
@@ -47,13 +66,25 @@ class FolderEntity extends Entity {
         );
       }
 
-      return FolderEntity.fromJson(entityJson!)
+      final folder = FolderEntity.fromJson(entityJson!)
         ..id = transaction.getTag(EntityTag.folderId)
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..createdAt = transaction.getCommitTime();
+
+      final tags = transaction.tags
+          .map(
+            (t) => Tag.fromJson(t.toJson()),
+          )
+          .toList();
+      folder.customGqlTags = EntityWithCustomMetadata.getCustomGqlTags(
+        folder,
+        tags,
+      );
+
+      return folder;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
@@ -65,7 +96,7 @@ class FolderEntity extends Entity {
 
     tx
       ..addArFsTag()
-      ..addTag(EntityTag.entityType, EntityType.folder)
+      ..addTag(EntityTag.entityType, EntityTypeTag.folder)
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.folderId, id!);
 
@@ -74,7 +105,18 @@ class FolderEntity extends Entity {
     }
   }
 
-  factory FolderEntity.fromJson(Map<String, dynamic> json) =>
-      _$FolderEntityFromJson(json);
-  Map<String, dynamic> toJson() => _$FolderEntityToJson(this);
+  factory FolderEntity.fromJson(Map<String, dynamic> json) {
+    final entity = _$FolderEntityFromJson(json);
+    entity.customJsonMetadata = EntityWithCustomMetadata.getCustomJsonMetadata(
+      entity,
+      json,
+    );
+    return entity;
+  }
+  Map<String, dynamic> toJson() {
+    final thisJson = _$FolderEntityToJson(this);
+    final custom = customJsonMetadata ?? {};
+    final merged = {...thisJson, ...custom};
+    return merged;
+  }
 }

@@ -3,6 +3,9 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
+import 'package:ardrive/components/hide_dialog.dart';
+import 'package:ardrive/components/pin_indicator.dart';
+import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -22,29 +25,42 @@ class DriveExplorerItemTile extends TableRowWidget {
     required String lastUpdated,
     required String dateCreated,
     required Function() onPressed,
+    required bool isHidden,
   }) : super(
           [
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Text(
                 name,
-                style: ArDriveTypography.body.buttonNormalBold(),
+                style: ArDriveTypography.body.buttonNormalBold().copyWith(
+                      color: isHidden ? Colors.grey : null,
+                    ),
                 overflow: TextOverflow.fade,
                 maxLines: 1,
                 softWrap: false,
               ),
             ),
-            Text(size, style: ArDriveTypography.body.captionRegular()),
-            Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),
-            Text(dateCreated, style: ArDriveTypography.body.captionRegular()),
+            Text(size, style: _driveExplorerItemTileTextStyle(isHidden)),
+            Text(lastUpdated, style: _driveExplorerItemTileTextStyle(isHidden)),
+            Text(dateCreated, style: _driveExplorerItemTileTextStyle(isHidden)),
           ],
         );
 }
 
+TextStyle _driveExplorerItemTileTextStyle(bool isHidden) =>
+    ArDriveTypography.body
+        .captionRegular()
+        .copyWith(color: isHidden ? Colors.grey : null);
+
 class DriveExplorerItemTileLeading extends StatelessWidget {
-  const DriveExplorerItemTileLeading({super.key, required this.item});
+  const DriveExplorerItemTileLeading({
+    super.key,
+    required this.item,
+  });
 
   final ArDriveDataTableItem item;
+
+  bool get isHidden => item.isHidden;
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +80,10 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.center,
-            child: _getIconForContentType(
+            child: getIconForContentType(
               item.contentType,
+            ).copyWith(
+              color: isHidden ? Colors.grey : null,
             ),
           ),
           if (item.fileStatusFromTransactions != null)
@@ -108,43 +126,52 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
       ),
     );
   }
+}
 
-  ArDriveIcon _getIconForContentType(String contentType) {
-    const size = 18.0;
+ArDriveIcon getIconForContentType(
+  String contentType, {
+  double size = 18,
+  Color? color,
+}) {
+  contentType = contentType.toLowerCase();
 
-    if (contentType == 'folder') {
-      return ArDriveIcons.folderOutline(
-        size: size,
-      );
-    } else if (FileTypeHelper.isZip(contentType)) {
-      return ArDriveIcons.zip(
-        size: size,
-      );
-    } else if (FileTypeHelper.isImage(contentType)) {
-      return ArDriveIcons.image(
-        size: size,
-      );
-    } else if (FileTypeHelper.isVideo(contentType)) {
-      return ArDriveIcons.video(
-        size: size,
-      );
-    } else if (FileTypeHelper.isAudio(contentType)) {
-      return ArDriveIcons.music(
-        size: size,
-      );
-    } else if (FileTypeHelper.isDoc(contentType)) {
-      return ArDriveIcons.fileOutlined(
-        size: size,
-      );
-    } else if (FileTypeHelper.isCode(contentType)) {
-      return ArDriveIcons.fileOutlined(
-        size: size,
-      );
-    } else {
-      return ArDriveIcons.fileOutlined(
-        size: size,
-      );
-    }
+  if (contentType == 'folder') {
+    return ArDriveIcons.folderOutline(
+      size: size,
+      color: color,
+    );
+  } else if (FileTypeHelper.isZip(contentType)) {
+    return ArDriveIcons.zip(
+      size: size,
+    );
+  } else if (FileTypeHelper.isImage(contentType)) {
+    return ArDriveIcons.image(
+      size: size,
+    );
+  } else if (FileTypeHelper.isVideo(contentType)) {
+    return ArDriveIcons.video(
+      size: size,
+    );
+  } else if (FileTypeHelper.isAudio(contentType)) {
+    return ArDriveIcons.music(
+      size: size,
+    );
+  } else if (FileTypeHelper.isDoc(contentType)) {
+    return ArDriveIcons.fileOutlined(
+      size: size,
+    );
+  } else if (FileTypeHelper.isCode(contentType)) {
+    return ArDriveIcons.fileOutlined(
+      size: size,
+    );
+  } else if (FileTypeHelper.isManifest(contentType)) {
+    return ArDriveIcons.manifest(
+      size: size,
+    );
+  } else {
+    return ArDriveIcons.fileOutlined(
+      size: size,
+    );
   }
 }
 
@@ -167,11 +194,6 @@ class DriveExplorerItemTileTrailing extends StatefulWidget {
 
 class _DriveExplorerItemTileTrailingState
     extends State<DriveExplorerItemTileTrailing> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
@@ -201,6 +223,13 @@ class _DriveExplorerItemTileTrailingState
             width: 4,
           ),
         ],
+        if (widget.item is FileDataTableItem &&
+            (widget.item as FileDataTableItem).pinnedDataOwnerAddress !=
+                null) ...{
+          const PinIndicator(
+            size: 32,
+          ),
+        },
         ArDriveDropdown(
           calculateVerticalAlignment: (isAboveHalfScreen) {
             if (isAboveHalfScreen) {
@@ -214,7 +243,6 @@ class _DriveExplorerItemTileTrailingState
             target: Alignment.topLeft,
           ),
           items: _getItems(widget.item, context),
-          // ignore: sized_box_for_whitespace
           child: HoverWidget(
             tooltip: appLocalizationsOf(context).showMenu,
             child: ArDriveIcons.kebabMenu(),
@@ -225,11 +253,35 @@ class _DriveExplorerItemTileTrailingState
   }
 
   List<ArDriveDropdownItem> _getItems(
-      ArDriveDataTableItem item, BuildContext context) {
+    ArDriveDataTableItem item,
+    BuildContext context,
+  ) {
     final isOwner = item.isOwner;
 
     if (item is FolderDataTableItem) {
       return [
+        ArDriveDropdownItem(
+          onClick: () {
+            final driveDetail = (context.read<DriveDetailCubit>().state
+                as DriveDetailLoadSuccess);
+
+            final zipName = item.id == driveDetail.currentDrive.rootFolderId
+                ? driveDetail.currentDrive.name
+                : item.name;
+
+            promptToDownloadMultipleFiles(
+              context,
+              selectedItems: [item],
+              zipName: zipName,
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).download,
+            ArDriveIcons.download2(
+              size: defaultIconSize,
+            ),
+          ),
+        ),
         if (isOwner) ...[
           ArDriveDropdownItem(
             onClick: () {
@@ -264,6 +316,7 @@ class _DriveExplorerItemTileTrailingState
               ),
             ),
           ),
+          hideFileDropdownItem(context, item),
         ],
         ArDriveDropdownItem(
           onClick: () {
@@ -290,7 +343,7 @@ class _DriveExplorerItemTileTrailingState
         },
         content: _buildItem(
           appLocalizationsOf(context).download,
-          ArDriveIcons.download(
+          ArDriveIcons.download2(
             size: defaultIconSize,
           ),
         ),
@@ -356,6 +409,7 @@ class _DriveExplorerItemTileTrailingState
             ),
           ),
         ),
+        hideFileDropdownItem(context, item),
       ],
       ArDriveDropdownItem(
         onClick: () {
@@ -378,6 +432,7 @@ class _DriveExplorerItemTileTrailingState
   }
 }
 
+// TODO: @thiagocarvalhodev remove this and use the AppPlatform class or change the name of the method
 bool isMobile(BuildContext context) {
   final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
   return isPortrait;
@@ -403,11 +458,9 @@ class EntityActionsMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveDropdown(
-      width: item is DriveDataItem ? 240 : 160,
       height: isMobile(context) ? 44 : 60,
       anchor: alignment,
       items: _getItems(item, context, withInfo),
-      // ignore: sized_box_for_whitespace
       child: HoverWidget(
         tooltip: appLocalizationsOf(context).showMenu,
         child: ArDriveIcons.dots(),
@@ -421,6 +474,21 @@ class EntityActionsMenu extends StatelessWidget {
 
     if (item is FolderDataTableItem) {
       return [
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToDownloadMultipleFiles(
+              context,
+              selectedItems: [item],
+              zipName: item.name,
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).download,
+            ArDriveIcons.download2(
+              size: defaultIconSize,
+            ),
+          ),
+        ),
         if (isOwner) ...[
           ArDriveDropdownItem(
             onClick: () {
@@ -455,11 +523,23 @@ class EntityActionsMenu extends StatelessWidget {
               ),
             ),
           ),
+          hideFileDropdownItem(context, item),
         ],
         if (withInfo) _buildInfoOption(context),
       ];
     } else if (item is DriveDataItem) {
       return [
+        ArDriveDropdownItem(
+            onClick: () async {
+              promptToDownloadMultipleFiles(context,
+                  selectedItems: [item], zipName: item.name);
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).download,
+              icon: ArDriveIcons.download2(
+                size: defaultIconSize,
+              ),
+            )),
         ArDriveDropdownItem(
           onClick: () {
             promptToRenameDrive(
@@ -498,7 +578,7 @@ class EntityActionsMenu extends StatelessWidget {
           },
           content: ArDriveDropdownItemTile(
             name: appLocalizationsOf(context).exportDriveContents,
-            icon: ArDriveIcons.download(
+            icon: ArDriveIcons.download2(
               size: defaultIconSize,
             ),
           ),
@@ -535,7 +615,7 @@ class EntityActionsMenu extends StatelessWidget {
         },
         content: _buildItem(
           appLocalizationsOf(context).download,
-          ArDriveIcons.download(
+          ArDriveIcons.download2(
             size: defaultIconSize,
           ),
         ),
@@ -600,6 +680,7 @@ class EntityActionsMenu extends StatelessWidget {
             ),
           ),
         ),
+        hideFileDropdownItem(context, item),
       ],
       if (withInfo) _buildInfoOption(context)
     ];
@@ -624,4 +705,26 @@ class EntityActionsMenu extends StatelessWidget {
   ArDriveDropdownItemTile _buildItem(String name, ArDriveIcon icon) {
     return ArDriveDropdownItemTile(name: name, icon: icon);
   }
+}
+
+ArDriveDropdownItem hideFileDropdownItem(
+  BuildContext context,
+  ArDriveDataTableItem item,
+) {
+  return ArDriveDropdownItem(
+    onClick: () {
+      promptToToggleHideState(
+        context,
+        item: item,
+      );
+    },
+    content: ArDriveDropdownItemTile(
+      name: item.isHidden
+          ? appLocalizationsOf(context).unhide
+          : appLocalizationsOf(context).hide,
+      icon: item.isHidden
+          ? ArDriveIcons.eyeOpen(size: defaultIconSize)
+          : ArDriveIcons.eyeClosed(size: defaultIconSize),
+    ),
+  );
 }

@@ -1,6 +1,6 @@
 // Importing necessary packages and files
-import 'package:ardrive/blocs/turbo_balance/turbo_balance_cubit.dart';
-import 'package:ardrive/services/turbo/payment_service.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/topup/blocs/turbo_balance/turbo_balance_cubit.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';

@@ -1,6 +1,6 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -78,10 +78,10 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
       color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
       height: 240,
       child: _isLoading
-          ? Center(
+          ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
+                children: [
                   CircularProgressIndicator(),
                   Padding(
                     padding: EdgeInsets.only(top: 16.0),
@@ -100,14 +100,16 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                       setState(() {
                         _isLoading = true;
                       });
+
                       try {
                         final content = await widget.pickFromCamera();
 
                         widget.onClose(content);
                       } catch (e) {
                         if (e is FileSystemPermissionDeniedException) {
+                          // ignore: use_build_context_synchronously
                           await _showCameraPermissionModal(context);
-                          logger.d(e.toString());
+                          logger.e('Camera permission denied', e);
                         }
                       }
 
@@ -115,6 +117,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                         _isLoading = false;
                       });
 
+                      // ignore: use_build_context_synchronously
                       Navigator.pop(context);
                     },
                     title: Text(
@@ -142,10 +145,10 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
 
                           widget.onClose(content);
 
-                          logger.d('adding file');
+                          logger.d('adding file from gallery');
                         }
                       } catch (e) {
-                        logger.e(e.toString());
+                        logger.e('Error while picking file from gallery', e);
                       }
 
                       setState(() {
@@ -180,10 +183,13 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
 
                           widget.onClose(content);
 
-                          logger.d('adding file');
+                          logger.d('adding file from file system');
                         }
                       } catch (e) {
-                        logger.e(e.toString());
+                        logger.e(
+                          'Error while picking file from file system',
+                          e,
+                        );
                       }
 
                       setState(() {
@@ -212,6 +218,7 @@ Future<bool> verifyStoragePermissionAndShowModalWhenDenied(
     await verifyStoragePermission();
   } catch (e) {
     if (e is FileSystemPermissionDeniedException) {
+      // ignore: use_build_context_synchronously
       await showStoragePermissionModal(context);
     }
     return false;

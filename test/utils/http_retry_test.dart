@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/response_handler.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -1,14 +1,16 @@
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 
 import '../../services/arweave/arweave_service.dart';
 
 class GQLDriveHistory implements SegmentedGQLData {
   final DriveID driveId;
   final String ownerAddress;
+
+  int _txCount = 0;
 
   int _currentIndex = -1;
   final ArweaveService _arweave;
@@ -17,6 +19,8 @@ class GQLDriveHistory implements SegmentedGQLData {
   final HeightRange subRanges;
   @override
   int get currentIndex => _currentIndex;
+
+  int get txCount => _txCount;
 
   GQLDriveHistory({
     required this.subRanges,
@@ -49,6 +53,7 @@ class GQLDriveHistory implements SegmentedGQLData {
 
     await for (final multipleEdges in txsStream) {
       for (final edge in multipleEdges) {
+        _txCount++;
         yield edge.node;
       }
     }

@@ -1,0 +1,2 @@
+- Enables creating Pins in private drives.
+- Updates downloads of manifest files to download the raw manifest JSON file rather than the manifest’s index path file.

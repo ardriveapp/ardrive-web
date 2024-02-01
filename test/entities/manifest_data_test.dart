@@ -2,7 +2,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
-import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';
@@ -16,119 +16,139 @@ void main() {
   final stubCurrentDate = DateTime.now();
 
   final stubRootFolderEntry = FolderEntry(
-      id: stubEntityId,
-      dateCreated: stubCurrentDate,
-      driveId: stubEntityId,
-      isGhost: false,
-      parentFolderId: stubEntityId,
-      path: '/root-folder',
-      name: 'root-folder',
-      lastUpdated: stubCurrentDate);
+    id: stubEntityId,
+    dateCreated: stubCurrentDate,
+    driveId: stubEntityId,
+    isGhost: false,
+    parentFolderId: stubEntityId,
+    path: '/root-folder',
+    name: 'root-folder',
+    lastUpdated: stubCurrentDate,
+    isHidden: false,
+  );
 
   final stubParentFolderEntry = FolderEntry(
-      id: stubEntityId,
-      dateCreated: stubCurrentDate,
-      driveId: stubEntityId,
-      isGhost: false,
-      parentFolderId: stubEntityId,
-      path: '/root-folder/parent-folder',
-      name: 'parent-folder',
-      lastUpdated: stubCurrentDate);
+    id: stubEntityId,
+    dateCreated: stubCurrentDate,
+    driveId: stubEntityId,
+    isGhost: false,
+    parentFolderId: stubEntityId,
+    path: '/root-folder/parent-folder',
+    name: 'parent-folder',
+    lastUpdated: stubCurrentDate,
+    isHidden: false,
+  );
 
   final stubChildFolderEntry = FolderEntry(
-      id: stubEntityId,
-      dateCreated: stubCurrentDate,
-      driveId: stubEntityId,
-      isGhost: false,
-      parentFolderId: stubEntityId,
-      path: '/root-folder/parent-folder/child-folder',
-      name: 'child-folder',
-      lastUpdated: stubCurrentDate);
+    id: stubEntityId,
+    dateCreated: stubCurrentDate,
+    driveId: stubEntityId,
+    isGhost: false,
+    parentFolderId: stubEntityId,
+    path: '/root-folder/parent-folder/child-folder',
+    name: 'child-folder',
+    lastUpdated: stubCurrentDate,
+    isHidden: false,
+  );
 
   final stubFileInRoot1 = FileEntry(
-      dataTxId: stubTxId,
-      dateCreated: stubCurrentDate,
-      size: 10,
-      path: '/root-folder/file-in-root-1',
-      name: 'file-in-root-1',
-      parentFolderId: stubEntityId,
-      lastUpdated: stubCurrentDate,
-      lastModifiedDate: stubCurrentDate,
-      id: 'file-in-root-1-entity-id',
-      driveId: stubEntityId);
+    dataTxId: stubTxId,
+    dateCreated: stubCurrentDate,
+    size: 10,
+    path: '/root-folder/file-in-root-1',
+    name: 'file-in-root-1',
+    parentFolderId: stubEntityId,
+    lastUpdated: stubCurrentDate,
+    lastModifiedDate: stubCurrentDate,
+    id: 'file-in-root-1-entity-id',
+    driveId: stubEntityId,
+    isHidden: false,
+  );
 
   final stubFileInRoot2 = FileEntry(
-      dataTxId: stubTxId,
-      dateCreated: stubCurrentDate,
-      size: 10,
-      path: '/root-folder/file-in-root-2',
-      name: 'file-in-root-2',
-      parentFolderId: stubEntityId,
-      lastUpdated: stubCurrentDate,
-      lastModifiedDate: stubCurrentDate,
-      id: 'file-in-root-2-entity-id',
-      driveId: stubEntityId);
+    dataTxId: stubTxId,
+    dateCreated: stubCurrentDate,
+    size: 10,
+    path: '/root-folder/file-in-root-2',
+    name: 'file-in-root-2',
+    parentFolderId: stubEntityId,
+    lastUpdated: stubCurrentDate,
+    lastModifiedDate: stubCurrentDate,
+    id: 'file-in-root-2-entity-id',
+    driveId: stubEntityId,
+    isHidden: false,
+  );
 
   final stubFileInParent1 = FileEntry(
-      dataTxId: stubTxId,
-      dateCreated: stubCurrentDate,
-      size: 10,
-      path: '/root-folder/parent-folder/file-in-parent-1',
-      name: 'file-in-parent-1',
-      parentFolderId: stubEntityId,
-      lastUpdated: stubCurrentDate,
-      lastModifiedDate: stubCurrentDate,
-      id: 'file-in-parent-1-entity-id',
-      driveId: stubEntityId);
+    dataTxId: stubTxId,
+    dateCreated: stubCurrentDate,
+    size: 10,
+    path: '/root-folder/parent-folder/file-in-parent-1',
+    name: 'file-in-parent-1',
+    parentFolderId: stubEntityId,
+    lastUpdated: stubCurrentDate,
+    lastModifiedDate: stubCurrentDate,
+    id: 'file-in-parent-1-entity-id',
+    driveId: stubEntityId,
+    isHidden: false,
+  );
 
   final stubFileInParent2 = FileEntry(
-      dataTxId: stubTxId,
-      dateCreated: stubCurrentDate,
-      size: 10,
-      path: '/root-folder/parent-folder/file-in-parent-2',
-      name: 'file-in-parent-2',
-      parentFolderId: stubEntityId,
-      lastUpdated: stubCurrentDate,
-      lastModifiedDate: stubCurrentDate,
-      id: 'file-in-parent-2-entity-id',
-      driveId: stubEntityId);
+    dataTxId: stubTxId,
+    dateCreated: stubCurrentDate,
+    size: 10,
+    path: '/root-folder/parent-folder/file-in-parent-2',
+    name: 'file-in-parent-2',
+    parentFolderId: stubEntityId,
+    lastUpdated: stubCurrentDate,
+    lastModifiedDate: stubCurrentDate,
+    id: 'file-in-parent-2-entity-id',
+    driveId: stubEntityId,
+    isHidden: false,
+  );
 
   final stubFileInChild1 = FileEntry(
-      dataTxId: stubTxId,
-      dateCreated: stubCurrentDate,
-      size: 10,
-      path: '/root-folder/parent-folder/child-folder/file-in-child-1',
-      name: 'file-in-child-1',
-      parentFolderId: stubEntityId,
-      lastUpdated: stubCurrentDate,
-      lastModifiedDate: stubCurrentDate,
-      id: 'file-in-child-1-entity-id',
-      driveId: stubEntityId);
+    dataTxId: stubTxId,
+    dateCreated: stubCurrentDate,
+    size: 10,
+    path: '/root-folder/parent-folder/child-folder/file-in-child-1',
+    name: 'file-in-child-1',
+    parentFolderId: stubEntityId,
+    lastUpdated: stubCurrentDate,
+    lastModifiedDate: stubCurrentDate,
+    id: 'file-in-child-1-entity-id',
+    driveId: stubEntityId,
+    isHidden: false,
+  );
 
   final stubFileInChild2 = FileEntry(
-      dataTxId: stubTxId,
-      dateCreated: stubCurrentDate,
-      size: 10,
-      path: '/root-folder/parent-folder/child-folder/file-in-child-2',
-      name: 'file-in-child-2',
-      parentFolderId: stubEntityId,
-      lastUpdated: stubCurrentDate,
-      lastModifiedDate: stubCurrentDate,
-      id: 'file-in-child-2-entity-id',
-      driveId: stubEntityId);
+    dataTxId: stubTxId,
+    dateCreated: stubCurrentDate,
+    size: 10,
+    path: '/root-folder/parent-folder/child-folder/file-in-child-2',
+    name: 'file-in-child-2',
+    parentFolderId: stubEntityId,
+    lastUpdated: stubCurrentDate,
+    lastModifiedDate: stubCurrentDate,
+    id: 'file-in-child-2-entity-id',
+    driveId: stubEntityId,
+    isHidden: false,
+  );
 
   final stubManifestFileInChild = FileEntry(
-      dataTxId: stubTxId,
-      dateCreated: stubCurrentDate,
-      size: 10,
-      path: '/root-folder/parent-folder/child-folder/file-in-child-2',
-      name: 'manifest-file-in-child',
-      parentFolderId: stubEntityId,
-      lastUpdated: stubCurrentDate,
-      lastModifiedDate: stubCurrentDate,
-      id: 'manifest-file-in-child-entity-id',
-      driveId: stubEntityId,
-      dataContentType: ContentType.manifest);
+    dataTxId: stubTxId,
+    dateCreated: stubCurrentDate,
+    size: 10,
+    path: '/root-folder/parent-folder/child-folder/file-in-child-2',
+    name: 'manifest-file-in-child',
+    parentFolderId: stubEntityId,
+    lastUpdated: stubCurrentDate,
+    lastModifiedDate: stubCurrentDate,
+    id: 'manifest-file-in-child-entity-id',
+    driveId: stubEntityId,
+    dataContentType: ContentType.manifest,
+    isHidden: false,
+  );
 
   final stubChildFolderNode =
       FolderNode(folder: stubChildFolderEntry, subfolders: [], files: {
@@ -157,8 +177,9 @@ void main() {
     group('fromFolderNode static method', () {
       test('returns a ManifestEntity with a valid expected manifest shape',
           () async {
-        final manifest =
-            ManifestData.fromFolderNode(folderNode: stubRootFolderNode);
+        final manifest = ManifestData.fromFolderNode(
+          folderNode: stubRootFolderNode,
+        );
 
         expect(
             manifest.toJson(),
@@ -192,8 +213,9 @@ void main() {
       test(
           'returns a ManifestEntity with a valid expected manifest shape with a nested child folder',
           () async {
-        final manifest =
-            ManifestData.fromFolderNode(folderNode: stubChildFolderNode);
+        final manifest = ManifestData.fromFolderNode(
+          folderNode: stubChildFolderNode,
+        );
 
         expect(
             manifest.toJson(),
@@ -224,8 +246,9 @@ void main() {
 
       test('returns a DataItem with the expected tags, owner, and data',
           () async {
-        final manifest =
-            ManifestData.fromFolderNode(folderNode: stubRootFolderNode);
+        final manifest = ManifestData.fromFolderNode(
+          folderNode: stubRootFolderNode,
+        );
         final wallet = getTestWallet();
 
         AppPlatform.setMockPlatform(platform: SystemPlatform.Android);

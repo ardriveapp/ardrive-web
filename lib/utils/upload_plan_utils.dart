@@ -5,7 +5,8 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart'
     show getDirname, lookupMimeTypeWithDefaultType;
 import 'package:arweave/arweave.dart';
@@ -21,7 +22,7 @@ class UploadPlanUtils {
   });
 
   final ArweaveService arweave;
-  final UploadService turboUploadService;
+  final TurboUploadService turboUploadService;
   final DriveDao driveDao;
   final ArDriveCrypto crypto;
   final _uuid = const Uuid();
@@ -34,7 +35,15 @@ class UploadPlanUtils {
     required Drive targetDrive,
     required FolderEntry targetFolder,
     Map<String, WebFolder> foldersByPath = const {},
+    bool useTurbo = false,
   }) async {
+    logger.i(
+      'Creating upload plan for ${files.length} files'
+      ' Target drive: ${targetDrive.id}'
+      ' Target folder: ${targetFolder.id}'
+      ' Use turbo: $useTurbo',
+    );
+
     final fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
     final fileV2UploadHandles = <String, FileV2UploadHandle>{};
     final folderDataItemUploadHandles = <String, FolderDataItemUploadHandle>{};
@@ -61,12 +70,10 @@ class UploadPlanUtils {
 
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
       if (conflictingFiles[file.getIdentifier()] != null) {
-        logger.i(
-            'File ${file.getIdentifier()} already exists in target folder. Reusing id.');
+        logger.i('File already exists in target folder. Reusing id.');
         fileEntity.id = conflictingFiles[file.getIdentifier()];
       } else {
-        logger.i(
-            'File ${file.getIdentifier()} does not exist in target folder. Creating new id.');
+        logger.i('File does not exist in target folder. Creating new id.');
         fileEntity.id = _uuid.v4();
       }
 
@@ -77,6 +84,8 @@ class UploadPlanUtils {
       final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
           ? RevisionAction.uploadNewVersion
           : RevisionAction.create;
+
+      final bundleSizeLimit = getBundleSizeLimit(useTurbo);
 
       if (fileSize < bundleSizeLimit) {
         fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
@@ -120,6 +129,9 @@ class UploadPlanUtils {
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
       turboUploadService: turboUploadService,
+      maxDataItemCount:
+          useTurbo ? maxFilesSizePerBundleUsingTurbo : maxFilesPerBundle,
+      useTurbo: useTurbo,
     );
   }
 

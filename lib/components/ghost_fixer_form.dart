@@ -4,7 +4,9 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -16,17 +18,17 @@ import 'components.dart';
 Future<void> promptToReCreateFolder(BuildContext context,
     {required FolderDataTableItem ghostFolder}) {
   if (ghostFolder.parentFolderId != null) {
-    return showAnimatedDialog(
+    return showArDriveDialog(
       context,
       content: BlocProvider(
         create: (context) => GhostFixerCubit(
             ghostFolder: ghostFolder,
             profileCubit: context.read<ProfileCubit>(),
             arweave: context.read<ArweaveService>(),
-            turboUploadService: context.read<UploadService>(),
+            turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             syncCubit: context.read<SyncCubit>()),
-        child: GhostFixerForm(),
+        child: const GhostFixerForm(),
       ),
     );
   } else {
@@ -36,7 +38,7 @@ Future<void> promptToReCreateFolder(BuildContext context,
 }
 
 class GhostFixerForm extends StatefulWidget {
-  GhostFixerForm({Key? key}) : super(key: key);
+  const GhostFixerForm({Key? key}) : super(key: key);
 
   @override
   State<GhostFixerForm> createState() => _GhostFixerFormState();
@@ -263,15 +265,15 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
                       const Divider(),
                       Padding(
                           padding: const EdgeInsets.only(right: 16),
-                          child: ScreenTypeLayout(
-                            desktop: Row(
+                          child: ScreenTypeLayout.builder(
+                            desktop: (context) => Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 buildCreateFolderButton(),
                                 buildButtonBar(),
                               ],
                             ),
-                            mobile: Wrap(
+                            mobile: (context) => Wrap(
                               alignment: WrapAlignment.spaceBetween,
                               children: [
                                 buildCreateFolderButton(),

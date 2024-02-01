@@ -1,8 +1,7 @@
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/app_platform.dart';
-import 'package:ardrive/utils/ar_cost_to_usd.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -15,7 +14,6 @@ void main() {
     const knownFileId = 'ffffffff-0000-0000-0000-ffffffffffff';
     const unknownFileId = 'aaaaaaaa-0000-0000-0000-ffffffffffff';
 
-    //TODO Create and inject mock artemis client
     AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
 
     final arweave = MockArweaveService();
@@ -84,26 +82,6 @@ void main() {
           unknownFileId,
         );
         expect(fileEntities, equals(null));
-      });
-    });
-
-    group('arCostToUsdOrNull method', () {
-      const arCost = 100.0;
-
-      test('returns the correct USD value', () async {
-        when(() => arweave.getArUsdConversionRateOrNull()).thenAnswer(
-          (_) => Future.value(1),
-        );
-
-        expect(await arCostToUsdOrNull(arweave, arCost), equals(arCost));
-      });
-
-      test('returns null if the conversion rate is null', () async {
-        when(() => arweave.getArUsdConversionRateOrNull()).thenAnswer(
-          (_) => Future.value(null),
-        );
-
-        expect(await arCostToUsdOrNull(arweave, arCost), equals(null));
       });
     });
   });

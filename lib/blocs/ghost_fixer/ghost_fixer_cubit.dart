@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:reactive_forms/reactive_forms.dart';
 
 part 'ghost_fixer_state.dart';
 
@@ -17,7 +17,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final SyncCubit _syncCubit;
 
@@ -27,7 +27,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     required this.ghostFolder,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required SyncCubit syncCubit,
   })  : _profileCubit = profileCubit,
@@ -52,7 +52,10 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     await _selectedFolderSubscription?.cancel();
 
     _selectedFolderSubscription = _driveDao
-        .watchFolderContents(ghostFolder.driveId, folderId: folderId)
+        .watchFolderContents(
+          ghostFolder.driveId,
+          folderId: folderId,
+        )
         .listen(
           (f) => emit(
             GhostFixerFolderLoadSuccess(
@@ -129,6 +132,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
           isGhost: false,
           lastUpdated: ghostFolder.lastUpdated,
           dateCreated: ghostFolder.dateCreated,
+          isHidden: ghostFolder.isHidden,
         );
 
         final folderEntity = folder.asEntity();
@@ -139,7 +143,10 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
             key: driveKey,
           );
 
-          await _turboUploadService.postDataItem(dataItem: folderDataItem);
+          await _turboUploadService.postDataItem(
+            dataItem: folderDataItem,
+            wallet: profile.wallet,
+          );
           folderEntity.txId = folderDataItem.id;
         } else {
           final folderTx = await _arweave.prepareEntityTx(
@@ -171,30 +178,11 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     await super.close();
   }
 
-  Future<Map<String, dynamic>?> _uniqueFolderName(
-      AbstractControl<dynamic> control) async {
-    final state = this.state as GhostFixerFolderLoadSuccess;
-
-    final String folderName = control.value;
-    final parentFolder = state.viewingFolder.folder;
-
-    // Check that the parent folder does not already have a folder with the input name.
-    final nameAlreadyExists = await entityNameExists(
-        name: folderName, parentFolderId: parentFolder.id);
-
-    if (nameAlreadyExists) {
-      control.markAsTouched();
-      return {AppValidationMessage.fsEntryNameAlreadyPresent: true};
-    }
-
-    return null;
-  }
-
   @override
   void onError(Object error, StackTrace stackTrace) {
     emit(GhostFixerFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to create folder: $error $stackTrace');
+    logger.e('Failed to create folder', error, stackTrace);
   }
 }

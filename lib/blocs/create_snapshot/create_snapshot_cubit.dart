@@ -2,25 +2,31 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show BytesBuilder;
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/services/pst/pst.dart';
-import 'package:ardrive/utils/ar_cost_to_usd.dart';
-import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
-import 'package:arweave/utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pst/pst.dart';
 import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -28,10 +34,15 @@ part 'create_snapshot_state.dart';
 
 class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   final ArweaveService _arweave;
+  final PaymentService _paymentService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final PstService _pst;
   final TabVisibilitySingleton _tabVisibility;
+  final TurboBalanceRetriever turboBalanceRetriever;
+  final ArDriveAuth auth;
+  final ConfigService configService;
+  final TurboUploadService turboService;
   @visibleForTesting
   bool throwOnDataComputingForTesting;
   @visibleForTesting
@@ -43,23 +54,48 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late String _ownerAddress;
   late Range _range;
   late int _currentHeight;
-  late Transaction _preparedTx;
+  Uint8List? data;
+  DataItem? _preparedDataItem;
+  Transaction? _preparedTx;
 
+  UploadMethod _uploadMethod = UploadMethod.ar;
+  UploadCostEstimate _costEstimateAr = UploadCostEstimate.zero();
+  UploadCostEstimate _costEstimateTurbo = UploadCostEstimate.zero();
+  bool _hasNoTurboBalance = false;
+  String _arBalance = '';
+  String _turboCredits = '';
+  BigInt _turboBalance = BigInt.zero;
+  bool _isButtonToUploadEnabled = false;
+  bool _isTurboUploadPossible = true;
+  bool _sufficentCreditsBalance = false;
+  bool _sufficientArBalance = false;
+  bool _isFreeThanksToTurbo = false;
   bool _wasSnapshotDataComputingCanceled = false;
+
+  bool get _useTurboUpload =>
+      _uploadMethod == UploadMethod.turbo || _isFreeThanksToTurbo;
+
+  AppConfig get appConfig => configService.config;
 
   SnapshotItemToBeCreated? _itemToBeCreated;
   SnapshotEntity? _snapshotEntity;
 
   CreateSnapshotCubit({
     required ArweaveService arweave,
+    required PaymentService paymentService,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required PstService pst,
     required TabVisibilitySingleton tabVisibility,
+    required this.turboBalanceRetriever,
+    required this.auth,
+    required this.configService,
+    required this.turboService,
     this.throwOnDataComputingForTesting = false,
     this.throwOnSignTxForTesting = false,
     this.returnWithoutSigningForTesting = false,
   })  : _arweave = arweave,
+        _paymentService = paymentService,
         _profileCubit = profileCubit,
         _driveDao = driveDao,
         _pst = pst,
@@ -97,15 +133,16 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _setupSnapshotEntityWithBlob(data);
 
-    await _prepareAndSignTx(
-      _snapshotEntity!,
-      data,
+    await _computeCost();
+    await _computeBalanceEstimate();
+    _computeIsSufficientBalance();
+    _computeIsTurboEnabled();
+    _computeIsFreeThanksToTurbo();
+    _computeIsButtonEnabled();
+
+    await _emitConfirming(
+      dataSize: data.length,
     );
-
-    final costResult = await _computeCostAndCheckBalance();
-    if (costResult == null) return;
-
-    await _emitConfirming(costResult, data.length);
   }
 
   bool _wasCancelled() {
@@ -138,9 +175,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       _range = Range(start: 0, end: maximumHeightToSnapshot);
     }
 
-    // ignore: avoid_print
-    print(
-      'Trusted range to be snapshotted (Current height: $_currentHeight): $_range',
+    logger.d(
+      'Trusted range to be snapshotted (Current height: $_currentHeight): $_range)',
     );
   }
 
@@ -180,10 +216,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> _prepareAndSignTx(
     SnapshotEntity snapshotEntity,
-    Uint8List data,
   ) async {
-    // ignore: avoid_print
-    print('About to prepare and sign snapshot transaction');
+    logger.i('About to prepare and sign snapshot transaction');
 
     final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
 
@@ -192,10 +226,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     ));
 
     await prepareTx(isArConnectProfile);
-    await _pst.addCommunityTipToTx(_preparedTx);
     await signTx(isArConnectProfile);
 
-    snapshotEntity.txId = _preparedTx.id;
+    if (_useTurboUpload) {
+      snapshotEntity.txId = _preparedDataItem!.id;
+    } else {
+      snapshotEntity.txId = _preparedTx!.id;
+    }
   }
 
   @visibleForTesting
@@ -204,32 +241,40 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
 
     try {
-      // ignore: avoid_print
-      print(
+      logger.i(
         'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
-      _preparedTx = await _arweave.prepareEntityTx(
-        _snapshotEntity!,
-        wallet,
-        null,
-        // We'll sign it just after adding the tip
-        skipSignature: true,
-      );
+      if (_useTurboUpload) {
+        _preparedDataItem = await _arweave.prepareEntityDataItem(
+          _snapshotEntity!,
+          wallet,
+          // We'll sign it just after adding the tip
+          skipSignature: true,
+        );
+      } else {
+        _preparedTx = await _arweave.prepareEntityTx(
+          _snapshotEntity!,
+          wallet,
+          null,
+          // We'll sign it just after adding the tip
+          skipSignature: true,
+        );
+      }
     } catch (e) {
       final isTabFocused = _tabVisibility.isTabFocused();
       if (isArConnectProfile && !isTabFocused) {
-        // ignore: avoid_print
-        print(
+        logger.i(
           'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await _tabVisibility.onTabGetsFocusedFuture(
           () async => await prepareTx(isArConnectProfile),
         );
       } else {
-        // ignore: avoid_print
-        print(
-            'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
+        logger.e(
+          'Error preparing snapshot transaction - isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused',
+          e,
+        );
         rethrow;
       }
     }
@@ -241,8 +286,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
 
     try {
-      // ignore: avoid_print
-      print(
+      logger.i(
         'Signing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
 
@@ -252,12 +296,15 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         return;
       }
 
-      await _preparedTx.sign(wallet);
+      if (_useTurboUpload) {
+        await _preparedDataItem!.sign(wallet);
+      } else {
+        await _preparedTx!.sign(wallet);
+      }
     } catch (e) {
       final isTabFocused = _tabVisibility.isTabFocused();
       if (isArConnectProfile && !isTabFocused) {
-        // ignore: avoid_print
-        print(
+        logger.i(
           'Signing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await _tabVisibility.onTabGetsFocusedFuture(
@@ -266,17 +313,17 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           },
         );
       } else {
-        // ignore: avoid_print
-        print(
-            'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
+        logger.e(
+          'Error signing snapshot transaction isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused',
+          e,
+        );
         rethrow;
       }
     }
   }
 
   Future<Uint8List> _getSnapshotData() async {
-    // ignore: avoid_print
-    print('Computing snapshot data');
+    logger.i('Computing snapshot data');
 
     emit(ComputingSnapshotData(
       driveId: _driveId,
@@ -303,8 +350,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       dataBuffer.add(chunk);
     }
 
-    // ignore: avoid_print
-    print('Finished computing snapshot data');
+    logger.i('Finished computing snapshot data');
 
     final data = dataBuffer.takeBytes();
     return data;
@@ -328,45 +374,185 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _snapshotEntity = snapshotEntity;
   }
 
-  Future<BigInt?> _computeCostAndCheckBalance() async {
-    final totalCost = _preparedTx.reward + _preparedTx.quantity;
+  Future<void> _computeCost() async {
+    final profileState = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profileState.wallet;
 
-    final profile = _profileCubit.state as ProfileLoggedIn;
-    final walletBalance = profile.walletBalance;
-
-    if (walletBalance < totalCost) {
-      emit(CreateSnapshotInsufficientBalance(
-        walletBalance: walletBalance.toString(),
-        arCost: winstonToAr(totalCost),
-      ));
-      return null;
-    }
-
-    return totalCost;
-  }
-
-  Future<void> _emitConfirming(
-    BigInt totalCost,
-    int dataSize,
-  ) async {
-    final arUploadCost = winstonToAr(totalCost);
-
-    final double? usdUploadCost = await arCostToUsdOrNull(
-      _arweave,
-      double.parse(arUploadCost),
+    UploadCostEstimateCalculatorForAR costCalculatorForAr =
+        UploadCostEstimateCalculatorForAR(
+      arweaveService: _arweave,
+      pstService: _pst,
+      arCostToUsd: ConvertArToUSD(arweave: _arweave),
     );
 
+    final turboCostCalc = TurboCostCalculator(paymentService: _paymentService);
+    TurboUploadCostCalculator costCalculatorForTurbo =
+        TurboUploadCostCalculator(
+      turboCostCalculator: turboCostCalc,
+      priceEstimator: TurboPriceEstimator(
+        wallet: wallet,
+        paymentService: _paymentService,
+        costCalculator: turboCostCalc,
+      ),
+    );
+
+    _costEstimateAr = await costCalculatorForAr.calculateCost(
+      totalSize: _snapshotEntity!.data!.length,
+    );
+    _costEstimateTurbo = await costCalculatorForTurbo.calculateCost(
+      totalSize: _snapshotEntity!.data!.length,
+    );
+  }
+
+  Future<void> refreshTurboBalance() async {
+    final profileState = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profileState.wallet;
+
+    final BigInt? fakeTurboCredits = appConfig.fakeTurboCredits;
+
+    /// necessary to wait for backend update the balance
+    await Future.delayed(const Duration(seconds: 2));
+
+    final BigInt turboBalance = fakeTurboCredits ??
+        await turboBalanceRetriever.getBalance(wallet).catchError((e) {
+          logger.e('Error while retrieving turbo balance', e);
+          return BigInt.zero;
+        });
+
+    logger.d('Balance after topping up: $turboBalance');
+
+    _turboBalance = turboBalance;
+    _hasNoTurboBalance = turboBalance == BigInt.zero;
+    _turboCredits = convertWinstonToLiteralString(turboBalance);
+    _sufficentCreditsBalance = _costEstimateTurbo.totalCost <= _turboBalance;
+    _computeIsTurboEnabled();
+    _computeIsButtonEnabled();
+
+    if (state is ConfirmingSnapshotCreation) {
+      final stateAsConfirming = state as ConfirmingSnapshotCreation;
+
+      logger.d(
+        'Refreshing turbo balance\n'
+        'Turbo balance: $_turboCredits\n'
+        'Has no turbo balance: $_hasNoTurboBalance\n'
+        'Sufficient balance to pay with turbo: $_sufficentCreditsBalance\n'
+        'Upload method: $_uploadMethod',
+      );
+
+      emit(
+        stateAsConfirming.copyWith(
+          turboCredits: _turboCredits,
+          hasNoTurboBalance: _hasNoTurboBalance,
+          sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
+          uploadMethod: _uploadMethod,
+          isButtonToUploadEnabled: _isButtonToUploadEnabled,
+        ),
+      );
+    }
+  }
+
+  Future<void> _computeBalanceEstimate() async {
+    final ProfileLoggedIn profileState = _profileCubit.state as ProfileLoggedIn;
+    final Wallet wallet = profileState.wallet;
+
+    final BigInt? fakeTurboCredits = appConfig.fakeTurboCredits;
+
+    final BigInt turboBalance = fakeTurboCredits ??
+        await turboBalanceRetriever.getBalance(wallet).catchError((e) {
+          logger.e('Error while retrieving turbo balance', e);
+          return BigInt.zero;
+        });
+
+    logger.d('Balance before topping up: $turboBalance');
+
+    _turboBalance = turboBalance;
+    _hasNoTurboBalance = turboBalance == BigInt.zero;
+    _turboCredits = convertWinstonToLiteralString(turboBalance);
+    _arBalance = convertWinstonToLiteralString(auth.currentUser.walletBalance);
+  }
+
+  void _computeIsTurboEnabled() async {
+    bool isTurboEnabled = appConfig.useTurboUpload;
+    _isTurboUploadPossible = isTurboEnabled && _sufficentCreditsBalance;
+  }
+
+  void _computeIsSufficientBalance() {
+    final profileState = _profileCubit.state as ProfileLoggedIn;
+
+    bool sufficientBalanceToPayWithAR =
+        profileState.walletBalance >= _costEstimateAr.totalCost;
+    bool sufficientBalanceToPayWithTurbo =
+        _costEstimateTurbo.totalCost <= _turboBalance;
+
+    _sufficientArBalance = sufficientBalanceToPayWithAR;
+    _sufficentCreditsBalance = sufficientBalanceToPayWithTurbo;
+  }
+
+  void _computeIsFreeThanksToTurbo() {
+    final allowedDataItemSizeForTurbo = appConfig.allowedDataItemSizeForTurbo;
+    final forceNoFreeThanksToTurbo = appConfig.forceNoFreeThanksToTurbo;
+    final isFreeThanksToTurbo =
+        _snapshotEntity!.data!.length <= allowedDataItemSizeForTurbo;
+    _isFreeThanksToTurbo = isFreeThanksToTurbo && !forceNoFreeThanksToTurbo;
+  }
+
+  Future<void> _emitConfirming({required int dataSize}) async {
     emit(ConfirmingSnapshotCreation(
       snapshotSize: dataSize,
-      arUploadCost: arUploadCost,
-      usdUploadCost: usdUploadCost,
+      costEstimateAr: _costEstimateAr,
+      costEstimateTurbo: _costEstimateTurbo,
+      hasNoTurboBalance: _hasNoTurboBalance,
+      isTurboUploadPossible: _isTurboUploadPossible,
+      arBalance: _arBalance,
+      turboCredits: _turboCredits,
+      uploadMethod: _uploadMethod,
+      isButtonToUploadEnabled: _isButtonToUploadEnabled,
+      sufficientBalanceToPayWithAr: _sufficientArBalance,
+      sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
+      isFreeThanksToTurbo: _isFreeThanksToTurbo,
     ));
+  }
+
+  void setUploadMethod(UploadMethod method) {
+    logger.d('Upload method set to $method');
+    _uploadMethod = method;
+
+    _computeIsButtonEnabled();
+    if (state is ConfirmingSnapshotCreation) {
+      final stateAsConfirming = state as ConfirmingSnapshotCreation;
+      emit(
+        stateAsConfirming.copyWith(
+          uploadMethod: method,
+          isButtonToUploadEnabled: _isButtonToUploadEnabled,
+        ),
+      );
+    }
+  }
+
+  void _computeIsButtonEnabled() {
+    _isButtonToUploadEnabled = false;
+
+    logger.d('Sufficient Balance To Pay With AR: $_sufficientArBalance');
+    if (_uploadMethod == UploadMethod.ar && _sufficientArBalance) {
+      logger.d('Enabling button for AR payment method');
+      _isButtonToUploadEnabled = true;
+    } else if (_uploadMethod == UploadMethod.turbo &&
+        _isTurboUploadPossible &&
+        _sufficentCreditsBalance) {
+      logger.d('Enabling button for Turbo payment method');
+      _isButtonToUploadEnabled = true;
+    } else if (_isFreeThanksToTurbo) {
+      logger.d('Enabling button for free upload using Turbo');
+      _isButtonToUploadEnabled = true;
+    } else {
+      logger.d('Disabling button');
+    }
   }
 
   Future<Uint8List> _jsonMetadataOfTxId(String txId) async {
     final drive =
         await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
-    final isPrivate = drive != null && drive.privacy != DrivePrivacy.public;
+    final isPrivate = drive != null && drive.privacy != DrivePrivacyTag.public;
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),
@@ -398,29 +584,56 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
-      // ignore: avoid_print
-      print('Failed to confirm the upload: Wallet mismatch');
-      emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
+      logger.w('Failed to confirm the upload: Wallet mismatch');
+      emit(SnapshotUploadFailure());
       return;
     }
+
+    await _prepareAndSignTx(
+      _snapshotEntity!,
+    );
 
     try {
       emit(UploadingSnapshot());
 
-      await _arweave.postTx(_preparedTx);
+      if (_useTurboUpload) {
+        await _postTurboDataItem(
+          dataItem: _preparedDataItem!,
+        );
+      } else {
+        await _arweave.postTx(_preparedTx!);
+      }
+
+      final drive =
+          await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
+      final drivePrivacy = drive?.privacy == DrivePrivacyTag.public
+          ? DrivePrivacy.public
+          : DrivePrivacy.private;
+      PlausibleEventTracker.trackSnapshotCreation(
+        drivePrivacy: drivePrivacy,
+      );
 
       emit(SnapshotUploadSuccess());
-    } catch (err) {
-      // ignore: avoid_print
-      print(
-          'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}');
-      emit(SnapshotUploadFailure(errorMessage: '$err'));
+    } catch (err, stacktrace) {
+      logger.e('Error while posting the snapshot transaction', err, stacktrace);
+      emit(SnapshotUploadFailure());
     }
   }
 
+  Future<void> _postTurboDataItem({required DataItem dataItem}) async {
+    final profile = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profile.wallet;
+
+    logger.d('Posting snapshot transaction to Turbo');
+
+    await turboService.postDataItem(
+      dataItem: dataItem,
+      wallet: wallet,
+    );
+  }
+
   void cancelSnapshotCreation() {
-    // ignore: avoid_print
-    print('User cancelled the snapshot creation');
+    logger.i('User cancelled the snapshot creation');
 
     _wasSnapshotDataComputingCanceled = true;
   }

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_logger.i
+
 part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 
 const fetchPhaseWeight = 0.1;
@@ -16,12 +18,13 @@ Stream<double> _syncDrive(
   required Map<FolderID, GhostFolder> ghostFolders,
   required String ownerAddress,
   required ConfigService configService,
+  required PromptToSnapshotBloc promptToSnapshotBloc,
 }) async* {
   /// Variables to count the current drive's progress information
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
   final startSyncDT = DateTime.now();
 
-  logSync('Syncing drive - ${drive.name}');
+  logger.i('Syncing drive: ${drive.id}');
 
   SecretKey? driveKey;
 
@@ -38,14 +41,14 @@ Stream<double> _syncDrive(
   }
   final fetchPhaseStartDT = DateTime.now();
 
-  logSync('Fetching all transactions for drive ${drive.name}\n');
+  logger.d('Fetching all transactions for drive ${drive.id}');
 
   final transactions = <DriveHistoryTransaction>[];
 
   List<SnapshotItem> snapshotItems = [];
 
   if (configService.config.enableSyncFromSnapshot) {
-    logger.i('Syncing from snapshot');
+    logger.i('Syncing from snapshot: ${drive.id}');
 
     final snapshotsStream = arweave.getAllSnapshotsOfDrive(
       driveId,
@@ -84,13 +87,9 @@ Stream<double> _syncDrive(
     ownerAddress: ownerAddress,
   );
 
-  print('Total range to query for: ${totalRangeToQueryFor.rangeSegments}');
-  print(
-    'Sub ranges in snapshots (DRIVE ID: $driveId): ${snapshotDriveHistory.subRanges.rangeSegments}',
-  );
-  print(
-    'Sub ranges in GQL (DRIVE ID: $driveId): ${gqlDriveHistorySubRanges.rangeSegments}',
-  );
+  logger.d('Total range to query for: ${totalRangeToQueryFor.rangeSegments}\n'
+      'Sub ranges in snapshots (DRIVE ID: $driveId): ${snapshotDriveHistory.subRanges.rangeSegments}\n'
+      'Sub ranges in GQL (DRIVE ID: $driveId): ${gqlDriveHistorySubRanges.rangeSegments}');
 
   final DriveHistoryComposite driveHistory = DriveHistoryComposite(
     subRanges: totalRangeToQueryFor,
@@ -120,11 +119,11 @@ Stream<double> _syncDrive(
         return (1 -
             ((currentBlockHeight - block.height) / totalBlockHeightDifference));
       }
-      logSync(
-        'The transaction block is null. \nTransaction node id: ${t.id}',
+      logger.d(
+        'The transaction block is null. Transaction node id: ${t.id}',
       );
 
-      print('New fetch-phase percentage: $fetchPhasePercentage');
+      logger.d('New fetch-phase percentage: $fetchPhasePercentage');
 
       /// if the block is null, we don't calculate and keep the same percentage
       return fetchPhasePercentage;
@@ -137,19 +136,17 @@ Stream<double> _syncDrive(
       if (block != null) {
         firstBlockHeight = block.height;
         totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
-        print(
+        logger.d(
           'First height: $firstBlockHeight, totalHeightDiff: $totalBlockHeightDifference',
         );
       } else {
-        logSync(
-          'The transaction block is null. \nTransaction node id: ${t.id}',
+        logger.d(
+          'The transaction block is null. Transaction node id: ${t.id}',
         );
       }
-    } else {
-      print('Block attribute is already present - $firstBlockHeight');
     }
 
-    print('Adding transaction ${t.id}');
+    logger.d('Adding transaction ${t.id}');
     transactions.add(t);
 
     /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
@@ -158,7 +155,7 @@ Stream<double> _syncDrive(
         fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
       } else {
         // If the difference is zero means that the first phase was concluded.
-        print('The first phase just finished!');
+        logger.d('The first phase just finished!');
         fetchPhasePercentage = 1;
       }
       final percentage =
@@ -166,18 +163,22 @@ Stream<double> _syncDrive(
       yield percentage;
     }
   }
-  print('Done fetching data - ${gqlDriveHistory.driveId}');
+
+  logger.d('Done fetching data - ${gqlDriveHistory.driveId}');
+
+  promptToSnapshotBloc.add(
+    CountSyncedTxs(
+      driveId: driveId,
+      txsSyncedWithGqlCount: gqlDriveHistory.txCount,
+      wasDeepSync: lastBlockHeight == 0,
+    ),
+  );
 
   final fetchPhaseTotalTime =
       DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
 
-  logSync(
-    '''
-      Duration of fetch phase for ${drive.name} : $fetchPhaseTotalTime ms \n
-      Progress by block height: $fetchPhasePercentage% \n
-      Starting parse phase \n
-    ''',
-  );
+  logger.d(
+      'Duration of fetch phase for ${drive.name}: $fetchPhaseTotalTime ms. Progress by block height: $fetchPhasePercentage%. Starting parse phase');
 
   try {
     yield* _parseDriveTransactionsIntoDatabaseEntities(
@@ -197,7 +198,7 @@ Stream<double> _syncDrive(
       (parseProgress) => parseProgress * 0.9,
     );
   } catch (e) {
-    print('[Sync Drive] Error while parsing transactions: $e');
+    logger.e('[Sync Drive] Error while parsing transactions', e);
     rethrow;
   }
 
@@ -208,13 +209,6 @@ Stream<double> _syncDrive(
 
   final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
 
-  logSync(
-    '''
-      Drive ${drive.name} completed parse phase\n
-      Progress by block height: $fetchPhasePercentage% \n
-      Starting parse phase \n
-      Sync duration : $syncDriveTotalTime ms}.\n
-      Parsing used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process.\n
-    ''',
-  );
+  logger.i(
+      'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Parsing used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
 }

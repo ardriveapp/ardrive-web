@@ -3,7 +3,8 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -12,6 +13,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+// ignore: depend_on_referenced_packages
 import 'package:platform/platform.dart';
 import 'package:uuid/uuid.dart';
 
@@ -24,7 +26,7 @@ void main() {
     late Database db;
     late DriveDao driveDao;
     late ArweaveService arweave;
-    late UploadService turboUploadService;
+    late TurboUploadService turboUploadService;
 
     late ProfileCubit profileCubit;
     late SyncCubit syncBloc;
@@ -57,28 +59,34 @@ void main() {
             rootFolderId: rootFolderId,
             ownerAddress: 'fake-owner-address',
             name: 'fake-drive-name',
-            privacy: DrivePrivacy.public,
+            privacy: DrivePrivacyTag.public,
           ),
         );
         // Create fake root folder for drive and sub folders
         batch.insertAll(db.folderEntries, [
           FolderEntriesCompanion.insert(
-              id: rootFolderId,
-              driveId: driveId,
-              name: 'fake-drive-name',
-              path: ''),
+            id: rootFolderId,
+            driveId: driveId,
+            name: 'fake-drive-name',
+            path: '',
+            isHidden: const Value(false),
+          ),
           FolderEntriesCompanion.insert(
-              id: nestedFolderId,
-              driveId: driveId,
-              parentFolderId: Value(rootFolderId),
-              name: nestedFolderId,
-              path: '/$nestedFolderId'),
+            id: nestedFolderId,
+            driveId: driveId,
+            parentFolderId: Value(rootFolderId),
+            name: nestedFolderId,
+            path: '/$nestedFolderId',
+            isHidden: const Value(false),
+          ),
           FolderEntriesCompanion.insert(
-              id: conflictTestFolderId,
-              driveId: driveId,
-              parentFolderId: Value(rootFolderId),
-              name: conflictTestFolderId,
-              path: '/$conflictTestFolderId'),
+            id: conflictTestFolderId,
+            driveId: driveId,
+            parentFolderId: Value(rootFolderId),
+            name: conflictTestFolderId,
+            path: '/$conflictTestFolderId',
+            isHidden: const Value(false),
+          ),
         ]);
         // Insert fake files
         batch.insertAll(
@@ -99,6 +107,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
+                  isHidden: const Value(false),
                 );
               },
             ),
@@ -117,6 +126,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
+                  isHidden: const Value(false),
                 );
               },
             ),
@@ -142,6 +152,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
+                  isHidden: const Value(false),
                 );
               },
             ),
@@ -161,6 +172,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
+                  isHidden: const Value(false),
                 );
               },
             ),
@@ -269,6 +281,7 @@ void main() {
     blocTest(
       'throws when selectedItems is empty',
       build: () => FsEntryMoveBloc(
+        driveDetailCubit: MockDriveDetailCubit(),
         arweave: arweave,
         turboUploadService: turboUploadService,
         syncCubit: syncBloc,
@@ -280,23 +293,12 @@ void main() {
       ),
       errors: () => [isA<Exception>()],
     );
-    late List<SelectedItem> selectedItems;
     blocTest(
       'successfully moves files into folders when there are no conflicts',
-      setUp: (() async {
-        final fileRevisions = await driveDao
-            .filesInFolderAtPathWithRevisionTransactions(
-              driveId: driveId,
-              path: '',
-            )
-            .get();
-        selectedItems = [
-          ...fileRevisions.map((f) => SelectedFile(file: f)),
-        ];
-      }),
       build: () => FsEntryMoveBloc(
         crypto: ArDriveCrypto(),
         arweave: arweave,
+        driveDetailCubit: MockDriveDetailCubit(),
         turboUploadService: turboUploadService,
         syncCubit: syncBloc,
         driveId: driveId,

@@ -22,27 +22,37 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   final DriveDao _driveDao;
   final ArweaveService _arweave;
-  final ArDriveDownloader _downloader;
-  final DownloadService _downloadService;
+  final io.ArDriveMobileDownloader _downloader;
+  final ArDriveDownloader _arDriveDownloader;
   final ARFSRepository _arfsRepository;
-  final ArDriveCrypto _crypto;
 
   ProfileFileDownloadCubit({
     required ARFSFileEntity file,
     required DriveDao driveDao,
     required ArweaveService arweave,
-    required ArDriveDownloader downloader,
-    required DownloadService downloadService,
+    required io.ArDriveMobileDownloader downloader,
+    required ArDriveDownloader arDriveDownloader,
     required ARFSRepository arfsRepository,
     required ArDriveCrypto crypto,
   })  : _driveDao = driveDao,
         _arweave = arweave,
+        _arDriveDownloader = arDriveDownloader,
         _file = file,
         _downloader = downloader,
-        _downloadService = downloadService,
         _arfsRepository = arfsRepository,
-        _crypto = crypto,
         super(FileDownloadStarting());
+
+  Future<void> verifyUploadLimitationsAndDownload(SecretKey? cipherKey) async {
+    if (await AppPlatform.isSafari()) {
+      if (_file.size > publicDownloadSafariSizeLimit) {
+        emit(const FileDownloadFailure(
+            FileDownloadFailureReason.browserDoesNotSupportLargeDownloads));
+        return;
+      }
+    }
+
+    download(cipherKey);
+  }
 
   Future<void> download(SecretKey? cipherKey) async {
     try {
@@ -64,13 +74,21 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
             }
           }
 
-          await _downloadFile(drive, cipherKey);
+          final isPinFile = _file.pinnedDataOwnerAddress != null;
+
+          if (isPinFile) {
+            await _downloadFile(drive, null);
+          } else {
+            await _downloadFile(drive, cipherKey);
+          }
+
           break;
         case DrivePrivacy.public:
           if (AppPlatform.isMobile) {
             final stream = _downloader.downloadFile(
               '${_arweave.client.api.gatewayUrl.origin}/${_file.txId}',
               _file.name,
+              _file.contentType,
             );
 
             await for (int progress in stream) {
@@ -83,6 +101,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
                   fileName: _file.name,
                   progress: progress,
                   fileSize: _file.size,
+                  contentType: _file.contentType ??
+                      lookupMimeTypeWithDefaultType(_file.name),
                 ),
               );
               _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
@@ -112,9 +132,21 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
-    final dataBytes = await _downloadService.download(_file.txId);
+    logger.d('Downloading file...');
 
-    if (drive.drivePrivacy == DrivePrivacy.private) {
+    String? cipher;
+    String? cipherIvTag;
+    SecretKey? fileKey;
+
+    final isPinFile = _file.pinnedDataOwnerAddress != null;
+
+    final dataTx = await (_arweave.getTransactionDetails(_file.txId));
+
+    if (dataTx == null) {
+      throw StateError('Data transaction not found');
+    }
+
+    if (drive.drivePrivacy == DrivePrivacy.private && !isPinFile) {
       SecretKey? driveKey;
 
       if (cipherKey != null) {
@@ -130,41 +162,61 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         throw StateError('Drive Key not found');
       }
 
-      final fileKey = await _driveDao.getFileKey(_file.id, driveKey);
-      final dataTx = await (_arweave.getTransactionDetails(_file.txId));
+      fileKey = await _driveDao.getFileKey(_file.id, driveKey);
 
-      if (dataTx != null) {
-        final decryptedData = await _crypto.decryptTransactionData(
-          dataTx,
-          dataBytes,
-          fileKey,
-        );
-
-        emit(
-          FileDownloadSuccess(
-            bytes: decryptedData,
-            fileName: _file.name,
-            mimeType: _file.contentType ?? lookupMimeType(_file.name),
-            lastModified: _file.lastModifiedDate,
-          ),
-        );
-        return;
-      }
+      cipher = dataTx.getTag(EntityTag.cipher);
+      cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
     }
 
-    emit(
-      FileDownloadSuccess(
-        bytes: dataBytes,
-        fileName: _file.name,
-        mimeType: _file.contentType ?? lookupMimeType(_file.name),
-        lastModified: _file.lastModifiedDate,
-      ),
+    // log file size
+    logger.d('File size: ${_file.size}');
+
+    final downloadStream = await _arDriveDownloader.downloadFile(
+      dataTx: dataTx,
+      fileName: _file.name,
+      fileSize: _file.size,
+      lastModifiedDate: _file.lastModifiedDate,
+      isManifest: _file.contentType == ContentType.manifest,
+      contentType:
+          _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
+      cipher: cipher,
+      cipherIvString: cipherIvTag,
+      fileKey: fileKey,
+    );
+
+    downloadStream.listen(
+      (progress) {
+        logger.d('Download progress: $progress');
+
+        if (state is FileDownloadAborted) {
+          return;
+        }
+
+        emit(
+          FileDownloadWithProgress(
+            fileName: _file.name,
+            progress: progress.toInt(),
+            fileSize: _file.size,
+            contentType:
+                _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
+          ),
+        );
+
+        _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
+      },
+      onError: (e) {
+        logger.e('Failed to download personal file', e);
+        addError(e);
+      },
+      onDone: () {
+        emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
+      },
+      cancelOnError: true,
     );
   }
 
   @visibleForTesting
   bool isSizeAbovePrivateLimit(int size) {
-    debugPrint(_privateFileLimit.toString());
     return size > _privateFileLimit;
   }
 
@@ -192,6 +244,6 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     );
     super.onError(error, stackTrace);
 
-    debugPrint('Failed to download personal file: $error $stackTrace');
+    logger.e('Failed to download personal file', error, stackTrace);
   }
 }

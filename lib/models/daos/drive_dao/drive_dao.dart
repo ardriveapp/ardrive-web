@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -49,7 +49,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> deleteSharedPrivateDrives(String? owner) async {
     final drives = (await allDrives().get()).where(
       (drive) =>
-          drive.ownerAddress != owner && drive.privacy == DrivePrivacy.private,
+          drive.ownerAddress != owner &&
+          drive.privacy == DrivePrivacyTag.private,
     );
     for (var drive in drives) {
       await detachDrive(drive.id);
@@ -111,12 +112,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     SecretKey? driveKey;
     switch (privacy) {
-      case DrivePrivacy.private:
+      case DrivePrivacyTag.private:
         driveKey = await _crypto.deriveDriveKey(wallet, driveId, password);
         insertDriveOp = await _addDriveKeyToDriveCompanion(
             insertDriveOp, profileKey, driveKey);
         break;
-      case DrivePrivacy.public:
+      case DrivePrivacyTag.public:
         // Nothing to do
         break;
     }
@@ -131,6 +132,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           driveId: driveId,
           name: name,
           path: rootPath,
+          isHidden: const Value(false),
         ),
       );
     });
@@ -182,7 +184,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               lastUpdated: Value(entity.createdAt),
             );
 
-            if (entity.privacy == DrivePrivacy.private) {
+            if (entity.privacy == DrivePrivacyTag.private) {
               driveCompanion = await _addDriveKeyToDriveCompanion(
                   driveCompanion, profileKey!, entry.value!);
             }
@@ -213,7 +215,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       lastUpdated: Value(entity.createdAt),
     );
 
-    if (entity.privacy == DrivePrivacy.private) {
+    if (entity.privacy == DrivePrivacyTag.private) {
       if (profileKey != null) {
         companion = await _addDriveKeyToDriveCompanion(
           companion,
@@ -296,23 +298,54 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ? folderById(driveId: driveId, folderId: folderId)
             : folderWithPath(driveId: driveId, path: folderPath!))
         .watchSingleOrNull();
-    final subfolderOrder =
-        enumToFolderOrderByClause(folderEntries, orderBy, orderingMode);
 
     final subfolderQuery = (folderId != null
         ? foldersInFolder(
-            driveId: driveId, parentFolderId: folderId, order: subfolderOrder)
+            driveId: driveId,
+            parentFolderId: folderId,
+            order: (folderEntries) {
+              return enumToFolderOrderByClause(
+                folderEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          )
         : foldersInFolderAtPath(
-            driveId: driveId, path: folderPath!, order: subfolderOrder));
-
-    final filesOrder =
-        enumToFileOrderByClause(fileEntries, orderBy, orderingMode);
+            driveId: driveId,
+            path: folderPath!,
+            order: (folderEntries) {
+              return enumToFolderOrderByClause(
+                folderEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          ));
 
     final filesQuery = folderId != null
         ? filesInFolderWithRevisionTransactions(
-            driveId: driveId, parentFolderId: folderId, order: filesOrder)
+            driveId: driveId,
+            parentFolderId: folderId,
+            order: (fileEntries, _, __) {
+              return enumToFileOrderByClause(
+                fileEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          )
         : filesInFolderAtPathWithRevisionTransactions(
-            driveId: driveId, path: folderPath!, order: filesOrder);
+            driveId: driveId,
+            path: folderPath!,
+            order: (fileEntries, _, __) {
+              return enumToFileOrderByClause(
+                fileEntries,
+                orderBy,
+                orderingMode,
+              );
+            },
+          );
 
     return Rx.combineLatest3(
         folderStream.where((folder) => folder != null).map((folder) => folder!),
@@ -334,6 +367,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           files = files.reversed.toList();
         }
       }
+
       return FolderWithContents(
         folder: folder,
         subfolders: subfolders,
@@ -358,6 +392,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       parentFolderId: Value(parentFolderId),
       name: folderName,
       path: path,
+      isHidden: const Value(false),
     );
     await into(folderEntries).insert(folderEntriesCompanion);
 
@@ -423,6 +458,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       size: entity.size!,
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
       dataContentType: Value(entity.dataContentType),
+      pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
+      isHidden: Value(entity.isHidden ?? false),
     );
 
     return into(fileEntries).insert(

@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/string_types.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -98,6 +100,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     try {
       final previousState = state;
+      final DrivePrivacy drivePrivacy;
 
       if (state is DriveAttachPrivate) {
         if (await driveKeyValidator() != null) {
@@ -105,6 +108,10 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
           emit(previousState);
           return;
         }
+
+        drivePrivacy = DrivePrivacy.private;
+      } else {
+        drivePrivacy = DrivePrivacy.public;
       }
 
       if (!await driveNameLoader()) {
@@ -137,6 +144,10 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
       emit(DriveAttachSuccess());
       unawaited(_syncBloc.startSync());
+
+      PlausibleEventTracker.trackAttachDrive(
+        drivePrivacy: drivePrivacy,
+      );
     } catch (err) {
       addError(err);
     }
@@ -217,7 +228,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     final drivePrivacy = await _arweave.getDrivePrivacyForId(driveId);
 
     switch (drivePrivacy) {
-      case DrivePrivacy.private:
+      case DrivePrivacyTag.private:
         emit(DriveAttachPrivate());
         break;
       case null:
@@ -235,6 +246,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     emit(DriveAttachFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to attach drive: $error $stackTrace');
+    logger.e('Failed to attach drive', error, stackTrace);
   }
 }

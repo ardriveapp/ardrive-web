@@ -1,0 +1,2 @@
+- New Video Preview available when selecting video files
+- The currently selected wallet address is now displayed on the login page

@@ -4,26 +4,27 @@ import 'dart:math';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/constants.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:retry/retry.dart';
-
-import '../../utils/html/html_util.dart';
 
 part 'sync_progress.dart';
 part 'sync_state.dart';
@@ -32,7 +33,7 @@ part 'utils/add_file_entity_revisions.dart';
 part 'utils/add_folder_entity_revisions.dart';
 part 'utils/create_ghosts.dart';
 part 'utils/generate_paths.dart';
-part 'utils/log_sync.dart';
+part 'utils/get_all_file_entities.dart';
 part 'utils/parse_drive_transactions.dart';
 part 'utils/sync_drive.dart';
 part 'utils/update_transaction_statuses.dart';
@@ -53,6 +54,7 @@ const _pendingWaitTime = Duration(days: 1);
 class SyncCubit extends Cubit<SyncState> {
   final ProfileCubit _profileCubit;
   final ActivityCubit _activityCubit;
+  final PromptToSnapshotBloc _promptToSnapshotBloc;
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final Database _db;
@@ -72,13 +74,16 @@ class SyncCubit extends Cubit<SyncState> {
   SyncCubit({
     required ProfileCubit profileCubit,
     required ActivityCubit activityCubit,
+    required PromptToSnapshotBloc promptToSnapshotBloc,
     required ArweaveService arweave,
     required DriveDao driveDao,
     required Database db,
     required TabVisibilitySingleton tabVisibility,
     required ConfigService configService,
+    required ActivityTracker activityTracker,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
+        _promptToSnapshotBloc = promptToSnapshotBloc,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
@@ -86,8 +91,6 @@ class SyncCubit extends Cubit<SyncState> {
         _tabVisibility = tabVisibility,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
-    logSync('Building Sync Cubit...');
-
     createSyncStream();
     restartSyncOnFocus();
     // Sync ArConnect
@@ -96,7 +99,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void createSyncStream() async {
-    logSync('Creating sync stream to periodically call sync automatically');
+    logger.d('Creating sync stream to periodically call sync automatically');
 
     await _syncSub?.cancel();
 
@@ -105,7 +108,7 @@ class SyncCubit extends Cubit<SyncState> {
         // Do not start another sync until the previous sync has completed.
         .map((value) => Stream.fromFuture(startSync()))
         .listen((_) {
-      logSync('Listening to startSync periodic stream');
+      logger.d('Listening to startSync periodic stream');
     });
 
     startSync();
@@ -117,8 +120,11 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void _restartSync() {
-    logSync(
-        'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
+    logger.d(
+      'Attempting to create a sync subscription when the window regains focus.'
+      ' Is Cubit active? ${!isClosed}',
+    );
+
     if (_lastSync != null) {
       final syncInterval = _configService.config.autoSyncIntervalInSeconds;
       final minutesSinceLastSync =
@@ -126,12 +132,13 @@ class SyncCubit extends Cubit<SyncState> {
       final isTimerDurationReadyToSync = minutesSinceLastSync >= syncInterval;
 
       if (!isTimerDurationReadyToSync) {
-        logSync('''
-              Can't restart sync when window is focused \n
-              Is current active? ${!isClosed} \n
-              last sync was $minutesSinceLastSync seconds ago. \n
-              It should be $syncInterval
-              ''');
+        logger.d(
+          'Cannot restart sync when the window is focused. Is it currently'
+          ' active? ${!isClosed}.'
+          ' Last sync occurred $minutesSinceLastSync seconds ago, but it'
+          ' should be at least $syncInterval seconds.',
+        );
+
         return;
       }
     }
@@ -159,7 +166,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> arconnectSync() async {
     final isTabFocused = _tabVisibility.isTabFocused();
-    print('[ArConnect SYNC] isTabFocused: $isTabFocused');
+    logger.i('[ArConnect SYNC] isTabFocused: $isTabFocused');
     if (isTabFocused && await _profileCubit.logoutIfWalletMismatch()) {
       emit(SyncWalletMismatch());
       return;
@@ -182,11 +189,10 @@ class SyncCubit extends Cubit<SyncState> {
   var ghostFolders = <FolderID, GhostFolder>{};
 
   Future<void> startSync({bool syncDeep = false}) async {
-    logSync('Starting Sync');
-    logSync('SyncCubit is currently active? ${!isClosed}');
+    logger.i('Starting Sync');
 
     if (state is SyncInProgress) {
-      logSync('Sync state is SyncInProgress, aborting sync...');
+      logger.d('Sync state is SyncInProgress, aborting sync...');
       return;
     }
 
@@ -198,32 +204,30 @@ class SyncCubit extends Cubit<SyncState> {
 
       _initSync = DateTime.now();
 
-      logSync('Emitting SyncInProgress state');
-
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
-      logSync('Checking if user is logged in...');
+      logger.d('Checking if user is logged in...');
 
       if (profile is ProfileLoggedIn) {
-        logSync('User is logged in');
+        logger.d('User is logged in');
 
         //Check if profile is ArConnect to skip sync while tab is hidden
         ownerAddress = profile.walletAddress;
 
-        logSync('Checking if user is from ar connect...');
+        logger.d('Checking if user is from arconnect...');
 
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
-        logSync('User is ar connect? $isArConnect');
+        logger.d('User using arconnect: $isArConnect');
 
         if (isArConnect && !_tabVisibility.isTabFocused()) {
-          logSync('Tab hidden, skipping sync...');
+          logger.d('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
         }
 
         if (_activityCubit.state is ActivityInProgress) {
-          logSync('Uninterruptible activity in progress, skipping sync...');
+          logger.d('Uninterruptible activity in progress, skipping sync...');
           emit(SyncIdle());
           return;
         }
@@ -246,8 +250,8 @@ class SyncCubit extends Cubit<SyncState> {
 
       if (drives.isEmpty) {
         _syncProgress = SyncProgress.emptySyncCompleted();
-
         syncProgressController.add(_syncProgress);
+        _lastSync = DateTime.now();
 
         emit(SyncIdle());
 
@@ -256,13 +260,15 @@ class SyncCubit extends Cubit<SyncState> {
 
       final currentBlockHeight = await retry(
         () async => await _arweave.getCurrentBlockHeight(),
-        onRetry: (exception) => logSync(
-          'Retrying for get the current block height on exception ${exception.toString()}',
+        onRetry: (exception) => logger.w(
+          'Retrying for get the current block height',
         ),
       );
 
+      _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
+
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
-      logSync('Current block height number $currentBlockHeight');
+      logger.d('Current block height number $currentBlockHeight');
       final driveSyncProcesses = drives.map(
         (drive) async* {
           try {
@@ -282,16 +288,15 @@ class SyncCubit extends Cubit<SyncState> {
                   (_syncProgress.drivesCount - _syncProgress.drivesSynced),
               ownerAddress: drive.ownerAddress,
               configService: _configService,
+              promptToSnapshotBloc: _promptToSnapshotBloc,
             );
           } catch (error, stackTrace) {
-            logSync('''
-                    Error syncing drive with id ${drive.id}. \n
-                    Skipping sync on this drive.\n
-                    Exception: \n
-                    ${error.toString()} \n
-                    StackTrace: \n
-                    ${stackTrace.toString()}
-                    ''');
+            logger.e(
+              'Error syncing drive. Skipping sync on this drive',
+              error,
+              stackTrace,
+            );
+
             addError(error);
           }
         },
@@ -322,7 +327,7 @@ class SyncCubit extends Cubit<SyncState> {
         ),
       );
 
-      logSync('Creating ghosts...');
+      logger.i('Creating ghosts...');
 
       await createGhosts(
         driveDao: _driveDao,
@@ -332,37 +337,51 @@ class SyncCubit extends Cubit<SyncState> {
 
       ghostFolders.clear();
 
-      logSync('Ghosts created...');
+      logger.i('Ghosts created...');
 
-      logSync('Updating transaction statuses...');
+      logger.i('Updating transaction statuses...');
 
-      await Future.wait([
-        if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
-        _updateTransactionStatuses(
-          driveDao: _driveDao,
-          arweave: _arweave,
-        ),
-      ]);
+      final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
+      final metadataTxsFromSnapshots =
+          await SnapshotItemOnChain.getAllCachedTransactionIds();
 
-      logSync('Transaction statuses updated');
+      final confirmedFileTxIds = allFileRevisions
+          .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
+          .map((file) => file.dataTxId)
+          .toList();
 
-      logSync(
-          'Syncing drives finished.\nDrives quantity: ${_syncProgress.drivesCount}\n'
-          'The total progress was ${(_syncProgress.progress * 100).roundToDouble()}');
+      await Future.wait(
+        [
+          if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
+          _updateTransactionStatuses(
+            driveDao: _driveDao,
+            arweave: _arweave,
+            txsIdsToSkip: confirmedFileTxIds,
+          ),
+        ],
+      );
+
+      logger.i('Transaction statuses updated');
     } catch (err, stackTrace) {
-      logSyncError(err, stackTrace);
+      logger.e('Error syncing drives', err, stackTrace);
       addError(err);
     }
     _lastSync = DateTime.now();
 
-    logSync('The sync process took: '
-        '${_lastSync!.difference(_initSync).inMilliseconds} milliseconds to finish.\n');
+    logger.i(
+      'Syncing drives finished. Drives quantity: ${_syncProgress.drivesCount}.'
+      ' The total progress was'
+      ' ${(_syncProgress.progress * 100).roundToDouble()}%.'
+      ' The sync process took:'
+      ' ${_lastSync!.difference(_initSync).inMilliseconds}ms to finish',
+    );
 
+    _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
     emit(SyncIdle());
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {
-    logSync('Last Block Height: $lastBlockHeight');
+    logger.d('Calculating sync last block height: $lastBlockHeight');
     if (_lastSync != null) {
       return lastBlockHeight;
     } else {
@@ -389,21 +408,22 @@ class SyncCubit extends Cubit<SyncState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    logSyncError(error, stackTrace);
-    logSync('Emitting SyncFailure state');
+    logger.e('An error occured on SyncCubit', error, stackTrace);
+
     if (isClosed) {
+      logger.d('SyncCubit is closed, aborting onError...');
       return;
     }
+
     emit(SyncFailure(error: error, stackTrace: stackTrace));
 
-    logSync('Emitting SyncIdle state');
     emit(SyncIdle());
     super.onError(error, stackTrace);
   }
 
   @override
   Future<void> close() async {
-    logSync('Closing SyncCubit...');
+    logger.d('Closing SyncCubit instance');
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
     await _restartOnFocusStreamSubscription?.cancel();
@@ -415,5 +435,7 @@ class SyncCubit extends Cubit<SyncState> {
     _restartArConnectOnFocusStreamSubscription = null;
 
     await super.close();
+
+    logger.d('SyncCubit closed');
   }
 }

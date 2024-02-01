@@ -8,7 +8,7 @@ The ArDrive Web App allows a user to log in to securely view, upload and manage 
 Have any questions? Join the ArDrive Discord channel for support, news and updates. https://discord.gg/ya4hf2H
 
 ## Setting up the Development Environment
-
+****
 Install lefthook for your platform from the intructions [here](https://github.com/evilmartians/lefthook/blob/master/docs/other.md).
 This will enable the use of git hooks.
 After installing lefthook you need to enable it by running:
@@ -56,7 +56,11 @@ Then, to begin code generation and watch for changes, run:
 flutter packages pub run build_runner watch
 ```
 
-Finally, to start a development instance for web, run:
+### App flavors
+
+The app has three flavors: `development`, `staging` and `production`. To select one of those, follow the instructions for:
+
+#### Web
 
 ```shell
 flutter run -d chrome --dart-define=environment=development
@@ -72,6 +76,18 @@ or
 
 ```shell
 flutter run -d chrome --dart-define=environment=production
+```
+
+#### Mobile
+
+```shell
+flutter run --flavor=development
+```
+
+or
+
+```shell
+flutter run --flavor=production
 ```
 
 All changes made to `dev` will be continuously deployed to [staging.ardrive.io](https://staging.ardrive.io). All PRs from this repo merging into `dev` will trigger a preview build that can be shared freely.

@@ -14,6 +14,10 @@ on:
 env:
   BUILD_NUMBER: ${{ github.run_number }}
   RELEASE_NOTES: 'Production'
+  SENTRY_DSN: ${{secrets.SENTRY_DSN}}
+  SENTRY_ORG: ${{secrets.SENTRY_ORG}}
+  SENTRY_AUTH_TOKEN: ${{secrets.SENTRY_AUTH_TOKEN}}
+  SENTRY_PROJECT: ${{secrets.SENTRY_PROJECT}}
 
 jobs:
   test:
@@ -116,8 +120,8 @@ jobs:
   #       working-directory: ./ios
   #       run: bundle exec fastlane deploy type:staging
 
-  android:
-    needs: test
+  build-android:
+    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       # Checkout

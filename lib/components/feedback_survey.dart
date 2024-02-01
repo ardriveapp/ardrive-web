@@ -1,15 +1,14 @@
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/open_url_utils.dart';
 import 'package:ardrive/utils/screen_sizes.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-Future<void> openFeedbackSurveyModal(BuildContext context) =>
-    showAnimatedDialog(
+Future<void> openFeedbackSurveyModal(BuildContext context) => showArDriveDialog(
       context,
       content: const FeedbackSurveyModal(),
     );
@@ -59,7 +58,7 @@ class FeedbackSurveyModal extends StatelessWidget {
                       ArDriveButton(
                         maxWidth: kMediumDialogWidth,
                         onPressed: () async {
-                          await openUrl(url: Resources.surveyFeedbackFormUrl);
+                          await openFeedbackSurveyUrl();
 
                           // ignore: use_build_context_synchronously
                           context.read<FeedbackSurveyCubit>().leaveFeedback();

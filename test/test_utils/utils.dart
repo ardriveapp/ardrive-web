@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io' if (dart.library.html) 'dart:html';
 import 'dart:math';
 
-import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -54,7 +54,7 @@ Future<void> addTestFilesToDb(
         rootFolderId: rootFolderId,
         ownerAddress: 'fake-owner-address',
         name: 'fake-drive-name',
-        privacy: DrivePrivacy.public,
+        privacy: DrivePrivacyTag.public,
       ),
     );
     // Create fake root folder for drive and sub folders
@@ -62,16 +62,20 @@ Future<void> addTestFilesToDb(
       db.folderEntries,
       [
         FolderEntriesCompanion.insert(
-            id: rootFolderId,
-            driveId: driveId,
-            name: 'fake-drive-name',
-            path: ''),
+          id: rootFolderId,
+          driveId: driveId,
+          name: 'fake-drive-name',
+          path: '',
+          isHidden: const Value(false),
+        ),
         FolderEntriesCompanion.insert(
-            id: nestedFolderId,
-            driveId: driveId,
-            parentFolderId: Value(rootFolderId),
-            name: nestedFolderId,
-            path: '/$nestedFolderId'),
+          id: nestedFolderId,
+          driveId: driveId,
+          parentFolderId: Value(rootFolderId),
+          name: nestedFolderId,
+          path: '/$nestedFolderId',
+          isHidden: const Value(false),
+        ),
         ...List.generate(
           emptyNestedFolderCount,
           (i) {
@@ -82,6 +86,7 @@ Future<void> addTestFilesToDb(
               parentFolderId: Value(rootFolderId),
               name: folderId,
               path: '/$folderId',
+              isHidden: const Value(false),
             );
           },
         )..shuffle(Random(0)),
@@ -106,6 +111,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
+              isHidden: const Value(false),
             );
           },
         )..shuffle(Random(0)),
@@ -124,6 +130,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
+              isHidden: const Value(false),
             );
           },
         )..shuffle(Random(0)),
@@ -149,6 +156,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
+              isHidden: const Value(false),
             );
           },
         )..shuffle(Random(0)),
@@ -168,6 +176,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
+              isHidden: const Value(false),
             );
           },
         )..shuffle(Random(0)),

@@ -3,7 +3,9 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,12 +14,12 @@ import '../pages/drive_detail/drive_detail_page.dart';
 import 'components.dart';
 
 Future<void> promptToMove(
-  BuildContext context, {
+  BuildContext parentContext, {
   required String driveId,
   required List<ArDriveDataTableItem> selectedItems,
 }) {
-  return showAnimatedDialog(
-    context,
+  return showArDriveDialog(
+    parentContext,
     content: MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -26,14 +28,15 @@ Future<void> promptToMove(
             driveId: driveId,
             selectedItems: selectedItems,
             arweave: context.read<ArweaveService>(),
-            turboUploadService: context.read<UploadService>(),
+            turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),
+            driveDetailCubit: parentContext.read<DriveDetailCubit>(),
           )..add(const FsEntryMoveInitial()),
         ),
         BlocProvider.value(
-          value: context.read<DriveDetailCubit>(),
+          value: parentContext.read<DriveDetailCubit>(),
         )
       ],
       child: const FsEntryMoveForm(),
@@ -61,286 +64,309 @@ class FsEntryMoveForm extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        return Builder(builder: (context) {
-          if (state is FsEntryMoveNameConflict) {
-            return ArDriveStandardModal(
-              title: appLocalizationsOf(context).nameConflict,
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Text(
-                    appLocalizationsOf(context)
-                        .itemMoveNameConflict(state.folderInView.name),
+        return BlocBuilder<DriveDetailCubit, DriveDetailState>(
+          builder: (context, driveDetailState) {
+            return Builder(builder: (context) {
+              if (state is FsEntryMoveNameConflict) {
+                return ArDriveStandardModal(
+                  title: appLocalizationsOf(context).nameConflict,
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        appLocalizationsOf(context)
+                            .itemMoveNameConflict(state.folderInView.name),
+                      ),
+                      for (final itemName in state.conflictingFileNames() +
+                          state.conflictingFolderNames())
+                        Text(itemName),
+                    ],
                   ),
-                  for (final itemName in state.conflictingFileNames() +
-                      state.conflictingFolderNames())
-                    Text(itemName),
-                ],
-              ),
-              actions: [
-                ModalAction(
-                  action: () {
-                    Navigator.pop(context);
-                  },
-                  title: appLocalizationsOf(context).cancelEmphasized,
-                ),
-                if (!state.areAllItemsConflicting())
-                  ModalAction(
-                    action: () {
-                      context.read<FsEntryMoveBloc>().add(
-                            FsEntryMoveSkipConflicts(
-                              folderInView: state.folderInView,
-                              conflictingItems: state.conflictingItems,
-                            ),
-                          );
+                  actions: [
+                    ModalAction(
+                      action: () {
+                        Navigator.pop(context);
+                      },
+                      title: appLocalizationsOf(context).cancelEmphasized,
+                    ),
+                    if (!state.areAllItemsConflicting())
+                      ModalAction(
+                        action: () {
+                          context.read<FsEntryMoveBloc>().add(
+                                FsEntryMoveSkipConflicts(
+                                  folderInView: state.folderInView,
+                                  conflictingItems: state.conflictingItems,
+                                ),
+                              );
+                        },
+                        title: appLocalizationsOf(context).skipEmphasized,
+                      ),
+                  ],
+                );
+              }
+              if (state is FsEntryMoveLoadSuccess) {
+                final isShowingHiddenFiles =
+                    (driveDetailState as DriveDetailLoadSuccess)
+                        .isShowingHiddenFiles;
+
+                final List<FolderEntry> subFolders;
+                if (isShowingHiddenFiles) {
+                  subFolders = state.viewingFolder.subfolders;
+                } else {
+                  subFolders = state.viewingFolder.subfolders
+                      .where((f) => !f.isHidden)
+                      .toList();
+                }
+
+                final items = [
+                  ...subFolders.map(
+                    (f) {
+                      final enabled = state.itemsToMove
+                          .where((item) => item.id == f.id)
+                          .isEmpty;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16.0, horizontal: 16),
+                        child: GestureDetector(
+                          onTap: enabled
+                              ? () {
+                                  context.read<FsEntryMoveBloc>().add(
+                                        FsEntryMoveUpdateTargetFolder(
+                                          folderId: f.id,
+                                        ),
+                                      );
+                                }
+                              : null,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ArDriveIcons.folderOutline(
+                                size: 16,
+                                color: enabled ? null : _colorDisabled(context),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  f.name,
+                                  style:
+                                      ArDriveTypography.body.inputNormalRegular(
+                                    color: enabled
+                                        ? null
+                                        : _colorDisabled(context),
+                                  ),
+                                ),
+                              ),
+                              ArDriveIcons.carretRight(
+                                size: 18,
+                                color: enabled ? null : _colorDisabled(context),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
                     },
-                    title: appLocalizationsOf(context).skipEmphasized,
                   ),
-              ],
-            );
-          }
-          if (state is FsEntryMoveLoadSuccess) {
-            final items = [
-              ...state.viewingFolder.subfolders.map(
-                (f) {
-                  final enabled = state.itemsToMove
-                      .where((item) => item.id == f.id)
-                      .isEmpty;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16.0, horizontal: 16),
-                    child: GestureDetector(
-                      onTap: enabled
-                          ? () {
-                              context.read<FsEntryMoveBloc>().add(
-                                    FsEntryMoveUpdateTargetFolder(
-                                      folderId: f.id,
-                                    ),
-                                  );
-                            }
-                          : null,
+                  ...state.viewingFolder.files.map(
+                    (f) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16.0,
+                        horizontal: 16,
+                      ),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          ArDriveIcons.folderOutline(
+                          ArDriveIcons.fileOutlined(
                             size: 16,
-                            color: enabled ? null : _colorDisabled(context),
+                            color: _colorDisabled(context),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               f.name,
                               style: ArDriveTypography.body.inputNormalRegular(
-                                color: enabled ? null : _colorDisabled(context),
+                                color: _colorDisabled(context),
                               ),
                             ),
-                          ),
-                          ArDriveIcons.carretRight(
-                            size: 18,
-                            color: enabled ? null : _colorDisabled(context),
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
-              ),
-              ...state.viewingFolder.files.map(
-                (f) => Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16.0,
-                    horizontal: 16,
                   ),
-                  child: Row(
-                    children: [
-                      ArDriveIcons.fileOutlined(
-                        size: 16,
-                        color: _colorDisabled(context),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          f.name,
-                          style: ArDriveTypography.body.inputNormalRegular(
-                            color: _colorDisabled(context),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ];
+                ];
 
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ArDriveCard(
-                height: 441,
-                width: kMediumDialogWidth,
-                contentPadding: EdgeInsets.zero,
-                content: SizedBox(
-                  height: 325,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.only(left: 16, right: 16),
-                        width: double.infinity,
-                        height: 77,
-                        alignment: Alignment.centerLeft,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeBgCanvas,
-                        child: Row(
-                          children: [
-                            AnimatedContainer(
-                              width: !state.viewingRootFolder ? 20 : 0,
-                              duration: const Duration(milliseconds: 200),
-                              child: GestureDetector(
-                                onTap: () {
-                                  context.read<FsEntryMoveBloc>().add(
-                                        FsEntryMoveGoBackToParent(
-                                          folderInView:
-                                              state.viewingFolder.folder,
-                                        ),
-                                      );
-                                },
-                                child: AnimatedScale(
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ArDriveCard(
+                    height: 441,
+                    width: kMediumDialogWidth,
+                    contentPadding: EdgeInsets.zero,
+                    content: SizedBox(
+                      height: 325,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.only(left: 16, right: 16),
+                            width: double.infinity,
+                            height: 77,
+                            alignment: Alignment.centerLeft,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeBgCanvas,
+                            child: Row(
+                              children: [
+                                AnimatedContainer(
+                                  width: !state.viewingRootFolder ? 20 : 0,
                                   duration: const Duration(milliseconds: 200),
-                                  scale: !state.viewingRootFolder ? 1 : 0,
-                                  child: ArDriveIcons.arrowLeft(
-                                    size: 32,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      context.read<FsEntryMoveBloc>().add(
+                                            FsEntryMoveGoBackToParent(
+                                              folderInView:
+                                                  state.viewingFolder.folder,
+                                            ),
+                                          );
+                                    },
+                                    child: AnimatedScale(
+                                      duration:
+                                          const Duration(milliseconds: 200),
+                                      scale: !state.viewingRootFolder ? 1 : 0,
+                                      child: ArDriveIcons.arrowLeft(
+                                        size: 32,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                                AnimatedPadding(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: !state.viewingRootFolder
+                                      ? const EdgeInsets.only(left: 8)
+                                      : const EdgeInsets.only(left: 0),
+                                  child: Text(
+                                    appLocalizationsOf(context).moveItems,
+                                    style: ArDriveTypography.headline
+                                        .headline5Bold(),
+                                  ),
+                                ),
+                                const Spacer(),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: ArDriveIcons.x(
+                                    size: 24,
+                                  ),
+                                ),
+                              ],
                             ),
-                            AnimatedPadding(
-                              duration: const Duration(milliseconds: 200),
-                              padding: !state.viewingRootFolder
-                                  ? const EdgeInsets.only(left: 8)
-                                  : const EdgeInsets.only(left: 0),
-                              child: Text(
-                                appLocalizationsOf(context).moveItems,
-                                style:
-                                    ArDriveTypography.headline.headline5Bold(),
-                              ),
-                            ),
-                            const Spacer(),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.pop(context);
+                          ),
+                          Expanded(
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: items.length,
+                              itemBuilder: (context, index) {
+                                return items[index];
                               },
-                              child: ArDriveIcons.x(
-                                size: 24,
-                              ),
                             ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          itemCount: items.length,
-                          itemBuilder: (context, index) {
-                            return items[index];
-                          },
-                        ),
-                      ),
-                      const Divider(),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeBgSurface,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            ArDriveButton(
-                                maxHeight: 36,
-                                style: ArDriveButtonStyle.secondary,
-                                backgroundColor: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgDefault,
-                                fontStyle:
-                                    ArDriveTypography.body.buttonNormalRegular(
-                                  color: ArDriveTheme.of(context)
+                          ),
+                          const Divider(),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeBgSurface,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                ArDriveButton(
+                                    maxHeight: 36,
+                                    style: ArDriveButtonStyle.secondary,
+                                    backgroundColor: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgDefault,
+                                    fontStyle: ArDriveTypography.body
+                                        .buttonNormalRegular(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault,
+                                    ),
+                                    icon: ArDriveIcons.iconNewFolder1(),
+                                    text: appLocalizationsOf(context)
+                                        .createFolderEmphasized,
+                                    onPressed: () {
+                                      showArDriveDialog(
+                                        context,
+                                        content: BlocProvider(
+                                          create: (context) =>
+                                              FolderCreateCubit(
+                                            driveId: state
+                                                .viewingFolder.folder.driveId,
+                                            parentFolderId:
+                                                state.viewingFolder.folder.id,
+                                            profileCubit:
+                                                context.read<ProfileCubit>(),
+                                            arweave:
+                                                context.read<ArweaveService>(),
+                                            turboUploadService: context
+                                                .read<TurboUploadService>(),
+                                            driveDao: context.read<DriveDao>(),
+                                          ),
+                                          child: const FolderCreateForm(),
+                                        ),
+                                      );
+                                    }),
+                                ArDriveButton(
+                                  maxHeight: 36,
+                                  backgroundColor: ArDriveTheme.of(context)
                                       .themeData
                                       .colors
                                       .themeFgDefault,
+                                  fontStyle: ArDriveTypography.body
+                                      .buttonNormalRegular(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeAccentSubtle,
+                                  ),
+                                  text: appLocalizationsOf(context)
+                                      .moveHereEmphasized,
+                                  onPressed: () {
+                                    context.read<FsEntryMoveBloc>().add(
+                                          FsEntryMoveSubmit(
+                                            folderInView:
+                                                state.viewingFolder.folder,
+                                          ),
+                                        );
+                                    context
+                                        .read<DriveDetailCubit>()
+                                        .forceDisableMultiselect = true;
+                                  },
                                 ),
-                                icon: ArDriveIcons.iconNewFolder1(),
-                                text: appLocalizationsOf(context)
-                                    .createFolderEmphasized,
-                                onPressed: () {
-                                  showAnimatedDialog(
-                                    context,
-                                    content: BlocProvider(
-                                      create: (context) => FolderCreateCubit(
-                                        driveId:
-                                            state.viewingFolder.folder.driveId,
-                                        parentFolderId:
-                                            state.viewingFolder.folder.id,
-                                        profileCubit:
-                                            context.read<ProfileCubit>(),
-                                        arweave: context.read<ArweaveService>(),
-                                        turboUploadService:
-                                            context.read<UploadService>(),
-                                        driveDao: context.read<DriveDao>(),
-                                      ),
-                                      child: const FolderCreateForm(),
-                                    ),
-                                  );
-                                }),
-                            ArDriveButton(
-                              maxHeight: 36,
-                              backgroundColor: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDefault,
-                              fontStyle:
-                                  ArDriveTypography.body.buttonNormalRegular(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeAccentSubtle,
-                              ),
-                              text: appLocalizationsOf(context)
-                                  .moveHereEmphasized,
-                              onPressed: () {
-                                context.read<FsEntryMoveBloc>().add(
-                                      FsEntryMoveSubmit(
-                                        folderInView:
-                                            state.viewingFolder.folder,
-                                      ),
-                                    );
-                                context
-                                    .read<DriveDetailCubit>()
-                                    .forceDisableMultiselect = true;
-                              },
+                              ],
                             ),
-                          ],
-                        ),
-                      )
-                    ],
+                          )
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          } else {
-            return const SizedBox();
-          }
-        });
+                );
+              } else {
+                return const SizedBox();
+              }
+            });
+          },
+        );
       },
     );
   }

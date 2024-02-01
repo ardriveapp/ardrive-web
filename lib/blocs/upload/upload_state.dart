@@ -63,54 +63,116 @@ class UploadFileTooLarge extends UploadState {
   List<Object> get props => [tooLargeFileNames];
 }
 
-/// [UploadReady] means that the upload is ready to be performed and is awaiting confirmation from the user.
-class UploadReady extends UploadState {
-  /// The cost to upload the data, in AR.
-  final CostEstimate costEstimate;
+class UploadReadyToPrepare extends UploadState {
+  final UploadParams params;
+  final bool isArConnect;
 
-  /// Whether or not the user has sufficient AR to cover the `totalCost`.
-  final bool sufficientArBalance;
-
-  /// Whether or not the upload will be made public ie. without encryption.
-  final bool uploadIsPublic;
-
-  final UploadPlan uploadPlan;
-
-  final bool isFreeThanksToTurbo;
-
-  final int uploadSize;
-
-  UploadReady({
-    required this.costEstimate,
-    required this.sufficientArBalance,
-    required this.uploadIsPublic,
-    required this.uploadPlan,
-    required this.isFreeThanksToTurbo,
-    required this.uploadSize,
+  UploadReadyToPrepare({
+    required this.params,
+    this.isArConnect = false,
   });
 
   @override
+  List<Object> get props => [params];
+}
+
+/// [UploadReady] means that the upload is ready to be performed and is awaiting confirmation from the user.
+class UploadReady extends UploadState {
+  final UploadPaymentMethodInfo paymentInfo;
+  final bool isButtonToUploadEnabled;
+  final bool isDragNDrop;
+  final bool uploadIsPublic;
+  final int numberOfFiles;
+
+  final UploadParams params;
+
+  final bool isArConnect;
+
+  UploadReady({
+    required this.paymentInfo,
+    required this.uploadIsPublic,
+    required this.isButtonToUploadEnabled,
+    this.isDragNDrop = false,
+    required this.params,
+    required this.numberOfFiles,
+    required this.isArConnect,
+  });
+
+// copyWith
+  UploadReady copyWith({
+    UploadPaymentMethodInfo? paymentInfo,
+    UploadMethod? uploadMethod,
+    bool? isButtonToUploadEnabled,
+    bool? isDragNDrop,
+    bool? uploadIsPublic,
+    int? numberOfFiles,
+    UploadParams? params,
+    bool? isArConnect,
+  }) {
+    return UploadReady(
+      isArConnect: isArConnect ?? this.isArConnect,
+      uploadIsPublic: uploadIsPublic ?? this.uploadIsPublic,
+      isDragNDrop: isDragNDrop ?? this.isDragNDrop,
+      paymentInfo: paymentInfo ?? this.paymentInfo,
+      params: params ?? this.params,
+      isButtonToUploadEnabled:
+          isButtonToUploadEnabled ?? this.isButtonToUploadEnabled,
+      numberOfFiles: numberOfFiles ?? this.numberOfFiles,
+    );
+  }
+
+  @override
   List<Object?> get props => [
-        costEstimate,
-        sufficientArBalance,
-        uploadPlan,
-        isFreeThanksToTurbo,
+        paymentInfo,
+        isButtonToUploadEnabled,
       ];
+
+  @override
+  toString() => 'UploadReady { paymentInfo: $paymentInfo }';
 }
 
 class UploadInProgress extends UploadState {
   final UploadPlan uploadPlan;
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
+  final double progress;
 
   UploadInProgress({
     required this.uploadPlan,
+    required this.progress,
   });
 
   @override
   List<Object?> get props => [uploadPlan, _equatableBust];
 }
 
-class UploadFailure extends UploadState {}
+class UploadInProgressUsingNewUploader extends UploadState {
+  final UploadProgress progress;
+  final UploadController controller;
+  final double totalProgress;
+  final bool isCanceling;
+  final Key? equatableBust;
+  final UploadMethod uploadMethod;
+
+  UploadInProgressUsingNewUploader({
+    required this.progress,
+    required this.totalProgress,
+    required this.controller,
+    this.equatableBust,
+    this.isCanceling = false,
+    required this.uploadMethod,
+  });
+
+  @override
+  List<Object?> get props => [equatableBust];
+}
+
+class UploadFailure extends UploadState {
+  final List<UploadTask>? failedTasks;
+  final UploadErrors error;
+  final UploadController? controller;
+
+  UploadFailure({this.failedTasks, required this.error, this.controller});
+}
 
 class UploadComplete extends UploadState {}
 
@@ -118,14 +180,30 @@ class UploadWalletMismatch extends UploadState {}
 
 class UploadShowingWarning extends UploadState {
   final UploadWarningReason reason;
+  final UploadPlan? uploadPlanForAR;
+  final UploadPlan? uploadPlanForTurbo;
 
-  UploadShowingWarning({required this.reason});
+  UploadShowingWarning({
+    required this.reason,
+    this.uploadPlanForAR,
+    this.uploadPlanForTurbo,
+  });
 
   @override
   List<Object> get props => [reason];
 }
 
+class UploadCanceled extends UploadState {}
+
+class CancelD2NUploadWarning extends UploadState {}
+
 enum UploadWarningReason {
   /// The user is attempting to upload a file that is too large.
   fileTooLarge,
+  fileTooLargeOnNonChromeBrowser,
+}
+
+enum UploadErrors {
+  turboTimeout,
+  unknown,
 }

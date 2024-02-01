@@ -1,6 +1,6 @@
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/utils/app_flavors.dart';
-import 'package:ardrive/utils/logger/logger.dart';
+import 'package:ardrive/utils/logger.dart';
 
 import 'config.dart';
 
@@ -36,7 +36,7 @@ class ConfigService {
   Future<AppConfig> loadConfig() async {
     _config ??= await _configFetcher.fetchConfig(await loadAppFlavor());
 
-    logger.i('App config: $_config');
+    logger.d('App config: $_config');
 
     return _config!;
   }
@@ -55,9 +55,9 @@ class ConfigService {
     }
   }
 
-  void updateAppConfig(AppConfig config) {
-    _configFetcher.saveConfigOnDevToolsPrefs(config);
-    _config = config;
+  void updateAppConfig(AppConfig newConfig) {
+    _configFetcher.saveConfigOnDevToolsPrefs(newConfig);
+    _config = newConfig;
   }
 
   Future<void> resetDevToolsPrefs() async {
@@ -67,4 +67,4 @@ class ConfigService {
   }
 }
 
-enum Flavor { production, development }
+enum Flavor { production, development, staging }

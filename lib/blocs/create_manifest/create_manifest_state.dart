@@ -91,7 +91,7 @@ class CreateManifestInsufficientBalance extends CreateManifestState {
 class CreateManifestUploadConfirmation extends CreateManifestState {
   final int manifestSize;
   final String manifestName;
-
+  final bool folderHasPendingFiles;
   final String arUploadCost;
   final double? usdUploadCost;
 
@@ -100,6 +100,7 @@ class CreateManifestUploadConfirmation extends CreateManifestState {
   CreateManifestUploadConfirmation({
     required this.manifestSize,
     required this.manifestName,
+    required this.folderHasPendingFiles,
     required this.arUploadCost,
     required this.usdUploadCost,
     required this.uploadManifestParams,
@@ -109,6 +110,7 @@ class CreateManifestUploadConfirmation extends CreateManifestState {
   List get props => [
         manifestSize,
         manifestName,
+        folderHasPendingFiles,
         arUploadCost,
         usdUploadCost,
         uploadManifestParams,
@@ -119,12 +121,14 @@ class CreateManifestUploadConfirmation extends CreateManifestState {
 class CreateManifestTurboUploadConfirmation extends CreateManifestState {
   final int manifestSize;
   final String manifestName;
+  final bool folderHasPendingFiles;
   final List<DataItem> manifestDataItems;
   final Future<void> Function() addManifestToDatabase;
 
   CreateManifestTurboUploadConfirmation({
     required this.manifestSize,
     required this.manifestName,
+    required this.folderHasPendingFiles,
     required this.manifestDataItems,
     required this.addManifestToDatabase,
   });
@@ -133,6 +137,7 @@ class CreateManifestTurboUploadConfirmation extends CreateManifestState {
   List<Object> get props => [
         manifestSize,
         manifestName,
+        folderHasPendingFiles,
         manifestDataItems,
         addManifestToDatabase,
       ];

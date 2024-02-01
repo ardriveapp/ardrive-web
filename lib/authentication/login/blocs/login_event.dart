@@ -24,7 +24,11 @@ class AddWalletFromArConnect extends LoginEvent {
 }
 
 class CheckIfUserIsLoggedIn extends LoginEvent {
-  const CheckIfUserIsLoggedIn();
+  final bool gettingStarted;
+
+  const CheckIfUserIsLoggedIn({
+    this.gettingStarted = false,
+  });
 
   @override
   List<Object> get props => [];
@@ -76,4 +80,44 @@ class FinishOnboarding extends LoginEvent {
 
 class UnLockWithBiometrics extends LoginEvent {
   const UnLockWithBiometrics();
+}
+
+class EnterSeedPhrase extends LoginEvent {
+  const EnterSeedPhrase();
+}
+
+class AddWalletFromMnemonic extends LoginEvent {
+  const AddWalletFromMnemonic(this.mnemonic);
+
+  final String mnemonic;
+
+  @override
+  List<Object> get props => [mnemonic];
+}
+
+class AddWalletFromCompleter extends LoginEvent {
+  const AddWalletFromCompleter(this.mnemonic, this.walletCompleter);
+
+  final String mnemonic;
+  final Completer<Wallet> walletCompleter;
+
+  @override
+  List<Object> get props => [mnemonic, walletCompleter];
+}
+
+class GenerateWallet extends LoginEvent {
+  const GenerateWallet();
+}
+
+class CreateNewWallet extends LoginEvent {
+  const CreateNewWallet();
+}
+
+class CompleteWalletGeneration extends LoginEvent {
+  const CompleteWalletGeneration(this.wallet);
+
+  final Wallet wallet;
+
+  @override
+  List<Object> get props => [wallet];
 }

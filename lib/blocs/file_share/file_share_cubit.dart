@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/link_generators.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -45,16 +45,13 @@ class FileShareCubit extends Cubit<FileShareState> {
     if (dataTxStatus == TransactionStatus.failed) {
       emit(FileShareLoadedFailedFile());
       return;
-    } else if (dataTxStatus == TransactionStatus.pending) {
-      emit(FileShareLoadedPendingFile());
-      return;
     }
 
     late Uri fileShareLink;
     SecretKey? fileKey;
 
     switch (drive.privacy) {
-      case DrivePrivacy.private:
+      case DrivePrivacyTag.private:
         final profile = _profileCubit.state;
         SecretKey? driveKey;
 
@@ -76,7 +73,7 @@ class FileShareCubit extends Cubit<FileShareState> {
         );
 
         break;
-      case DrivePrivacy.public:
+      case DrivePrivacyTag.public:
         fileShareLink = generatePublicFileShareLink(fileId: file.id);
         break;
       default:
@@ -87,6 +84,7 @@ class FileShareCubit extends Cubit<FileShareState> {
         fileName: file.name,
         fileShareLink: fileShareLink,
         isPublicFile: drive.isPublic,
+        isPending: dataTxStatus == TransactionStatus.pending,
       ),
     );
   }

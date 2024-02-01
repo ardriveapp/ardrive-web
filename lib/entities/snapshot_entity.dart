@@ -1,8 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -14,20 +15,20 @@ part 'snapshot_entity.g.dart';
 
 @JsonSerializable()
 class SnapshotEntity extends Entity {
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? id;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? driveId;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   int? blockStart;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   int? blockEnd;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   int? dataStart;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   int? dataEnd;
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   Uint8List? data;
 
   SnapshotEntity({
@@ -57,9 +58,8 @@ class SnapshotEntity extends Entity {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..createdAt = transaction.getCommitTime();
-    } catch (_) {
-      // ignore: avoid_print
-      print('Error parsing transaction: ${transaction.id}');
+    } catch (error) {
+      logger.e('Error parsing transaction: ${transaction.id}', error);
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }
@@ -75,7 +75,7 @@ class SnapshotEntity extends Entity {
 
     tx
       ..addArFsTag()
-      ..addTag(EntityTag.entityType, EntityType.snapshot)
+      ..addTag(EntityTag.entityType, EntityTypeTag.snapshot)
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.snapshotId, id!)
       ..addTag(EntityTag.blockStart, '$blockStart')
@@ -85,7 +85,7 @@ class SnapshotEntity extends Entity {
   }
 
   Future<DataItem> asPreparedDataItem({
-    required ArweaveAddress owner,
+    required ArweaveAddressString owner,
   }) async {
     final dataItem = DataItem()
       ..setOwner(owner)
@@ -116,5 +116,23 @@ class SnapshotEntity extends Entity {
     );
 
     return tx;
+  }
+
+  @override
+  Future<DataItem> asDataItem(SecretKey? key) async {
+    if (key != null) {
+      throw UnsupportedError('Snapshot entities are not encrypted.');
+    }
+
+    final item = DataItem.withBlobData(data: data!);
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    item.addTag(EntityTag.contentType, ContentType.json);
+    addEntityTagsToTransaction(item);
+    item.addApplicationTags(
+      version: packageInfo.version,
+    );
+
+    return item;
   }
 }

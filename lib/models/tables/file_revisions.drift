@@ -17,8 +17,15 @@ CREATE TABLE file_revisions (
     bundledIn TEXT,
 
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
-    
+
+    customJsonMetadata TEXT,
+    customGQLTags TEXT,
+
     [action] TEXT NOT NULL,
+
+    pinnedDataOwnerAddress TEXT,
+
+    isHidden BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (fileId, driveId, dateCreated),
     FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id),

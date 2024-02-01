@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/response_handler.dart';
 import 'package:http/http.dart';
 import 'package:retry/retry.dart';
@@ -28,7 +29,7 @@ class HttpRetry {
           responseHandler.handle(response);
 
           if (retryAttempts > 0) {
-            print(
+            logger.i(
                 'Succesfully get the response after $retryAttempts attempt(s)');
           }
 

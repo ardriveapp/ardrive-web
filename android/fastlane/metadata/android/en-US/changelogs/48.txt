@@ -1,0 +1,2 @@
+- Improves the performance for creating drive snapshots
+- Syncs revert to GQL when drives are unable to sync from snapshots

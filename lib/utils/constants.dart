@@ -6,8 +6,14 @@ const List<String> supportedImageTypesInFilePreview = [
   'image/bmp',
 ];
 
-const List<String> videoContentTypes = [
-  'video/mp4',
+const List<String> audioContentTypes = [
+  'audio/aac',
+  'audio/x-wav',
+  'audio/ogg',
+  'audio/x-flac',
+  'audio/mpeg',
 ];
 
 const profileQueryMaxRetries = 6;
+
+const String hasAcceptedCookiePolicyKey = 'hasAcceptedCookiePolicy';

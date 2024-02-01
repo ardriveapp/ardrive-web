@@ -1,22 +1,28 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/blocs/sync/sync_cubit.dart';
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/theme_switcher.dart';
+import 'package:ardrive/dev_tools/app_dev_tools.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
+import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AppSideBar extends StatefulWidget {
   const AppSideBar({super.key});
@@ -38,9 +44,9 @@ class _AppSideBarState extends State<AppSideBar> {
   Widget build(BuildContext context) {
     return Material(
       color: ArDriveTheme.of(context).themeData.backgroundColor,
-      child: ScreenTypeLayout(
-        mobile: _mobileView(),
-        desktop: _desktopView(),
+      child: ScreenTypeLayout.builder(
+        mobile: (context) => _mobileView(),
+        desktop: (context) => _desktopView(),
       ),
     );
   }
@@ -111,6 +117,26 @@ class _AppSideBarState extends State<AppSideBar> {
               const SizedBox(
                 height: 16,
               ),
+              if ((AppPlatform.isMobile || AppPlatform.isMobileWeb()) &&
+                  configService.flavor != Flavor.production) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0),
+                  child: GestureDetector(
+                    child: Text(
+                      'Open dev tools',
+                      style: ArDriveTypography.body
+                          .buttonNormalBold()
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    onTap: () {
+                      ArDriveDevTools().showDevTools();
+                    },
+                  ),
+                ),
+                const SizedBox(
+                  height: 16,
+                ),
+              ],
               const Padding(
                 padding: EdgeInsets.only(left: 16.0),
                 child: HelpButton(),
@@ -118,9 +144,19 @@ class _AppSideBarState extends State<AppSideBar> {
               const SizedBox(
                 height: 16,
               ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _exportLogsButton(),
+              ),
+              const SizedBox(
+                height: 4,
+              ),
               const Padding(
                 padding: EdgeInsets.only(left: 16.0),
                 child: ThemeSwitcher(),
+              ),
+              const SizedBox(
+                height: 4,
               ),
               const Padding(
                 padding: EdgeInsets.only(left: 20.0),
@@ -342,15 +378,22 @@ class _AppSideBarState extends State<AppSideBar> {
                   child: HelpButton(),
                 ),
                 const SizedBox(
-                  height: 24,
+                  height: 16,
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _exportLogsButton(),
+                ),
+                const SizedBox(
+                  height: 8,
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
+                    const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         ThemeSwitcher(),
                         SizedBox(
                           height: 8,
@@ -408,62 +451,13 @@ class _AppSideBarState extends State<AppSideBar> {
           );
   }
 
-  Widget _buildSyncButton() {
-    return BlocBuilder<SyncCubit, SyncState>(
-      builder: (context, syncState) {
-        return PopupMenuButton(
-          color: kDarkSurfaceColor,
-          tooltip: appLocalizationsOf(context).resync,
-          onSelected: ((value) {
-            context
-                .read<SyncCubit>()
-                .startSync(syncDeep: value == SyncType.deep);
-          }),
-          itemBuilder: (context) {
-            return [
-              PopupMenuItem<SyncType>(
-                value: SyncType.normal,
-                child: Tooltip(
-                  message: appLocalizationsOf(context).resyncTooltip,
-                  child: ListTile(
-                    leading: const Icon(Icons.sync),
-                    title: Text(appLocalizationsOf(context).resync),
-                  ),
-                ),
-              ),
-              PopupMenuItem<SyncType>(
-                value: SyncType.deep,
-                child: Tooltip(
-                  message: appLocalizationsOf(context).deepResyncTooltip,
-                  child: ListTile(
-                    leading: const Icon(Icons.cloud_sync),
-                    title: Text(appLocalizationsOf(context).deepResync),
-                  ),
-                ),
-              ),
-            ];
-          },
-          icon: const Icon(Icons.sync),
-          position: PopupMenuPosition.under,
-        );
-      },
-    );
-  }
-
   Widget _buildDriveActionsButton(
     BuildContext context,
     bool isMobile,
   ) {
-    final minimumWalletBalance = BigInt.from(10000000);
-
     final profileState = context.watch<ProfileCubit>().state;
 
     if (profileState is ProfileLoggedIn) {
-      final profile = profileState;
-      final notEnoughARInWallet = !profile.hasMinimumBalanceForUpload(
-        minimumWalletBalance: minimumWalletBalance,
-      );
-
       return AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child: Column(
@@ -478,6 +472,124 @@ class _AppSideBarState extends State<AppSideBar> {
     } else {
       return _newButton(_isExpanded, isMobile);
     }
+  }
+
+  Widget _exportLogsButton() {
+    final logExportInfo = LogExportInfo(
+      emailSubject: appLocalizationsOf(context).shareLogsEmailSubject,
+      emailBody: appLocalizationsOf(context).shareLogsEmailBody,
+      shareText: appLocalizationsOf(context).shareLogsNativeShareText,
+      shareSubject: appLocalizationsOf(context).shareLogsNativeShareSubject,
+      emailSupport: Resources.emailSupport,
+    );
+    return FutureBuilder<bool>(
+      future: canLaunchUrl(Uri.parse('mailto:')),
+      builder: (context, snapshot) {
+        final canLaunchEmail = snapshot.data ?? false;
+        return HoverWidget(
+          child: GestureDetector(
+            onTap: () {
+              showArDriveDialog(
+                context,
+                content: ArDriveStandardModal(
+                  hasCloseButton: true,
+                  title: appLocalizationsOf(context).help,
+                  content: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appLocalizationsOf(context).shareLogsDescription,
+                        style: ArDriveTypography.body.buttonLargeBold(),
+                      ),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      Text(
+                        appLocalizationsOf(context).ourChannels,
+                        style:
+                            ArDriveTypography.body.buttonLargeBold().copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      ArDriveClickArea(
+                        child: GestureDetector(
+                          onTap: () {
+                            openUrl(
+                              url: Resources.discordLink,
+                            );
+                          },
+                          child: Text(
+                            discord,
+                            style: ArDriveTypography.body
+                                .buttonLargeBold()
+                                .copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 4,
+                      ),
+                      ArDriveClickArea(
+                        child: GestureDetector(
+                          onTap: () {
+                            openUrl(
+                              url: Resources.helpCenterLink,
+                            );
+                          },
+                          child: Text(
+                            appLocalizationsOf(context).helpCenter,
+                            style: ArDriveTypography.body
+                                .buttonLargeBold()
+                                .copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    ModalAction(
+                      action: () {
+                        logger.exportLogs(info: logExportInfo);
+                      },
+                      title: appLocalizationsOf(context).download,
+                    ),
+                    if (AppPlatform.isMobile && canLaunchEmail)
+                      ModalAction(
+                        action: () {
+                          logger.exportLogs(
+                            info: logExportInfo,
+                            shareAsEmail: true,
+                          );
+                        },
+                        title:
+                            appLocalizationsOf(context).shareLogsWithEmailText,
+                      ),
+                    if (AppPlatform.isMobile)
+                      ModalAction(
+                        action: () {
+                          logger.exportLogs(
+                            info: logExportInfo,
+                            share: true,
+                          );
+                        },
+                        title: appLocalizationsOf(context).share,
+                      ),
+                  ],
+                ),
+              );
+            },
+            child: Text(
+              appLocalizationsOf(context).shareLogsText,
+              style: ArDriveTypography.body.buttonNormalBold(),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _newButton(
@@ -508,6 +620,7 @@ class _AppSideBarState extends State<AppSideBar> {
         drive: currentDrive,
         driveDetailState: context.read<DriveDetailCubit>().state,
         currentFolder: currentFolder,
+        customOffset: _isExpanded ? null : const Offset(52, -40),
         child: LayoutBuilder(
           builder: (context, constraints) {
             return Container(
@@ -627,35 +740,6 @@ class HelpButton extends StatelessWidget {
       icon: ArDriveIcons.question(),
       onPressed: () {
         openUrl(url: Resources.helpLink);
-      },
-    );
-  }
-}
-
-class AppVersionWidget extends StatelessWidget {
-  const AppVersionWidget({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: PackageInfo.fromPlatform(),
-      builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
-        final info = snapshot.data;
-        if (info == null) {
-          return const SizedBox(
-            height: 32,
-            width: 32,
-          );
-        }
-        final literalVersion =
-            kIsWeb ? info.version : '${info.version}+${info.buildNumber}';
-        return Text(
-          appLocalizationsOf(context).appVersion(literalVersion),
-          style: ArDriveTypography.body.buttonNormalRegular(
-            color: Colors.grey,
-          ),
-          textAlign: TextAlign.center,
-        );
       },
     );
   }

@@ -29,17 +29,20 @@ Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions({
       continue;
     }
     // If Parent-Folder-Id is missing for a file, put it in the root folder
+    try {
+      entity.parentFolderId = entity.parentFolderId ?? rootPath;
+      final revision =
+          entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
-    entity.parentFolderId = entity.parentFolderId ?? rootPath;
-    final revision =
-        entity.toRevisionCompanion(performedAction: revisionPerformedAction);
+      if (revision.action.value.isEmpty) {
+        continue;
+      }
 
-    if (revision.action.value.isEmpty) {
-      continue;
+      newRevisions.add(revision);
+      latestRevisions[entity.id!] = revision;
+    } catch (e, stacktrace) {
+      logger.e('Error adding revision for entity', e, stacktrace);
     }
-
-    newRevisions.add(revision);
-    latestRevisions[entity.id!] = revision;
   }
 
   await database.batch((b) {
@@ -86,9 +89,12 @@ Future<Map<String, FileEntriesCompanion>>
         .oldestFileRevisionByFileId(driveId: driveId, fileId: fileId)
         .getSingleOrNull();
 
+    final dateCreated = oldestRevision?.dateCreated ??
+        updatedFilesById[fileId]!.dateCreated.value;
+
     updatedFilesById[fileId] = updatedFilesById[fileId]!.copyWith(
-        dateCreated: Value(oldestRevision?.dateCreated ??
-            updatedFilesById[fileId]!.dateCreated as DateTime));
+      dateCreated: Value<DateTime>(dateCreated),
+    );
   }
 
   return updatedFilesById;

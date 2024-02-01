@@ -6,6 +6,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,7 @@ Future<void> promptToExportCSVData({
   required BuildContext context,
   required String driveId,
 }) =>
-    showAnimatedDialog(
+    showArDriveDialog(
       context,
       content: BlocProvider<DataExportCubit>(
         create: (_) {
@@ -41,19 +42,19 @@ class FileDownloadDialog extends StatelessWidget {
           if (state is DataExportSuccess) {
             final ArDriveIO io = ArDriveIO();
 
-            await io.saveFile(await IOFile.fromData(state.bytes,
+            final saveFile = io.saveFile(await IOFile.fromData(state.bytes,
                 name: state.fileName, lastModifiedDate: state.lastModified));
 
-            Navigator.pop(context);
+            saveFile.then((value) => Navigator.pop(context));
           }
         },
         builder: (context, state) {
           if (state is FileDownloadStarting) {
             return ArDriveStandardModal(
               title: appLocalizationsOf(context).downloadingCSV,
-              content: Column(
+              content: const Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Center(child: CircularProgressIndicator()),
                 ],
               ),

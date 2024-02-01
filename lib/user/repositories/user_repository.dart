@@ -2,8 +2,8 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:arweave/arweave.dart';
-import 'package:flutter/foundation.dart';
 
 abstract class UserRepository {
   Future<bool> hasUser();
@@ -14,6 +14,7 @@ abstract class UserRepository {
     Wallet wallet,
   );
   Future<void> deleteUser();
+  Future<String?> getOwnerOfDefaultProfile();
 
   factory UserRepository(ProfileDao profileDao, ArweaveService arweave) =>
       _UserRepository(
@@ -33,6 +34,8 @@ class _UserRepository implements UserRepository {
         _arweave = arweave;
 
   // TODO: Check ProfileDAO to implement only one source for user data
+
+  // Will return null if no user is not logged in - i.e. not present in the DB
   @override
   Future<User?> getUser(String password) async {
     final profile = await _profileDao.getDefaultProfile();
@@ -54,7 +57,7 @@ class _UserRepository implements UserRepository {
       ),
     );
 
-    debugPrint('Loaded user: ${user.walletAddress}');
+    logger.d('Loaded user');
 
     return user;
   }
@@ -62,7 +65,7 @@ class _UserRepository implements UserRepository {
   @override
   Future<void> saveUser(
       String password, ProfileType profileType, Wallet wallet) async {
-    debugPrint('Saving user');
+    logger.d('Saving user');
 
     await _profileDao.addProfile(
       // FIXME: This is a hack to get the username from the user object
@@ -86,9 +89,19 @@ class _UserRepository implements UserRepository {
 
     return profile != null;
   }
-}
 
-// TODO: move this to a constants file
+  // Will return null if no user is logged in - i.e. not present in the DB
+  @override
+  Future<String?> getOwnerOfDefaultProfile() async {
+    final profile = await _profileDao.getDefaultProfile();
+
+    if (profile == null) {
+      return null;
+    }
+
+    return profile.walletPublicKey;
+  }
+}
 
 class NoProfileFoundException implements Exception {
   final String message;

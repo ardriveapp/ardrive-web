@@ -1,0 +1,3 @@
+- Updates the design of video file previews in the share page.
+- Updates the design of image file previews in the share page.
+- Fixes the issue of attempting to show a preview for a folder.

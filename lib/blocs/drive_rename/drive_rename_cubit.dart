@@ -1,10 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:reactive_forms/reactive_forms.dart';
 
 part 'drive_rename_state.dart';
 
@@ -12,14 +11,14 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
   final String driveId;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
 
   DriveRenameCubit({
     required this.driveId,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
@@ -66,7 +65,10 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
             profile.wallet,
             key: driveKey,
           );
-          await _turboUploadService.postDataItem(dataItem: driveDataItem);
+          await _turboUploadService.postDataItem(
+            dataItem: driveDataItem,
+            wallet: profile.wallet,
+          );
           driveEntity.txId = driveDataItem.id;
         } else {
           final driveTx = await _arweave.prepareEntityTx(
@@ -98,28 +100,6 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
     final nameAlreadyExists = drivesWithName.isNotEmpty;
 
     return nameAlreadyExists;
-  }
-
-  Future<Map<String, dynamic>?> _uniqueDriveName(
-      AbstractControl<dynamic> control) async {
-    final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-    final String? newDriveName = control.value;
-
-    if (newDriveName == drive.name) {
-      return null;
-    }
-
-    // Check that the current drive does not already have a drive with the target file name.
-    final drivesWithName = (await _driveDao.allDrives().get())
-        .where((element) => element.name == newDriveName);
-    final nameAlreadyExists = drivesWithName.isNotEmpty;
-
-    if (nameAlreadyExists) {
-      control.markAsTouched();
-      return {AppValidationMessage.driveNameAlreadyPresent: true};
-    }
-
-    return null;
   }
 
   @override

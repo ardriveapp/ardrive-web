@@ -1,6 +1,5 @@
-import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/bundles/fake_tags.dart';
+import 'package:ardrive_utils/ardrive_utils.dart' hide appName;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';
 
@@ -14,13 +13,8 @@ void main() {
     buildNumber: buildNumber,
     buildSignature: buildSignature,
   );
-  late PackageInfo packageInfo;
 
   group('fakeApplicationTags method', () {
-    setUp(() async {
-      packageInfo = await PackageInfo.fromPlatform();
-    });
-
     test('contains the expected tags', () async {
       AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
 

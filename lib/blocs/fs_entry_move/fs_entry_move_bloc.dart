@@ -5,10 +5,14 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+// ignore: depend_on_referenced_packages
 import 'package:platform/platform.dart';
 
 part 'fs_entry_move_event.dart';
@@ -19,26 +23,29 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final List<ArDriveDataTableItem> selectedItems;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
   final ArDriveCrypto _crypto;
+  final DriveDetailCubit _driveDetailCubit;
 
   FsEntryMoveBloc({
     required this.driveId,
     required this.selectedItems,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
     required ArDriveCrypto crypto,
+    required DriveDetailCubit driveDetailCubit,
     Platform platform = const LocalPlatform(),
   })  : _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
+        _driveDetailCubit = driveDetailCubit,
         _syncCubit = syncCubit,
         _crypto = crypto,
         super(const FsEntryMoveLoadInProgress()) {
@@ -76,8 +83,9 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
                 profile: profile,
                 parentFolder: folderInView,
               );
-            } catch (err) {
-              print('Error moving items: $err');
+            } catch (err, stacktrace) {
+              // TODO: we must handle this error better. Currently, if an error occurs, it will emit the success state anyway.
+              logger.e('Error moving items', err, stacktrace);
             }
             emit(const FsEntryMoveSuccess());
           } else {
@@ -128,8 +136,10 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required String folderId,
     required Emitter<FsEntryMoveState> emit,
   }) async {
-    final folderStream =
-        _driveDao.watchFolderContents(driveId, folderId: folderId);
+    final folderStream = _driveDao.watchFolderContents(
+      driveId,
+      folderId: folderId,
+    );
     await emit.forEach(
       folderStream,
       onData: (FolderWithContents folderWithContents) => FsEntryMoveLoadSuccess(
@@ -171,20 +181,37 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   }) async {
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
     final moveTxDataItems = <DataItem>[];
+    final isShowingHiddenItems =
+        (_driveDetailCubit.state as DriveDetailLoadSuccess)
+            .isShowingHiddenFiles;
+    final files = selectedItems.whereType<FileDataTableItem>().toList();
 
-    final filesToMove = selectedItems
-        .whereType<FileDataTableItem>()
+    if (!isShowingHiddenItems) {
+      files.removeWhere((element) => element.isHidden);
+    }
+
+    final filesToMove = files
         .where((file) => conflictingItems
             .where((conflictingFile) => conflictingFile.id == file.id)
             .isEmpty)
         .toList();
 
-    final foldersToMove = selectedItems
+    files.clear();
+
+    final folders = selectedItems.whereType<FolderDataTableItem>().toList();
+
+    if (!isShowingHiddenItems) {
+      folders.removeWhere((element) => element.isHidden);
+    }
+
+    final foldersToMove = folders
         .whereType<FolderDataTableItem>()
         .where((folder) => conflictingItems
             .where((conflictingFolder) => conflictingFolder.id == folder.id)
             .isEmpty)
         .toList();
+
+    folders.clear();
 
     final folderMap = <String, FolderEntriesCompanion>{};
 
@@ -224,7 +251,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             .folderById(driveId: driveId, folderId: folderToMove.id)
             .getSingle();
         folder = folder.copyWith(
-          parentFolderId: parentFolder.id,
+          parentFolderId: Value(parentFolder.id),
           path: '${parentFolder.path}/${folder.name}',
           lastUpdated: DateTime.now(),
         );
@@ -253,7 +280,10 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     if (_turboUploadService.useTurboUpload) {
       for (var dataItem in moveTxDataItems) {
-        await _turboUploadService.postDataItem(dataItem: dataItem);
+        await _turboUploadService.postDataItem(
+          dataItem: dataItem,
+          wallet: profile.wallet,
+        );
       }
     } else {
       final moveTx = await _arweave.prepareDataBundleTx(

@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
 import 'package:ardrive/utils/snapshots/tx_snapshot_to_snapshot_data.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 
 import 'height_range.dart';
 
@@ -40,28 +39,42 @@ class SnapshotItemToBeCreated {
   }) : _jsonMetadataOfTxId = jsonMetadataOfTxId;
 
   Stream<Uint8List> getSnapshotData() async* {
-    final txSnapshotStream = source.asyncMap<TxSnapshot>(
-      (node) async {
-        // updates dataStart and dataEnd being the start the minimum and end the maximum
-        _dataStart = _dataStart == null || node.block!.height < _dataStart!
-            ? node.block!.height
-            : _dataStart;
-        _dataEnd = _dataEnd == null || node.block!.height > _dataEnd!
-            ? node.block!.height
-            : _dataEnd;
+    List<Future<TxSnapshot>> tasks = [];
 
-        return TxSnapshot(
-          gqlNode: node,
-          jsonMetadata:
-              _isSnapshotTx(node) ? null : await _jsonMetadataOfTxId(node.id),
-        );
-      },
-    );
+    // Convert the source Stream into a List to get all elements at once
+    List nodes = await source.toList();
 
-    final snapshotDataStream =
-        txSnapshotStream.transform<Uint8List>(txSnapshotToSnapshotData);
+    // Process each node concurrently
+    for (var node in nodes) {
+      tasks.add(_processNode(node));
+    }
+
+    // Wait for all tasks to finish in their original order
+    List<TxSnapshot> results = await Future.wait(tasks);
+
+    // Create a stream that emits each TxSnapshot in their original order
+    Stream<TxSnapshot> snapshotStream = Stream.fromIterable(results);
+
+    Stream<Uint8List> snapshotDataStream =
+        snapshotStream.transform(txSnapshotToSnapshotData);
 
     yield* snapshotDataStream;
+  }
+
+  Future<TxSnapshot> _processNode(node) async {
+    _dataStart = _dataStart == null || node.block!.height < _dataStart!
+        ? node.block!.height
+        : _dataStart;
+    _dataEnd = _dataEnd == null || node.block!.height > _dataEnd!
+        ? node.block!.height
+        : _dataEnd;
+
+    if (_isSnapshotTx(node)) {
+      return TxSnapshot(gqlNode: node, jsonMetadata: null);
+    } else {
+      var metadata = await _jsonMetadataOfTxId(node.id);
+      return TxSnapshot(gqlNode: node, jsonMetadata: metadata);
+    }
   }
 
   bool _isSnapshotTx(DriveHistoryTransaction node) {
@@ -69,6 +82,6 @@ class SnapshotItemToBeCreated {
     final entityTypeTags =
         tags.where((tag) => tag.name == EntityTag.entityType);
 
-    return entityTypeTags.any((tag) => tag.value == EntityType.snapshot);
+    return entityTypeTags.any((tag) => tag.value == EntityTypeTag.snapshot);
   }
 }

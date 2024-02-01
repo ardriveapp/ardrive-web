@@ -3,17 +3,21 @@ import 'dart:async';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/ar_cost_to_usd.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pst/pst.dart';
 import 'package:uuid/uuid.dart';
+
+import '../../core/upload/cost_calculator.dart';
 
 part 'create_manifest_state.dart';
 
@@ -24,9 +28,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   final Drive drive;
 
   final ArweaveService _arweave;
-  final UploadService _turboUploadService;
+  final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final PstService _pst;
+  bool _hasPendingFiles = false;
 
   StreamSubscription? _selectedFolderSubscription;
 
@@ -34,14 +39,16 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required this.drive,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
-    required UploadService turboUploadService,
+    required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required PstService pst,
+    required bool hasPendingFiles,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _pst = pst,
+        _hasPendingFiles = hasPendingFiles,
         super(CreateManifestInitial()) {
     if (drive.isPrivate) {
       // Extra guardrail to prevent private drives from creating manifests
@@ -54,6 +61,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   Future<void> chooseTargetFolder() async {
     rootFolderNode =
         await _driveDao.getFolderTree(drive.id, drive.rootFolderId);
+
+    _hasPendingFiles = await _hasPendingFilesInFolder(rootFolderNode);
 
     await loadFolder(drive.rootFolderId);
   }
@@ -79,18 +88,56 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
   }
 
+  /// recursively check if any files in the folder have pending uploads
+  Future<bool> _hasPendingFilesInFolder(FolderNode folder) async {
+    final files = folder.getRecursiveFiles();
+    final folders = folder.subfolders;
+
+    if (files.isEmpty && folders.isEmpty) {
+      return false;
+    }
+
+    final filesWithTx = await _driveDao
+        .filesInFolderWithRevisionTransactions(
+            driveId: drive.id, parentFolderId: folder.folder.id)
+        .get();
+
+    final hasPendingFiles = filesWithTx.any((e) =>
+        'pending' ==
+        fileStatusFromTransactions(
+          e.metadataTx,
+          e.dataTx,
+        ).toString());
+
+    if (hasPendingFiles) {
+      return true;
+    }
+
+    for (var folder in folders) {
+      if (await _hasPendingFilesInFolder(folder)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   Future<void> loadFolder(String folderId) async {
     await _selectedFolderSubscription?.cancel();
 
-    _selectedFolderSubscription =
-        _driveDao.watchFolderContents(drive.id, folderId: folderId).listen(
-              (f) => emit(
-                CreateManifestFolderLoadSuccess(
-                  viewingRootFolder: f.folder.parentFolderId == null,
-                  viewingFolder: f,
-                ),
-              ),
-            );
+    _selectedFolderSubscription = _driveDao
+        .watchFolderContents(
+          drive.id,
+          folderId: folderId,
+        )
+        .listen(
+          (f) => emit(
+            CreateManifestFolderLoadSuccess(
+              viewingRootFolder: f.folder.parentFolderId == null,
+              viewingFolder: f,
+            ),
+          ),
+        );
   }
 
   /// User selected a new name due to name conflict, confirm that form is valid and check for conflicts again
@@ -170,7 +217,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           (state as CreateManifestPreparingManifest).parentFolder;
       final folderNode = rootFolderNode.searchForFolder(parentFolder.id) ??
           await _driveDao.getFolderTree(drive.id, parentFolder.id);
-
       final arweaveManifest = ManifestData.fromFolderNode(
         folderNode: folderNode,
       );
@@ -207,7 +253,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       addManifestToDatabase() => _driveDao.transaction(
             () async {
               await _driveDao.writeFileEntity(
-                  manifestFileEntity, '${parentFolder.path}/$manifestName');
+                manifestFileEntity,
+                '${parentFolder.path}/$manifestName',
+              );
               await _driveDao.insertFileRevision(
                 manifestFileEntity.toRevisionCompanion(
                   performedAction: existingManifestFileId == null
@@ -217,6 +265,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
               );
             },
           );
+
+      logger.d('Manifest has pending files: $_hasPendingFiles');
+
       final canUseTurbo = _turboUploadService.useTurboUpload &&
           arweaveManifest.size < _turboUploadService.allowedDataItemSize;
       if (canUseTurbo) {
@@ -224,6 +275,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           CreateManifestTurboUploadConfirmation(
             manifestSize: arweaveManifest.size,
             manifestName: manifestName,
+            folderHasPendingFiles: _hasPendingFiles,
             manifestDataItems: [manifestDataItem, manifestMetaDataItem],
             addManifestToDatabase: addManifestToDatabase,
           ),
@@ -255,8 +307,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       final arUploadCost = winstonToAr(totalCost);
 
-      final double? usdUploadCost =
-          await arCostToUsdOrNull(_arweave, double.parse(arUploadCost));
+      final double? usdUploadCost = await ConvertArToUSD(arweave: _arweave)
+          .convertForUSD(double.parse(arUploadCost));
 
       // Sign bundle tx and preserve bundle tx ID on entity
       await bundleTx.sign(wallet);
@@ -271,6 +323,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         CreateManifestUploadConfirmation(
           manifestSize: arweaveManifest.size,
           manifestName: manifestName,
+          folderHasPendingFiles: _hasPendingFiles,
           arUploadCost: arUploadCost,
           usdUploadCost: usdUploadCost,
           uploadManifestParams: uploadManifestParams,
@@ -291,7 +344,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       emit(CreateManifestUploadInProgress());
       try {
         for (var dataItem in params.manifestDataItems) {
-          await _turboUploadService.postDataItem(dataItem: dataItem);
+          await _turboUploadService.postDataItem(
+            dataItem: dataItem,
+            wallet: (_profileCubit.state as ProfileLoggedIn).wallet,
+          );
         }
 
         await params.addManifestToDatabase();
@@ -336,7 +392,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     emit(CreateManifestFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to create manifest: $error $stackTrace');
+    logger.e('Failed to create manifest', error, stackTrace);
   }
 }
 

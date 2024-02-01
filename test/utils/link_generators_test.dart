@@ -1,6 +1,6 @@
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/link_generators.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,7 +18,7 @@ void main() {
           rootFolderId: 'publicDriveRootFolderId',
           ownerAddress: 'ownerAddress',
           name: 'testPublicDrive',
-          privacy: DrivePrivacy.public,
+          privacy: DrivePrivacyTag.public,
           dateCreated: DateTime.now(),
           lastUpdated: DateTime.now(),
         );
@@ -27,7 +27,7 @@ void main() {
           rootFolderId: 'privateRootFolderId',
           ownerAddress: 'ownerAddress',
           name: 'testPrivateDrive',
-          privacy: DrivePrivacy.private,
+          privacy: DrivePrivacyTag.private,
           dateCreated: DateTime.now(),
           lastUpdated: DateTime.now(),
         );
@@ -94,6 +94,7 @@ void main() {
           lastModifiedDate: DateTime.now(),
           lastUpdated: DateTime.now(),
           dataContentType: '',
+          isHidden: false,
         );
         testFileKeyBase64 = 'X123YZAB-CD4e5fgHIjKlmN6O7pqrStuVwxYzaBcd8E';
         testFileKey = SecretKey(decodeBase64ToBytes(testFileKeyBase64));
