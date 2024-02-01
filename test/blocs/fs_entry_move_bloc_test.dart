@@ -69,7 +69,7 @@ void main() {
             driveId: driveId,
             name: 'fake-drive-name',
             path: '',
-            isHidden: false,
+            isHidden: const Value(false),
           ),
           FolderEntriesCompanion.insert(
             id: nestedFolderId,
@@ -77,7 +77,7 @@ void main() {
             parentFolderId: Value(rootFolderId),
             name: nestedFolderId,
             path: '/$nestedFolderId',
-            isHidden: false,
+            isHidden: const Value(false),
           ),
           FolderEntriesCompanion.insert(
             id: conflictTestFolderId,
@@ -85,7 +85,7 @@ void main() {
             parentFolderId: Value(rootFolderId),
             name: conflictTestFolderId,
             path: '/$conflictTestFolderId',
-            isHidden: false,
+            isHidden: const Value(false),
           ),
         ]);
         // Insert fake files
@@ -107,7 +107,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
-                  isHidden: false,
+                  isHidden: const Value(false),
                 );
               },
             ),
@@ -126,7 +126,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
-                  isHidden: false,
+                  isHidden: const Value(false),
                 );
               },
             ),
@@ -152,7 +152,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
-                  isHidden: false,
+                  isHidden: const Value(false),
                 );
               },
             ),
@@ -172,7 +172,7 @@ void main() {
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
-                  isHidden: false,
+                  isHidden: const Value(false),
                 );
               },
             ),
