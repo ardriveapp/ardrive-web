@@ -36,10 +36,10 @@ platform :android do
 
     if isProd then
 
-      flags = ['SENTRY_DSN=' + ENV["SENTRY_DSN"],
-      'SENTRY_PROJECT=' + ENV["SENTRY_PROJECT"],
-      'SENTRY_AUTH_TOKEN=' + ENV["SENTRY_AUTH_TOKEN"],
-      'SENTRY_ORG=' + ENV["SENTRY_ORG"]]
+      flags = ["SENTRY_DSN=#{ENV["SENTRY_DSN"]}",
+      "SENTRY_PROJECT=#{ENV["SENTRY_PROJECT"]}" ,
+      "SENTRY_AUTH_TOKEN=#{ENV["SENTRY_AUTH_TOKEN"]}" ,
+      "SENTRY_ORG=#{ENV["SENTRY_ORG"]}"]
 
       b64flags = flags.map { |s| Base64.encode64(s) }.join(',')
 
@@ -56,7 +56,7 @@ platform :android do
           "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"],
           "android.injected.version.code" => build_number,
         },
-        flags: "-Pdart-defines=#{b64flags}"
+        flags: "-Pdart-defines=\"#{b64flags}\""
       )
     end
   end
