@@ -21,7 +21,7 @@ extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
         lastUpdated: dateCreated,
         customGQLTags: customGQLTags,
         customJsonMetadata: customJsonMetadata,
-        isHidden: isHidden.value,
+        isHidden: isHidden,
       );
 
   /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
@@ -47,7 +47,7 @@ extension FolderEntityExtensions on FolderEntity {
         action: performedAction,
         customGQLTags: Value(customGqlTagsAsString),
         customJsonMetadata: Value(customJsonMetadataAsString),
-        isHidden: isHidden ?? false,
+        isHidden: Value(isHidden ?? false),
       );
 
   /// Returns the action performed on the folder that lead to the new revision.
