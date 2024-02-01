@@ -18,6 +18,7 @@ class Database extends _$Database {
   @override
   int get schemaVersion => 19;
 
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
