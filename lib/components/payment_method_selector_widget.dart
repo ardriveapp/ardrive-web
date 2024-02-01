@@ -1,37 +1,19 @@
+import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
-import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart';
 import 'package:flutter/material.dart';
 
 class PaymentMethodSelector extends StatelessWidget {
-  final UploadMethod uploadMethod;
-  final UploadCostEstimate? costEstimateTurbo;
-  final UploadCostEstimate costEstimateAr;
-  final bool hasNoTurboBalance;
-  final bool isTurboUploadPossible;
-  final String arBalance;
-  final bool sufficientArBalance;
-  final String turboCredits;
-  final bool sufficentCreditsBalance;
-  final bool isFreeThanksToTurbo;
+  final UploadPaymentMethodInfo uploadMethodInfo;
   final void Function() onTurboTopupSucess;
   final void Function() onArSelect;
   final void Function() onTurboSelect;
 
   const PaymentMethodSelector({
     super.key,
-    required this.uploadMethod,
-    required this.costEstimateTurbo,
-    required this.costEstimateAr,
-    required this.hasNoTurboBalance,
-    required this.isTurboUploadPossible,
-    required this.arBalance,
-    required this.sufficientArBalance,
-    required this.turboCredits,
-    required this.sufficentCreditsBalance,
-    required this.isFreeThanksToTurbo,
+    required this.uploadMethodInfo,
     required this.onTurboTopupSucess,
     required this.onArSelect,
     required this.onTurboSelect,
@@ -41,7 +23,7 @@ class PaymentMethodSelector extends StatelessWidget {
   Widget build(context) {
     return Column(
       children: [
-        if (!isFreeThanksToTurbo) ...[
+        if (!uploadMethodInfo.isFreeThanksToTurbo) ...[
           _buildContent(context),
           const SizedBox(height: 16),
           _getInsufficientBalanceMessage(context: context),
@@ -80,20 +62,22 @@ class PaymentMethodSelector extends StatelessWidget {
           options: [
             // FIXME: rename to RadioButtonOption
             RadioButtonOptions(
-              value: uploadMethod == UploadMethod.ar,
+              value: uploadMethodInfo.uploadMethod == UploadMethod.ar,
               // TODO: Localization
-              text: 'Cost: ${winstonToAr(costEstimateAr.totalCost)} AR',
+              text:
+                  'Cost: ${winstonToAr(uploadMethodInfo.costEstimateAr.totalCost)} AR',
               textStyle: ArDriveTypography.body.buttonLargeBold(),
             ),
-            if (costEstimateTurbo != null && isTurboUploadPossible)
+            if (uploadMethodInfo.costEstimateTurbo != null &&
+                uploadMethodInfo.isTurboUploadPossible)
               RadioButtonOptions(
-                value: uploadMethod == UploadMethod.turbo,
+                value: uploadMethodInfo.uploadMethod == UploadMethod.turbo,
                 // TODO: Localization
-                text: hasNoTurboBalance
+                text: uploadMethodInfo.hasNoTurboBalance
                     ? ''
-                    : 'Cost: ${winstonToAr(costEstimateTurbo!.totalCost)} Credits',
+                    : 'Cost: ${winstonToAr(uploadMethodInfo.costEstimateTurbo!.totalCost)} Credits',
                 textStyle: ArDriveTypography.body.buttonLargeBold(),
-                content: hasNoTurboBalance
+                content: uploadMethodInfo.hasNoTurboBalance
                     ? GestureDetector(
                         onTap: () {
                           showTurboTopupModal(context, onSuccess: () {
@@ -146,8 +130,8 @@ class PaymentMethodSelector extends StatelessWidget {
                 child: Text(
                   index == 0
                       // TODO: localize
-                      ? 'Wallet Balance: $arBalance AR'
-                      : 'Turbo Balance: $turboCredits Credits',
+                      ? 'Wallet Balance: ${uploadMethodInfo.arBalance} AR'
+                      : 'Turbo Balance: ${uploadMethodInfo.turboCredits} Credits',
                   style: ArDriveTypography.body.buttonNormalBold(
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeFgMuted,
@@ -164,9 +148,9 @@ class PaymentMethodSelector extends StatelessWidget {
   Widget _getInsufficientBalanceMessage({
     required BuildContext context,
   }) {
-    if (uploadMethod == UploadMethod.turbo &&
-        !sufficentCreditsBalance &&
-        sufficientArBalance) {
+    if (uploadMethodInfo.uploadMethod == UploadMethod.turbo &&
+        !uploadMethodInfo.sufficentCreditsBalance &&
+        uploadMethodInfo.sufficientArBalance) {
       return GestureDetector(
         onTap: () {
           showTurboTopupModal(context, onSuccess: () {
@@ -207,14 +191,16 @@ class PaymentMethodSelector extends StatelessWidget {
           ),
         ),
       );
-    } else if (uploadMethod == UploadMethod.ar && !sufficientArBalance) {
+    } else if (uploadMethodInfo.uploadMethod == UploadMethod.ar &&
+        !uploadMethodInfo.sufficientArBalance) {
       return Text(
         'Insufficient AR balance for purchase.',
         style: ArDriveTypography.body.captionBold(
           color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
         ),
       );
-    } else if (!sufficentCreditsBalance && !sufficientArBalance) {
+    } else if (!uploadMethodInfo.sufficentCreditsBalance &&
+        !uploadMethodInfo.sufficientArBalance) {
       return GestureDetector(
         onTap: () {
           showTurboTopupModal(context, onSuccess: () {

@@ -94,6 +94,7 @@ void main() {
           lastModifiedDate: DateTime.now(),
           lastUpdated: DateTime.now(),
           dataContentType: '',
+          isHidden: false,
         );
         testFileKeyBase64 = 'X123YZAB-CD4e5fgHIjKlmN6O7pqrStuVwxYzaBcd8E';
         testFileKey = SecretKey(decodeBase64ToBytes(testFileKeyBase64));

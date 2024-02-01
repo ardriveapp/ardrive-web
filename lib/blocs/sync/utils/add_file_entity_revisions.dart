@@ -89,9 +89,12 @@ Future<Map<String, FileEntriesCompanion>>
         .oldestFileRevisionByFileId(driveId: driveId, fileId: fileId)
         .getSingleOrNull();
 
+    final dateCreated = oldestRevision?.dateCreated ??
+        updatedFilesById[fileId]!.dateCreated.value;
+
     updatedFilesById[fileId] = updatedFilesById[fileId]!.copyWith(
-        dateCreated: Value(oldestRevision?.dateCreated ??
-            updatedFilesById[fileId]!.dateCreated as DateTime));
+      dateCreated: Value<DateTime>(dateCreated),
+    );
   }
 
   return updatedFilesById;
