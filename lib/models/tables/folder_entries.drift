@@ -13,7 +13,7 @@ CREATE TABLE folder_entries (
     customJsonMetadata TEXT,
     customGQLTags TEXT,
 
-    isHidden BOOLEAN NOT NULL,
+    isHidden BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (id, driveId)
 ) As FolderEntry;
