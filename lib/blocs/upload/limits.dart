@@ -2,12 +2,12 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 
 final privateFileSizeLimit = const GiB(65).size;
 
-final largeFileUploadSizeThreshold = const GiB(2).size;
+final largeFileUploadSizeThreshold = const GiB(1).size;
 
 final mobilePrivateFileSizeLimit = const GiB(10).size;
 
 final publicFileSafeSizeLimit = const GiB(5).size;
-final nonChromeBrowserUploadSafeLimitUsingTurbo = const GiB(2).size;
+final nonChromeBrowserUploadSafeLimitUsingTurbo = const GiB(1).size;
 
 int getBundleSizeLimit(bool isTurbo) =>
     isTurbo ? turboBundleSizeLimit : d2nBundleSizeLimit;
