@@ -19,10 +19,12 @@ FutureOr<SentryEvent?> _beforeSend(SentryEvent event, {Hint? hint}) async {
 }
 
 Future<void> initSentry() async {
+  String dsn = const String.fromEnvironment('SENTRY_DSN');
   await SentryFlutter.init(
     (options) {
       options.beforeSend = _beforeSend;
       options.tracesSampleRate = 1.0;
+      options.dsn = dsn;
     },
   );
 }
