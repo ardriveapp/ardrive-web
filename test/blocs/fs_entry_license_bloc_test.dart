@@ -70,21 +70,21 @@ void main() {
               driveId: driveId,
               name: 'fake-drive-name',
               path: '',
-              isHidden: false),
+              isHidden: const Value(false)),
           FolderEntriesCompanion.insert(
               id: nestedFolderId,
               driveId: driveId,
               parentFolderId: Value(rootFolderId),
               name: nestedFolderId,
               path: '/$nestedFolderId',
-              isHidden: false),
+              isHidden: const Value(false)),
           FolderEntriesCompanion.insert(
               id: conflictTestFolderId,
               driveId: driveId,
               parentFolderId: Value(rootFolderId),
               name: conflictTestFolderId,
               path: '/$conflictTestFolderId',
-              isHidden: false),
+              isHidden: const Value(false)),
         ]);
         // Insert fake files
         batch.insertAll(
@@ -105,7 +105,7 @@ void main() {
                     dateCreated: Value(defaultDate),
                     lastModifiedDate: defaultDate,
                     dataContentType: const Value(''),
-                    isHidden: false);
+                    isHidden: const Value(false));
               },
             ),
             ...List.generate(
@@ -123,7 +123,7 @@ void main() {
                     dateCreated: Value(defaultDate),
                     lastModifiedDate: defaultDate,
                     dataContentType: const Value(''),
-                    isHidden: false);
+                    isHidden: const Value(false));
               },
             ),
           ],
@@ -148,7 +148,7 @@ void main() {
                     dateCreated: Value(defaultDate),
                     lastModifiedDate: defaultDate,
                     dataContentType: const Value(''),
-                    isHidden: false);
+                    isHidden: const Value(false));
               },
             ),
             ...List.generate(
@@ -167,7 +167,7 @@ void main() {
                     dateCreated: Value(defaultDate),
                     lastModifiedDate: defaultDate,
                     dataContentType: const Value(''),
-                    isHidden: false);
+                    isHidden: const Value(false));
               },
             ),
           ],
