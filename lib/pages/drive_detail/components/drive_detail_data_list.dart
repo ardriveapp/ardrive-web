@@ -120,7 +120,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
       required this.metadataTx,
       required this.dataTx,
       required this.pinnedDataOwnerAddress,
-      LicenseType? licenseType,
+      super.licenseType,
       this.licenseTxId,
       this.bundledIn})
       : super(id: fileId);
