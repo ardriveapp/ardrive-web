@@ -60,7 +60,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     bool updateExtension = false,
   }) async {
     try {
-      late bool hasEntityWithSameName;
+      final bool hasEntityWithSameName;
 
       if (_isRenamingFolder) {
         hasEntityWithSameName = await _folderWithSameNameExists(newName);

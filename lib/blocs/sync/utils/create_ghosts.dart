@@ -44,6 +44,7 @@ Future<void> createGhosts({
       lastUpdated: DateTime.now(),
       isGhost: true,
       dateCreated: DateTime.now(),
+      isHidden: ghostFolder.isHidden,
     );
     await driveDao.into(driveDao.folderEntries).insert(folderEntry);
     ghostFoldersByDrive.putIfAbsent(

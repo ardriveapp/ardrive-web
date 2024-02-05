@@ -16,7 +16,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -57,6 +57,15 @@ class Database extends _$Database {
               fileRevisions,
               fileRevisions.pinnedDataOwnerAddress,
             );
+          } else if (from == 17 && to == 18) {
+            // Then we're adding the isHidden column
+            logger.i('Migrating schema from v17 to v18');
+
+            await m.addColumn(folderRevisions, folderRevisions.isHidden);
+            await m.addColumn(fileRevisions, fileRevisions.isHidden);
+
+            await m.addColumn(folderEntries, folderEntries.isHidden);
+            await m.addColumn(fileEntries, fileEntries.isHidden);
           } else if (from >= 1 && from < schemaVersion) {
             logger.w(
               'No strategy set for migration v$from to v$to'

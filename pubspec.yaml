@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.31.0
+version: 2.33.1
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -165,7 +165,7 @@ dependency_overrides:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-5529-txt-file-extension-changes-incorrectly-in-edit-modal
+      ref: v1.4.6
 
 dev_dependencies:
   integration_test:

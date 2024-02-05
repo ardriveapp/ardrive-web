@@ -1,0 +1,2 @@
+- Added option to confirm file extension change when renaming files
+- Introduced seamless file sharing from external apps into ArDrive, supporting multiple file types.
