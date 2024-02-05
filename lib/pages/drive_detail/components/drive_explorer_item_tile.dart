@@ -4,6 +4,7 @@ import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
+import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/models/models.dart';
@@ -26,30 +27,43 @@ class DriveExplorerItemTile extends TableRowWidget {
     required String dateCreated,
     required String license,
     required Function() onPressed,
+    required bool isHidden,
   }) : super(
           [
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Text(
                 name,
-                style: ArDriveTypography.body.buttonNormalBold(),
+                style: ArDriveTypography.body.buttonNormalBold().copyWith(
+                      color: isHidden ? Colors.grey : null,
+                    ),
                 overflow: TextOverflow.fade,
                 maxLines: 1,
                 softWrap: false,
               ),
             ),
-            Text(size, style: ArDriveTypography.body.captionRegular()),
-            Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),
-            Text(dateCreated, style: ArDriveTypography.body.captionRegular()),
+            Text(size, style: _driveExplorerItemTileTextStyle(isHidden)),
+            Text(lastUpdated, style: _driveExplorerItemTileTextStyle(isHidden)),
+            Text(dateCreated, style: _driveExplorerItemTileTextStyle(isHidden)),
             Text(license, style: ArDriveTypography.body.captionRegular()),
           ],
         );
 }
 
+TextStyle _driveExplorerItemTileTextStyle(bool isHidden) =>
+    ArDriveTypography.body
+        .captionRegular()
+        .copyWith(color: isHidden ? Colors.grey : null);
+
 class DriveExplorerItemTileLeading extends StatelessWidget {
-  const DriveExplorerItemTileLeading({super.key, required this.item});
+  const DriveExplorerItemTileLeading({
+    super.key,
+    required this.item,
+  });
 
   final ArDriveDataTableItem item;
+
+  bool get isHidden => item.isHidden;
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +85,8 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
             alignment: Alignment.center,
             child: getIconForContentType(
               item.contentType,
+            ).copyWith(
+              color: isHidden ? Colors.grey : null,
             ),
           ),
           if (item.fileStatusFromTransactions != null)
@@ -182,11 +198,6 @@ class DriveExplorerItemTileTrailing extends StatefulWidget {
 class _DriveExplorerItemTileTrailingState
     extends State<DriveExplorerItemTileTrailing> {
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final item = widget.item;
 
@@ -235,7 +246,6 @@ class _DriveExplorerItemTileTrailingState
             target: Alignment.topLeft,
           ),
           items: _getItems(widget.item, context),
-          // ignore: sized_box_for_whitespace
           child: HoverWidget(
             tooltip: appLocalizationsOf(context).showMenu,
             child: ArDriveIcons.kebabMenu(),
@@ -246,7 +256,9 @@ class _DriveExplorerItemTileTrailingState
   }
 
   List<ArDriveDropdownItem> _getItems(
-      ArDriveDataTableItem item, BuildContext context) {
+    ArDriveDataTableItem item,
+    BuildContext context,
+  ) {
     final isOwner = item.isOwner;
 
     if (item is FolderDataTableItem) {
@@ -324,6 +336,7 @@ class _DriveExplorerItemTileTrailingState
               ),
             ),
           ),
+          hideFileDropdownItem(context, item),
         ],
         ArDriveDropdownItem(
           onClick: () {
@@ -440,6 +453,7 @@ class _DriveExplorerItemTileTrailingState
               ),
             ),
           ),
+        hideFileDropdownItem(context, item),
       ],
       ArDriveDropdownItem(
         onClick: () {
@@ -462,6 +476,7 @@ class _DriveExplorerItemTileTrailingState
   }
 }
 
+// TODO: @thiagocarvalhodev remove this and use the AppPlatform class or change the name of the method
 bool isMobile(BuildContext context) {
   final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
   return isPortrait;
@@ -490,7 +505,6 @@ class EntityActionsMenu extends StatelessWidget {
       height: isMobile(context) ? 44 : 60,
       anchor: alignment,
       items: _getItems(item, context, withInfo),
-      // ignore: sized_box_for_whitespace
       child: HoverWidget(
         tooltip: appLocalizationsOf(context).showMenu,
         child: ArDriveIcons.dots(),
@@ -553,6 +567,7 @@ class EntityActionsMenu extends StatelessWidget {
               ),
             ),
           ),
+          hideFileDropdownItem(context, item),
         ],
         if (withInfo) _buildInfoOption(context),
       ];
@@ -709,6 +724,7 @@ class EntityActionsMenu extends StatelessWidget {
             ),
           ),
         ),
+        hideFileDropdownItem(context, item),
       ],
       if (withInfo) _buildInfoOption(context)
     ];
@@ -733,4 +749,26 @@ class EntityActionsMenu extends StatelessWidget {
   ArDriveDropdownItemTile _buildItem(String name, ArDriveIcon icon) {
     return ArDriveDropdownItemTile(name: name, icon: icon);
   }
+}
+
+ArDriveDropdownItem hideFileDropdownItem(
+  BuildContext context,
+  ArDriveDataTableItem item,
+) {
+  return ArDriveDropdownItem(
+    onClick: () {
+      promptToToggleHideState(
+        context,
+        item: item,
+      );
+    },
+    content: ArDriveDropdownItemTile(
+      name: item.isHidden
+          ? appLocalizationsOf(context).unhide
+          : appLocalizationsOf(context).hide,
+      icon: item.isHidden
+          ? ArDriveIcons.eyeOpen(size: defaultIconSize)
+          : ArDriveIcons.eyeClosed(size: defaultIconSize),
+    ),
+  );
 }

@@ -12,6 +12,7 @@ void main() {
         Tag(arFsTagName, '0.11'),
         Tag(arFsTagName, '0.12'),
         Tag(arFsTagName, '0.13'),
+        Tag(arFsTagName, '0.14'),
       ];
 
       for (final tag in tags) {
@@ -23,7 +24,6 @@ void main() {
         () {
       final tags = [
         Tag(arFsTagName, '0.9'),
-        Tag(arFsTagName, '0.14'),
         Tag(arFsTagName, '0.15'),
         Tag(arFsTagName, '0.16'),
         Tag(arFsTagName, 'Supercalifragilisticoespialidoso'),

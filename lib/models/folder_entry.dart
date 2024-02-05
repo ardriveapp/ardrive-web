@@ -10,6 +10,7 @@ extension FolderEntryExtensions on FolderEntry {
       driveId: driveId,
       parentFolderId: parentFolderId,
       name: name,
+      isHidden: isHidden,
     );
 
     folder.customJsonMetadata = parseCustomJsonMetadata(customJsonMetadata);

@@ -69,19 +69,22 @@ void main() {
               id: rootFolderId,
               driveId: driveId,
               name: 'fake-drive-name',
-              path: ''),
+              path: '',
+              isHidden: false),
           FolderEntriesCompanion.insert(
               id: nestedFolderId,
               driveId: driveId,
               parentFolderId: Value(rootFolderId),
               name: nestedFolderId,
-              path: '/$nestedFolderId'),
+              path: '/$nestedFolderId',
+              isHidden: false),
           FolderEntriesCompanion.insert(
               id: conflictTestFolderId,
               driveId: driveId,
               parentFolderId: Value(rootFolderId),
               name: conflictTestFolderId,
-              path: '/$conflictTestFolderId'),
+              path: '/$conflictTestFolderId',
+              isHidden: false),
         ]);
         // Insert fake files
         batch.insertAll(
@@ -92,17 +95,17 @@ void main() {
               (i) {
                 final fileId = '$rootFolderId$i';
                 return FileEntriesCompanion.insert(
-                  id: fileId,
-                  driveId: driveId,
-                  parentFolderId: rootFolderId,
-                  name: fileId,
-                  path: '/$fileId',
-                  dataTxId: '${fileId}Data',
-                  size: 500,
-                  dateCreated: Value(defaultDate),
-                  lastModifiedDate: defaultDate,
-                  dataContentType: const Value(''),
-                );
+                    id: fileId,
+                    driveId: driveId,
+                    parentFolderId: rootFolderId,
+                    name: fileId,
+                    path: '/$fileId',
+                    dataTxId: '${fileId}Data',
+                    size: 500,
+                    dateCreated: Value(defaultDate),
+                    lastModifiedDate: defaultDate,
+                    dataContentType: const Value(''),
+                    isHidden: false);
               },
             ),
             ...List.generate(
@@ -110,17 +113,17 @@ void main() {
               (i) {
                 final fileId = '$conflictTestFolderId$i';
                 return FileEntriesCompanion.insert(
-                  id: fileId,
-                  driveId: driveId,
-                  parentFolderId: conflictTestFolderId,
-                  name: fileId,
-                  path: '/$fileId',
-                  dataTxId: '${fileId}Data',
-                  size: 500,
-                  dateCreated: Value(defaultDate),
-                  lastModifiedDate: defaultDate,
-                  dataContentType: const Value(''),
-                );
+                    id: fileId,
+                    driveId: driveId,
+                    parentFolderId: conflictTestFolderId,
+                    name: fileId,
+                    path: '/$fileId',
+                    dataTxId: '${fileId}Data',
+                    size: 500,
+                    dateCreated: Value(defaultDate),
+                    lastModifiedDate: defaultDate,
+                    dataContentType: const Value(''),
+                    isHidden: false);
               },
             ),
           ],
@@ -134,18 +137,18 @@ void main() {
               (i) {
                 final fileId = '$rootFolderId$i';
                 return FileRevisionsCompanion.insert(
-                  fileId: fileId,
-                  driveId: driveId,
-                  parentFolderId: rootFolderId,
-                  name: fileId,
-                  metadataTxId: '${fileId}Meta',
-                  action: RevisionAction.create,
-                  dataTxId: '${fileId}Data',
-                  size: 500,
-                  dateCreated: Value(defaultDate),
-                  lastModifiedDate: defaultDate,
-                  dataContentType: const Value(''),
-                );
+                    fileId: fileId,
+                    driveId: driveId,
+                    parentFolderId: rootFolderId,
+                    name: fileId,
+                    metadataTxId: '${fileId}Meta',
+                    action: RevisionAction.create,
+                    dataTxId: '${fileId}Data',
+                    size: 500,
+                    dateCreated: Value(defaultDate),
+                    lastModifiedDate: defaultDate,
+                    dataContentType: const Value(''),
+                    isHidden: false);
               },
             ),
             ...List.generate(
@@ -153,18 +156,18 @@ void main() {
               (i) {
                 final fileId = '$conflictTestFolderId$i';
                 return FileRevisionsCompanion.insert(
-                  fileId: fileId,
-                  driveId: driveId,
-                  parentFolderId: conflictTestFolderId,
-                  name: fileId,
-                  metadataTxId: '${fileId}Meta',
-                  action: RevisionAction.create,
-                  dataTxId: '${fileId}Data',
-                  size: 500,
-                  dateCreated: Value(defaultDate),
-                  lastModifiedDate: defaultDate,
-                  dataContentType: const Value(''),
-                );
+                    fileId: fileId,
+                    driveId: driveId,
+                    parentFolderId: conflictTestFolderId,
+                    name: fileId,
+                    metadataTxId: '${fileId}Meta',
+                    action: RevisionAction.create,
+                    dataTxId: '${fileId}Data',
+                    size: 500,
+                    dateCreated: Value(defaultDate),
+                    lastModifiedDate: defaultDate,
+                    dataContentType: const Value(''),
+                    isHidden: false);
               },
             ),
           ],

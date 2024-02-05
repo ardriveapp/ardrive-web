@@ -79,7 +79,8 @@ class ManifestData {
     final fileList = folderNode
         .getRecursiveFiles()
         // We will not include any existing manifests in the new manifest
-        .where((f) => f.dataContentType != ContentType.manifest);
+        // We will not include any hidden files in the new manifest
+        .where((f) => f.dataContentType != ContentType.manifest && !f.isHidden);
 
     final indexFile = () {
       final indexHtml = folderNode.files.values.firstWhereOrNull(

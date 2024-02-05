@@ -52,7 +52,10 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     await _selectedFolderSubscription?.cancel();
 
     _selectedFolderSubscription = _driveDao
-        .watchFolderContents(ghostFolder.driveId, folderId: folderId)
+        .watchFolderContents(
+          ghostFolder.driveId,
+          folderId: folderId,
+        )
         .listen(
           (f) => emit(
             GhostFixerFolderLoadSuccess(
@@ -129,6 +132,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
           isGhost: false,
           lastUpdated: ghostFolder.lastUpdated,
           dateCreated: ghostFolder.dateCreated,
+          isHidden: ghostFolder.isHidden,
         );
 
         final folderEntity = folder.asEntity();

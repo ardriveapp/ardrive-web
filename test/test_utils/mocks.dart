@@ -204,22 +204,23 @@ FileDataTableItem createMockFileDataTableItem(
     index = 0,
     isOwner = true}) {
   return FileDataTableItem(
-      fileId: fileId,
-      driveId: driveId,
-      parentFolderId: parentFolderId,
-      dataTxId: dataTxId,
-      lastUpdated: lastUpdated ?? DateTime.now(),
-      lastModifiedDate: lastModifiedDate ?? DateTime.now(),
-      metadataTx: metadataTx,
-      dataTx: dataTx,
-      name: name,
-      size: size,
-      dateCreated: dateCreated ?? DateTime.now(),
-      contentType: 'contentType',
-      path: path,
-      index: index,
-      pinnedDataOwnerAddress: pinnedDataOwnerAddress,
-      isOwner: isOwner);
+    fileId: fileId,
+    driveId: driveId,
+    parentFolderId: parentFolderId,
+    dataTxId: dataTxId,
+    lastUpdated: lastUpdated ?? DateTime.now(),
+    lastModifiedDate: lastModifiedDate ?? DateTime.now(),
+    metadataTx: metadataTx,
+    dataTx: dataTx,
+    name: name,
+    size: size,
+    dateCreated: dateCreated ?? DateTime.now(),
+    contentType: 'contentType',
+    path: path,
+    index: index,
+    pinnedDataOwnerAddress: pinnedDataOwnerAddress,
+    isOwner: isOwner,
+  );
 }
 
 FolderDataTableItem createMockFolderDataTableItem(
@@ -239,18 +240,19 @@ FolderDataTableItem createMockFolderDataTableItem(
     index = 0,
     isOwner = true}) {
   return FolderDataTableItem(
-      driveId: driveId,
-      folderId: folderId,
-      name: name,
-      lastUpdated: lastUpdated ?? DateTime.now(),
-      dateCreated: dateCreated ?? DateTime.now(),
-      contentType: contentType,
-      path: path,
-      fileStatusFromTransactions: fileStatusFromTransactions,
-      parentFolderId: parentFolderId,
-      isGhostFolder: isGhostFolder,
-      index: index,
-      isOwner: isOwner);
+    driveId: driveId,
+    folderId: folderId,
+    name: name,
+    lastUpdated: lastUpdated ?? DateTime.now(),
+    dateCreated: dateCreated ?? DateTime.now(),
+    contentType: contentType,
+    path: path,
+    fileStatusFromTransactions: fileStatusFromTransactions,
+    parentFolderId: parentFolderId,
+    isGhostFolder: isGhostFolder,
+    index: index,
+    isOwner: isOwner,
+  );
 }
 
 DriveDataItem createMockDriveDataItem(
@@ -262,13 +264,14 @@ DriveDataItem createMockDriveDataItem(
     index = 0,
     isOwner = true}) {
   return DriveDataItem(
-      id: id,
-      driveId: driveId,
-      name: name,
-      lastUpdated: lastUpdated ?? DateTime.now(),
-      dateCreated: dateCreated ?? DateTime.now(),
-      index: index,
-      isOwner: isOwner);
+    id: id,
+    driveId: driveId,
+    name: name,
+    lastUpdated: lastUpdated ?? DateTime.now(),
+    dateCreated: dateCreated ?? DateTime.now(),
+    index: index,
+    isOwner: isOwner,
+  );
 }
 
 FolderEntry createMockFolderEntry(
@@ -292,6 +295,7 @@ FolderEntry createMockFolderEntry(
     path: path,
     parentFolderId: parentFolderId,
     isGhost: isGhost,
+    isHidden: false,
   );
 }
 
@@ -325,5 +329,6 @@ FileEntry createMockFileEntry(
     path: path,
     parentFolderId: parentFolderId,
     bundledIn: bundledIn,
+    isHidden: false,
   );
 }

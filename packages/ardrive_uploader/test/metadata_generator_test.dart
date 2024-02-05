@@ -43,7 +43,7 @@ void main() {
     appInfo = AppInfo(
       version: '2.22.0',
       platform: 'FlutterTest',
-      arfsVersion: '0.13',
+      arfsVersion: '0.14',
       appName: 'ardrive',
     );
 

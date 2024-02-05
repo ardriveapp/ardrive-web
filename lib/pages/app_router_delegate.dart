@@ -196,14 +196,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   child: MultiBlocListener(
                     listeners: [
                       BlocListener<DriveDetailCubit, DriveDetailState>(
-                        listener: (context, state) {
-                          if (state is DriveDetailLoadSuccess) {
-                            driveId = state.currentDrive.id;
-                            driveFolderId = state.folderInView.folder.id;
+                        listener: (context, driveDetailCubitState) {
+                          if (driveDetailCubitState is DriveDetailLoadSuccess) {
+                            driveId = driveDetailCubitState.currentDrive.id;
+                            driveFolderId =
+                                driveDetailCubitState.folderInView.folder.id;
 
                             //Can be null at the root folder of the drive
                             notifyListeners();
-                          } else if (state is DriveDetailLoadNotFound) {
+                          } else if (driveDetailCubitState
+                              is DriveDetailLoadNotFound) {
                             // Do not prompt the user to attach an unfound drive if they are logging out.
                             final profileCubit = context.read<ProfileCubit>();
 

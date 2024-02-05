@@ -17,15 +17,6 @@ const licenseAssertionTxBaseTagKeys = [
   LicenseTag.licenseDefinitionTxId,
 ];
 
-final appInfo = AppInfoServices().appInfo;
-final ardriveTags = {
-  EntityTag.appVersion: appInfo.version,
-  EntityTag.appPlatform: appInfo.platform,
-  EntityTag.appName: appInfo.appName,
-  EntityTag.unixTime:
-      (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
-};
-
 class LicenseAssertionEntity with TransactionPropertiesMixin {
   final String dataTxId;
   final String licenseDefinitionTxId;
@@ -72,6 +63,15 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
   Future<DataItem> asPreparedDataItem({
     required ArweaveAddressString owner,
   }) async {
+    final appInfo = AppInfoServices().appInfo;
+    final ardriveTags = {
+      EntityTag.appVersion: appInfo.version,
+      EntityTag.appPlatform: appInfo.platform,
+      EntityTag.appName: appInfo.appName,
+      EntityTag.unixTime:
+          (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
+    };
+
     final licenseAssertionDataItem = DataItem.withBlobData(data: Uint8List(0))
       ..setOwner(owner);
 
@@ -87,7 +87,9 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
       ...additionalTags.entries
     ];
 
-    tags.forEach((tag) { licenseAssertionDataItem.addTag(tag.key, tag.value) });
+    for (var tag in tags) {
+      licenseAssertionDataItem.addTag(tag.key, tag.value);
+    }
 
     return licenseAssertionDataItem;
   }

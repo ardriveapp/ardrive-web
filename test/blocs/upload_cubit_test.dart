@@ -102,14 +102,16 @@ void main() {
     registerFallbackValue(Wallet());
     registerFallbackValue(getFakeUser());
     registerFallbackValue(FolderEntry(
-        id: '',
-        dateCreated: tDefaultDate,
-        driveId: '',
-        isGhost: false,
-        lastUpdated: tDefaultDate,
-        name: '',
-        parentFolderId: '',
-        path: ''));
+      id: '',
+      dateCreated: tDefaultDate,
+      driveId: '',
+      isGhost: false,
+      lastUpdated: tDefaultDate,
+      name: '',
+      parentFolderId: '',
+      path: '',
+      isHidden: false,
+    ));
 
     registerFallbackValue(Drive(
         id: '',
@@ -368,7 +370,7 @@ void main() {
       expect: () => <dynamic>[
         const TypeMatcher<UploadPreparationInitialized>(),
         const TypeMatcher<UploadPreparationInProgress>(),
-        const TypeMatcher<UploadReady>()
+        const TypeMatcher<UploadReadyToPrepare>()
       ],
     );
   });
@@ -454,7 +456,7 @@ void main() {
                 const TypeMatcher<UploadShowingWarning>(),
                 const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadPreparationInProgress>(),
-                const TypeMatcher<UploadReady>(),
+                const TypeMatcher<UploadReadyToPrepare>(),
               ]);
       blocTest<UploadCubit, UploadState>(
           'should not show the warning when file checker not found files above safe limit and emit UploadReady without user confirmation',
@@ -474,7 +476,7 @@ void main() {
                 const TypeMatcher<UploadPreparationInitialized>(),
                 const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadPreparationInProgress>(),
-                const TypeMatcher<UploadReady>(),
+                const TypeMatcher<UploadReadyToPrepare>(),
               ]);
     },
   );
@@ -533,7 +535,7 @@ void main() {
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
         UploadPreparationInProgress(isArConnect: true),
-        const TypeMatcher<UploadReady>()
+        const TypeMatcher<UploadReadyToPrepare>()
       ],
     );
     blocTest<UploadCubit, UploadState>(
@@ -553,7 +555,7 @@ void main() {
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
         UploadPreparationInProgress(isArConnect: false),
-        const TypeMatcher<UploadReady>()
+        const TypeMatcher<UploadReadyToPrepare>()
       ],
     );
 
@@ -676,7 +678,7 @@ void main() {
             UploadPreparationInitialized(),
             const TypeMatcher<UploadPreparationInProgress>(),
             const TypeMatcher<UploadPreparationInProgress>(),
-            const TypeMatcher<UploadReady>(),
+            const TypeMatcher<UploadReadyToPrepare>(),
           ],
         );
 
@@ -722,7 +724,7 @@ void main() {
             UploadPreparationInitialized(),
             const TypeMatcher<UploadFileTooLarge>(),
             const TypeMatcher<UploadPreparationInProgress>(),
-            const TypeMatcher<UploadReady>(),
+            const TypeMatcher<UploadReadyToPrepare>(),
           ],
         );
       },

@@ -18,6 +18,7 @@ class Database extends _$Database {
   @override
   int get schemaVersion => 19;
 
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -73,6 +74,15 @@ class Database extends _$Database {
                 fileRevisions,
                 fileRevisions.pinnedDataOwnerAddress,
               );
+            } else if (from == 17 && to == 18) {
+              // Then we're adding the isHidden column
+              logger.i('Migrating schema from v17 to v18');
+
+              await m.addColumn(folderRevisions, folderRevisions.isHidden);
+              await m.addColumn(fileRevisions, fileRevisions.isHidden);
+
+              await m.addColumn(folderEntries, folderEntries.isHidden);
+              await m.addColumn(fileEntries, fileEntries.isHidden);
             }
             if (from < 18) {
               // TODO: Merge with PE-4727
