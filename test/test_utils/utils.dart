@@ -66,7 +66,7 @@ Future<void> addTestFilesToDb(
           driveId: driveId,
           name: 'fake-drive-name',
           path: '',
-          isHidden: false,
+          isHidden: const Value(false),
         ),
         FolderEntriesCompanion.insert(
           id: nestedFolderId,
@@ -74,7 +74,7 @@ Future<void> addTestFilesToDb(
           parentFolderId: Value(rootFolderId),
           name: nestedFolderId,
           path: '/$nestedFolderId',
-          isHidden: false,
+          isHidden: const Value(false),
         ),
         ...List.generate(
           emptyNestedFolderCount,
@@ -86,7 +86,7 @@ Future<void> addTestFilesToDb(
               parentFolderId: Value(rootFolderId),
               name: folderId,
               path: '/$folderId',
-              isHidden: false,
+              isHidden: const Value(false),
             );
           },
         )..shuffle(Random(0)),
@@ -111,7 +111,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
-              isHidden: false,
+              isHidden: const Value(false),
             );
           },
         )..shuffle(Random(0)),
@@ -130,7 +130,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
-              isHidden: false,
+              isHidden: const Value(false),
             );
           },
         )..shuffle(Random(0)),
@@ -156,7 +156,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
-              isHidden: false,
+              isHidden: const Value(false),
             );
           },
         )..shuffle(Random(0)),
@@ -176,7 +176,7 @@ Future<void> addTestFilesToDb(
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
-              isHidden: false,
+              isHidden: const Value(false),
             );
           },
         )..shuffle(Random(0)),

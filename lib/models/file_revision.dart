@@ -23,7 +23,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         customGQLTags: customGQLTags,
         customJsonMetadata: customJsonMetadata,
         pinnedDataOwnerAddress: pinnedDataOwnerAddress,
-        isHidden: isHidden.value,
+        isHidden: isHidden,
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -60,7 +60,7 @@ extension FileEntityExtensions on FileEntity {
         customGQLTags: Value(customGqlTagsAsString),
         customJsonMetadata: Value(customJsonMetadataAsString),
         pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
-        isHidden: isHidden ?? false,
+        isHidden: Value(isHidden ?? false),
       );
 
   FileRevision toRevision({
