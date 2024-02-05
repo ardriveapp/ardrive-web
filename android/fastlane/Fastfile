@@ -27,6 +27,7 @@ platform :android do
 
 
     # Build APK
+    sh_on_root(command: "flutter build apk --release --flavor #{flavor} --build-number #{build_number}")
 
     if isProd || isStaging then
       flags = ["SENTRY_DSN=#{ENV["SENTRY_DSN"]}",
@@ -51,8 +52,6 @@ platform :android do
         },
         flags: "-Pdart-defines=\"#{b64flags}\"",
       )
-    else
-      sh_on_root(command: "flutter build apk --release --flavor #{flavor} --build-number #{build_number}")
     end
   end
 
