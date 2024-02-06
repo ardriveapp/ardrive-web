@@ -48,7 +48,7 @@ Future<void> promptToLicense(
   );
 }
 
-class FsEntryLicenseForm extends StatelessWidget {
+class FsEntryLicenseForm extends StatefulWidget {
   final List<ArDriveDataTableItem> selectedItems;
 
   const FsEntryLicenseForm({
@@ -56,6 +56,11 @@ class FsEntryLicenseForm extends StatelessWidget {
     required this.selectedItems,
   }) : super(key: key);
 
+  @override
+  State<FsEntryLicenseForm> createState() => _FsEntryLicenseFormState();
+}
+
+class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<FsEntryLicenseBloc, FsEntryLicenseState>(
@@ -299,6 +304,9 @@ class FsEntryLicenseForm extends StatelessWidget {
                                   .licenseType ==
                               LicenseType.udl
                           ? UdlParamsForm(
+                              onChangeLicenseFee: () {
+                                setState(() {});
+                              },
                               formGroup:
                                   context.watch<FsEntryLicenseBloc>().udlForm,
                             )
@@ -313,6 +321,8 @@ class FsEntryLicenseForm extends StatelessWidget {
                       title: appLocalizationsOf(context).backEmphasized,
                     ),
                     ModalAction(
+                      isEnable:
+                          context.watch<FsEntryLicenseBloc>().udlForm.valid,
                       action: () => context
                           .read<FsEntryLicenseBloc>()
                           .add(const FsEntryLicenseConfigurationSubmit()),
@@ -668,11 +678,21 @@ class LabeledInput extends StatelessWidget {
   }
 }
 
-class UdlParamsForm extends StatelessWidget {
+class UdlParamsForm extends StatefulWidget {
   final FormGroup formGroup;
+  final Function onChangeLicenseFee;
 
-  const UdlParamsForm({super.key, required this.formGroup});
+  const UdlParamsForm({
+    super.key,
+    required this.formGroup,
+    required this.onChangeLicenseFee,
+  });
 
+  @override
+  State<UdlParamsForm> createState() => _UdlParamsFormState();
+}
+
+class _UdlParamsFormState extends State<UdlParamsForm> {
   @override
   Widget build(BuildContext context) {
     final inputBorder = OutlineInputBorder(
@@ -688,7 +708,7 @@ class UdlParamsForm extends StatelessWidget {
     );
 
     return ReactiveForm(
-        formGroup: formGroup,
+        formGroup: widget.formGroup,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
@@ -718,6 +738,9 @@ class UdlParamsForm extends StatelessWidget {
                         enabledBorder: inputBorder,
                         focusedBorder: inputBorder,
                       ),
+                      onChanged: (s) {
+                        widget.onChangeLicenseFee();
+                      },
                       style: const TextStyle(height: 1.5),
                     ),
                   ),
