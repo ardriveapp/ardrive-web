@@ -211,27 +211,30 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                     hasFiles: hasFiles,
                     canDownloadMultipleFiles: canDownloadMultipleFiles,
                   ),
-                  mobile: (context) => Scaffold(
-                    drawerScrimColor: Colors.transparent,
-                    drawer: const AppSideBar(),
-                    appBar: (driveDetailState.showSelectedItemDetails &&
-                            context.read<DriveDetailCubit>().selectedItem !=
-                                null)
-                        ? MobileAppBar(
-                            leading: ArDriveIconButton(
-                              icon: ArDriveIcons.arrowLeft(),
-                              onPressed: () {
-                                context
-                                    .read<DriveDetailCubit>()
-                                    .toggleSelectedItemDetails();
-                              },
-                            ),
-                          )
-                        : null,
-                    body: _mobileView(
-                      driveDetailState,
-                      hasSubfolders,
-                      hasFiles,
+                  mobile: (context) => SafeArea(
+                    child: Scaffold(
+                      resizeToAvoidBottomInset: false,
+                      drawerScrimColor: Colors.transparent,
+                      drawer: const AppSideBar(),
+                      appBar: (driveDetailState.showSelectedItemDetails &&
+                              context.read<DriveDetailCubit>().selectedItem !=
+                                  null)
+                          ? MobileAppBar(
+                              leading: ArDriveIconButton(
+                                icon: ArDriveIcons.arrowLeft(),
+                                onPressed: () {
+                                  context
+                                      .read<DriveDetailCubit>()
+                                      .toggleSelectedItemDetails();
+                                },
+                              ),
+                            )
+                          : null,
+                      body: _mobileView(
+                        driveDetailState,
+                        hasSubfolders,
+                        hasFiles,
+                      ),
                     ),
                   ),
                 );
