@@ -212,6 +212,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                     canDownloadMultipleFiles: canDownloadMultipleFiles,
                   ),
                   mobile: (context) => Scaffold(
+                    resizeToAvoidBottomInset: false,
                     drawerScrimColor: Colors.transparent,
                     drawer: const AppSideBar(),
                     appBar: (driveDetailState.showSelectedItemDetails &&

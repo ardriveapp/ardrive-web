@@ -183,12 +183,14 @@ class AppState extends State<App> {
                 }
               },
               builder: (context, state) {
-                return ArDriveApp(
-                  onThemeChanged: (theme) {
-                    context.read<ThemeSwitcherBloc>().add(ChangeTheme());
-                  },
-                  key: arDriveAppKey,
-                  builder: _appBuilder,
+                return SafeArea(
+                  child: ArDriveApp(
+                    onThemeChanged: (theme) {
+                      context.read<ThemeSwitcherBloc>().add(ChangeTheme());
+                    },
+                    key: arDriveAppKey,
+                    builder: _appBuilder,
+                  ),
                 );
               },
             ),
