@@ -15,6 +15,8 @@ class TurboUploadService {
   final Uri turboUploadUri;
   final r = RetryOptions(maxAttempts: 8);
   final CancelToken _cancelToken = CancelToken();
+  final dio = Dio();
+  final dataItemConfirmationRetryDelay = Duration(seconds: 15);
 
   Future<Response> post({
     required DataItemResult dataItem,
@@ -22,25 +24,26 @@ class TurboUploadService {
     Function(double)? onSendProgress,
     Map<String, dynamic>? headers,
   }) async {
-    logger.d('Uploading dataItem to Turbo');
-
-    final dio = Dio();
+    logger.d('[${dataItem.id}] Uploading DataItem to Turbo');
 
     final uploadInfo = await r.retry(
       () => dio.get('$turboUploadUri/chunks/arweave/-1/-1'),
     );
     final uploadId = uploadInfo.data['id'] as String;
     final uploadChunkSizeMinInBytes = uploadInfo.data['min'] as int;
-    logger.d('Got upload info from Turbo');
-    logger.d('Upload ID: $uploadId');
-    logger.d('Upload chunk size: $uploadChunkSizeMinInBytes');
+    final uploadChunkSizeMaxInBytes = uploadInfo.data['max'] as int;
+    final uploadChunkSizeInBytes = _calculateChunkSize(
+      dataSize: dataItem.dataItemSize,
+      minChunkSize: uploadChunkSizeMinInBytes,
+      maxChunkSize: uploadChunkSizeMaxInBytes,
+    );
+    final maxUploadsInParallel = MiB(100).size ~/ uploadChunkSizeInBytes;
+    logger.d(
+        '[${dataItem.id}] UUpload ID: $uploadId, Uploads in parallel: $maxUploadsInParallel, Chunk size: $uploadChunkSizeInBytes');
 
     // (offset: sent bytes) map for in flight requests progress
     Map<int, int> inFlightRequestsBytesSent = {};
     int completedRequestsBytesSent = 0;
-
-    final maxUploadsInParallel = MiB(50).size ~/ uploadChunkSizeMinInBytes;
-    logger.d('Max uploads in parallel: $maxUploadsInParallel');
 
     if (onSendProgress != null) {
       Timer.periodic(Duration(milliseconds: 500), (timer) {
@@ -60,10 +63,11 @@ class TurboUploadService {
 
     await _processStream(
         stream: dataItem.streamGenerator(),
-        chunkSize: uploadChunkSizeMinInBytes,
-        maxConcurrent: maxUploadsInParallel, (chunk, offset) async {
+        chunkSize: uploadChunkSizeInBytes,
+        maxConcurrent: maxUploadsInParallel,
+        dataItemId: dataItem.id, (chunk, offset) async {
       try {
-        logger.d('Uploading chunk. Offset: $offset');
+        logger.d('[${dataItem.id}] Uploading chunk. Offset: $offset');
         return r.retry(
           () => dio.post(
             '$turboUploadUri/chunks/arweave/$uploadId/$offset',
@@ -89,7 +93,7 @@ class TurboUploadService {
         );
       } catch (e) {
         if (_isCanceled) {
-          logger.d('Upload canceled');
+          logger.d('[${dataItem.id}] Upload canceled');
           _cancelToken.cancel();
         }
         rethrow;
@@ -97,23 +101,64 @@ class TurboUploadService {
     });
 
     try {
-      logger.d('Finalising upload');
+      logger.d('[${dataItem.id}] Finalising upload to Turbo');
       final finaliseInfo = await r.retry(
         () => dio.post(
           '$turboUploadUri/chunks/arweave/$uploadId/-1',
           data: null,
           cancelToken: _cancelToken,
+          options: Options(
+            validateStatus: (status) {
+              return status != null &&
+                  ((status >= 200 && status < 300) || status == 504);
+            },
+          ),
         ),
       );
-      logger.d('Upload finalised');
+      logger.d('[${dataItem.id}] Upload finalised');
 
       return finaliseInfo;
     } catch (e) {
-      if (_isCanceled) {
-        logger.d('Upload canceled');
+      if (e is DioException) {
+        logger.d('[${dataItem.id}] Finalising upload failed, ${e.type}');
+      }
+      if (e is DioException && e.type == DioExceptionType.connectionError) {
+        final confirmInfo = await _confirmUpload(dataItem.id);
+        return confirmInfo;
+      } else if (_isCanceled) {
+        logger.d('[${dataItem.id}] Upload canceled');
         _cancelToken.cancel();
       }
+
       rethrow;
+    }
+  }
+
+  Future<Response> _confirmUpload(TxID dataItemId) async {
+    try {
+      logger.d('[$dataItemId] Confirming upload to Turbo');
+      final response = await dio.get(
+        '$turboUploadUri/v1/tx/$dataItemId/status',
+      );
+
+      final responseData = response.data;
+
+      if (responseData['status'] == 'CONFIRMED' ||
+          responseData['status'] == 'FINALIZED') {
+        logger.d('[$dataItemId] DataItem confirmed!');
+        return response;
+      } else {
+        logger.d(
+            '[$dataItemId] DataItem not confirmed. Retrying in ${dataItemConfirmationRetryDelay.toString()}');
+
+        await Future.delayed(dataItemConfirmationRetryDelay);
+
+        return _confirmUpload(dataItemId);
+      }
+    } catch (e) {
+      await Future.delayed(dataItemConfirmationRetryDelay);
+
+      return _confirmUpload(dataItemId);
     }
   }
 
@@ -126,28 +171,53 @@ class TurboUploadService {
 
   bool _isCanceled = false;
 
+  int _calculateChunkSize({
+    required int dataSize,
+    required int minChunkSize,
+    required int maxChunkSize,
+  }) {
+    getValidChunkSize(int chunkSize) {
+      if (chunkSize < minChunkSize) {
+        return minChunkSize;
+      } else if (chunkSize > maxChunkSize) {
+        return maxChunkSize;
+      } else {
+        return chunkSize;
+      }
+    }
+
+    if (dataSize < GiB(1).size) {
+      return getValidChunkSize(MiB(5).size);
+    } else if (dataSize <= GiB(2).size) {
+      return getValidChunkSize(MiB(25).size);
+    } else {
+      return getValidChunkSize(MiB(50).size);
+    }
+  }
+
   Future<void> _processStream(
     Future<dynamic> Function(Uint8List, int) processChunk, {
     required Stream<Uint8List> stream,
     required int chunkSize,
     required int maxConcurrent,
+    required TxID dataItemId,
   }) async {
-    logger.d('Processing DataItem stream');
+    logger.d('[$dataItemId] Processing DataItem stream');
     final chunkedStream = streamToChunks(stream, chunkSize);
-    logger.d('Stream chunked');
+    logger.d('[$dataItemId] Stream chunked');
     final runningTasks = <Future>[];
     int offset = 0;
 
     await for (final chunk in chunkedStream) {
       if (runningTasks.length >= maxConcurrent) {
-        logger.d('Waiting for a task to finish');
+        logger.d('[$dataItemId] Waiting for a task to finish');
         await Future.any(runningTasks);
       }
 
-      logger.d('Starting new task. Offset: $offset');
+      logger.d('[$dataItemId] Starting new task. Offset: $offset');
       final task = processChunk(chunk, offset);
       task.whenComplete(() {
-        logger.d('Task completed. Offset: $offset');
+        logger.d('[$dataItemId] Task completed. Offset: $offset');
         runningTasks.remove(task);
       });
 
@@ -156,13 +226,15 @@ class TurboUploadService {
       offset += chunk.length;
     }
 
-    logger.d('Waiting for all tasks to finish');
+    logger.d('[$dataItemId] Waiting for all tasks to finish');
     await Future.wait(runningTasks);
   }
 }
 
 Stream<Uint8List> streamToChunks(
-    Stream<Uint8List> stream, int chunkSize) async* {
+  Stream<Uint8List> stream,
+  int chunkSize,
+) async* {
   var buffer = BytesBuilder();
 
   await for (var uint8list in stream) {

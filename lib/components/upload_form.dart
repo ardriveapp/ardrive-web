@@ -148,7 +148,7 @@ Future<void> promptToUpload(
                 folder: ioFolder,
                 arDriveUploadManager:
                     context.read<ArDriveUploadPreparationManager>(),
-                uploadFileChecker: context.read<UploadFileChecker>(),
+                uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
                 driveId: driveId,
                 parentFolderId: parentFolderId,
                 files: selectedFiles,
@@ -1025,8 +1025,6 @@ class _UploadFormState extends State<UploadForm> {
 
                       if (task.isProgressAvailable) {
                         if (statusAvailableForShowingProgress) {
-                          logger.d(
-                              'task.progress: ${task.progress}, task.uploadItem is null?  ${task.uploadItem == null}');
                           if (task.uploadItem != null) {
                             progressText =
                                 '${filesize(((task.uploadItem!.size) * task.progress).ceil())}/${filesize(task.uploadItem!.size)}';
