@@ -18,7 +18,6 @@ class TurboUploadService {
   final dio = Dio();
   final dataItemConfirmationRetryDelay = Duration(seconds: 15);
   final maxInFlightData = MiB(200).size;
-  Timer? onSendProgressPeriodic;
 
   Future<Response> post({
     required DataItemResult dataItem,
@@ -49,8 +48,7 @@ class TurboUploadService {
     int completedRequestsBytesSent = 0;
 
     if (onSendProgress != null) {
-      onSendProgressPeriodic =
-          Timer.periodic(Duration(milliseconds: 500), (timer) {
+      Timer.periodic(Duration(milliseconds: 500), (timer) {
         final inFlightBytesSent = inFlightRequestsBytesSent.isEmpty
             ? 0
             : inFlightRequestsBytesSent.values.reduce((a, b) => a + b);
@@ -103,8 +101,6 @@ class TurboUploadService {
         rethrow;
       }
     });
-
-    onSendProgressPeriodic?.cancel();
 
     try {
       logger.d('[${dataItem.id}] Finalising upload to Turbo');

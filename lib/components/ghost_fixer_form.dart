@@ -18,6 +18,7 @@ import 'components.dart';
 Future<void> promptToReCreateFolder(BuildContext context,
     {required FolderDataTableItem ghostFolder}) {
   if (ghostFolder.parentFolderId != null) {
+    final driveDetailCubit = context.read<DriveDetailCubit>();
     return showArDriveDialog(
       context,
       content: BlocProvider(
@@ -28,7 +29,9 @@ Future<void> promptToReCreateFolder(BuildContext context,
             turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             syncCubit: context.read<SyncCubit>()),
-        child: const GhostFixerForm(),
+        child: GhostFixerForm(
+          driveDetailCubit: driveDetailCubit,
+        ),
       ),
     );
   } else {
@@ -38,7 +41,12 @@ Future<void> promptToReCreateFolder(BuildContext context,
 }
 
 class GhostFixerForm extends StatefulWidget {
-  const GhostFixerForm({Key? key}) : super(key: key);
+  const GhostFixerForm({
+    Key? key,
+    required this.driveDetailCubit,
+  }) : super(key: key);
+
+  final DriveDetailCubit driveDetailCubit;
 
   @override
   State<GhostFixerForm> createState() => _GhostFixerFormState();
@@ -60,6 +68,7 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
           } else if (state is GhostFixerSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
+            widget.driveDetailCubit.refreshDriveDataTable();
           } else if (state is GhostFixerWalletMismatch) {
             Navigator.pop(context);
           } else if (state is GhostFixerNameConflict) {
