@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -8,6 +9,7 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EnterYourPasswordWidget extends StatefulWidget {
   const EnterYourPasswordWidget(
@@ -63,7 +65,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                       fontWeight: ArFontWeight.semiBold)),
               const SizedBox(width: 8),
               FutureBuilder(
-                  future: widget.wallet?.getAddress(),
+                  future: _getWalletAddress(),
                   builder: (context, address) => address.hasData
                       ? TruncatedAddressNew(walletAddress: address.data!)
                       : const Text(''))
@@ -120,6 +122,13 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
         ],
       ),
     );
+  }
+
+  Future<String?> _getWalletAddress() async {
+    if (widget.wallet == null) {
+      return context.read<ArDriveAuth>().getWalletAddress();
+    }
+    return widget.wallet!.getAddress();
   }
 
   void _onSubmit() {
