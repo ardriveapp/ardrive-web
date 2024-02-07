@@ -198,6 +198,7 @@ class ArDriveMobileTypography implements ArdriveTypographyNew {
   }
 }
 
+// FIXME: Rename this to not be confusing wing ArdriveTypographyNew
 class ArDriveTypographyNew {
   static ArdriveTypographyNew desktop = ArDriveDesktopTypography();
   static ArdriveTypographyNew mobile = ArDriveMobileTypography();

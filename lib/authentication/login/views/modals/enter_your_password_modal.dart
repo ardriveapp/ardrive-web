@@ -75,9 +75,13 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   color: colorTokens.textLow,
                   fontWeight: ArFontWeight.semiBold)),
           const SizedBox(height: 8),
-          ArDriveTextField(
+          ArDriveTextFieldNew(
               controller: _passwordController,
               hintText: 'Enter your password',
+              showObfuscationToggle: true,
+              obscureText: true,
+              autofocus: true,
+              autofillHints: const [AutofillHints.password],
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   setState(() {
