@@ -1,0 +1,1 @@
+- Automatic updates the drive explorer after ghost folder correction.
