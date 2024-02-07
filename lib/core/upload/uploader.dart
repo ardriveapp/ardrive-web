@@ -458,6 +458,12 @@ class UploadPaymentEvaluator {
       _isTurboAvailableToUploadAllFiles,
     );
 
+    if (uploadMethod == UploadMethod.turbo) {
+      totalSize = turboBundleSizes;
+    } else if (uploadMethod == UploadMethod.ar) {
+      totalSize = arBundleSizes + arFileSizes;
+    }
+
     return UploadPaymentInfo(
       isTurboAvailable: _isTurboAvailableToUploadAllFiles,
       defaultPaymentMethod: uploadMethod,

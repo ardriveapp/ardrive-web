@@ -17,6 +17,8 @@ class TurboUploadService {
   final CancelToken _cancelToken = CancelToken();
   final dio = Dio();
   final dataItemConfirmationRetryDelay = Duration(seconds: 15);
+  final maxInFlightData = MiB(200).size;
+  Timer? onSendProgressPeriodic;
 
   Future<Response> post({
     required DataItemResult dataItem,
@@ -29,6 +31,7 @@ class TurboUploadService {
     final uploadInfo = await r.retry(
       () => dio.get('$turboUploadUri/chunks/arweave/-1/-1'),
     );
+
     final uploadId = uploadInfo.data['id'] as String;
     final uploadChunkSizeMinInBytes = uploadInfo.data['min'] as int;
     final uploadChunkSizeMaxInBytes = uploadInfo.data['max'] as int;
@@ -37,7 +40,7 @@ class TurboUploadService {
       minChunkSize: uploadChunkSizeMinInBytes,
       maxChunkSize: uploadChunkSizeMaxInBytes,
     );
-    final maxUploadsInParallel = MiB(100).size ~/ uploadChunkSizeInBytes;
+    final maxUploadsInParallel = maxInFlightData ~/ uploadChunkSizeInBytes;
     logger.d(
         '[${dataItem.id}] UUpload ID: $uploadId, Uploads in parallel: $maxUploadsInParallel, Chunk size: $uploadChunkSizeInBytes');
 
@@ -46,7 +49,8 @@ class TurboUploadService {
     int completedRequestsBytesSent = 0;
 
     if (onSendProgress != null) {
-      Timer.periodic(Duration(milliseconds: 500), (timer) {
+      onSendProgressPeriodic =
+          Timer.periodic(Duration(milliseconds: 500), (timer) {
         final inFlightBytesSent = inFlightRequestsBytesSent.isEmpty
             ? 0
             : inFlightRequestsBytesSent.values.reduce((a, b) => a + b);
@@ -100,6 +104,8 @@ class TurboUploadService {
       }
     });
 
+    onSendProgressPeriodic?.cancel();
+
     try {
       logger.d('[${dataItem.id}] Finalising upload to Turbo');
       final finaliseInfo = await r.retry(
@@ -108,23 +114,25 @@ class TurboUploadService {
           data: null,
           cancelToken: _cancelToken,
           options: Options(
-            validateStatus: (status) {
+            validateStatus: (int? status) {
               return status != null &&
                   ((status >= 200 && status < 300) || status == 504);
             },
           ),
         ),
       );
+
+      if (finaliseInfo.statusCode == 504) {
+        final confirmInfo = await _confirmUpload(dataItem.id);
+        return confirmInfo;
+      }
+
       logger.d('[${dataItem.id}] Upload finalised');
 
       return finaliseInfo;
     } catch (e) {
       if (e is DioException) {
         logger.d('[${dataItem.id}] Finalising upload failed, ${e.type}');
-      }
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        final confirmInfo = await _confirmUpload(dataItem.id);
-        return confirmInfo;
       } else if (_isCanceled) {
         logger.d('[${dataItem.id}] Upload canceled');
         _cancelToken.cancel();
