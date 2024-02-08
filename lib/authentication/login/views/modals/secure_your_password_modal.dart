@@ -66,7 +66,7 @@ class _SecureYourPasswordWidgetState extends State<SecureYourPasswordWidget> {
               ),
             ),
             const SizedBox(height: 12),
-            Text("Please enter and confirm a password to secure your wallet.",
+            Text('Please enter and confirm a password to secure your wallet.',
                 style: typography.paragraphNormal(
                     color: colorTokens.textLow,
                     fontWeight: ArFontWeight.semiBold)),

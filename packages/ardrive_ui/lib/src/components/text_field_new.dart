@@ -494,9 +494,9 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
 
   // }
 
-  Color _hintTextColor(ArDriveColorTokens colorTokens) {
-    return colorTokens.textXLow;
-  }
+  // Color _hintTextColor(ArDriveColorTokens colorTokens) {
+  //   return colorTokens.textXLow;
+  // }
 
   FutureOr<bool> validateAsync({String? text}) async {
     String? textToValidate = text;
