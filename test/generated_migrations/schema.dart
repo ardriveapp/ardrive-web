@@ -3,6 +3,7 @@
 //@dart=2.12
 import 'package:drift/drift.dart';
 import 'package:drift/internal/migrations.dart';
+
 import 'schema_v17.dart' as v17;
 import 'schema_v18.dart' as v18;
 import 'schema_v19.dart' as v19;
