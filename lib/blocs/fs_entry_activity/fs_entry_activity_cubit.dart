@@ -38,14 +38,13 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
           break;
         case FileDataTableItem:
           _entrySubscription = _driveDao
-              .latestFileRevisionsByFileIdWithTransactions(
+              .latestFileRevisionsByFileIdWithLicenseAndTransactions(
                 driveId: driveId,
                 fileId: selectedItem.id,
               )
               .watch()
-              .listen((r) => emit(
-                  FsEntryActivitySuccess<FileRevisionWithTransactions>(
-                      revisions: r)));
+              .listen((r) => emit(FsEntryActivitySuccess<
+                  FileRevisionWithLicenseAndTransactions>(revisions: r)));
           break;
 
         default:
