@@ -139,12 +139,14 @@ class ArDriveMultilineObscureTextControllerNew extends TextEditingController {
     return _isObscured
         ? TextSpan(
             style: style,
-            text: _showLastCharacter
-                ? text
-                    .replaceAll(RegExp(r'.'), obscuringCharacter)
-                    .replaceRange(
-                        text.length - 1, text.length, text[text.length - 1])
-                : text.replaceAll(RegExp(r'.'), obscuringCharacter))
+            text: text.isEmpty
+                ? ''
+                : _showLastCharacter
+                    ? text
+                        .replaceAll(RegExp(r'.'), obscuringCharacter)
+                        .replaceRange(
+                            text.length - 1, text.length, text[text.length - 1])
+                    : text.replaceAll(RegExp(r'.'), obscuringCharacter))
         : super.buildTextSpan(
             context: context, style: style, withComposing: withComposing);
   }
