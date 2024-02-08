@@ -54,7 +54,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   get isArConnectAvailable => _arConnectService.isExtensionPresent();
 
   Future<void> _onLoginEvent(LoginEvent event, Emitter<LoginState> emit) async {
-    print('Event: $event');
     if (event is SelectLoginFlow) {
       await _handleSelectLoginFlowEvent(event, emit);
     } else if (event is AddWalletFile) {
