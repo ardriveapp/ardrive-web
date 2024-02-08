@@ -492,17 +492,22 @@ class UploadPaymentEvaluator {
   }
 
   Future<UploadMethod> _determineUploadMethod(
-      BigInt turboBalance,
-      int turboBundleSizes,
-      int allowedSizeForTurbo,
-      bool isTurboAvailableToUploadAllFiles) async {
+    BigInt turboBalance,
+    int turboBundleSizes,
+    int allowedSizeForTurbo,
+    bool isTurboAvailableToUploadAllFiles,
+  ) async {
+    bool isFreeUploadPossibleUsingTurbo =
+        turboBundleSizes <= allowedSizeForTurbo;
+
+    if (isFreeUploadPossibleUsingTurbo) {
+      return UploadMethod.turbo;
+    }
+
     try {
       final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
         totalSize: turboBundleSizes,
       );
-
-      bool isFreeUploadPossibleUsingTurbo =
-          turboBundleSizes <= allowedSizeForTurbo;
 
       if ((isTurboAvailableToUploadAllFiles &&
               turboBalance >= turboCostEstimate.totalCost) ||
@@ -513,6 +518,7 @@ class UploadPaymentEvaluator {
       }
     } catch (e) {
       _isTurboAvailableToUploadAllFiles = false;
+
       return UploadMethod.ar;
     }
   }
