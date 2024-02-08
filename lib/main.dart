@@ -406,5 +406,8 @@ class AppState extends State<App> {
             themeDetector: ThemeDetector(),
           ),
         ),
+        RepositoryProvider(
+          create: (_) => LicenseService(),
+        ),
       ];
 }

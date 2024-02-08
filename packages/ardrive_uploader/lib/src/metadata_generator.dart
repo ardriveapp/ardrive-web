@@ -88,6 +88,12 @@ class ARFSUploadMetadataGenerator
           entity: EntityType.file,
           contentType: contentType,
           isPrivate: arguments.isPrivate,
+          licenseDefinitionTxId: arguments.licenseDefinitionTxId,
+          licenseAdditionalTags: arguments.licenseAdditionalTags == null
+              ? null
+              : arguments.licenseAdditionalTags!.entries
+                  .map((e) => Tag(e.key, e.value))
+                  .toList(),
           customBundleTags: customBundleTags,
         ),
       );
@@ -104,6 +110,8 @@ class ARFSUploadMetadataGenerator
         entityMetadataTags: tags['entity']!,
         dataItemTags: tags['data-item']!,
         bundleTags: tags['bundle-data-item']!,
+        licenseDefinitionTxId: arguments.licenseDefinitionTxId,
+        licenseAdditionalTags: arguments.licenseAdditionalTags,
       );
     } else if (entity is IOFolder) {
       ARFSUploadMetadataArgsValidator.validate(arguments, EntityType.folder);
@@ -181,6 +189,8 @@ class ARFSUploadMetadataArgs {
   final bool isPrivate;
   final String? entityId;
   final UploadType type;
+  final String? licenseDefinitionTxId;
+  final Map<String, String>? licenseAdditionalTags;
 
   factory ARFSUploadMetadataArgs.file({
     required String driveId,
@@ -233,6 +243,8 @@ class ARFSUploadMetadataArgs {
     this.parentFolderId,
     this.privacy,
     this.entityId,
+    this.licenseDefinitionTxId,
+    this.licenseAdditionalTags,
   });
 }
 
@@ -258,6 +270,11 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
     final dataItemTags = [
       ...appTags,
       Tag(EntityTag.contentType, arguments.contentType),
+      if (arguments.licenseDefinitionTxId != null) ...[
+        Tag(LicenseTag.licenseDefinitionTxId, arguments.licenseDefinitionTxId!),
+        if (arguments.licenseAdditionalTags != null)
+          ...arguments.licenseAdditionalTags!
+      ],
     ];
 
     final entityMedataTags = [...entityTags, ...appTags];
@@ -422,6 +439,8 @@ class ARFSTagsArgs extends Equatable {
   final bool? isPrivate;
   final String contentType;
   final EntityType entity;
+  final String? licenseDefinitionTxId;
+  final List<Tag>? licenseAdditionalTags;
   final List<Tag>? customBundleTags;
 
   ARFSTagsArgs({
@@ -431,6 +450,8 @@ class ARFSTagsArgs extends Equatable {
     this.entityId,
     required this.entity,
     required this.contentType,
+    this.licenseDefinitionTxId,
+    this.licenseAdditionalTags,
     this.customBundleTags,
   });
 

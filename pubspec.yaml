@@ -38,8 +38,8 @@ dependencies:
       ref: v1.4.5
   ardrive_ui:
     git:
-      url: https://github.com/ardriveapp/ardrive_ui.git
-      ref: v1.17.1
+      url: https://github.com/elliotsayes/ardrive_ui.git
+      ref: license
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:
@@ -132,7 +132,7 @@ dependencies:
   loading_animation_widget: ^1.2.0+4
   synchronized: ^3.1.0
   confetti: ^0.7.0
-  flutter_sharing_intent: 
+  flutter_sharing_intent:
     git:
       url: https://github.com/bhagat-techind/flutter_sharing_intent
       ref: 5f4f2e66c02580105ba89b3fec5a7be907d5466f
@@ -166,6 +166,10 @@ dependency_overrides:
     git:
       url: https://github.com/ar-io/ardrive_io.git
       ref: v1.4.6
+  ardrive_ui:
+    git:
+      url: https://github.com/ardriveapp/ardrive_ui
+      ref: PE-5412
 
 dev_dependencies:
   integration_test:

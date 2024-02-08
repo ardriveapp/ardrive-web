@@ -11,6 +11,7 @@ Widget _buildDataList(
     state.folderInView.folder,
     state.currentDrive,
     isMultiselecting: state.multiselect,
+    columnVisibility: state.columnVisibility,
     isShowingHiddenFiles: state.isShowingHiddenFiles,
     emptyState: emptyState,
   );
@@ -21,6 +22,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final int? size;
   final DateTime lastUpdated;
   final DateTime dateCreated;
+  final LicenseType? licenseType;
   final String contentType;
   final String? fileStatusFromTransactions;
   final String id;
@@ -36,6 +38,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     required this.name,
     required this.lastUpdated,
     required this.dateCreated,
+    this.licenseType,
     required this.contentType,
     this.fileStatusFromTransactions,
     required this.path,
@@ -91,33 +94,36 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final String fileId;
   final String parentFolderId;
   final String dataTxId;
+  final String? licenseTxId;
   final String? bundledIn;
   final DateTime lastModifiedDate;
   final NetworkTransaction? metadataTx;
   final NetworkTransaction? dataTx;
   final String? pinnedDataOwnerAddress;
 
-  FileDataTableItem({
-    required super.driveId,
-    required super.lastUpdated,
-    required super.name,
-    required super.size,
-    required super.dateCreated,
-    required super.contentType,
-    required super.path,
-    super.isHidden,
-    super.fileStatusFromTransactions,
-    required super.index,
-    required super.isOwner,
-    required this.fileId,
-    required this.parentFolderId,
-    required this.dataTxId,
-    required this.lastModifiedDate,
-    required this.metadataTx,
-    required this.dataTx,
-    required this.pinnedDataOwnerAddress,
-    this.bundledIn,
-  }) : super(id: fileId);
+  FileDataTableItem(
+      {required super.driveId,
+      required super.lastUpdated,
+      required super.name,
+      required super.size,
+      required super.dateCreated,
+      required super.contentType,
+      required super.path,
+      super.isHidden,
+      super.fileStatusFromTransactions,
+      required super.index,
+      required super.isOwner,
+      required this.fileId,
+      required this.parentFolderId,
+      required this.dataTxId,
+      required this.lastModifiedDate,
+      required this.metadataTx,
+      required this.dataTx,
+      required this.pinnedDataOwnerAddress,
+      super.licenseType,
+      this.licenseTxId,
+      this.bundledIn})
+      : super(id: fileId);
 
   @override
   List<Object> get props => [fileId, name, isHidden];
@@ -129,6 +135,7 @@ Widget _buildDataListContent(
   FolderEntry folder,
   Drive drive, {
   required bool isMultiselecting,
+  required Map<int, bool> columnVisibility,
   required bool isShowingHiddenFiles,
   required Widget emptyState,
 }) {
@@ -174,16 +181,48 @@ Widget _buildDataListContent(
       onChangeMultiSelecting: (isMultiselecting) {
         context.read<DriveDetailCubit>().setMultiSelect(isMultiselecting);
       },
+      onChangeColumnVisibility: (column) {
+        context.read<DriveDetailCubit>().updateTableColumnVisibility(column);
+      },
       forceDisableMultiSelect:
           context.read<DriveDetailCubit>().forceDisableMultiselect,
       columns: [
-        TableColumn(appLocalizationsOf(context).name, 3),
+        TableColumn(
+          appLocalizationsOf(context).name,
+          9,
+          index: 0,
+          canHide: false,
+        ),
         if (constraints.maxWidth > 500)
-          TableColumn(appLocalizationsOf(context).size, 1),
+          TableColumn(
+            appLocalizationsOf(context).size,
+            3,
+            index: 1,
+            canHide: false,
+          ),
         if (constraints.maxWidth > 640)
-          TableColumn(appLocalizationsOf(context).lastUpdated, 1),
+          TableColumn(
+            appLocalizationsOf(context).lastUpdated,
+            3,
+            index: 2,
+            isVisible: columnVisibility[2] ?? true,
+          ),
         if (constraints.maxWidth > 700)
-          TableColumn(appLocalizationsOf(context).dateCreated, 1),
+          TableColumn(
+            appLocalizationsOf(context).dateCreated,
+            3,
+            index: 3,
+            isVisible: columnVisibility[3] ?? true,
+          ),
+        if (constraints.maxWidth > 820)
+          TableColumn(
+            // TODO: Localize
+            // appLocalizationsOf(context).licenseType,
+            'License',
+            2,
+            index: 4,
+            isVisible: columnVisibility[4] ?? true,
+          ),
       ],
       trailing: (file) => isMultiselecting
           ? const SizedBox.shrink()
@@ -237,6 +276,12 @@ Widget _buildDataListContent(
           size: row.size == null ? '-' : filesize(row.size),
           lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
           dateCreated: yMMdDateFormatter.format(row.dateCreated),
+          license: row.licenseType == null
+              ? ''
+              : context
+                  .read<LicenseService>()
+                  .licenseMetaByType(row.licenseType!)
+                  .shortName,
           isHidden: row.isHidden,
           onPressed: () {
             final cubit = context.read<DriveDetailCubit>();
@@ -278,6 +323,29 @@ int _getResult(int result, TableSort ascDescSort) {
 
 void _sortItems(
     List<ArDriveDataTableItem> items, int columnIndex, TableSort ascDescSort) {
+  if (columnIndex == ColumnIndexes.licenseType) {
+    final licenseFiles = items.where((e) => e.licenseType != null).toList();
+
+    licenseFiles.sort((a, b) {
+      int result = 0;
+      result = (a.licenseType ?? LicenseType.unknown)
+          .index
+          .compareTo((b.licenseType ?? LicenseType.unknown).index);
+      return _getResult(result, ascDescSort);
+    });
+
+    final noLicenseFiles = items.where((e) => e.licenseType == null).toList();
+
+    noLicenseFiles.sort((a, b) {
+      int result = 0;
+      result = compareAlphabeticallyAndNatural(a.name, b.name);
+      return _getResult(result, ascDescSort);
+    });
+    items.clear();
+    items.addAll(licenseFiles + noLicenseFiles);
+    return;
+  }
+
   items.sort((a, b) {
     int result = 0;
     if (columnIndex == ColumnIndexes.name) {
@@ -286,6 +354,10 @@ void _sortItems(
       result = (a.size ?? 0).compareTo(b.size ?? 0);
     } else if (columnIndex == ColumnIndexes.lastUpdated) {
       result = a.lastUpdated.compareTo(b.lastUpdated);
+    } else if (columnIndex == ColumnIndexes.licenseType) {
+      result = (a.licenseType ?? LicenseType.unknown)
+          .index
+          .compareTo((b.licenseType ?? LicenseType.unknown).index);
     } else {
       result = a.dateCreated.compareTo(b.dateCreated);
     }
@@ -298,11 +370,12 @@ class ColumnIndexes {
   static const int size = 1;
   static const int lastUpdated = 2;
   static const int dateCreated = 3;
+  static const int licenseType = 4;
 }
 
 class DriveDataTableItemMapper {
   static FileDataTableItem toFileDataTableItem(
-    FileWithLatestRevisionTransactions file,
+    FileWithLicenseAndLatestRevisionTransactions file,
     int index,
     bool isOwner,
   ) {
@@ -324,8 +397,10 @@ class DriveDataTableItemMapper {
       parentFolderId: file.parentFolderId,
       dataTxId: file.dataTxId,
       bundledIn: file.bundledIn,
+      licenseTxId: file.licenseTxId,
       metadataTx: file.metadataTx,
       dataTx: file.dataTx,
+      licenseType: file.license?.toCompanion(true).licenseTypeEnum,
       index: index,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
       isHidden: file.isHidden,
@@ -389,6 +464,7 @@ class DriveDataTableItemMapper {
       parentFolderId: revision.parentFolderId,
       dataTxId: revision.dataTxId,
       bundledIn: revision.bundledIn,
+      licenseTxId: revision.licenseTxId,
       metadataTx: null,
       dataTx: null,
       index: 0,
