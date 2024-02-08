@@ -93,6 +93,8 @@ class MockTransactionCommonMixin extends Mock
 
 class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
 
+class MockLicenseService extends Mock implements LicenseService {}
+
 class MockPromptToSnapshotBloc extends Mock implements PromptToSnapshotBloc {}
 
 class MockARFSFile extends ARFSFileEntity {

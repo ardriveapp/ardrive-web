@@ -1,0 +1,12 @@
+query LicenseAssertions($transactionIds: [ID!]) {
+  transactions(
+    ids: $transactionIds
+    tags: [{ name: "App-Name", values: ["License-Assertion"] }]
+  ) {
+    edges {
+      node {
+        ...TransactionCommon
+      }
+    }
+  }
+}

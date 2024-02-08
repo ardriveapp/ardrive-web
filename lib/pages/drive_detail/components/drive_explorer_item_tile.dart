@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
@@ -24,6 +25,7 @@ class DriveExplorerItemTile extends TableRowWidget {
     required String size,
     required String lastUpdated,
     required String dateCreated,
+    required String license,
     required Function() onPressed,
     required bool isHidden,
   }) : super(
@@ -43,6 +45,7 @@ class DriveExplorerItemTile extends TableRowWidget {
             Text(size, style: _driveExplorerItemTileTextStyle(isHidden)),
             Text(lastUpdated, style: _driveExplorerItemTileTextStyle(isHidden)),
             Text(dateCreated, style: _driveExplorerItemTileTextStyle(isHidden)),
+            Text(license, style: ArDriveTypography.body.captionRegular()),
           ],
         );
 }
@@ -316,6 +319,23 @@ class _DriveExplorerItemTileTrailingState
               ),
             ),
           ),
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToLicense(
+                context,
+                driveId: item.driveId,
+                selectedItems: [item],
+              );
+            },
+            content: _buildItem(
+              // TODO: Localize
+              // appLocalizationsOf(context).license,
+              'Add license',
+              ArDriveIcons.license(
+                size: defaultIconSize,
+              ),
+            ),
+          ),
           hideFileDropdownItem(context, item),
         ],
         ArDriveDropdownItem(
@@ -409,6 +429,30 @@ class _DriveExplorerItemTileTrailingState
             ),
           ),
         ),
+        if (item is FileDataTableItem && item.pinnedDataOwnerAddress == null)
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToLicense(
+                context,
+                driveId: item.driveId,
+                selectedItems: [item],
+              );
+            },
+            content: _buildItem(
+              item.licenseTxId == null
+                  ?
+                  // TODO: Localize
+                  // appLocalizationsOf(context).addLicense,
+                  'Add license'
+                  :
+                  // TODO: Localize
+                  // appLocalizationsOf(context).updateLicense,
+                  'Update license',
+              ArDriveIcons.license(
+                size: defaultIconSize,
+              ),
+            ),
+          ),
         hideFileDropdownItem(context, item),
       ],
       ArDriveDropdownItem(

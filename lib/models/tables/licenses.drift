@@ -1,0 +1,21 @@
+import 'network_transactions.drift';
+
+CREATE TABLE licenses (
+    fileId TEXT NOT NULL,
+    driveId TEXT NOT NULL,
+    dataTxId TEXT NOT NULL,
+
+    licenseTxType TEXT NOT NULL,
+    licenseTxId TEXT NOT NULL,
+
+    bundledIn TEXT,
+
+    dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
+
+    licenseType TEXT NOT NULL,
+
+    customGQLTags TEXT,
+
+    PRIMARY KEY (fileId, driveId, dataTxId, licenseTxId),
+    FOREIGN KEY (licenseTxId) REFERENCES network_transactions(id)
+);

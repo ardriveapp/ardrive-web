@@ -693,6 +693,9 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   }, (fileDataItem) {
     metadata as ARFSFileUploadMetadata;
     metadata.setDataTxId = fileDataItem.id;
+    if (metadata.licenseDefinitionTxId != null) {
+      metadata.setLicenseTxId = fileDataItem.id;
+    }
   });
 
   int metadataLength;
