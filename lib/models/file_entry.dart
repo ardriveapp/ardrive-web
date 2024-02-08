@@ -11,6 +11,7 @@ extension FileEntryExtensions on FileEntry {
       parentFolderId: parentFolderId,
       name: name,
       dataTxId: dataTxId,
+      licenseTxId: licenseTxId,
       size: size,
       lastModifiedDate: lastModifiedDate,
       dataContentType: dataContentType,

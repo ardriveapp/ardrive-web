@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,6 +14,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
   final ArDriveDataTableItem? maybeSelectedItem;
 
   final DriveDao _driveDao;
+  final LicenseService _licenseService;
 
   StreamSubscription? _entrySubscription;
 
@@ -20,7 +22,13 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     required this.driveId,
     this.maybeSelectedItem,
     required DriveDao driveDao,
+    required LicenseService licenseService,
+    bool isSharedFile = false,
+    // Supplied in the case isSharedFile == true
+    List<FileRevision>? maybeRevisions,
+    LicenseState? maybeLicenseState,
   })  : _driveDao = driveDao,
+        _licenseService = licenseService,
         super(FsEntryInfoInitial()) {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
@@ -49,25 +57,73 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
           );
           break;
         case FileDataTableItem:
-          _entrySubscription = _driveDao
-              .fileById(driveId: driveId, fileId: selectedItem.id)
-              .watchSingle()
-              .listen(
-            (f) async {
-              final metadataTxId = await _driveDao
-                  .latestFileRevisionByFileId(
-                      driveId: driveId, fileId: selectedItem.id)
-                  .getSingle();
+          fileHandler(
+            String id, {
+            required String name,
+            required DateTime lastUpdated,
+            required DateTime dateCreated,
+          }) async {
+            // Revision must either come from DB (preferred) or [SharedFileCubit]
+            final latestRevision = await _driveDao
+                    .latestFileRevisionByFileId(driveId: driveId, fileId: id)
+                    .getSingleOrNull() ??
+                maybeRevisions!.first;
 
-              emit(FsEntryInfoSuccess<FileEntry>(
-                name: f.name,
-                lastUpdated: f.lastUpdated,
-                dateCreated: f.dateCreated,
-                entry: f,
-                metadataTxId: metadataTxId.metadataTxId,
-              ));
-            },
-          );
+            LicenseState? licenseState;
+            // Prefer unconfirmed LicenseState from the DB...
+            if (latestRevision.licenseTxId != null) {
+              final license = await _driveDao
+                  .licenseByTxId(tx: latestRevision.licenseTxId!)
+                  .getSingleOrNull();
+
+              if (license != null) {
+                final companion = license.toCompanion(true);
+                licenseState = _licenseService.fromCompanion(companion);
+              } else {
+                // ...fall back to license fetched from [SharedFileCubit] if available
+                licenseState ??= maybeLicenseState;
+                // License not yet mined?
+                licenseState ??= const LicenseState(
+                  meta: LicenseMeta(
+                    licenseType: LicenseType.unknown,
+                    licenseDefinitionTxId: '',
+                    name: 'Pending',
+                    shortName: 'Pending',
+                    version: '',
+                  ),
+                );
+              }
+            }
+
+            emit(FsEntryFileInfoSuccess(
+              name: name,
+              lastUpdated: lastUpdated,
+              dateCreated: dateCreated,
+              metadataTxId: latestRevision.metadataTxId,
+              licenseState: licenseState,
+            ));
+          }
+          if (isSharedFile) {
+            selectedItem is FileDataTableItem;
+            fileHandler(
+              selectedItem.id,
+              name: selectedItem.name,
+              lastUpdated: selectedItem.lastUpdated,
+              dateCreated: selectedItem.dateCreated,
+            );
+          } else {
+            _entrySubscription = _driveDao
+                .fileById(driveId: driveId, fileId: selectedItem.id)
+                .watchSingle()
+                .listen(
+                  (fileEntry) => fileHandler(
+                    fileEntry.id,
+                    name: fileEntry.name,
+                    lastUpdated: fileEntry.lastUpdated,
+                    dateCreated: fileEntry.dateCreated,
+                  ),
+                );
+          }
           break;
         default:
           _entrySubscription = _driveDao

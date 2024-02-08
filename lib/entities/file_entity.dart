@@ -31,6 +31,8 @@ class FileEntity extends EntityWithCustomMetadata {
   @JsonKey(fromJson: _msToDateTime, toJson: _dateTimeToMs)
   DateTime? lastModifiedDate;
   String? dataTxId;
+  @JsonKey(includeIfNull: false)
+  String? licenseTxId;
   String? dataContentType;
   @JsonKey(name: 'pinnedDataOwner', includeIfNull: false)
   String? pinnedDataOwnerAddress;
@@ -52,6 +54,7 @@ class FileEntity extends EntityWithCustomMetadata {
     'size',
     'lastModifiedDate',
     'dataTxId',
+    'licenseTxId',
     'dataContentType',
     'isHidden',
   ];
@@ -64,6 +67,7 @@ class FileEntity extends EntityWithCustomMetadata {
     this.size,
     this.lastModifiedDate,
     this.dataTxId,
+    this.licenseTxId,
     this.dataContentType,
     this.pinnedDataOwnerAddress,
     this.isHidden,

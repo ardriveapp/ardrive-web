@@ -16,6 +16,7 @@ import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
+import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -229,6 +230,42 @@ class ArweaveService {
       if (!driveEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
         break;
       }
+    }
+  }
+
+  Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
+      getLicenseAssertions(Iterable<String> licenseAssertionTxIds) async* {
+    const chunkSize = 100;
+    final chunks = licenseAssertionTxIds.slices(chunkSize);
+    for (final chunk in chunks) {
+      // Get a page of 100 transactions
+      final licenseAssertionsQuery = await _graphQLRetry.execute(
+        LicenseAssertionsQuery(
+          variables: LicenseAssertionsArguments(transactionIds: chunk),
+        ),
+      );
+
+      yield licenseAssertionsQuery.data!.transactions.edges
+          .map((e) => e.node)
+          .toList();
+    }
+  }
+
+  Stream<List<LicenseComposed$Query$TransactionConnection$TransactionEdge$Transaction>>
+      getLicenseComposed(Iterable<String> licenseComposedTxIds) async* {
+    const chunkSize = 100;
+    final chunks = licenseComposedTxIds.slices(chunkSize);
+    for (final chunk in chunks) {
+      // Get a page of 100 transactions
+      final licenseComposedQuery = await _graphQLRetry.execute(
+        LicenseComposedQuery(
+          variables: LicenseComposedArguments(transactionIds: chunk),
+        ),
+      );
+
+      yield licenseComposedQuery.data!.transactions.edges
+          .map((e) => e.node)
+          .toList();
     }
   }
 

@@ -108,11 +108,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.17.1"
-      resolved-ref: "0b9da8860a1652fdb6c686310cf3aa188c4af1b1"
-      url: "https://github.com/ardriveapp/ardrive_ui.git"
+      ref: "v1.18.0"
+      resolved-ref: c459bb3db876709c86a03c42f900807936a99226
+      url: "https://github.com/ardriveapp/ardrive_ui"
     source: git
-    version: "1.17.1"
+    version: "1.18.0"
   ardrive_uploader:
     dependency: "direct main"
     description:

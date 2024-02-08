@@ -4,8 +4,8 @@ abstract class ARFSFactory {
   ARFSFileEntity getARFSFileFromFileWithLatestRevisionTransactions(
     FileWithLatestRevisionTransactions file,
   );
-  ARFSFileEntity getARFSFileFromFileRevisionWithTransactions(
-    FileRevisionWithTransactions file,
+  ARFSFileEntity getARFSFileFromFileRevisionWithLicenseAndTransactions(
+    FileRevisionWithLicenseAndTransactions file,
   );
   ARFSFileEntity getARFSFileFromFileRevision(FileRevision file);
   ARFSFileEntity getARFSFileFromFileDataItemTable(FileDataTableItem file);
@@ -34,13 +34,14 @@ class _ARFSFactory implements ARFSFactory {
       size: file.size,
       id: file.id,
       dataTxId: file.dataTxId,
+      licenseTxId: file.licenseTxId,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
     );
   }
 
   @override
-  ARFSFileEntity getARFSFileFromFileRevisionWithTransactions(
-      FileRevisionWithTransactions file) {
+  ARFSFileEntity getARFSFileFromFileRevisionWithLicenseAndTransactions(
+      FileRevisionWithLicenseAndTransactions file) {
     return _ARFSFileEntity(
       appName: '',
       appVersion: '',
@@ -55,6 +56,7 @@ class _ARFSFactory implements ARFSFactory {
       parentFolderId: file.parentFolderId,
       size: file.size,
       id: file.fileId,
+      licenseTxId: file.licenseTxId,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
     );
   }
@@ -93,6 +95,7 @@ class _ARFSFactory implements ARFSFactory {
       parentFolderId: file.parentFolderId,
       size: file.size ?? 0,
       id: file.id,
+      licenseTxId: file.licenseTxId,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
     );
   }
