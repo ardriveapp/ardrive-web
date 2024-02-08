@@ -1,4 +1,6 @@
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/license_assertion.dart';
+import 'package:ardrive/entities/license_composed.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -22,12 +24,15 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   final SecretKey? fileKey;
 
   final ArweaveService _arweave;
+  final LicenseService _licenseService;
 
   SharedFileCubit({
     required this.fileId,
     this.fileKey,
     required arweave,
+    required licenseService,
   })  : _arweave = arweave,
+        _licenseService = licenseService,
         super(SharedFileLoadInProgress()) {
     loadFileDetails(fileKey);
   }
@@ -41,6 +46,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
         return RevisionAction.move;
       } else if (entity.dataTxId != previousRevision.dataTxId) {
         return RevisionAction.uploadNewVersion;
+      } else if (entity.licenseTxId != previousRevision.licenseTxId) {
+        return RevisionAction.assertLicense;
       }
     }
 
@@ -80,6 +87,39 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     return revisions.reversed.toList();
   }
 
+  Future<LicenseState?> fetchLicenseForRevision(FileRevision revision) async {
+    final isComposed = revision.licenseTxId == revision.dataTxId;
+    if (isComposed) {
+      // License Composed
+      final licenseTxs = await _arweave
+          .getLicenseComposed([revision.licenseTxId!])
+          .expand((e) => e)
+          .toList();
+      if (licenseTxs.isEmpty) {
+        logger.e(
+            'Could not find any license composed with txId: ${revision.licenseTxId}');
+        return null;
+      }
+      final licenseComposedEntity =
+          LicenseComposedEntity.fromTransaction(licenseTxs.single);
+      return _licenseService.fromComposedEntity(licenseComposedEntity);
+    } else {
+      // License Assertion
+      final licenseTxs = await _arweave
+          .getLicenseAssertions([revision.licenseTxId!])
+          .expand((e) => e)
+          .toList();
+      if (licenseTxs.isEmpty) {
+        logger.e(
+            'Could not find any license assertions with txId: ${revision.licenseTxId}');
+        return null;
+      }
+      final licenseAssertionEntity =
+          LicenseAssertionEntity.fromTransaction(licenseTxs.single);
+      return _licenseService.fromAssertionEntity(licenseAssertionEntity);
+    }
+  }
+
   Future<void> loadFileDetails(SecretKey? fileKey) async {
     emit(SharedFileLoadInProgress());
     final privacy = await _arweave.getFilePrivacyForId(fileId);
@@ -93,8 +133,16 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     );
     if (allEntities != null) {
       final revisions = await computeRevisionsFromEntities(allEntities);
+      // revisions are in reverse chronological order, so first is most recent
+      final latestLicense = revisions.first.licenseTxId != null
+          ? await fetchLicenseForRevision(revisions.first)
+          : null;
 
-      emit(SharedFileLoadSuccess(fileRevisions: revisions, fileKey: fileKey));
+      emit(SharedFileLoadSuccess(
+        fileRevisions: revisions,
+        fileKey: fileKey,
+        latestLicense: latestLicense,
+      ));
       return;
     }
     emit(SharedFileNotFound());

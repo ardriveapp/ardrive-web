@@ -4,7 +4,7 @@ abstract class FsEntryInfoState extends Equatable {
   const FsEntryInfoState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class FsEntryInfoInitial extends FsEntryInfoState {}
@@ -25,7 +25,24 @@ class FsEntryInfoSuccess<T> extends FsEntryInfoState {
   });
 
   @override
-  List<Object> get props => [name, lastUpdated, dateCreated];
+  List<Object?> get props => [name, lastUpdated, dateCreated];
+}
+
+class FsEntryFileInfoSuccess extends FsEntryInfoSuccess<void> {
+  final LicenseState? licenseState;
+
+  const FsEntryFileInfoSuccess({
+    required super.name,
+    required super.lastUpdated,
+    required super.dateCreated,
+    required super.metadataTxId,
+    required this.licenseState,
+  }) : super(
+          entry: null,
+        );
+
+  @override
+  List<Object?> get props => [name, lastUpdated, dateCreated, licenseState];
 }
 
 class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {

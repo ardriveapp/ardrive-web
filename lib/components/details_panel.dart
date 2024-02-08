@@ -4,7 +4,9 @@ import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
+import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
@@ -41,6 +43,7 @@ class DetailsPanel extends StatefulWidget {
     required this.item,
     required this.drivePrivacy,
     this.revisions,
+    this.licenseState,
     this.fileKey,
     required this.isSharePage,
     this.currentDrive,
@@ -52,6 +55,7 @@ class DetailsPanel extends StatefulWidget {
   final ArDriveDataTableItem item;
   final Privacy drivePrivacy;
   final List<FileRevision>? revisions;
+  final LicenseState? licenseState;
   final SecretKey? fileKey;
   final bool isSharePage;
   final Drive? currentDrive;
@@ -77,7 +81,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
           create: (context) => FsEntryInfoCubit(
             driveId: widget.item.driveId,
             maybeSelectedItem: widget.item,
+            isSharedFile: widget.isSharePage,
+            maybeRevisions: widget.revisions,
+            maybeLicenseState: widget.licenseState,
             driveDao: context.read<DriveDao>(),
+            licenseService: context.read<LicenseService>(),
           ),
         ),
         BlocProvider<FsEntryPreviewCubit>(
@@ -501,8 +509,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     late List<Widget> children;
     if (state is FsEntryInfoSuccess<FolderNode>) {
       children = _folderDetails(state);
-    } else if (state is FsEntryInfoSuccess<FileEntry> ||
-        widget.revisions != null) {
+    } else if (state is FsEntryFileInfoSuccess || widget.revisions != null) {
       children = _fileDetails(state);
     } else if (state is FsEntryInfoSuccess<Drive>) {
       children = _driveDetails(state);
@@ -661,18 +668,18 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }
 
   List<Widget> _fileDetails(FsEntryInfoState state) {
-    String? pinnedDataOwnerAddress =
-        (widget.item as FileDataTableItem).pinnedDataOwnerAddress;
+    final item = widget.item as FileDataTableItem;
+    String? pinnedDataOwnerAddress = item.pinnedDataOwnerAddress;
 
     return [
       DetailsPanelItem(
-        leading: CopyButton(text: widget.item.id),
+        leading: CopyButton(text: item.id),
         itemTitle: appLocalizationsOf(context).fileID,
       ),
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          filesize(widget.item.size),
+          filesize(item.size),
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
         itemTitle: appLocalizationsOf(context).size,
@@ -680,7 +687,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.lastUpdated),
+          yMMdDateFormatter.format(item.lastUpdated),
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -688,7 +695,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.dateCreated),
+          yMMdDateFormatter.format(item.dateCreated),
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -696,7 +703,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          widget.item.contentType,
+          item.contentType,
           textAlign: TextAlign.right,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
@@ -736,19 +743,79 @@ class _DetailsPanelState extends State<DetailsPanel> {
               icon: ArDriveIcons.newWindow(size: 20),
               onPressed: () {
                 openUrl(
-                  url:
-                      'https://viewblock.io/arweave/tx/${(widget.item as FileDataTableItem).dataTxId}',
+                  url: 'https://viewblock.io/arweave/tx/${item.dataTxId}',
                 );
               },
             ),
             const SizedBox(width: 12),
             CopyButton(
-              text: (widget.item as FileDataTableItem).dataTxId,
+              text: item.dataTxId,
             ),
           ],
         ),
         itemTitle: appLocalizationsOf(context).dataTxID,
       ),
+      sizedBoxHeight16px,
+      if (state is FsEntryFileInfoSuccess)
+        DetailsPanelItem(
+          // TODO: Localize
+          // itemTitle: appLocalizationsOf(context).license,
+          itemTitle: 'License',
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              state.licenseState != null
+                  ? LicenseDetailsPopoverButton(
+                      licenseState: state.licenseState!,
+                      fileItem: item,
+                      updateButton:
+                          !widget.isSharePage && pinnedDataOwnerAddress == null,
+                      anchor: const Aligned(
+                        follower: Alignment.bottomRight,
+                        target: Alignment.topRight,
+                        // Shift to the edge of the screen on Mobile
+                        backup: Aligned(
+                          follower: Alignment.bottomRight,
+                          target: Alignment.topRight,
+                          offset: Offset(48, 0),
+                        ),
+                      ),
+                    )
+                  : (!widget.isSharePage && pinnedDataOwnerAddress == null)
+                      ? ArDriveButton(
+                          text: 'Add',
+                          icon: ArDriveIcons.license(
+                            size: 16,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .backgroundColor,
+                          ),
+                          fontStyle: ArDriveTypography.body.buttonNormalBold(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .backgroundColor,
+                          ),
+                          backgroundColor: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault,
+                          maxHeight: 32,
+                          onPressed: () => promptToLicense(
+                            context,
+                            driveId: item.driveId,
+                            selectedItems: [item],
+                          ),
+                        )
+                      : Text(
+                          // TODO: Localize
+                          // appLocalizationsOf(context).noLicense,
+                          'None',
+                          textAlign: TextAlign.right,
+                          style: ArDriveTypography.body.buttonNormalRegular(),
+                        ),
+            ],
+          ),
+        ),
       if (pinnedDataOwnerAddress != null) ...[
         sizedBoxHeight16px,
         DetailsPanelItem(
@@ -770,6 +837,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
           return _buildFileActivity(
             file,
+            null,
             revision.action,
             widget.fileKey,
           );
@@ -819,11 +887,22 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 itemSubtitle: subtitle,
                 itemTitle: title,
               );
-            } else if (revision is FileRevisionWithTransactions) {
+            } else if (revision is FileRevisionWithLicenseAndTransactions) {
               final file = ARFSFactory()
-                  .getARFSFileFromFileRevisionWithTransactions(revision);
+                  .getARFSFileFromFileRevisionWithLicenseAndTransactions(
+                      revision);
+              final licenseState = revision.license == null
+                  ? null
+                  : context
+                      .read<LicenseService>()
+                      .fromCompanion(revision.license!.toCompanion(true));
 
-              return _buildFileActivity(file, revision.action, null);
+              return _buildFileActivity(
+                file,
+                licenseState,
+                revision.action,
+                null,
+              );
             } else if (revision is DriveRevisionWithTransaction) {
               switch (revision.action) {
                 case RevisionAction.create:
@@ -862,6 +941,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
   Widget _buildFileActivity(
     ARFSFileEntity file,
+    LicenseState? licenseState,
     String action,
     SecretKey? key,
   ) {
@@ -897,6 +977,17 @@ class _DetailsPanelState extends State<DetailsPanel> {
           fileRevision: file,
           fileKey: key,
         );
+        break;
+      case RevisionAction.assertLicense:
+        if (licenseState == null) {
+          title = 'File had license updated';
+          // TODO: Localize
+          // title = appLocalizationsOf(context).fileHadALicenseUpdated;
+        } else {
+          title = 'File had license updated to ${licenseState.meta.shortName}';
+          // TODO: Localize
+          // title = appLocalizationsOf(context).fileHadALicenseUpdated(licenseState.meta.shortName);
+        }
         break;
       case RevisionAction.hide:
         title = appLocalizationsOf(context).fileWasHidden;
