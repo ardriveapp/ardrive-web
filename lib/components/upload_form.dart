@@ -1231,12 +1231,13 @@ class _UploadFormState extends State<UploadForm> {
                 .copyWith(fontWeight: FontWeight.bold),
           ),
           // TODO: localize
-          Text(
-            'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
-            style: ArDriveTypography.body.buttonNormalBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDefault),
-          ),
+          if (state.progress.hasUploadInProgress)
+            Text(
+              'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
+              style: ArDriveTypography.body.buttonNormalBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault),
+            ),
         ],
       ),
     );
