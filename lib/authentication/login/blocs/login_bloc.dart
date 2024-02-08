@@ -173,7 +173,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         profileType: profileType!,
       );
     } catch (e) {
-      print(e);
       usingSeedphrase = false;
       emit(LoginFailure(e));
       emit(previousState);

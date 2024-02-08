@@ -110,7 +110,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   typography: typography,
                   maxWidth: double.maxFinite,
                   onPressed: () {
-                    print('Implement me!');
+                    // print('Implement me!');
                   }),
               const SizedBox(height: 40),
               const LinedTextDivider(text: 'or'),
@@ -131,7 +131,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       variant: ButtonVariant.primary,
                       maxWidth: double.maxFinite,
                       onPressed: () {
-                        print('Implement me!');
+                        // print('Implement me!');
                       }),
               const SizedBox(height: 72),
               // TODO:  make this into a reusable component

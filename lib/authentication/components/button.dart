@@ -1,8 +1,10 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_ui/src/constants/size_constants.dart';
 import 'package:flutter/material.dart';
 
 enum ButtonVariant { primary, secondary, outline }
+
+// FIXME: using this from ardrive_ui; move this class to ardrive_ui and remove
+const double buttonDefaultHeight = 56;
 
 class ArDriveButtonNew extends StatefulWidget {
   const ArDriveButtonNew({
