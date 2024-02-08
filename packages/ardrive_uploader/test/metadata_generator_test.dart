@@ -43,7 +43,7 @@ void main() {
     appInfo = AppInfo(
       version: '2.22.0',
       platform: 'FlutterTest',
-      arfsVersion: '0.13',
+      arfsVersion: '0.14',
       appName: 'ardrive',
     );
 
@@ -53,16 +53,10 @@ void main() {
 
   group('ARFSUploadMetadataGenerator', () {
     group('generateMetadata for IOFile', () {
-      test('throws if arguments is null', () {
-        expect(() => metadataGenerator.generateMetadata(DumbIOFile()),
-            throwsA(isA<ArgumentError>()));
-      });
-
       test('throws if entity type is null', () {
         expect(
-            () => metadataGenerator.generateMetadata(
-                DumbIOFile(),
-                ARFSUploadMetadataArgs(
+            () => metadataGenerator.generateMetadata(DumbIOFile(),
+                arguments: ARFSUploadMetadataArgs(
                   isPrivate: false,
                   type: UploadType.d2n,
                   entityId: null,
@@ -72,9 +66,8 @@ void main() {
 
       test('throws if drive id is null', () {
         expect(
-            () => metadataGenerator.generateMetadata(
-                DumbIOFile(),
-                ARFSUploadMetadataArgs(
+            () => metadataGenerator.generateMetadata(DumbIOFile(),
+                arguments: ARFSUploadMetadataArgs(
                   isPrivate: false,
                   type: UploadType.d2n,
                   entityId: 'entity123',
@@ -85,9 +78,8 @@ void main() {
 
       test('throws if parentFolderId is null', () {
         expect(
-            () => metadataGenerator.generateMetadata(
-                DumbIOFile(),
-                ARFSUploadMetadataArgs(
+            () => metadataGenerator.generateMetadata(DumbIOFile(),
+                arguments: ARFSUploadMetadataArgs(
                   isPrivate: false,
                   type: UploadType.d2n,
                   entityId: 'entity123',
@@ -129,7 +121,7 @@ void main() {
 
         final metadata = await metadataGenerator.generateMetadata(
           DumbIOFile(),
-          ARFSUploadMetadataArgs(
+          arguments: ARFSUploadMetadataArgs(
             isPrivate: false,
             type: UploadType.d2n,
             entityId: 'entity123',
@@ -196,7 +188,7 @@ void main() {
 
         final metadata = await metadataGenerator.generateMetadata(
           DumbIOFile(),
-          ARFSUploadMetadataArgs(
+          arguments: ARFSUploadMetadataArgs(
             isPrivate: true, // private file
             type: UploadType.d2n,
             entityId: 'entity123',
@@ -257,7 +249,7 @@ void main() {
 
         final metadata = await metadataGenerator.generateMetadata(
           DumbIOFile(),
-          ARFSUploadMetadataArgs(
+          arguments: ARFSUploadMetadataArgs(
             isPrivate: false,
             type: UploadType.turbo,
             entityId: 'entity123',
@@ -314,7 +306,7 @@ void main() {
 
         final metadata = await metadataGenerator.generateMetadata(
           DumbIOFile(),
-          ARFSUploadMetadataArgs(
+          arguments: ARFSUploadMetadataArgs(
             isPrivate: true, // private file
             type: UploadType.turbo,
             entityId: 'entity123',

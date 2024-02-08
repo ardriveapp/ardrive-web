@@ -4,6 +4,8 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_io/ardrive_io.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -26,6 +28,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
   bool get _isRenamingFolder => folderId != null;
 
+  bool _dontVerifyExtension = false;
+
   FsEntryRenameCubit({
     required this.driveId,
     this.folderId,
@@ -47,9 +51,16 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
   }
 
-  Future<void> submit({required String newName}) async {
+  Future<void> reset() async {
+    emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
+  }
+
+  Future<void> submit({
+    required String newName,
+    bool updateExtension = false,
+  }) async {
     try {
-      late bool hasEntityWithSameName;
+      final bool hasEntityWithSameName;
 
       if (_isRenamingFolder) {
         hasEntityWithSameName = await _folderWithSameNameExists(newName);
@@ -114,13 +125,48 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
         emit(const FolderEntryRenameSuccess());
       } else {
+        var file = await _driveDao
+            .fileById(driveId: driveId, fileId: fileId!)
+            .getSingle();
+
+        if (!updateExtension && !_dontVerifyExtension) {
+          final newFileExtension =
+              getFileExtensionFromFileName(fileName: newName);
+
+          if (newFileExtension.isNotEmpty) {
+            bool hasExtensionChanged;
+
+            final currentExtension = getFileExtension(
+                name: file.name, contentType: file.dataContentType!);
+
+            hasExtensionChanged = currentExtension != newFileExtension;
+
+            if (hasExtensionChanged) {
+              emit(
+                UpdatingEntityExtension(
+                  previousExtension: currentExtension,
+                  entityName: newName,
+                  newExtension: newFileExtension,
+                ),
+              );
+
+              return;
+            }
+          }
+        }
+
         emit(const FileEntryRenameInProgress());
 
         await _driveDao.transaction(() async {
-          var file = await _driveDao
-              .fileById(driveId: driveId, fileId: fileId!)
-              .getSingle();
-          file = file.copyWith(name: newName, lastUpdated: DateTime.now());
+          file = file.copyWith(
+            name: newName,
+            lastUpdated: DateTime.now(),
+          );
+
+          if (updateExtension) {
+            file =
+                file.copyWith(dataContentType: Value(lookupMimeType(newName)));
+          }
 
           final fileKey = driveKey != null
               ? await _crypto.deriveFileKey(driveKey, file.id)
@@ -147,6 +193,9 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
             await _arweave.postTx(fileTx);
             fileEntity.txId = fileTx.id;
           }
+
+          logger.i(
+              'Updating file ${file.id} with txId ${fileEntity.txId}. Data content type: ${fileEntity.dataContentType}');
 
           await _driveDao.writeToFile(file);
 
@@ -186,6 +235,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     );
 
     return entityWithSameNameExists;
+  }
+
+  void dontVerifyExtension() {
+    _dontVerifyExtension = true;
   }
 
   @override

@@ -3,6 +3,8 @@ abstract class RevisionAction {
   static const uploadNewVersion = 'upload-new-version';
   static const rename = 'rename';
   static const move = 'move';
+  static const hide = 'hide';
+  static const unhide = 'unhide';
 }
 
 abstract class TransactionStatus {

@@ -1,4 +1,3 @@
-// implement a widget that has 145 of height and maximum widget, and has a row as child
 import 'package:ardrive/blocs/sync/sync_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/gift/reedem_button.dart';

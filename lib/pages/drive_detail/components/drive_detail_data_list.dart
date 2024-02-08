@@ -3,13 +3,16 @@ part of '../drive_detail_page.dart';
 Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
+  Widget emptyState,
 ) {
   return _buildDataListContent(
     context,
     state.currentFolderContents,
     state.folderInView.folder,
     state.currentDrive,
-    state.multiselect,
+    isMultiselecting: state.multiselect,
+    isShowingHiddenFiles: state.isShowingHiddenFiles,
+    emptyState: emptyState,
   );
 }
 
@@ -24,6 +27,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final String driveId;
   final String path;
   final bool isOwner;
+  final bool isHidden;
 
   ArDriveDataTableItem({
     required this.id,
@@ -37,6 +41,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     required this.path,
     required int index,
     required this.isOwner,
+    this.isHidden = false,
   }) : super(index);
 }
 
@@ -51,6 +56,7 @@ class DriveDataItem extends ArDriveDataTableItem {
     super.path = '',
     required super.index,
     required super.isOwner,
+    super.isHidden,
   });
 
   @override
@@ -62,34 +68,23 @@ class FolderDataTableItem extends ArDriveDataTableItem {
   final bool isGhostFolder;
 
   FolderDataTableItem({
-    required String driveId,
+    required super.driveId,
     required String folderId,
-    required String name,
-    required DateTime lastUpdated,
-    required DateTime dateCreated,
-    required String contentType,
-    required String path,
-    String? fileStatusFromTransactions,
+    required super.name,
+    required super.lastUpdated,
+    required super.dateCreated,
+    required super.contentType,
+    required super.path,
+    super.fileStatusFromTransactions,
+    super.isHidden,
+    required super.index,
+    required super.isOwner,
     this.parentFolderId,
     this.isGhostFolder = false,
-    required int index,
-    required bool isOwner,
-  }) : super(
-          driveId: driveId,
-          path: path,
-          id: folderId,
-          name: name,
-          size: null,
-          lastUpdated: lastUpdated,
-          dateCreated: dateCreated,
-          contentType: contentType,
-          fileStatusFromTransactions: fileStatusFromTransactions,
-          index: index,
-          isOwner: isOwner,
-        );
+  }) : super(id: folderId);
 
   @override
-  List<Object?> get props => [id, name];
+  List<Object> get props => [id, name, isHidden];
 }
 
 class FileDataTableItem extends ArDriveDataTableItem {
@@ -103,52 +98,59 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final String? pinnedDataOwnerAddress;
 
   FileDataTableItem({
+    required super.driveId,
+    required super.lastUpdated,
+    required super.name,
+    required super.size,
+    required super.dateCreated,
+    required super.contentType,
+    required super.path,
+    super.isHidden,
+    super.fileStatusFromTransactions,
+    required super.index,
+    required super.isOwner,
     required this.fileId,
-    required String driveId,
     required this.parentFolderId,
     required this.dataTxId,
-    required DateTime lastUpdated,
     required this.lastModifiedDate,
     required this.metadataTx,
     required this.dataTx,
     required this.pinnedDataOwnerAddress,
-    required String name,
-    required int size,
-    required DateTime dateCreated,
-    required String contentType,
-    required String path,
-    String? fileStatusFromTransactions,
     this.bundledIn,
-    required int index,
-    required bool isOwner,
-  }) : super(
-          path: path,
-          driveId: driveId,
-          id: fileId,
-          name: name,
-          size: size,
-          lastUpdated: lastUpdated,
-          dateCreated: dateCreated,
-          contentType: contentType,
-          fileStatusFromTransactions: fileStatusFromTransactions,
-          index: index,
-          isOwner: isOwner,
-        );
+  }) : super(id: fileId);
 
   @override
-  List<Object?> get props => [fileId, name];
+  List<Object> get props => [fileId, name, isHidden];
 }
 
 Widget _buildDataListContent(
   BuildContext context,
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
-  Drive drive,
-  bool isMultiselecting,
-) {
+  Drive drive, {
+  required bool isMultiselecting,
+  required bool isShowingHiddenFiles,
+  required Widget emptyState,
+}) {
+  final List<ArDriveDataTableItem> filteredItems;
+
+  if (isShowingHiddenFiles) {
+    filteredItems = items.toList();
+  } else {
+    filteredItems = items.where((item) => item.isHidden == false).toList();
+  }
+
+  if (filteredItems.isEmpty) {
+    return emptyState;
+  }
+
   return LayoutBuilder(builder: (context, constraints) {
+    final driveDetailCubitState = context.read<DriveDetailCubit>().state;
+    final forceRebuildKey = driveDetailCubitState is DriveDetailLoadSuccess
+        ? driveDetailCubitState.forceRebuildKey
+        : null;
     return ArDriveDataTable<ArDriveDataTableItem>(
-      key: ValueKey(folder.id),
+      key: ValueKey('${folder.id}-${forceRebuildKey.toString()}'),
       lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
           !context.watch<ActivityTracker>().isMultiSelectEnabled,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
@@ -235,6 +237,7 @@ Widget _buildDataListContent(
           size: row.size == null ? '-' : filesize(row.size),
           lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
           dateCreated: yMMdDateFormatter.format(row.dateCreated),
+          isHidden: row.isHidden,
           onPressed: () {
             final cubit = context.read<DriveDetailCubit>();
             if (row is FolderDataTableItem) {
@@ -246,14 +249,14 @@ Widget _buildDataListContent(
             } else if (row is FileDataTableItem) {
               if (row.id == cubit.selectedItem?.id) {
                 cubit.toggleSelectedItemDetails();
-                return;
+              } else {
+                cubit.selectDataItem(row);
               }
-              cubit.selectDataItem(row);
             }
           },
         );
       },
-      rows: items,
+      rows: filteredItems,
       selectedRow: context.watch<DriveDetailCubit>().selectedItem,
     );
   });
@@ -325,6 +328,7 @@ class DriveDataTableItemMapper {
       dataTx: file.dataTx,
       index: index,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
+      isHidden: file.isHidden,
     );
   }
 
@@ -346,6 +350,7 @@ class DriveDataTableItemMapper {
       dateCreated: folderEntry.dateCreated,
       contentType: 'folder',
       fileStatusFromTransactions: null,
+      isHidden: folderEntry.isHidden,
     );
   }
 
@@ -364,6 +369,7 @@ class DriveDataTableItemMapper {
       dateCreated: drive.dateCreated,
       contentType: 'drive',
       id: drive.id,
+      isHidden: false, // TODO: update me when drives can be hidden
     );
   }
 
@@ -387,6 +393,7 @@ class DriveDataTableItemMapper {
       dataTx: null,
       index: 0,
       pinnedDataOwnerAddress: revision.pinnedDataOwnerAddress,
+      isHidden: revision.isHidden,
     );
   }
 }

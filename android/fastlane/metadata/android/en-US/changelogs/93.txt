@@ -1,0 +1,1 @@
+- Added ability to hide/unhide files and folders
