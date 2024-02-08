@@ -9,7 +9,18 @@ import 'unsupported.dart'
 part 'database.g.dart';
 
 @DriftDatabase(
-  include: {'../tables/all.drift'},
+  include: {
+    '../tables/all.drift',
+    '../tables/drive_revisions.drift',
+    '../tables/drives.drift',
+    '../tables/file_entries.drift',
+    '../tables/file_revisions.drift',
+    '../tables/folder_entries.drift',
+    '../tables/folder_revisions.drift',
+    '../tables/network_transactions.drift',
+    '../tables/profiles.drift',
+    '../tables/snapshot_entries.drift'
+  },
   daos: [DriveDao, ProfileDao],
 )
 class Database extends _$Database {
