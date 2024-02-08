@@ -15,6 +15,7 @@ import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/prompt_to_snapshot_dialog.dart';
 import 'package:ardrive/components/side_bar.dart';
@@ -22,6 +23,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
 import 'package:ardrive/l11n/l11n.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -294,7 +296,24 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         .read<DriveDetailCubit>()
                                         .selectedItems
                                         .isNotEmpty &&
-                                    isDriveOwner)
+                                    isDriveOwner) ...[
+                                  ArDriveIconButton(
+                                    tooltip: 'Add license',
+                                    // TODO: Localize
+                                    // tooltip: appLocalizationsOf(context).addLicense,
+                                    icon: ArDriveIcons.license(),
+                                    onPressed: () {
+                                      promptToLicense(
+                                        context,
+                                        driveId:
+                                            driveDetailState.currentDrive.id,
+                                        selectedItems: context
+                                            .read<DriveDetailCubit>()
+                                            .selectedItems,
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
                                   ArDriveIconButton(
                                     tooltip: appLocalizationsOf(context).move,
                                     icon: ArDriveIcons.move(),
@@ -309,6 +328,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       );
                                     },
                                   ),
+                                ],
                                 const SizedBox(width: 8),
                                 if (canDownloadMultipleFiles &&
                                     context

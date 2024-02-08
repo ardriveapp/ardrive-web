@@ -6,10 +6,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class TableColumn {
-  TableColumn(this.title, this.size);
+  TableColumn(
+    this.title,
+    this.size, {
+    required this.index,
+    this.isVisible = true,
+    this.canHide = true,
+  });
 
   final String title;
   final int size;
+  final bool isVisible;
+  final int index;
+  final bool canHide;
 }
 
 class TableRowWidget {
@@ -37,6 +46,7 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   final bool forceDisableMultiSelect;
   final bool lockMultiSelect;
   final T? selectedRow;
+  final Function(TableColumn)? onChangeColumnVisibility;
 
   const ArDriveDataTable({
     super.key,
@@ -57,6 +67,7 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.forceDisableMultiSelect = false,
     this.lockMultiSelect = false,
     this.selectedRow,
+    this.onChangeColumnVisibility,
   });
 
   @override
@@ -77,6 +88,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
   late List<T> _currentPage;
   final List<MultiSelectBox<T>> _multiSelectBoxes = [];
   T? _selectedItem;
+  List<TableColumn> _columns = [];
 
   final ScrollController _scrollController = ScrollController();
 
@@ -119,6 +131,8 @@ class _ArDriveDataTableState<T extends IndexedItem>
     RawKeyboard.instance.addListener(_handleKeyDownEvent);
     RawKeyboard.instance.addListener(_handleEscapeKey);
     RawKeyboard.instance.addListener(_handleSelectAllShortcut);
+
+    _columns = widget.columns;
   }
 
   void openMultiSelectBox() {
@@ -153,6 +167,19 @@ class _ArDriveDataTableState<T extends IndexedItem>
       clearSelection();
 
       selectPage(newPage);
+    });
+  }
+
+  void _toggleColumnVisibility(int index) {
+    setState(() {
+      final column = TableColumn(
+        _columns[index].title,
+        _columns[index].size,
+        isVisible: !_columns[index].isVisible,
+        index: _columns[index].index,
+      );
+      _columns[index] = column;
+      widget.onChangeColumnVisibility?.call(column);
     });
   }
 
@@ -362,9 +389,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
   @override
   Widget build(BuildContext context) {
     final columns = List.generate(
-      widget.columns.length,
+      _columns.length,
       (index) => _buildSingleColumn(
-        column: widget.columns[index],
+        column: _columns[index],
         index: index,
       ),
       growable: false,
@@ -380,7 +407,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
         leftPadding = 20;
       }
       if (widget.trailing != null) {
-        rightPadding = 135;
+        rightPadding = 20;
       } else {
         rightPadding = 20;
       }
@@ -406,7 +433,37 @@ class _ArDriveDataTableState<T extends IndexedItem>
                   duration: const Duration(milliseconds: 300),
                   padding: getPadding(),
                   child: Row(
-                    children: columns,
+                    children: [
+                      ...columns,
+                      const SizedBox(
+                        width: 90,
+                      ),
+                      ArDriveSubmenu(
+                        alignmentOffset: const Offset(-150, 10),
+                        menuChildren: [
+                          for (int i = 0; i < _columns.length; i++)
+                            ArDriveSubmenuItem(
+                                widget: Padding(
+                              padding: EdgeInsets.only(
+                                  top: (i == 0) ? 16 : 8,
+                                  left: 16,
+                                  right: 16,
+                                  bottom: (i == _columns.length - 1) ? 16 : 8),
+                              child: ArDriveCheckBox(
+                                isDisabled: !_columns[i].canHide,
+                                title: _columns[i].title,
+                                checked: _columns[i].isVisible,
+                                titleStyle:
+                                    ArDriveTypography.body.buttonLargeBold(),
+                                onChange: (value) {
+                                  _toggleColumnVisibility(i);
+                                },
+                              ),
+                            ))
+                        ],
+                        child: ArDriveIcons.plus(),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -431,7 +488,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
                       child: Padding(
                         padding: const EdgeInsets.only(top: 5),
                         child: _buildRowSpacing(
-                          widget.columns,
+                          _columns,
                           widget.buildRow(_currentPage[index]).row,
                           _currentPage[index],
                           index,
@@ -450,6 +507,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
   }
 
   Widget _buildSingleColumn({required TableColumn column, required int index}) {
+    if (!column.isVisible) {
+      return const SizedBox();
+    }
     return Flexible(
       flex: column.size,
       child: ArDriveClickArea(
@@ -818,12 +878,15 @@ class _ArDriveDataTableState<T extends IndexedItem>
                   ...List.generate(
                     columns.length,
                     (index) {
+                      if (!columns[index].isVisible) {
+                        return const SizedBox();
+                      }
                       return Flexible(
-                        flex: columns[index].size,
+                        flex: columns[columns[index].index].size,
                         child: ArDriveClickArea(
                           child: Align(
                             alignment: Alignment.centerLeft,
-                            child: buildRow[index],
+                            child: buildRow[columns[index].index],
                           ),
                         ),
                       );

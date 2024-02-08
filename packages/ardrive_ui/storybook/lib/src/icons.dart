@@ -77,6 +77,7 @@ List<IconOption> _options = [
   IconOption(icon: ArDriveIcons.x(), name: 'x'),
   IconOption(icon: ArDriveIcons.newWindow(), name: 'newWindow'),
   IconOption(icon: ArDriveIcons.share(), name: 'share'),
+  IconOption(icon: ArDriveIcons.license(), name: 'license'),
   IconOption(icon: ArDriveIcons.move(), name: 'move'),
   IconOption(icon: ArDriveIcons.plus(), name: 'plus'),
   IconOption(icon: ArDriveIcons.tournament(), name: 'tournament'),

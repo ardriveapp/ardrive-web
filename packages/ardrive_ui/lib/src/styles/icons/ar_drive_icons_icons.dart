@@ -151,6 +151,8 @@ class ArDriveIconsData {
       IconData(0xe841, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData download_2 =
       IconData(0xe842, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData license =
+      IconData(0xe843, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData pin_circle =
       IconData(0xe844, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData pin_no_circle =

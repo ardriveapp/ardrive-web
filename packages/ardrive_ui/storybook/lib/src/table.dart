@@ -46,9 +46,9 @@ Widget _tableWithContent(BuildContext context) {
         : null,
     key: ValueKey('$space2 $space1'),
     columns: [
-      TableColumn('Name', space1),
-      TableColumn('Size', space2),
-      TableColumn('Last Updated', space3),
+      TableColumn('Name', space1, index: 0),
+      TableColumn('Size', space2, index: 1),
+      TableColumn('Last Updated', space3, index: 2, canHide: false),
     ],
     sort: (columnIndex) {
       if (columnIndex == 2) {

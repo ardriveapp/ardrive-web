@@ -73,6 +73,7 @@ abstract class ARFSFileEntity extends ARFSEntity {
     required this.parentFolderId,
     this.contentType,
     this.dataTxId,
+    this.licenseTxId,
     this.pinnedDataOwnerAddress,
   });
 
@@ -82,6 +83,7 @@ abstract class ARFSFileEntity extends ARFSEntity {
   final DateTime lastModifiedDate;
   final String? contentType;
   final String? dataTxId;
+  final String? licenseTxId;
   final String? pinnedDataOwnerAddress;
 }
 
@@ -121,6 +123,7 @@ class _ARFSFileEntity extends ARFSFileEntity {
     required super.size,
     required super.id,
     super.dataTxId,
+    super.licenseTxId,
     required super.pinnedDataOwnerAddress,
   });
 }

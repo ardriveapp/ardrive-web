@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -65,6 +66,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       await deleteFolderRevisionsByDriveId(driveId: driveId);
       await deleteFilesForDriveId(driveId: driveId);
       await deleteFileRevisionsByDriveId(driveId: driveId);
+      await deleteLicensesByDriveId(driveId: driveId);
     });
   }
 
@@ -324,10 +326,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           ));
 
     final filesQuery = folderId != null
-        ? filesInFolderWithRevisionTransactions(
+        ? filesInFolderWithLicenseAndRevisionTransactions(
             driveId: driveId,
             parentFolderId: folderId,
-            order: (fileEntries, _, __) {
+            order: (fileEntries, _, __, ___) {
               return enumToFileOrderByClause(
                 fileEntries,
                 orderBy,
@@ -335,10 +337,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               );
             },
           )
-        : filesInFolderAtPathWithRevisionTransactions(
+        : filesInFolderAtPathWithLicenseAndRevisionTransactions(
             driveId: driveId,
             path: folderPath!,
-            order: (fileEntries, _, __) {
+            order: (fileEntries, _, __, ___) {
               return enumToFileOrderByClause(
                 fileEntries,
                 orderBy,
@@ -353,7 +355,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         filesQuery.watch(), (
       FolderEntry folder,
       List<FolderEntry> subfolders,
-      List<FileWithLatestRevisionTransactions> files,
+      List<FileWithLicenseAndLatestRevisionTransactions> files,
     ) {
       /// Implementing natural sort this way because to do it in SQLite
       /// it requires triggers, regex spliiting names and creating index fields
@@ -493,6 +495,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           .getTransactionCompanions()
           .map((tx) => writeTransaction(tx)));
       await into(fileRevisions).insert(revision);
+    });
+  }
+
+  Future<void> insertLicense(
+    LicensesCompanion license,
+  ) async {
+    await db.transaction(() async {
+      await Future.wait(
+          license.getTransactionCompanions().map((tx) => writeTransaction(tx)));
+      await into(licenses).insert(license);
     });
   }
 

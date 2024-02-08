@@ -110,7 +110,7 @@ packages:
       path: "packages/ardrive_ui"
       relative: true
     source: path
-    version: "1.17.1"
+    version: "1.18.0"
   ardrive_uploader:
     dependency: "direct main"
     description:

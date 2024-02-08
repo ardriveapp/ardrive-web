@@ -5,6 +5,7 @@ abstract class RevisionAction {
   static const move = 'move';
   static const hide = 'hide';
   static const unhide = 'unhide';
+  static const assertLicense = 'assert-license';
 }
 
 abstract class TransactionStatus {

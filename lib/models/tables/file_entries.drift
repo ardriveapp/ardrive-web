@@ -11,6 +11,9 @@ CREATE TABLE file_entries (
     dataContentType TEXT,
 
     dataTxId TEXT NOT NULL,
+
+    licenseTxId TEXT,
+
     bundledIn TEXT,
 
     pinnedDataOwnerAddress TEXT,

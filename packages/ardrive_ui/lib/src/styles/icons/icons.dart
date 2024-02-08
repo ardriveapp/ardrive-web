@@ -299,6 +299,12 @@ class ArDriveIcons {
         size: size,
         color: color,
       );
+  // license
+  static ArDriveIcon license({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.license,
+        size: size,
+        color: color,
+      );
   // move
   static ArDriveIcon move({double? size, Color? color}) => ArDriveIcon(
         icon: ArDriveIconsData.move,
