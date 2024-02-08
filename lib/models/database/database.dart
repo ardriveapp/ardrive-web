@@ -32,12 +32,12 @@ class Database extends _$Database {
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
-          logger.d('creating database schema');
+          logger.d('Creating database schema...');
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
           try {
-            logger.d('schema changed from $from to $to');
+            logger.d('Migrating schemas from $from thru $to');
 
             if (from >= 1 && from < 16) {
               logger.w(
