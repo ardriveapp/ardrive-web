@@ -63,7 +63,7 @@ dependencies:
   intl: ^0.18.0
   json_annotation: ^4.8.0
   mime: ^1.0.0
-  drift: ^2.9.0
+  drift: ^2.12.1
   path_provider: ^2.0.2
   reactive_forms: ^14.1.0
   rxdart: ^0.27.1

@@ -205,6 +205,96 @@ class NetworkTransactions extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
+class Licenses extends Table with TableInfo {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  Licenses(this.attachedDatabase, [this._alias]);
+  late final GeneratedColumn<String> fileId = GeneratedColumn<String>(
+      'fileId', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<String> driveId = GeneratedColumn<String>(
+      'driveId', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<String> dataTxId = GeneratedColumn<String>(
+      'dataTxId', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<String> licenseTxType = GeneratedColumn<String>(
+      'licenseTxType', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<String> licenseTxId = GeneratedColumn<String>(
+      'licenseTxId', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<String> bundledIn = GeneratedColumn<String>(
+      'bundledIn', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: '');
+  late final GeneratedColumn<DateTime> dateCreated = GeneratedColumn<DateTime>(
+      'dateCreated', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT (strftime(\'%s\', \'now\'))',
+      defaultValue: const CustomExpression('strftime(\'%s\', \'now\')'));
+  late final GeneratedColumn<String> licenseType = GeneratedColumn<String>(
+      'licenseType', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<String> customGQLTags = GeneratedColumn<String>(
+      'customGQLTags', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: '');
+  @override
+  List<GeneratedColumn> get $columns => [
+        fileId,
+        driveId,
+        dataTxId,
+        licenseTxType,
+        licenseTxId,
+        bundledIn,
+        dateCreated,
+        licenseType,
+        customGQLTags
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'licenses';
+  @override
+  Set<GeneratedColumn> get $primaryKey =>
+      {fileId, driveId, dataTxId, licenseTxId};
+  @override
+  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
+    throw UnsupportedError('TableInfo.map in schema verification code');
+  }
+
+  @override
+  Licenses createAlias(String alias) {
+    return Licenses(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const [
+        'PRIMARY KEY(fileId, driveId, dataTxId, licenseTxId)',
+        'FOREIGN KEY(licenseTxId)REFERENCES network_transactions(id)'
+      ];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
 class FolderRevisions extends Table with TableInfo {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -402,139 +492,6 @@ class FolderEntries extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class FileRevisions extends Table with TableInfo {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  FileRevisions(this.attachedDatabase, [this._alias]);
-  late final GeneratedColumn<String> fileId = GeneratedColumn<String>(
-      'fileId', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  late final GeneratedColumn<String> driveId = GeneratedColumn<String>(
-      'driveId', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  late final GeneratedColumn<String> parentFolderId = GeneratedColumn<String>(
-      'parentFolderId', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  late final GeneratedColumn<int> size = GeneratedColumn<int>(
-      'size', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  late final GeneratedColumn<DateTime> lastModifiedDate =
-      GeneratedColumn<DateTime>('lastModifiedDate', aliasedName, false,
-          type: DriftSqlType.dateTime,
-          requiredDuringInsert: true,
-          $customConstraints: 'NOT NULL');
-  late final GeneratedColumn<String> dataContentType = GeneratedColumn<String>(
-      'dataContentType', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  late final GeneratedColumn<String> metadataTxId = GeneratedColumn<String>(
-      'metadataTxId', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  late final GeneratedColumn<String> dataTxId = GeneratedColumn<String>(
-      'dataTxId', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  late final GeneratedColumn<String> bundledIn = GeneratedColumn<String>(
-      'bundledIn', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  late final GeneratedColumn<DateTime> dateCreated = GeneratedColumn<DateTime>(
-      'dateCreated', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT (strftime(\'%s\', \'now\'))',
-      defaultValue: const CustomExpression('strftime(\'%s\', \'now\')'));
-  late final GeneratedColumn<String> customJsonMetadata =
-      GeneratedColumn<String>('customJsonMetadata', aliasedName, true,
-          type: DriftSqlType.string,
-          requiredDuringInsert: false,
-          $customConstraints: '');
-  late final GeneratedColumn<String> customGQLTags = GeneratedColumn<String>(
-      'customGQLTags', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  late final GeneratedColumn<String> action = GeneratedColumn<String>(
-      'action', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  late final GeneratedColumn<String> pinnedDataOwnerAddress =
-      GeneratedColumn<String>('pinnedDataOwnerAddress', aliasedName, true,
-          type: DriftSqlType.string,
-          requiredDuringInsert: false,
-          $customConstraints: '');
-  late final GeneratedColumn<bool> isHidden = GeneratedColumn<bool>(
-      'isHidden', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  @override
-  List<GeneratedColumn> get $columns => [
-        fileId,
-        driveId,
-        name,
-        parentFolderId,
-        size,
-        lastModifiedDate,
-        dataContentType,
-        metadataTxId,
-        dataTxId,
-        bundledIn,
-        dateCreated,
-        customJsonMetadata,
-        customGQLTags,
-        action,
-        pinnedDataOwnerAddress,
-        isHidden
-      ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'file_revisions';
-  @override
-  Set<GeneratedColumn> get $primaryKey => {fileId, driveId, dateCreated};
-  @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
-  }
-
-  @override
-  FileRevisions createAlias(String alias) {
-    return FileRevisions(attachedDatabase, alias);
-  }
-
-  @override
-  List<String> get customConstraints => const [
-        'PRIMARY KEY(fileId, driveId, dateCreated)',
-        'FOREIGN KEY(metadataTxId)REFERENCES network_transactions(id)',
-        'FOREIGN KEY(dataTxId)REFERENCES network_transactions(id)'
-      ];
-  @override
-  bool get dontWriteConstraints => true;
-}
-
 class FileEntries extends Table with TableInfo {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -585,6 +542,11 @@ class FileEntries extends Table with TableInfo {
       type: DriftSqlType.string,
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<String> licenseTxId = GeneratedColumn<String>(
+      'licenseTxId', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: '');
   late final GeneratedColumn<String> bundledIn = GeneratedColumn<String>(
       'bundledIn', aliasedName, true,
       type: DriftSqlType.string,
@@ -634,6 +596,7 @@ class FileEntries extends Table with TableInfo {
         lastModifiedDate,
         dataContentType,
         dataTxId,
+        licenseTxId,
         bundledIn,
         pinnedDataOwnerAddress,
         customJsonMetadata,
@@ -888,9 +851,9 @@ class DatabaseAtV19 extends GeneratedDatabase {
   late final Profiles profiles = Profiles(this);
   late final NetworkTransactions networkTransactions =
       NetworkTransactions(this);
+  late final Licenses licenses = Licenses(this);
   late final FolderRevisions folderRevisions = FolderRevisions(this);
   late final FolderEntries folderEntries = FolderEntries(this);
-  late final FileRevisions fileRevisions = FileRevisions(this);
   late final FileEntries fileEntries = FileEntries(this);
   late final Drives drives = Drives(this);
   late final DriveRevisions driveRevisions = DriveRevisions(this);
@@ -902,9 +865,9 @@ class DatabaseAtV19 extends GeneratedDatabase {
         snapshotEntries,
         profiles,
         networkTransactions,
+        licenses,
         folderRevisions,
         folderEntries,
-        fileRevisions,
         fileEntries,
         drives,
         driveRevisions
